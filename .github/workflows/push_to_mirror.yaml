@@ -1,0 +1,27 @@
+## This action mirrors the repository to the Epitech repository
+
+name: Mirror to Epitech
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  TARGET_REPO_URL: "git@github.com:EpitechPromo2027/G-EIP-600-LYN-6-1-eip-sebastien.lucas.git"
+
+jobs:
+  to-tek-repo:
+    if: github.repository == 'scylla-ops/scylla'
+    runs-on: ubuntu-latest
+    name: Mirror to Epitech Job
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Push to mirror repository
+        uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          target_repo_url: ${{ env.TARGET_REPO_URL }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
