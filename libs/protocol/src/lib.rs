@@ -8,7 +8,7 @@ pub use uuid;
 
 use uuid::Uuid;
 
-/// Statut générique pour job/step
+/// Generic status for job/step
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Status {
     Pending,
@@ -17,14 +17,14 @@ pub enum Status {
     Failed,
 }
 
-/// Définition d'une étape dans une pipeline (template)
+/// Definition of a step in a pipeline (template)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PipelineStep {
     pub name: String,
     pub commands: Vec<String>,
 }
 
-/// Définition d'une pipeline (template)
+/// Definition of a pipeline (template)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pipeline {
     pub id: Uuid,
@@ -32,7 +32,7 @@ pub struct Pipeline {
     pub steps: Vec<PipelineStep>,
 }
 
-/// État d'une étape dans un job (exécution d'une pipeline)
+/// State of a step in a job (execution of a pipeline)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobStep {
     pub name: String,
@@ -41,7 +41,7 @@ pub struct JobStep {
     pub output: Option<String>,
 }
 
-/// Instance d'exécution d'une pipeline
+/// Execution instance of a pipeline
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Job {
     pub id: Uuid,
@@ -50,7 +50,7 @@ pub struct Job {
     pub steps: Vec<JobStep>,
 }
 
-/// Message principal échangé entre serveur et agent
+/// Main message exchanged between server and agent
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "category", content = "payload")]
 pub enum Message {
@@ -59,33 +59,33 @@ pub enum Message {
     Agent(AgentMessage),
 }
 
-/// Messages API (ex : exécution de commande)
+/// API messages (e.g.: command execution)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ApiMessage {
     ExecutePipeline { pipeline: Pipeline },
 }
 
-/// Messages relatifs à l'exécution de jobs
+/// Messages related to job execution
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum JobMessage {
-    /// Demande d'exécution d'un job (instance d'une pipeline)
+    /// Request to execute a job (instance of a pipeline)
     Execute { job: Job },
-    /// Mise à jour du statut d'une étape (envoyée par l'agent)
+    /// Update of a step status (sent by the agent)
     StepStatusUpdate {
         job_id: Uuid,
         step_index: usize,
         status: Status,
         output: String,
     },
-    /// Mise à jour globale du job
+    /// Global update of the job
     JobStatusUpdate { job_id: Uuid, status: Status },
-    /// Demande d'annulation d'un job
+    /// Request to cancel a job
     Cancel { job_id: Uuid },
 }
 
-/// Messages relatifs à l'état des agents
+/// Messages related to the agent state
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum AgentMessage {
@@ -93,7 +93,7 @@ pub enum AgentMessage {
     Heartbeat { agent_id: Uuid, status: AgentStatus },
 }
 
-/// Statut d'un agent
+/// Status of an agent
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum AgentStatus {
     Available,
@@ -102,7 +102,7 @@ pub enum AgentStatus {
     Undefined,
 }
 
-/// Fonctions utilitaires pour (dé)sérialiser les messages
+/// Utility functions to (de)serialize messages
 pub mod utils {
     use super::*;
 
@@ -115,12 +115,12 @@ pub mod utils {
     }
 }
 
-/// Trait pour accéder au statut d'un agent
+/// Trait to access an agent's status
 pub trait HasStatus {
     fn status(&self) -> AgentStatus;
 }
 
-/// Trait pour accéder à l'UUID d'un agent
+/// Trait to access an agent's UUID
 pub trait HasUuid {
     fn uuid(&self) -> Uuid;
 }

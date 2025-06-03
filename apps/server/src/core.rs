@@ -4,18 +4,9 @@ use protocol::uuid::Uuid;
 use protocol::{AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message};
 use std::collections::HashMap;
 use std::sync::Arc;
-use thiserror::Error;
 use tokio::sync::{Mutex, mpsc};
-use tracing::{debug, error, info, warn};
-
-#[derive(Error, Debug)]
-pub enum CoreError {
-    #[error("Error during serialization: {0}")]
-    Serialization(String),
-
-    #[error("Connection error: {0}")]
-    Connection(String),
-}
+use tracing::{debug, info, warn};
+use anyhow::{Context, Result, anyhow};
 
 pub struct Core {
     config: CoreConfig,
@@ -43,17 +34,18 @@ impl Core {
         }
     }
 
-    pub async fn run(&mut self) -> Result<(), CoreError> {
-        info!("Core démarré sur {}", self.config.addr);
+    pub async fn run(&mut self) -> Result<()> {
+        info!("Core started on {}", self.config.addr);
 
         while let Some(message) = self.core_rx.recv().await {
-            self.handle_message(message).await?;
+            self.handle_message(message).await
+                .with_context(|| "Failed to handle message")?;
         }
 
         Ok(())
     }
 
-    async fn handle_message(&mut self, message: Message) -> Result<(), CoreError> {
+    async fn handle_message(&mut self, message: Message) -> Result<()> {
         debug!("Core received message: {:?}", message);
         match message {
             Message::Api(api_message) => match api_message {
@@ -70,7 +62,8 @@ impl Core {
                         self.agents_manager
                             .lock()
                             .await
-                            .update_status(agent_id, AgentStatus::Busy);
+                            .update_status(agent_id, AgentStatus::Busy)
+                            .with_context(|| format!("Failed to update status for agent {}", agent_id))?;
                         let job_id = Uuid::new_v4();
                         let job = protocol::Job {
                             id: job_id,
@@ -89,7 +82,7 @@ impl Core {
                         };
                         // Store the job
                         self.jobs.lock().await.insert(job_id, job.clone());
-                        // Send to the agent
+                        // Send it to the agent
                         if let Err(e) = self
                             .send_to_agent(agent_id, Message::Job(JobMessage::Execute { job }))
                             .await
@@ -111,8 +104,10 @@ impl Core {
                     self.agents_manager
                         .lock()
                         .await
-                        .update_status(agent_id, status);
-                    self.agents_manager.lock().await.update_last_seen(agent_id);
+                        .update_status(agent_id, status)
+                        .with_context(|| format!("Failed to update status for agent {}", agent_id))?;
+                    self.agents_manager.lock().await.update_last_seen(agent_id)
+                        .with_context(|| format!("Failed to update last_seen for agent {}", agent_id))?;
                 }
             },
             Message::Job(job_message) => match job_message {
@@ -150,19 +145,15 @@ impl Core {
         Ok(())
     }
 
-    pub async fn send_to_agent(&self, agent_id: Uuid, message: Message) -> Result<(), CoreError> {
+    pub async fn send_to_agent(&self, agent_id: Uuid, message: Message) -> Result<()> {
         let agents = self.agents_manager.lock().await;
 
         if let Some(tx) = agents.get_agent_tx(&agent_id) {
-            tx.send(message).await.map_err(|_| {
-                CoreError::Connection(format!("Failed to send message to agent {}", agent_id))
-            })?;
+            tx.send(message).await
+                .with_context(|| format!("Failed to send message to agent {}", agent_id))?;
             Ok(())
         } else {
-            Err(CoreError::Connection(format!(
-                "Agent with UUID {} not found",
-                agent_id
-            )))
+            Err(anyhow!("Agent with UUID {} not found", agent_id))
         }
     }
 }

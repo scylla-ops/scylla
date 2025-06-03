@@ -3,6 +3,7 @@ use protocol::uuid::Uuid;
 use std::collections::HashMap;
 use std::time::SystemTime;
 use tokio::sync::mpsc;
+use anyhow::{Result, anyhow};
 
 #[derive(Debug)]
 pub struct Agent {
@@ -38,12 +39,18 @@ impl AgentsManager {
         self.agents.remove(&uuid);
     }
 
-    pub fn update_last_seen(&mut self, uuid: Uuid) {
-        self.agents.get_mut(&uuid).unwrap().last_seen = SystemTime::now();
+    pub fn update_last_seen(&mut self, uuid: Uuid) -> Result<()> {
+        self.agents.get_mut(&uuid)
+            .ok_or_else(|| anyhow!("Agent with UUID {} not found", uuid))?
+            .last_seen = SystemTime::now();
+        Ok(())
     }
 
-    pub fn update_status(&mut self, uuid: Uuid, status: AgentStatus) {
-        self.agents.get_mut(&uuid).unwrap().status = status;
+    pub fn update_status(&mut self, uuid: Uuid, status: AgentStatus) -> Result<()> {
+        self.agents.get_mut(&uuid)
+            .ok_or_else(|| anyhow!("Agent with UUID {} not found", uuid))?
+            .status = status;
+        Ok(())
     }
 
     pub fn get_agent_tx(&self, uuid: &Uuid) -> Option<&mpsc::Sender<protocol::Message>> {

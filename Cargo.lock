@@ -1161,12 +1161,13 @@ dependencies = [
 name = "scylla-core"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "axum",
+ "clap",
  "futures",
  "protocol",
  "serde",
  "serde_json",
- "thiserror",
  "tokio",
  "tower-http",
  "tracing",

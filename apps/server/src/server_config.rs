@@ -3,15 +3,19 @@ use protocol::toml;
 use std::fs;
 use std::net::SocketAddr;
 use std::path::Path;
+use anyhow::{Context, Result, anyhow};
 
 pub const DEFAULT_HOST: &str = "127.0.0.1";
 pub const DEFAULT_PORT: u16 = 3000;
-pub const DEFAULT_MAX_BUFFER_SIZE: usize = 4096;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RootConfig {
+    pub server_config: CoreConfig,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CoreConfig {
     pub addr: SocketAddr,
-    pub max_buffer_size: usize,
 }
 
 impl CoreConfig {
@@ -19,17 +23,42 @@ impl CoreConfig {
         CoreConfigBuilder::default()
     }
 
-    pub fn from_toml_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
-        let content = fs::read_to_string(path)?;
-        let config: Self = toml::from_str(&content)?;
-        Ok(config)
+    pub fn from_toml_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let content = fs::read_to_string(&path)
+            .with_context(|| format!("Failed to read config file: {:?}", path.as_ref()))?;
+        let root_config: RootConfig = toml::from_str(&content)
+            .with_context(|| "Failed to parse TOML config")?;
+        Ok(root_config.server_config)
+    }
+
+    /// Generates an example TOML configuration based on the default values
+    /// and prints it to the terminal.
+    pub fn print_example_toml() {
+        let default_config = CoreConfigBuilder::default().build().unwrap_or_else(|_| {
+            CoreConfig {
+                addr: format!("{}:{}", DEFAULT_HOST, DEFAULT_PORT).parse().unwrap(),
+            }
+        });
+
+        let root_config = RootConfig {
+            server_config: default_config,
+        };
+
+        match toml::to_string_pretty(&root_config) {
+            Ok(toml_str) => {
+                println!("# Example Server Configuration");
+                println!("{}", toml_str);
+            },
+            Err(e) => {
+                eprintln!("Error generating example TOML: {}", e);
+            }
+        }
     }
 }
 
 pub struct CoreConfigBuilder {
     host: Option<String>,
     port: Option<u16>,
-    max_buffer_size: Option<usize>,
 }
 
 impl Default for CoreConfigBuilder {
@@ -37,7 +66,6 @@ impl Default for CoreConfigBuilder {
         Self {
             host: Some(DEFAULT_HOST.to_string()),
             port: Some(DEFAULT_PORT),
-            max_buffer_size: Some(DEFAULT_MAX_BUFFER_SIZE),
         }
     }
 }
@@ -53,23 +81,15 @@ impl CoreConfigBuilder {
         self
     }
 
-    pub fn max_buffer_size(mut self, max_buffer_size: usize) -> Self {
-        self.max_buffer_size = Some(max_buffer_size);
-        self
-    }
-
-    pub fn build(self) -> Result<CoreConfig, &'static str> {
-        let host = self.host.ok_or("Host est requis")?;
-        let port = self.port.ok_or("Port est requis")?;
+    pub fn build(self) -> Result<CoreConfig> {
+        let host = self.host.ok_or_else(|| anyhow!("Host is required"))?;
+        let port = self.port.ok_or_else(|| anyhow!("Port is required"))?;
         let socket_addr = format!("{}:{}", host, port)
             .parse()
-            .map_err(|_| "Adresse IP ou port invalide")?;
-
-        let max_buffer_size = self.max_buffer_size.unwrap_or(DEFAULT_MAX_BUFFER_SIZE);
+            .with_context(|| format!("Invalid IP address or port: {}:{}", host, port))?;
 
         Ok(CoreConfig {
             addr: socket_addr,
-            max_buffer_size,
         })
     }
 }

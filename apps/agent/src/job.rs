@@ -22,7 +22,7 @@ impl JobExecutor {
     ) -> Self {
         Self {
             command_executor: command_executor
-                .unwrap_or_else(|| Arc::new(ShellCommandExecutor::default())),
+                .unwrap_or_else(|| Arc::new(ShellCommandExecutor)),
             cancel_map: Arc::new(Mutex::new(HashMap::new())),
             tx_to_server: Arc::new(Mutex::new(None)),
             state,
@@ -62,7 +62,7 @@ impl JobExecutor {
             state.set_status(AgentStatus::Busy);
         }
 
-        // Set up cancellation channel
+        // Set up a cancellation channel
         let (cancel_tx, cancel_rx) = watch::channel(false);
         self.cancel_map.lock().await.insert(job_id, cancel_tx);
 

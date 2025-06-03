@@ -11,21 +11,22 @@ use axum::extract::{State, WebSocketUpgrade};
 use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router, routing::get};
+use clap::Parser;
 use futures::{SinkExt, StreamExt};
 use protocol::serde::Deserialize;
 use protocol::serde_json;
 use protocol::uuid::Uuid;
 use protocol::{
-    AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message, Pipeline,
+    AgentMessage, ApiMessage, Message, Pipeline,
 };
 use std::collections::HashMap;
-use std::error::Error as StdError;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::{Mutex, mpsc};
 use tower_http::trace::TraceLayer;
 use tracing::{debug, error, info};
 use tracing_subscriber::EnvFilter;
+use anyhow::{Context, Result, anyhow};
 
 #[derive(Deserialize)]
 struct CommandRequest {
@@ -33,18 +34,34 @@ struct CommandRequest {
     pipeline: Pipeline,
 }
 
+/// Scylla Server - The core server for the Scylla CI/CD system
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Print an example configuration file and exit
+    #[arg(short = 'e', long = "print-example-config")]
+    print_example_config: bool,
+
+    /// Path to the configuration file
+    #[arg(short, long)]
+    config: Option<String>,
+}
+
 // Function to execute a command
 async fn execute_command(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CommandRequest>,
 ) -> String {
-    state
+    if let Err(e) = state
         .core_tx
         .send(Message::Api(ApiMessage::ExecutePipeline {
             pipeline: payload.pipeline,
         }))
         .await
-        .unwrap();
+    {
+        error!("Failed to send pipeline execution message: {}", e);
+        return format!("Error: {}", e);
+    }
 
     "Ok".to_string()
 }
@@ -142,14 +159,14 @@ async fn handle_messages(
     agents_manager: Arc<Mutex<AgentsManager>>,
     jobs: Arc<Mutex<HashMap<Uuid, protocol::Job>>>,
     core_config: CoreConfig,
-) -> Result<(), Box<dyn StdError + Send + Sync>> {
+) -> Result<()> {
     let (core_tx, _) = mpsc::channel::<Message>(MAX_CHANNEL_SIZE);
 
     let mut core = core::Core::new(core_config, server_rx, core_tx, agents_manager, jobs);
 
     core.run()
         .await
-        .map_err(|e| Box::<dyn StdError + Send + Sync>::from(e.to_string()))?;
+        .with_context(|| "Failed to run core")?;
 
     Ok(())
 }
@@ -161,12 +178,21 @@ struct AppState {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
         )
         .init();
+
+    // Parse command-line arguments using clap
+    let args = Args::parse();
+
+    // Handle the print-example-config flag
+    if args.print_example_config {
+        CoreConfig::print_example_toml();
+        return Ok(());
+    }
 
     info!("Core starting");
 
@@ -177,8 +203,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let agents_manager = Arc::new(Mutex::new(AgentsManager::new()));
     let jobs = Arc::new(Mutex::new(HashMap::new()));
 
-    // Configure the Core
-    let core_config = CoreConfig::builder().host("127.0.0.1").port(3000).build()?;
+    // Load configuration from file if specified, otherwise use default
+    let core_config = match args.config {
+        Some(config_path) => {
+            match CoreConfig::from_toml_file(&config_path) {
+                Ok(config) => {
+                    info!("Loaded configuration from {}", config_path);
+                    config
+                },
+                Err(e) => {
+                    error!("Failed to load configuration from {}: {}", config_path, e);
+                    info!("Falling back to default configuration");
+                    CoreConfig::builder().host("127.0.0.1").port(3000).build()
+                        .map_err(|e| anyhow!("{}", e))?
+                }
+            }
+        },
+        None => CoreConfig::builder().host("127.0.0.1").port(3000).build()
+            .map_err(|e| anyhow!("{}", e))?,
+    };
 
     // Create app state for HTTP and WebSocket handlers
     let app_state = Arc::new(AppState {
