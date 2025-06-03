@@ -160,8 +160,6 @@ async fn handle_messages(
     jobs: Arc<Mutex<HashMap<Uuid, protocol::Job>>>,
     core_config: CoreConfig,
 ) -> Result<()> {
-    let (core_tx, _) = mpsc::channel::<Message>(MAX_CHANNEL_SIZE);
-
     let mut core = core::Core::new(core_config, server_rx, agents_manager, jobs);
 
     core.run()
