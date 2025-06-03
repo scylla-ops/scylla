@@ -1,33 +1,26 @@
-use crate::agents_manager::AgentsManager;
-use crate::server_config::CoreConfig;
+use crate::agents::AgentsManager;
+use crate::config::CoreConfig;
+use anyhow::{Context, Result, anyhow};
 use protocol::uuid::Uuid;
 use protocol::{AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message};
 use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::{Mutex, mpsc};
+use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
-use anyhow::{Context, Result, anyhow};
 
 pub struct Core {
     config: CoreConfig,
     core_rx: mpsc::Receiver<Message>,
-    // Keep a core_tx for agents
-    agents_manager: Arc<Mutex<AgentsManager>>,
-    jobs: Arc<Mutex<HashMap<Uuid, protocol::Job>>>,
+    agents_manager: AgentsManager,
+    jobs: HashMap<Uuid, protocol::Job>,
 }
 
 impl Core {
-    pub fn new(
-        config: CoreConfig,
-        core_rx: mpsc::Receiver<Message>,
-        agents_manager: Arc<Mutex<AgentsManager>>,
-        jobs: Arc<Mutex<HashMap<Uuid, protocol::Job>>>,
-    ) -> Self {
+    pub fn new(config: CoreConfig, core_rx: mpsc::Receiver<Message>) -> Self {
         Self {
             config,
             core_rx,
-            agents_manager,
-            jobs,
+            agents_manager: AgentsManager::new(),
+            jobs: HashMap::new(),
         }
     }
 
@@ -35,7 +28,8 @@ impl Core {
         info!("Core started on {}", self.config.addr);
 
         while let Some(message) = self.core_rx.recv().await {
-            self.handle_message(message).await
+            self.handle_message(message)
+                .await
                 .with_context(|| "Failed to handle message")?;
         }
 
@@ -48,7 +42,7 @@ impl Core {
             Message::Api(api_message) => match api_message {
                 ApiMessage::ExecutePipeline { pipeline } => {
                     let agent_id = {
-                        let agents = self.agents_manager.lock().await;
+                        let agents = &self.agents_manager;
                         agents
                             .get_agent_by_filter(|agent| agent.status() == AgentStatus::Available)
                             .into_iter()
@@ -57,10 +51,10 @@ impl Core {
                     };
                     if let Some(agent_id) = agent_id {
                         self.agents_manager
-                            .lock()
-                            .await
                             .update_status(agent_id, AgentStatus::Busy)
-                            .with_context(|| format!("Failed to update status for agent {}", agent_id))?;
+                            .with_context(|| {
+                                format!("Failed to update status for agent {}", agent_id)
+                            })?;
                         let job_id = Uuid::new_v4();
                         let job = protocol::Job {
                             id: job_id,
@@ -78,7 +72,7 @@ impl Core {
                                 .collect(),
                         };
                         // Store the job
-                        self.jobs.lock().await.insert(job_id, job.clone());
+                        self.jobs.insert(job_id, job.clone());
                         // Send it to the agent
                         if let Err(e) = self
                             .send_to_agent(agent_id, Message::Job(JobMessage::Execute { job }))
@@ -99,12 +93,23 @@ impl Core {
                 }
                 AgentMessage::Heartbeat { agent_id, status } => {
                     self.agents_manager
-                        .lock()
-                        .await
                         .update_status(agent_id, status)
-                        .with_context(|| format!("Failed to update status for agent {}", agent_id))?;
-                    self.agents_manager.lock().await.update_last_seen(agent_id)
-                        .with_context(|| format!("Failed to update last_seen for agent {}", agent_id))?;
+                        .with_context(|| {
+                            format!("Failed to update status for agent {}", agent_id)
+                        })?;
+                    self.agents_manager
+                        .update_last_seen(agent_id)
+                        .with_context(|| {
+                            format!("Failed to update last_seen for agent {}", agent_id)
+                        })?;
+                }
+                AgentMessage::Connected { agent_id, tx } => {
+                    self.agents_manager.add_agent(agent_id, tx);
+                    info!("Agent {} connected", agent_id);
+                }
+                AgentMessage::Disconnected { agent_id } => {
+                    self.agents_manager.remove_agent(agent_id);
+                    info!("Agent {} disconnected", agent_id);
                 }
             },
             Message::Job(job_message) => match job_message {
@@ -114,7 +119,7 @@ impl Core {
                     status,
                     output,
                 } => {
-                    let mut jobs = self.jobs.lock().await;
+                    let jobs = &mut self.jobs;
                     if let Some(job) = jobs.get_mut(&job_id) {
                         if let Some(step) = job.steps.get_mut(step_index) {
                             step.status = status;
@@ -123,7 +128,7 @@ impl Core {
                     }
                 }
                 JobMessage::JobStatusUpdate { job_id, status } => {
-                    let mut jobs = self.jobs.lock().await;
+                    let jobs = &mut self.jobs;
                     if let Some(job) = jobs.get_mut(&job_id) {
                         job.status = status.clone();
                         if matches!(status, protocol::Status::Success | protocol::Status::Failed) {
@@ -135,7 +140,7 @@ impl Core {
                     warn!("JobMessage::Execute received by core, ignored.");
                 }
                 JobMessage::Cancel { job_id } => {
-                    self.jobs.lock().await.remove(&job_id);
+                    self.jobs.remove(&job_id);
                 }
             },
         }
@@ -143,10 +148,11 @@ impl Core {
     }
 
     pub async fn send_to_agent(&self, agent_id: Uuid, message: Message) -> Result<()> {
-        let agents = self.agents_manager.lock().await;
+        let agents = &self.agents_manager;
 
         if let Some(tx) = agents.get_agent_tx(&agent_id) {
-            tx.send(message).await
+            tx.send(message)
+                .await
                 .with_context(|| format!("Failed to send message to agent {}", agent_id))?;
             Ok(())
         } else {

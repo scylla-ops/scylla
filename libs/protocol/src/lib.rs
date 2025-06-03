@@ -89,8 +89,25 @@ pub enum JobMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum AgentMessage {
-    Register { agent_id: Uuid },
-    Heartbeat { agent_id: Uuid, status: AgentStatus },
+    Register {
+        agent_id: Uuid,
+    },
+    Heartbeat {
+        agent_id: Uuid,
+        status: AgentStatus,
+    },
+
+    // Internal messages used by the server to manage agent connections
+    #[serde(skip_serializing, skip_deserializing)]
+    Connected {
+        agent_id: Uuid,
+        tx: tokio::sync::mpsc::Sender<Message>,
+    },
+
+    #[serde(skip_serializing, skip_deserializing)]
+    Disconnected {
+        agent_id: Uuid,
+    },
 }
 
 /// Status of an agent
