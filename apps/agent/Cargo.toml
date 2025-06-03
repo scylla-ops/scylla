@@ -4,3 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tokio = { version = "1.45.0", features = ["full"] }
+tracing-subscriber = "0.3.19"
+protocol = { path = "../../libs/protocol"}
+tracing = "0.1.41"

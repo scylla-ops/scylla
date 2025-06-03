@@ -2,5 +2,5 @@
 resolver = "3"
 members = [
     "apps/server",
-    "apps/agent",
+    "apps/agent", "libs/protocol",
 ]
