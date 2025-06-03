@@ -15,6 +15,7 @@ use crate::websocket::WebSocketClient;
 use clap::Parser;
 use std::error::Error;
 use std::sync::Arc;
+use tracing_subscriber::EnvFilter;
 
 /// Scylla Agent - A client for the Scylla CI/CD system
 #[derive(Parser, Debug)]
@@ -31,8 +32,11 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    tracing_subscriber::fmt::init();
-
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+        )
+        .init();
     // Parse command-line arguments using clap
     let args = Args::parse();
 

@@ -12,7 +12,6 @@ pub struct Core {
     config: CoreConfig,
     core_rx: mpsc::Receiver<Message>,
     // Keep a core_tx for agents
-    core_tx: mpsc::Sender<Message>,
     agents_manager: Arc<Mutex<AgentsManager>>,
     jobs: Arc<Mutex<HashMap<Uuid, protocol::Job>>>,
 }
@@ -21,14 +20,12 @@ impl Core {
     pub fn new(
         config: CoreConfig,
         core_rx: mpsc::Receiver<Message>,
-        core_tx: mpsc::Sender<Message>,
         agents_manager: Arc<Mutex<AgentsManager>>,
         jobs: Arc<Mutex<HashMap<Uuid, protocol::Job>>>,
     ) -> Self {
         Self {
             config,
             core_rx,
-            core_tx,
             agents_manager,
             jobs,
         }
