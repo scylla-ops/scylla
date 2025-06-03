@@ -79,6 +79,7 @@ async fn handle_agent_socket(socket: WebSocket, state: Arc<AppState>) {
     if let Ok(json) = serde_json::to_string(&register_msg) {
         if let Err(e) = sender.send(WsMessage::Text(json.into())).await {
             error!("Failed to send registration message: {}", e);
+            state.agents_manager.lock().await.remove_agent(agent_id);
             return;
         }
     }

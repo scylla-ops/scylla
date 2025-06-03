@@ -1,5 +1,4 @@
 use crate::agents_manager::AgentsManager;
-use crate::constants::MAX_CHANNEL_SIZE;
 use crate::server_config::CoreConfig;
 use protocol::uuid::Uuid;
 use protocol::{AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message};
