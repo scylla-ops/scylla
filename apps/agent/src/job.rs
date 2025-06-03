@@ -21,8 +21,7 @@ impl JobExecutor {
         state: SharedClientState,
     ) -> Self {
         Self {
-            command_executor: command_executor
-                .unwrap_or_else(|| Arc::new(ShellCommandExecutor)),
+            command_executor: command_executor.unwrap_or_else(|| Arc::new(ShellCommandExecutor)),
             cancel_map: Arc::new(Mutex::new(HashMap::new())),
             tx_to_server: Arc::new(Mutex::new(None)),
             state,
@@ -201,9 +200,9 @@ impl JobExecutor {
     pub async fn cancel_job(&self, job_id: Uuid) -> Result<()> {
         let map = self.cancel_map.lock().await;
         if let Some(sender) = map.get(&job_id) {
-            sender
-                .send(true)
-                .map_err(|e| error::channel_error(format!("Failed to send cancel signal: {}", e)))?;
+            sender.send(true).map_err(|e| {
+                error::channel_error(format!("Failed to send cancel signal: {}", e))
+            })?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Job {} not found", job_id))

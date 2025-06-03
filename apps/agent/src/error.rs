@@ -1,4 +1,4 @@
-pub use anyhow::{anyhow, Error, Result};
+pub use anyhow::{Error, Result, anyhow};
 
 // Define some helper functions for common error types
 pub fn websocket_error<E: std::error::Error + Send + Sync + 'static>(err: E) -> Error {
@@ -16,7 +16,6 @@ pub fn command_error(msg: impl AsRef<str>) -> Error {
 pub fn channel_error(msg: impl AsRef<str>) -> Error {
     anyhow!("Channel error: {}", msg.as_ref())
 }
-
 
 pub fn url_parse_error<E: std::error::Error + Send + Sync + 'static>(err: E) -> Error {
     anyhow!("URL parsing error: {}", err)

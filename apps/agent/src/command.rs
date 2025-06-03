@@ -18,9 +18,9 @@ impl CommandExecutor for ShellCommandExecutor {
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).to_string())
         } else {
-            Err(error::command_error(
-                String::from_utf8_lossy(&output.stderr),
-            ))
+            Err(error::command_error(String::from_utf8_lossy(
+                &output.stderr,
+            )))
         }
     }
 }

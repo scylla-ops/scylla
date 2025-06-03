@@ -50,19 +50,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let job_executor = Arc::new(JobExecutor::new(None, state.clone()));
 
-    // Load configuration from file if specified, otherwise use default
+    // Load configuration from a file if specified, otherwise use default
     let config = match args.config {
-        Some(config_path) => {
-            match AgentConfig::from_toml_file(&config_path) {
-                Ok(config) => {
-                    tracing::info!("Loaded configuration from {}", config_path);
-                    config
-                },
-                Err(e) => {
-                    tracing::error!("Failed to load configuration from {}: {}", config_path, e);
-                    tracing::info!("Falling back to default configuration");
-                    AgentConfig::default()
-                }
+        Some(config_path) => match AgentConfig::from_toml_file(&config_path) {
+            Ok(config) => {
+                tracing::info!("Loaded configuration from {}", config_path);
+                config
+            }
+            Err(e) => {
+                tracing::error!("Failed to load configuration from {}: {}", config_path, e);
+                tracing::info!("Falling back to default configuration");
+                AgentConfig::default()
             }
         },
         None => AgentConfig::default(),

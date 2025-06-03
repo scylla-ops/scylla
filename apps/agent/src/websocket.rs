@@ -178,6 +178,10 @@ impl WebSocketClient {
                 AgentMessage::Heartbeat { .. } => {
                     unreachable!("Agent should not receive Heartbeat messages")
                 }
+                AgentMessage::Connected { .. }
+                | AgentMessage::Disconnected { .. } => unreachable!(
+                    "Agent client side cannot receive Connected or Disconnected messages since there are not serialized on the server side"
+                ),
             },
             Message::Api(_) => unreachable!("Agent should not receive API messages"),
         }

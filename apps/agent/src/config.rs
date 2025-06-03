@@ -39,7 +39,7 @@ impl AgentConfig {
             Ok(toml_str) => {
                 println!("# Example Agent Configuration");
                 println!("{}", toml_str);
-            },
+            }
             Err(e) => {
                 eprintln!("Error generating example TOML: {}", e);
             }
@@ -82,7 +82,9 @@ impl AgentConfigBuilder {
     }
 
     pub fn build(self) -> Result<AgentConfig> {
-        let websocket_url = self.websocket_url.ok_or_else(|| anyhow::anyhow!("WebSocket URL is required"))?;
+        let websocket_url = self
+            .websocket_url
+            .ok_or_else(|| anyhow::anyhow!("WebSocket URL is required"))?;
         let channel_size = self.channel_size.unwrap_or(DEFAULT_CHANNEL_SIZE);
 
         Ok(AgentConfig {
