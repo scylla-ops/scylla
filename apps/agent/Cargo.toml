@@ -5,6 +5,13 @@ edition = "2024"
 
 [dependencies]
 tokio = { version = "1.45.0", features = ["full"] }
+tokio-tungstenite = { version = "0.26.2", features = ["native-tls"] }
+futures = "0.3.30"
+url = "2.5.0"
 tracing-subscriber = "0.3.19"
 protocol = { path = "../../libs/protocol"}
 tracing = "0.1.41"
+async-trait = "0.1.77"
+anyhow = { version = "1.0.81" }
+serde = { version = "1.0", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive"] }
