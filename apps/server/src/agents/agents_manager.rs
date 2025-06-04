@@ -1,9 +1,15 @@
-use anyhow::{Result, anyhow};
 use protocol::AgentStatus;
 use protocol::uuid::Uuid;
 use std::collections::HashMap;
 use std::time::SystemTime;
+use thiserror::Error;
 use tokio::sync::mpsc;
+
+#[derive(Error, Debug)]
+pub enum AgentError {
+    #[error("Agent with UUID {0} not found")]
+    AgentNotFound(Uuid),
+}
 
 #[derive(Debug)]
 pub struct Agent {
@@ -39,19 +45,21 @@ impl AgentsManager {
         self.agents.remove(&uuid);
     }
 
-    pub fn update_last_seen(&mut self, uuid: Uuid) -> Result<()> {
+    pub fn update_last_seen(&mut self, uuid: Uuid) -> Result<(), AgentError> {
         self.agents
             .get_mut(&uuid)
-            .ok_or_else(|| anyhow!("Agent with UUID {} not found", uuid))?
+            .ok_or(AgentError::AgentNotFound(uuid))?
             .last_seen = SystemTime::now();
         Ok(())
     }
 
-    pub fn update_status(&mut self, uuid: Uuid, status: AgentStatus) -> Result<()> {
-        self.agents
+    pub fn update_status(&mut self, uuid: Uuid, status: AgentStatus) -> Result<(), AgentError> {
+        let agent = self
+            .agents
             .get_mut(&uuid)
-            .ok_or_else(|| anyhow!("Agent with UUID {} not found", uuid))?
-            .status = status;
+            .ok_or(AgentError::AgentNotFound(uuid))?;
+
+        agent.status = status;
         Ok(())
     }
 

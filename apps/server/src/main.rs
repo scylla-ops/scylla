@@ -32,8 +32,8 @@ struct Args {
     config: Option<String>,
 }
 
-struct AppState {
-    core_tx: mpsc::Sender<Message>,
+pub struct AppState {
+    pub core_tx: mpsc::Sender<Message>,
 }
 
 fn create_default_config() -> Result<CoreConfig> {

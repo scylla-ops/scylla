@@ -12,6 +12,28 @@ use tracing::{debug, error, info};
 use crate::AppState;
 use crate::config::MAX_CHANNEL_SIZE;
 
+/// Trait for handling WebSocket connections
+#[async_trait::async_trait]
+pub trait WebSocketHandler {
+    /// The state type used by the handler
+    type State;
+
+    /// Handle a WebSocket connection
+    async fn handle_socket(socket: WebSocket, state: Self::State);
+
+    /// Process a message received from a WebSocket
+    async fn process_message(
+        text: String,
+        state: &Self::State,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+    /// Send a message to a WebSocket
+    async fn send_message(
+        message: Message,
+        sender: &mut futures::stream::SplitSink<WebSocket, WsMessage>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+}
+
 // Agent controller for handling agent-related HTTP requests
 pub struct AgentController;
 
@@ -23,9 +45,14 @@ impl AgentController {
     ) -> impl IntoResponse {
         ws.on_upgrade(|socket| Self::handle_socket(socket, state))
     }
+}
+
+#[async_trait::async_trait]
+impl WebSocketHandler for AgentController {
+    type State = Arc<AppState>;
 
     // Process WebSocket connection from an agent
-    async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
+    async fn handle_socket(socket: WebSocket, state: Self::State) {
         let (mut sender, mut receiver) = socket.split();
 
         // Create a new UUID for this agent
@@ -45,46 +72,31 @@ impl AgentController {
 
         // Send registration message to the agent
         let register_msg = Message::Agent(AgentMessage::Register { agent_id });
-        if let Ok(json) = serde_json::to_string(&register_msg) {
-            if let Err(e) = sender.send(WsMessage::Text(json.into())).await {
-                error!("Failed to send registration message: {}", e);
-                state
-                    .core_tx
-                    .send(Message::Agent(AgentMessage::Disconnected { agent_id }))
-                    .await
-                    .unwrap();
-                return;
-            }
+        if let Err(e) = Self::send_message(register_msg, &mut sender).await {
+            error!("Failed to send registration message: {}", e);
+            Self::handle_disconnect(&state, agent_id).await;
+            return;
         }
 
         // Task to forward messages from server to agent
         let mut send_task = tokio::spawn(async move {
             while let Some(message) = client_rx.recv().await {
-                if let Ok(json) = serde_json::to_string(&message) {
-                    if let Err(e) = sender.send(WsMessage::Text(json.into())).await {
-                        error!("Error sending message to agent: {}", e);
-                        break;
-                    }
+                if let Err(e) = Self::send_message(message, &mut sender).await {
+                    error!("Error sending message to agent: {}", e);
+                    break;
                 }
             }
         });
 
         // Task to process messages from agent
-        let core_tx = state.core_tx.clone();
+        let state_clone = state.clone();
         let mut recv_task = tokio::spawn(async move {
             while let Some(result) = receiver.next().await {
                 match result {
                     Ok(WsMessage::Text(text)) => {
-                        debug!("Received message from agent: {}", text);
-                        match serde_json::from_str::<Message>(&text) {
-                            Ok(message) => {
-                                if let Err(e) = core_tx.send(message).await {
-                                    error!("Failed to forward message to core: {}", e);
-                                }
-                            }
-                            Err(e) => {
-                                error!("Failed to parse message from agent: {}", e);
-                            }
+                        if let Err(e) = Self::process_message(text.to_string(), &state_clone).await
+                        {
+                            error!("Error processing message: {}", e);
                         }
                     }
                     Ok(WsMessage::Close(_)) => {
@@ -99,11 +111,7 @@ impl AgentController {
                 }
             }
 
-            state
-                .core_tx
-                .send(Message::Agent(AgentMessage::Disconnected { agent_id }))
-                .await
-                .unwrap();
+            Self::handle_disconnect(&state_clone, agent_id).await;
         });
 
         // Wait for either task to complete
@@ -114,6 +122,38 @@ impl AgentController {
             _ = &mut recv_task => {
                 send_task.abort();
             }
+        }
+    }
+
+    async fn process_message(
+        text: String,
+        state: &Self::State,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        debug!("Received message from agent: {}", text);
+        let message = serde_json::from_str::<Message>(&text)?;
+        state.core_tx.send(message).await?;
+        Ok(())
+    }
+
+    async fn send_message(
+        message: Message,
+        sender: &mut futures::stream::SplitSink<WebSocket, WsMessage>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let json = serde_json::to_string(&message)?;
+        sender.send(WsMessage::Text(json.into())).await?;
+        Ok(())
+    }
+}
+
+impl AgentController {
+    // Helper method to handle agent disconnection
+    async fn handle_disconnect(state: &Arc<AppState>, agent_id: Uuid) {
+        if let Err(e) = state
+            .core_tx
+            .send(Message::Agent(AgentMessage::Disconnected { agent_id }))
+            .await
+        {
+            error!("Failed to send disconnect message: {}", e);
         }
     }
 }
