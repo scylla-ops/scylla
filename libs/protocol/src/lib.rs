@@ -6,6 +6,8 @@ pub use serde_json;
 pub use toml;
 pub use uuid;
 
+use anyhow::Result;
+use async_trait::async_trait;
 use uuid::Uuid;
 
 /// Generic status for job/step
@@ -140,4 +142,11 @@ pub trait HasStatus {
 /// Trait to access an agent's UUID
 pub trait HasUuid {
     fn uuid(&self) -> Uuid;
+}
+
+/// Trait for handling different types of messages
+#[async_trait]
+pub trait MessageHandler {
+    /// Handle a message and return a result
+    async fn handle_message(&mut self, message: Message) -> Result<()>;
 }

@@ -2,16 +2,11 @@ use crate::agents::AgentsManager;
 use crate::config::CoreConfig;
 use anyhow::{Context, Result, anyhow};
 use protocol::uuid::Uuid;
-use protocol::{AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message};
+use protocol::{AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message, MessageHandler};
 use std::collections::HashMap;
+use async_trait::async_trait;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
-
-/// Trait for handling different types of messages
-pub trait MessageHandler {
-    /// Handle a message and return a result
-    async fn handle_message(&mut self, message: Message) -> Result<()>;
-}
 
 /// Trait for sending messages to agents
 pub trait AgentSender {
@@ -194,6 +189,7 @@ impl Core {
     }
 }
 
+#[async_trait]
 impl MessageHandler for Core {
     async fn handle_message(&mut self, message: Message) -> Result<()> {
         debug!("Core received message: {:?}", message);
