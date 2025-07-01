@@ -1,11 +1,13 @@
+use crate::AppState;
+use crate::api::v1::common::responses::helper::ApiResponse;
 use axum::Json;
 use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use protocol::serde::Deserialize;
 use protocol::{ApiMessage, Message, Pipeline};
 use std::sync::Arc;
 use tracing::error;
-
-use crate::AppState;
 
 #[derive(Deserialize)]
 pub struct CommandRequest {
@@ -21,7 +23,7 @@ impl PipelineController {
     pub async fn execute_command(
         State(state): State<Arc<AppState>>,
         Json(payload): Json<CommandRequest>,
-    ) -> String {
+    ) -> impl IntoResponse {
         if let Err(e) = state
             .core_tx
             .send(Message::Api(ApiMessage::ExecutePipeline {
@@ -30,9 +32,14 @@ impl PipelineController {
             .await
         {
             error!("Failed to send pipeline execution message: {}", e);
-            return format!("Error: {}", e);
+            return ApiResponse::error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to send pipeline execution message: {}", e),
+            );
         }
-
-        "Ok".to_string()
+        ApiResponse::success(
+            StatusCode::OK,
+            "Pipeline execution command sent successfully",
+        )
     }
 }

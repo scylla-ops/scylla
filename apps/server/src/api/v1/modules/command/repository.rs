@@ -1,6 +1,6 @@
+use crate::api::v1::common::base::{BaseRepository, Repository};
 use crate::api::v1::models::Command;
-use crate::api::v1::repositories::base::{BaseRepository, Repository};
-use crate::database::DbPool;
+use crate::database::DieselPool;
 use crate::database::schema::commands;
 use anyhow::{Context, Result};
 use diesel::prelude::*;
@@ -12,7 +12,7 @@ pub struct CommandRepository {
 }
 
 impl CommandRepository {
-    pub fn new(pool: DbPool) -> Self {
+    pub fn new(pool: DieselPool) -> Self {
         Self {
             base: BaseRepository::new(pool),
         }
@@ -57,7 +57,7 @@ impl CommandRepository {
 
 // Implement Repository trait for CommandRepository by delegating to the base repository
 impl Repository for CommandRepository {
-    fn get_pool(&self) -> &DbPool {
+    fn get_pool(&self) -> &DieselPool {
         self.base.get_pool()
     }
 }

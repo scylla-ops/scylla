@@ -1,10 +1,12 @@
 use crate::agents::AgentsManager;
 use crate::config::CoreConfig;
 use anyhow::{Context, Result, anyhow};
-use protocol::uuid::Uuid;
-use protocol::{AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message, MessageHandler};
-use std::collections::HashMap;
 use async_trait::async_trait;
+use protocol::uuid::Uuid;
+use protocol::{
+    AgentMessage, AgentStatus, ApiMessage, HasStatus, HasUuid, JobMessage, Message, MessageHandler,
+};
+use std::collections::HashMap;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 

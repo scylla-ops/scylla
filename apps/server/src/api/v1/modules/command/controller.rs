@@ -1,3 +1,6 @@
+use crate::api::v1::common::responses::helper::ApiResponse;
+use crate::api::v1::modules::command::CommandService;
+use crate::api::v1::modules::command::dto::CommandRequestDto;
 use axum::{
     Json,
     extract::{Path, State},
@@ -7,10 +10,6 @@ use axum::{
 use std::sync::Arc;
 use tracing::{error, info};
 use validator::Validate;
-
-use crate::api::v1::common::response_helpers;
-use crate::api::v1::dto::{CommandRequestDto, CommandResponseDto};
-use crate::api::v1::services::CommandService;
 
 // Command controller for handling command-related HTTP requests
 pub struct CommandController;
@@ -24,21 +23,24 @@ impl CommandController {
         // Validate the request
         if let Err(e) = request.validate() {
             error!("Invalid command request: {}", e);
-            return response_helpers::validation_error::<CommandResponseDto>(e);
+            return ApiResponse::error(
+                StatusCode::BAD_REQUEST,
+                format!("Invalid command request: {}", e),
+            );
         }
 
         // Execute the command using the service
         match service.execute_command(request).await {
             Ok(response) => {
                 info!("Command executed successfully: {}", response.command_id);
-                (StatusCode::OK, response_helpers::success(response))
+                ApiResponse::success(StatusCode::OK, response)
             }
             Err(e) => {
                 error!("Failed to execute command: {}", e);
-                response_helpers::internal_error::<CommandResponseDto>(format!(
-                    "Failed to execute command: {}",
-                    e
-                ))
+                ApiResponse::error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to execute command: {}", e),
+                )
             }
         }
     }
@@ -51,18 +53,21 @@ impl CommandController {
         match service.get_command(&command_id).await {
             Ok(Some(response)) => {
                 info!("Command retrieved successfully: {}", command_id);
-                (StatusCode::OK, response_helpers::success(response))
+                ApiResponse::success(StatusCode::OK, response)
             }
             Ok(None) => {
                 info!("Command not found: {}", command_id);
-                response_helpers::not_found::<CommandResponseDto>(command_id)
+                ApiResponse::error(
+                    StatusCode::NOT_FOUND,
+                    format!("Command not found: {}", command_id),
+                )
             }
             Err(e) => {
                 error!("Failed to get command: {}", e);
-                response_helpers::internal_error::<CommandResponseDto>(format!(
-                    "Failed to get command: {}",
-                    e
-                ))
+                ApiResponse::error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to get command: {}", e),
+                )
             }
         }
     }

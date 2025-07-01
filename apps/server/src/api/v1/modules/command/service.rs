@@ -1,9 +1,8 @@
+use crate::api::v1::modules::command::dto::{CommandRequestDto, CommandResponseDto};
+use crate::api::v1::modules::command::repository::CommandRepository;
 use anyhow::{Context, Result};
 use tracing::info;
 use validator::Validate;
-
-use crate::api::v1::dto::{CommandRequestDto, CommandResponseDto};
-use crate::api::v1::repositories::CommandRepository;
 
 // Command service for handling command-related business logic
 pub struct CommandService {

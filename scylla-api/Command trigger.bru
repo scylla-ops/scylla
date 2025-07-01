@@ -1,0 +1,33 @@
+meta {
+  name: Command trigger
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{FULL_URL}}/execute
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": "58ba122d-9aac-4b38-93ec-ad7ddb10d238",
+    "name": "Mon pipeline",
+    "steps": [
+      {
+        "name": "Build",
+        "commands": [
+          "cargo build",
+          "cargo test"
+        ]
+      },
+      {
+        "name": "Deploy",
+        "commands": [
+          "echo Deploy"
+        ]
+      }
+    ]
+  }
+}

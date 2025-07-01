@@ -111,6 +111,14 @@ impl CoreConfig {
             }
         }
     }
+
+    pub fn try_create_default_config() -> Result<CoreConfig> {
+        CoreConfig::builder()
+            .host("127.0.0.1")
+            .port(3000)
+            .build()
+            .map_err(|e| anyhow!("Failed to create default configuration: {}", e))
+    }
 }
 
 /// Builder for creating CoreConfig instances
