@@ -1,11 +1,14 @@
 pub mod v1;
 use crate::api::v1::modules::agent::AgentController;
-use crate::api::v1::modules::command::{CommandController, CommandRepository, CommandService};
+// use crate::api::v1::modules::command::{CommandController, CommandRepository, CommandService};
 use crate::api::v1::modules::pipeline::PipelineController;
 use crate::api::v1::modules::root::RootController;
 use crate::database::{DieselDatabase, DieselPool, SqlxDatabase};
 // Internal imports
 use crate::AppState;
+use crate::api::v1::modules::user::controller::UserController;
+use crate::api::v1::modules::user::repository::UserRepository;
+use crate::api::v1::modules::user::service::UserService;
 use axum::{
     Router,
     routing::{get, post},
@@ -52,11 +55,11 @@ impl ApiBuilder {
     /// # Returns
     /// * `Router` - Configured Axum router with all API routes
     pub async fn build_v1_api(&self, app_state: Arc<AppState>) -> Router {
-        // Create repositories
-        let command_repo = CommandRepository::new(self.diesel_db_pool.clone());
-
-        // Create services
-        let command_service = Arc::new(CommandService::new(command_repo));
+        let user_service = {
+            let user_repo = UserRepository::new(self.diesel_db_pool.clone());
+            let user_service = UserService::new(user_repo);
+            Arc::new(user_service)
+        };
 
         // Create session store for managing user sessions
         // Session in postgresql
@@ -84,9 +87,9 @@ impl ApiBuilder {
             ])); // todo: replace with secret from config
 
         let api_router = Router::new()
-            .route("/commands", post(CommandController::execute_command))
-            .route("/commands/{id}", get(CommandController::get_command))
-            .with_state(command_service);
+            .route("/user/create", post(UserController::create_user))
+            .route("/user/{id}", get(UserController::get_user_by_id))
+            .with_state(user_service);
 
         Router::new()
             .route("/ws/agent", get(AgentController::handle_websocket))

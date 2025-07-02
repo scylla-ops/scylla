@@ -1,12 +1,13 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    commands (id) {
-        id -> Varchar,
-        command -> Text,
-        args -> Array<Text>,
-        status -> Varchar,
+    users (id) {
+        id -> Uuid,
+        #[max_length = 255]
+        username -> Varchar,
+        password_hash -> Text,
+        is_active -> Bool,
         created_at -> Timestamptz,
-        updated_at -> Nullable<Timestamptz>,
+        updated_at -> Timestamptz,
     }
 }

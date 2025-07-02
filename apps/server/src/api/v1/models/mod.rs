@@ -1,3 +1,1 @@
-pub mod example;
-
-pub use example::Command;
+pub mod users;

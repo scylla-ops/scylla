@@ -18,6 +18,7 @@ anyhow = "1.0.98"
 futures = "0.3.31"
 thiserror = "2.0.12"
 clap = { version = "4.5.40", features = ["derive"] }
+bcrypt = { version = "0.17.0", features = ["default"] }
 # Database dependencies
 diesel = { version = "2.2.11", features = ["postgres", "r2d2", "chrono", "uuid"] }
 diesel_migrations = "2.2.0"
