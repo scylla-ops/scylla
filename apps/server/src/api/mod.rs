@@ -88,7 +88,13 @@ impl ApiBuilder {
 
         let api_router = Router::new()
             .route("/user/create", post(UserController::create_user))
-            .route("/user/{id}", get(UserController::get_user_by_id))
+            .route(
+                "/user/{id}",
+                get(UserController::get_user_by_id)
+                    .patch(UserController::update_user_by_id)
+                    .delete(UserController::deactivate_user_by_id),
+            )
+            .route("/user/all", get(UserController::get_all_users))
             .with_state(user_service);
 
         Router::new()

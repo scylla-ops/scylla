@@ -1,6 +1,6 @@
 use crate::api::v1::common::extractors::validated_json::ValidatedJson;
 use crate::api::v1::common::responses::helper::ApiResponse;
-use crate::api::v1::modules::user::dto::NewUserRequest;
+use crate::api::v1::modules::user::dto::{NewUserRequest, UpdateUserRequest};
 use crate::api::v1::modules::user::service::UserService;
 use axum::Json;
 use axum::extract::{Path, State};
@@ -47,6 +47,57 @@ impl UserController {
                 ApiResponse::error(
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                     format!("Failed to fetch user: {e}"),
+                )
+            }
+        }
+    }
+
+    // Get all users
+    pub async fn get_all_users(State(service): State<Arc<UserService>>) -> impl IntoResponse {
+        match service.get_all_users().await {
+            Ok(users) => ApiResponse::success(axum::http::StatusCode::OK, users),
+            Err(e) => {
+                tracing::error!("Failed to fetch users: {}", e);
+                ApiResponse::error(
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to fetch users: {e}"),
+                )
+            }
+        }
+    }
+
+    // Update user by ID
+    pub async fn update_user_by_id(
+        State(service): State<Arc<UserService>>,
+        user_uuid: Path<Uuid>,
+        ValidatedJson(req): ValidatedJson<UpdateUserRequest>,
+    ) -> impl IntoResponse {
+        match service.update_user_by_id(*user_uuid, req).await {
+            Ok(_) => ApiResponse::success(axum::http::StatusCode::OK, "User updated successfully"),
+            Err(e) => {
+                tracing::error!("Failed to update user: {}", e);
+                ApiResponse::error(
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to update user: {e}"),
+                )
+            }
+        }
+    }
+
+    // Deactivate user by ID
+    pub async fn deactivate_user_by_id(
+        State(service): State<Arc<UserService>>,
+        user_uuid: Path<Uuid>,
+    ) -> impl IntoResponse {
+        match service.deactivate_user_by_id(*user_uuid).await {
+            Ok(_) => {
+                ApiResponse::success(axum::http::StatusCode::OK, "User deactivated successfully")
+            }
+            Err(e) => {
+                tracing::error!("Failed to deactivate user: {}", e);
+                ApiResponse::error(
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to deactivate user: {e}"),
                 )
             }
         }
