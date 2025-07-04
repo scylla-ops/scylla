@@ -1,6 +1,5 @@
 pub mod v1;
 use crate::api::v1::modules::agent::AgentController;
-// use crate::api::v1::modules::command::{CommandController, CommandRepository, CommandService};
 use crate::api::v1::modules::pipeline::PipelineController;
 use crate::api::v1::modules::root::RootController;
 use crate::database::{DieselDatabase, DieselPool, SqlxDatabase};

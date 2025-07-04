@@ -14,15 +14,17 @@ impl UserService {
     }
 
     // Create a new user
-    pub async fn create_user(&self, req: NewUserRequest) -> Result<()> {
-        let res = self.repository.create_user(req.try_into()?).await?;
-        Ok(())
+    pub async fn create_user(&self, req: NewUserRequest) -> Result<usize> {
+        self.repository.create_user(req.try_into()?).await
     }
 
     // Get user by ID
     pub async fn get_user_by_id(&self, user_uuid: Uuid) -> Result<Option<UserResponse>> {
-        let user = self.repository.get_user_by_uuid(user_uuid).await?;
-        Ok(user.map(UserResponse::from))
+        Ok(self
+            .repository
+            .get_user_by_uuid(user_uuid)
+            .await?
+            .map(UserResponse::from))
     }
 
     // Get all users

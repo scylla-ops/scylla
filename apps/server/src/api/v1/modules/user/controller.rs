@@ -2,7 +2,6 @@ use crate::api::v1::common::extractors::validated_json::ValidatedJson;
 use crate::api::v1::common::responses::helper::ApiResponse;
 use crate::api::v1::modules::user::dto::{NewUserRequest, UpdateUserRequest};
 use crate::api::v1::modules::user::service::UserService;
-use axum::Json;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use std::sync::Arc;

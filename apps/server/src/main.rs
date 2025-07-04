@@ -86,7 +86,7 @@ async fn spawn_core(
 
     tokio::spawn(async move {
         if let Err(e) = core.run().await {
-            eprintln!("{:#}", e);
+            error!("{e:#}");
         }
     })
 }

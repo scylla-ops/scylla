@@ -103,17 +103,14 @@ impl UserRepository {
     /// # Returns
     /// * `Result<usize>` - The number of rows updated, or an error if the operation fails.
     pub async fn deactivate_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<usize> {
-        use crate::database::schema::users::dsl::*;
+        use crate::api::v1::modules::user::dto::UpdateUser;
 
-        let mut conn = Repository::get_connection(self)?;
+        let update = UpdateUser {
+            is_active: Some(false),
+            ..Default::default()
+        };
 
-        let updated_count = diesel::update(users.filter(id.eq(user_uuid)))
-            .set(is_active.eq(false))
-            .execute(&mut conn)
-            .context("Failed to deactivate user by UUID")?;
-
-        debug!("Deactivated {} user(s)", updated_count);
-        Ok(updated_count)
+        self.update_user_by_uuid(user_uuid, update).await
     }
 }
 

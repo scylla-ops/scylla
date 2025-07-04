@@ -10,7 +10,7 @@ const PASSWORD_MAX_LENGTH: u64 = 255;
 
 // DB only
 #[derive(Insertable, Deserialize, Validate)]
-#[table_name = "crate::database::schema::users"]
+#[diesel(table_name = crate::database::schema::users)]
 pub struct NewUser {
     pub username: String,
     pub password_hash: String,
@@ -96,6 +96,17 @@ pub struct UpdateUser {
     pub is_active: Option<bool>,
     pub password_hash: Option<String>,
     pub updated_at: chrono::NaiveDateTime,
+}
+
+impl Default for UpdateUser {
+    fn default() -> Self {
+        Self {
+            username: None,
+            is_active: None,
+            password_hash: None,
+            updated_at: chrono::Utc::now().naive_utc(),
+        }
+    }
 }
 
 impl TryFrom<UpdateUserRequest> for UpdateUser {
