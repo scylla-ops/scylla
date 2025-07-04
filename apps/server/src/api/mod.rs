@@ -5,6 +5,9 @@ use crate::api::v1::modules::root::RootController;
 use crate::database::{DieselDatabase, DieselPool, SqlxDatabase};
 // Internal imports
 use crate::AppState;
+use crate::api::v1::modules::teams::controller::TeamController;
+use crate::api::v1::modules::teams::repository::TeamRepository;
+use crate::api::v1::modules::teams::service::TeamService;
 use crate::api::v1::modules::user::controller::UserController;
 use crate::api::v1::modules::user::repository::UserRepository;
 use crate::api::v1::modules::user::service::UserService;
@@ -60,6 +63,12 @@ impl ApiBuilder {
             Arc::new(user_service)
         };
 
+        let team_service = {
+            let team_repo = TeamRepository::new(self.diesel_db_pool.clone());
+            let team_service = TeamService::new(team_repo);
+            Arc::new(team_service)
+        };
+
         // Create session store for managing user sessions
         // Session in postgresql
         let session_store = PostgresStore::new(self.sqlx_db_pool.clone());
@@ -85,22 +94,31 @@ impl ApiBuilder {
                 51, 79, 144, 35, 53, 5, 247, 53, 83, 236,
             ])); // todo: replace with secret from config
 
-        let api_router = Router::new()
-            .route("/user/create", post(UserController::create_user))
+        let user_router = Router::new()
+            .route("/create", post(UserController::create_user))
             .route(
-                "/user/{id}",
+                "/{id}",
                 get(UserController::get_user_by_id)
                     .patch(UserController::update_user_by_id)
                     .delete(UserController::deactivate_user_by_id),
             )
-            .route("/user/all", get(UserController::get_all_users))
+            .route("/all", get(UserController::get_all_users))
             .with_state(user_service);
+
+        let team_router = Router::new()
+            .route("/create", post(TeamController::create_team))
+            .with_state(team_service);
 
         Router::new()
             .route("/ws/agent", get(AgentController::handle_websocket))
             .route("/execute", post(PipelineController::execute_command))
             .with_state(app_state)
-            .nest("/api/v1", api_router)
+            .nest(
+                "/api/v1",
+                Router::new()
+                    .nest("/user", user_router)
+                    .nest("/team", team_router),
+            )
             .layer(session_layer)
             .layer(TraceLayer::new_for_http())
             .fallback(RootController::fallback)

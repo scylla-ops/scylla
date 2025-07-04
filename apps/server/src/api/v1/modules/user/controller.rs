@@ -7,13 +7,15 @@ use axum::response::IntoResponse;
 use std::sync::Arc;
 use uuid::Uuid;
 
+type UserState = State<Arc<UserService>>;
+
 pub struct UserController {}
 
 impl UserController {
     // Create a new user
     // todo should be admin only request
     pub async fn create_user(
-        State(service): State<Arc<UserService>>,
+        State(service): UserState,
         ValidatedJson(req): ValidatedJson<NewUserRequest>,
     ) -> impl IntoResponse {
         match service.create_user(req).await {
@@ -32,7 +34,7 @@ impl UserController {
 
     // Get user by ID
     pub async fn get_user_by_id(
-        State(service): State<Arc<UserService>>,
+        State(service): UserState,
         user_uuid: Path<Uuid>,
     ) -> impl IntoResponse {
         match service.get_user_by_id(*user_uuid).await {
@@ -52,7 +54,7 @@ impl UserController {
     }
 
     // Get all users
-    pub async fn get_all_users(State(service): State<Arc<UserService>>) -> impl IntoResponse {
+    pub async fn get_all_users(State(service): UserState) -> impl IntoResponse {
         match service.get_all_users().await {
             Ok(users) => ApiResponse::success(axum::http::StatusCode::OK, users),
             Err(e) => {
@@ -67,7 +69,7 @@ impl UserController {
 
     // Update user by ID
     pub async fn update_user_by_id(
-        State(service): State<Arc<UserService>>,
+        State(service): UserState,
         user_uuid: Path<Uuid>,
         ValidatedJson(req): ValidatedJson<UpdateUserRequest>,
     ) -> impl IntoResponse {
@@ -85,7 +87,7 @@ impl UserController {
 
     // Deactivate user by ID
     pub async fn deactivate_user_by_id(
-        State(service): State<Arc<UserService>>,
+        State(service): UserState,
         user_uuid: Path<Uuid>,
     ) -> impl IntoResponse {
         match service.deactivate_user_by_id(*user_uuid).await {
