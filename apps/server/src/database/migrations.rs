@@ -3,7 +3,7 @@ use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 pub fn run_migrations(pool: &Pool<ConnectionManager<PgConnection>>) -> Result<()> {
     // Get a connection from the pool
