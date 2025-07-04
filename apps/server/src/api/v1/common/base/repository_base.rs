@@ -9,7 +9,7 @@ pub trait Repository {
     fn get_connection(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
         self.get_pool()
             .get()
-            .context("Échec lors de l'obtention d'une connexion Diesel")
+            .context("Failed to get database connection (diesel)")
     }
 }
 
