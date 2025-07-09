@@ -9,8 +9,8 @@ use crate::api::v1::modules::teams::controller::TeamController;
 use crate::api::v1::modules::teams::repository::TeamRepository;
 use crate::api::v1::modules::teams::service::TeamService;
 use crate::api::v1::modules::user::controller::UserController;
-use crate::api::v1::modules::user::repository::UserRepository;
-use crate::api::v1::modules::user::service::UserService;
+use crate::api::v1::modules::user::repository::{UserRepository, UserRepositoryTrait};
+use crate::api::v1::modules::user::service::{UserService, UserServiceTrait};
 use axum::{
     Router,
     routing::{get, post},

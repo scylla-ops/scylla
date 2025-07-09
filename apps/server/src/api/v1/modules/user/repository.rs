@@ -11,8 +11,21 @@ pub struct UserRepository {
     base: BaseRepository,
 }
 
-impl UserRepository {
-    pub fn new(pool: DieselPool) -> Self {
+pub trait UserRepositoryTrait {
+    fn new(pool: DieselPool) -> Self;
+    async fn create_user(&self, new_user: NewUser) -> Result<usize>;
+    async fn get_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<Option<User>>;
+    async fn get_all_users(&self) -> Result<Vec<User>>;
+    async fn update_user_by_uuid(
+        &self,
+        user_uuid: uuid::Uuid,
+        updated_user: UpdateUser,
+    ) -> Result<usize>;
+    async fn deactivate_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<usize>;
+}
+
+impl UserRepositoryTrait for UserRepository {
+    fn new(pool: DieselPool) -> Self {
         Self {
             base: BaseRepository::new(pool),
         }
@@ -23,7 +36,7 @@ impl UserRepository {
     /// * `new_user` - The new user data to be inserted.
     /// # Returns
     /// * `Result<usize>` - The number of rows inserted, or an error if the operation fails.
-    pub async fn create_user(&self, new_user: NewUser) -> Result<usize> {
+    async fn create_user(&self, new_user: NewUser) -> Result<usize> {
         use crate::database::schema::users::dsl::*;
 
         let mut conn = Repository::get_connection(self)?;
@@ -42,7 +55,7 @@ impl UserRepository {
     /// * `user_uuid` - The UUID of the user to be fetched.
     /// # Returns
     /// * `Result<Option<User>>` - The user if found, or None if not found, or an error if the operation fails.
-    pub async fn get_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<Option<User>> {
+    async fn get_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<Option<User>> {
         use crate::database::schema::users::dsl::*;
 
         let mut conn = Repository::get_connection(self)?;
@@ -60,7 +73,7 @@ impl UserRepository {
     /// Fetches all users from the database.
     /// # Returns
     /// * `Result<Vec<User>>` - A vector of users, or an error if the operation fails.
-    pub async fn get_all_users(&self) -> Result<Vec<User>> {
+    async fn get_all_users(&self) -> Result<Vec<User>> {
         use crate::database::schema::users::dsl::*;
 
         let mut conn = Repository::get_connection(self)?;
@@ -79,7 +92,7 @@ impl UserRepository {
     /// * `updated_user` - The updated user data.
     /// # Returns
     /// * `Result<usize>` - The number of rows updated, or an error if the operation fails.
-    pub async fn update_user_by_uuid(
+    async fn update_user_by_uuid(
         &self,
         user_uuid: uuid::Uuid,
         updated_user: UpdateUser,
@@ -102,7 +115,7 @@ impl UserRepository {
     /// * `user_uuid` - The UUID of the user to be deactivated.
     /// # Returns
     /// * `Result<usize>` - The number of rows updated, or an error if the operation fails.
-    pub async fn deactivate_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<usize> {
+    async fn deactivate_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<usize> {
         use crate::api::v1::modules::user::dto::UpdateUser;
 
         let update = UpdateUser {
