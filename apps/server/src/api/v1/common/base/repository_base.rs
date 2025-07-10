@@ -2,6 +2,12 @@ use anyhow::{Context, Result};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 
+// Re-export the derive macro
+pub use repository_derive::Repository;
+
+// Type alias for the diesel pool
+pub type DieselPool = Pool<ConnectionManager<PgConnection>>;
+
 // Trait générique pour repository Diesel uniquement
 pub trait Repository {
     fn get_pool(&self) -> &Pool<ConnectionManager<PgConnection>>;

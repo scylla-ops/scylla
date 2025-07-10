@@ -33,7 +33,7 @@ The template follows a standard structure:
 - **mod.rs**: Exports the module's components.
 - **controller.rs**: Handles HTTP requests and responses.
 - **dto.rs**: Defines Data Transfer Objects for requests and responses.
-- **repository.rs**: Handles database operations.
+- **repository.rs**: Handles database operations. Uses the `#[derive(Repository)]` macro to automatically implement the Repository trait.
 - **service.rs**: Contains business logic.
 
 ## Example Customization
