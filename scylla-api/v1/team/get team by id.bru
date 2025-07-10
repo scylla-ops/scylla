@@ -1,0 +1,18 @@
+meta {
+  name: get team by id
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{USER_ENDPOINT}}/22cb8931-594a-4663-8192-9d8c52599bd6
+  body: none
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "test_user123",
+    "password": "cacaaaaa"
+  }
+}

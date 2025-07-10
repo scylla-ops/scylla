@@ -7,12 +7,12 @@ use diesel::prelude::*;
 use tracing::debug;
 
 // Example command repository
+#[derive(Repository)]
 pub struct UserRepository {
     base: BaseRepository,
 }
 
 pub trait UserRepositoryTrait {
-    fn new(pool: DieselPool) -> Self;
     async fn create_user(&self, new_user: NewUser) -> Result<usize>;
     async fn get_user_by_uuid(&self, user_uuid: uuid::Uuid) -> Result<Option<User>>;
     async fn get_all_users(&self) -> Result<Vec<User>>;
@@ -25,12 +25,6 @@ pub trait UserRepositoryTrait {
 }
 
 impl UserRepositoryTrait for UserRepository {
-    fn new(pool: DieselPool) -> Self {
-        Self {
-            base: BaseRepository::new(pool),
-        }
-    }
-
     /// Creates a new user in the database.
     /// # Arguments
     /// * `new_user` - The new user data to be inserted.
@@ -124,12 +118,5 @@ impl UserRepositoryTrait for UserRepository {
         };
 
         self.update_user_by_uuid(user_uuid, update).await
-    }
-}
-
-// Implement Repository trait for CommandRepository by delegating to the base repository
-impl Repository for UserRepository {
-    fn get_pool(&self) -> &DieselPool {
-        self.base.get_pool()
     }
 }

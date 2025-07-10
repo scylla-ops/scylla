@@ -1,18 +1,14 @@
 use anyhow::{Context, Result};
-use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 
+use crate::database::{DieselConnection, DieselPool};
 // Re-export the derive macro
 pub use repository_derive::Repository;
 
-// Type alias for the diesel pool
-pub type DieselPool = Pool<ConnectionManager<PgConnection>>;
-
 // Trait générique pour repository Diesel uniquement
 pub trait Repository {
-    fn get_pool(&self) -> &Pool<ConnectionManager<PgConnection>>;
+    fn get_pool(&self) -> &DieselPool;
 
-    fn get_connection(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
+    fn get_connection(&self) -> Result<DieselConnection> {
         self.get_pool()
             .get()
             .context("Failed to get database connection (diesel)")
@@ -21,17 +17,17 @@ pub trait Repository {
 
 // Implémentation de base
 pub struct BaseRepository {
-    pool: Pool<ConnectionManager<PgConnection>>,
+    pool: DieselPool,
 }
 
 impl BaseRepository {
-    pub fn new(pool: Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(pool: DieselPool) -> Self {
         Self { pool }
     }
 }
 
 impl Repository for BaseRepository {
-    fn get_pool(&self) -> &Pool<ConnectionManager<PgConnection>> {
+    fn get_pool(&self) -> &DieselPool {
         &self.pool
     }
 }

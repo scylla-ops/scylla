@@ -3,10 +3,12 @@ pub mod schema;
 
 use anyhow::{Context, Result};
 use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool as DPool};
-use tower_sessions_sqlx_store::sqlx::{PgPool, postgres::PgPoolOptions};
+use diesel::r2d2::{ConnectionManager, Pool as DPool, PooledConnection};
+use tower_sessions_sqlx_store::sqlx::{PgPool as SPool, postgres::PgPoolOptions};
 
+// Type alias for the diesel pool
 pub type DieselPool = DPool<ConnectionManager<PgConnection>>;
+pub type DieselConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
 #[derive(Clone)]
 pub struct DieselDatabase {
@@ -33,7 +35,7 @@ impl DieselDatabase {
 
 #[derive(Clone)]
 pub struct SqlxDatabase {
-    pub pool: PgPool,
+    pub pool: SPool,
 }
 
 impl SqlxDatabase {

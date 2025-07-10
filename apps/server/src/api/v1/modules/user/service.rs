@@ -1,6 +1,6 @@
 use crate::api::v1::common::base::Repository;
 use crate::api::v1::modules::user::dto::{NewUserRequest, UpdateUserRequest, UserResponse};
-use crate::api::v1::modules::user::repository::{UserRepository, UserRepositoryTrait};
+use crate::api::v1::modules::user::repository::UserRepositoryTrait;
 use anyhow::Result;
 use uuid::Uuid;
 

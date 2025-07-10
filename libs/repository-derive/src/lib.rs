@@ -2,14 +2,14 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
-/// Derive macro for implementing the Repository trait.
-/// 
-/// This macro automatically implements the Repository trait for a struct
-/// that has a `base: BaseRepository` field. It delegates the `get_pool` method
-/// to the base repository.
-/// 
+/// Derive macro for implementing the Repository trait and new constructor.
+///
+/// This macro automatically implements:
+/// 1. The Repository trait for a struct that has a `base: BaseRepository` field
+/// 2. A `new` constructor that takes a DieselPool and creates the struct
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// #[derive(Repository)]
 /// pub struct MyRepository {
@@ -25,8 +25,15 @@ pub fn derive_repository(input: TokenStream) -> TokenStream {
 
     // Generate the implementation
     let expanded = quote! {
-        impl crate::api::v1::common::base::Repository for #name {
-            fn get_pool(&self) -> &crate::database::DieselPool {
+        impl #name {
+            pub fn new(pool: DieselPool) -> Self {
+                Self {
+                    base: BaseRepository::new(pool),
+                }
+            }
+        }
+        impl Repository for #name {
+            fn get_pool(&self) -> &DieselPool {
                 self.base.get_pool()
             }
         }

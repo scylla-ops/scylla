@@ -8,6 +8,7 @@ use tracing::debug;
 
 // Entity repository
 // Replace "Entity" with your entity name (e.g., "User", "Team", "Product")
+#[derive(Repository)]
 pub struct EntityRepository {
     base: BaseRepository,
 }
@@ -15,7 +16,6 @@ pub struct EntityRepository {
 // Repository trait for entity operations
 // Replace "Entity" with your entity name
 pub trait EntityRepositoryTrait {
-    fn new(pool: DieselPool) -> Self;
     async fn create_entity(&self, new_entity: NewEntity) -> Result<usize>;
     async fn get_entity_by_uuid(&self, entity_uuid: uuid::Uuid) -> Result<Option<Entity>>;
     async fn get_all_entities(&self) -> Result<Vec<Entity>>;
@@ -28,12 +28,6 @@ pub trait EntityRepositoryTrait {
 }
 
 impl EntityRepositoryTrait for EntityRepository {
-    fn new(pool: DieselPool) -> Self {
-        Self {
-            base: BaseRepository::new(pool),
-        }
-    }
-
     /// Creates a new entity in the database.
     /// # Arguments
     /// * `new_entity` - The new entity data to be inserted.
@@ -132,9 +126,3 @@ impl EntityRepositoryTrait for EntityRepository {
     }
 }
 
-// Implement Repository trait for EntityRepository by delegating to the base repository
-impl Repository for EntityRepository {
-    fn get_pool(&self) -> &DieselPool {
-        self.base.get_pool()
-    }
-}
