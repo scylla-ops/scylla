@@ -1,0 +1,17 @@
+meta {
+  name: update team by id
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{TEAM_ENDPOINT}}/eb055d44-19ad-4fdf-af14-f0f1cdfdd596
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "aaa"
+  }
+}

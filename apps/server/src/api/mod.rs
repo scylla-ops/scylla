@@ -6,10 +6,10 @@ use crate::database::{DieselDatabase, DieselPool, SqlxDatabase};
 // Internal imports
 use crate::AppState;
 use crate::api::v1::modules::teams::controller::TeamController;
-use crate::api::v1::modules::teams::repository::{TeamRepository, TeamRepositoryTrait};
+use crate::api::v1::modules::teams::repository::TeamRepository;
 use crate::api::v1::modules::teams::service::{TeamService, TeamServiceTrait};
 use crate::api::v1::modules::user::controller::UserController;
-use crate::api::v1::modules::user::repository::{UserRepository, UserRepositoryTrait};
+use crate::api::v1::modules::user::repository::UserRepository;
 use crate::api::v1::modules::user::service::{UserService, UserServiceTrait};
 use axum::{
     Router,
@@ -107,7 +107,13 @@ impl ApiBuilder {
 
         let team_router = Router::new()
             .route("/create", post(TeamController::create_team))
-            .route("/{id}", get(TeamController::get_team_by_id))
+            .route(
+                "/{id}",
+                get(TeamController::get_team_by_id)
+                    .patch(TeamController::update_team_by_id)
+                    .delete(TeamController::delete_team_by_id),
+            )
+            .route("/all", get(TeamController::get_all_teams))
             .with_state(team_service);
 
         Router::new()

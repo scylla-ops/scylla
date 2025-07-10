@@ -1,5 +1,5 @@
 use crate::api::v1::common::base::Repository;
-use crate::api::v1::modules::teams::dto::{NewTeamRequest, TeamResponse};
+use crate::api::v1::modules::teams::dto::{NewTeamRequest, TeamResponse, UpdateTeamRequest};
 use crate::api::v1::modules::teams::repository::TeamRepositoryTrait;
 use anyhow::Result;
 use uuid::Uuid;
@@ -12,9 +12,9 @@ pub trait TeamServiceTrait<R: Repository + TeamRepositoryTrait> {
     fn new(repository: R) -> Self;
     async fn create_team(&self, req: NewTeamRequest) -> Result<Uuid>;
     async fn get_team_by_id(&self, team_uuid: Uuid) -> Result<Option<TeamResponse>>;
-    /*async fn get_all_teams(&self) -> Result<Vec<TeamResponse>>;
+    async fn get_all_teams(&self) -> Result<Vec<TeamResponse>>;
     async fn update_team_by_id(&self, team_uuid: Uuid, req: UpdateTeamRequest) -> Result<()>;
-    async fn delete_team_by_id(&self, team_uuid: Uuid) -> Result<()>;*/
+    async fn delete_team_by_id(&self, team_uuid: Uuid) -> Result<()>;
 }
 
 impl<R: Repository + TeamRepositoryTrait> TeamServiceTrait<R> for TeamService<R> {
@@ -33,21 +33,27 @@ impl<R: Repository + TeamRepositoryTrait> TeamServiceTrait<R> for TeamService<R>
             .await?
             .map(TeamResponse::from))
     }
-    /*
+
     async fn get_all_teams(&self) -> Result<Vec<TeamResponse>> {
         let teams = self.repository.get_all_teams().await?;
         Ok(teams.into_iter().map(TeamResponse::from).collect())
     }
 
     async fn update_team_by_id(&self, team_uuid: Uuid, req: UpdateTeamRequest) -> Result<()> {
-        self.repository
+        match self
+            .repository
             .update_team_by_uuid(team_uuid, req.try_into()?)
-            .await?;
-        Ok(())
+            .await?
+        {
+            0 => Err(anyhow::anyhow!("Team not found")),
+            _ => Ok(()),
+        }
     }
 
     async fn delete_team_by_id(&self, team_uuid: Uuid) -> Result<()> {
-        self.repository.delete_team_by_uuid(team_uuid).await?;
-        Ok(())
-    }*/
+        match self.repository.delete_team_by_uuid(team_uuid).await? {
+            0 => Err(anyhow::anyhow!("Team not found")),
+            _ => Ok(()),
+        }
+    }
 }

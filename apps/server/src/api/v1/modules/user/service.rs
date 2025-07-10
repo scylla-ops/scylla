@@ -45,15 +45,21 @@ impl<R: Repository + UserRepositoryTrait> UserServiceTrait<R> for UserService<R>
 
     // Update user by ID
     async fn update_user_by_id(&self, user_uuid: Uuid, req: UpdateUserRequest) -> Result<()> {
-        self.repository
+        match self
+            .repository
             .update_user_by_uuid(user_uuid, req.try_into()?)
-            .await?;
-        Ok(())
+            .await?
+        {
+            0 => Err(anyhow::anyhow!("User not found")),
+            _ => Ok(()),
+        }
     }
 
     // Deactivate user by ID
     async fn deactivate_user_by_id(&self, user_uuid: Uuid) -> Result<()> {
-        self.repository.deactivate_user_by_uuid(user_uuid).await?;
-        Ok(())
+        match self.repository.deactivate_user_by_uuid(user_uuid).await? {
+            0 => Err(anyhow::anyhow!("User not found")),
+            _ => Ok(()),
+        }
     }
 }
