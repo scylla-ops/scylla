@@ -1,15 +1,9 @@
-import { useState } from 'react'
 import './App.css'
-import { Button } from '@/core/presentation/ui/button'
+import CoreRoot from "@core/presentation/ui/CoreRoot.tsx";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-        <Button onClick={ () => setCount(count + 1)}>Increment</Button>
-        <p>Count : {count} </p>
-    </>
+    <CoreRoot/>
   )
 }
 
