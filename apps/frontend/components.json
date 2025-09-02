@@ -11,8 +11,8 @@
   "tsx": true,
   "rsc": false,
   "aliases": {
-    "ui": "@/shared/ui",
-    "components": "@/shared/ui",
-    "utils": "@/shared/utils"
+    "ui": "@core/presentation/ui",
+    "components": "@core/presentation/ui",
+    "utils": "@core/presentation/utils"
   }
 }
