@@ -33,3 +33,5 @@ async-trait = "0.1.89"
 tonic-reflection = "0.14.1"
 tower = "0.5.2"
 tonic-web = "0.14.1"
+derive_more = { version = "2.0.1", features = ["full"] }
+derive_builder = "0.20.2"

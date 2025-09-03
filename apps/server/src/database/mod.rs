@@ -5,7 +5,6 @@ pub mod schema;
 use anyhow::{Context, Result};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool as DPool, PooledConnection};
-use tower_sessions_sqlx_store::sqlx::{PgPool as SPool, postgres::PgPoolOptions};
 
 // Type alias for the diesel pool
 pub type DieselPool = DPool<ConnectionManager<PgConnection>>;
@@ -31,26 +30,6 @@ impl DieselDatabase {
 
     pub fn run_migrations(&self) -> Result<()> {
         migrations::run_migrations(&self.pool)
-    }
-}
-
-#[derive(Clone)]
-pub struct SqlxDatabase {
-    pub pool: SPool,
-}
-
-impl SqlxDatabase {
-    pub async fn new(config: &DatabaseConfig) -> Result<Self> {
-        let database_url = format!(
-            "postgres://{}:{}@{}:{}/{}",
-            config.username, config.password, config.host, config.port, config.database
-        );
-        let pool = PgPoolOptions::new()
-            .max_connections(5)
-            .connect(&database_url)
-            .await
-            .context("Failed to create sqlx database connection pool")?;
-        Ok(Self { pool })
     }
 }
 

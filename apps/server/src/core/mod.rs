@@ -45,8 +45,6 @@ impl Core {
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        info!("Core started on {}", self.config.addr);
-
         while let Some(message) = self.core_rx.recv().await {
             self.handle_message(message)
                 .await

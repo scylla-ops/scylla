@@ -3,13 +3,11 @@ mod api;
 mod config;
 mod core;
 mod database;
-mod tcp_server;
 
 use std::net::SocketAddr;
 // Internal crate imports
-use crate::api::ApiBuilder;
-use crate::config::{CoreConfig, MAX_CHANNEL_SIZE};
-use crate::database::{DieselDatabase, SqlxDatabase};
+use crate::config::{CoreConfig};
+use crate::database::{DieselDatabase};
 
 // External crate imports
 use crate::api::grpc::{AuthService, UserRepositoryDiesel, UserService};
@@ -21,7 +19,6 @@ use protocol::services::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
 use protocol::{Message, services};
 use std::sync::Arc;
-use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tower_http::cors::CorsLayer;
 use tracing::info;
@@ -53,18 +50,23 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
             }
         }
     } else {
-        CoreConfig::try_create_default_config()
+        let default_config = CoreConfig::default();
+        info!(
+            "No configuration file provided, using default configuration : {:#?}",
+            default_config
+        );
+        Ok(default_config)
     }
 }
 
-async fn init_database_pools(core_config: &CoreConfig) -> Result<(DieselDatabase, SqlxDatabase)> {
+async fn init_database_pool(core_config: CoreConfig) -> Result<DieselDatabase> {
     // Create database config from core config
     let db_config = database::DatabaseConfig::new(
-        core_config.database.host.clone(),
-        core_config.database.port,
-        core_config.database.username.clone(),
-        core_config.database.password.clone(),
-        core_config.database.database.clone(),
+        core_config.database_config.host,
+        core_config.database_config.port,
+        core_config.database_config.username,
+        core_config.database_config.password,
+        core_config.database_config.database,
     );
 
     // Initialize database and run migrations
@@ -75,51 +77,20 @@ async fn init_database_pools(core_config: &CoreConfig) -> Result<(DieselDatabase
         .run_migrations()
         .map_err(|e| anyhow!("Database migration failed: {}", e))?;
 
-    // Initialize SQLx pool for session store
-    let sqlx_db = SqlxDatabase::new(&db_config)
-        .await
-        .map_err(|e| anyhow!("SQLx database connection failed: {}", e))?;
-
     info!("Database connection established and migrations completed successfully");
-    Ok((diesel_db, sqlx_db))
-}
-
-async fn run_api(
-    core_config: &CoreConfig,
-    (diesel_database, sqlx_database): (DieselDatabase, SqlxDatabase),
-    app_state: Arc<AppState>,
-) -> Result<()> {
-    let listener = TcpListener::bind(core_config.addr).await?;
-
-    info!("Api running on {}", core_config.addr);
-
-    let api_builder = ApiBuilder::new((&diesel_database, &sqlx_database));
-    let app = api_builder.build_v1_api(app_state).await;
-
-    axum::serve(listener, app)
-        .await
-        .map_err(|e| anyhow!("API error: {}", e))
+    Ok(diesel_db)
 }
 
 async fn start_application(core_config: CoreConfig) -> Result<()> {
-    let (core_tx, core_rx) = mpsc::channel::<Message>(MAX_CHANNEL_SIZE);
+    /*//let (core_tx, core_rx) = mpsc::channel::<Message>(MAX_CHANNEL_SIZE);
 
     // Create app state for API handlers
     let app_state = Arc::new(AppState {
         core_tx: core_tx.clone(),
-    });
-
-    // Start core
-    //let core_task = Core::spawn_core(core_rx, core_config.clone());
-
-    // Start TCP server for agents
-    //let tcp_task = TcpServer::spawn_tcp_server(&core_config, app_state.clone()).await;
+    });*/
 
     // Initialize databases with migrations
-    let (diesel_db, sqlx_db) = init_database_pools(&core_config).await?;
-    // Run the API
-    /*    let api_task = run_api(&core_config, (diesel_db.clone(), sqlx_db), app_state);
-     */
+    let diesel_db = init_database_pool(core_config).await?;
 
     /* GRPC Api */
     let reflection = tonic_reflection::server::Builder::configure()
@@ -156,20 +127,10 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     };
 
     // Wait for any task to complete
-    tokio::select! {/*
-        result = api_task => {
-            if let Err(e) = result {
-                error!("API error: {}", e);
-            }
-        }*/
-        /*_ = core_task => {
-            info!("Core processing task completed");
-        }
-        _ = tcp_task => {
-            info!("TCP server task completed");
-        }*/
-        _ = grpc_server() => {
+    tokio::select! {
+        res = grpc_server() => {
             info!("GRPC server task completed");
+            res.map_err(|e| anyhow!("GRPC server error: {:?}", e))?;
         }
     }
 
