@@ -2,19 +2,19 @@ mod api;
 mod config;
 mod database;
 
-use std::net::SocketAddr;
 // Internal crate imports
-use crate::config::{CoreConfig};
-use crate::database::{DieselDatabase};
+use crate::config::CoreConfig;
+use crate::database::DieselDatabase;
 
 // External crate imports
 use crate::api::grpc::{AuthService, UserRepositoryDiesel, UserService};
+use crate::config::core_config::DatabaseConfig;
 use anyhow::{Result, anyhow};
 use clap::Parser;
 use pasetors::keys::{Generate, SymmetricKey};
 use protocol::services::auth_service_server::AuthServiceServer;
 use protocol::services::user_service_server::UserServiceServer;
-use protocol::tonic::transport::Server;
+use protocol::tonic::transport::{Server, ServerTlsConfig};
 use protocol::{Message, services};
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -57,18 +57,9 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
     }
 }
 
-async fn init_database_pool(core_config: CoreConfig) -> Result<DieselDatabase> {
-    // Create database config from core config
-    let db_config = database::DatabaseConfig::new(
-        core_config.database_config.host,
-        core_config.database_config.port,
-        core_config.database_config.username,
-        core_config.database_config.password,
-        core_config.database_config.database,
-    );
-
+async fn init_database_pool(database_config: DatabaseConfig) -> Result<DieselDatabase> {
     // Initialize database and run migrations
-    let diesel_db = DieselDatabase::new(&db_config)
+    let diesel_db = DieselDatabase::new(&database_config)
         .map_err(|e| anyhow!("Database connection failed: {}", e))?;
 
     diesel_db
@@ -87,8 +78,10 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         core_tx: core_tx.clone(),
     });*/
 
+    let CoreConfig { database_config, grpc_config } = core_config;
+
     // Initialize databases with migrations
-    let diesel_db = init_database_pool(core_config).await?;
+    let diesel_db = init_database_pool(database_config).await?;
 
     /* GRPC Api */
     let reflection = tonic_reflection::server::Builder::configure()
@@ -105,7 +98,10 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     );
     let auth_service = AuthServiceServer::new(auth_service);
 
-    let addr: SocketAddr = "0.0.0.0:50051".parse()?;
+    /*let cert = fs::read("certs/origin-cert.pem").await?;
+    let key = fs::read("certs/origin-key.pem").await?;
+
+    let identity = Identity::from_pem(cert, key);*/
 
     let grpc_web_service = tower::ServiceBuilder::new()
         .layer(tower_http::trace::TraceLayer::new_for_http())
@@ -114,14 +110,15 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         .into_inner();
 
     let grpc_server = move || {
-        info!("GRPC server running on {}", addr);
+        info!("GRPC server running on {}", grpc_config);
         Server::builder()
+            /*.tls_config(ServerTlsConfig::new().identity(identity)).unwrap()*/
             .layer(grpc_web_service)
             .accept_http1(true)
             .add_service(reflection)
             .add_service(user_service)
             .add_service(auth_service)
-            .serve(addr)
+            .serve(grpc_config)
     };
 
     // Wait for any task to complete

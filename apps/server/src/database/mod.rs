@@ -1,6 +1,7 @@
 mod migrations;
 pub mod schema;
 
+use crate::config::core_config::DatabaseConfig;
 use anyhow::{Context, Result};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool as DPool, PooledConnection};
@@ -29,32 +30,5 @@ impl DieselDatabase {
 
     pub fn run_migrations(&self) -> Result<()> {
         migrations::run_migrations(&self.pool)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct DatabaseConfig {
-    pub host: String,
-    pub port: u16,
-    pub username: String,
-    pub password: String,
-    pub database: String,
-}
-
-impl DatabaseConfig {
-    pub fn new(
-        host: String,
-        port: u16,
-        username: String,
-        password: String,
-        database: String,
-    ) -> Self {
-        Self {
-            host,
-            port,
-            username,
-            password,
-            database,
-        }
     }
 }
