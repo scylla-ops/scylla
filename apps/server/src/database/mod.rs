@@ -1,4 +1,3 @@
-pub mod macros;
 mod migrations;
 pub mod schema;
 
