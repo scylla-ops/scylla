@@ -1,6 +1,5 @@
 use crate::api::grpc::user::dto::{NewUser, UpdateUser};
 use crate::api::v1::models::users::User;
-use crate::database::schema::users::{table, username};
 use async_trait::async_trait;
 use std::sync::Arc;
 

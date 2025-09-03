@@ -8,7 +8,6 @@ use tracing::log::debug;
 
 impl AuthService {
     fn verify_password(&self, password: &str, password_hash: &str) -> bool {
-        let res = bcrypt::verify(password.as_bytes(), password_hash);
         bcrypt::verify(password.as_bytes(), password_hash).unwrap_or(false)
     }
 
