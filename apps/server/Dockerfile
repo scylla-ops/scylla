@@ -38,4 +38,4 @@ COPY --from=build /bin/$APP_NAME /bin/
 
 EXPOSE 50051
 
-ENTRYPOINT ["/bin/${APP_NAME}"]
+ENTRYPOINT ["/bin/scylla-core"]
