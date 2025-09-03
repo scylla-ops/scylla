@@ -12,7 +12,7 @@
   "rsc": false,
   "aliases": {
     "ui": "@core/presentation/ui",
-    "components": "@core/presentation/ui",
+    "components": "@core/presentation/ui/shadcn",
     "utils": "@core/presentation/utils"
   }
 }
