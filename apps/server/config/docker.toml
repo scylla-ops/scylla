@@ -1,10 +1,9 @@
 # Docker configuration for Scylla Core
 
 [core_config]
-addr = "0.0.0.0:3000"
-tcp_addr = "0.0.0.0:3001"
+grpc_config = "127.0.0.1:50051"
 
-[core_config.database]
+[core_config.database_config]
 host = "db"
 port = 5432
 username = "postgres"
