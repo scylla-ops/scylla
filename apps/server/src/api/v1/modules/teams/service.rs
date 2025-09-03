@@ -1,4 +1,4 @@
-use crate::api::v1::common::base::Repository;
+use crate::api::v1::common::base::DieselRepository;
 use crate::api::v1::modules::teams::dto::{NewTeamRequest, TeamResponse, UpdateTeamRequest};
 use crate::api::v1::modules::teams::repository::TeamRepositoryTrait;
 use anyhow::Result;

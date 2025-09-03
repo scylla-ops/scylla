@@ -3,12 +3,24 @@ pub mod pipeline_loader;
 pub use serde;
 pub use serde::*;
 pub use serde_json;
+use std::time::SystemTime;
 pub use toml;
 pub use uuid;
 
+pub use tonic;
+
 use anyhow::Result;
 use async_trait::async_trait;
+use tokio::sync::oneshot;
 use uuid::Uuid;
+
+pub mod services {
+    tonic::include_proto!("user");
+    tonic::include_proto!("auth");
+
+    pub const FILE_DESCRIPTOR_SET: &[u8] =
+        tonic::include_file_descriptor_set!("services_descriptor");
+}
 
 /// Generic status for job/step
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -53,7 +65,7 @@ pub struct Job {
 }
 
 /// Main message exchanged between server and agent
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "category", content = "payload")]
 pub enum Message {
     Api(ApiMessage),
@@ -62,10 +74,16 @@ pub enum Message {
 }
 
 /// API messages (e.g.: command execution)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ApiMessage {
-    ExecutePipeline { pipeline: Pipeline },
+    ExecutePipeline {
+        pipeline: Pipeline,
+    },
+    #[serde(skip_serializing, skip_deserializing)]
+    GetAgents {
+        tx: oneshot::Sender<AgentMessage>,
+    },
 }
 
 /// Messages related to job execution
@@ -85,6 +103,13 @@ pub enum JobMessage {
     JobStatusUpdate { job_id: Uuid, status: Status },
     /// Request to cancel a job
     Cancel { job_id: Uuid },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentInfo {
+    pub uuid: Uuid,
+    pub last_seen: SystemTime,
+    pub status: AgentStatus,
 }
 
 /// Messages related to the agent state
@@ -109,6 +134,10 @@ pub enum AgentMessage {
     #[serde(skip_serializing, skip_deserializing)]
     Disconnected {
         agent_id: Uuid,
+    },
+
+    GetAgentsResponse {
+        agents: Vec<AgentInfo>,
     },
 }
 

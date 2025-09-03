@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use protocol::serde::Deserialize;
-use protocol::{ApiMessage, Message, Pipeline};
+use protocol::{AgentMessage, ApiMessage, Message, Pipeline};
 use std::sync::Arc;
 use tracing::error;
 
@@ -34,12 +34,35 @@ impl PipelineController {
             error!("Failed to send pipeline execution message: {}", e);
             return ApiResponse::error(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to send pipeline execution message: {}", e),
+                format!("Failed to send pipeline execution message: {e}"),
             );
         }
         ApiResponse::success(
             StatusCode::OK,
             "Pipeline execution command sent successfully",
         )
+    }
+
+    pub async fn get_agents(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+        let oneshot = tokio::sync::oneshot::channel();
+        let get_agents_message = Message::Api(ApiMessage::GetAgents { tx: oneshot.0 });
+        state.core_tx.send(get_agents_message).await.unwrap();
+        // maybe we should put a timeout here
+        match oneshot.1.await {
+            Ok(AgentMessage::GetAgentsResponse { agents }) => {
+                ApiResponse::success(StatusCode::OK, agents)
+            }
+            Ok(_) => ApiResponse::error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unexpected response type",
+            ),
+            Err(e) => {
+                error!("Failed to receive agents: {}", e);
+                ApiResponse::error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to receive agents: {e}"),
+                )
+            }
+        }
     }
 }

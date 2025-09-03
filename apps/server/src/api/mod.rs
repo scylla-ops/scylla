@@ -1,16 +1,17 @@
+pub mod grpc;
 pub mod v1;
-use crate::api::v1::modules::agent::AgentController;
-use crate::api::v1::modules::pipeline::PipelineController;
+
 use crate::api::v1::modules::root::RootController;
-use crate::database::{DieselDatabase, DieselPool, SqlxDatabase};
-// Internal imports
-use crate::AppState;
-use crate::api::v1::modules::teams::controller::TeamController;
+/*use crate::api::v1::modules::teams::controller::TeamController;
 use crate::api::v1::modules::teams::repository::TeamRepository;
 use crate::api::v1::modules::teams::service::{TeamService, TeamServiceTrait};
 use crate::api::v1::modules::user::controller::UserController;
 use crate::api::v1::modules::user::repository::UserRepository;
-use crate::api::v1::modules::user::service::{UserService, UserServiceTrait};
+use crate::api::v1::modules::user::service::{UserService, UserServiceTrait};*/
+use crate::database::{DieselDatabase, DieselPool, SqlxDatabase};
+// Internal imports
+use crate::AppState;
+use crate::api::v1::modules::pipeline::controller::PipelineController;
 use axum::{
     Router,
     routing::{get, post},
@@ -56,8 +57,8 @@ impl ApiBuilder {
     ///
     /// # Returns
     /// * `Router` - Configured Axum router with all API routes
-    pub async fn build_v1_api(&self, app_state: Arc<AppState>) -> Router {
-        let user_service = {
+    pub async fn build_v1_api(&self, _app_state: Arc<AppState>) -> Router {
+        /*let user_service = {
             let user_repo = UserRepository::new(self.diesel_db_pool.clone());
             let user_service = UserService::new(user_repo);
             Arc::new(user_service)
@@ -67,10 +68,9 @@ impl ApiBuilder {
             let team_repo = TeamRepository::new(self.diesel_db_pool.clone());
             let team_service = TeamService::new(team_repo);
             Arc::new(team_service)
-        };
+        };*/
 
         // Create session store for managing user sessions
-        // Session in postgresql
         let session_store = PostgresStore::new(self.sqlx_db_pool.clone());
         session_store
             .migrate()
@@ -94,7 +94,7 @@ impl ApiBuilder {
                 51, 79, 144, 35, 53, 5, 247, 53, 83, 236,
             ])); // todo: replace with secret from config
 
-        let user_router = Router::new()
+        /*let user_router = Router::new()
             .route("/create", post(UserController::create_user))
             .route(
                 "/{id}",
@@ -114,17 +114,20 @@ impl ApiBuilder {
                     .delete(TeamController::delete_team_by_id),
             )
             .route("/all", get(TeamController::get_all_teams))
-            .with_state(team_service);
+            .with_state(team_service);*/
+
+        let pipeline_router = Router::new()
+            .route("/execute", post(PipelineController::execute_command))
+            .route("/agents", get(PipelineController::get_agents))
+            .with_state(_app_state.clone());
 
         Router::new()
-            .route("/ws/agent", get(AgentController::handle_websocket))
-            .route("/execute", post(PipelineController::execute_command))
-            .with_state(app_state)
             .nest(
                 "/api/v1",
-                Router::new()
+                Router::new() /*
                     .nest("/user", user_router)
-                    .nest("/team", team_router),
+                    .nest("/team", team_router)*/
+                    .nest("/pipeline", pipeline_router),
             )
             .layer(session_layer)
             .layer(TraceLayer::new_for_http())

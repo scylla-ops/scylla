@@ -3,20 +3,28 @@ mod api;
 mod config;
 mod core;
 mod database;
+mod tcp_server;
 
+use std::net::SocketAddr;
 // Internal crate imports
 use crate::api::ApiBuilder;
 use crate::config::{CoreConfig, MAX_CHANNEL_SIZE};
 use crate::database::{DieselDatabase, SqlxDatabase};
 
 // External crate imports
+use crate::api::grpc::{AuthService, UserRepositoryDiesel, UserService};
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use protocol::Message;
+use pasetors::keys::{Generate, SymmetricKey};
+use protocol::services::auth_service_server::AuthServiceServer;
+use protocol::services::user_service_server::UserServiceServer;
+use protocol::tonic::transport::Server;
+use protocol::{Message, services};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
-use tracing::{error, info};
+use tower_http::cors::CorsLayer;
+use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 /// Scylla Core - The core component for the Scylla CI/CD system
@@ -41,9 +49,7 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
         match CoreConfig::from_toml_file(config_path) {
             Ok(config) => Ok(config),
             Err(e) => {
-                error!("Failed to load configuration from {}: {}", config_path, e);
-                info!("Falling back to default configuration");
-                CoreConfig::try_create_default_config()
+                panic!("Failed to load configuration from {config_path}: {e}");
             }
         }
     } else {
@@ -78,19 +84,6 @@ async fn init_database_pools(core_config: &CoreConfig) -> Result<(DieselDatabase
     Ok((diesel_db, sqlx_db))
 }
 
-async fn spawn_core(
-    core_rx: mpsc::Receiver<Message>,
-    core_config: CoreConfig,
-) -> tokio::task::JoinHandle<()> {
-    let mut core = core::Core::new(core_config, core_rx);
-
-    tokio::spawn(async move {
-        if let Err(e) = core.run().await {
-            error!("{e:#}");
-        }
-    })
-}
-
 async fn run_api(
     core_config: &CoreConfig,
     (diesel_database, sqlx_database): (DieselDatabase, SqlxDatabase),
@@ -116,23 +109,67 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         core_tx: core_tx.clone(),
     });
 
-    // Start core in background
-    let core_task = spawn_core(core_rx, core_config.clone()).await;
+    // Start core
+    //let core_task = Core::spawn_core(core_rx, core_config.clone());
+
+    // Start TCP server for agents
+    //let tcp_task = TcpServer::spawn_tcp_server(&core_config, app_state.clone()).await;
 
     // Initialize databases with migrations
     let (diesel_db, sqlx_db) = init_database_pools(&core_config).await?;
     // Run the API
-    let api_task = run_api(&core_config, (diesel_db, sqlx_db), app_state);
+    /*    let api_task = run_api(&core_config, (diesel_db.clone(), sqlx_db), app_state);
+     */
 
-    // Wait for either task to complete
-    tokio::select! {
+    /* GRPC Api */
+    let reflection = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(services::FILE_DESCRIPTOR_SET)
+        .build_v1alpha()?;
+
+    let user_service =
+        UserService::new(Arc::new(UserRepositoryDiesel::new(diesel_db.pool.clone())));
+    let user_service = UserServiceServer::new(user_service);
+
+    let auth_service = AuthService::new(
+        Arc::new(UserRepositoryDiesel::new(diesel_db.pool)),
+        SymmetricKey::generate()?,
+    );
+    let auth_service = AuthServiceServer::new(auth_service);
+
+    let addr: SocketAddr = "0.0.0.0:50051".parse()?;
+
+    let grpc_web_service = tower::ServiceBuilder::new()
+        .layer(tower_http::trace::TraceLayer::new_for_http())
+        .layer(CorsLayer::very_permissive()) //todo : make this configurable
+        .layer(tonic_web::GrpcWebLayer::new())
+        .into_inner();
+
+    let grpc_server = move || {
+        info!("GRPC server running on {}", addr);
+        Server::builder()
+            .layer(grpc_web_service)
+            .accept_http1(true)
+            .add_service(reflection)
+            .add_service(user_service)
+            .add_service(auth_service)
+            .serve(addr)
+    };
+
+    // Wait for any task to complete
+    tokio::select! {/*
         result = api_task => {
             if let Err(e) = result {
                 error!("API error: {}", e);
             }
-        }
-        _ = core_task => {
+        }*/
+        /*_ = core_task => {
             info!("Core processing task completed");
+        }
+        _ = tcp_task => {
+            info!("TCP server task completed");
+        }*/
+        _ = grpc_server() => {
+            info!("GRPC server task completed");
         }
     }
 

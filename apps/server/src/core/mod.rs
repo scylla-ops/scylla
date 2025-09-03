@@ -8,6 +8,7 @@ use protocol::{
 };
 use std::collections::HashMap;
 use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
 use tracing::{debug, info, warn};
 
 /// Trait for sending messages to agents
@@ -33,6 +34,16 @@ impl Core {
         }
     }
 
+    pub fn spawn_core(core_rx: mpsc::Receiver<Message>, core_config: CoreConfig) -> JoinHandle<()> {
+        let core_task = tokio::spawn(async move {
+            let mut core = Core::new(core_config, core_rx);
+            core.run().await.unwrap();
+        });
+
+        info!("Core task spawned");
+        core_task
+    }
+
     pub async fn run(&mut self) -> Result<()> {
         info!("Core started on {}", self.config.addr);
 
@@ -49,6 +60,13 @@ impl Core {
         match api_message {
             ApiMessage::ExecutePipeline { pipeline } => {
                 self.handle_execute_pipeline(pipeline).await?;
+            }
+            ApiMessage::GetAgents { tx } => {
+                let agents = self.agents_manager.get_agents();
+                let res = tx.send(AgentMessage::GetAgentsResponse { agents });
+                if let Err(e) = res {
+                    warn!("Failed to send GetAgentsResponse: {:?}", e);
+                }
             }
         }
         Ok(())
@@ -137,6 +155,11 @@ impl Core {
                 self.agents_manager.remove_agent(agent_id);
                 info!("Agent {} disconnected", agent_id);
             }
+            AgentMessage::GetAgentsResponse { .. } => {
+                unreachable!(
+                    "GetAgentsResponse should not be handled here, it is handled in the API module."
+                );
+            }
         }
         Ok(())
     }
@@ -211,7 +234,7 @@ impl AgentSender for Core {
         if let Some(tx) = agents.get_agent_tx(&agent_id) {
             tx.send(message)
                 .await
-                .with_context(|| format!("Failed to send message to agent {}", agent_id))?;
+                .with_context(|| format!("Failed to send message to agent {agent_id}"))?;
             Ok(())
         } else {
             Err(anyhow!("Agent with UUID {} not found", agent_id))

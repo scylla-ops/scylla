@@ -1,5 +1,5 @@
-use protocol::AgentStatus;
 use protocol::uuid::Uuid;
+use protocol::{AgentInfo, AgentStatus};
 use std::collections::HashMap;
 use std::time::SystemTime;
 use thiserror::Error;
@@ -27,6 +27,10 @@ pub struct AgentsManager {
 impl AgentsManager {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn get_agents(&self) -> Vec<AgentInfo> {
+        self.agents.values().map(|agent| agent.into()).collect()
     }
 
     pub fn add_agent(&mut self, uuid: Uuid, agent_tx: mpsc::Sender<protocol::Message>) {
@@ -84,5 +88,15 @@ impl protocol::HasStatus for Agent {
 impl protocol::HasUuid for Agent {
     fn uuid(&self) -> Uuid {
         self.uuid
+    }
+}
+
+impl From<&Agent> for AgentInfo {
+    fn from(agent: &Agent) -> Self {
+        AgentInfo {
+            uuid: agent.uuid,
+            last_seen: agent.last_seen,
+            status: agent.status,
+        }
     }
 }

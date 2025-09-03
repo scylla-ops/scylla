@@ -1,3 +1,3 @@
 pub mod common;
-mod models;
+pub(crate) mod models;
 pub mod modules;

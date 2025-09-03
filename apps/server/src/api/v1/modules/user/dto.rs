@@ -1,12 +1,21 @@
 use crate::api::v1::models::users::User;
+use bcrypt::BcryptError;
 use diesel::{AsChangeset, Insertable};
+use protocol::services::CreateUserRequest;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use validator::Validate;
 
 const USERNAME_MIN_LENGTH: u64 = 1;
 const USERNAME_MAX_LENGTH: u64 = 255;
 const PASSWORD_MIN_LENGTH: u64 = 8;
 const PASSWORD_MAX_LENGTH: u64 = 255;
+
+#[derive(Error, Debug)]
+pub enum UserDtoError {
+    #[error("Failed to hash password: {0}")]
+    HashPasswordError(#[from] BcryptError),
+}
 
 // DB only
 #[derive(Insertable, Deserialize, Validate)]
@@ -54,16 +63,15 @@ impl From<User> for UserResponse {
     }
 }
 
-fn hash_password(password: &str) -> anyhow::Result<String> {
+fn hash_password(password: &str) -> Result<String, UserDtoError> {
     //todo: ne pas utiliser le coût par défaut en production
-    bcrypt::hash(password, bcrypt::DEFAULT_COST)
-        .map_err(|e| anyhow::anyhow!("Failed to hash password: {}", e))
+    bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(UserDtoError::HashPasswordError)
 }
 
 impl TryFrom<NewUserRequest> for NewUser {
-    type Error = anyhow::Error;
+    type Error = UserDtoError;
 
-    fn try_from(req: NewUserRequest) -> anyhow::Result<Self> {
+    fn try_from(req: NewUserRequest) -> Result<Self, Self::Error> {
         let password_hash = hash_password(&req.password)?;
         Ok(Self {
             username: req.username,
@@ -110,20 +118,31 @@ impl Default for UpdateUser {
 }
 
 impl TryFrom<UpdateUserRequest> for UpdateUser {
-    type Error = anyhow::Error;
+    type Error = UserDtoError;
 
-    fn try_from(req: UpdateUserRequest) -> anyhow::Result<Self> {
-        let password_hash = if let Some(password) = req.password {
-            Some(hash_password(&password)?)
-        } else {
-            None
-        };
+    fn try_from(req: UpdateUserRequest) -> Result<Self, Self::Error> {
+        {
+            let password_hash = if let Some(password) = req.password {
+                Some(hash_password(&password)?)
+            } else {
+                None
+            };
 
-        Ok(Self {
-            username: req.username,
-            is_active: req.is_active,
-            password_hash,
-            updated_at: chrono::Utc::now().naive_utc(),
-        })
+            Ok(Self {
+                username: req.username,
+                is_active: req.is_active,
+                password_hash,
+                updated_at: chrono::Utc::now().naive_utc(),
+            })
+        }
+    }
+}
+
+impl From<CreateUserRequest> for NewUser {
+    fn from(value: CreateUserRequest) -> Self {
+        NewUser {
+            username: value.username,
+            password_hash: value.password_hash,
+        }
     }
 }

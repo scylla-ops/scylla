@@ -11,13 +11,13 @@ use syn::{parse_macro_input, DeriveInput};
 /// # Example
 ///
 /// ```rust
-/// #[derive(Repository)]
+/// #[derive(DieselRepository)]
 /// pub struct MyRepository {
 ///     base: BaseRepository,
 ///     // other fields...
 /// }
 /// ```
-#[proc_macro_derive(Repository)]
+#[proc_macro_derive(DieselRepository)]
 pub fn derive_repository(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);

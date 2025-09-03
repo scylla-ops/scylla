@@ -1,3 +1,4 @@
+use crate::config::constants::DEFAULT_TCP_PORT;
 use anyhow::{Context, Result, anyhow};
 use protocol::serde::{Deserialize, Serialize};
 use protocol::toml;
@@ -25,6 +26,8 @@ pub struct RootConfig {
 pub struct CoreConfig {
     /// Socket address for the core to listen on
     pub addr: SocketAddr,
+    /// Socket address for the TCP server to listen on
+    pub tcp_addr: SocketAddr,
     /// Database connection configuration
     #[serde(default = "default_database_config")]
     pub database: DatabaseConfig,
@@ -91,7 +94,8 @@ impl CoreConfig {
         let default_config = CoreConfigBuilder::default()
             .build()
             .unwrap_or_else(|_| CoreConfig {
-                addr: format!("{}:{}", DEFAULT_HOST, DEFAULT_PORT)
+                addr: format!("{DEFAULT_HOST}:{DEFAULT_PORT}").parse().unwrap(),
+                tcp_addr: format!("{DEFAULT_HOST}:{DEFAULT_TCP_PORT}")
                     .parse()
                     .unwrap(),
                 database: default_database_config(),
@@ -104,20 +108,16 @@ impl CoreConfig {
         match toml::to_string_pretty(&root_config) {
             Ok(toml_str) => {
                 println!("# Example Core Configuration");
-                println!("{}", toml_str);
+                println!("{toml_str}");
             }
             Err(e) => {
-                eprintln!("Error generating example TOML: {}", e);
+                eprintln!("Error generating example TOML: {e}");
             }
         }
     }
 
     pub fn try_create_default_config() -> Result<CoreConfig> {
-        CoreConfig::builder()
-            .host("127.0.0.1")
-            .port(3000)
-            .build()
-            .map_err(|e| anyhow!("Failed to create default configuration: {}", e))
+        Self::builder().build()
     }
 }
 
@@ -153,6 +153,7 @@ impl CoreConfigBuilder {
     ///
     /// # Returns
     /// * `Self` - Builder with updated host
+    #[allow(dead_code)]
     pub fn host<S: Into<String>>(mut self, host: S) -> Self {
         self.host = Some(host.into());
         self
@@ -165,6 +166,7 @@ impl CoreConfigBuilder {
     ///
     /// # Returns
     /// * `Self` - Builder with updated port
+    #[allow(dead_code)]
     pub fn port(mut self, port: u16) -> Self {
         self.port = Some(port);
         self
@@ -177,12 +179,19 @@ impl CoreConfigBuilder {
     pub fn build(self) -> Result<CoreConfig> {
         let host = self.host.ok_or_else(|| anyhow!("Host is required"))?;
         let port = self.port.ok_or_else(|| anyhow!("Port is required"))?;
-        let socket_addr = format!("{}:{}", host, port)
+        let socket_addr = format!("{host}:{port}")
             .parse()
-            .with_context(|| format!("Invalid IP address or port: {}:{}", host, port))?;
+            .with_context(|| format!("Invalid IP address or port: {host}:{port}"))?;
+
+        let tcp_socket_addr = format!("{host}:{DEFAULT_TCP_PORT}")
+            .parse()
+            .with_context(|| {
+                format!("Invalid IP address or port for TCP: {host}:{DEFAULT_TCP_PORT}")
+            })?;
 
         Ok(CoreConfig {
             addr: socket_addr,
+            tcp_addr: tcp_socket_addr,
             database: default_database_config(),
         })
     }

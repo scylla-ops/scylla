@@ -1,4 +1,4 @@
-use crate::constants::{DEFAULT_CHANNEL_SIZE, DEFAULT_WEBSOCKET_URL};
+use crate::constants::{DEFAULT_CHANNEL_SIZE, DEFAULT_TCP_URL, DEFAULT_WEBSOCKET_URL};
 use crate::error::Result;
 use protocol::toml;
 use serde::{Deserialize, Serialize};
@@ -13,6 +13,7 @@ pub struct RootConfig {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AgentConfig {
     pub websocket_url: String,
+    pub tcp_url: String,
     pub channel_size: usize,
 }
 
@@ -38,10 +39,10 @@ impl AgentConfig {
         match toml::to_string_pretty(&root_config) {
             Ok(toml_str) => {
                 println!("# Example Agent Configuration");
-                println!("{}", toml_str);
+                println!("{toml_str}");
             }
             Err(e) => {
-                eprintln!("Error generating example TOML: {}", e);
+                eprintln!("Error generating example TOML: {e}");
             }
         }
     }
@@ -51,6 +52,7 @@ impl Default for AgentConfig {
     fn default() -> Self {
         Self {
             websocket_url: DEFAULT_WEBSOCKET_URL.to_string(),
+            tcp_url: DEFAULT_TCP_URL.to_string(),
             channel_size: DEFAULT_CHANNEL_SIZE,
         }
     }
@@ -58,6 +60,7 @@ impl Default for AgentConfig {
 
 pub struct AgentConfigBuilder {
     websocket_url: Option<String>,
+    tcp_url: Option<String>,
     channel_size: Option<usize>,
 }
 
@@ -65,6 +68,7 @@ impl Default for AgentConfigBuilder {
     fn default() -> Self {
         Self {
             websocket_url: Some(DEFAULT_WEBSOCKET_URL.to_string()),
+            tcp_url: Some(DEFAULT_TCP_URL.to_string()),
             channel_size: Some(DEFAULT_CHANNEL_SIZE),
         }
     }
@@ -73,6 +77,11 @@ impl Default for AgentConfigBuilder {
 impl AgentConfigBuilder {
     pub fn websocket_url<S: Into<String>>(mut self, url: S) -> Self {
         self.websocket_url = Some(url.into());
+        self
+    }
+
+    pub fn tcp_url<S: Into<String>>(mut self, url: S) -> Self {
+        self.tcp_url = Some(url.into());
         self
     }
 
@@ -85,10 +94,14 @@ impl AgentConfigBuilder {
         let websocket_url = self
             .websocket_url
             .ok_or_else(|| anyhow::anyhow!("WebSocket URL is required"))?;
+        let tcp_url = self
+            .tcp_url
+            .ok_or_else(|| anyhow::anyhow!("TCP URL is required"))?;
         let channel_size = self.channel_size.unwrap_or(DEFAULT_CHANNEL_SIZE);
 
         Ok(AgentConfig {
             websocket_url,
+            tcp_url,
             channel_size,
         })
     }

@@ -1,4 +1,4 @@
-use crate::api::v1::common::base::{BaseRepository, Repository};
+use crate::api::v1::common::base::{BaseRepository, DieselRepository};
 use crate::api::v1::models::teams::Team;
 use crate::api::v1::modules::teams::dto::{NewTeam, UpdateTeam};
 use crate::database::DieselPool;
@@ -6,7 +6,7 @@ use anyhow::Context;
 use diesel::prelude::*;
 use uuid::Uuid;
 
-#[derive(Repository)]
+#[derive(DieselRepository)]
 pub struct TeamRepository {
     base: BaseRepository,
 }
@@ -20,7 +20,7 @@ pub trait TeamRepositoryTrait {
         team_uuid: Uuid,
         updated_team: UpdateTeam,
     ) -> anyhow::Result<usize>;
-    async fn delete_team_by_uuid(&self, team_uuid: uuid::Uuid) -> anyhow::Result<usize>;
+    async fn delete_team_by_uuid(&self, team_uuid: Uuid) -> anyhow::Result<usize>;
 }
 
 impl TeamRepositoryTrait for TeamRepository {

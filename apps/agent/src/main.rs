@@ -6,12 +6,12 @@ mod constants;
 mod error;
 mod job;
 mod state;
-mod websocket;
+mod tcp_client;
 
 use crate::config::AgentConfig;
 use crate::job::JobExecutor;
 use crate::state::new_shared_state;
-use crate::websocket::WebSocketClient;
+use crate::tcp_client::TcpClient;
 use clap::Parser;
 use std::error::Error;
 use std::sync::Arc;
@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     loop {
-        let client = WebSocketClient::builder()
+        let client = TcpClient::builder()
             .config(config.clone())
             .state(state.clone())
             .job_executor(job_executor.clone())
@@ -78,7 +78,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 break;
             }
             Err(e) => {
-                tracing::error!("WebSocket connection lost: {}", e);
+                tracing::error!("TCP connection lost: {}", e);
                 tracing::info!("Reconnecting in 5 seconds...");
                 tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             }

@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 
 use crate::database::{DieselConnection, DieselPool};
 // Re-export the derive macro
-pub use repository_derive::Repository;
+pub use repository_derive::DieselRepository;
 
 // Trait générique pour repository Diesel uniquement
 pub trait Repository {

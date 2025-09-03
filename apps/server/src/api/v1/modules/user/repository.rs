@@ -1,4 +1,4 @@
-use crate::api::v1::common::base::{BaseRepository, Repository};
+use crate::api::v1::common::base::{BaseRepository, DieselRepository};
 use crate::api::v1::models::users::User;
 use crate::api::v1::modules::user::dto::{NewUser, UpdateUser};
 use crate::database::DieselPool;
@@ -7,7 +7,7 @@ use diesel::prelude::*;
 use tracing::debug;
 
 // Example command repository
-#[derive(Repository)]
+#[derive(DieselRepository)]
 pub struct UserRepository {
     base: BaseRepository,
 }

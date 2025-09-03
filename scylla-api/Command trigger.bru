@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{FULL_URL}}/execute
+  url: {{FULL_URL}}/v1/pipeline/execute
   body: json
   auth: inherit
 }
@@ -17,10 +17,7 @@ body:json {
     "steps": [
       {
         "name": "Build",
-        "commands": [
-          "cargo build",
-          "cargo test"
-        ]
+        "commands": ["echo 'Un\ndeux\ntrois'"]
       },
       {
         "name": "Deploy",

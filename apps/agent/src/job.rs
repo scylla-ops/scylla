@@ -41,7 +41,7 @@ impl JobExecutor {
                     output_acc.push_str(&out);
                 }
                 Err(err) => {
-                    let err_msg = format!("{}", err);
+                    let err_msg = format!("{err}");
                     output_acc.push_str(&err_msg);
                     return (protocol::Status::Failed, output_acc);
                 }
@@ -114,10 +114,7 @@ impl JobExecutor {
                 .await
             {
                 error!("Failed to send step status update: {}", e);
-                return Err(error::channel_error(format!(
-                    "Failed to send message: {}",
-                    e
-                )));
+                return Err(error::channel_error(format!("Failed to send message: {e}")));
             }
 
             // Execute the step
@@ -137,10 +134,7 @@ impl JobExecutor {
                 .await
             {
                 error!("Failed to send step status update: {}", e);
-                return Err(error::channel_error(format!(
-                    "Failed to send message: {}",
-                    e
-                )));
+                return Err(error::channel_error(format!("Failed to send message: {e}")));
             }
 
             if job_status == protocol::Status::Failed {
@@ -157,10 +151,7 @@ impl JobExecutor {
             .await
         {
             error!("Failed to send job status update: {}", e);
-            return Err(error::channel_error(format!(
-                "Failed to send message: {}",
-                e
-            )));
+            return Err(error::channel_error(format!("Failed to send message: {e}")));
         }
 
         // Update agent status to available
@@ -185,10 +176,7 @@ impl JobExecutor {
             .await
         {
             error!("Failed to send heartbeat: {}", e);
-            return Err(error::channel_error(format!(
-                "Failed to send message: {}",
-                e
-            )));
+            return Err(error::channel_error(format!("Failed to send message: {e}")));
         }
 
         // Remove job from cancel map
@@ -200,9 +188,9 @@ impl JobExecutor {
     pub async fn cancel_job(&self, job_id: Uuid) -> Result<()> {
         let map = self.cancel_map.lock().await;
         if let Some(sender) = map.get(&job_id) {
-            sender.send(true).map_err(|e| {
-                error::channel_error(format!("Failed to send cancel signal: {}", e))
-            })?;
+            sender
+                .send(true)
+                .map_err(|e| error::channel_error(format!("Failed to send cancel signal: {e}")))?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Job {} not found", job_id))
