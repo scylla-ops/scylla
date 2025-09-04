@@ -14,7 +14,7 @@ use clap::Parser;
 use pasetors::keys::{Generate, SymmetricKey};
 use protocol::services::auth_service_server::AuthServiceServer;
 use protocol::services::user_service_server::UserServiceServer;
-use protocol::tonic::transport::{Server, ServerTlsConfig};
+use protocol::tonic::transport::Server;
 use protocol::{Message, services};
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -78,7 +78,10 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         core_tx: core_tx.clone(),
     });*/
 
-    let CoreConfig { database_config, grpc_config } = core_config;
+    let CoreConfig {
+        database_config,
+        grpc_config,
+    } = core_config;
 
     // Initialize databases with migrations
     let diesel_db = init_database_pool(database_config).await?;

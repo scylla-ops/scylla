@@ -2202,6 +2202,8 @@ dependencies = [
  "anyhow",
  "async-trait",
  "clap",
+ "derive_builder",
+ "derive_more",
  "protocol",
  "serde",
  "tokio",

@@ -1,20 +1,19 @@
-mod command;
+//mod command;
 #[allow(dead_code)]
 mod config;
-mod constants;
-#[allow(dead_code)]
-mod error;
-mod job;
-mod state;
-mod tcp_client;
+mod executors;
+mod model;
 
 use crate::config::AgentConfig;
-use crate::job::JobExecutor;
-use crate::state::new_shared_state;
-use crate::tcp_client::TcpClient;
+use crate::executors::local::LocalExecutor;
+use crate::model::executor::PipelineRunner;
+use crate::model::pipeline::Pipeline;
+use crate::model::shell::Shell;
+use crate::model::stage::Stage;
+use crate::model::step::Step;
 use clap::Parser;
 use std::error::Error;
-use std::sync::Arc;
+use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
 /// Scylla Agent - A client for the Scylla CI/CD system
@@ -46,44 +45,55 @@ async fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    let state = new_shared_state();
-
-    let job_executor = Arc::new(JobExecutor::new(None, state.clone()));
-
     // Load configuration from a file if specified, otherwise use default
-    let config = match args.config {
+    let _config = match args.config {
         Some(config_path) => match AgentConfig::from_toml_file(&config_path) {
             Ok(config) => {
-                tracing::info!("Loaded configuration from {}", config_path);
+                info!("Loaded configuration from {}", config_path);
                 config
             }
             Err(e) => {
-                tracing::error!("Failed to load configuration from {}: {}", config_path, e);
-                tracing::info!("Falling back to default configuration");
+                error!("Failed to load configuration from {}: {}", config_path, e);
+                info!("Falling back to default configuration");
                 AgentConfig::default()
             }
         },
-        None => AgentConfig::default(),
+        None => {
+            let defaut_config = AgentConfig::default();
+            info!(
+                "No configuration file specified, using default configuration : {:#?}",
+                defaut_config
+            );
+            defaut_config
+        }
     };
 
-    loop {
-        let client = TcpClient::builder()
-            .config(config.clone())
-            .state(state.clone())
-            .job_executor(job_executor.clone())
-            .build()?;
+    let pipeline = Pipeline {
+        name: "demo".to_string(),
+        stages: vec![Stage {
+            name: "build".to_string(),
+            steps: vec![
+                Step {
+                    name: "echo_1".to_string(),
+                    shell: Shell::Sh,
+                    command: "echo".to_string(),
+                    args: vec!["From".into(), "sh".into(), "$RUST_LOG".into()],
+                },
+                Step {
+                    name: "echo_2".to_string(),
+                    shell: Shell::Bash,
+                    command: "echo".to_string(),
+                    args: vec!["From".into(), "bash".into()],
+                },
+            ],
+        }],
+    };
 
-        match client.run().await {
-            Ok(_) => {
-                break;
-            }
-            Err(e) => {
-                tracing::error!("TCP connection lost: {}", e);
-                tracing::info!("Reconnecting in 5 seconds...");
-                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-            }
-        }
-    }
+    let executor = LocalExecutor::new();
+    let runner = PipelineRunner::new(executor)
+        .with_workdir(".")
+        .with_env_var("RUST_LOG", "info");
 
+    runner.run_pipeline(&pipeline).await?;
     Ok(())
 }
