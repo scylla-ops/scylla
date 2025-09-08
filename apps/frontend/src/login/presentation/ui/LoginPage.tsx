@@ -1,6 +1,7 @@
 import { LoginForm } from '@/login/presentation/ui/LoginForm.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn';
 import LogoScylla from '@/assets/logo_scylla.png';
+import { Trans } from '@lingui/react/macro';
 
 export const LoginPage = () => {
   return (
@@ -11,8 +12,12 @@ export const LoginPage = () => {
       </div>
       <Card className='w-full max-w-sm'>
         <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
+          <CardTitle>
+            <Trans>Login to your account</Trans>
+          </CardTitle>
+          <CardDescription>
+            <Trans>Enter your email below to login to your account</Trans>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm handleSubmit={e => e.preventDefault()} />

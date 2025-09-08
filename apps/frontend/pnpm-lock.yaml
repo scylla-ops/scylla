@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@lingui/core':
+        specifier: ^5.4.1
+        version: 5.4.1(@lingui/babel-plugin-lingui-macro@5.4.1(typescript@5.8.3))
       '@lingui/react':
         specifier: ^5.4.1
         version: 5.4.1(@lingui/babel-plugin-lingui-macro@5.4.1(typescript@5.8.3))(react@19.1.1)
