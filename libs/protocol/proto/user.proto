@@ -2,19 +2,19 @@ syntax = "proto3";
 package user;
 
 service UserService {
-  // Créer un utilisateur
+  // Create a user
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
 
-  // Récupérer un utilisateur par ID
+  // Get a user by ID
   rpc GetUser (GetUserRequest) returns (UserResponse);
 
-  // Lister tous les utilisateurs
+  // List all users
   rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
 
-  // Mettre à jour un utilisateur
+  // Update a user
   rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
 
-  // Supprimer un utilisateur
+  // Delete a user
   rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
 }
 
@@ -24,7 +24,7 @@ message CreateUserRequest {
 }
 
 message GetUserRequest {
-  string user_uuid = 1;  // Utilisation d'UUID au lieu de user_id
+  string user_uuid = 1;  // Using UUID instead of user_id
 }
 
 message ListUsersRequest {
