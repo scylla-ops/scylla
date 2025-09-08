@@ -60,7 +60,15 @@ impl PipelineSnapshotRepository for PipelineSnapshotRepositoryDiesel {
         Ok(records)
     }
 
-    async fn delete_snapshot(&self, _id: Uuid) -> anyhow::Result<()> {
-        todo!()
+    async fn delete_snapshot(&self, snapshot_id: Uuid) -> anyhow::Result<()> {
+        use crate::database::schema::pipeline_snapshots::dsl::*;
+
+        let mut conn = Repository::get_connection(self)?;
+
+        diesel::delete(pipeline_snapshots)
+            .filter(id.eq(snapshot_id))
+            .execute(&mut conn)?;
+
+        Ok(())
     }
 }

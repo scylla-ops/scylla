@@ -66,10 +66,18 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotService {
 
     async fn delete_pipeline_snapshot(
         &self,
-        _request: Request<DeletePipelineSnapshotRequest>,
+        request: Request<DeletePipelineSnapshotRequest>,
     ) -> Result<Response<DeletePipelineSnapshotResponse>, Status> {
         //todo soft delete ?
-        todo!()
+        let DeletePipelineSnapshotRequest { snapshot_id } = request.into_inner();
+        let snapshot_id = parse_uuid!(snapshot_id)?;
+
+        self.repo
+            .delete_snapshot(snapshot_id)
+            .await
+            .map_err(|e| Status::internal(format!("Unable to delete snapshot: {}", e)))?;
+
+        Ok(Response::new(DeletePipelineSnapshotResponse {}))
     }
 
     async fn list_pipeline_snapshots(
