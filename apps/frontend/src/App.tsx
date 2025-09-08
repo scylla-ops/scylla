@@ -1,10 +1,8 @@
-import './App.css'
-import CoreRoot from "@core/presentation/ui/CoreRoot.tsx";
+import './App.css';
+import CoreRoot from '@core/presentation/ui/CoreRoot.tsx';
 
 function App() {
-  return (
-    <CoreRoot/>
-  )
+  return <CoreRoot />;
 }
 
-export default App
+export default App;
