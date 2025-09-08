@@ -1,5 +1,5 @@
 import './App.css';
-import CoreRoot from '@core/presentation/ui/CoreRoot.tsx';
+import CoreRoot from '@/modules/core/presentation/ui/CoreRoot.tsx';
 
 function App() {
   return <CoreRoot />;

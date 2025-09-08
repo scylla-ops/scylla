@@ -1,4 +1,4 @@
-import { Button, Input, Label } from '@shadcn';
+import { Button, Input, Label } from '@/modules/core/presentation/ui/shadcn';
 import { useState } from 'react';
 import * as React from 'react';
 

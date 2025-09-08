@@ -1,0 +1,16 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2025-09-08 17:20+0900\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+
+#: src/modules/login/presentation/ui/LoginPage.tsx:25
+msgid "Enter your email below to login to your account"
+msgstr ""
+
+#: src/modules/login/presentation/ui/LoginPage.tsx:22
+msgid "Login to your account"
+msgstr ""
