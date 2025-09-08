@@ -4,10 +4,9 @@ mod database;
 
 use crate::api::grpc::auth::controller::AuthController;
 use crate::api::grpc::orchestrator::Orchestrator;
-use crate::api::grpc::orchestrator::controller::OrchestratorController;
-use crate::api::grpc::pipeline::PipelineService;
 use crate::api::grpc::pipeline::controller::PipelineController;
 use crate::api::grpc::pipeline::repo::PipelineRepositoryDiesel;
+use crate::api::grpc::pipeline::service::PipelineService;
 use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
 use crate::api::grpc::pipeline::snapshot::repo::PipelineSnapshotRepositoryDiesel;
 use crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotService;
