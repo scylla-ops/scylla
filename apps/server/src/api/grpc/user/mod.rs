@@ -1,8 +1,7 @@
 use crate::api::grpc::user::dto::{NewUser, UpdateUser};
 use crate::api::grpc::user::models::User;
 use async_trait::async_trait;
-use std::sync::Arc;
-
+pub mod controller;
 mod dto;
 pub mod models;
 pub mod repo;
@@ -20,14 +19,4 @@ pub trait UserRepository: Send + Sync {
     ) -> anyhow::Result<Option<User>>;
     async fn deactivate_user(&self, user_uuid: uuid::Uuid) -> anyhow::Result<Option<User>>;
     async fn get_user_by_username(&self, username: String) -> anyhow::Result<Option<User>>;
-}
-
-pub struct UserService {
-    repo: Arc<dyn UserRepository>,
-}
-
-impl UserService {
-    pub fn new(repo: Arc<dyn UserRepository>) -> Self {
-        Self { repo }
-    }
 }

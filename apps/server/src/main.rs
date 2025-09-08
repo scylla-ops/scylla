@@ -2,20 +2,23 @@ mod api;
 mod config;
 mod database;
 
-// Internal crate imports
-use crate::config::CoreConfig;
-use crate::database::DieselDatabase;
-
-// External crate imports
+use crate::api::grpc::auth::controller::AuthController;
 use crate::api::grpc::orchestrator::Orchestrator;
+use crate::api::grpc::orchestrator::controller::OrchestratorController;
 use crate::api::grpc::pipeline::PipelineService;
+use crate::api::grpc::pipeline::controller::PipelineController;
 use crate::api::grpc::pipeline::repo::PipelineRepositoryDiesel;
-use crate::api::grpc::pipeline::snapshot::PipelineSnapshotService;
+use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
 use crate::api::grpc::pipeline::snapshot::repo::PipelineSnapshotRepositoryDiesel;
+use crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotService;
 use crate::api::grpc::pipeline::worker::PipelineWorker;
-use crate::api::grpc::{AuthService, BackgroundWorker, UserRepositoryDiesel, UserService};
+use crate::api::grpc::user::controller::UserController;
+use crate::api::grpc::{AuthService, BackgroundWorker, UserRepositoryDiesel};
+use crate::config::CoreConfig;
 use crate::config::core_config::DatabaseConfig;
+use crate::database::DieselDatabase;
 use anyhow::{Result, anyhow};
+use api::grpc::user::service::UserService;
 use clap::Parser;
 use pasetors::keys::{Generate, SymmetricKey};
 use protocol::services;
@@ -95,26 +98,28 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         .register_encoded_file_descriptor_set(services::FILE_DESCRIPTOR_SET)
         .build_v1alpha()?;
 
-    let user_service =
-        UserService::new(Arc::new(UserRepositoryDiesel::new(diesel_db.pool.clone())));
-    let user_grpc = UserServiceServer::new(user_service);
+    let user_service = Arc::new(UserService::new(Arc::new(UserRepositoryDiesel::new(
+        diesel_db.pool.clone(),
+    ))));
+    let user_grpc = UserServiceServer::new(UserController::new(user_service));
 
-    let auth_service = AuthService::new(
+    let auth_service = Arc::new(AuthService::new(
         Arc::new(UserRepositoryDiesel::new(diesel_db.pool.clone())),
         SymmetricKey::generate()?,
-    );
-    let auth_grpc = AuthServiceServer::new(auth_service);
+    ));
+    let auth_grpc = AuthServiceServer::new(AuthController::new(auth_service));
 
     let pipeline_repo = PipelineRepositoryDiesel::new(diesel_db.pool.clone());
-    let pipeline_service = PipelineService::new(Arc::new(pipeline_repo.clone()));
-    let pipeline_worker = PipelineWorker::new(Arc::new(pipeline_repo), rx_pipeline_service);
-    let pipeline_grpc = PipelineServer::new(pipeline_service);
+    let pipeline_service = Arc::new(PipelineService::new(Arc::new(pipeline_repo.clone())));
+    let pipeline_worker = PipelineWorker::new(Arc::clone(&pipeline_service), rx_pipeline_service);
+    let pipeline_grpc = PipelineServer::new(PipelineController::new(pipeline_service));
 
-    let pipeline_snapshot_service = PipelineSnapshotService::new(
+    let pipeline_snapshot_service = Arc::new(PipelineSnapshotService::new(
         Arc::new(PipelineSnapshotRepositoryDiesel::new(diesel_db.pool)),
         tx_pipeline_service,
-    );
-    let pipeline_snapshot_grpc = PipelineSnapshotServer::new(pipeline_snapshot_service);
+    ));
+    let pipeline_snapshot_grpc =
+        PipelineSnapshotServer::new(PipelineSnapshotController::new(pipeline_snapshot_service));
 
     let orchestrator = Orchestrator::default();
     let orchestrator_grpc = OrchestratorServer::new(orchestrator.clone());

@@ -5,6 +5,7 @@ use protocol::pipeline::Pipeline;
 use std::sync::Arc;
 use uuid::Uuid;
 
+pub mod controller;
 pub mod models;
 pub mod repo;
 pub mod service;
@@ -18,9 +19,4 @@ pub trait PipelineRepository: Send + Sync {
     async fn list_pipelines(&self) -> anyhow::Result<Vec<Pipeline>>;
     async fn delete_pipeline(&self, id: Uuid) -> anyhow::Result<()>;
     async fn update_pipeline(&self, id: Uuid, updated_pipeline: Pipeline) -> anyhow::Result<()>;
-}
-
-#[derive(Constructor, Clone)]
-pub struct PipelineService {
-    repo: Arc<dyn PipelineRepository>,
 }

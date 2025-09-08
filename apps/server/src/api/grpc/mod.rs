@@ -5,7 +5,6 @@ pub mod pipeline;
 pub mod user;
 pub mod utils;
 
-pub use user::UserService;
 pub use user::repo::UserRepositoryDiesel;
 
 pub use auth::AuthService;

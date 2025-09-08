@@ -1,125 +1,111 @@
-use crate::api::grpc::pipeline::snapshot::PipelineSnapshotService;
+use crate::api::grpc::pipeline::models::PipelineRecord;
+use crate::api::grpc::pipeline::snapshot::PipelineSnapshotRepository;
+use crate::api::grpc::pipeline::snapshot::models::PipelineSnapshotRecord;
 use crate::api::grpc::pipeline::worker::PipelineMessage;
-use crate::parse_uuid;
-use protocol::services::pipeline::snapshot::{
-    CreatePipelineSnapshotRequest, CreatePipelineSnapshotResponse, DeletePipelineSnapshotRequest,
-    DeletePipelineSnapshotResponse, GetPipelineSnapshotRequest, ListPipelineSnapshotRequest,
-    ListPipelineSnapshotResponse, PipelineSnapshotRecord, pipeline_snapshot_server,
-};
-use protocol::tonic::{Request, Response, Status};
+use derive_more::Constructor;
+use std::sync::Arc;
+use thiserror::Error;
+use tokio::sync::mpsc;
+use uuid::Uuid;
 
-#[async_trait::async_trait]
-impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotService {
-    async fn create_pipeline_snapshot(
-        &self,
-        request: Request<CreatePipelineSnapshotRequest>,
-    ) -> Result<Response<CreatePipelineSnapshotResponse>, Status> {
-        let CreatePipelineSnapshotRequest { pipeline_id } = request.into_inner();
-        let pipeline_id = parse_uuid!(pipeline_id)?;
+#[derive(Constructor)]
+pub struct PipelineSnapshotService {
+    repo: Arc<dyn PipelineSnapshotRepository>,
+    tx_pipeline: mpsc::Sender<PipelineMessage>,
+}
 
+#[derive(Debug, Error)]
+pub enum PipelineSnapshotError {
+    #[error("Critical: unable to send GetPipeline request")]
+    SendFailed,
+    #[error("Critical: unable to receive pipeline")]
+    ReceiveFailed,
+    #[error("Pipeline not found")]
+    PipelineNotFound,
+    #[error("Create failed: {0}")]
+    CreateFailed(anyhow::Error),
+    #[error("Get failed: {0}")]
+    GetFailed(anyhow::Error),
+    #[error("Delete failed: {0}")]
+    DeleteFailed(anyhow::Error),
+    #[error("List failed: {0}")]
+    ListFailed(anyhow::Error),
+}
+
+impl PipelineSnapshotService {
+    pub async fn create_snapshot(&self, pipeline_id: Uuid) -> Result<Uuid, PipelineSnapshotError> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-
         self.tx_pipeline
             .send(PipelineMessage::GetPipeline {
                 id: pipeline_id,
                 respond_tx: tx,
             })
             .await
-            .map_err(|_| Status::internal("Critical: unable to send GetPipeline request"))?;
+            .map_err(|_| PipelineSnapshotError::SendFailed)?;
 
-        let pipeline_rec = rx
+        let pipeline_rec: PipelineRecord = rx
             .await
-            .map_err(|_| Status::internal("Critical: unable to receive pipeline"))?
-            .map_err(|e| Status::internal(format!("Failed to retrieve pipeline: {}", e)))?;
+            .map_err(|_| PipelineSnapshotError::ReceiveFailed)?
+            .map_err(|e| {
+                tracing::error!("Failed to retrieve pipeline: {}", e);
+                PipelineSnapshotError::PipelineNotFound
+            })?;
 
         let snapshot_id = self
             .repo
             .create_snapshot(pipeline_rec)
             .await
-            .map_err(|e| Status::internal(format!("Unable to create snapshot: {}", e)))?;
+            .map_err(PipelineSnapshotError::CreateFailed)?;
 
-        Ok(Response::new(CreatePipelineSnapshotResponse {
-            snapshot_id: snapshot_id.to_string(),
-        }))
+        Ok(snapshot_id)
     }
 
-    async fn get_pipeline_snapshot(
+    pub async fn get_snapshot(
         &self,
-        request: Request<GetPipelineSnapshotRequest>,
-    ) -> Result<Response<PipelineSnapshotRecord>, Status> {
-        let GetPipelineSnapshotRequest { snapshot_id } = request.into_inner();
-        let snapshot_id = parse_uuid!(snapshot_id)?;
-
+        snapshot_id: Uuid,
+    ) -> Result<PipelineSnapshotRecord, PipelineSnapshotError> {
         let record = self
             .repo
             .get_snapshot(snapshot_id)
             .await
-            .map_err(|e| Status::internal(format!("Unable to get snapshot: {}", e)))?;
-
-        Ok(Response::new(PipelineSnapshotRecord {
-            snapshot_id: snapshot_id.to_string(),
-            pipeline_id: record.pipeline_id.to_string(),
-            content: record.content,
-            created_at: record.created_at.to_string(),
-        }))
+            .map_err(PipelineSnapshotError::GetFailed)?;
+        Ok(record)
     }
 
-    async fn delete_pipeline_snapshot(
-        &self,
-        request: Request<DeletePipelineSnapshotRequest>,
-    ) -> Result<Response<DeletePipelineSnapshotResponse>, Status> {
-        //todo soft delete ?
-        let DeletePipelineSnapshotRequest { snapshot_id } = request.into_inner();
-        let snapshot_id = parse_uuid!(snapshot_id)?;
-
+    pub async fn delete_snapshot(&self, snapshot_id: Uuid) -> Result<(), PipelineSnapshotError> {
         self.repo
             .delete_snapshot(snapshot_id)
             .await
-            .map_err(|e| Status::internal(format!("Unable to delete snapshot: {}", e)))?;
-
-        Ok(Response::new(DeletePipelineSnapshotResponse {}))
+            .map_err(PipelineSnapshotError::DeleteFailed)?;
+        Ok(())
     }
 
-    async fn list_pipeline_snapshots(
+    pub async fn list_snapshots(
         &self,
-        request: Request<ListPipelineSnapshotRequest>,
-    ) -> Result<Response<ListPipelineSnapshotResponse>, Status> {
-        let ListPipelineSnapshotRequest { pipeline_id } = request.into_inner();
-        let pipeline_id = parse_uuid!(pipeline_id)?;
-
+        pipeline_id: Uuid,
+    ) -> Result<Vec<PipelineSnapshotRecord>, PipelineSnapshotError> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-
         self.tx_pipeline
             .send(PipelineMessage::GetPipeline {
                 id: pipeline_id,
                 respond_tx: tx,
             })
             .await
-            .map_err(|_| Status::internal("Critical: unable to send GetPipeline request"))?;
+            .map_err(|_| PipelineSnapshotError::SendFailed)?;
 
-        let pipeline_rec = rx
+        let pipeline_rec: PipelineRecord = rx
             .await
-            .map_err(|_| Status::internal("Critical: unable to receive pipeline"))?
-            .map_err(|e| Status::internal(format!("Failed to retrieve pipeline: {}", e)))?;
+            .map_err(|_| PipelineSnapshotError::ReceiveFailed)?
+            .map_err(|e| {
+                tracing::error!("Failed to retrieve pipeline: {}", e);
+                PipelineSnapshotError::PipelineNotFound
+            })?;
 
         let records = self
             .repo
             .list_snapshots(pipeline_rec)
             .await
-            .map_err(|e| Status::internal(format!("Unable to list snapshots: {}", e)))?;
-
-        let response_records = records
-            .into_iter()
-            .map(|record| PipelineSnapshotRecord {
-                snapshot_id: record.id.to_string(),
-                pipeline_id: record.pipeline_id.to_string(),
-                content: record.content,
-                created_at: record.created_at.to_string(),
-            })
-            .collect();
-
-        Ok(Response::new(ListPipelineSnapshotResponse {
-            records: response_records,
-        }))
+            .map_err(PipelineSnapshotError::ListFailed)?;
+        Ok(records)
     }
 }

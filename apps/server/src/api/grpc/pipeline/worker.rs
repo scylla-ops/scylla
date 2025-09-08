@@ -1,6 +1,6 @@
 use crate::api::grpc::BackgroundWorker;
-use crate::api::grpc::pipeline::PipelineRepository;
 use crate::api::grpc::pipeline::models::PipelineRecord;
+use crate::api::grpc::pipeline::service::PipelineService;
 use derive_more::Constructor;
 use std::sync::Arc;
 use tokio::sync::watch::Receiver;
@@ -18,7 +18,7 @@ pub enum PipelineMessage {
 
 #[derive(Constructor)]
 pub struct PipelineWorker {
-    repo: Arc<dyn PipelineRepository>,
+    service: Arc<PipelineService>,
     rx_pipeline: mpsc::Receiver<PipelineMessage>,
 }
 
@@ -45,7 +45,12 @@ impl PipelineWorker {
     async fn handle_message(&self, message: PipelineMessage) {
         match message {
             PipelineMessage::GetPipeline { id, respond_tx } => {
-                let _ = respond_tx.send(self.repo.get_pipeline(id).await);
+                let res = self
+                    .service
+                    .get_pipeline(id)
+                    .await
+                    .map_err(|e| anyhow::anyhow!(e));
+                let _ = respond_tx.send(res);
             }
         }
     }

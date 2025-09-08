@@ -1,10 +1,22 @@
 use crate::api::grpc::auth::AuthService;
 use crate::api::grpc::user::models::User;
 use pasetors::local;
-use protocol::services::{LoginRequest, LoginResponse, auth_service_server};
-use protocol::tonic;
-use protocol::tonic::{Request, Response, Status};
-use tracing::log::debug;
+
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum AuthError {
+    #[error("Utilisateur introuvable")]
+    UserNotFound,
+    #[error("Account is disabled")]
+    AccountDisabled,
+    #[error("Incorrect password")]
+    IncorrectPassword,
+    #[error("Paseto generation failed: {0}")]
+    PasetoGeneration(String),
+    #[error(transparent)]
+    Repo(#[from] anyhow::Error),
+}
 
 impl AuthService {
     fn verify_password(&self, password: &str, password_hash: &str) -> bool {
@@ -26,51 +38,28 @@ impl AuthService {
 
         claims.add_additional("username", user.username)?;
 
-        debug!("{:?}", claims);
-
         let token = local::encrypt(&symmetric_key, &claims, None, None)?;
 
         Ok(token)
     }
-}
 
-#[tonic::async_trait]
-impl auth_service_server::AuthService for AuthService {
-    async fn login(
-        &self,
-        request: Request<LoginRequest>,
-    ) -> Result<Response<LoginResponse>, Status> {
-        let req = request.into_inner();
-
-        // 1. Rechercher l'utilisateur par username
-        let user = match self.repo.get_user_by_username(req.username).await {
-            Ok(Some(user)) => user,
-            Ok(None) => return Err(Status::not_found("Utilisateur introuvable")),
-            Err(e) => {
-                tracing::error!("Erreur lors de la recherche de l'utilisateur: {}", e);
-                return Err(Status::internal("Erreur serveur"));
-            }
+    pub async fn login(&self, username: String, password: String) -> Result<String, AuthError> {
+        let user = match self.repo.get_user_by_username(username).await? {
+            Some(user) => user,
+            None => return Err(AuthError::UserNotFound),
         };
 
-        // 2. Vérifier si l'utilisateur est actif
         if !user.is_active {
-            return Err(Status::permission_denied("Account is disabled"));
+            return Err(AuthError::AccountDisabled);
         }
 
-        // 3. Vérifier le mot de passe
-        if !AuthService::verify_password(self, &req.password, &user.password_hash) {
-            return Err(Status::permission_denied("Incorrect password"));
+        if !Self::verify_password(self, &password, &user.password_hash) {
+            return Err(AuthError::IncorrectPassword);
         }
 
-        // 4. Generate Paseto
-        let token = match AuthService::generate_paseto(self, user) {
-            Ok(token) => token,
-            Err(e) => {
-                tracing::error!("Erreur lors de la génération du token: {}", e);
-                return Err(Status::internal("Erreur serveur"));
-            }
-        };
+        let token = Self::generate_paseto(self, user)
+            .map_err(|e| AuthError::PasetoGeneration(e.to_string()))?;
 
-        Ok(Response::new(LoginResponse { token }))
+        Ok(token)
     }
 }
