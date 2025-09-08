@@ -1,11 +1,12 @@
-use crate::api::grpc::constants::PASSWORD_MAX_LENGTH;
-use crate::api::grpc::constants::PASSWORD_MIN_LENGTH;
-use crate::api::grpc::constants::USERNAME_MAX_LENGTH;
-use crate::api::grpc::constants::USERNAME_MIN_LENGTH;
-use crate::api::v1::models::users::User;
+use crate::api::grpc::user::models::User;
 use diesel::{AsChangeset, Insertable};
 use protocol::services::{CreateUserRequest, UserResponse};
 use validator::Validate;
+
+pub const USERNAME_MIN_LENGTH: u64 = 1;
+pub const USERNAME_MAX_LENGTH: u64 = 255;
+pub const PASSWORD_MIN_LENGTH: u64 = 8;
+pub const PASSWORD_MAX_LENGTH: u64 = 255;
 
 #[derive(Debug, Clone, Validate)]
 pub struct UserFields {

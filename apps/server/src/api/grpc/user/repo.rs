@@ -1,14 +1,15 @@
+use crate::api::base::BaseRepository;
+use crate::api::base::diesel_repo_base::Repository;
 use crate::api::grpc::user::UserRepository;
 use crate::api::grpc::user::dto::{NewUser, UpdateUser};
-use crate::api::v1::common::base::BaseRepository;
-use crate::api::v1::common::base::repository_base::Repository;
-use crate::api::v1::models::users::User;
+use crate::api::grpc::user::models::User;
 use crate::database::DieselPool;
 use anyhow::Context;
 use async_trait::async_trait;
 use diesel::QueryDsl;
+use diesel::RunQueryDsl;
+use diesel::SelectableHelper;
 use diesel::{ExpressionMethods, OptionalExtension};
-use diesel::{RunQueryDsl, SelectableHelper};
 use repository_derive::DieselRepository;
 
 #[derive(DieselRepository)]

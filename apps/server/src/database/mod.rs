@@ -1,10 +1,10 @@
-mod migrations;
 pub mod schema;
 
 use crate::config::core_config::DatabaseConfig;
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool as DPool, PooledConnection};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 
 // Type alias for the diesel pool
 pub type DieselPool = DPool<ConnectionManager<PgConnection>>;
@@ -14,6 +14,8 @@ pub type DieselConnection = PooledConnection<ConnectionManager<PgConnection>>;
 pub struct DieselDatabase {
     pub pool: DieselPool,
 }
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 impl DieselDatabase {
     pub fn new(config: &DatabaseConfig) -> Result<Self> {
@@ -29,6 +31,14 @@ impl DieselDatabase {
     }
 
     pub fn run_migrations(&self) -> Result<()> {
-        migrations::run_migrations(&self.pool)
+        let mut conn = self
+            .pool
+            .get()
+            .context("Failed to get database connection")?;
+        conn.run_pending_migrations(MIGRATIONS)
+            .map_err(|e| anyhow!(e.to_string()))
+            .context("Failed to run pending migrations")?;
+
+        Ok(())
     }
 }

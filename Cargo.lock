@@ -1924,6 +1924,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "derive_builder",
+ "derive_more",
  "http",
  "prost",
  "serde",

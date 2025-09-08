@@ -1,15 +1,13 @@
-use crate::model::pipeline::Pipeline;
-use crate::model::stage::Stage;
-use crate::model::step::Step;
 use anyhow::Result;
 use async_trait::async_trait;
+use protocol::pipeline::{PStage, PStep, Pipeline};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct ExecRequest<'a> {
-    pub step: &'a Step,
+    pub step: &'a PStep,
     pub workdir: Option<&'a Path>,
     pub env: Option<&'a HashMap<String, String>>,
 }
@@ -58,7 +56,7 @@ impl<E: Executor> PipelineRunner<E> {
         Ok(())
     }
 
-    async fn run_stage(&self, stage: &Stage) -> Result<()> {
+    async fn run_stage(&self, stage: &PStage) -> Result<()> {
         for step in &stage.steps {
             println!("Running step '{:?}'", step);
 

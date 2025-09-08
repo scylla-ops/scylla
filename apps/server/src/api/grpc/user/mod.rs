@@ -1,9 +1,10 @@
 use crate::api::grpc::user::dto::{NewUser, UpdateUser};
-use crate::api::v1::models::users::User;
+use crate::api::grpc::user::models::User;
 use async_trait::async_trait;
 use std::sync::Arc;
 
 mod dto;
+pub mod models;
 pub mod repo;
 pub mod service;
 

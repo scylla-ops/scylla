@@ -1,5 +1,5 @@
 use crate::api::grpc::auth::AuthService;
-use crate::api::v1::models::users::User;
+use crate::api::grpc::user::models::User;
 use pasetors::local;
 use protocol::services::{LoginRequest, LoginResponse, auth_service_server};
 use protocol::tonic;

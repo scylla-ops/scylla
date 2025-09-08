@@ -1,6 +1,24 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    pipeline_snapshots (id) {
+        id -> Uuid,
+        pipeline_id -> Uuid,
+        content -> Text,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    pipelines (id) {
+        id -> Uuid,
+        content -> Text,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     teams (id) {
         id -> Uuid,
         #[max_length = 255]
@@ -22,4 +40,6 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(teams, users,);
+diesel::joinable!(pipeline_snapshots -> pipelines (pipeline_id));
+
+diesel::allow_tables_to_appear_in_same_query!(pipeline_snapshots, pipelines, teams, users,);
