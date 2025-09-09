@@ -1,4 +1,6 @@
-use crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotService;
+use crate::api::grpc::pipeline::snapshot::service::{
+    PipelineSnapshotService, PipelineSnapshotServiceError,
+};
 use crate::parse_uuid;
 use derive_more::Constructor;
 use protocol::services::pipeline::snapshot::{
@@ -99,17 +101,11 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
     }
 }
 
-fn map_snapshot_error(
-    e: crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotError,
-) -> Status {
-    use crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotError as E;
+fn map_snapshot_error(e: PipelineSnapshotServiceError) -> Status {
+    use PipelineSnapshotServiceError as E;
     match e {
-        E::SendFailed => Status::internal("Critical: unable to send GetPipeline request"),
-        E::ReceiveFailed => Status::internal("Critical: unable to receive pipeline"),
-        E::PipelineNotFound => Status::not_found("Pipeline not found"),
-        E::CreateFailed(_) => Status::internal("Unable to create snapshot"),
-        E::GetFailed(_) => Status::internal("Unable to get snapshot"),
-        E::DeleteFailed(_) => Status::internal("Unable to delete snapshot"),
-        E::ListFailed(_) => Status::internal("Unable to list snapshots"),
+        E::Repo(e) => Status::internal(format!("Repository error: {}", e)),
+        E::ChannelError(e) => Status::internal(format!("Critical: unable to use channel {}", e)),
+        E::PipelineServiceError(e) => Status::internal(format!("Pipeline service error: {}", e)),
     }
 }

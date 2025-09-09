@@ -1,4 +1,4 @@
-use crate::api::grpc::pipeline::service::{PipelineDomainError, PipelineService};
+use crate::api::grpc::pipeline::service::{PipelineService, PipelineServiceError};
 use crate::parse_uuid;
 use derive_more::Constructor;
 use protocol::pipeline::Pipeline;
@@ -78,12 +78,10 @@ impl pipeline_server::Pipeline for PipelineController {
     }
 }
 
-fn map_err(e: PipelineDomainError) -> Status {
-    use PipelineDomainError as E;
+fn map_err(e: PipelineServiceError) -> Status {
+    use PipelineServiceError as E;
     match e {
-        E::InvalidToml(_) => Status::invalid_argument("Invalid pipeline TOML"),
-        E::InvalidUuid(_) => Status::invalid_argument("Invalid pipeline ID"),
-        E::NotFound => Status::not_found("Pipeline not found"),
-        E::Repo(_) => Status::internal("Repository error"),
+        E::InvalidToml(e) => Status::invalid_argument(format!("Invalid TOML: {}", e)),
+        E::Repo(e) => Status::internal(format!("Repository error: {}", e)),
     }
 }

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
 use uuid::Uuid;
-use validator::Validate;
+use validator::{Validate, ValidationErrors};
 
 #[derive(Constructor)]
 pub struct UserService {
@@ -19,7 +19,7 @@ pub enum UserDomainError {
     #[error("Validation failed: {0}")]
     Validation(String),
     #[error("User not found")]
-    NotFound,
+    UserNotFound,
     #[error("Hashing error: {0}")]
     Hashing(#[from] BcryptError),
     #[error(transparent)]
@@ -63,7 +63,7 @@ impl UserService {
             .map_err(UserDomainError::Repo)?;
         match opt {
             Some(u) => Ok(u),
-            None => Err(UserDomainError::NotFound),
+            None => Err(UserDomainError::UserNotFound),
         }
     }
 
@@ -122,7 +122,7 @@ impl UserService {
             .map_err(UserDomainError::Repo)?;
         match opt {
             Some(u) => Ok(u),
-            None => Err(UserDomainError::NotFound),
+            None => Err(UserDomainError::UserNotFound),
         }
     }
 
@@ -134,7 +134,7 @@ impl UserService {
             .map_err(UserDomainError::Repo)?;
         match res {
             Some(_) => Ok(()),
-            None => Err(UserDomainError::NotFound),
+            None => Err(UserDomainError::UserNotFound),
         }
     }
 }

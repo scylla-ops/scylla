@@ -107,7 +107,7 @@ fn map_err(e: UserDomainError) -> Status {
     use UserDomainError as E;
     match e {
         E::Validation(msg) => Status::invalid_argument(msg),
-        E::NotFound => Status::not_found("User not found"),
+        E::UserNotFound => Status::not_found("User not found"),
         E::Hashing(_) => Status::internal("Failed to hash password"),
         E::Repo(_) => Status::internal("Repository error"),
     }
