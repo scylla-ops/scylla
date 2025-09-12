@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package pipeline;
+
+message PipelineRequest {
+  string pipeline_toml = 1; // pipeline in toml format
+}
+
+message CreatePipelineResponse {
+  string pipeline_id = 1; // Pipeline UUID
+}
+
+message GetPipelineRequest {
+  string pipeline_id = 1; // Pipeline UUID
+}
+
+message DeletePipelineRequest {
+  string pipeline_id = 1; // Pipeline UUID
+}
+
+message DeletePipelineResponse {}
+
+message UpdatePipelineRequest {
+  string pipeline_id = 1;   // Pipeline UUID
+  string pipeline_toml = 2; // pipeline in toml format
+}
+
+message UpdatePipelineResponse {}
+
+message PipelineRecord {
+  string pipeline_id = 1; // Pipeline UUID
+  string pipeline_toml = 2; // pipeline in toml format
+  string created_at = 3; // timestamp
+  string updated_at = 4; // timestamp
+  optional string name = 5; // pipeline name
+}
+
+service Pipeline {
+  rpc CreatePipeline(PipelineRequest) returns (CreatePipelineResponse);
+  rpc GetPipeline(GetPipelineRequest) returns (PipelineRecord);
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse);
+  //rpc listPipelines(PipelineRequest) returns (PipelineResponse);
+}
+
+// User -> Send a Pipeline (executePipeline) -> PipelineService -> channel<Pipeline> -> Core -> channel<Job> -> Orchestrator
+// -> stream<Job> -> Worker

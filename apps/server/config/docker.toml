@@ -1,0 +1,11 @@
+# Docker configuration for Scylla Core
+
+[core_config]
+grpc_config = "127.0.0.1:50051"
+
+[core_config.database_config]
+host = "db"
+port = 5432
+username = "postgres"
+password = "postgres"
+database = "scylla"

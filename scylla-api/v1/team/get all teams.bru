@@ -1,0 +1,18 @@
+meta {
+  name: get all teams
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{TEAM_ENDPOINT}}/all
+  body: none
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "test_user123",
+    "password": "cacaaaaa"
+  }
+}

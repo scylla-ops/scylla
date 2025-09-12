@@ -1,0 +1,19 @@
+meta {
+  name: delete team by id
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{TEAM_ENDPOINT}}/c5b9b876-364c-41a8-89e7-c9d3d6f2776a
+  body: none
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "test",
+    "password": "saluaaaaaaat",
+    "is_active": false
+  }
+}

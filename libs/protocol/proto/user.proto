@@ -1,0 +1,63 @@
+syntax = "proto3";
+package user;
+
+service UserService {
+  // Create a user
+  rpc CreateUser (CreateUserRequest) returns (UserResponse);
+
+  // Get a user by ID
+  rpc GetUser (GetUserRequest) returns (UserResponse);
+
+  // List all users
+  rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
+
+  // Update a user
+  rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
+
+  // Delete a user
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2; // not hashed
+}
+
+message GetUserRequest {
+  string user_uuid = 1;  // Using UUID instead of user_id
+}
+
+message ListUsersRequest {
+  uint64 page = 1;
+  uint64 page_size = 2;
+}
+
+message UpdateUserRequest {
+  string user_uuid = 1;
+  optional string username = 2;
+  optional string password = 3;
+}
+
+message DeleteUserRequest {
+  string user_uuid = 1;
+}
+
+message UserResponse {
+  string user_uuid = 1;
+  string username = 2;
+  string password_hash = 3;
+  string created_at = 4;
+  string updated_at = 5;
+  bool is_active = 6;
+}
+
+message ListUsersResponse {
+  repeated UserResponse users = 1;
+  uint64 total_count = 2;
+  uint64 page = 3;
+  uint64 page_size = 4;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+}

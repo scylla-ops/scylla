@@ -1,6 +1,37 @@
 [package]
-name = "scylla-server"
+name = "scylla-core"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+axum = { version = "0.8.4" }
+tokio = { version = "1.47.1", features = ["full"] }
+tower-http = { version = "0.6.6", features = ["trace", "cors"] }
+tower-sessions = { version = "0.14.0", features = ["memory-store", "signed", "private"] }
+tower-sessions-sqlx-store = { version = "0.15.0", features = ["postgres"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+serde = { version = "1.0.219", features = ["derive"] }
+protocol = { path = "../../libs/protocol" }
+repository-derive = { path = "../../libs/repository-derive" }
+serde_json = "1.0.143"
+anyhow = "1.0.99"
+thiserror = "2.0.16"
+clap = { version = "4.5.47", features = ["derive"] }
+bcrypt = { version = "0.17.1", features = ["default"] }
+pasetors = "0.7.7"
+# Database dependencies
+diesel = { version = "2.2.12", features = ["postgres", "r2d2", "chrono", "uuid"] }
+diesel_migrations = "2.2.0"
+pq-sys = { version = "0.7.2", features = ["bundled"] }
+openssl-sys = { version = "0.9.109", features = ["vendored"] }
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
+chrono = { version = "0.4.41", features = ["serde"] }
+# Validation
+validator = { version = "0.20.0", features = ["derive"] }
+async-trait = "0.1.89"
+tonic-reflection = "0.14.1"
+tower = "0.5.2"
+tonic-web = "0.14.1"
+derive_more = { version = "2.0.1", features = ["full"] }
+derive_builder = "0.20.2"

@@ -1,0 +1,18 @@
+meta {
+  name: create user
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{USER_ENDPOINT}}/create
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "test_user123",
+    "password": "cacaaaaa"
+  }
+}
