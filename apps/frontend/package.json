@@ -16,6 +16,8 @@
     "@lingui/core": "^5.4.1",
     "@lingui/react": "^5.4.1",
     "@protobuf-ts/grpcweb-transport": "^2.11.1",
+    "@protobuf-ts/runtime": "^2.11.1",
+    "@protobuf-ts/runtime-rpc": "^2.11.1",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
