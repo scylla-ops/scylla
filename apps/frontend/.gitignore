@@ -23,4 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-src/modules/**/messages/ts
+src/modules/**/messages.ts
