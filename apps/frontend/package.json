@@ -9,11 +9,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "gen-proto": "rm -rf src/generated && mkdir -p src/generated && protoc -I=../proto --ts_out=src/generated ../proto/*.proto"
   },
   "dependencies": {
     "@lingui/core": "^5.4.1",
     "@lingui/react": "^5.4.1",
+    "@protobuf-ts/grpcweb-transport": "^2.11.1",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
@@ -35,6 +37,7 @@
     "@lingui/cli": "^5.4.1",
     "@lingui/swc-plugin": "^5.6.1",
     "@lingui/vite-plugin": "^5.4.1",
+    "@protobuf-ts/plugin": "^2.11.1",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
