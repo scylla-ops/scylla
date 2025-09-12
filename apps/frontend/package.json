@@ -6,7 +6,7 @@
   "scripts": {
     "extract": "lingui extract",
     "compile": "lingui compile --typescript",
-    "dev": "vite",
+    "dev": "pnpm run extract && pnpm run compile && pnpm run gen-proto && vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
