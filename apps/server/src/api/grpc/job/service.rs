@@ -87,10 +87,10 @@ impl JobService {
         let record = self.get_pipeline(pipeline_id).await?;
         let snapshots = self.list_snapshots(pipeline_id).await?;
 
-        let pipeline_hash = format!("{:x}", sha2::Sha256::digest(record.content.as_bytes()));
+        let pipeline_hash = sha2::Sha256::digest(record.content.as_bytes());
         let snapshot_record = match snapshots
             .into_iter()
-            .find(|s| format!("{:x}", sha2::Sha256::digest(s.content.as_bytes())) == pipeline_hash)
+            .find(|s| sha2::Sha256::digest(s.content.as_bytes()) == pipeline_hash)
         {
             Some(snapshot) => snapshot,
             None => self.create_snapshot(pipeline_id).await?,

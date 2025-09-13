@@ -35,9 +35,12 @@ use protocol::services::pipeline::snapshot::pipeline_snapshot_server::PipelineSn
 use protocol::services::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
-use tracing::info;
+use tower_http::LatencyUnit;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tracing::{Level, info};
 use tracing_subscriber::EnvFilter;
 
 /// Scylla Core - The core component for the Scylla CI/CD system
@@ -100,9 +103,16 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     let (tx_shutdown, rx_shutdown) = tokio::sync::watch::channel(false);
 
     /* GRPC Api */
-    let reflection = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(services::FILE_DESCRIPTOR_SET)
-        .build_v1()?;
+    #[cfg(feature = "reflection")]
+    let reflection = {
+        #[allow(unused_imports)]
+        use tonic_reflection::server::Builder as ReflectionBuilder;
+        Some(
+            ReflectionBuilder::configure()
+                .register_encoded_file_descriptor_set(services::FILE_DESCRIPTOR_SET)
+                .build_v1alpha()?,
+        )
+    };
 
     let user_service = Arc::new(UserService::new(Arc::new(UserRepositoryDiesel::new(
         diesel_db.pool.clone(),
@@ -170,18 +180,31 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     let grpc_server_fn = move || {
         info!("GRPC server running on {}", grpc_config);
-        Server::builder()
-            .add_service(reflection)
+        let trace_layer = TraceLayer::new_for_http()
+            .make_span_with(DefaultMakeSpan::new().include_headers(true))
+            .on_request(DefaultOnRequest::new().level(Level::INFO))
+            .on_response(
+                DefaultOnResponse::new()
+                    .level(Level::INFO)
+                    .latency_unit(LatencyUnit::Millis),
+            );
+
+        let mut server = Server::builder()
+            .layer(trace_layer)
             .add_service(user_grpc)
             .add_service(auth_grpc)
             .add_service(pipeline_grpc)
             .add_service(orchestrator_grpc)
             .add_service(pipeline_snapshot_grpc)
-            .add_service(job_grpc)
-            .serve_with_shutdown(grpc_config, async move {
-                tokio::signal::ctrl_c().await.ok();
-                let _ = tx_shutdown.send(true);
-            })
+            .add_service(job_grpc);
+        #[cfg(feature = "reflection")]
+        if let Some(reflection) = reflection {
+            server = server.add_service(reflection);
+        }
+        server.serve_with_shutdown(grpc_config, async move {
+            tokio::signal::ctrl_c().await.ok();
+            let _ = tx_shutdown.send(true);
+        })
     };
 
     let _res = grpc_server_fn().await;
@@ -193,8 +216,12 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 fn init_logger() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("trace,h2=warn")),
         )
+        .pretty()
+        .with_target(true)
+        .with_line_number(false)
+        .with_file(false)
         .init();
 }
 
