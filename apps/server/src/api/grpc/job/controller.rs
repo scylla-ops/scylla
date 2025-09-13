@@ -21,9 +21,12 @@ impl job_service_server::JobService for JobController {
         let CreateJobRequest { pipeline_id } = request.into_inner();
         let uuid: Uuid = parse_uuid!(pipeline_id)?;
 
-        let job = self.service.create_job(uuid).await.map_err(map_err)?;
+        let (job_id, snapshot_id) = self.service.create_job(uuid).await.map_err(map_err)?;
 
-        Ok(Response::new(CreateJobResponse::default()))
+        Ok(Response::new(CreateJobResponse {
+            job_id: job_id.to_string(),
+            snapshot_id: snapshot_id.to_string(),
+        }))
     }
 }
 
@@ -36,5 +39,6 @@ fn map_err(e: JobServiceError) -> Status {
             Status::internal(format!("Pipeline snapshot service error: {}", e))
         }
         E::ParsePipeline(e) => Status::internal(format!("Unable to parse pipeline: {}", e)),
+        E::JobRepo(e) => Status::internal(format!("Job repository error: {}", e)),
     }
 }

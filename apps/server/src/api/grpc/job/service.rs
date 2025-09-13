@@ -1,5 +1,5 @@
+use crate::api::grpc::job::JobRepository;
 use crate::api::grpc::job::service::JobServiceError as E;
-use crate::api::grpc::job::{JobRepository, StageRepository, StepRepository};
 use crate::api::grpc::pipeline::models::PipelineRecord;
 use crate::api::grpc::pipeline::snapshot::models::PipelineSnapshotRecord;
 use crate::api::grpc::pipeline::snapshot::worker::PipelineSnapshotMessage;
@@ -16,8 +16,6 @@ use uuid::Uuid;
 #[derive(Constructor)]
 pub struct JobService {
     job_repo: Arc<dyn JobRepository>,
-    stage_repo: Arc<dyn StageRepository>,
-    step_repo: Arc<dyn StepRepository>,
 
     // channel to pipeline service
     tx_pipeline: mpsc::Sender<PipelineMessage>,
@@ -36,6 +34,8 @@ pub enum JobServiceError {
     PipelineService(anyhow::Error),
     #[error("Pipeline Snapshot service error: {0}")]
     PipelineSnapshotService(anyhow::Error),
+    #[error("Error in job repo: {0}")]
+    JobRepo(anyhow::Error),
 }
 impl JobService {
     async fn get_pipeline(&self, pipeline_id: Uuid) -> Result<PipelineRecord, JobServiceError> {
@@ -96,10 +96,15 @@ impl JobService {
             None => self.create_snapshot(pipeline_id).await?,
         };
 
-        let pipeline: Pipeline =
+        let snapshot_pipeline: Pipeline =
             toml::from_str(&snapshot_record.content).map_err(E::ParsePipeline)?;
 
-        //Ok((record.id, record.id));
-        unimplemented!()
+        let job_id = self
+            .job_repo
+            .create_job(snapshot_record.id, snapshot_pipeline)
+            .await
+            .map_err(E::JobRepo)?;
+
+        Ok((job_id, snapshot_record.id))
     }
 }

@@ -4,9 +4,7 @@ mod database;
 
 use crate::api::grpc::auth::controller::AuthController;
 use crate::api::grpc::job::controller::JobController;
-use crate::api::grpc::job::repo::{
-    JobRepositoryDiesel, StageRepositoryDiesel, StepRepositoryDiesel,
-};
+use crate::api::grpc::job::repo::JobRepositoryDiesel;
 use crate::api::grpc::job::service::JobService;
 use crate::api::grpc::orchestrator::Orchestrator;
 use crate::api::grpc::pipeline::controller::PipelineController;
@@ -148,12 +146,8 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     let orchestrator_grpc = OrchestratorServer::new(orchestrator.clone());
 
     let job_repo = JobRepositoryDiesel::new(diesel_db.pool.clone());
-    let stage_repo = StageRepositoryDiesel::new(diesel_db.pool.clone());
-    let step_repo = StepRepositoryDiesel::new(diesel_db.pool.clone());
     let job_service = Arc::new(JobService::new(
         Arc::new(job_repo),
-        Arc::new(stage_repo),
-        Arc::new(step_repo),
         tx_pipeline_service,
         tx_pipeline_snapshot_service,
     ));
