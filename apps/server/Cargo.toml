@@ -23,6 +23,7 @@ pasetors = "0.7.7"
 # Database dependencies
 diesel = { version = "2.2.12", features = ["postgres", "r2d2", "chrono", "uuid"] }
 diesel_migrations = "2.2.0"
+diesel-derive-enum = { version = "2.1.0", features = ["postgres"] }
 pq-sys = { version = "0.7.2", features = ["bundled"] }
 openssl-sys = { version = "0.9.109", features = ["vendored"] }
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
@@ -31,7 +32,6 @@ chrono = { version = "0.4.41", features = ["serde"] }
 validator = { version = "0.20.0", features = ["derive"] }
 async-trait = "0.1.89"
 tonic-reflection = "0.14.1"
-tower = "0.5.2"
-tonic-web = "0.14.1"
 derive_more = { version = "2.0.1", features = ["full"] }
 derive_builder = "0.20.2"
+sha2 = "0.10.9"

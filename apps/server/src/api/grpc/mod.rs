@@ -1,5 +1,5 @@
 pub mod auth;
-mod job;
+pub mod job;
 pub mod orchestrator;
 pub mod pipeline;
 pub mod user;

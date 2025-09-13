@@ -3,6 +3,11 @@ mod config;
 mod database;
 
 use crate::api::grpc::auth::controller::AuthController;
+use crate::api::grpc::job::controller::JobController;
+use crate::api::grpc::job::repo::{
+    JobRepositoryDiesel, StageRepositoryDiesel, StepRepositoryDiesel,
+};
+use crate::api::grpc::job::service::JobService;
 use crate::api::grpc::orchestrator::Orchestrator;
 use crate::api::grpc::pipeline::controller::PipelineController;
 use crate::api::grpc::pipeline::repo::PipelineRepositoryDiesel;
@@ -10,6 +15,7 @@ use crate::api::grpc::pipeline::service::PipelineService;
 use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
 use crate::api::grpc::pipeline::snapshot::repo::PipelineSnapshotRepositoryDiesel;
 use crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotService;
+use crate::api::grpc::pipeline::snapshot::worker::PipelineSnapshotWorker;
 use crate::api::grpc::pipeline::worker::PipelineWorker;
 use crate::api::grpc::user::controller::UserController;
 use crate::api::grpc::{AuthService, BackgroundWorker, UserRepositoryDiesel};
@@ -22,6 +28,7 @@ use clap::Parser;
 use pasetors::keys::{Generate, SymmetricKey};
 use protocol::services;
 use protocol::services::auth_service_server::AuthServiceServer;
+use protocol::services::job::job_service_server::JobServiceServer;
 use protocol::services::orchestrator::orchestrator_server::OrchestratorServer;
 use protocol::services::pipeline::pipeline_server::PipelineServer;
 use protocol::services::pipeline::snapshot::pipeline_snapshot_server::PipelineSnapshotServer;
@@ -30,7 +37,6 @@ use protocol::tonic::transport::Server;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
-use tower_http::cors::CorsLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -89,13 +95,14 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     // Channels
     let (tx_pipeline_service, rx_pipeline_service) = mpsc::channel(100);
+    let (tx_pipeline_snapshot_service, rx_pipeline_snapshot_service) = mpsc::channel(100);
 
     let (tx_shutdown, rx_shutdown) = tokio::sync::watch::channel(false);
 
     /* GRPC Api */
     let reflection = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(services::FILE_DESCRIPTOR_SET)
-        .build_v1alpha()?;
+        .build_v1()?;
 
     let user_service = Arc::new(UserService::new(Arc::new(UserRepositoryDiesel::new(
         diesel_db.pool.clone(),
@@ -113,26 +120,39 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     let pipeline_worker = PipelineWorker::new(Arc::clone(&pipeline_service), rx_pipeline_service);
     let pipeline_grpc = PipelineServer::new(PipelineController::new(pipeline_service));
 
-    let pipeline_snapshot_service = Arc::new(PipelineSnapshotService::new(
-        Arc::new(PipelineSnapshotRepositoryDiesel::new(diesel_db.pool)),
-        tx_pipeline_service,
+    let pipeline_snapshot_repo = Arc::new(PipelineSnapshotRepositoryDiesel::new(
+        diesel_db.pool.clone(),
     ));
+    let pipeline_snapshot_service = Arc::new(PipelineSnapshotService::new(
+        pipeline_snapshot_repo,
+        tx_pipeline_service.clone(),
+    ));
+    let pipeline_snapshot_worker = PipelineSnapshotWorker::new(
+        pipeline_snapshot_service.clone(),
+        rx_pipeline_snapshot_service,
+    );
     let pipeline_snapshot_grpc =
         PipelineSnapshotServer::new(PipelineSnapshotController::new(pipeline_snapshot_service));
 
     let orchestrator = Orchestrator::default();
     let orchestrator_grpc = OrchestratorServer::new(orchestrator.clone());
 
+    let job_repo = JobRepositoryDiesel::new(diesel_db.pool.clone());
+    let stage_repo = StageRepositoryDiesel::new(diesel_db.pool.clone());
+    let step_repo = StepRepositoryDiesel::new(diesel_db.pool.clone());
+    let job_service = Arc::new(JobService::new(
+        Arc::new(job_repo),
+        Arc::new(stage_repo),
+        Arc::new(step_repo),
+        tx_pipeline_service,
+        tx_pipeline_snapshot_service,
+    ));
+    let job_grpc = JobServiceServer::new(JobController::new(job_service));
+
     /*let cert = fs::read("certs/origin-cert.pem").await?;
     let key = fs::read("certs/origin-key.pem").await?;
 
     let identity = Identity::from_pem(cert, key);*/
-
-    let grpc_web_service = tower::ServiceBuilder::new()
-        .layer(tower_http::trace::TraceLayer::new_for_http())
-        .layer(CorsLayer::very_permissive()) //todo : make this configurable
-        .layer(tonic_web::GrpcWebLayer::new())
-        .into_inner();
 
     let mut threads = JoinSet::new();
     threads.spawn(BackgroundWorker::spawn_worker(
@@ -143,19 +163,21 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         pipeline_worker,
         rx_shutdown.clone(),
     ));
+    threads.spawn(BackgroundWorker::spawn_worker(
+        pipeline_snapshot_worker,
+        rx_shutdown.clone(),
+    ));
 
     let grpc_server_fn = move || {
         info!("GRPC server running on {}", grpc_config);
         Server::builder()
-            /*.tls_config(ServerTlsConfig::new().identity(identity)).unwrap()*/
-            .layer(grpc_web_service)
-            .accept_http1(true)
             .add_service(reflection)
             .add_service(user_grpc)
             .add_service(auth_grpc)
             .add_service(pipeline_grpc)
             .add_service(orchestrator_grpc)
             .add_service(pipeline_snapshot_grpc)
+            .add_service(job_grpc)
             .serve_with_shutdown(grpc_config, async move {
                 tokio::signal::ctrl_c().await.ok();
                 let _ = tx_shutdown.send(true);

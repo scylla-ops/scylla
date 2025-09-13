@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS steps;
+DROP TABLE IF EXISTS stages;
+DROP TABLE IF EXISTS jobs;
+
+DROP TYPE IF EXISTS execution_status;

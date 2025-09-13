@@ -2,19 +2,13 @@ syntax = "proto3";
 
 package job;
 
-enum Status {
-  PENDING = 0;
-  RUNNING = 1;
-  COMPLETED = 2;
-  FAILED = 3;
-}
-
 message CreateJobRequest {
   string pipeline_id = 1; // UUID of the pipeline to execute
 }
 
 message CreateJobResponse {
   string job_id = 1; // UUID of the job created
+  string snapshot_id = 2; // UUID of the snapshot used
 }
 
 service JobService {

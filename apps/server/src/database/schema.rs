@@ -1,5 +1,24 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "execution_status"))]
+    pub struct ExecutionStatus;
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ExecutionStatus;
+
+    jobs (id) {
+        id -> Uuid,
+        pipeline_snapshot_id -> Uuid,
+        status -> ExecutionStatus,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
 diesel::table! {
     pipeline_snapshots (id) {
         id -> Uuid,
@@ -13,6 +32,34 @@ diesel::table! {
     pipelines (id) {
         id -> Uuid,
         content -> Text,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ExecutionStatus;
+
+    stages (id) {
+        id -> Uuid,
+        job_id -> Uuid,
+        status -> ExecutionStatus,
+        position -> Int4,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ExecutionStatus;
+
+    steps (id) {
+        id -> Uuid,
+        stage_id -> Uuid,
+        status -> ExecutionStatus,
+        position -> Int4,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
@@ -40,6 +87,17 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(jobs -> pipeline_snapshots (pipeline_snapshot_id));
 diesel::joinable!(pipeline_snapshots -> pipelines (pipeline_id));
+diesel::joinable!(stages -> jobs (job_id));
+diesel::joinable!(steps -> stages (stage_id));
 
-diesel::allow_tables_to_appear_in_same_query!(pipeline_snapshots, pipelines, teams, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    jobs,
+    pipeline_snapshots,
+    pipelines,
+    stages,
+    steps,
+    teams,
+    users,
+);
