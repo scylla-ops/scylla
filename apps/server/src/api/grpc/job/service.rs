@@ -37,6 +37,12 @@ pub enum JobServiceError {
     #[error("Error in job repo: {0}")]
     JobRepo(anyhow::Error),
 }
+
+pub struct JobCreationResult {
+    pub job_id: Uuid,
+    pub snapshot_id: Uuid,
+}
+
 impl JobService {
     async fn get_pipeline(&self, pipeline_id: Uuid) -> Result<PipelineRecord, JobServiceError> {
         let (tx, rx) = oneshot::channel();
@@ -83,7 +89,10 @@ impl JobService {
             .map_err(E::PipelineSnapshotService)
     }
 
-    pub async fn create_job(&self, pipeline_id: Uuid) -> Result<(Uuid, Uuid), JobServiceError> {
+    pub async fn create_job(
+        &self,
+        pipeline_id: Uuid,
+    ) -> Result<JobCreationResult, JobServiceError> {
         let record = self.get_pipeline(pipeline_id).await?;
         let snapshots = self.list_snapshots(pipeline_id).await?;
 
@@ -105,6 +114,9 @@ impl JobService {
             .await
             .map_err(E::JobRepo)?;
 
-        Ok((job_id, snapshot_record.id))
+        Ok(JobCreationResult {
+            job_id,
+            snapshot_id: snapshot_record.id,
+        })
     }
 }

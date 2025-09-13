@@ -1,4 +1,4 @@
-use crate::api::grpc::job::service::{JobService, JobServiceError};
+use crate::api::grpc::job::service::{JobCreationResult, JobService, JobServiceError};
 use crate::parse_uuid;
 use async_trait::async_trait;
 use derive_more::Constructor;
@@ -21,7 +21,10 @@ impl job_service_server::JobService for JobController {
         let CreateJobRequest { pipeline_id } = request.into_inner();
         let uuid: Uuid = parse_uuid!(pipeline_id)?;
 
-        let (job_id, snapshot_id) = self.service.create_job(uuid).await.map_err(map_err)?;
+        let JobCreationResult {
+            job_id,
+            snapshot_id,
+        } = self.service.create_job(uuid).await.map_err(map_err)?;
 
         Ok(Response::new(CreateJobResponse {
             job_id: job_id.to_string(),
