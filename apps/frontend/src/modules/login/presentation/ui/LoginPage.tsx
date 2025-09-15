@@ -9,20 +9,21 @@ import {
 import LogoScylla from '@/assets/logo_scylla.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/login/presentation/hooks/login.ts';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent } from 'react';
 
 export const LoginPage = () => {
   const { mutate: login, status, error } = useLogin();
-  const [loginValue, setLoginValue] = useState('');
-  const [passwordValue, setPasswordValue] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent, loginValue: string, passwordValue: string) => {
     e.preventDefault();
 
     login(
       { login: loginValue, password: passwordValue },
       {
-        onSuccess: token => {
+        onSuccess: res => {
+          if (!res.ok) {
+            console.log('Error logging in!', res.error);
+          }
           console.log('Logged in!', token);
         },
       },

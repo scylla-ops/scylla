@@ -3,7 +3,7 @@ import { useState } from 'react';
 import * as React from 'react';
 
 type LoginFormProps = {
-  handleSubmit: (e: React.FormEvent) => void;
+  handleSubmit: (e: React.FormEvent, login: string, password: string) => void;
 };
 
 export const LoginForm = ({ handleSubmit }: LoginFormProps) => {
@@ -11,7 +11,10 @@ export const LoginForm = ({ handleSubmit }: LoginFormProps) => {
   const [password, setPassword] = useState('');
 
   return (
-    <form onSubmit={handleSubmit} className='flex flex-col gap-4 w-auto mx-auto'>
+    <form
+      onSubmit={e => handleSubmit(e, email, password)}
+      className='flex flex-col gap-4 w-auto mx-auto'
+    >
       <div>
         <Label htmlFor='email'>Email</Label>
         <Input
