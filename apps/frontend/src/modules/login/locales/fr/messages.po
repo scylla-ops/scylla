@@ -13,10 +13,10 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/login/presentation/ui/LoginPage.tsx:25
+#: src/modules/login/presentation/ui/LoginPage.tsx:42
 msgid "Enter your email below to login to your account"
 msgstr ""
 
-#: src/modules/login/presentation/ui/LoginPage.tsx:22
+#: src/modules/login/presentation/ui/LoginPage.tsx:39
 msgid "Login to your account"
 msgstr ""

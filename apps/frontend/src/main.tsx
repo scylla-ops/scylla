@@ -7,6 +7,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { messages as coreMessages } from './modules/core/locales/en/messages';
 import { messages as loginMessages } from './modules/login/locales/en/messages';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 i18n.load('en', {
   ...coreMessages,
@@ -14,12 +15,16 @@ i18n.load('en', {
 });
 i18n.activate('en');
 
+const queryClient = new QueryClient();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <I18nProvider i18n={i18n}>
-      <DependenciesProvider>
-        <App />
-      </DependenciesProvider>
+      <QueryClientProvider client={queryClient}>
+        <DependenciesProvider>
+          <App />
+        </DependenciesProvider>
+      </QueryClientProvider>
     </I18nProvider>
   </StrictMode>,
 );

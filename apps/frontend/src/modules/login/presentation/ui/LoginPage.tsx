@@ -8,8 +8,27 @@ import {
 } from '@/modules/core/presentation/ui/shadcn';
 import LogoScylla from '@/assets/logo_scylla.png';
 import { Trans } from '@lingui/react/macro';
+import { useLogin } from '@/modules/login/presentation/hooks/login.ts';
+import { type FormEvent, useState } from 'react';
 
 export const LoginPage = () => {
+  const { mutate: login, status, error } = useLogin();
+  const [loginValue, setLoginValue] = useState('');
+  const [passwordValue, setPasswordValue] = useState('');
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+
+    login(
+      { login: loginValue, password: passwordValue },
+      {
+        onSuccess: token => {
+          console.log('Logged in!', token);
+        },
+      },
+    );
+  };
+
   return (
     <div className={'flex items-center h-screen flex-col'}>
       <div className='flex flex-row items-center space-x-1 mb-4 mt-12 pr-6'>
@@ -26,7 +45,7 @@ export const LoginPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm handleSubmit={e => e.preventDefault()} />
+          <LoginForm handleSubmit={handleSubmit} />
         </CardContent>
       </Card>
     </div>
