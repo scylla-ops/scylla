@@ -24,7 +24,7 @@ export const LoginPage = () => {
           if (!res.ok) {
             console.log('Error logging in!', res.error);
           }
-          console.log('Logged in!', token);
+          console.log('Logged in!', res);
         },
       },
     );
