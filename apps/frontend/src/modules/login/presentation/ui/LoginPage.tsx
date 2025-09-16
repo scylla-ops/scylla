@@ -23,8 +23,9 @@ export const LoginPage = () => {
         onSuccess: res => {
           if (!res.ok) {
             console.log('Error logging in!', res.error);
+          } else {
+            console.log('Logged in!', res.value);
           }
-          console.log('Logged in!', res);
         },
       },
     );
