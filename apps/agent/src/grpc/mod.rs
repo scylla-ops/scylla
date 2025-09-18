@@ -120,7 +120,7 @@ impl Agent {
 
         let runner = builder.build().unwrap();
 
-        let res = runner.run_job(&job).await;
+        let _res = runner.run_job(&job).await;
 
         Ok(())
     }

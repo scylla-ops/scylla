@@ -26,7 +26,6 @@ use crate::database::DieselDatabase;
 use anyhow::{Result, anyhow};
 use api::grpc::user::service::UserService;
 use clap::Parser;
-use diesel::insertable::DefaultableColumnInsertValue::Default;
 use pasetors::keys::{Generate, SymmetricKey};
 use protocol::services;
 use protocol::services::auth_service_server::AuthServiceServer;
@@ -37,7 +36,6 @@ use protocol::services::pipeline::snapshot::pipeline_snapshot_server::PipelineSn
 use protocol::services::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::task::JoinSet;
 use tower_http::LatencyUnit;

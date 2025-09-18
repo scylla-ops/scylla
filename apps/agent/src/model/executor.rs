@@ -18,7 +18,7 @@ pub enum LogStream {
 
 #[derive(Debug, Clone)]
 pub struct LogEvent {
-    pub stream: LogStream,
+    pub _stream: LogStream,
     pub chunk: String,
 }
 

@@ -81,7 +81,7 @@ impl user_service_server::UserService for UserController {
             fields: crate::api::grpc::user::dto::UserFields {
                 username,
                 password,
-                is_active: None,
+                _is_active: None,
             },
         };
         let user = self

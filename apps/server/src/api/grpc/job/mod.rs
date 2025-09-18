@@ -5,7 +5,7 @@ pub mod service;
 pub mod worker;
 
 use crate::api::grpc::job::models::{
-    JobStatusUpdate, NewJob, NewStage, NewStep, StageStatusUpdate, StepStatusUpdate,
+    JobStatusUpdate, StageStatusUpdate, StepStatusUpdate,
 };
 use async_trait::async_trait;
 use uuid::Uuid;

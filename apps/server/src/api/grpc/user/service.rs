@@ -1,5 +1,5 @@
 use crate::api::grpc::user::dto::{NewUser, NewUserRequest, UpdateUser, UserFields};
-use crate::api::grpc::user::{UserRepository, dto};
+use crate::api::grpc::user::{dto, UserRepository};
 use bcrypt::BcryptError;
 use chrono::Utc;
 use derive_more::Constructor;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
 use uuid::Uuid;
-use validator::{Validate, ValidationErrors};
+use validator::Validate;
 
 #[derive(Constructor)]
 pub struct UserService {

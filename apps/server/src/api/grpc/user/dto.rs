@@ -24,7 +24,7 @@ pub struct UserFields {
     ))]
     pub password: Option<String>,
 
-    pub is_active: Option<bool>,
+    pub _is_active: Option<bool>,
 }
 
 #[derive(Debug, Validate)]
@@ -61,7 +61,7 @@ impl From<CreateUserRequest> for NewUserRequest {
             fields: UserFields {
                 username: Option::from(value.username),
                 password: Option::from(value.password),
-                is_active: None,
+                _is_active: None,
             },
         }
     }
@@ -86,7 +86,7 @@ impl From<protocol::services::UpdateUserRequest> for UpdateUserRequest {
             fields: UserFields {
                 username: value.username,
                 password: value.password,
-                is_active: None,
+                _is_active: None,
             },
         }
     }

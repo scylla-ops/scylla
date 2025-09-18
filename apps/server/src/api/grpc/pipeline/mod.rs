@@ -1,8 +1,6 @@
 use crate::api::grpc::pipeline::models::PipelineRecord;
 use async_trait::async_trait;
-use derive_more::Constructor;
 use protocol::pipeline::Pipeline;
-use std::sync::Arc;
 use uuid::Uuid;
 
 pub mod controller;

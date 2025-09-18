@@ -52,9 +52,9 @@ impl Executor for LocalExecutor {
         // stdout
         if let Some(sink) = &req.log_sink {
             let sink_out = sink.clone();
-            let mut out_task = None;
+            let mut _out_task = None;
             if let Some(mut out_reader) = child.stdout.take().map(BufReader::new) {
-                out_task = Some(tokio::spawn(async move {
+                _out_task = Some(tokio::spawn(async move {
                     let mut buf = String::new();
                     loop {
                         buf.clear();
@@ -64,7 +64,7 @@ impl Executor for LocalExecutor {
                         }
                         sink_out
                             .on_log_chunk(LogEvent {
-                                stream: LogStream::Stdout,
+                                _stream: LogStream::Stdout,
                                 chunk: buf.clone(),
                             })
                             .await;
