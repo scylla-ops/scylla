@@ -2,16 +2,14 @@
 #[allow(dead_code)]
 mod config;
 mod executors;
+mod grpc;
 mod model;
 
 use crate::config::AgentConfig;
-use crate::executors::local::LocalExecutor;
-use crate::model::executor::PipelineRunner;
+use crate::grpc::Agent;
 use clap::Parser;
-use protocol::pipeline::{PStage, PStep, Pipeline};
-use protocol::shell::Shell;
-use protocol::toml;
 use std::error::Error;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
@@ -67,34 +65,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let pipeline = Pipeline {
-        name: "demo".to_string(),
-        stages: vec![PStage {
-            name: "build".to_string(),
-            steps: vec![
-                PStep {
-                    name: "echo_1".to_string(),
-                    shell: Shell::Sh,
-                    command: "echo".to_string(),
-                    args: vec!["From".into(), "sh".into(), "$RUST_LOG".into()],
-                },
-                PStep {
-                    name: "echo_2".to_string(),
-                    shell: Shell::Bash,
-                    command: "echo".to_string(),
-                    args: vec!["From".into(), "bash".into()],
-                },
-            ],
-        }],
-    };
+    Agent::new(SocketAddr::V4(SocketAddrV4::new(
+        Ipv4Addr::new(127, 0, 0, 1),
+        50051,
+    )))
+    .run()
+    .await?;
 
-    println!("{}", toml::to_string_pretty(&pipeline)?);
-
-    let executor = LocalExecutor::new();
-    let runner = PipelineRunner::new(executor)
-        .with_workdir(".")
-        .with_env_var("RUST_LOG", "info");
-
-    runner.run_pipeline(&pipeline).await?;
     Ok(())
 }

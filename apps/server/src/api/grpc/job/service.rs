@@ -1,10 +1,15 @@
 use crate::api::grpc::job::JobRepository;
+use crate::api::grpc::job::models::{
+    ExecutionStatus, JobStatusUpdate, StageStatusUpdate, StepStatusUpdate,
+};
 use crate::api::grpc::job::service::JobServiceError as E;
+use crate::api::grpc::orchestrator::worker::OrchestratorMessage;
 use crate::api::grpc::pipeline::models::PipelineRecord;
 use crate::api::grpc::pipeline::snapshot::models::PipelineSnapshotRecord;
 use crate::api::grpc::pipeline::snapshot::worker::PipelineSnapshotMessage;
 use crate::api::grpc::pipeline::worker::PipelineMessage;
 use derive_more::Constructor;
+use protocol::job::{Job, JobStage, JobStep};
 use protocol::pipeline::Pipeline;
 use protocol::toml;
 use sha2::Digest;
@@ -22,6 +27,9 @@ pub struct JobService {
 
     // channel to snapshot service
     tx_pipeline_snapshot: mpsc::Sender<PipelineSnapshotMessage>,
+
+    // channel to orchestrator
+    tx_orchestrator: mpsc::Sender<OrchestratorMessage>,
 }
 
 #[derive(Debug, Error)]
@@ -108,15 +116,73 @@ impl JobService {
         let snapshot_pipeline: Pipeline =
             toml::from_str(&snapshot_record.content).map_err(E::ParsePipeline)?;
 
+        let job = Job::from(snapshot_pipeline);
+
         let job_id = self
             .job_repo
-            .create_job(snapshot_record.id, snapshot_pipeline)
+            .create_job(snapshot_record.id, &job)
             .await
             .map_err(E::JobRepo)?;
+
+        self.tx_orchestrator
+            .send(OrchestratorMessage::NewJob { job: job.clone() })
+            .await
+            .map_err(|e| E::Channel(e.into()))?;
 
         Ok(JobCreationResult {
             job_id,
             snapshot_id: snapshot_record.id,
         })
+    }
+
+    pub async fn update_job(
+        &self,
+        job_id: Uuid,
+        new_status: ExecutionStatus,
+    ) -> Result<(), JobServiceError> {
+        self.job_repo
+            .update_job(
+                job_id,
+                JobStatusUpdate {
+                    status: new_status,
+                    updated_at: chrono::Utc::now(),
+                },
+            )
+            .await
+            .map_err(E::JobRepo)
+    }
+
+    pub async fn update_stage(
+        &self,
+        stage_id: Uuid,
+        new_status: ExecutionStatus,
+    ) -> Result<(), JobServiceError> {
+        self.job_repo
+            .update_stage(
+                stage_id,
+                StageStatusUpdate {
+                    status: new_status,
+                    updated_at: chrono::Utc::now(),
+                },
+            )
+            .await
+            .map_err(E::JobRepo)
+    }
+
+    pub async fn update_step(
+        &self,
+        step_id: Uuid,
+        new_status: ExecutionStatus,
+    ) -> Result<(), JobServiceError> {
+        self.job_repo
+            .update_step(
+                step_id,
+                StepStatusUpdate {
+                    status: new_status,
+                    updated_at: chrono::Utc::now(),
+                },
+            )
+            .await
+            .map_err(E::JobRepo)
     }
 }

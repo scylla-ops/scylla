@@ -6,7 +6,10 @@ use crate::api::grpc::auth::controller::AuthController;
 use crate::api::grpc::job::controller::JobController;
 use crate::api::grpc::job::repo::JobRepositoryDiesel;
 use crate::api::grpc::job::service::JobService;
-use crate::api::grpc::orchestrator::Orchestrator;
+use crate::api::grpc::job::worker::JobWorker;
+use crate::api::grpc::orchestrator::controller::OrchestratorController;
+use crate::api::grpc::orchestrator::service::OrchestratorService;
+use crate::api::grpc::orchestrator::worker::OchestratorWorker;
 use crate::api::grpc::pipeline::controller::PipelineController;
 use crate::api::grpc::pipeline::repo::PipelineRepositoryDiesel;
 use crate::api::grpc::pipeline::service::PipelineService;
@@ -23,6 +26,7 @@ use crate::database::DieselDatabase;
 use anyhow::{Result, anyhow};
 use api::grpc::user::service::UserService;
 use clap::Parser;
+use diesel::insertable::DefaultableColumnInsertValue::Default;
 use pasetors::keys::{Generate, SymmetricKey};
 use protocol::services;
 use protocol::services::auth_service_server::AuthServiceServer;
@@ -94,10 +98,13 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     // Initialize databases with migrations
     let diesel_db = init_database_pool(database_config).await?;
 
-    // Channels
-    let (tx_pipeline_service, rx_pipeline_service) = mpsc::channel(100);
-    let (tx_pipeline_snapshot_service, rx_pipeline_snapshot_service) = mpsc::channel(100);
+    const CHANNEL_SIZE: usize = 100;
 
+    // Channels
+    let (tx_pipeline_service, rx_pipeline_service) = mpsc::channel(CHANNEL_SIZE);
+    let (tx_pipeline_snapshot_service, rx_pipeline_snapshot_service) = mpsc::channel(CHANNEL_SIZE);
+    let (tx_orchestrator, rx_orchestrator) = mpsc::channel(CHANNEL_SIZE);
+    let (tx_job, rx_job) = mpsc::channel(CHANNEL_SIZE);
     let (tx_shutdown, rx_shutdown) = tokio::sync::watch::channel(false);
 
     /* GRPC Api */
@@ -142,15 +149,19 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     let pipeline_snapshot_grpc =
         PipelineSnapshotServer::new(PipelineSnapshotController::new(pipeline_snapshot_service));
 
-    let orchestrator = Orchestrator::default();
-    let orchestrator_grpc = OrchestratorServer::new(orchestrator.clone());
+    let orchestrator_service = Arc::new(OrchestratorService::new(Arc::default(), tx_job));
+    let orchestrator_worker = OchestratorWorker::new(orchestrator_service.clone(), rx_orchestrator);
+    let orchestrator_grpc =
+        OrchestratorServer::new(OrchestratorController::new(orchestrator_service.clone()));
 
     let job_repo = JobRepositoryDiesel::new(diesel_db.pool.clone());
     let job_service = Arc::new(JobService::new(
         Arc::new(job_repo),
         tx_pipeline_service,
         tx_pipeline_snapshot_service,
+        tx_orchestrator,
     ));
+    let job_worker = JobWorker::new(job_service.clone(), rx_job);
     let job_grpc = JobServiceServer::new(JobController::new(job_service));
 
     /*let cert = fs::read("certs/origin-cert.pem").await?;
@@ -160,7 +171,7 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     let mut threads = JoinSet::new();
     threads.spawn(BackgroundWorker::spawn_worker(
-        orchestrator,
+        orchestrator_worker,
         rx_shutdown.clone(),
     ));
     threads.spawn(BackgroundWorker::spawn_worker(
@@ -169,6 +180,10 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     ));
     threads.spawn(BackgroundWorker::spawn_worker(
         pipeline_snapshot_worker,
+        rx_shutdown.clone(),
+    ));
+    threads.spawn(BackgroundWorker::spawn_worker(
+        job_worker,
         rx_shutdown.clone(),
     ));
 

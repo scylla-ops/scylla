@@ -2,32 +2,55 @@ syntax = "proto3";
 
 package orchestrator;
 
-message WorkerHello {}
-
-message WorkerRegistration {
-  string id = 1; // UUID assigned by server
+message Job {
+  string job_toml = 2; // job definition in TOML format
 }
 
-message Job {
-  string id = 1; // Job UUID
-  string pipeline = 2; // pipeline in toml format
+message WorkerId {
+  string id = 1;
+}
+
+enum EventKind {
+  Queued = 0;
+  Running = 1;
+  Succeeded = 2;
+  Failed = 3;
+  Canceled = 4;
+}
+
+message PipelineEvent {
+  oneof event {
+    JobEvent job = 1;
+    StageEvent stage = 2;
+    StepEvent step = 3;
+  }
+  EventKind kind = 4;
+  string id = 5;
+}
+
+message JobEvent {
+}
+
+message StageEvent {
+}
+
+message StepEvent {
 }
 
 message Ack {}
 
-message StepResult {
-  string step_id = 1;
-  int32 status_code = 2;
-  string stdout = 3;
-  string stderr = 4;
+message HealthStatus {
+  WorkerId id = 1;
+  enum WorkerState {
+    UNDEFINED = 0;
+    IDLE = 1;
+    BUSY = 2;
+  }
+  WorkerState state = 3;
 }
 
 service Orchestrator {
-  // Worker registers and receives its UUID
-  rpc RegisterWorker(WorkerHello) returns (WorkerRegistration);
-
-  // Then server can send a stream of jobs
-  rpc Assign(WorkerRegistration) returns (stream Job);
-
-  rpc Report(StepResult) returns (Ack);
+  rpc SubscribeJobs(WorkerId) returns (stream Job);
+  rpc ReportStatus(stream PipelineEvent) returns (Ack);
+  rpc ReportHealth(HealthStatus) returns (Ack);
 }

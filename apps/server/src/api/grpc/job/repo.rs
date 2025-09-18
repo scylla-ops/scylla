@@ -1,10 +1,12 @@
 use crate::api::base::BaseRepository;
 use crate::api::base::diesel_repo_base::Repository;
 use crate::api::grpc::job::JobRepository;
+use crate::api::grpc::job::models::{JobStatusUpdate, StageStatusUpdate, StepStatusUpdate};
 use crate::database::DieselPool;
 use anyhow::Context;
+use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
-use protocol::pipeline::Pipeline;
+use protocol::job::Job;
 use repository_derive::DieselRepository;
 use uuid::Uuid;
 
@@ -15,7 +17,7 @@ pub struct JobRepositoryDiesel {
 
 #[async_trait::async_trait]
 impl JobRepository for JobRepositoryDiesel {
-    async fn create_job(&self, snapshot_id: Uuid, pipeline: Pipeline) -> anyhow::Result<Uuid> {
+    async fn create_job(&self, snapshot_id: Uuid, job: &Job) -> anyhow::Result<Uuid> {
         use crate::api::grpc::job::models::NewJob;
         use crate::api::grpc::job::models::NewStage;
         use crate::api::grpc::job::models::NewStep;
@@ -28,6 +30,7 @@ impl JobRepository for JobRepositoryDiesel {
 
         let job_id = conn.transaction(|conn| {
             let new_job = NewJob {
+                id: job.id,
                 pipeline_snapshot_id: snapshot_id,
             };
 
@@ -37,8 +40,9 @@ impl JobRepository for JobRepositoryDiesel {
                 .get_result::<Uuid>(conn)
                 .context("Failed to create job")?;
 
-            for (stage_idx, pstage) in pipeline.stages.iter().enumerate() {
+            for (stage_idx, pstage) in job.stages.iter().enumerate() {
                 let new_stage = NewStage {
+                    id: pstage.id,
                     job_id,
                     position: stage_idx as i32,
                 };
@@ -49,8 +53,9 @@ impl JobRepository for JobRepositoryDiesel {
                     .get_result::<Uuid>(conn)
                     .context("Failed to create stage")?;
 
-                for (step_idx, _) in pstage.steps.iter().enumerate() {
+                for (step_idx, step) in pstage.steps.iter().enumerate() {
                     let new_step = NewStep {
+                        id: step.id,
                         stage_id,
                         position: step_idx as i32,
                     };
@@ -66,5 +71,55 @@ impl JobRepository for JobRepositoryDiesel {
         })?;
 
         Ok(job_id)
+    }
+
+    async fn update_job(&self, job_id: Uuid, updated_job: JobStatusUpdate) -> anyhow::Result<()> {
+        use crate::database::schema::jobs;
+        use diesel::RunQueryDsl;
+        let mut conn = Repository::get_connection(self)?;
+
+        diesel::update(jobs::table)
+            .filter(jobs::id.eq(job_id))
+            .set(updated_job)
+            .execute(&mut conn)
+            .context("Failed to update job")?;
+
+        Ok(())
+    }
+
+    async fn update_stage(
+        &self,
+        stage_id: Uuid,
+        updated_stage: StageStatusUpdate,
+    ) -> anyhow::Result<()> {
+        use crate::database::schema::stages;
+        use diesel::RunQueryDsl;
+        let mut conn = Repository::get_connection(self)?;
+
+        diesel::update(stages::table)
+            .filter(stages::id.eq(stage_id))
+            .set(updated_stage)
+            .execute(&mut conn)
+            .context("Failed to update stage")?;
+
+        Ok(())
+    }
+
+    async fn update_step(
+        &self,
+        step_id: Uuid,
+        updated_step: StepStatusUpdate,
+    ) -> anyhow::Result<()> {
+        use crate::database::schema::steps;
+        use diesel::RunQueryDsl;
+        let mut conn = Repository::get_connection(self)?;
+
+        diesel::update(steps::table)
+            .filter(steps::id.eq(step_id))
+            .set(updated_step)
+            .execute(&mut conn)
+            .context("Failed to update step")?;
+
+        Ok(())
     }
 }

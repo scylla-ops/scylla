@@ -1,5 +1,6 @@
-use diesel::Insertable;
+use diesel::{AsChangeset, Insertable};
 use diesel_derive_enum::DbEnum;
+use protocol::services::orchestrator::EventKind;
 use uuid::Uuid;
 
 #[derive(DbEnum, Debug)]
@@ -13,10 +14,23 @@ pub enum ExecutionStatus {
     Canceled,
 }
 
+impl From<EventKind> for ExecutionStatus {
+    fn from(value: EventKind) -> Self {
+        match value {
+            EventKind::Queued => ExecutionStatus::Queued,
+            EventKind::Running => ExecutionStatus::Running,
+            EventKind::Succeeded => ExecutionStatus::Succeeded,
+            EventKind::Failed => ExecutionStatus::Failed,
+            EventKind::Canceled => ExecutionStatus::Canceled,
+        }
+    }
+}
+
 #[derive(Insertable)]
 #[diesel(table_name = crate::database::schema::jobs)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewJob {
+    pub id: Uuid,
     pub pipeline_snapshot_id: Uuid,
 }
 
@@ -24,6 +38,7 @@ pub struct NewJob {
 #[diesel(table_name = crate::database::schema::stages)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewStage {
+    pub id: Uuid,
     pub job_id: Uuid,
     pub position: i32,
 }
@@ -32,6 +47,28 @@ pub struct NewStage {
 #[diesel(table_name = crate::database::schema::steps)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewStep {
+    pub id: Uuid,
     pub stage_id: Uuid,
     pub position: i32,
+}
+
+#[derive(AsChangeset)]
+#[diesel(table_name = crate::database::schema::jobs)]
+pub struct JobStatusUpdate {
+    pub status: ExecutionStatus,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(AsChangeset)]
+#[diesel(table_name = crate::database::schema::stages)]
+pub struct StageStatusUpdate {
+    pub status: ExecutionStatus,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(AsChangeset)]
+#[diesel(table_name = crate::database::schema::steps)]
+pub struct StepStatusUpdate {
+    pub status: ExecutionStatus,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }

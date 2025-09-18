@@ -6,6 +6,7 @@ use std::sync::Arc;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
+use tracing::warn;
 use uuid::Uuid;
 
 pub enum PipelineSnapshotMessage {
@@ -32,6 +33,7 @@ impl BackgroundWorker for PipelineSnapshotWorker {
                 tokio::select! {
                     _ = shutdown.changed() => {
                         if *shutdown.borrow() {
+                            warn!("Pipeline snapshot worker shutdown");
                             break 'main;
                         }
                     }
