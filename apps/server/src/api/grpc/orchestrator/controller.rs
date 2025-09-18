@@ -3,17 +3,19 @@ use crate::parse_uuid;
 use derive_more::Constructor;
 use protocol::services::orchestrator::pipeline_event::Event;
 use protocol::services::orchestrator::{
-    Ack, EventKind, HealthStatus, Job, PipelineEvent, WorkerId, orchestrator_server,
+    orchestrator_server, Ack, EventKind, Job, PipelineEvent, WorkerId,
 };
 use protocol::toml;
-use protocol::tonic::codegen::tokio_stream::Stream;
 use protocol::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
+use protocol::tonic::codegen::tokio_stream::Stream;
 use protocol::tonic::{Request, Response, Status, Streaming};
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 use uuid::Uuid;
+
+static ORCH_TOKEN: OnceLock<String> = OnceLock::new();
 
 #[derive(Constructor)]
 pub struct OrchestratorController {
@@ -68,67 +70,24 @@ impl orchestrator_server::Orchestrator for OrchestratorController {
         }
         Ok(Response::from(Ack::default()))
     }
-
-    async fn report_health(&self, request: Request<HealthStatus>) -> Result<Response<Ack>, Status> {
-        Ok(Response::from(Ack::default()))
-    }
-
-    /*async fn register_worker(
-        &self,
-        _request: Request<WorkerHello>,
-    ) -> Result<Response<WorkerRegistration>, Status> {
-        let new_id = self.service.worker_registry.register().await;
-        Ok(Response::new(WorkerRegistration {
-            id: new_id.to_string(),
-        }))
-    }
-
-    type AssignStream = Pin<Box<dyn Stream<Item = Result<Job, Status>> + Send>>;
-
-    async fn assign(
-        &self,
-        request: Request<WorkerRegistration>,
-    ) -> Result<Response<Self::AssignStream>, Status> {
-        let worker_id: Uuid = request
-            .into_inner()
-            .id
-            .parse()
-            .map_err(|_| Status::invalid_argument("Invalid worker id"))?;
-
-        let (tx, rx): (Sender<protocol::job::Job>, Receiver<protocol::job::Job>) =
-            mpsc::channel(32);
-
-        self.service
-            .worker_registry
-            .attach_stream(worker_id, tx.clone())
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
-
-        let base_stream = ReceiverStream::new(rx).map(|job| match toml::to_string(&job.pipeline) {
-            Ok(pipeline_toml) => Ok(Job {
-                id: job.id.to_string(),
-                pipeline: pipeline_toml,
-            }),
-            Err(e) => Err(Status::internal(format!(
-                "Failed to serialize pipeline: {}",
-                e
-            ))),
-        });
-
-        let reg = self.service.worker_registry.clone();
-        tokio::spawn(async move {
-            tx.closed().await;
-            reg.unregister(worker_id).await;
-            tracing::warn!("Worker {} disconnected", worker_id);
-        });
-
-        Ok(Response::new(Box::pin(base_stream) as Self::AssignStream))
-    }
-
-    async fn report(&self, _request: Request<StepResult>) -> Result<Response<Ack>, Status> {
-        // TODO: implement reporting logic in service layer later
-        Ok(Response::new(Ack { ok: true }))
-    }*/
 }
 
-// user -> create a job -> database -> channel to orchestrator
+impl OrchestratorController {
+    pub fn set_token(token: String) {
+        let _ = ORCH_TOKEN.set(token);
+    }
+
+    pub fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
+        let provided = req
+            .metadata()
+            .get("x-orch-token")
+            .and_then(|v| v.to_str().ok());
+
+        match (ORCH_TOKEN.get(), provided) {
+            (Some(expected), Some(v)) if v == expected => Ok(req),
+            _ => Err(Status::unauthenticated(
+                "Invalid or missing orchestrator token",
+            )),
+        }
+    }
+}

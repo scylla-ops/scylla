@@ -28,29 +28,15 @@ message PipelineEvent {
   string id = 5;
 }
 
-message JobEvent {
-}
+message JobEvent {}
 
-message StageEvent {
-}
+message StageEvent {}
 
-message StepEvent {
-}
+message StepEvent {}
 
 message Ack {}
-
-message HealthStatus {
-  WorkerId id = 1;
-  enum WorkerState {
-    UNDEFINED = 0;
-    IDLE = 1;
-    BUSY = 2;
-  }
-  WorkerState state = 3;
-}
 
 service Orchestrator {
   rpc SubscribeJobs(WorkerId) returns (stream Job);
   rpc ReportStatus(stream PipelineEvent) returns (Ack);
-  rpc ReportHealth(HealthStatus) returns (Ack);
 }

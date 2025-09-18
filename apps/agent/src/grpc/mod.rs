@@ -7,6 +7,7 @@ use protocol::services::orchestrator::orchestrator_client::OrchestratorClient;
 use protocol::services::orchestrator::{Job, WorkerId};
 use protocol::toml;
 use protocol::tonic::Request;
+use protocol::tonic::transport::Channel;
 use protocol::uuid::Uuid;
 use std::collections::HashMap;
 use std::error::Error;
@@ -59,10 +60,10 @@ impl Agent {
         loop {
             match self.get_and_handle_single_job(&worker_id).await {
                 Ok(()) => {
-                    info!("Job traité, attente du prochain job...");
+                    info!("Job processed, waiting for next job...");
                 }
                 Err(e) => {
-                    error!("Erreur lors du traitement du job: {e:#}");
+                    error!("Error while processing job: {e:#}");
                     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                 }
             }
@@ -73,7 +74,16 @@ impl Agent {
         &mut self,
         worker_id: &WorkerId,
     ) -> Result<(), Box<dyn Error>> {
-        let mut jobs_client = OrchestratorClient::connect(self.endpoint.clone()).await?;
+        let channel: Channel = Channel::from_shared(self.endpoint.clone())?
+            .connect()
+            .await?;
+
+        let mut jobs_client =
+            OrchestratorClient::with_interceptor(channel.clone(), move |mut req: Request<()>| {
+                req.metadata_mut()
+                    .insert("x-orch-token", "not a good token".parse().unwrap());
+                Ok(req)
+            });
 
         let mut stream = jobs_client
             .subscribe_jobs(Request::new(worker_id.clone()))

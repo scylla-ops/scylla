@@ -149,8 +149,12 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     let orchestrator_service = Arc::new(OrchestratorService::new(Arc::default(), tx_job));
     let orchestrator_worker = OchestratorWorker::new(orchestrator_service.clone(), rx_orchestrator);
-    let orchestrator_grpc =
-        OrchestratorServer::new(OrchestratorController::new(orchestrator_service.clone()));
+    let orchestrator_grpc = OrchestratorServer::with_interceptor(
+        OrchestratorController::new(orchestrator_service.clone()),
+        OrchestratorController::check_auth,
+    );
+
+    OrchestratorController::set_token("not a good token".into());
 
     let job_repo = JobRepositoryDiesel::new(diesel_db.pool.clone());
     let job_service = Arc::new(JobService::new(
@@ -161,11 +165,6 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     ));
     let job_worker = JobWorker::new(job_service.clone(), rx_job);
     let job_grpc = JobServiceServer::new(JobController::new(job_service));
-
-    /*let cert = fs::read("certs/origin-cert.pem").await?;
-    let key = fs::read("certs/origin-key.pem").await?;
-
-    let identity = Identity::from_pem(cert, key);*/
 
     let mut threads = JoinSet::new();
     threads.spawn(BackgroundWorker::spawn_worker(
