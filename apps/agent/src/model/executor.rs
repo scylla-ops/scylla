@@ -2,7 +2,6 @@ use crate::model::status::{EventKind, JobEvent, PipelineEvent, StageEvent, Statu
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use log::info;
 use protocol::job::{Job, JobStage, JobStep};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -57,63 +56,29 @@ pub struct PipelineRunner<E: Executor> {
 
 impl<E: Executor> PipelineRunner<E> {
     pub async fn run_job(&self, pipeline: &Job) -> Result<()> {
-        self.status_sink
-            .on_event(PipelineEvent::Job(JobEvent {
-                id: pipeline.id,
-                name: pipeline.name.clone(),
-                kind: EventKind::Running,
-            }))
-            .await;
+        self.emit_job_event(pipeline, EventKind::Running).await;
 
         for stage in &pipeline.stages {
-            self.status_sink
-                .on_event(PipelineEvent::Stage(StageEvent {
-                    id: stage.id,
-                    kind: EventKind::Running,
-                }))
-                .await;
+            self.emit_stage_event(stage, EventKind::Running).await;
 
             match self.run_stage(stage).await {
                 Ok(()) => {
-                    self.status_sink
-                        .on_event(PipelineEvent::Stage(StageEvent {
-                            id: stage.id,
-                            kind: EventKind::Succeeded,
-                        }))
-                        .await;
+                    self.emit_stage_event(stage, EventKind::Succeeded).await;
                 }
                 Err(e) => {
-                    self.status_sink
-                        .on_event(PipelineEvent::Job(JobEvent {
-                            id: pipeline.id,
-                            name: pipeline.name.clone(),
-                            kind: EventKind::Failed,
-                        }))
-                        .await;
+                    self.emit_job_event(pipeline, EventKind::Failed).await;
                     return Err(e);
                 }
             }
         }
 
-        self.status_sink
-            .on_event(PipelineEvent::Job(JobEvent {
-                id: pipeline.id,
-                name: pipeline.name.clone(),
-                kind: EventKind::Succeeded,
-            }))
-            .await;
+        self.emit_job_event(pipeline, EventKind::Succeeded).await;
         Ok(())
     }
 
     async fn run_stage(&self, stage: &JobStage) -> Result<()> {
         for step in &stage.steps {
-            info!("Running step '{:?}'", step);
-            self.status_sink
-                .on_event(PipelineEvent::Step(StepEvent {
-                    id: step.id,
-                    kind: EventKind::Running,
-                }))
-                .await;
+            self.emit_step_event(step, EventKind::Running).await;
 
             let output = self
                 .executor
@@ -126,27 +91,37 @@ impl<E: Executor> PipelineRunner<E> {
                 })
                 .await?;
 
-            self.status_sink
-                .on_event(PipelineEvent::Step(StepEvent {
-                    id: step.id,
-                    kind: if output.status.success() {
-                        EventKind::Succeeded
-                    } else {
-                        EventKind::Failed
-                    },
-                }))
-                .await;
-
-            if !output.status.success() {
-                self.status_sink
-                    .on_event(PipelineEvent::Stage(StageEvent {
-                        id: stage.id,
-                        kind: EventKind::Failed,
-                    }))
-                    .await;
+            let kind = if output.status.success() {
+                EventKind::Succeeded
+            } else {
+                self.emit_stage_event(stage, EventKind::Failed).await;
                 return Err(anyhow::anyhow!(format!("Step {} failed", step.id)));
-            }
+            };
+
+            self.emit_step_event(step, kind).await;
         }
         Ok(())
+    }
+
+    async fn emit_job_event(&self, pipeline: &Job, kind: EventKind) {
+        self.status_sink
+            .on_event(PipelineEvent::Job(JobEvent {
+                id: pipeline.id,
+                name: pipeline.name.clone(),
+                kind,
+            }))
+            .await;
+    }
+
+    async fn emit_stage_event(&self, stage: &JobStage, kind: EventKind) {
+        self.status_sink
+            .on_event(PipelineEvent::Stage(StageEvent { id: stage.id, kind }))
+            .await;
+    }
+
+    async fn emit_step_event(&self, step: &JobStep, kind: EventKind) {
+        self.status_sink
+            .on_event(PipelineEvent::Step(StepEvent { id: step.id, kind }))
+            .await;
     }
 }

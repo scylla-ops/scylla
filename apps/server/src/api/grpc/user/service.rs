@@ -1,5 +1,5 @@
 use crate::api::grpc::user::dto::{NewUser, NewUserRequest, UpdateUser, UserFields};
-use crate::api::grpc::user::{dto, UserRepository};
+use crate::api::grpc::user::{UserRepository, dto};
 use bcrypt::BcryptError;
 use chrono::Utc;
 use derive_more::Constructor;

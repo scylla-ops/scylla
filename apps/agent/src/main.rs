@@ -9,7 +9,6 @@ use crate::config::AgentConfig;
 use crate::grpc::Agent;
 use clap::Parser;
 use std::error::Error;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
@@ -43,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Load configuration from a file if specified, otherwise use default
-    let _config = match args.config {
+    let config = match args.config {
         Some(config_path) => match AgentConfig::from_toml_file(&config_path) {
             Ok(config) => {
                 info!("Loaded configuration from {}", config_path);
@@ -65,12 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    Agent::new(SocketAddr::V4(SocketAddrV4::new(
-        Ipv4Addr::new(127, 0, 0, 1),
-        50051,
-    )))
-    .run()
-    .await?;
+    Agent::new(config.grpc_url).run().await?;
 
     Ok(())
 }
