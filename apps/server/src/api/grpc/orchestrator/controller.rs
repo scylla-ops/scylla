@@ -1,13 +1,13 @@
 use crate::api::grpc::orchestrator::service::OrchestratorService;
 use crate::parse_uuid;
 use derive_more::Constructor;
-use protocol::services::orchestrator::pipeline_event::Event;
+use protocol::services::orchestrator::pipeline_event::EventType;
 use protocol::services::orchestrator::{
-    orchestrator_server, Ack, EventKind, Job, PipelineEvent, WorkerId,
+    Ack, EventKind, Job, PipelineEvent, WorkerId, orchestrator_server,
 };
 use protocol::toml;
-use protocol::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use protocol::tonic::codegen::tokio_stream::Stream;
+use protocol::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use protocol::tonic::{Request, Response, Status, Streaming};
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
@@ -56,17 +56,18 @@ impl orchestrator_server::Orchestrator for OrchestratorController {
     ) -> Result<Response<Ack>, Status> {
         let mut status_stream = request.into_inner();
         while let Ok(Some(status)) = status_stream.message().await {
-            if let Some(event) = status.event {
-                let kind = EventKind::try_from(status.kind).map_err(|_| {
-                    Status::invalid_argument(format!("Unknown event kind: {}", status.kind))
-                })?;
-                let id: Uuid = parse_uuid!(status.id)?;
-                match event {
-                    Event::Job(_) => self.service.update_job(id, kind.into()).await,
-                    Event::Stage(_) => self.service.update_stage(id, kind.into()).await,
-                    Event::Step(_) => self.service.update_step(id, kind.into()).await,
-                }
-            }
+            let kind = EventKind::try_from(status.kind).map_err(|_| {
+                Status::invalid_argument(format!("Unknown event kind: {}", status.kind))
+            })?;
+            let event_type = EventType::try_from(status.r#type).map_err(|_| {
+                Status::invalid_argument(format!("Unknown event type: {}", status.r#type))
+            })?;
+            let id: Uuid = parse_uuid!(status.id)?;
+            match event_type {
+                EventType::Job => self.service.update_job(id, kind.into()).await,
+                EventType::Stage => self.service.update_stage(id, kind.into()).await,
+                EventType::Step => self.service.update_step(id, kind.into()).await,
+            };
         }
         Ok(Response::from(Ack::default()))
     }

@@ -107,7 +107,6 @@ impl<E: Executor> PipelineRunner<E> {
         self.status_sink
             .on_event(PipelineEvent::Job(JobEvent {
                 id: pipeline.id,
-                name: pipeline.name.clone(),
                 kind,
             }))
             .await;

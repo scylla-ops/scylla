@@ -28,7 +28,6 @@ pub enum EventKind {
 #[derive(Debug, Clone)]
 pub struct JobEvent {
     pub id: Uuid,
-    pub name: String,
     pub kind: EventKind,
 }
 
@@ -38,21 +37,17 @@ impl From<PipelineEvent> for orchestrator::PipelineEvent {
             PipelineEvent::Job(job_e) => orchestrator::PipelineEvent {
                 kind: job_e.kind as i32,
                 id: job_e.id.to_string(),
-                event: Some(pipeline_event::Event::Job(orchestrator::JobEvent::default())),
+                r#type: pipeline_event::EventType::Job as i32,
             },
             PipelineEvent::Stage(stage_e) => orchestrator::PipelineEvent {
                 kind: stage_e.kind as i32,
                 id: stage_e.id.to_string(),
-                event: Some(pipeline_event::Event::Stage(
-                    orchestrator::StageEvent::default(),
-                )),
+                r#type: pipeline_event::EventType::Stage as i32,
             },
             PipelineEvent::Step(step_e) => orchestrator::PipelineEvent {
                 kind: step_e.kind as i32,
                 id: step_e.id.to_string(),
-                event: Some(pipeline_event::Event::Step(
-                    orchestrator::StepEvent::default(),
-                )),
+                r#type: pipeline_event::EventType::Step as i32,
             },
         }
     }

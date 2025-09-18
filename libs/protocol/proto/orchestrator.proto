@@ -19,11 +19,12 @@ enum EventKind {
 }
 
 message PipelineEvent {
-  oneof event {
-    JobEvent job = 1;
-    StageEvent stage = 2;
-    StepEvent step = 3;
+  enum EventType {
+    JOB = 0;
+    STAGE = 1;
+    STEP = 2;
   }
+  EventType type = 1;
   EventKind kind = 4;
   string id = 5;
 }
