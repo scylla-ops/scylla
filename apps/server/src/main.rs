@@ -222,7 +222,7 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 fn init_logger() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("trace,h2=warn")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug,h2=warn")),
         )
         .pretty()
         .with_target(true)

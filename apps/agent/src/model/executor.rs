@@ -12,13 +12,13 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Copy)]
 pub enum LogStream {
     Stdout,
-    Stderr,
+    _Stderr,
 }
 
 #[derive(Debug, Clone)]
 pub struct LogEvent {
     pub _stream: LogStream,
-    pub chunk: String,
+    pub _chunk: String,
 }
 
 #[async_trait]

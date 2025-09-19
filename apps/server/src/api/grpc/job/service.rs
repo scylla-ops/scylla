@@ -97,6 +97,13 @@ impl JobService {
             .map_err(E::PipelineSnapshotService)
     }
 
+    async fn send_to_orchestrator(&self, job: Job) -> Result<(), JobServiceError> {
+        self.tx_orchestrator
+            .send(OrchestratorMessage::NewJob { job: job.clone() })
+            .await
+            .map_err(|e| E::Channel(e.into()))
+    }
+
     pub async fn create_job(
         &self,
         pipeline_id: Uuid,
@@ -124,10 +131,7 @@ impl JobService {
             .await
             .map_err(E::JobRepo)?;
 
-        self.tx_orchestrator
-            .send(OrchestratorMessage::NewJob { job: job.clone() })
-            .await
-            .map_err(|e| E::Channel(e.into()))?;
+        self.send_to_orchestrator(job).await?;
 
         Ok(JobCreationResult {
             job_id,

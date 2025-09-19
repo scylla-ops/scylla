@@ -65,7 +65,7 @@ impl Executor for LocalExecutor {
                         sink_out
                             .on_log_chunk(LogEvent {
                                 _stream: LogStream::Stdout,
-                                chunk: buf.clone(),
+                                _chunk: buf.clone(),
                             })
                             .await;
                     }

@@ -25,13 +25,21 @@ struct Args {
     config: Option<String>,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn init_logger() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug,h2=warn")),
         )
+        .pretty()
+        .with_target(true)
+        .with_line_number(false)
+        .with_file(false)
         .init();
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    init_logger();
     // Parse command-line arguments using clap
     let args = Args::parse();
 

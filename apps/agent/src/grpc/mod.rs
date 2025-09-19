@@ -16,7 +16,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 #[derive(Clone, Debug, Constructor)]
 pub struct ChannelLogSink {
@@ -43,12 +43,16 @@ impl StatusSink for ChannelStatusSink {
 
 pub struct Agent {
     endpoint: String,
+    token: String,
 }
 
 impl Agent {
     pub fn new(grpc_addr: SocketAddr) -> Self {
+        // Token configurable via ORCH_TOKEN, fallback sur valeur par défaut
+        let token = std::env::var("ORCH_TOKEN").unwrap_or_else(|_| "not a good token".to_string());
         Self {
             endpoint: format!("http://{}", grpc_addr),
+            token,
         }
     }
 
@@ -78,12 +82,14 @@ impl Agent {
             .connect()
             .await?;
 
-        let mut jobs_client =
-            OrchestratorClient::with_interceptor(channel.clone(), move |mut req: Request<()>| {
+        let mut jobs_client = OrchestratorClient::with_interceptor(channel.clone(), {
+            let token = self.token.clone();
+            move |mut req: Request<()>| {
                 req.metadata_mut()
-                    .insert("x-orch-token", "not a good token".parse().unwrap());
+                    .insert("x-orch-token", token.parse().unwrap());
                 Ok(req)
-            });
+            }
+        });
 
         let mut stream = jobs_client
             .subscribe_jobs(Request::new(worker_id.clone()))
@@ -91,17 +97,25 @@ impl Agent {
             .into_inner();
 
         if let Some(job) = stream.message().await? {
-            self.handle_job(job).await?;
+            self.handle_job(channel, job).await?;
         }
 
         Ok(())
     }
 
-    async fn handle_job(&mut self, job: Job) -> Result<(), Box<dyn Error>> {
+    async fn handle_job(&mut self, channel: Channel, job: Job) -> Result<(), Box<dyn Error>> {
         let job: protocol::job::Job =
             toml::from_str(&job.job_toml).context("Failed to parse job TOML")?;
 
-        let mut status_client = OrchestratorClient::connect(self.endpoint.clone()).await?;
+        let mut status_client = OrchestratorClient::with_interceptor(channel, {
+            let token = self.token.clone();
+            move |mut req: Request<()>| {
+                req.metadata_mut()
+                    .insert("x-orch-token", token.parse().unwrap());
+                Ok(req)
+            }
+        });
+
         let (job_status_tx, job_status_rx) = mpsc::channel::<PipelineEvent>(64);
 
         tokio::spawn(async move {
@@ -115,8 +129,16 @@ impl Agent {
 
         let status_sink = ChannelStatusSink::new(job_status_tx);
 
-        let (log_event_tx, _) = mpsc::channel::<LogEvent>(64);
+        let (log_event_tx, log_event_rx) = mpsc::channel::<LogEvent>(64);
         let log_sink = ChannelLogSink::new(log_event_tx);
+
+        tokio::spawn(async move {
+            // temporary
+            let mut logs = ReceiverStream::new(log_event_rx);
+            while let Some(log) = logs.next().await {
+                debug!("[LOG] {:?}", log);
+            }
+        });
 
         let executor = LocalExecutor::new();
 
