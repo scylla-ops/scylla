@@ -10,7 +10,7 @@ import LogoScylla from '@/assets/logo_scylla.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/login/presentation/hooks/login.ts';
 import { type FormEvent } from 'react';
-import { useToken } from '@/modules/login/presentation/store/tokenStore.ts';
+import { useToken } from '@/modules/login/presentation/stores/tokenStore.ts';
 
 export const LoginPage = () => {
   const { mutate: login, status, error } = useLogin();
