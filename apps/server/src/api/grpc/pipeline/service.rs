@@ -1,9 +1,11 @@
 use crate::api::grpc::pipeline::PipelineRepository;
 use crate::api::grpc::pipeline::models::PipelineRecord as DbPipelineRecord;
+use crate::api::grpc::pipeline::repo::PipelineRepositoryDiesel;
+use crate::database::get_existing_db;
 use derive_more::Constructor;
 use protocol::pipeline::Pipeline;
 use protocol::toml;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -19,6 +21,14 @@ pub enum PipelineServiceError {
     #[error(transparent)]
     Repo(#[from] anyhow::Error),
 }
+
+pub static PIPELINE_SERVICE: LazyLock<Arc<PipelineService>> = LazyLock::new(|| {
+    let diesel_db = get_existing_db();
+
+    Arc::new(PipelineService::new(Arc::new(
+        PipelineRepositoryDiesel::new(diesel_db.clone()),
+    )))
+});
 
 impl PipelineService {
     pub async fn create_pipeline(&self, pipeline_toml: &str) -> Result<Uuid, PipelineServiceError> {

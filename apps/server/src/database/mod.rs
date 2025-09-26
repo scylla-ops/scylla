@@ -5,6 +5,7 @@ use anyhow::{Context, Result, anyhow};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool as DPool, PooledConnection};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use tokio::sync::OnceCell;
 
 // Type alias for the diesel pool
 pub type DieselPool = DPool<ConnectionManager<PgConnection>>;
@@ -13,6 +14,21 @@ pub type DieselConnection = PooledConnection<ConnectionManager<PgConnection>>;
 #[derive(Clone)]
 pub struct DieselDatabase {
     pub pool: DieselPool,
+}
+
+pub static DB_POOL: OnceCell<DieselPool> = OnceCell::const_new();
+
+pub fn set_db_pool(pool: DieselPool) {
+    DB_POOL
+        .set(pool)
+        .expect("Database pool already initialized");
+}
+
+pub fn get_existing_db() -> DieselPool {
+    DB_POOL
+        .get()
+        .expect("Database pool not initialized. Call set_db_pool(...) during startup.")
+        .clone()
 }
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");

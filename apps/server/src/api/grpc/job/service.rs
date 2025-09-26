@@ -2,42 +2,40 @@ use crate::api::grpc::job::JobRepository;
 use crate::api::grpc::job::models::{
     ExecutionStatus, JobStatusUpdate, StageStatusUpdate, StepStatusUpdate,
 };
+use crate::api::grpc::job::repo::JobRepositoryDiesel;
 use crate::api::grpc::job::service::JobServiceError as E;
-use crate::api::grpc::orchestrator::worker::OrchestratorMessage;
+use crate::api::grpc::orchestrator::service::ORCHESTRATOR_SERVICE;
 use crate::api::grpc::pipeline::models::PipelineRecord;
+use crate::api::grpc::pipeline::service::PIPELINE_SERVICE;
 use crate::api::grpc::pipeline::snapshot::models::PipelineSnapshotRecord;
-use crate::api::grpc::pipeline::snapshot::worker::PipelineSnapshotMessage;
-use crate::api::grpc::pipeline::worker::PipelineMessage;
+use crate::api::grpc::pipeline::snapshot::service::PIPELINE_SNAPSHOT_SERVICE;
+use crate::database::get_existing_db;
 use derive_more::Constructor;
 use protocol::job::Job;
 use protocol::pipeline::Pipeline;
 use protocol::toml;
 use sha2::Digest;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use thiserror::Error;
-use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
 #[derive(Constructor)]
 pub struct JobService {
     job_repo: Arc<dyn JobRepository>,
-
-    // channel to pipeline service
-    tx_pipeline: mpsc::Sender<PipelineMessage>,
-
-    // channel to snapshot service
-    tx_pipeline_snapshot: mpsc::Sender<PipelineSnapshotMessage>,
-
-    // channel to orchestrator
-    tx_orchestrator: mpsc::Sender<OrchestratorMessage>,
 }
+
+pub static JOB_SERVICE: LazyLock<Arc<JobService>> = LazyLock::new(|| {
+    let diesel_db = get_existing_db();
+
+    Arc::new(JobService::new(Arc::new(JobRepositoryDiesel::new(
+        diesel_db.clone(),
+    ))))
+});
 
 #[derive(Debug, Error)]
 pub enum JobServiceError {
     #[error("Failed to parse pipeline: {0}")]
     ParsePipeline(#[from] toml::de::Error),
-    #[error("Internal: unable to use channel {0}")]
-    Channel(anyhow::Error),
     #[error("Pipeline service error: {0}")]
     PipelineService(anyhow::Error),
     #[error("Pipeline Snapshot service error: {0}")]
@@ -53,55 +51,35 @@ pub struct JobCreationResult {
 
 impl JobService {
     async fn get_pipeline(&self, pipeline_id: Uuid) -> Result<PipelineRecord, JobServiceError> {
-        let (tx, rx) = oneshot::channel();
-        self.tx_pipeline
-            .send(PipelineMessage::GetPipeline {
-                id: pipeline_id,
-                respond_tx: tx,
-            })
+        PIPELINE_SERVICE
+            .get_pipeline(pipeline_id)
             .await
-            .map_err(|e| E::Channel(e.into()))?;
-
-        rx.await
-            .map_err(|e| E::Channel(e.into()))?
-            .map_err(E::PipelineService)
+            .map_err(|e| E::PipelineService(e.into()))
     }
 
     async fn list_snapshots(
         &self,
         pipeline_id: Uuid,
     ) -> Result<Vec<PipelineSnapshotRecord>, JobServiceError> {
-        let (tx, rx) = oneshot::channel();
-        self.tx_pipeline_snapshot
-            .send(PipelineSnapshotMessage::ListSnapshots { pipeline_id, tx })
+        PIPELINE_SNAPSHOT_SERVICE
+            .list_snapshots(pipeline_id)
             .await
-            .map_err(|e| E::Channel(e.into()))?;
-
-        rx.await
-            .map_err(|e| E::Channel(e.into()))?
-            .map_err(E::PipelineSnapshotService)
+            .map_err(|e| E::PipelineSnapshotService(e.into()))
     }
 
     async fn create_snapshot(
         &self,
         pipeline_id: Uuid,
     ) -> Result<PipelineSnapshotRecord, JobServiceError> {
-        let (tx, rx) = oneshot::channel();
-        self.tx_pipeline_snapshot
-            .send(PipelineSnapshotMessage::CreateSnapshot { pipeline_id, tx })
+        let snapshot_id = PIPELINE_SNAPSHOT_SERVICE
+            .create_snapshot(pipeline_id)
             .await
-            .map_err(|e| E::Channel(e.into()))?;
+            .map_err(|e| E::PipelineSnapshotService(e.into()))?;
 
-        rx.await
-            .map_err(|e| E::Channel(e.into()))?
-            .map_err(E::PipelineSnapshotService)
-    }
-
-    async fn send_to_orchestrator(&self, job: Job) -> Result<(), JobServiceError> {
-        self.tx_orchestrator
-            .send(OrchestratorMessage::NewJob { job: job.clone() })
+        PIPELINE_SNAPSHOT_SERVICE
+            .get_snapshot(snapshot_id)
             .await
-            .map_err(|e| E::Channel(e.into()))
+            .map_err(|e| E::PipelineSnapshotService(e.into()))
     }
 
     pub async fn create_job(
@@ -131,7 +109,7 @@ impl JobService {
             .await
             .map_err(E::JobRepo)?;
 
-        self.send_to_orchestrator(job).await?;
+        ORCHESTRATOR_SERVICE.queue_job(job).await;
 
         Ok(JobCreationResult {
             job_id,

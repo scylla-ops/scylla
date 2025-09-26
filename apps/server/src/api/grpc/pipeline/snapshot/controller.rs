@@ -1,5 +1,5 @@
 use crate::api::grpc::pipeline::snapshot::service::{
-    PipelineSnapshotService, PipelineSnapshotServiceError,
+    PIPELINE_SNAPSHOT_SERVICE, PipelineSnapshotServiceError,
 };
 use crate::parse_uuid;
 use derive_more::Constructor;
@@ -9,12 +9,9 @@ use protocol::services::pipeline::snapshot::{
     ListPipelineSnapshotResponse, PipelineSnapshotRecord, pipeline_snapshot_server,
 };
 use protocol::tonic::{Request, Response, Status};
-use std::sync::Arc;
 
 #[derive(Constructor)]
-pub struct PipelineSnapshotController {
-    service: Arc<PipelineSnapshotService>,
-}
+pub struct PipelineSnapshotController {}
 
 #[async_trait::async_trait]
 impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
@@ -25,8 +22,7 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         let CreatePipelineSnapshotRequest { pipeline_id } = request.into_inner();
         let pipeline_id = parse_uuid!(pipeline_id)?;
 
-        let snapshot_id = self
-            .service
+        let snapshot_id = PIPELINE_SNAPSHOT_SERVICE
             .create_snapshot(pipeline_id)
             .await
             .map_err(map_snapshot_error)?;
@@ -43,8 +39,7 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         let GetPipelineSnapshotRequest { snapshot_id } = request.into_inner();
         let snapshot_id = parse_uuid!(snapshot_id)?;
 
-        let record = self
-            .service
+        let record = PIPELINE_SNAPSHOT_SERVICE
             .get_snapshot(snapshot_id)
             .await
             .map_err(map_snapshot_error)?;
@@ -64,7 +59,7 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         let DeletePipelineSnapshotRequest { snapshot_id } = request.into_inner();
         let snapshot_id = parse_uuid!(snapshot_id)?;
 
-        self.service
+        PIPELINE_SNAPSHOT_SERVICE
             .delete_snapshot(snapshot_id)
             .await
             .map_err(map_snapshot_error)?;
@@ -79,8 +74,7 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         let ListPipelineSnapshotRequest { pipeline_id } = request.into_inner();
         let pipeline_id = parse_uuid!(pipeline_id)?;
 
-        let records = self
-            .service
+        let records = PIPELINE_SNAPSHOT_SERVICE
             .list_snapshots(pipeline_id)
             .await
             .map_err(map_snapshot_error)?;
@@ -105,7 +99,6 @@ fn map_snapshot_error(e: PipelineSnapshotServiceError) -> Status {
     use PipelineSnapshotServiceError as E;
     match e {
         E::Repo(e) => Status::internal(format!("Repository error: {}", e)),
-        E::ChannelError(e) => Status::internal(format!("Critical: unable to use channel {}", e)),
         E::PipelineServiceError(e) => Status::internal(format!("Pipeline service error: {}", e)),
     }
 }

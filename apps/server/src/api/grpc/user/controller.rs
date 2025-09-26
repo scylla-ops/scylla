@@ -1,4 +1,5 @@
-use crate::api::grpc::user::service::UserService;
+use crate::api::grpc::auth::service::AUTH_SERVICE;
+use crate::api::grpc::user::service::USER_SERVICE;
 use crate::api::grpc::user::{
     dto::{NewUserRequest as DomainNewUserRequest, UpdateUserRequest as DomainUpdateUserRequest},
     service::UserDomainError,
@@ -12,11 +13,28 @@ use protocol::{
     },
     tonic::{Request, Response, Status},
 };
-use std::sync::Arc;
+use tracing::debug;
 
 #[derive(Constructor)]
-pub struct UserController {
-    service: Arc<UserService>,
+pub struct UserController {}
+
+fn extract_bearer_token<T>(req: &Request<T>) -> Result<String, Status> {
+    let meta = req
+        .metadata()
+        .get("authorization")
+        .ok_or_else(|| Status::unauthenticated("Missing authorization header"))?;
+
+    let header_value = meta
+        .to_str()
+        .map_err(|_| Status::unauthenticated("Invalid authorization header"))?;
+
+    if let Some(token) = header_value.strip_prefix("Bearer ") {
+        Ok(token.to_string())
+    } else {
+        Err(Status::unauthenticated(
+            "Authorization must be Bearer token",
+        ))
+    }
 }
 
 #[async_trait::async_trait]
@@ -27,8 +45,7 @@ impl user_service_server::UserService for UserController {
     ) -> Result<Response<UserResponse>, Status> {
         let req = request.into_inner();
         let domain_req: DomainNewUserRequest = req.into();
-        let user = self
-            .service
+        let user = USER_SERVICE
             .create_user(domain_req)
             .await
             .map_err(map_err)?;
@@ -41,7 +58,7 @@ impl user_service_server::UserService for UserController {
     ) -> Result<Response<UserResponse>, Status> {
         let GetUserRequest { user_uuid } = request.into_inner();
         let id = parse_uuid!(user_uuid)?;
-        let user = self.service.get_user(id).await.map_err(map_err)?;
+        let user = USER_SERVICE.get_user(id).await.map_err(map_err)?;
         Ok(Response::new(user.into()))
     }
 
@@ -49,13 +66,21 @@ impl user_service_server::UserService for UserController {
         &self,
         request: Request<ListUsersRequest>,
     ) -> Result<Response<ListUsersResponse>, Status> {
+        let token = extract_bearer_token(&request)?;
+
+        let user = AUTH_SERVICE.verify_paseto(&token).await.map_err(|e| {
+            debug!("Failed to verify token: {:?}", e);
+            Status::unauthenticated("Invalid token")
+        })?;
+
+        debug!("{:?}", user);
+
         let ListUsersRequest { page, page_size } = request.into_inner();
         let page_u32 =
             u32::try_from(page).map_err(|_| Status::invalid_argument("page is too big"))?;
         let page_size_u32 = u32::try_from(page_size)
             .map_err(|_| Status::invalid_argument("page_size is too big"))?;
-        let (users, total_count) = self
-            .service
+        let (users, total_count) = USER_SERVICE
             .list_users(page_u32, page_size_u32)
             .await
             .map_err(map_err)?;
@@ -84,8 +109,7 @@ impl user_service_server::UserService for UserController {
                 _is_active: None,
             },
         };
-        let user = self
-            .service
+        let user = USER_SERVICE
             .update_user(id, domain_req)
             .await
             .map_err(map_err)?;
@@ -98,7 +122,7 @@ impl user_service_server::UserService for UserController {
     ) -> Result<Response<DeleteUserResponse>, Status> {
         let DeleteUserRequest { user_uuid } = request.into_inner();
         let id = parse_uuid!(user_uuid)?;
-        self.service.deactivate_user(id).await.map_err(map_err)?;
+        USER_SERVICE.deactivate_user(id).await.map_err(map_err)?;
         Ok(Response::new(DeleteUserResponse { success: true }))
     }
 }

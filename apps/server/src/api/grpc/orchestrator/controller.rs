@@ -1,4 +1,4 @@
-use crate::api::grpc::orchestrator::service::OrchestratorService;
+use crate::api::grpc::orchestrator::service::ORCHESTRATOR_SERVICE;
 use crate::parse_uuid;
 use derive_more::Constructor;
 use protocol::services::orchestrator::pipeline_event::EventType;
@@ -10,7 +10,7 @@ use protocol::tonic::codegen::tokio_stream::Stream;
 use protocol::tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use protocol::tonic::{Request, Response, Status, Streaming};
 use std::pin::Pin;
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 use uuid::Uuid;
@@ -18,9 +18,7 @@ use uuid::Uuid;
 static ORCH_TOKEN: OnceLock<String> = OnceLock::new();
 
 #[derive(Constructor)]
-pub struct OrchestratorController {
-    service: Arc<OrchestratorService>,
-}
+pub struct OrchestratorController {}
 
 #[async_trait::async_trait]
 impl orchestrator_server::Orchestrator for OrchestratorController {
@@ -43,7 +41,7 @@ impl orchestrator_server::Orchestrator for OrchestratorController {
             ))),
         });
 
-        self.service.queue_worker(worker_id, tx).await;
+        ORCHESTRATOR_SERVICE.queue_worker(worker_id, tx).await;
 
         Ok(Response::new(
             Box::pin(base_stream) as Self::SubscribeJobsStream
@@ -64,9 +62,9 @@ impl orchestrator_server::Orchestrator for OrchestratorController {
             })?;
             let id: Uuid = parse_uuid!(status.id)?;
             match event_type {
-                EventType::Job => self.service.update_job(id, kind.into()).await,
-                EventType::Stage => self.service.update_stage(id, kind.into()).await,
-                EventType::Step => self.service.update_step(id, kind.into()).await,
+                EventType::Job => ORCHESTRATOR_SERVICE.update_job(id, kind.into()).await,
+                EventType::Stage => ORCHESTRATOR_SERVICE.update_stage(id, kind.into()).await,
+                EventType::Step => ORCHESTRATOR_SERVICE.update_step(id, kind.into()).await,
             };
         }
         Ok(Response::from(Ack::default()))

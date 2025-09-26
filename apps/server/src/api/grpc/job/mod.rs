@@ -2,7 +2,6 @@ pub mod controller;
 pub mod models;
 pub mod repo;
 pub mod service;
-pub mod worker;
 
 use crate::api::grpc::job::models::{JobStatusUpdate, StageStatusUpdate, StepStatusUpdate};
 use async_trait::async_trait;

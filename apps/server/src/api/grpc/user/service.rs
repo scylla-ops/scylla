@@ -1,9 +1,11 @@
 use crate::api::grpc::user::dto::{NewUser, NewUserRequest, UpdateUser, UserFields};
+use crate::api::grpc::user::repo::UserRepositoryDiesel;
 use crate::api::grpc::user::{UserRepository, dto};
+use crate::database::get_existing_db;
 use bcrypt::BcryptError;
 use chrono::Utc;
 use derive_more::Constructor;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use thiserror::Error;
 use tracing::error;
 use uuid::Uuid;
@@ -13,6 +15,14 @@ use validator::Validate;
 pub struct UserService {
     repo: Arc<dyn UserRepository>,
 }
+
+pub static USER_SERVICE: LazyLock<Arc<UserService>> = LazyLock::new(|| {
+    let diesel_db = get_existing_db();
+
+    Arc::new(UserService::new(Arc::new(UserRepositoryDiesel::new(
+        diesel_db.clone(),
+    ))))
+});
 
 #[derive(Debug, Error)]
 pub enum UserDomainError {

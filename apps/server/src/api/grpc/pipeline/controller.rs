@@ -1,4 +1,4 @@
-use crate::api::grpc::pipeline::service::{PipelineService, PipelineServiceError};
+use crate::api::grpc::pipeline::service::{PIPELINE_SERVICE, PipelineServiceError};
 use crate::parse_uuid;
 use derive_more::Constructor;
 use protocol::pipeline::Pipeline;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 #[derive(Constructor)]
 pub struct PipelineController {
-    service: Arc<PipelineService>,
+    enforcer: Arc<casbin::Enforcer>,
 }
 
 #[async_trait::async_trait]
@@ -22,8 +22,7 @@ impl pipeline_server::Pipeline for PipelineController {
         request: Request<PipelineRequest>,
     ) -> Result<Response<CreatePipelineResponse>, Status> {
         let PipelineRequest { pipeline_toml } = request.into_inner();
-        let id = self
-            .service
+        let id = PIPELINE_SERVICE
             .create_pipeline(&pipeline_toml)
             .await
             .map_err(map_err)?;
@@ -38,7 +37,7 @@ impl pipeline_server::Pipeline for PipelineController {
     ) -> Result<Response<PipelineRecord>, Status> {
         let GetPipelineRequest { pipeline_id } = request.into_inner();
         let id = parse_uuid!(pipeline_id)?;
-        let rec = self.service.get_pipeline(id).await.map_err(map_err)?;
+        let rec = PIPELINE_SERVICE.get_pipeline(id).await.map_err(map_err)?;
         // parse TOML to extract name
         let parsed: Pipeline = protocol::toml::from_str(&rec.content)
             .map_err(|_| Status::internal("Failed to parse TOML"))?;
@@ -57,7 +56,10 @@ impl pipeline_server::Pipeline for PipelineController {
     ) -> Result<Response<DeletePipelineResponse>, Status> {
         let DeletePipelineRequest { pipeline_id } = request.into_inner();
         let id = parse_uuid!(pipeline_id)?;
-        self.service.delete_pipeline(id).await.map_err(map_err)?;
+        PIPELINE_SERVICE
+            .delete_pipeline(id)
+            .await
+            .map_err(map_err)?;
         Ok(Response::new(DeletePipelineResponse {}))
     }
 
@@ -70,7 +72,7 @@ impl pipeline_server::Pipeline for PipelineController {
             pipeline_toml,
         } = request.into_inner();
         let id = parse_uuid!(pipeline_id)?;
-        self.service
+        PIPELINE_SERVICE
             .update_pipeline(id, &pipeline_toml)
             .await
             .map_err(map_err)?;

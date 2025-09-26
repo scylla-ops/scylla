@@ -4,29 +4,18 @@ mod database;
 
 use crate::api::grpc::auth::controller::AuthController;
 use crate::api::grpc::job::controller::JobController;
-use crate::api::grpc::job::repo::JobRepositoryDiesel;
-use crate::api::grpc::job::service::JobService;
-use crate::api::grpc::job::worker::JobWorker;
 use crate::api::grpc::orchestrator::controller::OrchestratorController;
-use crate::api::grpc::orchestrator::service::OrchestratorService;
-use crate::api::grpc::orchestrator::worker::OchestratorWorker;
 use crate::api::grpc::pipeline::controller::PipelineController;
-use crate::api::grpc::pipeline::repo::PipelineRepositoryDiesel;
-use crate::api::grpc::pipeline::service::PipelineService;
 use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
-use crate::api::grpc::pipeline::snapshot::repo::PipelineSnapshotRepositoryDiesel;
-use crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotService;
-use crate::api::grpc::pipeline::snapshot::worker::PipelineSnapshotWorker;
-use crate::api::grpc::pipeline::worker::PipelineWorker;
 use crate::api::grpc::user::controller::UserController;
-use crate::api::grpc::{AuthService, BackgroundWorker, UserRepositoryDiesel};
 use crate::config::CoreConfig;
+use crate::config::casbin::CASBIN_CONF;
 use crate::config::core_config::DatabaseConfig;
-use crate::database::DieselDatabase;
+use crate::database::{DieselDatabase, set_db_pool};
 use anyhow::{Result, anyhow};
-use api::grpc::user::service::UserService;
+use casbin::{CoreApi, Enforcer};
 use clap::Parser;
-use pasetors::keys::{Generate, SymmetricKey};
+use diesel_adapter::DieselAdapter;
 use protocol::services;
 use protocol::services::auth_service_server::AuthServiceServer;
 use protocol::services::job::job_service_server::JobServiceServer;
@@ -36,8 +25,6 @@ use protocol::services::pipeline::snapshot::pipeline_snapshot_server::PipelineSn
 use protocol::services::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::task::JoinSet;
 use tower_http::LatencyUnit;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::{Level, info};
@@ -95,15 +82,12 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     // Initialize databases with migrations
     let diesel_db = init_database_pool(database_config).await?;
+    set_db_pool(diesel_db.pool.clone());
 
-    const CHANNEL_SIZE: usize = 100;
-
-    // Channels
-    let (tx_pipeline_service, rx_pipeline_service) = mpsc::channel(CHANNEL_SIZE);
-    let (tx_pipeline_snapshot_service, rx_pipeline_snapshot_service) = mpsc::channel(CHANNEL_SIZE);
-    let (tx_orchestrator, rx_orchestrator) = mpsc::channel(CHANNEL_SIZE);
-    let (tx_job, rx_job) = mpsc::channel(CHANNEL_SIZE);
-    let (tx_shutdown, rx_shutdown) = tokio::sync::watch::channel(false);
+    // RBAC
+    let m = casbin::DefaultModel::from_str(CASBIN_CONF).await?;
+    let a = DieselAdapter::with_pool(diesel_db.pool.clone())?;
+    let enforcer = Arc::from(Enforcer::new(m, a).await?);
 
     /* GRPC Api */
     #[cfg(feature = "reflection")]
@@ -117,72 +101,22 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         )
     };
 
-    let user_service = Arc::new(UserService::new(Arc::new(UserRepositoryDiesel::new(
-        diesel_db.pool.clone(),
-    ))));
-    let user_grpc = UserServiceServer::new(UserController::new(user_service));
+    let user_grpc = UserServiceServer::new(UserController::new());
 
-    let auth_service = Arc::new(AuthService::new(
-        Arc::new(UserRepositoryDiesel::new(diesel_db.pool.clone())),
-        SymmetricKey::generate()?,
-    ));
-    let auth_grpc = AuthServiceServer::new(AuthController::new(auth_service));
+    let auth_grpc = AuthServiceServer::new(AuthController::new());
 
-    let pipeline_repo = PipelineRepositoryDiesel::new(diesel_db.pool.clone());
-    let pipeline_service = Arc::new(PipelineService::new(Arc::new(pipeline_repo.clone())));
-    let pipeline_worker = PipelineWorker::new(Arc::clone(&pipeline_service), rx_pipeline_service);
-    let pipeline_grpc = PipelineServer::new(PipelineController::new(pipeline_service));
+    let pipeline_grpc = PipelineServer::new(PipelineController::new(enforcer));
 
-    let pipeline_snapshot_repo = Arc::new(PipelineSnapshotRepositoryDiesel::new(
-        diesel_db.pool.clone(),
-    ));
-    let pipeline_snapshot_service = Arc::new(PipelineSnapshotService::new(
-        pipeline_snapshot_repo,
-        tx_pipeline_service.clone(),
-    ));
-    let pipeline_snapshot_worker = PipelineSnapshotWorker::new(
-        pipeline_snapshot_service.clone(),
-        rx_pipeline_snapshot_service,
-    );
-    let pipeline_snapshot_grpc =
-        PipelineSnapshotServer::new(PipelineSnapshotController::new(pipeline_snapshot_service));
+    let pipeline_snapshot_grpc = PipelineSnapshotServer::new(PipelineSnapshotController::new());
 
-    let orchestrator_service = Arc::new(OrchestratorService::new(Arc::default(), tx_job));
-    let orchestrator_worker = OchestratorWorker::new(orchestrator_service.clone(), rx_orchestrator);
     let orchestrator_grpc = OrchestratorServer::with_interceptor(
-        OrchestratorController::new(orchestrator_service.clone()),
+        OrchestratorController::new(),
         OrchestratorController::check_auth,
     );
 
     OrchestratorController::set_token("not a good token".into());
 
-    let job_repo = JobRepositoryDiesel::new(diesel_db.pool.clone());
-    let job_service = Arc::new(JobService::new(
-        Arc::new(job_repo),
-        tx_pipeline_service,
-        tx_pipeline_snapshot_service,
-        tx_orchestrator,
-    ));
-    let job_worker = JobWorker::new(job_service.clone(), rx_job);
-    let job_grpc = JobServiceServer::new(JobController::new(job_service));
-
-    let mut threads = JoinSet::new();
-    threads.spawn(BackgroundWorker::spawn_worker(
-        orchestrator_worker,
-        rx_shutdown.clone(),
-    ));
-    threads.spawn(BackgroundWorker::spawn_worker(
-        pipeline_worker,
-        rx_shutdown.clone(),
-    ));
-    threads.spawn(BackgroundWorker::spawn_worker(
-        pipeline_snapshot_worker,
-        rx_shutdown.clone(),
-    ));
-    threads.spawn(BackgroundWorker::spawn_worker(
-        job_worker,
-        rx_shutdown.clone(),
-    ));
+    let job_grpc = JobServiceServer::new(JobController::new());
 
     let grpc_server_fn = move || {
         info!("GRPC server running on {}", grpc_config);
@@ -207,14 +141,10 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         if let Some(reflection) = reflection {
             server = server.add_service(reflection);
         }
-        server.serve_with_shutdown(grpc_config, async move {
-            tokio::signal::ctrl_c().await.ok();
-            let _ = tx_shutdown.send(true);
-        })
+        server.serve(grpc_config)
     };
 
     let _res = grpc_server_fn().await;
-    let _res = threads.join_all().await;
 
     Ok(())
 }

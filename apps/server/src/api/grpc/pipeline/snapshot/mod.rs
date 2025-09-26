@@ -7,7 +7,6 @@ pub mod controller;
 pub mod models;
 pub mod repo;
 pub mod service;
-pub mod worker;
 
 #[async_trait]
 pub trait PipelineSnapshotRepository: Send + Sync {
