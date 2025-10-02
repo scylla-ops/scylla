@@ -9,7 +9,7 @@ import {
 export const Organizations = () => {
     return (
 
-        <Card className="w-full">
+        <Card className="w-full bg-white">
 
             <CardHeader>
                 <CardTitle>Organizations</CardTitle>

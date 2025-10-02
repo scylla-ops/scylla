@@ -13,7 +13,7 @@ import {
 export const UserInformation = () => {
     return (
 
-        <Card className="w-full">
+        <Card className="w-full bg-white">
 
             <CardHeader>
                 <CardTitle>User information</CardTitle>

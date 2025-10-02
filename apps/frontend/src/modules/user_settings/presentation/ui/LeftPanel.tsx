@@ -1,16 +1,23 @@
 import { useState } from 'react';
+import {House, Folders, Blocks, Settings} from 'lucide-react';
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage
+} from '@/modules/core/presentation/ui/shadcn';
+
 
 export const LeftPanel = () => {
     const [selected, setSelected] = useState("settings");
 
     const menuItems = [
-        { id: "dashboard", label: "Dashboard" },
-        { id: "repositories", label: "Repositories" },
-        { id: "plugins", label: "Plugins marketplace" },
+        { id: "dashboard", label: "Dashboard", icon: House },
+        { id: "repositories", label: "Repositories", icon: Folders},
+        { id: "plugins", label: "Plugins marketplace", icon: Blocks},
     ];
 
     return (
-        <div className="flex flex-col w-64 h-screen border-r bg-gray-50">
+        <div className="flex flex-col h-[884px] border-r bg-[#f5f5f5]">
 
             {/* Main navigation */}
             <nav className="flex-1 px-2 py-4">
@@ -25,7 +32,10 @@ export const LeftPanel = () => {
                                         : "text-gray-700 hover:bg-gray-100"
                                 }`}
                             >
-                                {item.label}
+                                <span className="flex items-center">
+                                    <item.icon className="w-5 h-5 mr-2" />
+                                    {item.label}
+                                </span>
                             </button>
                         </li>
                     ))}
@@ -42,7 +52,10 @@ export const LeftPanel = () => {
                             : "text-gray-700 hover:bg-gray-100"
                     }`}
                 >
-                    Settings
+                    <span className="flex items-center">
+                        <Settings className="w-5 h-5 mr-2" />
+                        Settings
+                    </span>
                 </button>
                 <button
                     onClick={() => setSelected("account")}
@@ -52,7 +65,14 @@ export const LeftPanel = () => {
                             : "text-gray-700 hover:bg-gray-100"
                     }`}
                 >
-                    Select an account
+                    <span className="flex items-center">
+                        <Avatar>
+                            <AvatarImage src="https://github.com/YohannMgt.png" />
+                            <AvatarFallback>YM</AvatarFallback>
+                        </Avatar>
+                        <span className="ml-4">Select an account</span>
+                    </span>
+
                 </button>
             </div>
         </div>
