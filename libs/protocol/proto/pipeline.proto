@@ -7,32 +7,38 @@ message PipelineRequest {
 }
 
 message CreatePipelineResponse {
-  string pipeline_id = 1; // Pipeline UUID
+  string pipeline_id = 1; // Pipeline ID
 }
 
 message GetPipelineRequest {
-  string pipeline_id = 1; // Pipeline UUID
+  string pipeline_id = 1; // Pipeline ID
 }
 
 message DeletePipelineRequest {
-  string pipeline_id = 1; // Pipeline UUID
+  string pipeline_id = 1; // Pipeline ID
 }
 
 message DeletePipelineResponse {}
 
 message UpdatePipelineRequest {
-  string pipeline_id = 1;   // Pipeline UUID
+  string pipeline_id = 1;   // Pipeline ID
   string pipeline_toml = 2; // pipeline in toml format
 }
 
 message UpdatePipelineResponse {}
 
 message PipelineRecord {
-  string pipeline_id = 1; // Pipeline UUID
+  string pipeline_id = 1; // Pipeline ID
   string pipeline_toml = 2; // pipeline in toml format
   string created_at = 3; // timestamp
   string updated_at = 4; // timestamp
   optional string name = 5; // pipeline name
+}
+
+message ListPipelinesRequest {}
+
+message ListPipelinesResponse {
+  repeated PipelineRecord pipelines = 1;
 }
 
 service Pipeline {
@@ -40,7 +46,7 @@ service Pipeline {
   rpc GetPipeline(GetPipelineRequest) returns (PipelineRecord);
   rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
   rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse);
-  //rpc listPipelines(PipelineRequest) returns (PipelineResponse);
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
 }
 
 // User -> Send a Pipeline (executePipeline) -> PipelineService -> channel<Pipeline> -> Core -> channel<Job> -> Orchestrator

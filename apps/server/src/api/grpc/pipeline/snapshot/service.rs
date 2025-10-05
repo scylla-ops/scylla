@@ -1,17 +1,14 @@
 use crate::api::grpc::pipeline::models::PipelineRecord;
-use crate::api::grpc::pipeline::service::PIPELINE_SERVICE;
-use crate::api::grpc::pipeline::snapshot::models::PipelineSnapshotRecord;
-use crate::api::grpc::pipeline::snapshot::repo::PipelineSnapshotRepositoryDiesel;
-use crate::api::grpc::pipeline::snapshot::PipelineSnapshotRepository;
-use crate::database::get_existing_db;
+use crate::api::grpc::pipeline::repos::PipelineRepository;
+use crate::api::grpc::pipeline::snapshot::models::{NewPipelineSnapshot, PipelineSnapshotRecord};
+use crate::api::grpc::pipeline::snapshot::repos::PipelineSnapshotRepository;
+use crate::api::grpc::utils::Id;
 use derive_more::Constructor;
-use std::sync::{Arc, LazyLock};
 use thiserror::Error;
-use uuid::Uuid;
 
 #[derive(Constructor)]
-pub struct PipelineSnapshotService {
-    repo: Arc<dyn PipelineSnapshotRepository>,
+pub struct PipelineSnapshotService<SR: PipelineSnapshotRepository, PR: PipelineRepository> {
+    _marker: std::marker::PhantomData<(SR, PR)>,
 }
 
 #[derive(Debug, Error)]
@@ -22,71 +19,41 @@ pub enum PipelineSnapshotServiceError {
     Repo(#[from] anyhow::Error),
 }
 
-pub static PIPELINE_SNAPSHOT_SERVICE: LazyLock<Arc<PipelineSnapshotService>> =
-    LazyLock::new(|| {
-        let diesel_db = get_existing_db();
-
-        Arc::new(PipelineSnapshotService::new(Arc::new(
-            PipelineSnapshotRepositoryDiesel::new(diesel_db.clone()),
-        )))
-    });
-
-impl PipelineSnapshotService {
-    pub async fn create_snapshot(
-        &self,
-        pipeline_id: Uuid,
-    ) -> Result<Uuid, PipelineSnapshotServiceError> {
-        let pipeline_rec: PipelineRecord = PIPELINE_SERVICE
-            .get_pipeline(pipeline_id)
+impl<SR: PipelineSnapshotRepository, PR: PipelineRepository> PipelineSnapshotService<SR, PR> {
+    pub async fn create_snapshot(pipeline_id: Id) -> Result<Id, PipelineSnapshotServiceError> {
+        let pipeline_rec: PipelineRecord = PR::get_pipeline(pipeline_id)
             .await
-            .map_err(|e| PipelineSnapshotServiceError::PipelineServiceError(e.into()))?;
+            .map_err(PipelineSnapshotServiceError::PipelineServiceError)?;
 
-        let snapshot_id = self
-            .repo
-            .create_snapshot(pipeline_rec)
-            .await
-            .map_err(PipelineSnapshotServiceError::Repo)?;
+        let snapshot_id = SR::create_snapshot(NewPipelineSnapshot {
+            pipeline: pipeline_rec.id,
+            content: pipeline_rec.content,
+        })
+        .await?;
 
         Ok(snapshot_id)
     }
 
     pub async fn get_snapshot(
-        &self,
-        snapshot_id: Uuid,
+        snapshot_id: Id,
     ) -> Result<PipelineSnapshotRecord, PipelineSnapshotServiceError> {
-        let record = self
-            .repo
-            .get_snapshot(snapshot_id)
-            .await
-            .map_err(PipelineSnapshotServiceError::Repo)?;
+        let record = SR::get_snapshot(snapshot_id).await?;
         Ok(record)
     }
 
-    pub async fn delete_snapshot(
-        &self,
-        snapshot_id: Uuid,
-    ) -> Result<(), PipelineSnapshotServiceError> {
-        self.repo
-            .delete_snapshot(snapshot_id)
-            .await
-            .map_err(PipelineSnapshotServiceError::Repo)?;
+    pub async fn delete_snapshot(snapshot_id: Id) -> Result<(), PipelineSnapshotServiceError> {
+        SR::delete_snapshot(snapshot_id).await?;
         Ok(())
     }
 
     pub async fn list_snapshots(
-        &self,
-        pipeline_id: Uuid,
+        pipeline_id: Id,
     ) -> Result<Vec<PipelineSnapshotRecord>, PipelineSnapshotServiceError> {
-        let pipeline_rec: PipelineRecord = PIPELINE_SERVICE
-            .get_pipeline(pipeline_id)
+        let pipeline_rec: PipelineRecord = PR::get_pipeline(pipeline_id)
             .await
-            .map_err(|e| PipelineSnapshotServiceError::PipelineServiceError(e.into()))?;
+            .map_err(PipelineSnapshotServiceError::PipelineServiceError)?;
 
-        let records = self
-            .repo
-            .list_snapshots(pipeline_rec)
-            .await
-            .map_err(PipelineSnapshotServiceError::Repo)?;
+        let records = SR::list_snapshots(&pipeline_rec).await?;
         Ok(records)
     }
 }

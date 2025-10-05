@@ -1,20 +1,23 @@
 use chrono::{DateTime, Utc};
-use diesel::{Identifiable, Insertable, Queryable};
-use uuid::Uuid;
+use protocol::pipeline::Pipeline;
+use protocol::{Deserialize, Serialize};
 
-#[derive(Insertable)]
-#[diesel(table_name = crate::database::schema::pipelines)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewPipeline<'a> {
-    pub content: &'a str,
+#[derive(Serialize)]
+pub struct NewPipeline {
+    pub content: Pipeline,
 }
 
-#[derive(Identifiable, Queryable, Debug)]
-#[diesel(table_name = crate::database::schema::pipelines)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Deserialize)]
 pub struct PipelineRecord {
-    pub id: Uuid,
-    pub content: String,
-    pub created_at: DateTime<Utc>,
+    #[cfg(feature = "surreal")]
+    pub id: surrealdb::RecordId,
+    pub content: Pipeline,
     pub updated_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Debug)]
+pub struct PipelinePatch {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<Pipeline>,
 }

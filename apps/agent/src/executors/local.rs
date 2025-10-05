@@ -1,5 +1,4 @@
 use crate::model::executor::{ExecOutput, ExecRequest, Executor, LogEvent, LogStream};
-use crate::model::status::{EventKind, PipelineEvent, StepEvent};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_more::Constructor;
@@ -14,13 +13,6 @@ pub struct LocalExecutor;
 impl Executor for LocalExecutor {
     async fn run_step(&self, req: ExecRequest<'_>) -> Result<ExecOutput> {
         let step = req.step;
-
-        req.status_sink
-            .on_event(PipelineEvent::Step(StepEvent {
-                id: step.id,
-                kind: EventKind::Running,
-            }))
-            .await;
 
         let mut cmd: Command = step.shell.clone().into();
 
@@ -75,17 +67,6 @@ impl Executor for LocalExecutor {
         }
 
         let status = child.wait().await?;
-
-        req.status_sink
-            .on_event(PipelineEvent::Step(StepEvent {
-                id: step.id,
-                kind: if status.success() {
-                    EventKind::Succeeded
-                } else {
-                    EventKind::Failed
-                },
-            }))
-            .await;
 
         Ok(ExecOutput { status })
     }

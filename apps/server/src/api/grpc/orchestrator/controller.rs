@@ -1,9 +1,8 @@
 use crate::api::grpc::orchestrator::service::ORCHESTRATOR_SERVICE;
-use crate::parse_uuid;
 use derive_more::Constructor;
-use protocol::services::orchestrator::pipeline_event::EventType;
+use protocol::job::{JobData, JobEntry};
 use protocol::services::orchestrator::{
-    Ack, EventKind, Job, PipelineEvent, WorkerId, orchestrator_server,
+    Ack, Job, PipelineStatuUpdate, WorkerId, orchestrator_server,
 };
 use protocol::toml;
 use protocol::tonic::codegen::tokio_stream::Stream;
@@ -15,57 +14,65 @@ use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 use uuid::Uuid;
 
+macro_rules! parse_uuid {
+    ($id:expr) => {
+        Uuid::parse_str(&$id).map_err(|e| Status::invalid_argument(format!("Invalid UUID: {}", e)))
+    };
+}
+
 static ORCH_TOKEN: OnceLock<String> = OnceLock::new();
 
 #[derive(Constructor)]
-pub struct OrchestratorController {}
+pub struct OrchestratorController;
 
 #[async_trait::async_trait]
 impl orchestrator_server::Orchestrator for OrchestratorController {
-    type SubscribeJobsStream = Pin<Box<dyn Stream<Item = Result<Job, Status>> + Send>>;
+    type SubscribeJobStream = Pin<Box<dyn Stream<Item = Result<Job, Status>> + Send>>;
 
-    async fn subscribe_jobs(
+    async fn subscribe_job(
         &self,
         request: Request<WorkerId>,
-    ) -> Result<Response<Self::SubscribeJobsStream>, Status> {
+    ) -> Result<Response<Self::SubscribeJobStream>, Status> {
         let req = request.into_inner();
-        let worker_id: Uuid = parse_uuid!(req.id)?;
+        let worker_id = parse_uuid!(req.id)?;
 
         let (tx, rx) = mpsc::channel(32);
 
-        let base_stream = ReceiverStream::new(rx).map(|job| match toml::to_string(&job) {
-            Ok(job_toml) => Ok(Job { job_toml }),
-            Err(e) => Err(Status::internal(format!(
-                "Failed to serialize pipeline: {}",
-                e
-            ))),
-        });
+        let base_stream =
+            ReceiverStream::new(rx).map(|job: JobEntry| match toml::to_string(&job) {
+                Ok(job_toml) => Ok(Job {
+                    id: job.id,
+                    job_toml,
+                }),
+                Err(e) => Err(Status::internal(format!(
+                    "Failed to serialize pipeline: {}",
+                    e
+                ))),
+            });
 
         ORCHESTRATOR_SERVICE.queue_worker(worker_id, tx).await;
 
         Ok(Response::new(
-            Box::pin(base_stream) as Self::SubscribeJobsStream
+            Box::pin(base_stream) as Self::SubscribeJobStream
         ))
     }
 
     async fn report_status(
         &self,
-        request: Request<Streaming<PipelineEvent>>,
+        request: Request<Streaming<PipelineStatuUpdate>>,
     ) -> Result<Response<Ack>, Status> {
         let mut status_stream = request.into_inner();
         while let Ok(Some(status)) = status_stream.message().await {
-            let kind = EventKind::try_from(status.kind).map_err(|_| {
-                Status::invalid_argument(format!("Unknown event kind: {}", status.kind))
-            })?;
-            let event_type = EventType::try_from(status.r#type).map_err(|_| {
-                Status::invalid_argument(format!("Unknown event type: {}", status.r#type))
-            })?;
-            let id: Uuid = parse_uuid!(status.id)?;
-            match event_type {
-                EventType::Job => ORCHESTRATOR_SERVICE.update_job(id, kind.into()).await,
-                EventType::Stage => ORCHESTRATOR_SERVICE.update_stage(id, kind.into()).await,
-                EventType::Step => ORCHESTRATOR_SERVICE.update_step(id, kind.into()).await,
+            let job_data: JobData = match toml::from_str(&status.job_data_toml) {
+                Ok(data) => data,
+                Err(e) => {
+                    tracing::error!("Failed to deserialize job data: {}", e);
+                    continue;
+                }
             };
+            ORCHESTRATOR_SERVICE
+                .update_job_data(status.job_id, job_data)
+                .await
         }
         Ok(Response::from(Ack::default()))
     }

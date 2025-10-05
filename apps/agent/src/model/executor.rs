@@ -1,8 +1,8 @@
-use crate::model::status::{EventKind, JobEvent, PipelineEvent, StageEvent, StatusSink, StepEvent};
+use crate::model::status::{PipelineEvent, StatusSink};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use protocol::job::{Job, JobStage, JobStep};
+use protocol::job::{ExecutionStatus, JobEntry, JobStep};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
@@ -32,7 +32,6 @@ pub struct ExecRequest<'a> {
     pub workdir: Option<&'a Path>,
     pub env: Option<&'a HashMap<String, String>>,
     pub log_sink: Option<Arc<dyn LogSink>>,
-    pub status_sink: Arc<dyn StatusSink>,
 }
 
 #[derive(Debug, Clone)]
@@ -52,34 +51,58 @@ pub struct PipelineRunner<E: Executor> {
     default_env: HashMap<String, String>,
     log_sink: Option<Arc<dyn LogSink>>,
     status_sink: Arc<dyn StatusSink>,
+    job: JobEntry,
 }
 
 impl<E: Executor> PipelineRunner<E> {
-    pub async fn run_job(&self, pipeline: &Job) -> Result<()> {
-        self.emit_job_event(pipeline, EventKind::Running).await;
-
-        for stage in &pipeline.stages {
-            self.emit_stage_event(stage, EventKind::Running).await;
-
-            match self.run_stage(stage).await {
-                Ok(()) => {
-                    self.emit_stage_event(stage, EventKind::Succeeded).await;
-                }
-                Err(e) => {
-                    self.emit_job_event(pipeline, EventKind::Failed).await;
-                    return Err(e);
-                }
-            }
-        }
-
-        self.emit_job_event(pipeline, EventKind::Succeeded).await;
+    /// Modifie + émet en une seule op
+    async fn update<F>(&mut self, f: F) -> Result<()>
+    where
+        F: FnOnce(&mut JobEntry),
+    {
+        f(&mut self.job);
+        self.status_sink
+            .on_event(PipelineEvent::JobUpdate {
+                job_entry: self.job.clone(),
+            })
+            .await;
         Ok(())
     }
 
-    async fn run_stage(&self, stage: &JobStage) -> Result<()> {
-        for step in &stage.steps {
-            self.emit_step_event(step, EventKind::Running).await;
+    pub async fn run_job(&mut self) -> Result<()> {
+        self.update(|j| j.job.state = ExecutionStatus::Running)
+            .await?;
 
+        for stage_idx in 0..self.job.job.stages.len() {
+            self.update(|j| j.job.stages[stage_idx].state = ExecutionStatus::Running)
+                .await?;
+
+            if let Err(e) = self.run_stage_at(stage_idx).await {
+                self.update(|j| {
+                    j.job.stages[stage_idx].state = ExecutionStatus::Failed;
+                    j.job.state = ExecutionStatus::Failed;
+                })
+                .await?;
+                return Err(e);
+            }
+
+            self.update(|j| j.job.stages[stage_idx].state = ExecutionStatus::Succeeded)
+                .await?;
+        }
+
+        self.update(|j| j.job.state = ExecutionStatus::Succeeded)
+            .await?;
+        Ok(())
+    }
+
+    async fn run_stage_at(&mut self, stage_idx: usize) -> Result<()> {
+        for step_idx in 0..self.job.job.stages[stage_idx].steps.len() {
+            self.update(|j| {
+                j.job.stages[stage_idx].steps[step_idx].state = ExecutionStatus::Running
+            })
+            .await?;
+
+            let step = &self.job.job.stages[stage_idx].steps[step_idx];
             let output = self
                 .executor
                 .run_step(ExecRequest {
@@ -87,40 +110,24 @@ impl<E: Executor> PipelineRunner<E> {
                     workdir: self.default_workdir.as_deref(),
                     env: Some(&self.default_env),
                     log_sink: self.log_sink.clone(),
-                    status_sink: self.status_sink.clone(),
                 })
                 .await?;
 
-            let kind = if output.status.success() {
-                EventKind::Succeeded
-            } else {
-                self.emit_stage_event(stage, EventKind::Failed).await;
-                return Err(anyhow::anyhow!(format!("Step {} failed", step.id)));
-            };
+            let step_uuid = step.uuid;
 
-            self.emit_step_event(step, kind).await;
+            if output.status.success() {
+                self.update(|j| {
+                    j.job.stages[stage_idx].steps[step_idx].state = ExecutionStatus::Succeeded
+                })
+                .await?;
+            } else {
+                self.update(|j| {
+                    j.job.stages[stage_idx].steps[step_idx].state = ExecutionStatus::Failed
+                })
+                .await?;
+                return Err(anyhow::anyhow!(format!("Step {} failed", step_uuid)));
+            }
         }
         Ok(())
-    }
-
-    async fn emit_job_event(&self, pipeline: &Job, kind: EventKind) {
-        self.status_sink
-            .on_event(PipelineEvent::Job(JobEvent {
-                id: pipeline.id,
-                kind,
-            }))
-            .await;
-    }
-
-    async fn emit_stage_event(&self, stage: &JobStage, kind: EventKind) {
-        self.status_sink
-            .on_event(PipelineEvent::Stage(StageEvent { id: stage.id, kind }))
-            .await;
-    }
-
-    async fn emit_step_event(&self, step: &JobStep, kind: EventKind) {
-        self.status_sink
-            .on_event(PipelineEvent::Step(StepEvent { id: step.id, kind }))
-            .await;
     }
 }

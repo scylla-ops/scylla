@@ -24,7 +24,7 @@ message CreateUserRequest {
 }
 
 message GetUserRequest {
-  string user_uuid = 1;  // Using UUID instead of user_id
+  string user_id = 1;
 }
 
 message ListUsersRequest {
@@ -33,19 +33,19 @@ message ListUsersRequest {
 }
 
 message UpdateUserRequest {
-  string user_uuid = 1;
+  string user_id = 1;
   optional string username = 2;
   optional string password = 3;
+  optional bool is_active = 4;
 }
 
 message DeleteUserRequest {
-  string user_uuid = 1;
+  string user_id = 1;
 }
 
 message UserResponse {
-  string user_uuid = 1;
+  string user_id = 1;
   string username = 2;
-  string password_hash = 3;
   string created_at = 4;
   string updated_at = 5;
   bool is_active = 6;
@@ -58,6 +58,4 @@ message ListUsersResponse {
   uint64 page_size = 4;
 }
 
-message DeleteUserResponse {
-  bool success = 1;
-}
+message DeleteUserResponse {}

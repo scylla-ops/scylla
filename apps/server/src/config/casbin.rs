@@ -1,4 +1,4 @@
-pub const CASBIN_CONF: &str = r#"
+pub const _CASBIN_CONF: &str = r#"
 [request_definition]
 r = sub, dom, obj, act
 

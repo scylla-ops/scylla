@@ -1,19 +1,48 @@
+use crate::api::grpc::user::username::ScyllaUsername;
 use chrono::{DateTime, Utc};
-use diesel::{Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
+use surrealdb::RecordId;
 
-#[derive(Queryable, Selectable, Insertable, Debug)]
-#[diesel(table_name = crate::database::schema::users)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct User {
-    pub id: uuid::Uuid,
-    #[diesel(column_name = "username")]
+// Domain
+#[derive(Debug, Clone)]
+pub struct CreateUserInput {
     pub username: String,
-    #[diesel(column_name = "password_hash")]
+    pub password: String,
+}
+
+#[derive(Debug)]
+pub struct UpdateUserInput {
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub is_active: Option<bool>,
+}
+
+// DB
+#[derive(Serialize, Deserialize, Debug)]
+pub struct User {
+    #[serde(skip_serializing)]
+    pub id: RecordId,
+    pub username: ScyllaUsername,
     pub password_hash: String,
-    #[diesel(column_name = "is_active")]
     pub is_active: bool,
-    #[diesel(column_name = "created_at")]
+    #[serde(skip_serializing)]
     pub created_at: DateTime<Utc>,
-    #[diesel(column_name = "updated_at")]
+    #[serde(skip_serializing)]
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Debug)]
+pub struct UserPatch {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<ScyllaUsername>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_active: Option<bool>,
+}
+
+#[derive(Serialize)]
+pub struct InsertableUser {
+    pub username: ScyllaUsername,
+    pub password_hash: String,
 }

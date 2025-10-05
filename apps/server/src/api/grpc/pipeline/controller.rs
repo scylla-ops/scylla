@@ -1,19 +1,19 @@
-use crate::api::grpc::pipeline::service::{PIPELINE_SERVICE, PipelineServiceError};
-use crate::parse_uuid;
-use derive_more::Constructor;
-use protocol::pipeline::Pipeline;
+use crate::api::grpc::pipeline::service::{PipelineService, PipelineServiceError};
 use protocol::services::pipeline::{
     CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest,
-    PipelineRecord, PipelineRequest, UpdatePipelineRequest, UpdatePipelineResponse,
-    pipeline_server,
+    ListPipelinesRequest, ListPipelinesResponse, PipelineRecord, PipelineRequest,
+    UpdatePipelineRequest, UpdatePipelineResponse, pipeline_server,
 };
+use protocol::toml;
 use protocol::tonic::{Request, Response, Status};
-use std::sync::Arc;
 
-#[derive(Constructor)]
-pub struct PipelineController {
-    enforcer: Arc<casbin::Enforcer>,
-}
+#[cfg(feature = "surreal")]
+use crate::api::grpc::pipeline::repos::surreal::PipelineRepositorySurreal;
+
+#[cfg(feature = "surreal")]
+type PipelineRepo = PipelineRepositorySurreal;
+
+pub struct PipelineController;
 
 #[async_trait::async_trait]
 impl pipeline_server::Pipeline for PipelineController {
@@ -22,8 +22,7 @@ impl pipeline_server::Pipeline for PipelineController {
         request: Request<PipelineRequest>,
     ) -> Result<Response<CreatePipelineResponse>, Status> {
         let PipelineRequest { pipeline_toml } = request.into_inner();
-        let id = PIPELINE_SERVICE
-            .create_pipeline(&pipeline_toml)
+        let id = PipelineService::<PipelineRepo>::create_pipeline(&pipeline_toml)
             .await
             .map_err(map_err)?;
         Ok(Response::new(CreatePipelineResponse {
@@ -36,17 +35,19 @@ impl pipeline_server::Pipeline for PipelineController {
         request: Request<GetPipelineRequest>,
     ) -> Result<Response<PipelineRecord>, Status> {
         let GetPipelineRequest { pipeline_id } = request.into_inner();
-        let id = parse_uuid!(pipeline_id)?;
-        let rec = PIPELINE_SERVICE.get_pipeline(id).await.map_err(map_err)?;
-        // parse TOML to extract name
-        let parsed: Pipeline = protocol::toml::from_str(&rec.content)
-            .map_err(|_| Status::internal("Failed to parse TOML"))?;
+        let rec = PipelineService::<PipelineRepo>::get_pipeline(pipeline_id)
+            .await
+            .map_err(map_err)?;
+
+        let pipeline_toml = toml::to_string(&rec.content)
+            .map_err(|e| Status::internal(format!("Failed to serialize pipeline: {}", e)))?;
+
         Ok(Response::new(PipelineRecord {
             pipeline_id: rec.id.to_string(),
-            pipeline_toml: rec.content.clone(),
+            pipeline_toml,
             created_at: rec.created_at.to_string(),
             updated_at: rec.updated_at.to_string(),
-            name: Some(parsed.name),
+            name: Some(rec.content.name),
         }))
     }
 
@@ -55,9 +56,7 @@ impl pipeline_server::Pipeline for PipelineController {
         request: Request<DeletePipelineRequest>,
     ) -> Result<Response<DeletePipelineResponse>, Status> {
         let DeletePipelineRequest { pipeline_id } = request.into_inner();
-        let id = parse_uuid!(pipeline_id)?;
-        PIPELINE_SERVICE
-            .delete_pipeline(id)
+        PipelineService::<PipelineRepo>::delete_pipeline(pipeline_id)
             .await
             .map_err(map_err)?;
         Ok(Response::new(DeletePipelineResponse {}))
@@ -71,12 +70,32 @@ impl pipeline_server::Pipeline for PipelineController {
             pipeline_id,
             pipeline_toml,
         } = request.into_inner();
-        let id = parse_uuid!(pipeline_id)?;
-        PIPELINE_SERVICE
-            .update_pipeline(id, &pipeline_toml)
+        PipelineService::<PipelineRepo>::update_pipeline(pipeline_id, &pipeline_toml)
             .await
             .map_err(map_err)?;
         Ok(Response::new(UpdatePipelineResponse {}))
+    }
+
+    async fn list_pipelines(
+        &self,
+        _request: Request<ListPipelinesRequest>,
+    ) -> Result<Response<ListPipelinesResponse>, Status> {
+        let records = PipelineService::<PipelineRepo>::list_pipelines()
+            .await
+            .map_err(map_err)?;
+
+        let pipelines = records
+            .into_iter()
+            .map(|rec| PipelineRecord {
+                pipeline_id: rec.id.key().to_string(),
+                pipeline_toml: toml::to_string(&rec.content).unwrap_or_default(),
+                created_at: rec.created_at.to_string(),
+                updated_at: rec.updated_at.to_string(),
+                name: Some(rec.content.name),
+            })
+            .collect();
+
+        Ok(Response::new(ListPipelinesResponse { pipelines }))
     }
 }
 

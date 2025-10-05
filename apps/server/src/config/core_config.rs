@@ -32,10 +32,11 @@ impl Default for CoreConfig {
         Self {
             database_config: DatabaseConfig {
                 host: "localhost".to_string(),
-                port: 5432,
-                username: "postgres".to_string(),
-                password: "postgres".to_string(),
-                database: "scylla".to_string(),
+                port: 8000,
+                username: "root".to_string(),
+                password: "secret".to_string(),
+                namespace: "app".to_string(),
+                database: "main".to_string(),
             },
             grpc_config: SocketAddr::from(([127, 0, 0, 1], 50051)),
         }
@@ -55,6 +56,8 @@ pub struct DatabaseConfig {
     pub username: String,
     /// Database password for authentication
     pub password: String,
+    /// Database name space to connect to
+    pub namespace: String,
     /// Database name to connect to
     pub database: String,
 }

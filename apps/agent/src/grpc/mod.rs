@@ -3,6 +3,7 @@ use crate::model::executor::{LogEvent, LogSink, PipelineRunnerBuilder};
 use crate::model::status::{PipelineEvent, StatusSink};
 use anyhow::Context;
 use derive_more::Constructor;
+use futures_util::StreamExt;
 use protocol::services::orchestrator::orchestrator_client::OrchestratorClient;
 use protocol::services::orchestrator::{Job, WorkerId};
 use protocol::toml;
@@ -14,7 +15,6 @@ use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tokio_stream::StreamExt;
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{debug, error, info};
 
@@ -92,7 +92,7 @@ impl Agent {
         });
 
         let mut stream = jobs_client
-            .subscribe_jobs(Request::new(worker_id.clone()))
+            .subscribe_job(Request::new(worker_id.clone()))
             .await?
             .into_inner();
 
@@ -104,7 +104,7 @@ impl Agent {
     }
 
     async fn handle_job(&mut self, channel: Channel, job: Job) -> Result<(), Box<dyn Error>> {
-        let job: protocol::job::Job =
+        let job_entry: protocol::job::JobEntry =
             toml::from_str(&job.job_toml).context("Failed to parse job TOML")?;
 
         let mut status_client = OrchestratorClient::with_interceptor(channel, {
@@ -119,7 +119,16 @@ impl Agent {
         let (job_status_tx, job_status_rx) = mpsc::channel::<PipelineEvent>(64);
 
         tokio::spawn(async move {
-            let outbound = ReceiverStream::new(job_status_rx).map(Into::into);
+            let outbound = ReceiverStream::new(job_status_rx).filter_map(|ev| async move {
+                let converted = TryInto::try_into(ev);
+                match converted {
+                    Ok(ok) => Some(ok),
+                    Err(err) => {
+                        tracing::warn!("Impossible de convertir PipelineEvent: {err}");
+                        None
+                    }
+                }
+            });
 
             status_client
                 .report_status(Request::new(outbound))
@@ -148,11 +157,12 @@ impl Agent {
             .status_sink(Arc::new(status_sink))
             .log_sink(Some(Arc::new(log_sink)))
             .default_workdir(Some(".".into()))
-            .default_env(HashMap::default());
+            .default_env(HashMap::default())
+            .job(job_entry);
 
-        let runner = builder.build().unwrap();
+        let mut runner = builder.build().unwrap();
 
-        let _res = runner.run_job(&job).await;
+        let _res = runner.run_job().await;
 
         Ok(())
     }

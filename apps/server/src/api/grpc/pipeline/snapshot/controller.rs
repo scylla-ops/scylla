@@ -1,17 +1,17 @@
+use crate::api::grpc::pipeline::repos::surreal::PipelineRepositorySurreal;
+use crate::api::grpc::pipeline::snapshot::repos::surreal::PipelineSnapshotRepositorySurreal;
 use crate::api::grpc::pipeline::snapshot::service::{
-    PIPELINE_SNAPSHOT_SERVICE, PipelineSnapshotServiceError,
+    PipelineSnapshotService, PipelineSnapshotServiceError,
 };
-use crate::parse_uuid;
-use derive_more::Constructor;
 use protocol::services::pipeline::snapshot::{
     CreatePipelineSnapshotRequest, CreatePipelineSnapshotResponse, DeletePipelineSnapshotRequest,
     DeletePipelineSnapshotResponse, GetPipelineSnapshotRequest, ListPipelineSnapshotRequest,
     ListPipelineSnapshotResponse, PipelineSnapshotRecord, pipeline_snapshot_server,
 };
+use protocol::toml;
 use protocol::tonic::{Request, Response, Status};
 
-#[derive(Constructor)]
-pub struct PipelineSnapshotController {}
+pub struct PipelineSnapshotController;
 
 #[async_trait::async_trait]
 impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
@@ -20,12 +20,13 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         request: Request<CreatePipelineSnapshotRequest>,
     ) -> Result<Response<CreatePipelineSnapshotResponse>, Status> {
         let CreatePipelineSnapshotRequest { pipeline_id } = request.into_inner();
-        let pipeline_id = parse_uuid!(pipeline_id)?;
 
-        let snapshot_id = PIPELINE_SNAPSHOT_SERVICE
-            .create_snapshot(pipeline_id)
-            .await
-            .map_err(map_snapshot_error)?;
+        let snapshot_id = PipelineSnapshotService::<
+            PipelineSnapshotRepositorySurreal,
+            PipelineRepositorySurreal,
+        >::create_snapshot(pipeline_id)
+        .await
+        .map_err(map_snapshot_error)?;
 
         Ok(Response::new(CreatePipelineSnapshotResponse {
             snapshot_id: snapshot_id.to_string(),
@@ -37,17 +38,19 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         request: Request<GetPipelineSnapshotRequest>,
     ) -> Result<Response<PipelineSnapshotRecord>, Status> {
         let GetPipelineSnapshotRequest { snapshot_id } = request.into_inner();
-        let snapshot_id = parse_uuid!(snapshot_id)?;
 
-        let record = PIPELINE_SNAPSHOT_SERVICE
-            .get_snapshot(snapshot_id)
-            .await
-            .map_err(map_snapshot_error)?;
+        let record = PipelineSnapshotService::<
+            PipelineSnapshotRepositorySurreal,
+            PipelineRepositorySurreal,
+        >::get_snapshot(snapshot_id)
+        .await
+        .map_err(map_snapshot_error)?;
 
         Ok(Response::new(PipelineSnapshotRecord {
-            snapshot_id: record.id.to_string(),
-            pipeline_id: record.pipeline_id.to_string(),
-            content: record.content,
+            snapshot_id: record.id.key().to_string(),
+            pipeline_id: record.pipeline.key().to_string(),
+            content: toml::to_string(&record.content)
+                .map_err(|e| Status::internal(format!("Failed to serialize pipeline: {}", e)))?,
             created_at: record.created_at.to_string(),
         }))
     }
@@ -57,10 +60,8 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         request: Request<DeletePipelineSnapshotRequest>,
     ) -> Result<Response<DeletePipelineSnapshotResponse>, Status> {
         let DeletePipelineSnapshotRequest { snapshot_id } = request.into_inner();
-        let snapshot_id = parse_uuid!(snapshot_id)?;
 
-        PIPELINE_SNAPSHOT_SERVICE
-            .delete_snapshot(snapshot_id)
+        PipelineSnapshotService::<PipelineSnapshotRepositorySurreal, PipelineRepositorySurreal>::delete_snapshot(snapshot_id)
             .await
             .map_err(map_snapshot_error)?;
 
@@ -72,19 +73,20 @@ impl pipeline_snapshot_server::PipelineSnapshot for PipelineSnapshotController {
         request: Request<ListPipelineSnapshotRequest>,
     ) -> Result<Response<ListPipelineSnapshotResponse>, Status> {
         let ListPipelineSnapshotRequest { pipeline_id } = request.into_inner();
-        let pipeline_id = parse_uuid!(pipeline_id)?;
 
-        let records = PIPELINE_SNAPSHOT_SERVICE
-            .list_snapshots(pipeline_id)
-            .await
-            .map_err(map_snapshot_error)?;
+        let records = PipelineSnapshotService::<
+            PipelineSnapshotRepositorySurreal,
+            PipelineRepositorySurreal,
+        >::list_snapshots(pipeline_id)
+        .await
+        .map_err(map_snapshot_error)?;
 
         let response_records = records
             .into_iter()
             .map(|record| PipelineSnapshotRecord {
-                snapshot_id: record.id.to_string(),
-                pipeline_id: record.pipeline_id.to_string(),
-                content: record.content,
+                snapshot_id: record.id.key().to_string(),
+                pipeline_id: record.pipeline.key().to_string(),
+                content: toml::to_string(&record.content).unwrap_or_else(|_| String::new()),
                 created_at: record.created_at.to_string(),
             })
             .collect();

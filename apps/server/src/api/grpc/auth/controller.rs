@@ -1,10 +1,15 @@
-use crate::api::grpc::auth::service::{AUTH_SERVICE, AuthError};
-use derive_more::Constructor;
+use crate::api::grpc::auth::service::{AuthError, AuthService};
 use protocol::services::{LoginRequest, LoginResponse, auth_service_server};
 use protocol::tonic::{Request, Response, Status};
 
-#[derive(Constructor)]
-pub struct AuthController {}
+#[derive(Default)]
+pub struct AuthController;
+
+#[cfg(feature = "surreal")]
+use crate::api::grpc::user::repos::surreal::UserRepositorySurreal;
+
+#[cfg(feature = "surreal")]
+type UserRepo = UserRepositorySurreal;
 
 #[async_trait::async_trait]
 impl auth_service_server::AuthService for AuthController {
@@ -13,8 +18,7 @@ impl auth_service_server::AuthService for AuthController {
         request: Request<LoginRequest>,
     ) -> Result<Response<LoginResponse>, Status> {
         let req = request.into_inner();
-        let res = AUTH_SERVICE
-            .login(req.username, req.password)
+        let res = AuthService::<UserRepo>::login(req.username, req.password)
             .await
             .map_err(|e| match e {
                 AuthError::UserNotFound => Status::not_found("User not found"),
@@ -25,7 +29,7 @@ impl auth_service_server::AuthService for AuthController {
                     tracing::error!("Authentication error (repo): {}", e);
                     Status::internal("Server error")
                 }
-                AuthError::PasetoVerification(e) => {
+                AuthError::_PasetoVerification(e) => {
                     tracing::error!("Authentication error (paseto): {}", e);
                     Status::internal("Server error")
                 }

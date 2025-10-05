@@ -3,30 +3,17 @@ syntax = "proto3";
 package orchestrator;
 
 message Job {
-  string job_toml = 2; // job definition in TOML format
+  string id = 1; // unique job identifier
+  string job_toml = 2; // fully qualified job definition in TOML format
 }
 
 message WorkerId {
   string id = 1;
 }
 
-enum EventKind {
-  Queued = 0;
-  Running = 1;
-  Succeeded = 2;
-  Failed = 3;
-  Canceled = 4;
-}
-
-message PipelineEvent {
-  enum EventType {
-    JOB = 0;
-    STAGE = 1;
-    STEP = 2;
-  }
-  EventType type = 1;
-  EventKind kind = 4;
-  string id = 5;
+message PipelineStatuUpdate {
+  string job_id = 1; // unique job identifier
+  string job_data_toml = 2; // job data in toml format
 }
 
 message JobEvent {}
@@ -38,6 +25,6 @@ message StepEvent {}
 message Ack {}
 
 service Orchestrator {
-  rpc SubscribeJobs(WorkerId) returns (stream Job);
-  rpc ReportStatus(stream PipelineEvent) returns (Ack);
+  rpc SubscribeJob(WorkerId) returns (stream Job);
+  rpc ReportStatus(stream PipelineStatuUpdate) returns (Ack);
 }

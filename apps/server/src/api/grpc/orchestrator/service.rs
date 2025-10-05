@@ -1,7 +1,10 @@
-use crate::api::grpc::job::models::ExecutionStatus;
-use crate::api::grpc::job::service::JOB_SERVICE;
+use crate::api::grpc::job::repos::surreal::JobRepositorySurreal;
+use crate::api::grpc::job::service::JobService;
+use crate::api::grpc::pipeline::repos::surreal::PipelineRepositorySurreal;
+use crate::api::grpc::pipeline::snapshot::repos::surreal::PipelineSnapshotRepositorySurreal;
+use crate::api::grpc::utils::Id;
 use derive_more::Constructor;
-use protocol::job::Job;
+use protocol::job::{JobData, JobEntry};
 use std::collections::VecDeque;
 use std::sync::{Arc, LazyLock};
 use tokio::sync::RwLock;
@@ -9,7 +12,7 @@ use tokio::sync::mpsc::Sender;
 use tracing::warn;
 use uuid::Uuid;
 
-type JobSender = Sender<Job>;
+type JobSender = Sender<JobEntry>;
 
 #[derive(Constructor)]
 pub struct OrchestratorService {
@@ -29,7 +32,7 @@ pub struct WorkerRecord {
 }
 
 impl OrchestratorService {
-    pub async fn queue_job(&self, job: Job) {
+    pub async fn queue_job(&self, job: JobEntry) {
         if let Ok(WorkerRecord { tx_job, .. }) = self.get_first_available().await {
             let _ = tx_job.send(job).await;
         } else {
@@ -51,15 +54,12 @@ impl OrchestratorService {
             .ok_or_else(|| anyhow::anyhow!("No workers available"))
     }
 
-    pub async fn update_job(&self, job_id: Uuid, new_status: ExecutionStatus) {
-        let _ = JOB_SERVICE.update_job(job_id, new_status).await;
-    }
-
-    pub async fn update_stage(&self, stage_id: Uuid, new_status: ExecutionStatus) {
-        let _ = JOB_SERVICE.update_stage(stage_id, new_status).await;
-    }
-
-    pub async fn update_step(&self, step_id: Uuid, new_status: ExecutionStatus) {
-        let _ = JOB_SERVICE.update_step(step_id, new_status).await;
+    pub async fn update_job_data(&self, job_id: Id, job_data: JobData) {
+        let _ = JobService::<
+            JobRepositorySurreal,
+            PipelineRepositorySurreal,
+            PipelineSnapshotRepositorySurreal,
+        >::update_job(job_id, job_data)
+        .await;
     }
 }

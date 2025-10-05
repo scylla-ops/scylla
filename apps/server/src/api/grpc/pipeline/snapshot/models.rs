@@ -1,23 +1,20 @@
-use crate::api::grpc::pipeline::PipelineRecord;
 use chrono::{DateTime, Utc};
-use diesel::{Associations, Identifiable, Insertable, Queryable, Selectable};
-use uuid::Uuid;
+use protocol::pipeline::Pipeline;
+use protocol::{Deserialize, Serialize};
 
-#[derive(Insertable)]
-#[diesel(table_name = crate::database::schema::pipeline_snapshots)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewPipelineSnapshot<'a> {
-    pub pipeline_id: Uuid,
-    pub content: &'a str,
+#[derive(Serialize)]
+pub struct NewPipelineSnapshot {
+    #[cfg(feature = "surreal")]
+    pub pipeline: surrealdb::RecordId,
+    pub content: Pipeline,
 }
 
-#[derive(Queryable, Identifiable, Selectable, Associations, Debug)]
-#[diesel(table_name = crate::database::schema::pipeline_snapshots)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-#[diesel(belongs_to(PipelineRecord, foreign_key = pipeline_id))]
+#[derive(Deserialize, Debug)]
 pub struct PipelineSnapshotRecord {
-    pub id: Uuid,
-    pub pipeline_id: Uuid,
-    pub content: String,
+    #[cfg(feature = "surreal")]
+    pub id: surrealdb::RecordId,
+    #[cfg(feature = "surreal")]
+    pub pipeline: surrealdb::RecordId,
+    pub content: Pipeline,
     pub created_at: DateTime<Utc>,
 }

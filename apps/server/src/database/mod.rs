@@ -1,60 +1,31 @@
-pub mod schema;
-
-use crate::config::core_config::DatabaseConfig;
-use anyhow::{Context, Result, anyhow};
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool as DPool, PooledConnection};
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use std::sync::Arc;
+use surrealdb::Surreal;
+use surrealdb::engine::remote::ws::{Client, Ws};
 use tokio::sync::OnceCell;
 
-// Type alias for the diesel pool
-pub type DieselPool = DPool<ConnectionManager<PgConnection>>;
-pub type DieselConnection = PooledConnection<ConnectionManager<PgConnection>>;
+pub static DB: OnceCell<Arc<Surreal<Client>>> = OnceCell::const_new();
 
-#[derive(Clone)]
-pub struct DieselDatabase {
-    pub pool: DieselPool,
+pub async fn init_db(_url: &str, ns: &str, db: &str) -> anyhow::Result<()> {
+    let client = Surreal::new::<Ws>("127.0.0.1:8000").await?;
+    client.use_ns(ns).use_db(db).await?;
+    DB.set(Arc::new(client))
+        .map_err(|_| anyhow::anyhow!("DB already initialised"))?;
+    Ok(())
 }
 
-pub static DB_POOL: OnceCell<DieselPool> = OnceCell::const_new();
+pub async fn login(user: &str, password: &str) -> anyhow::Result<()> {
+    let db = db();
 
-pub fn set_db_pool(pool: DieselPool) {
-    DB_POOL
-        .set(pool)
-        .expect("Database pool already initialized");
+    db.signin(surrealdb::opt::auth::Root {
+        username: user,
+        password,
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Failed to login: {:?}", e))?;
+
+    Ok(())
 }
 
-pub fn get_existing_db() -> DieselPool {
-    DB_POOL
-        .get()
-        .expect("Database pool not initialized. Call set_db_pool(...) during startup.")
-        .clone()
-}
-
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
-
-impl DieselDatabase {
-    pub fn new(config: &DatabaseConfig) -> Result<Self> {
-        let database_url = format!(
-            "postgres://{}:{}@{}:{}/{}",
-            config.username, config.password, config.host, config.port, config.database
-        );
-        let manager = ConnectionManager::<PgConnection>::new(database_url);
-        let pool = DPool::builder()
-            .build(manager)
-            .context("Failed to create diesel database connection pool")?;
-        Ok(Self { pool })
-    }
-
-    pub fn run_migrations(&self) -> Result<()> {
-        let mut conn = self
-            .pool
-            .get()
-            .context("Failed to get database connection")?;
-        conn.run_pending_migrations(MIGRATIONS)
-            .map_err(|e| anyhow!(e.to_string()))
-            .context("Failed to run pending migrations")?;
-
-        Ok(())
-    }
+pub fn db() -> Arc<Surreal<Client>> {
+    DB.get().expect("DB not initialised").clone()
 }

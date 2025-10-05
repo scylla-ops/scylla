@@ -9,13 +9,9 @@ use crate::api::grpc::pipeline::controller::PipelineController;
 use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
 use crate::api::grpc::user::controller::UserController;
 use crate::config::CoreConfig;
-use crate::config::casbin::CASBIN_CONF;
-use crate::config::core_config::DatabaseConfig;
-use crate::database::{DieselDatabase, set_db_pool};
-use anyhow::{Result, anyhow};
-use casbin::{CoreApi, Enforcer};
+use crate::database::{init_db, login};
+use anyhow::Result;
 use clap::Parser;
-use diesel_adapter::DieselAdapter;
 use protocol::services;
 use protocol::services::auth_service_server::AuthServiceServer;
 use protocol::services::job::job_service_server::JobServiceServer;
@@ -24,7 +20,6 @@ use protocol::services::pipeline::pipeline_server::PipelineServer;
 use protocol::services::pipeline::snapshot::pipeline_snapshot_server::PipelineSnapshotServer;
 use protocol::services::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
-use std::sync::Arc;
 use tower_http::LatencyUnit;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::{Level, info};
@@ -61,33 +56,28 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
     }
 }
 
-async fn init_database_pool(database_config: DatabaseConfig) -> Result<DieselDatabase> {
-    // Initialize database and run migrations
-    let diesel_db = DieselDatabase::new(&database_config)
-        .map_err(|e| anyhow!("Database connection failed: {}", e))?;
-
-    diesel_db
-        .run_migrations()
-        .map_err(|e| anyhow!("Database migration failed: {}", e))?;
-
-    info!("Database connection established and migrations completed successfully");
-    Ok(diesel_db)
-}
-
 async fn start_application(core_config: CoreConfig) -> Result<()> {
     let CoreConfig {
         database_config,
         grpc_config,
     } = core_config;
 
-    // Initialize databases with migrations
-    let diesel_db = init_database_pool(database_config).await?;
-    set_db_pool(diesel_db.pool.clone());
+    // init database conn
+    init_db(
+        &database_config.host,
+        &database_config.namespace,
+        &database_config.database,
+    )
+    .await?;
+
+    login(&database_config.username, &database_config.password)
+        .await
+        .expect("Failed to login");
 
     // RBAC
-    let m = casbin::DefaultModel::from_str(CASBIN_CONF).await?;
-    let a = DieselAdapter::with_pool(diesel_db.pool.clone())?;
-    let enforcer = Arc::from(Enforcer::new(m, a).await?);
+    //let m = casbin::DefaultModel::from_str(CASBIN_CONF).await?;
+    //let a = DieselAdapter::with_pool(diesel_db.pool.clone())?;
+    //let enforcer = Arc::from(Enforcer::new(m, a).await?);
 
     /* GRPC Api */
     #[cfg(feature = "reflection")]
@@ -101,22 +91,21 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         )
     };
 
-    let user_grpc = UserServiceServer::new(UserController::new());
+    let user_grpc = UserServiceServer::new(UserController);
+    let auth_grpc = AuthServiceServer::new(AuthController);
 
-    let auth_grpc = AuthServiceServer::new(AuthController::new());
+    let pipeline_grpc = PipelineServer::new(PipelineController);
 
-    let pipeline_grpc = PipelineServer::new(PipelineController::new(enforcer));
-
-    let pipeline_snapshot_grpc = PipelineSnapshotServer::new(PipelineSnapshotController::new());
+    let pipeline_snapshot_grpc = PipelineSnapshotServer::new(PipelineSnapshotController);
 
     let orchestrator_grpc = OrchestratorServer::with_interceptor(
-        OrchestratorController::new(),
+        OrchestratorController,
         OrchestratorController::check_auth,
     );
 
     OrchestratorController::set_token("not a good token".into());
 
-    let job_grpc = JobServiceServer::new(JobController::new());
+    let job_grpc = JobServiceServer::new(JobController);
 
     let grpc_server_fn = move || {
         info!("GRPC server running on {}", grpc_config);
@@ -134,9 +123,9 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
             .add_service(user_grpc)
             .add_service(auth_grpc)
             .add_service(pipeline_grpc)
-            .add_service(orchestrator_grpc)
             .add_service(pipeline_snapshot_grpc)
-            .add_service(job_grpc);
+            .add_service(job_grpc)
+            .add_service(orchestrator_grpc);
         #[cfg(feature = "reflection")]
         if let Some(reflection) = reflection {
             server = server.add_service(reflection);

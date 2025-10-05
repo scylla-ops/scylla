@@ -9,22 +9,15 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 serde = { version = "1.0.219", features = ["derive"] }
 protocol = { path = "../../libs/protocol" }
-repository-derive = { path = "../../libs/repository-derive" }
 anyhow = "1.0.99"
 thiserror = "2.0.16"
 clap = { version = "4.5.47", features = ["derive"] }
-bcrypt = { version = "0.17.1", features = ["default"] }
+argon2 = "0.6.0-rc.1"
 pasetors = "0.7.7"
 # Database dependencies
-diesel = { version = "2.3.1", features = ["postgres", "r2d2", "chrono", "uuid"] }
-diesel_migrations = "2.3.0"
-diesel-derive-enum = { version = "2.1.0", features = ["postgres"] }
-pq-sys = { version = "0.7.2", features = ["bundled"] }
-openssl-sys = { version = "0.9.109", features = ["vendored"] }
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
+surrealdb = { version = "2.3.9", features = ["kv-mem"] }
 chrono = { version = "0.4.42", features = ["serde"] }
 # Validation
-validator = { version = "0.20.0", features = ["derive"] }
 async-trait = "0.1.89"
 tonic-reflection = "0.14.2"
 derive_more = { version = "2.0.1", features = ["full"] }
@@ -35,8 +28,10 @@ tokio-stream = "0.1.17"
 # Rbac with diesel:
 diesel-adapter = { version = "1.2.0", features = ["postgres"] }
 casbin = { version = "2.13.0" }
+uuid = { version = "1.18.1", features = ["v4"] }
 
 [features]
 # Enable gRPC server reflection service by default; you can build without it using `--no-default-features`.
 default = ["reflection"]
 reflection = []
+surreal = []
