@@ -4,8 +4,8 @@
 grpc_config = "0.0.0.0:50051"
 
 [core_config.database_config]
-host = "db"
-port = 5432
-username = "postgres"
-password = "postgres"
-database = "scylla"
+url = "ws://db:8000"
+username = "root"
+password = "secret"
+namespace = "app"
+database = "main"

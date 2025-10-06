@@ -12,11 +12,6 @@ services:
       - "8000:8000"
     volumes:
       - db_data:/data:rw
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 12
 
   core:
     build:
@@ -25,7 +20,7 @@ services:
     container_name: scylla-core
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
     ports:
       - "50051:50051"   # gRPC
     environment:
