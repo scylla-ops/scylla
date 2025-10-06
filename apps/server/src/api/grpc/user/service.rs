@@ -89,7 +89,11 @@ impl<R: UserRepository> UserService<R> {
     }
 
     pub async fn update_user(user_id: Id, req: UpdateUserInput) -> Result<User, UserDomainError> {
-        let UpdateUserInput { username, password, is_active } = req;
+        let UpdateUserInput {
+            username,
+            password,
+            is_active,
+        } = req;
 
         let username = match username {
             Some(u) => Some(ScyllaUsername::new(u)?),
@@ -125,5 +129,56 @@ impl<R: UserRepository> UserService<R> {
             Some(_) => Ok(()),
             None => Err(UserDomainError::UserNotFound),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::grpc::user::models::CreateUserInput;
+    use crate::api::grpc::user::repos::surreal::UserRepositorySurreal;
+    use crate::api::grpc::user::service::UserService;
+    use crate::api::grpc::user::username::ScyllaUsername;
+    use crate::database::{DB, apply_migrations};
+    use std::sync::Arc;
+    use surrealdb::Surreal;
+    use surrealdb::engine::any::Any;
+
+    pub async fn setup_test_db() {
+        DB.get_or_init(|| async {
+            let client: Arc<Surreal<Any>> =
+                Arc::from(surrealdb::engine::any::connect("mem://").await.unwrap());
+            client.use_ns("test").use_db("user").await.unwrap();
+            apply_migrations(client.clone()).await;
+            client
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn create_valid_user() {
+        setup_test_db().await;
+
+        static USERNAME: &str = "user1";
+        static PASSWORD: &str = "password123";
+
+        let create_input = CreateUserInput {
+            username: USERNAME.to_owned(),
+            password: PASSWORD.to_owned(),
+        };
+
+        let created_user = UserService::<UserRepositorySurreal>::create_user(create_input).await;
+        assert!(created_user.is_ok());
+
+        let user_id = created_user.unwrap().id.key().to_string();
+        let fetched_user = UserService::<UserRepositorySurreal>::get_user(user_id.clone()).await;
+
+        assert!(fetched_user.is_ok());
+        let fetched_user = fetched_user.unwrap();
+        assert_eq!(fetched_user.id.key().to_string(), user_id);
+        assert_eq!(
+            fetched_user.username,
+            ScyllaUsername::new(USERNAME.to_owned()).unwrap()
+        );
+        assert!(!fetched_user.is_active);
     }
 }

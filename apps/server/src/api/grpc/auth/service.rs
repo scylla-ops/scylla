@@ -75,9 +75,9 @@ impl<R: UserRepository> AuthService<R> {
         )
         .map_err(|e| AuthError::_PasetoVerification(e.to_string()))?;
 
-        let claims = trusted_token
-            .payload_claims()
-            .ok_or_else(|| AuthError::_PasetoVerification("No claims found in token".to_string()))?;
+        let claims = trusted_token.payload_claims().ok_or_else(|| {
+            AuthError::_PasetoVerification("No claims found in token".to_string())
+        })?;
 
         let subject = claims
             .get_claim("sub")

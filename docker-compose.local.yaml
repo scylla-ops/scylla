@@ -1,17 +1,19 @@
 services:
   db:
-    image: postgres:latest
-    container_name: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: scylla
+    image: surrealdb/surrealdb:latest-dev
+    container_name: surrealdb
+    command:
+      - start
+      - --log=debug
+      - --user=root
+      - --pass=secret
+      - rocksdb:/data/database
     ports:
-      - "5432:5432"
+      - "8000:8000"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - db_data:/data:rw
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
       timeout: 5s
       retries: 12

@@ -22,4 +22,3 @@ pub struct JobRecord {
 pub struct JobUpdate {
     pub content: JobData,
 }
-

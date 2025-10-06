@@ -24,6 +24,7 @@ pub struct User {
     pub id: RecordId,
     pub username: ScyllaUsername,
     pub password_hash: String,
+    #[serde(skip_serializing)]
     pub is_active: bool,
     #[serde(skip_serializing)]
     pub created_at: DateTime<Utc>,

@@ -9,7 +9,7 @@ use crate::api::grpc::pipeline::controller::PipelineController;
 use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
 use crate::api::grpc::user::controller::UserController;
 use crate::config::CoreConfig;
-use crate::database::{init_db, login};
+use crate::database::{apply_migrations, db, init_db, login};
 use anyhow::Result;
 use clap::Parser;
 use protocol::services;
@@ -64,7 +64,7 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     // init database conn
     init_db(
-        &database_config.host,
+        &database_config.url,
         &database_config.namespace,
         &database_config.database,
     )
@@ -73,6 +73,8 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     login(&database_config.username, &database_config.password)
         .await
         .expect("Failed to login");
+
+    apply_migrations(db()).await;
 
     // RBAC
     //let m = casbin::DefaultModel::from_str(CASBIN_CONF).await?;
@@ -119,7 +121,9 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
             );
 
         let mut server = Server::builder()
+            .accept_http1(true)
             .layer(trace_layer)
+            .layer(tonic_web::GrpcWebLayer::new())
             .add_service(user_grpc)
             .add_service(auth_grpc)
             .add_service(pipeline_grpc)

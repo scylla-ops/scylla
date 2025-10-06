@@ -123,7 +123,11 @@ impl user_service_server::UserService for UserController {
             password,
             is_active,
         } = request.into_inner();
-        let domain_req = UpdateUserInput { username, password, is_active };
+        let domain_req = UpdateUserInput {
+            username,
+            password,
+            is_active,
+        };
         let user = UserService::<UserRepo>::update_user(user_id, domain_req)
             .await
             .map_err(map_err)?;

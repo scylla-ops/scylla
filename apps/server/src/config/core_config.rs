@@ -31,8 +31,7 @@ impl Default for CoreConfig {
     fn default() -> Self {
         Self {
             database_config: DatabaseConfig {
-                host: "localhost".to_string(),
-                port: 8000,
+                url: "ws://127.0.0.1:8000".to_string(),
                 username: "root".to_string(),
                 password: "secret".to_string(),
                 namespace: "app".to_string(),
@@ -48,10 +47,8 @@ impl Default for CoreConfig {
 /// Contains all parameters needed to establish a connection to the database.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DatabaseConfig {
-    /// Database server hostname or IP address
-    pub host: String,
-    /// Database server port
-    pub port: u16,
+    /// Database server url
+    pub url: String,
     /// Database username for authentication
     pub username: String,
     /// Database password for authentication

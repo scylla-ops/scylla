@@ -1,6 +1,4 @@
-use crate::api::grpc::job::models::{
-    JobRecord, NewJob,
-};
+use crate::api::grpc::job::models::{JobRecord, NewJob};
 use crate::api::grpc::utils::Id;
 use async_trait::async_trait;
 use protocol::job::JobData;

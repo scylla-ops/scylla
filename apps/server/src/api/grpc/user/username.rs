@@ -8,7 +8,9 @@ pub const USERNAME_MIN_LENGTH: usize = 1;
 pub const USERNAME_MAX_LENGTH: usize = 255;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct ScyllaUsername(String);
+pub struct ScyllaUsername {
+    inner: String,
+}
 
 impl<'de> Deserialize<'de> for ScyllaUsername {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -41,12 +43,14 @@ impl ScyllaUsername {
             return Err(UsernameError::TooLong(USERNAME_MAX_LENGTH));
         }
 
-        Ok(Self(trimmed.to_string()))
+        Ok(Self {
+            inner: trimmed.to_string(),
+        })
     }
 }
 
 impl fmt::Display for ScyllaUsername {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.inner)
     }
 }
