@@ -1,4 +1,4 @@
-use protocol::Serialize;
+use protocol::{Serialize, Serializer};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use std::fmt;
@@ -7,7 +7,7 @@ use thiserror::Error;
 pub const USERNAME_MIN_LENGTH: usize = 1;
 pub const USERNAME_MAX_LENGTH: usize = 255;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScyllaUsername {
     inner: String,
 }
@@ -19,6 +19,15 @@ impl<'de> Deserialize<'de> for ScyllaUsername {
     {
         let s = String::deserialize(deserializer)?;
         ScyllaUsername::new(s).map_err(Error::custom)
+    }
+}
+
+impl Serialize for ScyllaUsername {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.inner.as_str())
     }
 }
 
