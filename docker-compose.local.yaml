@@ -12,15 +12,20 @@ services:
       - "8000:8000"
     volumes:
       - db_data:/data:rw
-
+  db-health:
+    image: curlimages/curl
+    command: sh -c "until curl -s http://db:8000/health; do echo 'Waiting for SurrealDB...'; sleep 2; done; echo 'SurrealDB is ready!'"
+    depends_on:
+      db:
+        condition: service_started
   core:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
     container_name: scylla-core
     depends_on:
-      db:
-        condition: service_started
+      db-health:
+        condition: service_completed_successfully
     ports:
       - "50051:50051"   # gRPC
     environment:
