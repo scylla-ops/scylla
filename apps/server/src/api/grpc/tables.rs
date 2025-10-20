@@ -48,3 +48,11 @@ declare_table!(
 declare_table!(
     pipelines => "pipelines"
 );
+
+declare_table!(
+    projects => "projects"
+);
+
+declare_table!(
+    user_project => "user_project"
+);

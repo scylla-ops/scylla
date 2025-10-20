@@ -34,6 +34,7 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         name: String,
         description: Option<String>,
     ) -> Result<Organization, OrganizationDomainError> {
+        // check if organization name already exists
         if let Some(_) = R::get_organization_by_name(name.clone()).await? {
             return Err(OrganizationDomainError::OrganizationNameExists);
         }
@@ -59,6 +60,7 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         page: u32,
         page_size: u32,
     ) -> Result<(Vec<Organization>, usize), OrganizationDomainError> {
+        // validate pagination parameters
         const MAX_PAGE_SIZE: u32 = 100;
         if page == 0 {
             return Err(OrganizationDomainError::InvalidPagination { field: "page" });
@@ -72,6 +74,8 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
                 MAX_PAGE_SIZE
             )));
         }
+
+        // calculate limit and offset
         let limit_i64: i64 = page_size.into();
         let offset_u128 = (page as u128)
             .saturating_sub(1)
@@ -79,6 +83,7 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         let offset_i64 = i64::try_from(offset_u128).map_err(|_| {
             OrganizationDomainError::Validation("computed offset is too big".into())
         })?;
+
         let list = R::list_organizations(limit_i64, offset_i64).await?;
         let total = list.len();
         Ok((list, total))
@@ -88,6 +93,7 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         org_id: RecordIdKey,
         patch: OrganizationPatch,
     ) -> Result<Organization, OrganizationDomainError> {
+        // if name is being changed, check uniqueness
         if let Some(ref new_name) = patch.name {
             if let Some(existing) = R::get_organization_by_name(new_name.clone()).await? {
                 if existing.id.key().to_string() != org_id.to_string() {
@@ -119,9 +125,12 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         org_id: RecordIdKey,
         role: String,
     ) -> Result<UserOrganizationRelation, OrganizationDomainError> {
+        // verify user exists
         let _user = UR::get_user_by_id(user_id.to_string())
             .await?
             .ok_or(OrganizationDomainError::UserNotFound)?;
+
+        // verify organization exists
         let _org = R::get_organization_by_id(org_id.clone())
             .await?
             .ok_or(OrganizationDomainError::OrganizationNotFound)?;
@@ -145,10 +154,12 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         page: u32,
         page_size: u32,
     ) -> Result<(Vec<(User, UserOrganizationRelation)>, usize), OrganizationDomainError> {
+        // verify organization exists
         let _ = R::get_organization_by_id(org_id.clone())
             .await?
             .ok_or(OrganizationDomainError::OrganizationNotFound)?;
 
+        // validate pagination parameters
         const MAX_PAGE_SIZE: u32 = 100;
         if page == 0 {
             return Err(OrganizationDomainError::InvalidPagination { field: "page" });
@@ -163,6 +174,7 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
             )));
         }
 
+        // calculate limit and offset
         let limit: i64 = page_size.into();
         let offset_u128 = (page as u128)
             .saturating_sub(1)
@@ -182,10 +194,12 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         page_size: u32,
     ) -> Result<(Vec<(Organization, UserOrganizationRelation)>, usize), OrganizationDomainError>
     {
+        // verify user exists
         let _user = UR::get_user_by_id(user_id.to_string())
             .await?
             .ok_or(OrganizationDomainError::UserNotFound)?;
 
+        // validate pagination parameters
         const MAX_PAGE_SIZE: u32 = 100;
         if page == 0 {
             return Err(OrganizationDomainError::InvalidPagination { field: "page" });
@@ -200,6 +214,7 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
             )));
         }
 
+        // calculate limit and offset
         let limit: i64 = page_size.into();
         let offset_u128 = (page as u128)
             .saturating_sub(1)

@@ -8,6 +8,7 @@ use crate::api::grpc::orchestrator::controller::OrchestratorController;
 use crate::api::grpc::organization::controller::OrganizationController;
 use crate::api::grpc::pipeline::controller::PipelineController;
 use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
+use crate::api::grpc::project::controller::ProjectController;
 use crate::api::grpc::user::controller::UserController;
 use crate::config::CoreConfig;
 use crate::database::{apply_migrations, db, init_db, login};
@@ -20,6 +21,7 @@ use protocol::services::orchestrator::orchestrator_server::OrchestratorServer;
 use protocol::services::organization::organization_service_server::OrganizationServiceServer;
 use protocol::services::pipeline::pipeline_server::PipelineServer;
 use protocol::services::pipeline::snapshot::pipeline_snapshot_server::PipelineSnapshotServer;
+use protocol::services::project::project_service_server::ProjectServiceServer;
 use protocol::services::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
 use tower_http::LatencyUnit;
@@ -100,6 +102,8 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     let organization_grpc = OrganizationServiceServer::new(OrganizationController);
 
+    let project_grpc = ProjectServiceServer::new(ProjectController);
+
     let pipeline_grpc = PipelineServer::new(PipelineController);
 
     let pipeline_snapshot_grpc = PipelineSnapshotServer::new(PipelineSnapshotController);
@@ -131,6 +135,7 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
             .add_service(user_grpc)
             .add_service(auth_grpc)
             .add_service(organization_grpc)
+            .add_service(project_grpc)
             .add_service(pipeline_grpc)
             .add_service(pipeline_snapshot_grpc)
             .add_service(job_grpc)

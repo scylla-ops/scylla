@@ -3,6 +3,7 @@ pub mod job;
 pub mod orchestrator;
 pub mod organization;
 pub mod pipeline;
+pub mod project;
 #[cfg(feature = "surreal")]
 pub mod tables;
 pub mod user;

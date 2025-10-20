@@ -9,7 +9,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use protocol::serde_json;
 use serde::Deserialize;
-use surrealdb::RecordIdKey;
+use surrealdb::{RecordId, RecordIdKey};
 
 pub struct OrganizationRepositorySurreal;
 
@@ -111,7 +111,7 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
         offset: i64,
     ) -> anyhow::Result<Vec<(User, UserOrganizationRelation)>> {
         let query = format!(
-            "SELECT VALUE [in, role, joined_at, id] FROM {} WHERE out = $org ORDER BY joined_at DESC LIMIT $limit START $offset",
+            "SELECT in, role, joined_at, id FROM {} WHERE out = $org ORDER BY joined_at DESC LIMIT $limit START $offset FETCH in",
             tables::user_organization::TABLE
         );
         let mut result = db()
@@ -122,7 +122,13 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
             .await?;
 
         #[derive(Deserialize)]
-        struct QueryRow(User, String, chrono::DateTime<chrono::Utc>, RecordIdKey);
+        struct QueryRow {
+            #[serde(rename = "in")]
+            user: User,
+            role: String,
+            joined_at: chrono::DateTime<chrono::Utc>,
+            id: RecordId,
+        }
 
         let data: Vec<QueryRow> = result.take(0)?;
 
@@ -130,15 +136,15 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
 
         Ok(data
             .into_iter()
-            .map(|QueryRow(user, role, joined_at, relation_id)| {
+            .map(|row| {
                 let relation = UserOrganizationRelation {
-                    id: tables::user_organization::to_record_id(relation_id),
-                    user: user.id.clone(),
+                    id: row.id,
+                    user: row.user.id.clone(),
                     organization: org_record_id.clone(),
-                    role,
-                    joined_at,
+                    role: row.role,
+                    joined_at: row.joined_at,
                 };
-                (user, relation)
+                (row.user, relation)
             })
             .collect())
     }
@@ -149,7 +155,7 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
         offset: i64,
     ) -> anyhow::Result<Vec<(Organization, UserOrganizationRelation)>> {
         let query = format!(
-            "SELECT VALUE [out, role, joined_at, id] FROM {} WHERE in = $user ORDER BY joined_at DESC LIMIT $limit START $offset",
+            "SELECT out, role, joined_at, id FROM {} WHERE in = $user ORDER BY joined_at DESC LIMIT $limit START $offset FETCH out",
             tables::user_organization::TABLE
         );
         let mut result = db()
@@ -160,12 +166,13 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
             .await?;
 
         #[derive(Deserialize)]
-        struct QueryRow(
-            Organization,
-            String,
-            chrono::DateTime<chrono::Utc>,
-            RecordIdKey,
-        );
+        struct QueryRow {
+            #[serde(rename = "out")]
+            org: Organization,
+            role: String,
+            joined_at: chrono::DateTime<chrono::Utc>,
+            id: RecordId,
+        }
 
         let data: Vec<QueryRow> = result.take(0)?;
 
@@ -173,15 +180,15 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
 
         Ok(data
             .into_iter()
-            .map(|QueryRow(org, role, joined_at, relation_id)| {
+            .map(|row| {
                 let relation = UserOrganizationRelation {
-                    id: tables::user_organization::to_record_id(relation_id),
+                    id: row.id,
                     user: user_record_id.clone(),
-                    organization: org.id.clone(),
-                    role,
-                    joined_at,
+                    organization: row.org.id.clone(),
+                    role: row.role,
+                    joined_at: row.joined_at,
                 };
-                (org, relation)
+                (row.org, relation)
             })
             .collect())
     }
