@@ -26,6 +26,9 @@ pub mod services {
     pub mod job {
         tonic::include_proto!("job");
     }
+    pub mod organization {
+        tonic::include_proto!("organization");
+    }
 
     pub const FILE_DESCRIPTOR_SET: &[u8] =
         tonic::include_file_descriptor_set!("services_descriptor");

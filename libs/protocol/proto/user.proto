@@ -46,9 +46,9 @@ message DeleteUserRequest {
 message UserResponse {
   string user_id = 1;
   string username = 2;
-  string created_at = 4;
-  string updated_at = 5;
-  bool is_active = 6;
+  string created_at = 3;
+  string updated_at = 4;
+  bool is_active = 5;
 }
 
 message ListUsersResponse {

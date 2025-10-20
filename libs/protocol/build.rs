@@ -9,6 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "proto/pipeline.proto",
         "proto/job.proto",
         "proto/pipeline_snapshot.proto",
+        "proto/organization.proto",
     ];
 
     for proto in protos {
