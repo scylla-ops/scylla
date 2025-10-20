@@ -1,0 +1,24 @@
+meta {
+  name: add_user_to_project
+  type: grpc
+  seq: 7
+}
+
+grpc {
+  url: localhost:50051
+  method: /project.ProjectService/AddUserToProject
+  body: grpc
+  auth: none
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "user_id": "user_id_here",
+      "project_id": "project_id_here",
+      "role": "member"
+    }
+  '''
+}

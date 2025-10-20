@@ -1,0 +1,23 @@
+meta {
+  name: remove_user_from_project
+  type: grpc
+  seq: 8
+}
+
+grpc {
+  url: localhost:50051
+  method: /project.ProjectService/RemoveUserFromProject
+  body: grpc
+  auth: none
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "user_id": "user_id_here",
+      "project_id": "project_id_here"
+    }
+  '''
+}
