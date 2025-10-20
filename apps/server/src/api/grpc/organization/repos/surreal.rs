@@ -38,8 +38,8 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
         );
         let mut result = db()
             .query(query)
-            .bind(("limit", limit.clone()))
-            .bind(("offset", offset.clone()))
+            .bind(("limit", limit))
+            .bind(("offset", offset))
             .await?;
         let recs: Vec<Organization> = result.take(0)?;
         Ok(recs.into_iter().collect())
