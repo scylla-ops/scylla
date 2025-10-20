@@ -266,7 +266,6 @@ fn map_err(e: OrganizationDomainError) -> Status {
         }
         E::OrganizationNotFound => Status::not_found("Organization not found"),
         E::UserNotFound => Status::not_found("User not found"),
-        E::OrganizationNameExists => Status::already_exists("Organization name already exists"),
         E::Repo(e) => Status::internal(format!("Repository error: {}", e)),
     }
 }

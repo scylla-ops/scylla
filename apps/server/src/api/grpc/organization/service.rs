@@ -23,8 +23,6 @@ pub enum OrganizationDomainError {
     OrganizationNotFound,
     #[error("User not found")]
     UserNotFound,
-    #[error("Organization name already exists")]
-    OrganizationNameExists,
     #[error(transparent)]
     Repo(#[from] anyhow::Error),
 }
@@ -34,11 +32,6 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         name: String,
         description: Option<String>,
     ) -> Result<Organization, OrganizationDomainError> {
-        // check if organization name already exists
-        if let Some(_) = R::get_organization_by_name(name.clone()).await? {
-            return Err(OrganizationDomainError::OrganizationNameExists);
-        }
-
         let organization = InsertableOrganization { name, description };
 
         R::create_organization(organization)
@@ -93,15 +86,6 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         org_id: RecordIdKey,
         patch: OrganizationPatch,
     ) -> Result<Organization, OrganizationDomainError> {
-        // if name is being changed, check uniqueness
-        if let Some(ref new_name) = patch.name {
-            if let Some(existing) = R::get_organization_by_name(new_name.clone()).await? {
-                if existing.id.key().to_string() != org_id.to_string() {
-                    return Err(OrganizationDomainError::OrganizationNameExists);
-                }
-            }
-        }
-
         let opt = R::update_organization(org_id, patch).await?;
 
         match opt {

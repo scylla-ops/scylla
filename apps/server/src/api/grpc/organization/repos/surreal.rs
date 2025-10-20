@@ -31,11 +31,6 @@ impl OrganizationRepository for OrganizationRepositorySurreal {
         Ok(rec)
     }
 
-    async fn get_organization_by_name(name: String) -> anyhow::Result<Option<Organization>> {
-        let rec: Option<Organization> = db().select((tables::organizations::TABLE, name)).await?;
-        Ok(rec)
-    }
-
     async fn list_organizations(limit: i64, offset: i64) -> anyhow::Result<Vec<Organization>> {
         let query = format!(
             "SELECT * FROM {} ORDER BY created_at DESC LIMIT $limit START $offset",

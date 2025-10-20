@@ -26,8 +26,6 @@ pub enum ProjectDomainError {
     UserNotFound,
     #[error("Organization not found")]
     OrganizationNotFound,
-    #[error("Project name already exists in this organization")]
-    ProjectNameExistsInOrg,
     #[error("User is not a member of the project's organization")]
     UserNotInOrganization,
     #[error(transparent)]
@@ -46,11 +44,6 @@ impl<R: ProjectRepository, UR: UserRepository, OR: OrganizationRepository>
         let _org = OR::get_organization_by_id(org_id.clone())
             .await?
             .ok_or(ProjectDomainError::OrganizationNotFound)?;
-
-        // check if project name already exists in this organization
-        if let Some(_) = R::get_project_by_name_and_org(name.clone(), org_id.clone()).await? {
-            return Err(ProjectDomainError::ProjectNameExistsInOrg);
-        }
 
         let project = InsertableProject {
             name,
@@ -139,23 +132,6 @@ impl<R: ProjectRepository, UR: UserRepository, OR: OrganizationRepository>
         project_id: RecordIdKey,
         patch: ProjectPatch,
     ) -> Result<Project, ProjectDomainError> {
-        // get existing project
-        let existing = R::get_project_by_id(project_id.clone())
-            .await?
-            .ok_or(ProjectDomainError::ProjectNotFound)?;
-
-        // if name is being changed, check uniqueness within the organization
-        if let Some(ref new_name) = patch.name {
-            let org_key = existing.organization.key();
-            if let Some(existing_with_name) =
-                R::get_project_by_name_and_org(new_name.clone(), org_key.clone()).await?
-            {
-                if existing_with_name.id.key().to_string() != project_id.to_string() {
-                    return Err(ProjectDomainError::ProjectNameExistsInOrg);
-                }
-            }
-        }
-
         let opt = R::update_project(project_id, patch).await?;
 
         match opt {

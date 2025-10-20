@@ -14,7 +14,6 @@ pub trait OrganizationRepository: Send + Sync + 'static {
     async fn get_organization_by_id(
         #[cfg(feature = "surreal")] org_id: RecordIdKey,
     ) -> anyhow::Result<Option<Organization>>;
-    async fn get_organization_by_name(name: String) -> anyhow::Result<Option<Organization>>;
     async fn list_organizations(limit: i64, offset: i64) -> anyhow::Result<Vec<Organization>>;
     async fn update_organization(
         #[cfg(feature = "surreal")] org_id: RecordIdKey,

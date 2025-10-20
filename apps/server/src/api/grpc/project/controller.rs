@@ -317,9 +317,6 @@ fn map_err(e: ProjectDomainError) -> Status {
         E::ProjectNotFound => Status::not_found("Project not found"),
         E::UserNotFound => Status::not_found("User not found"),
         E::OrganizationNotFound => Status::not_found("Organization not found"),
-        E::ProjectNameExistsInOrg => {
-            Status::already_exists("Project name already exists in this organization")
-        }
         E::UserNotInOrganization => Status::permission_denied(
             "User must be a member of the project's organization to be added to the project",
         ),

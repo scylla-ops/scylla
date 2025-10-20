@@ -14,10 +14,6 @@ pub trait ProjectRepository: Send + Sync + 'static {
     async fn get_project_by_id(
         #[cfg(feature = "surreal")] project_id: RecordIdKey,
     ) -> anyhow::Result<Option<Project>>;
-    async fn get_project_by_name_and_org(
-        name: String,
-        #[cfg(feature = "surreal")] org_id: RecordIdKey,
-    ) -> anyhow::Result<Option<Project>>;
     async fn list_projects(limit: i64, offset: i64) -> anyhow::Result<Vec<Project>>;
     async fn list_organization_projects(
         #[cfg(feature = "surreal")] org_id: RecordIdKey,

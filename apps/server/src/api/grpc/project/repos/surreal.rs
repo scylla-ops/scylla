@@ -31,23 +31,6 @@ impl ProjectRepository for ProjectRepositorySurreal {
         Ok(rec)
     }
 
-    async fn get_project_by_name_and_org(
-        name: String,
-        org_id: RecordIdKey,
-    ) -> anyhow::Result<Option<Project>> {
-        let query = format!(
-            "SELECT * FROM {} WHERE name = $name AND organization = $org LIMIT 1",
-            tables::projects::TABLE
-        );
-        let mut result = db()
-            .query(query)
-            .bind(("name", name))
-            .bind(("org", tables::organizations::to_record_id(org_id)))
-            .await?;
-        let recs: Vec<Project> = result.take(0)?;
-        Ok(recs.into_iter().next())
-    }
-
     async fn list_projects(limit: i64, offset: i64) -> anyhow::Result<Vec<Project>> {
         let query = format!(
             "SELECT * FROM {} ORDER BY created_at DESC LIMIT $limit START $offset",
