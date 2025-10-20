@@ -1,0 +1,25 @@
+meta {
+  name: update_organization
+  type: grpc
+  seq: 4
+}
+
+grpc {
+  url: localhost:50051
+  method: /organization.OrganizationService/UpdateOrganization
+  body: grpc
+  auth: none
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "organization_id": "org123",
+      "name": "Updated Organization Name",
+      "description": "Updated description",
+      "is_active": true
+    }
+  '''
+}
