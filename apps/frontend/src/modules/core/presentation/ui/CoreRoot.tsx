@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Navigate, Routes } from 'react-router-dom';
 import LoginPage from '@/modules/login/presentation/ui/LoginPage.tsx';
+import MarketplacePage from '@/modules/marketplace/presentation/ui/MarketplacePage.tsx';
 
 //TODO: navigation and overlay
 export const CoreRoot = () => {
@@ -7,6 +8,7 @@ export const CoreRoot = () => {
     <BrowserRouter>
       <Routes>
         <Route path='/login' element={<LoginPage />} />
+        <Route path='/marketplace' element={<MarketplacePage />}></Route>
         <Route path='*' element={<Navigate to='/login' replace />} />
       </Routes>
     </BrowserRouter>
