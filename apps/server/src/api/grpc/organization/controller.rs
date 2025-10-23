@@ -2,6 +2,7 @@ use crate::api::grpc::organization::models::OrganizationPatch;
 #[cfg(feature = "surreal")]
 use crate::api::grpc::organization::repos::surreal::OrganizationRepositorySurreal;
 use crate::api::grpc::organization::service::{OrganizationDomainError, OrganizationService};
+use crate::api::grpc::rbac::{check_permission, extract_user_from_token, permissions};
 #[cfg(feature = "surreal")]
 use crate::api::grpc::user::repos::surreal::UserRepositorySurreal;
 #[cfg(feature = "surreal")]
@@ -29,10 +30,12 @@ impl organization_service_server::OrganizationService for OrganizationController
         &self,
         request: Request<CreateOrganizationRequest>,
     ) -> Result<Response<OrganizationResponse>, Status> {
+        let _user_id = extract_user_from_token(&request).await?;
         let CreateOrganizationRequest { name, description } = request.into_inner();
         let org = OrganizationService::<OrgRepo, UserRepo>::create_organization(name, description)
             .await
             .map_err(map_err)?;
+
         Ok(Response::new(OrganizationResponse {
             organization_id: org.id.key().to_string(),
             name: org.name,
@@ -47,7 +50,19 @@ impl organization_service_server::OrganizationService for OrganizationController
         &self,
         request: Request<GetOrganizationRequest>,
     ) -> Result<Response<OrganizationResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let GetOrganizationRequest { organization_id } = request.into_inner();
+        let org_id_str = format!("organizations:{}", organization_id);
+
+        // check read permission
+        check_permission(
+            &user_id,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions::actions::READ,
+        )
+        .await?;
+
         let org_id = organization_id.into();
         let org = OrganizationService::<OrgRepo, UserRepo>::get_organization(org_id)
             .await
@@ -97,12 +112,24 @@ impl organization_service_server::OrganizationService for OrganizationController
         &self,
         request: Request<UpdateOrganizationRequest>,
     ) -> Result<Response<OrganizationResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let UpdateOrganizationRequest {
             organization_id,
             name,
             description,
             is_active,
         } = request.into_inner();
+        let org_id_str = format!("organizations:{}", organization_id);
+
+        // check write permission
+        check_permission(
+            &user_id,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions::actions::WRITE,
+        )
+        .await?;
+
         let org_id = organization_id.into();
         let patch = OrganizationPatch {
             name,
@@ -126,7 +153,19 @@ impl organization_service_server::OrganizationService for OrganizationController
         &self,
         request: Request<DeleteOrganizationRequest>,
     ) -> Result<Response<DeleteOrganizationResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let DeleteOrganizationRequest { organization_id } = request.into_inner();
+        let org_id_str = format!("organizations:{}", organization_id);
+
+        // check delete permission
+        check_permission(
+            &user_id,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions::actions::DELETE,
+        )
+        .await?;
+
         let org_id = organization_id.into();
         OrganizationService::<OrgRepo, UserRepo>::deactivate_organization(org_id)
             .await
@@ -138,11 +177,23 @@ impl organization_service_server::OrganizationService for OrganizationController
         &self,
         request: Request<AddUserToOrganizationRequest>,
     ) -> Result<Response<AddUserToOrganizationResponse>, Status> {
+        let requester_id = extract_user_from_token(&request).await?;
         let AddUserToOrganizationRequest {
             user_id,
             organization_id,
             role,
         } = request.into_inner();
+        let org_id_str = format!("organizations:{}", organization_id);
+
+        // check manage_users permission
+        check_permission(
+            &requester_id,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions::actions::MANAGE_USERS,
+        )
+        .await?;
+
         let user_record_id = user_id.into();
         let org_record_id = organization_id.into();
         let role = role.unwrap_or_else(|| "member".to_string());
@@ -162,10 +213,22 @@ impl organization_service_server::OrganizationService for OrganizationController
         &self,
         request: Request<RemoveUserFromOrganizationRequest>,
     ) -> Result<Response<RemoveUserFromOrganizationResponse>, Status> {
+        let requester_id = extract_user_from_token(&request).await?;
         let RemoveUserFromOrganizationRequest {
             user_id,
             organization_id,
         } = request.into_inner();
+        let org_id_str = format!("organizations:{}", organization_id);
+
+        // check manage_users permission
+        check_permission(
+            &requester_id,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions::actions::MANAGE_USERS,
+        )
+        .await?;
+
         let user_record_id = user_id.into();
         let org_record_id = organization_id.into();
         OrganizationService::<OrgRepo, UserRepo>::remove_user_from_organization(
@@ -181,11 +244,23 @@ impl organization_service_server::OrganizationService for OrganizationController
         &self,
         request: Request<ListOrganizationUsersRequest>,
     ) -> Result<Response<ListOrganizationUsersResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let ListOrganizationUsersRequest {
             organization_id,
             page,
             page_size,
         } = request.into_inner();
+        let org_id_str = format!("organizations:{}", organization_id);
+
+        // check read permission to view organization members
+        check_permission(
+            &user_id,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions::actions::READ,
+        )
+        .await?;
+
         let org_id = organization_id.into();
         let page_u32 =
             u32::try_from(page).map_err(|_| Status::invalid_argument("page is too big"))?;

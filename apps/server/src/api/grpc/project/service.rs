@@ -3,6 +3,7 @@ use crate::api::grpc::project::models::{
     InsertableProject, Project, ProjectPatch, UserProjectRelation,
 };
 use crate::api::grpc::project::repos::ProjectRepository;
+use crate::api::grpc::rbac::{add_policies_for_user, permissions, remove_policies_for_user};
 use crate::api::grpc::user::models::User;
 use crate::api::grpc::user::repos::UserRepository;
 use derive_more::Constructor;
@@ -154,7 +155,7 @@ impl<R: ProjectRepository, UR: UserRepository, OR: OrganizationRepository>
         role: String,
     ) -> Result<UserProjectRelation, ProjectDomainError> {
         // verify user exists
-        let _user = UR::get_user_by_id(user_id.to_string())
+        let user = UR::get_user_by_id(user_id.to_string())
             .await?
             .ok_or(ProjectDomainError::UserNotFound)?;
 
@@ -174,18 +175,75 @@ impl<R: ProjectRepository, UR: UserRepository, OR: OrganizationRepository>
             return Err(ProjectDomainError::UserNotInOrganization);
         }
 
-        R::add_user_to_project(user_id, project_id, role)
+        let relation = R::add_user_to_project(user_id, project_id, role.clone())
             .await
-            .map_err(ProjectDomainError::Repo)
+            .map_err(ProjectDomainError::Repo)?;
+
+        // sync RBAC policies
+        let user_id_str = user.id.to_string();
+        let project_id_str = project.id.to_string();
+        let permissions = permissions::role_permissions(&role);
+        
+        add_policies_for_user(
+            &user_id_str,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+            permissions,
+        )
+        .await
+        .map_err(|e| {
+            tracing::warn!("Failed to sync RBAC policies: {}", e);
+            ProjectDomainError::Repo(e)
+        })?;
+
+        tracing::debug!(
+            "Added user {} to project {} with role {}",
+            user_id_str,
+            project_id_str,
+            role
+        );
+
+        Ok(relation)
     }
 
     pub async fn remove_user_from_project(
         user_id: RecordIdKey,
         project_id: RecordIdKey,
     ) -> Result<(), ProjectDomainError> {
+        // get user and project IDs as strings before removing
+        let user = UR::get_user_by_id(user_id.to_string())
+            .await?
+            .ok_or(ProjectDomainError::UserNotFound)?;
+        let project = R::get_project_by_id(project_id.clone())
+            .await?
+            .ok_or(ProjectDomainError::ProjectNotFound)?;
+
+        let user_id_str = user.id.to_string();
+        let project_id_str = project.id.to_string();
+
         R::remove_user_from_project(user_id, project_id)
             .await
-            .map_err(ProjectDomainError::Repo)
+            .map_err(ProjectDomainError::Repo)?;
+
+        // remove RBAC policies
+        remove_policies_for_user(
+            &user_id_str,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+        )
+        .await
+        .map_err(|e| {
+            tracing::warn!("Failed to sync RBAC policies: {}", e);
+            ProjectDomainError::Repo(e)
+        })?;
+
+        tracing::debug!(
+            "Removed user {} from project {}",
+            user_id_str,
+            project_id_str
+        );
+
+        Ok(())
     }
 
     pub async fn list_project_users(

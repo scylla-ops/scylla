@@ -2,6 +2,7 @@ use crate::api::grpc::organization::repos::surreal::OrganizationRepositorySurrea
 use crate::api::grpc::project::models::ProjectPatch;
 use crate::api::grpc::project::repos::surreal::ProjectRepositorySurreal;
 use crate::api::grpc::project::service::{ProjectDomainError, ProjectService};
+use crate::api::grpc::rbac::{check_permission, extract_user_from_token, permissions};
 use crate::api::grpc::user::repos::surreal::UserRepositorySurreal;
 use protocol::services::project::{
     AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
@@ -24,11 +25,23 @@ impl project_service_server::ProjectService for ProjectController {
         &self,
         request: Request<CreateProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let CreateProjectRequest {
             name,
             description,
             organization_id,
         } = request.into_inner();
+        let org_id_str = format!("organizations:{}", organization_id);
+
+        // check write permission on organization to create projects
+        check_permission(
+            &user_id,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions::actions::WRITE,
+        )
+        .await?;
+
         let org_id = organization_id.into();
         let project = ProjectService::<ProjRepo, UserRepo, OrgRepo>::create_project(
             name,
@@ -37,6 +50,7 @@ impl project_service_server::ProjectService for ProjectController {
         )
         .await
         .map_err(map_err)?;
+
         Ok(Response::new(ProjectResponse {
             project_id: project.id.key().to_string(),
             name: project.name,
@@ -52,7 +66,19 @@ impl project_service_server::ProjectService for ProjectController {
         &self,
         request: Request<GetProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let GetProjectRequest { project_id } = request.into_inner();
+        let project_id_str = format!("projects:{}", project_id);
+
+        // check read permission on project
+        check_permission(
+            &user_id,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+            permissions::actions::READ,
+        )
+        .await?;
+
         let proj_id = project_id.into();
         let project = ProjectService::<ProjRepo, UserRepo, OrgRepo>::get_project(proj_id)
             .await
@@ -145,12 +171,24 @@ impl project_service_server::ProjectService for ProjectController {
         &self,
         request: Request<UpdateProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let UpdateProjectRequest {
             project_id,
             name,
             description,
             is_active,
         } = request.into_inner();
+        let project_id_str = format!("projects:{}", project_id);
+
+        // check write permission on project
+        check_permission(
+            &user_id,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+            permissions::actions::WRITE,
+        )
+        .await?;
+
         let proj_id = project_id.into();
         let patch = ProjectPatch {
             name,
@@ -175,7 +213,19 @@ impl project_service_server::ProjectService for ProjectController {
         &self,
         request: Request<DeleteProjectRequest>,
     ) -> Result<Response<DeleteProjectResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let DeleteProjectRequest { project_id } = request.into_inner();
+        let project_id_str = format!("projects:{}", project_id);
+
+        // check delete permission on project
+        check_permission(
+            &user_id,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+            permissions::actions::DELETE,
+        )
+        .await?;
+
         let proj_id = project_id.into();
         ProjectService::<ProjRepo, UserRepo, OrgRepo>::deactivate_project(proj_id)
             .await
@@ -187,11 +237,23 @@ impl project_service_server::ProjectService for ProjectController {
         &self,
         request: Request<AddUserToProjectRequest>,
     ) -> Result<Response<AddUserToProjectResponse>, Status> {
+        let requester_id = extract_user_from_token(&request).await?;
         let AddUserToProjectRequest {
             user_id,
             project_id,
             role,
         } = request.into_inner();
+        let project_id_str = format!("projects:{}", project_id);
+
+        // check manage_users permission on project
+        check_permission(
+            &requester_id,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+            permissions::actions::MANAGE_USERS,
+        )
+        .await?;
+
         let user_record_id = user_id.into();
         let project_record_id = project_id.into();
         let role = role.unwrap_or_else(|| "member".to_string());
@@ -211,10 +273,22 @@ impl project_service_server::ProjectService for ProjectController {
         &self,
         request: Request<RemoveUserFromProjectRequest>,
     ) -> Result<Response<RemoveUserFromProjectResponse>, Status> {
+        let requester_id = extract_user_from_token(&request).await?;
         let RemoveUserFromProjectRequest {
             user_id,
             project_id,
         } = request.into_inner();
+        let project_id_str = format!("projects:{}", project_id);
+
+        // check manage_users permission on project
+        check_permission(
+            &requester_id,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+            permissions::actions::MANAGE_USERS,
+        )
+        .await?;
+
         let user_record_id = user_id.into();
         let project_record_id = project_id.into();
         ProjectService::<ProjRepo, UserRepo, OrgRepo>::remove_user_from_project(
@@ -230,11 +304,23 @@ impl project_service_server::ProjectService for ProjectController {
         &self,
         request: Request<ListProjectUsersRequest>,
     ) -> Result<Response<ListProjectUsersResponse>, Status> {
+        let user_id = extract_user_from_token(&request).await?;
         let ListProjectUsersRequest {
             project_id,
             page,
             page_size,
         } = request.into_inner();
+        let project_id_str = format!("projects:{}", project_id);
+
+        // check read permission on project to view members
+        check_permission(
+            &user_id,
+            &project_id_str,
+            permissions::resources::PROJECTS,
+            permissions::actions::READ,
+        )
+        .await?;
+
         let proj_id = project_id.into();
         let page_u32 =
             u32::try_from(page).map_err(|_| Status::invalid_argument("page is too big"))?;

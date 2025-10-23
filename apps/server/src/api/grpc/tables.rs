@@ -56,3 +56,7 @@ declare_table!(
 declare_table!(
     user_project => "user_project"
 );
+
+declare_table!(
+    casbin_rules => "casbin_rules"
+);

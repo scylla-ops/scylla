@@ -16,27 +16,6 @@ type UserRepo = UserRepositorySurreal;
 
 pub struct UserController;
 
-/// Extract a Bearer token from the `authorization` metadata header.
-/// Returns `Unauthenticated` if the header is missing, malformed, or not prefixed with `Bearer `.
-fn _extract_bearer_token<T>(req: &Request<T>) -> Result<String, Status> {
-    let meta = req
-        .metadata()
-        .get("authorization")
-        .ok_or_else(|| Status::unauthenticated("Missing authorization header"))?;
-
-    let header_value = meta
-        .to_str()
-        .map_err(|_| Status::unauthenticated("Invalid authorization header"))?;
-
-    if let Some(token) = header_value.strip_prefix("Bearer ") {
-        Ok(token.to_string())
-    } else {
-        Err(Status::unauthenticated(
-            "Authorization must be Bearer token",
-        ))
-    }
-}
-
 #[async_trait::async_trait]
 impl user_service_server::UserService for UserController {
     async fn create_user(

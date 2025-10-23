@@ -2,6 +2,7 @@ use crate::api::grpc::organization::models::{
     InsertableOrganization, Organization, OrganizationPatch, UserOrganizationRelation,
 };
 use crate::api::grpc::organization::repos::OrganizationRepository;
+use crate::api::grpc::rbac::{add_policies_for_user, permissions, remove_policies_for_user};
 use crate::api::grpc::user::models::User;
 use crate::api::grpc::user::repos::UserRepository;
 use derive_more::Constructor;
@@ -110,27 +111,84 @@ impl<R: OrganizationRepository, UR: UserRepository> OrganizationService<R, UR> {
         role: String,
     ) -> Result<UserOrganizationRelation, OrganizationDomainError> {
         // verify user exists
-        let _user = UR::get_user_by_id(user_id.to_string())
+        let user = UR::get_user_by_id(user_id.to_string())
             .await?
             .ok_or(OrganizationDomainError::UserNotFound)?;
 
         // verify organization exists
-        let _org = R::get_organization_by_id(org_id.clone())
+        let org = R::get_organization_by_id(org_id.clone())
             .await?
             .ok_or(OrganizationDomainError::OrganizationNotFound)?;
 
-        R::add_user_to_organization(user_id, org_id, role)
+        let relation = R::add_user_to_organization(user_id, org_id, role.clone())
             .await
-            .map_err(OrganizationDomainError::Repo)
+            .map_err(OrganizationDomainError::Repo)?;
+
+        // sync RBAC policies
+        let user_id_str = user.id.to_string();
+        let org_id_str = org.id.to_string();
+        let permissions = permissions::role_permissions(&role);
+        
+        add_policies_for_user(
+            &user_id_str,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+            permissions,
+        )
+        .await
+        .map_err(|e| {
+            tracing::warn!("Failed to sync RBAC policies: {}", e);
+            OrganizationDomainError::Repo(e)
+        })?;
+
+        tracing::debug!(
+            "Added user {} to organization {} with role {}",
+            user_id_str,
+            org_id_str,
+            role
+        );
+
+        Ok(relation)
     }
 
     pub async fn remove_user_from_organization(
         user_id: RecordIdKey,
         org_id: RecordIdKey,
     ) -> Result<(), OrganizationDomainError> {
+        // get user and org IDs as strings before removing
+        let user = UR::get_user_by_id(user_id.to_string())
+            .await?
+            .ok_or(OrganizationDomainError::UserNotFound)?;
+        let org = R::get_organization_by_id(org_id.clone())
+            .await?
+            .ok_or(OrganizationDomainError::OrganizationNotFound)?;
+
+        let user_id_str = user.id.to_string();
+        let org_id_str = org.id.to_string();
+
         R::remove_user_from_organization(user_id, org_id)
             .await
-            .map_err(OrganizationDomainError::Repo)
+            .map_err(OrganizationDomainError::Repo)?;
+
+        // remove RBAC policies
+        remove_policies_for_user(
+            &user_id_str,
+            &org_id_str,
+            permissions::resources::ORGANIZATIONS,
+        )
+        .await
+        .map_err(|e| {
+            tracing::warn!("Failed to sync RBAC policies: {}", e);
+            OrganizationDomainError::Repo(e)
+        })?;
+
+        tracing::debug!(
+            "Removed user {} from organization {}",
+            user_id_str,
+            org_id_str
+        );
+
+        Ok(())
     }
 
     pub async fn list_organization_users(

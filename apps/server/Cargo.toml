@@ -25,13 +25,17 @@ derive_builder = "0.20.2"
 sha2 = "0.11.0-rc.2"
 tower-http = { version = "0.6.6", features = ["trace"]}
 tokio-stream = "0.1.17"
-# Rbac with diesel:
-diesel-adapter = { version = "1.2.0", features = ["postgres"] }
+# RBAC dependencies
+surreal-casbin-adapter = { path = "../../libs/surreal-casbin-adapter" }
 casbin = { version = "2.13.0" }
 uuid = { version = "1.18.1", features = ["v4"] }
 surrealdb-migrations = "2.3.0"
 include_dir = "0.7.4"
 tonic-web = "0.14.2"
+
+[dev-dependencies]
+tokio = { version = "1.47.1", features = ["full", "test-util"] }
+serde_json = "1.0"
 
 [features]
 # Enable gRPC server reflection service by default; you can build without it using `--no-default-features`.

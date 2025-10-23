@@ -80,10 +80,8 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     apply_migrations(db()).await;
 
-    // RBAC
-    //let m = casbin::DefaultModel::from_str(CASBIN_CONF).await?;
-    //let a = DieselAdapter::with_pool(diesel_db.pool.clone())?;
-    //let enforcer = Arc::from(Enforcer::new(m, a).await?);
+    // RBAC enforcer
+    crate::api::grpc::rbac::init_enforcer().await?;
 
     /* GRPC Api */
     #[cfg(feature = "reflection")]

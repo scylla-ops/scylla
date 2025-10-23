@@ -1,4 +1,7 @@
-pub const _CASBIN_CONF: &str = r#"
+// casbin model configuration for RBAC with domains
+// domains represent organizations and projects
+// roles: owner, admin, member, viewer
+pub const CASBIN_MODEL: &str = r#"
 [request_definition]
 r = sub, dom, obj, act
 
@@ -7,11 +10,10 @@ p = sub, dom, obj, act
 
 [role_definition]
 g = _, _, _
-; g, user_or_role, parent_role, dom
 
 [policy_effect]
 e = some(where (p.eft == allow))
 
 [matchers]
-m = g(r.sub, p.sub, r.dom) && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act)
+m = g(r.sub, p.sub, r.dom) && r.dom == p.dom && keyMatch2(r.obj, p.obj) && regexMatch(r.act, p.act)
 "#;
