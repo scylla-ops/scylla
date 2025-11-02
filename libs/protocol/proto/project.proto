@@ -1,0 +1,131 @@
+syntax = "proto3";
+package project;
+
+service ProjectService {
+  // create a project
+  rpc CreateProject (CreateProjectRequest) returns (ProjectResponse);
+
+  // get a project by ID
+  rpc GetProject (GetProjectRequest) returns (ProjectResponse);
+
+  // list all projects
+  rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse);
+
+  // list projects for an organization
+  rpc ListOrganizationProjects (ListOrganizationProjectsRequest) returns (ListProjectsResponse);
+
+  // update a project
+  rpc UpdateProject (UpdateProjectRequest) returns (ProjectResponse);
+
+  // delete a project
+  rpc DeleteProject (DeleteProjectRequest) returns (DeleteProjectResponse);
+
+  // add a user to a project
+  rpc AddUserToProject (AddUserToProjectRequest) returns (AddUserToProjectResponse);
+
+  // remove a user from a project
+  rpc RemoveUserFromProject (RemoveUserFromProjectRequest) returns (RemoveUserFromProjectResponse);
+
+  // list users in a project
+  rpc ListProjectUsers (ListProjectUsersRequest) returns (ListProjectUsersResponse);
+
+  // list projects for a user
+  rpc ListUserProjects (ListUserProjectsRequest) returns (ListProjectsResponse);
+}
+
+message CreateProjectRequest {
+  string name = 1;
+  optional string description = 2;
+  string organization_id = 3;
+}
+
+message GetProjectRequest {
+  string project_id = 1;
+}
+
+message ListProjectsRequest {
+  uint64 page = 1;
+  uint64 page_size = 2;
+}
+
+message ListOrganizationProjectsRequest {
+  string organization_id = 1;
+  uint64 page = 2;
+  uint64 page_size = 3;
+}
+
+message UpdateProjectRequest {
+  string project_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional bool is_active = 4;
+}
+
+message DeleteProjectRequest {
+  string project_id = 1;
+}
+
+message ProjectResponse {
+  string project_id = 1;
+  string name = 2;
+  string description = 3;
+  string organization_id = 4;
+  bool is_active = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message ListProjectsResponse {
+  repeated ProjectResponse projects = 1;
+  uint64 total_count = 2;
+  uint64 page = 3;
+  uint64 page_size = 4;
+}
+
+message DeleteProjectResponse {}
+
+message AddUserToProjectRequest {
+  string user_id = 1;
+  string project_id = 2;
+  optional string role = 3; // e.g., "member", "admin", "owner"
+}
+
+message AddUserToProjectResponse {
+  string relation_id = 1;
+}
+
+message RemoveUserFromProjectRequest {
+  string user_id = 1;
+  string project_id = 2;
+}
+
+message RemoveUserFromProjectResponse {}
+
+message ListProjectUsersRequest {
+  string project_id = 1;
+  uint64 page = 2;
+  uint64 page_size = 3;
+}
+
+message ProjectUserInfo {
+  string user_id = 1;
+  string username = 2;
+  string role = 3;
+  bool is_active = 4;
+  string joined_at = 5;
+}
+
+message ListProjectUsersResponse {
+  repeated ProjectUserInfo users = 1;
+  uint64 total_count = 2;
+  uint64 page = 3;
+  uint64 page_size = 4;
+}
+
+message ListUserProjectsRequest {
+  string user_id = 1;
+  uint64 page = 2;
+  uint64 page_size = 3;
+}
+
+

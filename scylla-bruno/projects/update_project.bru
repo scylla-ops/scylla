@@ -1,0 +1,24 @@
+meta {
+  name: update_project
+  type: grpc
+  seq: 5
+}
+
+grpc {
+  url: localhost:50051
+  method: /project.ProjectService/UpdateProject
+  body: grpc
+  auth: none
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "project_id": "project_id_here",
+      "name": "Updated Project Name",
+      "description": "Updated description"
+    }
+  '''
+}

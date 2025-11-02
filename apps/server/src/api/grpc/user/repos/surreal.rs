@@ -12,11 +12,8 @@ pub struct UserRepositorySurreal;
 #[async_trait]
 impl UserRepository for UserRepositorySurreal {
     async fn create_user(new_user: InsertableUser) -> anyhow::Result<User> {
-        let rec: Option<User> = dbg!(db()
-            .create(TABLE)
-            .content(new_user)
-            .await)
-            .context("Failed to create user")?;
+        let rec: Option<User> =
+            dbg!(db().create(TABLE).content(new_user).await).context("Failed to create user")?;
 
         let row = rec.context("Failed to fetch user")?;
         Ok(row)

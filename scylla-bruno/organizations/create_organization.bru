@@ -1,0 +1,23 @@
+meta {
+  name: create_organization
+  type: grpc
+  seq: 1
+}
+
+grpc {
+  url: localhost:50051
+  method: /organization.OrganizationService/CreateOrganization
+  body: grpc
+  auth: none
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "name": "Acme Corporation",
+      "description": "A sample organization for testing"
+    }
+  '''
+}

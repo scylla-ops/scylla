@@ -1,0 +1,125 @@
+syntax = "proto3";
+package organization;
+
+service OrganizationService {
+  // create an organization
+  rpc CreateOrganization (CreateOrganizationRequest) returns (OrganizationResponse);
+
+  // get an organization by ID
+  rpc GetOrganization (GetOrganizationRequest) returns (OrganizationResponse);
+
+  // list all organizations
+  rpc ListOrganizations (ListOrganizationsRequest) returns (ListOrganizationsResponse);
+
+  // update an organization
+  rpc UpdateOrganization (UpdateOrganizationRequest) returns (OrganizationResponse);
+
+  // delete an organization
+  rpc DeleteOrganization (DeleteOrganizationRequest) returns (DeleteOrganizationResponse);
+
+  // add a user to an organization
+  rpc AddUserToOrganization (AddUserToOrganizationRequest) returns (AddUserToOrganizationResponse);
+
+  // remove a user from an organization
+  rpc RemoveUserFromOrganization (RemoveUserFromOrganizationRequest) returns (RemoveUserFromOrganizationResponse);
+
+  // list users in an organization
+  rpc ListOrganizationUsers (ListOrganizationUsersRequest) returns (ListOrganizationUsersResponse);
+
+  // list organizations for a user
+  rpc ListUserOrganizations (ListUserOrganizationsRequest) returns (ListUserOrganizationsResponse);
+}
+
+message CreateOrganizationRequest {
+  string name = 1;
+  optional string description = 2;
+}
+
+message GetOrganizationRequest {
+  string organization_id = 1;
+}
+
+message ListOrganizationsRequest {
+  uint64 page = 1;
+  uint64 page_size = 2;
+}
+
+message UpdateOrganizationRequest {
+  string organization_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional bool is_active = 4;
+}
+
+message DeleteOrganizationRequest {
+  string organization_id = 1;
+}
+
+message OrganizationResponse {
+  string organization_id = 1;
+  string name = 2;
+  string description = 3;
+  bool is_active = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message ListOrganizationsResponse {
+  repeated OrganizationResponse organizations = 1;
+  uint64 total_count = 2;
+  uint64 page = 3;
+  uint64 page_size = 4;
+}
+
+message DeleteOrganizationResponse {}
+
+message AddUserToOrganizationRequest {
+  string user_id = 1;
+  string organization_id = 2;
+  optional string role = 3; // e.g., "member", "admin", "owner"
+}
+
+message AddUserToOrganizationResponse {
+  string relation_id = 1;
+}
+
+message RemoveUserFromOrganizationRequest {
+  string user_id = 1;
+  string organization_id = 2;
+}
+
+message RemoveUserFromOrganizationResponse {}
+
+message ListOrganizationUsersRequest {
+  string organization_id = 1;
+  uint64 page = 2;
+  uint64 page_size = 3;
+}
+
+message UserInfo {
+  string user_id = 1;
+  string username = 2;
+  string role = 3;
+  bool is_active = 4;
+  string joined_at = 5;
+}
+
+message ListOrganizationUsersResponse {
+  repeated UserInfo users = 1;
+  uint64 total_count = 2;
+  uint64 page = 3;
+  uint64 page_size = 4;
+}
+
+message ListUserOrganizationsRequest {
+  string user_id = 1;
+  uint64 page = 2;
+  uint64 page_size = 3;
+}
+
+message ListUserOrganizationsResponse {
+  repeated OrganizationResponse organizations = 1;
+  uint64 total_count = 2;
+  uint64 page = 3;
+  uint64 page_size = 4;
+}

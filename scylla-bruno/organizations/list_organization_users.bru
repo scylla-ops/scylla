@@ -1,0 +1,24 @@
+meta {
+  name: list_organization_users
+  type: grpc
+  seq: 6
+}
+
+grpc {
+  url: localhost:50051
+  method: /organization.OrganizationService/ListOrganizationUsers
+  body: grpc
+  auth: none
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "organization_id": "org123",
+      "page": 1,
+      "page_size": 10
+    }
+  '''
+}
