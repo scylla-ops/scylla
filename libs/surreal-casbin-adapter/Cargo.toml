@@ -9,6 +9,9 @@ repository = "https://github.com/yourusername/surreal-casbin-adapter"
 keywords = ["casbin", "surrealdb", "authorization", "rbac", "acl"]
 categories = ["authentication", "database"]
 
+[lib]
+doctest = false
+
 [dependencies]
 casbin = "2.13.0"
 surrealdb = { version = "2.3.9", default-features = false }
@@ -18,6 +21,7 @@ serde = { version = "1.0", features = ["derive"] }
 [dev-dependencies]
 tokio = { version = "1.47", features = ["full"] }
 surrealdb = { version = "2.3.9", features = ["kv-mem"] }
+serial_test = "3.2.0"
 
 [features]
 default = []

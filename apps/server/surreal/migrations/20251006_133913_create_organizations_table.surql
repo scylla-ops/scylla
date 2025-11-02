@@ -14,5 +14,5 @@ DEFINE FIELD updated_at ON organizations TYPE datetime DEFAULT time::now() VALUE
 -- INDEXES
 -- ------------------------------
 
+-- ensure organization names are unique
 DEFINE INDEX unique_name ON organizations FIELDS name UNIQUE;
-

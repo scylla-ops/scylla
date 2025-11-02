@@ -177,7 +177,10 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(db: impl Into<std::sync::Arc<surrealdb::Surreal<C>>>, table_name: impl Into<String>) -> Self {
+    pub fn new(
+        db: impl Into<std::sync::Arc<surrealdb::Surreal<C>>>,
+        table_name: impl Into<String>,
+    ) -> Self {
         Self {
             db: db.into(),
             table_name: table_name.into(),
@@ -235,15 +238,12 @@ where
             })?
         } else {
             // load all rules
-            self.db
-                .select(&self.table_name)
-                .await
-                .map_err(|e| {
-                    casbin::error::AdapterError(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to load policies: {}", e),
-                    )))
-                })?
+            self.db.select(&self.table_name).await.map_err(|e| {
+                casbin::error::AdapterError(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to load policies: {}", e),
+                )))
+            })?
         };
 
         for rule in rules {
@@ -348,7 +348,12 @@ where
         false
     }
 
-    async fn add_policy(&mut self, _sec: &str, ptype: &str, rule: Vec<String>) -> CasbinResult<bool> {
+    async fn add_policy(
+        &mut self,
+        _sec: &str,
+        ptype: &str,
+        rule: Vec<String>,
+    ) -> CasbinResult<bool> {
         let casbin_rule = CasbinRule::from_policy(ptype, &rule);
 
         let _: Option<CasbinRule> = self
@@ -390,12 +395,14 @@ where
         Ok(true)
     }
 
-    async fn remove_policy(&mut self, _sec: &str, ptype: &str, rule: Vec<String>) -> CasbinResult<bool> {
+    async fn remove_policy(
+        &mut self,
+        _sec: &str,
+        ptype: &str,
+        rule: Vec<String>,
+    ) -> CasbinResult<bool> {
         // build a query to find and delete the matching rule
-        let mut query = format!(
-            "DELETE FROM {} WHERE ptype = $ptype",
-            self.table_name
-        );
+        let mut query = format!("DELETE FROM {} WHERE ptype = $ptype", self.table_name);
 
         for (i, _) in rule.iter().enumerate() {
             query.push_str(&format!(" AND v{} = $v{}", i, i));
@@ -437,10 +444,7 @@ where
         field_index: usize,
         field_values: Vec<String>,
     ) -> CasbinResult<bool> {
-        let mut query = format!(
-            "DELETE FROM {} WHERE ptype = $ptype",
-            self.table_name
-        );
+        let mut query = format!("DELETE FROM {} WHERE ptype = $ptype", self.table_name);
 
         let mut bind_params = vec![];
         for (i, value) in field_values.iter().enumerate() {
@@ -475,7 +479,10 @@ mod tests {
 
     #[test]
     fn test_casbin_rule_from_policy() {
-        let rule = CasbinRule::from_policy("p", &["alice".to_string(), "data1".to_string(), "read".to_string()]);
+        let rule = CasbinRule::from_policy(
+            "p",
+            &["alice".to_string(), "data1".to_string(), "read".to_string()],
+        );
         assert_eq!(rule.ptype, "p");
         assert_eq!(rule.v0, Some("alice".to_string()));
         assert_eq!(rule.v1, Some("data1".to_string()));

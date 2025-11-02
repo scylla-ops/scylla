@@ -11,4 +11,3 @@ DEFINE FIELD v5 ON TABLE casbin_rules TYPE option<string>;
 
 -- index for efficient policy lookups
 DEFINE INDEX casbin_ptype_idx ON TABLE casbin_rules COLUMNS ptype;
-

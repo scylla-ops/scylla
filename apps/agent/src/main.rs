@@ -1,5 +1,3 @@
-//mod command;
-#[allow(dead_code)]
 mod config;
 mod executors;
 mod grpc;
@@ -63,12 +61,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         },
         None => {
-            let defaut_config = AgentConfig::default();
+            let default_config = AgentConfig::default();
             info!(
                 "No configuration file specified, using default configuration : {:#?}",
-                defaut_config
+                default_config
             );
-            defaut_config
+            default_config
         }
     };
 

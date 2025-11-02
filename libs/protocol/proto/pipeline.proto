@@ -2,52 +2,50 @@ syntax = "proto3";
 
 package pipeline;
 
-message PipelineRequest {
-  string pipeline_toml = 1; // pipeline in toml format
-}
-
-message CreatePipelineResponse {
-  string pipeline_id = 1; // Pipeline ID
-}
-
-message GetPipelineRequest {
-  string pipeline_id = 1; // Pipeline ID
-}
-
-message DeletePipelineRequest {
-  string pipeline_id = 1; // Pipeline ID
-}
-
-message DeletePipelineResponse {}
-
-message UpdatePipelineRequest {
-  string pipeline_id = 1;   // Pipeline ID
-  string pipeline_toml = 2; // pipeline in toml format
-}
-
-message UpdatePipelineResponse {}
-
-message PipelineRecord {
-  string pipeline_id = 1; // Pipeline ID
-  string pipeline_toml = 2; // pipeline in toml format
-  string created_at = 3; // timestamp
-  string updated_at = 4; // timestamp
-  optional string name = 5; // pipeline name
-}
-
-message ListPipelinesRequest {}
-
-message ListPipelinesResponse {
-  repeated PipelineRecord pipelines = 1;
-}
+import "common.proto";
 
 service Pipeline {
-  rpc CreatePipeline(PipelineRequest) returns (CreatePipelineResponse);
-  rpc GetPipeline(GetPipelineRequest) returns (PipelineRecord);
+  // Create a pipeline
+  rpc CreatePipeline(CreatePipelineRequest) returns (PipelineResponse);
+
+  // Get a pipeline by ID
+  rpc GetPipeline(GetPipelineRequest) returns (PipelineResponse);
+
+  // Update a pipeline
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (PipelineResponse);
+
+  // Delete a pipeline
   rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
-  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse);
+
+  // List all pipelines
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
 }
 
-// User -> Send a Pipeline (executePipeline) -> PipelineService -> channel<Pipeline> -> Core -> channel<Job> -> Orchestrator
-// -> stream<Job> -> Worker
+message CreatePipelineRequest { string content = 1; }
+
+message GetPipelineRequest { string pipeline_id = 1; }
+
+message UpdatePipelineRequest {
+  string pipeline_id = 1;
+  string content = 2;
+}
+
+message PipelineResponse {
+  string pipeline_id = 1;
+  string content = 2;
+  string created_at = 3;
+  string updated_at = 4;
+}
+
+message DeletePipelineRequest { string pipeline_id = 1; }
+
+message DeletePipelineResponse {}
+
+message ListPipelinesRequest {
+  optional common.PaginationRequest pagination = 1;
+}
+
+message ListPipelinesResponse {
+  repeated PipelineResponse pipelines = 1;
+  common.PaginationMetadata pagination = 2;
+}

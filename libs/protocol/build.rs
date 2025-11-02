@@ -3,12 +3,12 @@ use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let protos = &[
+        "proto/common.proto",
         "proto/user.proto",
         "proto/auth.proto",
         "proto/orchestrator.proto",
         "proto/pipeline.proto",
         "proto/job.proto",
-        "proto/pipeline_snapshot.proto",
         "proto/organization.proto",
         "proto/project.proto",
     ];

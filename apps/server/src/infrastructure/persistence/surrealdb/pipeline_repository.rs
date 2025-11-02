@@ -1,0 +1,124 @@
+use crate::domain::entities::Pipeline;
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::repositories::PipelineRepository;
+use crate::domain::value_objects::PipelineId;
+use crate::infrastructure::persistence::mappers::ToRecordId;
+use crate::infrastructure::persistence::surrealdb::mappers::PipelineMapper;
+use crate::infrastructure::persistence::surrealdb::models::PipelineRecord;
+use async_trait::async_trait;
+use std::sync::Arc;
+use surrealdb::Surreal;
+use surrealdb::engine::any::Any;
+
+/// SurrealDB implementation of PipelineRepository
+pub struct SurrealPipelineRepository {
+    db: Arc<Surreal<Any>>,
+}
+
+impl SurrealPipelineRepository {
+    pub fn new(db: Arc<Surreal<Any>>) -> Self {
+        Self { db }
+    }
+}
+
+#[async_trait]
+impl PipelineRepository for SurrealPipelineRepository {
+    async fn create(&self, pipeline: &Pipeline) -> DomainResult<Pipeline> {
+        let insert = PipelineMapper::to_insert(pipeline);
+        let created: Option<PipelineRecord> = self
+            .db
+            .create("pipelines")
+            .content(insert)
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+
+        match created {
+            Some(record) => Ok(PipelineMapper::to_domain(record)?),
+            None => Err(DomainError::infrastructure("Failed to create pipeline")),
+        }
+    }
+
+    async fn find_by_id(&self, id: &PipelineId) -> DomainResult<Pipeline> {
+        let result: Option<PipelineRecord> = self
+            .db
+            .select(id.to_record_id())
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+
+        match result {
+            Some(record) => Ok(PipelineMapper::to_domain(record)?),
+            None => Err(DomainError::not_found("Pipeline", id.to_string())),
+        }
+    }
+
+    async fn update(&self, pipeline: &Pipeline) -> DomainResult<Pipeline> {
+        let record = PipelineMapper::to_update(pipeline);
+        let updated: Option<PipelineRecord> = self
+            .db
+            .update(pipeline.id().to_record_id())
+            .merge(record)
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+
+        match updated {
+            Some(record) => Ok(PipelineMapper::to_domain(record)?),
+            None => Err(DomainError::not_found(
+                "Pipeline",
+                pipeline.id().to_string(),
+            )),
+        }
+    }
+
+    async fn delete(&self, id: &PipelineId) -> DomainResult<()> {
+        self.db
+            .delete::<Option<PipelineRecord>>(id.to_record_id())
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+
+        Ok(())
+    }
+
+    async fn list_all(
+        &self,
+        pagination: Option<&crate::domain::value_objects::PaginationParams>,
+    ) -> DomainResult<crate::domain::value_objects::PaginatedResult<Pipeline>> {
+        use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+
+        let params = pagination
+            .cloned()
+            .unwrap_or_else(PaginationParams::default);
+
+        // Get total count
+        let count_result: Vec<serde_json::Value> = self
+            .db
+            .query("SELECT count() FROM pipelines GROUP ALL")
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+
+        let total_count = count_result
+            .first()
+            .and_then(|v| v.get("count"))
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+
+        // Get paginated records
+        let records: Vec<PipelineRecord> = self
+            .db
+            .query("SELECT * FROM pipelines ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("limit", params.limit()))
+            .bind(("start", params.offset()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+
+        let pipelines: DomainResult<Vec<Pipeline>> = records
+            .into_iter()
+            .map(|record| PipelineMapper::to_domain(record))
+            .collect();
+
+        Ok(PaginatedResult::new(pipelines?, &params, total_count))
+    }
+}

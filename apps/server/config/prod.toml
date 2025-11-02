@@ -1,0 +1,34 @@
+# Production Configuration Template for Scylla Server
+
+[core_config]
+
+[core_config.grpc_config]
+address = "0.0.0.0:50051"
+
+# Database connection configuration
+[core_config.database_config]
+url = "wss://your-production-db.example.com"
+
+# TODO: Use environment variables or secrets management for credentials
+username = "production_user"
+password = "REPLACE_WITH_SECURE_PASSWORD"
+
+namespace = "production"
+database = "scylla"
+
+# Authentication configuration
+[core_config.auth_config]
+token_duration_seconds = 3600 # 1 hour
+
+# TODO: Generate with: openssl rand -base64 32
+# token_key = "REPLACE_WITH_SECURE_BASE64_KEY"
+
+# RBAC configuration
+[core_config.rbac_config]
+model_path = "casbin/model.conf"
+
+# Bootstrap configuration (DISABLED in production for security)
+[core_config.bootstrap_config]
+enabled = false
+username = "admin"
+password = "REPLACE_WITH_SECURE_PASSWORD"

@@ -8,7 +8,7 @@ grpc {
   url: localhost:50051
   method: /organization.OrganizationService/ListUserOrganizations
   body: grpc
-  auth: none
+  auth: inherit
   methodType: unary
 }
 
@@ -17,8 +17,10 @@ body:grpc {
   content: '''
     {
       "user_id": "user123",
-      "page": 1,
-      "page_size": 10
+      "pagination": {
+        "page": 1,
+        "page_size": 10
+      }
     }
   '''
 }

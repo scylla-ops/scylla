@@ -16,8 +16,15 @@ body:grpc {
   name: message 1
   content: '''
     {
-      "username": "john.doe",
-      "password": "securePassword123"
+      "username": "admin",
+      "password": "admin123"
     }
   '''
+}
+
+script:post-response {
+  // Automatically save the auth token to the collection
+  if (res.body.token) {
+    bru.setVar("token", res.body.token);
+  }
 }

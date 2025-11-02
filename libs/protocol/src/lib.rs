@@ -12,16 +12,21 @@ pub use uuid;
 pub use tonic;
 
 pub mod services {
-    tonic::include_proto!("user");
-    tonic::include_proto!("auth");
+    pub mod common {
+        tonic::include_proto!("common");
+    }
+
+    pub mod user {
+        tonic::include_proto!("user");
+    }
+    pub mod auth {
+        tonic::include_proto!("auth");
+    }
     pub mod orchestrator {
         tonic::include_proto!("orchestrator");
     }
     pub mod pipeline {
         tonic::include_proto!("pipeline");
-        pub mod snapshot {
-            tonic::include_proto!("pipeline.snapshot");
-        }
     }
     pub mod job {
         tonic::include_proto!("job");
