@@ -3,9 +3,7 @@ use crate::application::dto::{
     ListPipelinesRequestDto, UpdatePipelineRequestDto,
 };
 use crate::domain::value_objects::{PipelineContent, PipelineId};
-use crate::presentation::grpc::mappers::{
-    domain_to_proto_metadata, map_domain_error_to_status, proto_to_domain_pagination,
-};
+use crate::presentation::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 // use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
 use derive_more::Constructor;
@@ -40,15 +38,14 @@ impl pipeline_server::Pipeline for PipelineHandler {
 
         let req = request.into_inner();
         let dto = CreatePipelineRequestDto {
-            content: PipelineContent::new(req.content).map_err(map_domain_error_to_status)?,
+            content: PipelineContent::new(req.content)?,
         };
 
         let response = self
             .container
             .create_pipeline_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(response.into()))
     }
@@ -74,12 +71,7 @@ impl pipeline_server::Pipeline for PipelineHandler {
             pipeline_id: PipelineId::new(req.pipeline_id),
         };
 
-        let response = self
-            .container
-            .get_pipeline_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.get_pipeline_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -104,15 +96,14 @@ impl pipeline_server::Pipeline for PipelineHandler {
         let pipeline_id = PipelineId::new(req.pipeline_id);
         let dto = UpdatePipelineRequestDto {
             pipeline_id: pipeline_id,
-            content: PipelineContent::new(req.content).map_err(map_domain_error_to_status)?,
+            content: PipelineContent::new(req.content)?,
         };
 
         let response = self
             .container
             .update_pipeline_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(response.into()))
     }
@@ -142,8 +133,7 @@ impl pipeline_server::Pipeline for PipelineHandler {
             .container
             .delete_pipeline_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(DeletePipelineResponse::default()))
     }
@@ -169,8 +159,7 @@ impl pipeline_server::Pipeline for PipelineHandler {
             .container
             .list_pipelines_use_case()
             .execute(ListPipelinesRequestDto { pagination })
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let pipelines = response.pipelines.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);

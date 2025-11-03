@@ -2,30 +2,54 @@ use crate::application::dto::{AddUserToOrganizationRequestDto, AddUserToOrganiza
 use crate::application::ports::RbacEnforcer;
 use crate::domain::entities::UserOrganization;
 use crate::domain::errors::DomainResult;
-use crate::domain::repositories::UserOrganizationRepository;
+use crate::domain::repositories::{
+    OrganizationRepository, UserOrganizationRepository, UserRepository,
+};
 use crate::infrastructure::rbac::RoleMapper;
 use derive_more::Constructor;
 use std::sync::Arc;
 
 #[derive(Constructor)]
-pub struct AddUserToOrganizationUseCase<R, E>
+pub struct AddUserToOrganizationUseCase<R, U, O, E>
 where
     R: UserOrganizationRepository + ?Sized,
+    U: UserRepository + ?Sized,
+    O: OrganizationRepository + ?Sized,
     E: RbacEnforcer + ?Sized,
 {
     user_org_repo: Arc<R>,
+    user_repo: Arc<U>,
+    org_repo: Arc<O>,
     rbac_enforcer: Arc<E>,
 }
 
-impl<R, E> AddUserToOrganizationUseCase<R, E>
+impl<R, U, O, E> AddUserToOrganizationUseCase<R, U, O, E>
 where
     R: UserOrganizationRepository + ?Sized,
+    U: UserRepository + ?Sized,
+    O: OrganizationRepository + ?Sized,
     E: RbacEnforcer + ?Sized,
 {
     pub async fn execute(
         &self,
         request: AddUserToOrganizationRequestDto,
     ) -> DomainResult<AddUserToOrganizationResponseDto> {
+        // Check if user exists
+        if let Err(_) = self.user_repo.find_by_id(&request.user_id).await {
+            return Err(crate::domain::errors::DomainError::not_found(
+                "User".to_string(),
+                request.user_id,
+            ));
+        }
+
+        // Check if organization exists
+        if let Err(_) = self.org_repo.find_by_id(&request.organization_id).await {
+            return Err(crate::domain::errors::DomainError::not_found(
+                "Organization".to_string(),
+                request.organization_id,
+            ));
+        }
+
         // Check if user is already in the organization
         if let Ok(_existing) = self
             .user_org_repo

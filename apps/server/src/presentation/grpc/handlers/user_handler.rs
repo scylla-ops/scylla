@@ -3,9 +3,7 @@ use crate::application::dto::{
     ListUsersRequestDto, UpdateUserRequestDto,
 };
 use crate::domain::value_objects::{Password, UserGlobalRole, UserId, Username};
-use crate::presentation::grpc::mappers::{
-    domain_to_proto_metadata, map_domain_error_to_status, proto_to_domain_pagination,
-};
+use crate::presentation::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
 use derive_more::Constructor;
@@ -41,16 +39,11 @@ impl user_service_server::UserService for UserHandler {
         let req = request.into_inner();
 
         let dto = CreateUserRequestDto {
-            username: Username::try_from(req.username).map_err(map_domain_error_to_status)?,
-            password: Password::try_from(req.password).map_err(map_domain_error_to_status)?,
+            username: Username::try_from(req.username)?,
+            password: Password::try_from(req.password)?,
         };
 
-        let response = self
-            .container
-            .create_user_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.create_user_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -76,12 +69,7 @@ impl user_service_server::UserService for UserHandler {
             user_id: UserId::new(req.user_id),
         };
 
-        let response = self
-            .container
-            .get_user_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.get_user_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -111,16 +99,10 @@ impl user_service_server::UserService for UserHandler {
                 .username
                 .filter(|s| !s.is_empty())
                 .map(Username::try_from)
-                .transpose()
-                .map_err(map_domain_error_to_status)?,
+                .transpose()?,
         };
 
-        let response = self
-            .container
-            .update_user_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.update_user_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -146,12 +128,7 @@ impl user_service_server::UserService for UserHandler {
             user_id: UserId::new(req.user_id),
         };
 
-        let _response = self
-            .container
-            .delete_user_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let _response = self.container.delete_user_use_case().execute(dto).await?;
 
         Ok(Response::new(DeleteUserResponse::default()))
     }
@@ -177,8 +154,7 @@ impl user_service_server::UserService for UserHandler {
             .container
             .list_users_use_case()
             .execute(ListUsersRequestDto { pagination })
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let users: Vec<UserResponse> = response.users.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -201,7 +177,7 @@ impl user_service_server::UserService for UserHandler {
         .await?;
 
         let req = request.into_inner();
-        let new_role = UserGlobalRole::new(req.new_role).map_err(map_domain_error_to_status)?;
+        let new_role = UserGlobalRole::new(req.new_role)?;
 
         let dto = ChangeUserGlobalRoleRequestDto {
             user_id: UserId::new(req.user_id),
@@ -213,8 +189,7 @@ impl user_service_server::UserService for UserHandler {
             .container
             .change_user_global_role_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(ChangeUserGlobalRoleResponse {
             user_id: response.user_id.to_string(),

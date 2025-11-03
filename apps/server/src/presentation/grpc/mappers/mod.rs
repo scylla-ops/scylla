@@ -7,5 +7,4 @@ pub mod pipeline_mapper;
 pub mod project_mapper;
 pub mod user_mapper;
 
-pub use error_mapper::map_domain_error_to_status;
 pub use pagination_mapper::{domain_to_proto_metadata, proto_to_domain_pagination};

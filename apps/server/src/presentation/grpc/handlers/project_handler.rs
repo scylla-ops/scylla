@@ -7,9 +7,7 @@ use crate::application::dto::{
 use crate::domain::value_objects::{
     Description, OrganizationId, ProjectId, ProjectName, UserId, UserProjectRole,
 };
-use crate::presentation::grpc::mappers::{
-    domain_to_proto_metadata, map_domain_error_to_status, proto_to_domain_pagination,
-};
+use crate::presentation::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
 use derive_more::Constructor;
@@ -49,11 +47,8 @@ impl project_service_server::ProjectService for ProjectHandler {
 
         let req = request.into_inner();
         let dto = CreateProjectRequestDto {
-            name: ProjectName::new(req.name).map_err(map_domain_error_to_status)?,
-            description: req
-                .description
-                .map(|s| Description::new(s).map_err(map_domain_error_to_status))
-                .transpose()?,
+            name: ProjectName::new(req.name)?,
+            description: req.description.map(|s| Description::new(s)).transpose()?,
             organization_id: OrganizationId::new(req.organization_id),
             creator_id: auth_ctx.user_id,
         };
@@ -62,8 +57,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             .container
             .create_project_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(response.into()))
     }
@@ -89,12 +83,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             project_id: ProjectId::new(req.project_id),
         };
 
-        let response = self
-            .container
-            .get_project_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.get_project_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -121,22 +110,20 @@ impl project_service_server::ProjectService for ProjectHandler {
             name: req
                 .name
                 .filter(|s| !s.is_empty())
-                .map(|s| ProjectName::new(s).map_err(map_domain_error_to_status))
+                .map(|s| ProjectName::new(s))
                 .transpose()?,
             description: req
                 .description
                 .filter(|s| !s.is_empty())
                 .map(Description::new)
-                .transpose()
-                .map_err(map_domain_error_to_status)?,
+                .transpose()?,
         };
 
         let response = self
             .container
             .update_project_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(response.into()))
     }
@@ -166,8 +153,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             .container
             .toggle_project_active_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(ToggleProjectActiveResponse::default()))
     }
@@ -197,8 +183,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             .container
             .delete_project_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(DeleteProjectResponse::default()))
     }
@@ -224,8 +209,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             .container
             .list_projects_use_case()
             .execute(ListProjectsRequestDto { pagination })
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let projects = response.projects.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -264,8 +248,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             .container
             .list_project_users_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let users = response.users.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -302,8 +285,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             .container
             .list_user_projects_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let projects = response.projects.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -334,15 +316,14 @@ impl project_service_server::ProjectService for ProjectHandler {
         let dto = AddUserToProjectRequestDto {
             user_id: UserId::new(req.user_id),
             project_id: ProjectId::new(req.project_id),
-            role: UserProjectRole::new(req.role).map_err(map_domain_error_to_status)?,
+            role: UserProjectRole::new(req.role)?,
         };
 
         let response = self
             .container
             .add_user_to_project_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(AddUserToProjectResponse {
             relation_id: response.relation_id.to_string(),
@@ -375,8 +356,7 @@ impl project_service_server::ProjectService for ProjectHandler {
             .container
             .remove_user_from_project_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(RemoveUserFromProjectResponse::default()))
     }

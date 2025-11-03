@@ -116,7 +116,7 @@ async fn init_rbac_enforcer(
 }
 
 async fn bootstrap_admin_user(
-    container: &scylla_core::shared::di::AppContainer,
+    container: &AppContainer,
     bootstrap_config: &scylla_core::config::BootstrapConfig,
 ) -> Result<()> {
     use scylla_core::domain::entities::User;

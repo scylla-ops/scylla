@@ -1,6 +1,5 @@
 use crate::application::dto::RunPipelineRequestDto;
 use crate::domain::value_objects::PipelineId;
-use crate::presentation::grpc::mappers::map_domain_error_to_status;
 // use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
 use derive_more::Constructor;
@@ -38,12 +37,7 @@ impl orchestrator_server::Orchestrator for OrchestratorHandler {
             pipeline_id: PipelineId::new(req.pipeline_id),
         };
 
-        let response = self
-            .container
-            .run_pipeline_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.run_pipeline_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }

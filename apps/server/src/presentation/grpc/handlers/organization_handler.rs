@@ -7,9 +7,7 @@ use crate::application::dto::{
 use crate::domain::value_objects::{
     Description, OrganizationId, OrganizationName, UserId, UserOrganizationRole,
 };
-use crate::presentation::grpc::mappers::{
-    domain_to_proto_metadata, map_domain_error_to_status, proto_to_domain_pagination,
-};
+use crate::presentation::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
 use derive_more::Constructor;
@@ -48,11 +46,8 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
 
         let req = request.into_inner();
         let dto = CreateOrganizationRequestDto {
-            name: OrganizationName::new(req.name).map_err(map_domain_error_to_status)?,
-            description: req
-                .description
-                .map(|s| Description::new(s).map_err(map_domain_error_to_status))
-                .transpose()?,
+            name: OrganizationName::new(req.name)?,
+            description: req.description.map(|s| Description::new(s)).transpose()?,
             creator_id: auth_ctx.user_id,
         };
 
@@ -60,8 +55,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .create_organization_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(response.into()))
     }
@@ -91,8 +85,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .get_organization_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(response.into()))
     }
@@ -117,22 +110,15 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
 
         let dto = UpdateOrganizationRequestDto {
             organization_id: OrganizationId::new(req.organization_id),
-            name: req
-                .name
-                .map(|s| OrganizationName::new(s).map_err(map_domain_error_to_status))
-                .transpose()?,
-            description: req
-                .description
-                .map(|s| Description::new(s).map_err(map_domain_error_to_status))
-                .transpose()?,
+            name: req.name.map(|s| OrganizationName::new(s)).transpose()?,
+            description: req.description.map(|s| Description::new(s)).transpose()?,
         };
 
         let response = self
             .container
             .update_organization_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(response.into()))
     }
@@ -162,8 +148,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .toggle_organization_active_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(ToggleOrganizationActiveResponse::default()))
     }
@@ -193,8 +178,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .delete_organization_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(DeleteOrganizationResponse::default()))
     }
@@ -220,8 +204,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .list_organizations_use_case()
             .execute(ListOrganizationsRequestDto { pagination })
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let organizations = response.organizations.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -260,8 +243,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .list_organization_users_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let users = response.users.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -298,8 +280,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .list_user_organizations_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let organizations = response.organizations.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -330,15 +311,14 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
         let dto = AddUserToOrganizationRequestDto {
             user_id: UserId::new(req.user_id),
             organization_id: OrganizationId::new(req.organization_id),
-            role: UserOrganizationRole::new(req.role).map_err(map_domain_error_to_status)?,
+            role: UserOrganizationRole::new(req.role)?,
         };
 
         let response = self
             .container
             .add_user_to_organization_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(AddUserToOrganizationResponse {
             relation_id: response.relation_id.to_string(),
@@ -371,8 +351,7 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
             .container
             .remove_user_from_organization_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(RemoveUserFromOrganizationResponse::default()))
     }

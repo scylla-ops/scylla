@@ -1,6 +1,5 @@
 use crate::application::dto::{LoginRequestDto, RevokeTokenRequestDto, ValidateTokenRequestDto};
 use crate::domain::value_objects::{Password, Username};
-use crate::presentation::grpc::mappers::map_domain_error_to_status;
 use crate::shared::di::AppContainer;
 use derive_more::Constructor;
 use protocol::services::auth::{
@@ -24,16 +23,11 @@ impl auth_service_server::AuthService for AuthHandler {
         let req = request.into_inner();
 
         let dto = LoginRequestDto {
-            username: Username::try_from(req.username).map_err(map_domain_error_to_status)?,
-            password: Password::try_from(req.password).map_err(map_domain_error_to_status)?,
+            username: Username::try_from(req.username)?,
+            password: Password::try_from(req.password)?,
         };
 
-        let response = self
-            .container
-            .login_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.login_use_case().execute(dto).await?;
 
         Ok(Response::new(LoginResponse {
             token: response.token,
@@ -52,8 +46,7 @@ impl auth_service_server::AuthService for AuthHandler {
             .container
             .validate_token_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         Ok(Response::new(ValidateTokenResponse {
             is_valid: response.is_valid,
@@ -68,11 +61,7 @@ impl auth_service_server::AuthService for AuthHandler {
 
         let dto = RevokeTokenRequestDto { token: req.token };
 
-        self.container
-            .revoke_token_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        self.container.revoke_token_use_case().execute(dto).await?;
 
         Ok(Response::new(RevokeTokenResponse {}))
     }

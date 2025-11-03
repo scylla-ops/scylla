@@ -4,9 +4,7 @@ use crate::application::dto::{
 };
 use crate::domain::value_objects::JobStatus;
 use crate::domain::value_objects::{JobId, PipelineId};
-use crate::presentation::grpc::mappers::{
-    domain_to_proto_metadata, map_domain_error_to_status, proto_to_domain_pagination,
-};
+use crate::presentation::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 // use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
 use derive_more::Constructor;
@@ -47,12 +45,7 @@ impl job_service_server::JobService for JobHandler {
             pipeline_id: PipelineId::new(req.pipeline_id),
         };
 
-        let response = self
-            .container
-            .create_job_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.create_job_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -78,12 +71,7 @@ impl job_service_server::JobService for JobHandler {
             job_id: JobId::new(req.job_id),
         };
 
-        let response = self
-            .container
-            .get_job_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.get_job_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -107,18 +95,10 @@ impl job_service_server::JobService for JobHandler {
         let req = request.into_inner();
         let dto = UpdateJobRequestDto {
             job_id: JobId::new(req.job_id),
-            status: req
-                .status
-                .map(|s| JobStatus::new(s).map_err(map_domain_error_to_status))
-                .transpose()?,
+            status: req.status.map(|s| JobStatus::new(s)).transpose()?,
         };
 
-        let response = self
-            .container
-            .update_job_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let response = self.container.update_job_use_case().execute(dto).await?;
 
         Ok(Response::new(response.into()))
     }
@@ -144,12 +124,7 @@ impl job_service_server::JobService for JobHandler {
             job_id: JobId::new(req.job_id),
         };
 
-        let _response = self
-            .container
-            .delete_job_use_case()
-            .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+        let _response = self.container.delete_job_use_case().execute(dto).await?;
 
         Ok(Response::new(DeleteJobResponse::default()))
     }
@@ -175,8 +150,7 @@ impl job_service_server::JobService for JobHandler {
             .container
             .list_jobs_use_case()
             .execute(ListJobsRequestDto { pagination })
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let jobs = response.jobs.into_iter().map(Into::into).collect();
         let pagination = response.pagination.map(domain_to_proto_metadata);
@@ -199,7 +173,7 @@ impl job_service_server::JobService for JobHandler {
         // .await?;
 
         let req = request.into_inner();
-        let status = JobStatus::new(req.status).map_err(map_domain_error_to_status)?;
+        let status = JobStatus::new(req.status)?;
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let dto = ListJobsByStatusRequestDto { status, pagination };
@@ -208,8 +182,7 @@ impl job_service_server::JobService for JobHandler {
             .container
             .list_jobs_by_status_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let jobs = responses.jobs.into_iter().map(Into::into).collect();
         let pagination = responses.pagination.map(domain_to_proto_metadata);
@@ -245,8 +218,7 @@ impl job_service_server::JobService for JobHandler {
             .container
             .list_jobs_by_pipeline_use_case()
             .execute(dto)
-            .await
-            .map_err(map_domain_error_to_status)?;
+            .await?;
 
         let jobs = responses.jobs.into_iter().map(Into::into).collect();
         let pagination = responses.pagination.map(domain_to_proto_metadata);

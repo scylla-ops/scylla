@@ -91,8 +91,14 @@ pub struct AppContainer {
     list_user_organizations_use_case: Arc<
         ListUserOrganizationsUseCase<dyn UserOrganizationRepository, dyn OrganizationRepository>,
     >,
-    add_user_to_organization_use_case:
-        Arc<AddUserToOrganizationUseCase<dyn UserOrganizationRepository, dyn RbacEnforcer>>,
+    add_user_to_organization_use_case: Arc<
+        AddUserToOrganizationUseCase<
+            dyn UserOrganizationRepository,
+            dyn UserRepository,
+            dyn OrganizationRepository,
+            dyn RbacEnforcer,
+        >,
+    >,
     remove_user_from_organization_use_case:
         Arc<RemoveUserFromOrganizationUseCase<dyn UserOrganizationRepository>>,
 
@@ -212,6 +218,8 @@ impl AppContainer {
         ));
         let add_user_to_organization_use_case = Arc::new(AddUserToOrganizationUseCase::new(
             user_organization_repo.clone(),
+            user_repo.clone(),
+            organization_repo.clone(),
             rbac_enforcer.clone(),
         ));
         let remove_user_from_organization_use_case = Arc::new(
@@ -461,7 +469,14 @@ impl AppContainer {
 
     pub fn add_user_to_organization_use_case(
         &self,
-    ) -> Arc<AddUserToOrganizationUseCase<dyn UserOrganizationRepository, dyn RbacEnforcer>> {
+    ) -> Arc<
+        AddUserToOrganizationUseCase<
+            dyn UserOrganizationRepository,
+            dyn UserRepository,
+            dyn OrganizationRepository,
+            dyn RbacEnforcer,
+        >,
+    > {
         self.add_user_to_organization_use_case.clone()
     }
 
