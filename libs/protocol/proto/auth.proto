@@ -18,7 +18,10 @@ message LoginRequest {
   string password = 2;
 }
 
-message LoginResponse { string token = 1; }
+message LoginResponse {
+  string token = 1;
+  string user_id = 2;
+}
 
 message ValidateTokenRequest { string token = 1; }
 

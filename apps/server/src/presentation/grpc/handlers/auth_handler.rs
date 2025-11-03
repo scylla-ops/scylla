@@ -31,6 +31,7 @@ impl auth_service_server::AuthService for AuthHandler {
 
         Ok(Response::new(LoginResponse {
             token: response.token,
+            user_id: response.user_id.to_string(),
         }))
     }
 
