@@ -154,7 +154,7 @@ async fn bootstrap_admin_user(
         .with_context(|| "Failed to create username for bootstrap admin")?;
 
     // Create password value object
-    let password = Password::new(bootstrap_config.password.clone())
+    let password = Password::try_from(bootstrap_config.password.clone())
         .with_context(|| "Failed to create password for bootstrap admin")?;
 
     // Hash the password

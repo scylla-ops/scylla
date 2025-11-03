@@ -11,10 +11,10 @@ pub const PASSWORD_MAX_LENGTH: usize = 255;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Password(String);
 
-impl Password {
-    /// Create a new Password with validation
-    pub fn new(value: impl Into<String>) -> DomainResult<Self> {
-        let value = value.into();
+impl TryFrom<String> for Password {
+    type Error = DomainError;
+
+    fn try_from(value: String) -> DomainResult<Self> {
         let len = value.chars().count();
 
         if len == 0 {
@@ -40,7 +40,9 @@ impl Password {
 
         Ok(Self(value))
     }
+}
 
+impl Password {
     /// Get the password as a string slice
     pub fn as_str(&self) -> &str {
         &self.0
@@ -65,31 +67,31 @@ mod tests {
 
     #[test]
     fn test_valid_password() {
-        let password = Password::new("SecurePass123!");
+        let password = Password::try_from("SecurePass123!");
         assert!(password.is_ok());
     }
 
     #[test]
     fn test_password_too_short() {
-        let password = Password::new("short");
+        let password = Password::try_from("short");
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_empty() {
-        let password = Password::new("");
+        let password = Password::try_from("");
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_whitespace_only() {
-        let password = Password::new("        ");
+        let password = Password::try_from("        ");
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_display_hides_content() {
-        let password = Password::new("SecurePass123!").unwrap();
+        let password = Password::try_from("SecurePass123!").unwrap();
         let display = format!("{}", password);
         assert!(!display.contains("SecurePass"));
         assert!(display.contains("*"));
@@ -98,7 +100,7 @@ mod tests {
     #[test]
     fn test_password_too_long() {
         let long_pass = "a".repeat(256);
-        let password = Password::new(long_pass);
+        let password = Password::try_from(long_pass);
         assert!(password.is_err());
     }
 }

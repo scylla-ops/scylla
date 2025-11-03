@@ -29,13 +29,6 @@ impl PasetoAuthService {
         }
     }
 
-    pub fn with_generated_key() -> Self {
-        // key generation should never fail, but whatever
-        let key = SymmetricKey::<V4>::generate()
-            .unwrap_or_else(|_| panic!("Failed to generate encryption key"));
-        Self::new(key, Duration::from_secs(3600 * 24)) // 24 hours
-    }
-
     /// Create from configuration
     pub fn from_config(config: &AuthConfig) -> DomainResult<Self> {
         let token_duration = Duration::from_secs(config.token_duration_seconds);
@@ -96,11 +89,12 @@ impl AuthService for PasetoAuthService {
     async fn validate_token(&self, token: &str) -> DomainResult<bool> {
         // check if token is in blacklist
         let token_hash = self.hash_token(token);
-        let blacklist = self.blacklist.read().await;
-        if blacklist.contains(&token_hash) {
-            return Err(DomainError::unauthorized("Token has been revoked"));
+        {
+            let blacklist = self.blacklist.read().await;
+            if blacklist.contains(&token_hash) {
+                return Err(DomainError::unauthorized("Token has been revoked"));
+            }
         }
-        drop(blacklist); // release lock early
 
         let validation_rules = ClaimsValidationRules::new();
         let untrusted_token = UntrustedToken::<Local, V4>::try_from(token)

@@ -25,7 +25,7 @@ impl auth_service_server::AuthService for AuthHandler {
 
         let dto = LoginRequestDto {
             username: Username::try_from(req.username).map_err(map_domain_error_to_status)?,
-            password: Password::new(req.password).map_err(map_domain_error_to_status)?,
+            password: Password::try_from(req.password).map_err(map_domain_error_to_status)?,
         };
 
         let response = self

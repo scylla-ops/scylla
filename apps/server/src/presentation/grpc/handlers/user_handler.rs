@@ -42,7 +42,7 @@ impl user_service_server::UserService for UserHandler {
 
         let dto = CreateUserRequestDto {
             username: Username::try_from(req.username).map_err(map_domain_error_to_status)?,
-            password: Password::new(req.password).map_err(map_domain_error_to_status)?,
+            password: Password::try_from(req.password).map_err(map_domain_error_to_status)?,
         };
 
         let response = self
