@@ -2,19 +2,14 @@
 use crate::application::ports::RbacEnforcer;
 use crate::domain::value_objects::UserId;
 use crate::shared::di::AppContainer;
+use derive_more::Constructor;
 use protocol::tonic::{Request, Status};
 use std::sync::Arc;
 
 /// User context extracted from authentication
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Constructor)]
 pub struct AuthContext {
     pub user_id: UserId,
-}
-
-impl AuthContext {
-    pub fn new(user_id: UserId) -> Self {
-        Self { user_id }
-    }
 }
 
 /// Extract bearer token from request metadata

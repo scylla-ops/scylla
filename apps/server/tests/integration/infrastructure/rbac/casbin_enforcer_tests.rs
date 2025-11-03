@@ -8,9 +8,9 @@ use scylla_core::domain::value_objects::UserId;
 use scylla_core::infrastructure::rbac::casbin_enforcer::CasbinRbacEnforcer;
 use serial_test::serial;
 use std::sync::Arc;
-use surrealdb::engine::any::Any;
-use surrealdb::Surreal;
 use surreal_casbin_adapter::SurrealAdapter;
+use surrealdb::Surreal;
+use surrealdb::engine::any::Any;
 
 /// Creates an in-memory SurrealDB instance for testing
 async fn setup_test_db() -> Arc<Surreal<Any>> {
@@ -85,7 +85,9 @@ async fn setup_enforcer() -> CasbinRbacEnforcer {
 
 /// Helper to setup enforcer with specific domain policies for testing
 /// This adds both global bootstrap policies and test-specific domain policies
-async fn setup_enforcer_with_policies(policies: Vec<(&str, &str, &str, &str)>) -> CasbinRbacEnforcer {
+async fn setup_enforcer_with_policies(
+    policies: Vec<(&str, &str, &str, &str)>,
+) -> CasbinRbacEnforcer {
     let db = setup_test_db().await;
     let adapter = SurrealAdapter::new(db, "casbin_rules");
 
@@ -154,7 +156,10 @@ async fn test_enforce_global_admin_can_create_organizations() {
         .await
         .expect("Enforcement failed");
 
-    assert!(allowed, "Global admin should be able to create organizations");
+    assert!(
+        allowed,
+        "Global admin should be able to create organizations"
+    );
 }
 
 #[tokio::test]
@@ -176,7 +181,10 @@ async fn test_enforce_global_user_cannot_create_organizations() {
         .await
         .expect("Enforcement failed");
 
-    assert!(!allowed, "Regular user should NOT be able to create organizations");
+    assert!(
+        !allowed,
+        "Regular user should NOT be able to create organizations"
+    );
 }
 
 #[tokio::test]
@@ -206,7 +214,10 @@ async fn test_enforce_org_owner_can_create_projects() {
         .await
         .expect("Enforcement failed");
 
-    assert!(allowed, "Org owner should be able to create projects in their org");
+    assert!(
+        allowed,
+        "Org owner should be able to create projects in their org"
+    );
 }
 
 #[tokio::test]
@@ -230,7 +241,10 @@ async fn test_enforce_org_owner_cannot_access_different_org() {
         .await
         .expect("Enforcement failed");
 
-    assert!(!allowed, "Org owner should NOT have access to different organization");
+    assert!(
+        !allowed,
+        "Org owner should NOT have access to different organization"
+    );
 }
 
 #[tokio::test]
@@ -260,7 +274,10 @@ async fn test_enforce_project_member_can_execute_pipelines() {
         .await
         .expect("Enforcement failed");
 
-    assert!(can_execute, "Project member should be able to execute pipelines");
+    assert!(
+        can_execute,
+        "Project member should be able to execute pipelines"
+    );
 
     // Test enforcement - member cannot delete
     let can_delete = enforcer
@@ -268,7 +285,10 @@ async fn test_enforce_project_member_can_execute_pipelines() {
         .await
         .expect("Enforcement failed");
 
-    assert!(!can_delete, "Project member should NOT be able to delete pipelines");
+    assert!(
+        !can_delete,
+        "Project member should NOT be able to delete pipelines"
+    );
 }
 
 #[tokio::test]
@@ -279,9 +299,7 @@ async fn test_add_role_for_user() {
     let user_id = UserId::new("users:frank".to_string());
 
     // Add role
-    let result = enforcer
-        .add_role_for_user(&user_id, "admin", "*")
-        .await;
+    let result = enforcer.add_role_for_user(&user_id, "admin", "*").await;
 
     assert!(result.is_ok(), "Should successfully add role");
 
@@ -315,9 +333,7 @@ async fn test_remove_role_for_user() {
     assert!(allowed_before, "User should have admin permissions");
 
     // Remove role
-    let result = enforcer
-        .remove_role_for_user(&user_id, "admin", "*")
-        .await;
+    let result = enforcer.remove_role_for_user(&user_id, "admin", "*").await;
 
     assert!(result.is_ok(), "Should successfully remove role");
 
@@ -327,7 +343,10 @@ async fn test_remove_role_for_user() {
         .await
         .expect("Enforcement failed");
 
-    assert!(!allowed_after, "User should no longer have admin permissions after role removal");
+    assert!(
+        !allowed_after,
+        "User should no longer have admin permissions after role removal"
+    );
 }
 
 #[tokio::test]
@@ -351,7 +370,10 @@ async fn test_get_roles_for_user() {
         .expect("Failed to get roles");
 
     assert_eq!(roles.len(), 1, "Should have 1 role");
-    assert!(roles.contains(&"org_owner".to_string()), "Should have org_owner role");
+    assert!(
+        roles.contains(&"org_owner".to_string()),
+        "Should have org_owner role"
+    );
 }
 
 #[tokio::test]
@@ -482,7 +504,10 @@ async fn test_has_role_domain_isolation() {
         .await
         .expect("Failed to check role");
 
-    assert!(!has_role_in_p2, "User should NOT have role in project2 (different domain)");
+    assert!(
+        !has_role_in_p2,
+        "User should NOT have role in project2 (different domain)"
+    );
 }
 
 #[tokio::test]
@@ -517,7 +542,10 @@ async fn test_enforce_multiple_roles_same_domain() {
         .await
         .expect("Enforcement failed");
 
-    assert!(can_create_projects, "User with org_owner role should be able to create projects");
+    assert!(
+        can_create_projects,
+        "User with org_owner role should be able to create projects"
+    );
 
     // Should also have member permissions (can read org)
     let can_read_org = enforcer

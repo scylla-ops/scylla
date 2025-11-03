@@ -6,19 +6,15 @@ use crate::infrastructure::persistence::mappers::{FromRecordId, ToRecordId};
 use crate::infrastructure::persistence::surrealdb::mappers::UserOrganizationMapper;
 use crate::infrastructure::persistence::surrealdb::models::UserOrganizationRecord;
 use async_trait::async_trait;
+use derive_more::Constructor;
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
 /// SurrealDB implementation of OrganizationRepository
+#[derive(Constructor)]
 pub struct SurrealUserOrganizationRepository {
     db: Arc<Surreal<Any>>,
-}
-
-impl SurrealUserOrganizationRepository {
-    pub fn new(db: Arc<Surreal<Any>>) -> Self {
-        Self { db }
-    }
 }
 
 #[async_trait]
@@ -136,53 +132,6 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
             .collect()
     }
 
-    async fn list_users_in_organization(
-        &self,
-        organization_id: &OrganizationId,
-        pagination: Option<&crate::domain::value_objects::PaginationParams>,
-    ) -> DomainResult<crate::domain::value_objects::PaginatedResult<UserId>> {
-        use crate::domain::value_objects::{PaginatedResult, PaginationParams};
-
-        let params = pagination
-            .cloned()
-            .unwrap_or_else(PaginationParams::default);
-
-        // Get total count
-        let count_result: Vec<serde_json::Value> = self
-            .db
-            .query("SELECT count() FROM $organization_id<-user_organization GROUP ALL")
-            .bind(("organization_id", organization_id.to_record_id()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
-
-        let total_count = count_result
-            .first()
-            .and_then(|v| v.get("count"))
-            .and_then(|v| v.as_u64())
-            .unwrap_or(0);
-
-        // Get paginated records
-        let records: Vec<UserOrganizationRecord> = self
-            .db
-            .query("SELECT * FROM $organization_id<-user_organization LIMIT $limit START $start")
-            .bind(("organization_id", organization_id.to_record_id()))
-            .bind(("limit", params.limit()))
-            .bind(("start", params.offset()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
-
-        let user_ids: DomainResult<Vec<UserId>> = records
-            .into_iter()
-            .map(|record| Ok(UserId::from_record_id(record.user_id)))
-            .collect();
-
-        Ok(PaginatedResult::new(user_ids?, &params, total_count))
-    }
-
     async fn list_organizations_for_user(
         &self,
         user_id: &UserId,
@@ -232,6 +181,53 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
             &params,
             total_count,
         ))
+    }
+
+    async fn list_users_in_organization(
+        &self,
+        organization_id: &OrganizationId,
+        pagination: Option<&crate::domain::value_objects::PaginationParams>,
+    ) -> DomainResult<crate::domain::value_objects::PaginatedResult<UserId>> {
+        use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+
+        let params = pagination
+            .cloned()
+            .unwrap_or_else(PaginationParams::default);
+
+        // Get total count
+        let count_result: Vec<serde_json::Value> = self
+            .db
+            .query("SELECT count() FROM $organization_id<-user_organization GROUP ALL")
+            .bind(("organization_id", organization_id.to_record_id()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+
+        let total_count = count_result
+            .first()
+            .and_then(|v| v.get("count"))
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+
+        // Get paginated records
+        let records: Vec<UserOrganizationRecord> = self
+            .db
+            .query("SELECT * FROM $organization_id<-user_organization LIMIT $limit START $start")
+            .bind(("organization_id", organization_id.to_record_id()))
+            .bind(("limit", params.limit()))
+            .bind(("start", params.offset()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+
+        let user_ids: DomainResult<Vec<UserId>> = records
+            .into_iter()
+            .map(|record| Ok(UserId::from_record_id(record.user_id)))
+            .collect();
+
+        Ok(PaginatedResult::new(user_ids?, &params, total_count))
     }
 
     async fn add_user_to_organization(

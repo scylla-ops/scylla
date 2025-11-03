@@ -18,14 +18,14 @@ impl OrganizationMapper {
         let name = OrganizationName::new(record.name)?;
         let description = record.description.map(Description::new).transpose()?;
 
-        Organization::new(
+        Ok(Organization::new(
             id,
             name,
             description,
             record.is_active,
             DateTime::from(record.created_at),
             DateTime::from(record.updated_at),
-        )
+        ))
     }
 
     /// Convert domain entity to insert record

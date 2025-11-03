@@ -9,9 +9,9 @@ use scylla_core::domain::value_objects::UserId;
 use scylla_core::infrastructure::rbac::casbin_enforcer::CasbinRbacEnforcer;
 use serial_test::serial;
 use std::sync::Arc;
-use surrealdb::engine::any::Any;
-use surrealdb::Surreal;
 use surreal_casbin_adapter::SurrealAdapter;
+use surrealdb::Surreal;
+use surrealdb::engine::any::Any;
 
 /// Setup test database
 async fn setup_test_db() -> Arc<Surreal<Any>> {
@@ -122,7 +122,12 @@ async fn setup_permission_matrix() -> CasbinRbacEnforcer {
         ("project_owner", "project_id", "projects", "delete"),
         ("project_owner", "project_id", "projects", "toggle_active"),
         ("project_owner", "project_id", "users", "add_to_project"),
-        ("project_owner", "project_id", "users", "remove_from_project"),
+        (
+            "project_owner",
+            "project_id",
+            "users",
+            "remove_from_project",
+        ),
         ("project_owner", "project_id", "pipelines", "create"),
         ("project_owner", "project_id", "pipelines", "read"),
         ("project_owner", "project_id", "pipelines", "update"),
@@ -201,9 +206,17 @@ async fn test_global_admin_can_create_organizations() {
     let enforcer = setup_permission_matrix().await;
     let alice = UserId::new("users:alice".to_string());
 
-    enforcer.add_role_for_user(&alice, "admin", "*").await.unwrap();
+    enforcer
+        .add_role_for_user(&alice, "admin", "*")
+        .await
+        .unwrap();
 
-    assert!(enforcer.enforce(&alice, "*", "organizations", "create").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&alice, "*", "organizations", "create")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -212,12 +225,35 @@ async fn test_global_admin_can_manage_all_users() {
     let enforcer = setup_permission_matrix().await;
     let alice = UserId::new("users:alice".to_string());
 
-    enforcer.add_role_for_user(&alice, "admin", "*").await.unwrap();
+    enforcer
+        .add_role_for_user(&alice, "admin", "*")
+        .await
+        .unwrap();
 
-    assert!(enforcer.enforce(&alice, "*", "users", "create").await.unwrap());
-    assert!(enforcer.enforce(&alice, "*", "users", "read").await.unwrap());
-    assert!(enforcer.enforce(&alice, "*", "users", "update").await.unwrap());
-    assert!(enforcer.enforce(&alice, "*", "users", "delete").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&alice, "*", "users", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&alice, "*", "users", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&alice, "*", "users", "update")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&alice, "*", "users", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -226,10 +262,23 @@ async fn test_global_admin_can_manage_all_projects() {
     let enforcer = setup_permission_matrix().await;
     let alice = UserId::new("users:alice".to_string());
 
-    enforcer.add_role_for_user(&alice, "admin", "*").await.unwrap();
+    enforcer
+        .add_role_for_user(&alice, "admin", "*")
+        .await
+        .unwrap();
 
-    assert!(enforcer.enforce(&alice, "*", "projects", "create").await.unwrap());
-    assert!(enforcer.enforce(&alice, "*", "projects", "delete").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&alice, "*", "projects", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&alice, "*", "projects", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -245,12 +294,32 @@ async fn test_global_user_can_only_read_organizations() {
     enforcer.add_role_for_user(&bob, "user", "*").await.unwrap();
 
     // Can read
-    assert!(enforcer.enforce(&bob, "*", "organizations", "read").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&bob, "*", "organizations", "read")
+            .await
+            .unwrap()
+    );
 
     // Cannot create, update, or delete
-    assert!(!enforcer.enforce(&bob, "*", "organizations", "create").await.unwrap());
-    assert!(!enforcer.enforce(&bob, "*", "organizations", "update").await.unwrap());
-    assert!(!enforcer.enforce(&bob, "*", "organizations", "delete").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&bob, "*", "organizations", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !enforcer
+            .enforce(&bob, "*", "organizations", "update")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !enforcer
+            .enforce(&bob, "*", "organizations", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -261,8 +330,18 @@ async fn test_global_user_cannot_manage_users() {
 
     enforcer.add_role_for_user(&bob, "user", "*").await.unwrap();
 
-    assert!(!enforcer.enforce(&bob, "*", "users", "create").await.unwrap());
-    assert!(!enforcer.enforce(&bob, "*", "users", "delete").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&bob, "*", "users", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !enforcer
+            .enforce(&bob, "*", "users", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -282,10 +361,30 @@ async fn test_org_owner_full_organization_control() {
         .unwrap();
 
     // Full CRUD on organization
-    assert!(enforcer.enforce(&carol, org_id, "organizations", "read").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "organizations", "update").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "organizations", "delete").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "organizations", "toggle_active").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "organizations", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "organizations", "update")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "organizations", "delete")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "organizations", "toggle_active")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -300,9 +399,24 @@ async fn test_org_owner_can_manage_org_users() {
         .await
         .unwrap();
 
-    assert!(enforcer.enforce(&carol, org_id, "users", "add_to_org").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "users", "remove_from_org").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "users", "list_org_users").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "users", "add_to_org")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "users", "remove_from_org")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "users", "list_org_users")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -317,10 +431,30 @@ async fn test_org_owner_can_manage_projects() {
         .await
         .unwrap();
 
-    assert!(enforcer.enforce(&carol, org_id, "projects", "create").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "projects", "read").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "projects", "update").await.unwrap());
-    assert!(enforcer.enforce(&carol, org_id, "projects", "delete").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "projects", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "projects", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "projects", "update")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&carol, org_id, "projects", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -335,8 +469,18 @@ async fn test_org_owner_cannot_access_different_org() {
         .unwrap();
 
     // Should not have access to different organization
-    assert!(!enforcer.enforce(&carol, "organizations:org2", "organizations", "update").await.unwrap());
-    assert!(!enforcer.enforce(&carol, "organizations:org2", "projects", "create").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&carol, "organizations:org2", "organizations", "update")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !enforcer
+            .enforce(&carol, "organizations:org2", "projects", "create")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -356,11 +500,26 @@ async fn test_org_admin_can_manage_but_not_delete_org() {
         .unwrap();
 
     // Can read and update
-    assert!(enforcer.enforce(&dave, org_id, "organizations", "read").await.unwrap());
-    assert!(enforcer.enforce(&dave, org_id, "organizations", "update").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&dave, org_id, "organizations", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&dave, org_id, "organizations", "update")
+            .await
+            .unwrap()
+    );
 
     // Cannot delete organization
-    assert!(!enforcer.enforce(&dave, org_id, "organizations", "delete").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&dave, org_id, "organizations", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -376,12 +535,32 @@ async fn test_org_admin_can_manage_users_and_projects() {
         .unwrap();
 
     // Can manage users
-    assert!(enforcer.enforce(&dave, org_id, "users", "add_to_org").await.unwrap());
-    assert!(enforcer.enforce(&dave, org_id, "users", "remove_from_org").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&dave, org_id, "users", "add_to_org")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&dave, org_id, "users", "remove_from_org")
+            .await
+            .unwrap()
+    );
 
     // Can manage projects
-    assert!(enforcer.enforce(&dave, org_id, "projects", "create").await.unwrap());
-    assert!(enforcer.enforce(&dave, org_id, "projects", "delete").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&dave, org_id, "projects", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&dave, org_id, "projects", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -401,13 +580,38 @@ async fn test_org_member_can_only_read() {
         .unwrap();
 
     // Can read
-    assert!(enforcer.enforce(&emily, org_id, "organizations", "read").await.unwrap());
-    assert!(enforcer.enforce(&emily, org_id, "projects", "read").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&emily, org_id, "organizations", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&emily, org_id, "projects", "read")
+            .await
+            .unwrap()
+    );
 
     // Cannot modify
-    assert!(!enforcer.enforce(&emily, org_id, "organizations", "update").await.unwrap());
-    assert!(!enforcer.enforce(&emily, org_id, "projects", "create").await.unwrap());
-    assert!(!enforcer.enforce(&emily, org_id, "users", "add_to_org").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&emily, org_id, "organizations", "update")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !enforcer
+            .enforce(&emily, org_id, "projects", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !enforcer
+            .enforce(&emily, org_id, "users", "add_to_org")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -427,10 +631,30 @@ async fn test_project_owner_full_project_control() {
         .unwrap();
 
     // Full project control
-    assert!(enforcer.enforce(&frank, project_id, "projects", "read").await.unwrap());
-    assert!(enforcer.enforce(&frank, project_id, "projects", "update").await.unwrap());
-    assert!(enforcer.enforce(&frank, project_id, "projects", "delete").await.unwrap());
-    assert!(enforcer.enforce(&frank, project_id, "projects", "toggle_active").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "projects", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "projects", "update")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "projects", "delete")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "projects", "toggle_active")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -446,13 +670,38 @@ async fn test_project_owner_can_manage_pipelines_and_jobs() {
         .unwrap();
 
     // Pipelines
-    assert!(enforcer.enforce(&frank, project_id, "pipelines", "create").await.unwrap());
-    assert!(enforcer.enforce(&frank, project_id, "pipelines", "execute").await.unwrap());
-    assert!(enforcer.enforce(&frank, project_id, "pipelines", "delete").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "pipelines", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "pipelines", "execute")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "pipelines", "delete")
+            .await
+            .unwrap()
+    );
 
     // Jobs
-    assert!(enforcer.enforce(&frank, project_id, "jobs", "create").await.unwrap());
-    assert!(enforcer.enforce(&frank, project_id, "jobs", "delete").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "jobs", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&frank, project_id, "jobs", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -472,11 +721,26 @@ async fn test_project_admin_cannot_delete_project() {
         .unwrap();
 
     // Can manage
-    assert!(enforcer.enforce(&grace, project_id, "projects", "read").await.unwrap());
-    assert!(enforcer.enforce(&grace, project_id, "projects", "update").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&grace, project_id, "projects", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&grace, project_id, "projects", "update")
+            .await
+            .unwrap()
+    );
 
     // Cannot delete
-    assert!(!enforcer.enforce(&grace, project_id, "projects", "delete").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&grace, project_id, "projects", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -491,9 +755,24 @@ async fn test_project_admin_can_manage_pipelines() {
         .await
         .unwrap();
 
-    assert!(enforcer.enforce(&grace, project_id, "pipelines", "create").await.unwrap());
-    assert!(enforcer.enforce(&grace, project_id, "pipelines", "execute").await.unwrap());
-    assert!(enforcer.enforce(&grace, project_id, "pipelines", "delete").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&grace, project_id, "pipelines", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&grace, project_id, "pipelines", "execute")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&grace, project_id, "pipelines", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -513,12 +792,32 @@ async fn test_project_member_can_execute_but_not_manage_pipelines() {
         .unwrap();
 
     // Can read and execute
-    assert!(enforcer.enforce(&henry, project_id, "pipelines", "read").await.unwrap());
-    assert!(enforcer.enforce(&henry, project_id, "pipelines", "execute").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&henry, project_id, "pipelines", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&henry, project_id, "pipelines", "execute")
+            .await
+            .unwrap()
+    );
 
     // Cannot create or delete
-    assert!(!enforcer.enforce(&henry, project_id, "pipelines", "create").await.unwrap());
-    assert!(!enforcer.enforce(&henry, project_id, "pipelines", "delete").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&henry, project_id, "pipelines", "create")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !enforcer
+            .enforce(&henry, project_id, "pipelines", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -534,11 +833,26 @@ async fn test_project_member_can_read_and_update_jobs() {
         .unwrap();
 
     // Can read and update
-    assert!(enforcer.enforce(&henry, project_id, "jobs", "read").await.unwrap());
-    assert!(enforcer.enforce(&henry, project_id, "jobs", "update").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&henry, project_id, "jobs", "read")
+            .await
+            .unwrap()
+    );
+    assert!(
+        enforcer
+            .enforce(&henry, project_id, "jobs", "update")
+            .await
+            .unwrap()
+    );
 
     // Cannot delete
-    assert!(!enforcer.enforce(&henry, project_id, "jobs", "delete").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&henry, project_id, "jobs", "delete")
+            .await
+            .unwrap()
+    );
 }
 
 // ============================================================================
@@ -552,7 +866,10 @@ async fn test_user_with_multiple_roles_across_domains() {
     let iris = UserId::new("users:iris".to_string());
 
     // Iris is a global user, org admin, and project member
-    enforcer.add_role_for_user(&iris, "user", "*").await.unwrap();
+    enforcer
+        .add_role_for_user(&iris, "user", "*")
+        .await
+        .unwrap();
     enforcer
         .add_role_for_user(&iris, "org_admin", "organizations:company")
         .await
@@ -563,14 +880,34 @@ async fn test_user_with_multiple_roles_across_domains() {
         .unwrap();
 
     // Global permissions
-    assert!(enforcer.enforce(&iris, "*", "organizations", "read").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&iris, "*", "organizations", "read")
+            .await
+            .unwrap()
+    );
 
     // Org permissions
-    assert!(enforcer.enforce(&iris, "organizations:company", "projects", "create").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&iris, "organizations:company", "projects", "create")
+            .await
+            .unwrap()
+    );
 
     // Project permissions
-    assert!(enforcer.enforce(&iris, "projects:web", "pipelines", "execute").await.unwrap());
+    assert!(
+        enforcer
+            .enforce(&iris, "projects:web", "pipelines", "execute")
+            .await
+            .unwrap()
+    );
 
     // No cross-domain access
-    assert!(!enforcer.enforce(&iris, "organizations:other", "projects", "create").await.unwrap());
+    assert!(
+        !enforcer
+            .enforce(&iris, "organizations:other", "projects", "create")
+            .await
+            .unwrap()
+    );
 }

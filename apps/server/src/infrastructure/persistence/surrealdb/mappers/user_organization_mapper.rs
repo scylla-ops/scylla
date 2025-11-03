@@ -20,13 +20,13 @@ impl UserOrganizationMapper {
         let organization_id = OrganizationId::from_record_id(record.organization_id);
         let role = UserOrganizationRole::new(&record.role)?;
 
-        UserOrganization::new(
+        Ok(UserOrganization::new(
             id,
             user_id,
             organization_id,
             role,
             DateTime::from(record.joined_at),
-        )
+        ))
     }
 
     /// Convert domain entity to insert record

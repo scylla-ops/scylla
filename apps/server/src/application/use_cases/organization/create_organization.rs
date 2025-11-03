@@ -5,8 +5,10 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::{OrganizationRepository, UserOrganizationRepository};
 use crate::domain::value_objects::UserOrganizationRole;
 use crate::infrastructure::rbac::RoleMapper;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct CreateOrganizationUseCase<R, U, E>
 where
     R: OrganizationRepository + ?Sized,
@@ -24,14 +26,6 @@ where
     U: UserOrganizationRepository + ?Sized,
     E: RbacEnforcer + ?Sized,
 {
-    pub fn new(org_repo: Arc<R>, user_org_repo: Arc<U>, rbac_enforcer: Arc<E>) -> Self {
-        Self {
-            org_repo,
-            user_org_repo,
-            rbac_enforcer,
-        }
-    }
-
     pub async fn execute(
         &self,
         request: CreateOrganizationRequestDto,

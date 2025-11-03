@@ -6,19 +6,15 @@ use crate::infrastructure::persistence::mappers::ToRecordId;
 use crate::infrastructure::persistence::surrealdb::mappers::PipelineMapper;
 use crate::infrastructure::persistence::surrealdb::models::PipelineRecord;
 use async_trait::async_trait;
+use derive_more::Constructor;
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
 /// SurrealDB implementation of PipelineRepository
+#[derive(Constructor)]
 pub struct SurrealPipelineRepository {
     db: Arc<Surreal<Any>>,
-}
-
-impl SurrealPipelineRepository {
-    pub fn new(db: Arc<Surreal<Any>>) -> Self {
-        Self { db }
-    }
 }
 
 #[async_trait]

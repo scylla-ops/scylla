@@ -1,8 +1,10 @@
 use crate::application::dto::{RemoveUserFromProjectRequestDto, RemoveUserFromProjectResponseDto};
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::UserProjectRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct RemoveUserFromProjectUseCase<R>
 where
     R: UserProjectRepository + ?Sized,
@@ -14,10 +16,6 @@ impl<R> RemoveUserFromProjectUseCase<R>
 where
     R: UserProjectRepository + ?Sized,
 {
-    pub fn new(user_project_repo: Arc<R>) -> Self {
-        Self { user_project_repo }
-    }
-
     pub async fn execute(
         &self,
         request: RemoveUserFromProjectRequestDto,

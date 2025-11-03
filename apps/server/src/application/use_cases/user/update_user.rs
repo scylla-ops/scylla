@@ -1,8 +1,10 @@
 use crate::application::dto::{UpdateUserRequestDto, UserResponseDto};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::UserRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct UpdateUserUseCase<R>
 where
     R: UserRepository + ?Sized,
@@ -14,10 +16,6 @@ impl<R> UpdateUserUseCase<R>
 where
     R: UserRepository + ?Sized,
 {
-    pub fn new(user_repo: Arc<R>) -> Self {
-        Self { user_repo }
-    }
-
     pub async fn execute(&self, request: UpdateUserRequestDto) -> DomainResult<UserResponseDto> {
         let mut user_draft = self.user_repo.find_by_id(&request.user_id).await?;
 

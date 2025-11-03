@@ -1,8 +1,10 @@
 use crate::application::dto::{RevokeTokenRequestDto, RevokeTokenResponseDto};
 use crate::application::ports::AuthService;
 use crate::domain::errors::DomainResult;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct RevokeTokenUseCase<A>
 where
     A: AuthService + ?Sized,
@@ -14,10 +16,6 @@ impl<A> RevokeTokenUseCase<A>
 where
     A: AuthService + ?Sized,
 {
-    pub fn new(auth_service: Arc<A>) -> Self {
-        Self { auth_service }
-    }
-
     pub async fn execute(
         &self,
         request: RevokeTokenRequestDto,

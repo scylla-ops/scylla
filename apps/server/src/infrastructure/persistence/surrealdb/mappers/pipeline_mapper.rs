@@ -14,12 +14,12 @@ impl PipelineMapper {
         let id = PipelineId::new(record.id.key().to_string());
         let content = PipelineContent::new(record.content)?;
 
-        Pipeline::new(
+        Ok(Pipeline::new(
             id,
             content,
             DateTime::from(record.created_at),
             DateTime::from(record.updated_at),
-        )
+        ))
     }
 
     /// Convert domain entity to insert record

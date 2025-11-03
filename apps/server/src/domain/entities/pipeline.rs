@@ -1,9 +1,10 @@
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{PipelineContent, PipelineId};
 use chrono::{DateTime, Utc};
+use derive_more::Constructor;
 
 /// Pipeline domain entity
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Constructor)]
 pub struct Pipeline {
     id: PipelineId,
     content: PipelineContent,
@@ -12,21 +13,6 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    /// Create a new pipeline (for reconstruction from database)
-    pub fn new(
-        id: PipelineId,
-        content: PipelineContent,
-        created_at: DateTime<Utc>,
-        updated_at: DateTime<Utc>,
-    ) -> DomainResult<Self> {
-        Ok(Self {
-            id,
-            content,
-            created_at,
-            updated_at,
-        })
-    }
-
     /// Create a new pipeline
     pub fn create(content: PipelineContent) -> DomainResult<Self> {
         let now = Utc::now();

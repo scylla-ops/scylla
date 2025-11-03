@@ -9,6 +9,7 @@ use crate::presentation::grpc::mappers::{
 };
 // use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
+use derive_more::Constructor;
 use protocol::services::job::{
     CreateJobRequest, DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobResponse,
     ListJobsByPipelineRequest, ListJobsByPipelineResponse, ListJobsByStatusRequest,
@@ -18,14 +19,9 @@ use protocol::services::job::{
 use protocol::tonic::{Request, Response, Status};
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct JobHandler {
     container: Arc<AppContainer>,
-}
-
-impl JobHandler {
-    pub fn new(container: Arc<AppContainer>) -> Self {
-        Self { container }
-    }
 }
 
 #[async_trait::async_trait]

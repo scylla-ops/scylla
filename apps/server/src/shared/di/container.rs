@@ -158,7 +158,7 @@ impl AppContainer {
             Arc::new(PasetoAuthService::from_config(auth_config).map_err(|e| {
                 anyhow::anyhow!("Failed to create auth service from config: {}", e)
             })?);
-        let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::new());
+        let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
         let rbac_enforcer: Arc<dyn RbacEnforcer> = Arc::new(CasbinRbacEnforcer::new(enforcer));
 
         // Initialize use cases - User

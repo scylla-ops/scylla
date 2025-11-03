@@ -2,9 +2,7 @@
 //!
 //! Tests the mapping between domain role value objects and Casbin role strings.
 
-use scylla_core::domain::value_objects::{
-    UserGlobalRole, UserOrganizationRole, UserProjectRole,
-};
+use scylla_core::domain::value_objects::{UserGlobalRole, UserOrganizationRole, UserProjectRole};
 use scylla_core::infrastructure::rbac::role_mapper::RoleMapper;
 
 #[test]

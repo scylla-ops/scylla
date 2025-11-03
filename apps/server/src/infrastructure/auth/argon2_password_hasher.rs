@@ -6,24 +6,11 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier, SaltString},
 };
 use async_trait::async_trait;
-use getrandom::getrandom;
+use rand::Rng;
 
+#[derive(Default)]
 pub struct Argon2PasswordHasher {
     argon2: Argon2<'static>,
-}
-
-impl Argon2PasswordHasher {
-    pub fn new() -> Self {
-        Self {
-            argon2: Argon2::default(),
-        }
-    }
-}
-
-impl Default for Argon2PasswordHasher {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 #[async_trait]
@@ -31,8 +18,7 @@ impl PasswordHasher for Argon2PasswordHasher {
     async fn hash(&self, password: &Password) -> DomainResult<String> {
         // generate cryptographically secure random salt (16 bytes)
         let mut salt_bytes = [0u8; 16];
-        getrandom(&mut salt_bytes)
-            .map_err(|e| DomainError::internal(format!("Failed to generate random salt: {}", e)))?;
+        rand::rng().fill(&mut salt_bytes);
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| DomainError::internal(format!("Failed to encode salt: {}", e)))?;
 

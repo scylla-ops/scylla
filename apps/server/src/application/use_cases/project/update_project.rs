@@ -2,8 +2,10 @@ use crate::application::dto::{ProjectResponseDto, UpdateProjectRequestDto};
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::ProjectRepository;
 
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct UpdateProjectUseCase<R>
 where
     R: ProjectRepository + ?Sized,
@@ -15,10 +17,6 @@ impl<R> UpdateProjectUseCase<R>
 where
     R: ProjectRepository + ?Sized,
 {
-    pub fn new(project_repo: Arc<R>) -> Self {
-        Self { project_repo }
-    }
-
     pub async fn execute(
         &self,
         request: UpdateProjectRequestDto,

@@ -3,8 +3,10 @@ use crate::application::dto::{
 };
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::{UserProjectRepository, UserRepository};
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct ListProjectUsersUseCase<UP, U>
 where
     UP: UserProjectRepository + ?Sized,
@@ -19,13 +21,6 @@ where
     UP: UserProjectRepository + ?Sized,
     U: UserRepository + ?Sized,
 {
-    pub fn new(user_project_repo: Arc<UP>, user_repo: Arc<U>) -> Self {
-        Self {
-            user_project_repo,
-            user_repo,
-        }
-    }
-
     pub async fn execute(
         &self,
         request: ListProjectUsersRequestDto,

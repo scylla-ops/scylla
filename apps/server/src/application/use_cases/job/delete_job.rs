@@ -1,8 +1,10 @@
 use crate::application::dto::{DeleteJobRequestDto, DeleteJobResponseDto};
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::JobRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct DeleteJobUseCase<R>
 where
     R: JobRepository + ?Sized,
@@ -14,10 +16,6 @@ impl<R> DeleteJobUseCase<R>
 where
     R: JobRepository + ?Sized,
 {
-    pub fn new(job_repo: Arc<R>) -> Self {
-        Self { job_repo }
-    }
-
     pub async fn execute(
         &self,
         request: DeleteJobRequestDto,

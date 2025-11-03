@@ -2,8 +2,10 @@ use crate::application::dto::{RunPipelineRequestDto, RunPipelineResponseDto};
 use crate::domain::entities::Job;
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::{JobRepository, PipelineRepository};
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct RunPipelineUseCase<R, P>
 where
     R: JobRepository + ?Sized,
@@ -18,13 +20,6 @@ where
     R: JobRepository + ?Sized,
     P: PipelineRepository + ?Sized,
 {
-    pub fn new(job_repo: Arc<R>, pipeline_repo: Arc<P>) -> Self {
-        Self {
-            job_repo,
-            pipeline_repo,
-        }
-    }
-
     pub async fn execute(
         &self,
         request: RunPipelineRequestDto,

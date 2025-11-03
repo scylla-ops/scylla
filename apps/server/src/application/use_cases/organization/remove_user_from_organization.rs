@@ -3,8 +3,10 @@ use crate::application::dto::{
 };
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::UserOrganizationRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct RemoveUserFromOrganizationUseCase<R>
 where
     R: UserOrganizationRepository + ?Sized,
@@ -16,10 +18,6 @@ impl<R> RemoveUserFromOrganizationUseCase<R>
 where
     R: UserOrganizationRepository + ?Sized,
 {
-    pub fn new(user_org_repo: Arc<R>) -> Self {
-        Self { user_org_repo }
-    }
-
     pub async fn execute(
         &self,
         request: RemoveUserFromOrganizationRequestDto,

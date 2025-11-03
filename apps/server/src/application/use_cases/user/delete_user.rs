@@ -1,8 +1,10 @@
 use crate::application::dto::{DeleteUserRequestDto, DeleteUserResponseDto};
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::UserRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct DeleteUserUseCase<R>
 where
     R: UserRepository + ?Sized,
@@ -14,10 +16,6 @@ impl<R> DeleteUserUseCase<R>
 where
     R: UserRepository + ?Sized,
 {
-    pub fn new(user_repo: Arc<R>) -> Self {
-        Self { user_repo }
-    }
-
     pub async fn execute(
         &self,
         request: DeleteUserRequestDto,

@@ -18,13 +18,13 @@ impl UserProjectMapper {
         let project_id = ProjectId::from_record_id(record.project_id);
         let role = UserProjectRole::new(&record.role)?;
 
-        UserProject::new(
+        Ok(UserProject::new(
             id,
             user_id,
             project_id,
             role,
             DateTime::from(record.joined_at),
-        )
+        ))
     }
 
     /// Convert domain entity to insert record

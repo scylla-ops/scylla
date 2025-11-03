@@ -1,8 +1,10 @@
 use crate::application::dto::{JobResponseDto, UpdateJobRequestDto};
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::JobRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct UpdateJobUseCase<R>
 where
     R: JobRepository + ?Sized,
@@ -14,10 +16,6 @@ impl<R> UpdateJobUseCase<R>
 where
     R: JobRepository + ?Sized,
 {
-    pub fn new(job_repo: Arc<R>) -> Self {
-        Self { job_repo }
-    }
-
     pub async fn execute(&self, request: UpdateJobRequestDto) -> DomainResult<JobResponseDto> {
         let mut job_draft = self.job_repo.find_by_id(&request.job_id).await?;
 

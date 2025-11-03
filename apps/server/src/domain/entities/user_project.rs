@@ -1,9 +1,10 @@
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{ProjectId, UserId, UserProjectId, UserProjectRole};
 use chrono::{DateTime, Utc};
+use derive_more::Constructor;
 
 /// UserProject domain entity
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Constructor)]
 pub struct UserProject {
     id: UserProjectId,
     user_id: UserId,
@@ -13,23 +14,6 @@ pub struct UserProject {
 }
 
 impl UserProject {
-    /// Create a new user project (for reconstruction from database)
-    pub fn new(
-        id: UserProjectId,
-        user_id: UserId,
-        project_id: ProjectId,
-        role: UserProjectRole,
-        joined_at: DateTime<Utc>,
-    ) -> DomainResult<Self> {
-        Ok(Self {
-            id,
-            user_id,
-            project_id,
-            role,
-            joined_at,
-        })
-    }
-
     /// Create a new project
     pub fn create(
         user_id: UserId,

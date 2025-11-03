@@ -1,9 +1,10 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::{JobContent, JobId, JobStatus, PipelineContent, PipelineId};
 use chrono::{DateTime, Utc};
+use derive_more::Constructor;
 
 /// Job domain entity
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Constructor)]
 pub struct Job {
     id: JobId,
     pipeline_id: PipelineId,
@@ -14,25 +15,6 @@ pub struct Job {
 }
 
 impl Job {
-    /// Create a new job (for reconstruction from database)
-    pub fn new(
-        id: JobId,
-        pipeline_id: PipelineId,
-        status: JobStatus,
-        content: JobContent,
-        created_at: DateTime<Utc>,
-        updated_at: DateTime<Utc>,
-    ) -> Self {
-        Self {
-            id,
-            pipeline_id,
-            status,
-            content,
-            created_at,
-            updated_at,
-        }
-    }
-
     /// Create a new job
     pub fn create(pipeline_id: PipelineId, content: PipelineContent) -> DomainResult<Self> {
         let now = Utc::now();

@@ -1,9 +1,10 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::{UserId, Username};
 use chrono::{DateTime, Utc};
+use derive_more::Constructor;
 
 /// User domain entity
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Constructor)]
 pub struct User {
     id: UserId,
     username: Username,
@@ -14,25 +15,6 @@ pub struct User {
 }
 
 impl User {
-    /// Create a new user (for reconstruction from database)
-    pub fn new(
-        id: UserId,
-        username: Username,
-        password_hash: String,
-        is_active: bool,
-        created_at: DateTime<Utc>,
-        updated_at: DateTime<Utc>,
-    ) -> DomainResult<Self> {
-        Ok(Self {
-            id,
-            username,
-            password_hash,
-            is_active,
-            created_at,
-            updated_at,
-        })
-    }
-
     /// Create a new user
     pub fn create(username: Username, password_hash: String) -> Self {
         let now = Utc::now();

@@ -3,20 +3,16 @@ use crate::domain::value_objects::PipelineId;
 use crate::presentation::grpc::mappers::map_domain_error_to_status;
 // use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
+use derive_more::Constructor;
 use protocol::services::orchestrator::{
     RunPipelineRequest, RunPipelineResponse, orchestrator_server,
 };
 use protocol::tonic::{Request, Response, Status};
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct OrchestratorHandler {
     container: Arc<AppContainer>,
-}
-
-impl OrchestratorHandler {
-    pub fn new(container: Arc<AppContainer>) -> Self {
-        Self { container }
-    }
 }
 
 #[async_trait::async_trait]

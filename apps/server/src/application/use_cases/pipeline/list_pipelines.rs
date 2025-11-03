@@ -3,8 +3,10 @@ use crate::application::dto::{
 };
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::PipelineRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct ListPipelinesUseCase<R>
 where
     R: PipelineRepository + ?Sized,
@@ -16,10 +18,6 @@ impl<R> ListPipelinesUseCase<R>
 where
     R: PipelineRepository + ?Sized,
 {
-    pub fn new(pipeline_repo: Arc<R>) -> Self {
-        Self { pipeline_repo }
-    }
-
     pub async fn execute(
         &self,
         request: ListPipelinesRequestDto,

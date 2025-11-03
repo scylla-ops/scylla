@@ -1,9 +1,10 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::{Description, OrganizationId, OrganizationName};
 use chrono::{DateTime, Utc};
+use derive_more::Constructor;
 
 /// Organization domain entity
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Constructor)]
 pub struct Organization {
     id: OrganizationId,
     name: OrganizationName,
@@ -14,25 +15,6 @@ pub struct Organization {
 }
 
 impl Organization {
-    /// Create a new organization (for reconstruction from database)
-    pub fn new(
-        id: OrganizationId,
-        name: OrganizationName,
-        description: Option<Description>,
-        is_active: bool,
-        created_at: DateTime<Utc>,
-        updated_at: DateTime<Utc>,
-    ) -> DomainResult<Self> {
-        Ok(Self {
-            id,
-            name,
-            description,
-            is_active,
-            created_at,
-            updated_at,
-        })
-    }
-
     /// Create a new organization
     pub fn create(name: OrganizationName, description: Option<Description>) -> DomainResult<Self> {
         let now = Utc::now();

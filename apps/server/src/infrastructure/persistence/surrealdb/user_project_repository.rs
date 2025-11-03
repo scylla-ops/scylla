@@ -6,19 +6,15 @@ use crate::infrastructure::persistence::mappers::{FromRecordId, ToRecordId};
 use crate::infrastructure::persistence::surrealdb::mappers::UserProjectMapper;
 use crate::infrastructure::persistence::surrealdb::models::UserProjectRecord;
 use async_trait::async_trait;
+use derive_more::Constructor;
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
 /// SurrealDB implementation of UserProjectRepository
+#[derive(Constructor)]
 pub struct SurrealUserProjectRepository {
     db: Arc<Surreal<Any>>,
-}
-
-impl SurrealUserProjectRepository {
-    pub fn new(db: Arc<Surreal<Any>>) -> Self {
-        Self { db }
-    }
 }
 
 #[async_trait]

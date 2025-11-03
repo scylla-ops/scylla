@@ -8,6 +8,7 @@ use crate::presentation::grpc::mappers::{
 };
 use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
+use derive_more::Constructor;
 use protocol::services::user::{
     ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest,
     DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse,
@@ -16,14 +17,9 @@ use protocol::services::user::{
 use protocol::tonic::{Request, Response, Status};
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct UserHandler {
     container: Arc<AppContainer>,
-}
-
-impl UserHandler {
-    pub fn new(container: Arc<AppContainer>) -> Self {
-        Self { container }
-    }
 }
 
 #[async_trait::async_trait]

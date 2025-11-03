@@ -5,8 +5,10 @@ use crate::domain::errors::DomainResult;
 use crate::domain::repositories::{ProjectRepository, UserProjectRepository};
 use crate::domain::value_objects::UserProjectRole;
 use crate::infrastructure::rbac::RoleMapper;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct CreateProjectUseCase<R, U, E>
 where
     R: ProjectRepository + ?Sized,
@@ -24,14 +26,6 @@ where
     U: UserProjectRepository + ?Sized,
     E: RbacEnforcer + ?Sized,
 {
-    pub fn new(project_repo: Arc<R>, user_project_repo: Arc<U>, rbac_enforcer: Arc<E>) -> Self {
-        Self {
-            project_repo,
-            user_project_repo,
-            rbac_enforcer,
-        }
-    }
-
     pub async fn execute(
         &self,
         request: CreateProjectRequestDto,

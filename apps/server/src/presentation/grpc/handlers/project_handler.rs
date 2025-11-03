@@ -12,6 +12,7 @@ use crate::presentation::grpc::mappers::{
 };
 use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
+use derive_more::Constructor;
 use protocol::services::project::{
     AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
     DeleteProjectResponse, GetProjectRequest, ListProjectUsersRequest, ListProjectUsersResponse,
@@ -22,14 +23,9 @@ use protocol::services::project::{
 use protocol::tonic::{Request, Response, Status};
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct ProjectHandler {
     container: Arc<AppContainer>,
-}
-
-impl ProjectHandler {
-    pub fn new(container: Arc<AppContainer>) -> Self {
-        Self { container }
-    }
 }
 
 #[async_trait::async_trait]

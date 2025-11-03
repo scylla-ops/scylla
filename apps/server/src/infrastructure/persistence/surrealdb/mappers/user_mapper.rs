@@ -13,14 +13,14 @@ impl UserMapper {
         let id = UserId::new(record.id.key().to_string());
         let username = Username::new(record.username)?;
 
-        User::new(
+        Ok(User::new(
             id,
             username,
             record.password_hash,
             record.is_active,
             DateTime::from(record.created_at),
             DateTime::from(record.updated_at),
-        )
+        ))
     }
 
     /// Convert domain entity to insert record

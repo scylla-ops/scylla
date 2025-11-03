@@ -3,8 +3,10 @@ use crate::application::dto::{
 };
 use crate::domain::errors::DomainResult;
 use crate::domain::repositories::OrganizationRepository;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct ListOrganizationsUseCase<R>
 where
     R: OrganizationRepository + ?Sized,
@@ -16,10 +18,6 @@ impl<R> ListOrganizationsUseCase<R>
 where
     R: OrganizationRepository + ?Sized,
 {
-    pub fn new(org_repo: Arc<R>) -> Self {
-        Self { org_repo }
-    }
-
     pub async fn execute(
         &self,
         request: ListOrganizationsRequestDto,

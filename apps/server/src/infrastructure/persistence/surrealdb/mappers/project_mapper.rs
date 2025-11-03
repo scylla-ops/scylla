@@ -17,7 +17,7 @@ impl ProjectMapper {
         let name = ProjectName::new(record.name)?;
         let description = record.description.map(Description::new).transpose()?;
 
-        Project::new(
+        Ok(Project::new(
             id,
             name,
             description,
@@ -25,7 +25,7 @@ impl ProjectMapper {
             record.is_active,
             DateTime::from(record.created_at),
             DateTime::from(record.updated_at),
-        )
+        ))
     }
 
     /// Convert domain entity to insert record

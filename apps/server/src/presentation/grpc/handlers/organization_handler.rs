@@ -12,6 +12,7 @@ use crate::presentation::grpc::mappers::{
 };
 use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
+use derive_more::Constructor;
 use protocol::services::organization::{
     AddUserToOrganizationRequest, AddUserToOrganizationResponse, CreateOrganizationRequest,
     DeleteOrganizationRequest, DeleteOrganizationResponse, GetOrganizationRequest,
@@ -24,14 +25,9 @@ use protocol::services::organization::{
 use protocol::tonic::{Request, Response, Status};
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct OrganizationHandler {
     container: Arc<AppContainer>,
-}
-
-impl OrganizationHandler {
-    pub fn new(container: Arc<AppContainer>) -> Self {
-        Self { container }
-    }
 }
 
 #[async_trait::async_trait]
@@ -148,14 +144,14 @@ impl organization_service_server::OrganizationService for OrganizationHandler {
         // let org_id = &request.get_ref().organization_id;
 
         // Check RBAC permissions
-            // check_permissions(
-            //     &request,
-            //     self.container.rbac_enforcer(),
-            //     org_id,
-            //     "organizations",
-            //     "update",
-            // )
-            // .await?;
+        // check_permissions(
+        //     &request,
+        //     self.container.rbac_enforcer(),
+        //     org_id,
+        //     "organizations",
+        //     "update",
+        // )
+        // .await?;
 
         let req = request.into_inner();
         let dto = ToggleActiveOrganizationRequestDto {

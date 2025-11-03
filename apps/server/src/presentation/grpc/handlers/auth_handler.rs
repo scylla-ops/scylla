@@ -2,6 +2,7 @@ use crate::application::dto::{LoginRequestDto, RevokeTokenRequestDto, ValidateTo
 use crate::domain::value_objects::{Password, Username};
 use crate::presentation::grpc::mappers::map_domain_error_to_status;
 use crate::shared::di::AppContainer;
+use derive_more::Constructor;
 use protocol::services::auth::{
     LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
     ValidateTokenResponse, auth_service_server,
@@ -9,14 +10,9 @@ use protocol::services::auth::{
 use protocol::tonic::{Request, Response, Status};
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct AuthHandler {
     container: Arc<AppContainer>,
-}
-
-impl AuthHandler {
-    pub fn new(container: Arc<AppContainer>) -> Self {
-        Self { container }
-    }
 }
 
 #[async_trait::async_trait]

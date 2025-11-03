@@ -5,8 +5,10 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::UserRepository;
 use crate::domain::value_objects::UserGlobalRole;
 use crate::infrastructure::rbac::RoleMapper;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct CreateUserUseCase<R, H, E>
 where
     R: UserRepository + ?Sized,
@@ -24,14 +26,6 @@ where
     H: PasswordHasher + ?Sized,
     E: RbacEnforcer + ?Sized,
 {
-    pub fn new(user_repo: Arc<R>, password_hasher: Arc<H>, rbac_enforcer: Arc<E>) -> Self {
-        Self {
-            user_repo,
-            password_hasher,
-            rbac_enforcer,
-        }
-    }
-
     pub async fn execute(&self, request: CreateUserRequestDto) -> DomainResult<UserResponseDto> {
         // check if username already exists
         if self.user_repo.username_exists(&request.username).await? {

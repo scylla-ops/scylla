@@ -6,19 +6,15 @@ use crate::infrastructure::persistence::mappers::ToRecordId;
 use crate::infrastructure::persistence::surrealdb::mappers::OrganizationMapper;
 use crate::infrastructure::persistence::surrealdb::models::OrganizationRecord;
 use async_trait::async_trait;
+use derive_more::Constructor;
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
 /// SurrealDB implementation of OrganizationRepository
+#[derive(Constructor)]
 pub struct SurrealOrganizationRepository {
     db: Arc<Surreal<Any>>,
-}
-
-impl SurrealOrganizationRepository {
-    pub fn new(db: Arc<Surreal<Any>>) -> Self {
-        Self { db }
-    }
 }
 
 #[async_trait]

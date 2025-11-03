@@ -3,8 +3,10 @@ use crate::application::ports::RbacEnforcer;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::UserRepository;
 use crate::infrastructure::rbac::RoleMapper;
+use derive_more::Constructor;
 use std::sync::Arc;
 
+#[derive(Constructor)]
 pub struct ChangeUserGlobalRoleUseCase<R, E>
 where
     R: UserRepository + ?Sized,
@@ -19,13 +21,6 @@ where
     R: UserRepository + ?Sized,
     E: RbacEnforcer + ?Sized,
 {
-    pub fn new(user_repo: Arc<R>, rbac_enforcer: Arc<E>) -> Self {
-        Self {
-            user_repo,
-            rbac_enforcer,
-        }
-    }
-
     pub async fn execute(
         &self,
         request: ChangeUserGlobalRoleRequestDto,
