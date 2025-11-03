@@ -385,7 +385,7 @@ mod tests {
         let created_at = Utc::now();
         let updated_at = Utc::now();
 
-        let result = Organization::new(
+        let org = Organization::new(
             id.clone(),
             name,
             description,
@@ -394,12 +394,6 @@ mod tests {
             updated_at,
         );
 
-        assert!(
-            result.is_ok(),
-            "Reconstructing organization from database should succeed"
-        );
-
-        let org = result.unwrap();
         assert_eq!(org.id().as_str(), id.as_str());
         assert!(!org.is_active());
         assert_eq!(org.created_at(), created_at);

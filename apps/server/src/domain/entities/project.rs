@@ -407,7 +407,7 @@ mod tests {
         let created_at = Utc::now();
         let updated_at = Utc::now();
 
-        let result = Project::new(
+        let project = Project::new(
             id.clone(),
             name,
             description,
@@ -417,12 +417,6 @@ mod tests {
             updated_at,
         );
 
-        assert!(
-            result.is_ok(),
-            "Reconstructing project from database should succeed"
-        );
-
-        let project = result.unwrap();
         assert_eq!(project.id().as_str(), id.as_str());
         assert_eq!(project.organization_id().as_str(), org_id.as_str());
         assert!(!project.is_active());

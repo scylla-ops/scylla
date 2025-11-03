@@ -306,7 +306,7 @@ mod tests {
         let created_at = Utc::now();
         let updated_at = Utc::now();
 
-        let result = User::new(
+        let user = User::new(
             id.clone(),
             username,
             password_hash,
@@ -315,12 +315,6 @@ mod tests {
             updated_at,
         );
 
-        assert!(
-            result.is_ok(),
-            "Reconstructing user from database should succeed"
-        );
-
-        let user = result.unwrap();
         assert_eq!(user.id().as_str(), id.as_str());
         assert!(!user.is_active());
         assert_eq!(user.created_at(), created_at);

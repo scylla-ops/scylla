@@ -2,15 +2,15 @@
 //!
 //! These tests verify the RBAC enforcer works correctly with real Casbin and SurrealDB.
 
-use casbin::{CoreApi, Enforcer, MgmtApi, RbacApi};
+use casbin::{CoreApi, Enforcer, MgmtApi};
 use scylla_core::application::ports::RbacEnforcer;
 use scylla_core::domain::value_objects::UserId;
 use scylla_core::infrastructure::rbac::casbin_enforcer::CasbinRbacEnforcer;
 use serial_test::serial;
 use std::sync::Arc;
 use surreal_casbin_adapter::SurrealAdapter;
-use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::Surreal;
 
 /// Creates an in-memory SurrealDB instance for testing
 async fn setup_test_db() -> Arc<Surreal<Any>> {
