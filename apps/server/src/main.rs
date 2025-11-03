@@ -7,7 +7,7 @@ use protocol::services::project::project_service_server::ProjectServiceServer;
 use protocol::services::user::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
 
-use scylla_core::config::CoreConfig;
+use scylla_core::config::{BootstrapConfig, CoreConfig};
 use scylla_core::infrastructure::database::{apply_migrations, db, init_db, login};
 use scylla_core::presentation::grpc::handlers::{
     AuthHandler, JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler, UserHandler,
@@ -117,7 +117,7 @@ async fn init_rbac_enforcer(
 
 async fn bootstrap_admin_user(
     container: &AppContainer,
-    bootstrap_config: &scylla_core::config::BootstrapConfig,
+    bootstrap_config: BootstrapConfig,
 ) -> Result<()> {
     use scylla_core::domain::entities::User;
     use scylla_core::domain::value_objects::{Password, Username};
@@ -143,18 +143,20 @@ async fn bootstrap_admin_user(
         return Ok(());
     }
 
+    let BootstrapConfig { username, password, .. } = bootstrap_config;
+
     // No admins exist - proceed with bootstrap
     info!(
         "No admin users found, creating bootstrap admin user: {}",
-        bootstrap_config.username
+        username
     );
 
     // Create username value object
-    let username = Username::try_from(bootstrap_config.username.clone())
+    let username = Username::try_from(username)
         .with_context(|| "Failed to create username for bootstrap admin")?;
 
     // Create password value object
-    let password = Password::try_from(bootstrap_config.password.clone())
+    let password = Password::try_from(password)
         .with_context(|| "Failed to create password for bootstrap admin")?;
 
     // Hash the password
@@ -219,7 +221,7 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     let container = Arc::new(AppContainer::new(db()?, enforcer, &auth_config)?);
 
     // Bootstrap admin user if configured
-    bootstrap_admin_user(&container, &bootstrap_config).await?;
+    bootstrap_admin_user(&container, bootstrap_config).await?;
 
     // Create gRPC handlers
     let user_handler = UserHandler::new(container.clone());

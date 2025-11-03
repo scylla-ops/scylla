@@ -1,3 +1,4 @@
+
 //! Integration tests for UpdateUserUseCase
 
 use scylla_core::application::dto::UpdateUserRequestDto;
@@ -13,7 +14,7 @@ use crate::common::setup_test_db;
 
 fn create_test_user(username: &str) -> User {
     User::create(
-        Username::new(username.to_string()).unwrap(),
+        Username::try_from(username.to_string()).unwrap(),
         "hashed_password".to_string(),
     )
 }
@@ -30,7 +31,7 @@ async fn test_update_user_use_case_update_username() {
 
     let request = UpdateUserRequestDto {
         user_id: created.id().clone(),
-        username: Some(Username::new("updated_username".to_string()).unwrap()),
+        username: Some(Username::try_from("updated_username".to_string()).unwrap()),
     };
 
     let result = use_case.execute(request).await;
@@ -59,7 +60,7 @@ async fn test_update_user_use_case_duplicate_username() {
     // Try to update user2's username to user1's username
     let request = UpdateUserRequestDto {
         user_id: created2.id().clone(),
-        username: Some(Username::new("user1".to_string()).unwrap()),
+        username: Some(Username::try_from("user1".to_string()).unwrap()),
     };
 
     let result = use_case.execute(request).await;
@@ -87,7 +88,7 @@ async fn test_update_user_use_case_same_username() {
     // Update to the same username should succeed
     let request = UpdateUserRequestDto {
         user_id: created.id().clone(),
-        username: Some(Username::new("sameuser".to_string()).unwrap()),
+        username: Some(Username::try_from("sameuser".to_string()).unwrap()),
     };
 
     let result = use_case.execute(request).await;
@@ -104,7 +105,7 @@ async fn test_update_user_use_case_not_found() {
 
     let request = UpdateUserRequestDto {
         user_id: scylla_core::domain::value_objects::UserId::generate(),
-        username: Some(Username::new("newuser".to_string()).unwrap()),
+        username: Some(Username::try_from("newuser".to_string()).unwrap()),
     };
 
     let result = use_case.execute(request).await;

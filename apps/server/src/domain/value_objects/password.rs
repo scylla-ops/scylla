@@ -9,7 +9,9 @@ pub const PASSWORD_MAX_LENGTH: usize = 255;
 /// This is for plaintext passwords during creation/validation.
 /// Stored passwords should be hashed using the PasswordHasher port.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Password(String);
+pub struct Password {
+    inner: String,
+}
 
 impl TryFrom<String> for Password {
     type Error = DomainError;
@@ -38,26 +40,26 @@ impl TryFrom<String> for Password {
             )));
         }
 
-        Ok(Self(value))
+        Ok(Self { inner: value })
     }
 }
 
 impl Password {
     /// Get the password as a string slice
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.inner
     }
 
     /// Convert to inner String
     pub fn into_string(self) -> String {
-        self.0
+        self.inner
     }
 }
 
 impl fmt::Display for Password {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Never display the actual password, always show asterisks
-        write!(f, "{}", "*".repeat(self.0.len()))
+        write!(f, "{}", "*".repeat(self.inner.len()))
     }
 }
 
@@ -67,31 +69,31 @@ mod tests {
 
     #[test]
     fn test_valid_password() {
-        let password = Password::try_from("SecurePass123!");
+        let password = Password::try_from("SecurePass123!".to_string());
         assert!(password.is_ok());
     }
 
     #[test]
     fn test_password_too_short() {
-        let password = Password::try_from("short");
+        let password = Password::try_from("short".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_empty() {
-        let password = Password::try_from("");
+        let password = Password::try_from("".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_whitespace_only() {
-        let password = Password::try_from("        ");
+        let password = Password::try_from("        ".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_display_hides_content() {
-        let password = Password::try_from("SecurePass123!").unwrap();
+        let password = Password::try_from("SecurePass123!".to_string()).unwrap();
         let display = format!("{}", password);
         assert!(!display.contains("SecurePass"));
         assert!(display.contains("*"));

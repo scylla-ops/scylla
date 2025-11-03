@@ -37,7 +37,7 @@ mock! {
 async fn test_create_user_use_case_with_real_repository() {
     let db = setup_test_db().await;
     let user_repo: Arc<dyn UserRepository> = Arc::new(SurrealUserRepository::new(db));
-    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::new());
+    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
 
     let mut rbac_enforcer = MockRbacEnforcer::new();
     rbac_enforcer
@@ -51,8 +51,8 @@ async fn test_create_user_use_case_with_real_repository() {
     );
 
     let request = CreateUserRequestDto {
-        username: Username::new("usecasetest".to_string()).unwrap(),
-        password: Password::new("SecurePass123!".to_string()).unwrap(),
+        username: Username::try_from("usecasetest".to_string()).unwrap(),
+        password: Password::try_from("SecurePass123!".to_string()).unwrap(),
     };
 
     let result = use_case.execute(request).await;
@@ -75,7 +75,7 @@ async fn test_create_user_use_case_with_real_repository() {
 async fn test_create_user_use_case_duplicate_username() {
     let db = setup_test_db().await;
     let user_repo: Arc<dyn UserRepository> = Arc::new(SurrealUserRepository::new(db));
-    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::new());
+    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
 
     let mut rbac_enforcer = MockRbacEnforcer::new();
     // Expect only one call to add_role_for_user (for the first user)
@@ -88,8 +88,8 @@ async fn test_create_user_use_case_duplicate_username() {
         CreateUserUseCase::new(user_repo.clone(), password_hasher, Arc::new(rbac_enforcer));
 
     let request1 = CreateUserRequestDto {
-        username: Username::new("duplicate".to_string()).unwrap(),
-        password: Password::new("Pass123!".to_string()).unwrap(),
+        username: Username::try_from("duplicate".to_string()).unwrap(),
+        password: Password::try_from("Pass123!".to_string()).unwrap(),
     };
 
     let result1 = use_case.execute(request1).await;
@@ -99,13 +99,13 @@ async fn test_create_user_use_case_duplicate_username() {
     // For duplicate test, RBAC should not be called (fails at username check)
     let use_case2 = CreateUserUseCase::new(
         user_repo.clone(),
-        Arc::new(Argon2PasswordHasher::new()),
+        Arc::new(Argon2PasswordHasher::default()),
         Arc::new(rbac_enforcer2),
     );
 
     let request2 = CreateUserRequestDto {
-        username: Username::new("duplicate".to_string()).unwrap(),
-        password: Password::new("Pass456!".to_string()).unwrap(),
+        username: Username::try_from("duplicate".to_string()).unwrap(),
+        password: Password::try_from("Pass456!".to_string()).unwrap(),
     };
 
     let result2 = use_case2.execute(request2).await;

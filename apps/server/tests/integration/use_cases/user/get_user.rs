@@ -13,7 +13,7 @@ use crate::common::setup_test_db;
 
 fn create_test_user(username: &str) -> User {
     User::create(
-        Username::new(username.to_string()).unwrap(),
+        Username::try_from(username.to_string()).unwrap(),
         "hashed_password".to_string(),
     )
 }

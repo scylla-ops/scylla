@@ -27,7 +27,7 @@ use crate::common::setup_test_db;
 /// Helper to create a test user entity
 fn create_test_user(username: &str) -> User {
     User::create(
-        Username::new(username.to_string()).unwrap(),
+        Username::try_from(username.to_string()).unwrap(),
         "hashed_password".to_string(),
     )
 }
@@ -178,7 +178,7 @@ async fn test_find_user_by_username_success() {
     let user = create_test_user("searchable");
     repo.create(&user).await.unwrap();
 
-    let username = Username::new("searchable".to_string()).unwrap();
+    let username = Username::try_from("searchable".to_string()).unwrap();
 
     // Act
     let found_user = repo
@@ -197,7 +197,7 @@ async fn test_find_user_by_username_not_found() {
     let db = setup_test_db().await;
     let repo = SurrealUserRepository::new(db);
 
-    let username = Username::new("nonexistent".to_string()).unwrap();
+    let username = Username::try_from("nonexistent".to_string()).unwrap();
 
     // Act
     let result = repo.find_by_username(&username).await;
@@ -227,7 +227,7 @@ async fn test_update_user_success() {
     let mut created_user = repo.create(&user).await.unwrap();
 
     // Modify the user
-    let new_username = Username::new("updated".to_string()).unwrap();
+    let new_username = Username::try_from("updated".to_string()).unwrap();
     created_user.update_username(new_username).unwrap();
 
     // Act
@@ -437,7 +437,7 @@ async fn test_username_exists_returns_true_when_exists() {
     let user = create_test_user("existing");
     repo.create(&user).await.unwrap();
 
-    let username = Username::new("existing".to_string()).unwrap();
+    let username = Username::try_from("existing".to_string()).unwrap();
 
     // Act
     let exists = repo
@@ -456,7 +456,7 @@ async fn test_username_exists_returns_false_when_not_exists() {
     let db = setup_test_db().await;
     let repo = SurrealUserRepository::new(db);
 
-    let username = Username::new("notexisting".to_string()).unwrap();
+    let username = Username::try_from("notexisting".to_string()).unwrap();
 
     // Act
     let exists = repo

@@ -48,7 +48,7 @@ async fn setup_infrastructure() -> (
     let user_repo: Arc<dyn UserRepository> = Arc::new(SurrealUserRepository::new(db.clone()));
 
     // Real password hasher
-    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::new());
+    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
 
     // Mock RBAC enforcer (to avoid Casbin setup complexity in tests)
     let mut rbac_enforcer = MockRbacEnforcer::new();
@@ -78,8 +78,8 @@ async fn test_create_user_end_to_end_success() {
     );
 
     let request = CreateUserRequestDto {
-        username: Username::new("e2euser".to_string()).unwrap(),
-        password: Password::new("SecurePassword123!".to_string()).unwrap(),
+        username: Username::try_from("e2euser".to_string()).unwrap(),
+        password: Password::try_from("SecurePassword123!".to_string()).unwrap(),
     };
 
     // Act: Execute the complete workflow
@@ -108,7 +108,7 @@ async fn test_create_user_end_to_end_success() {
     );
 
     // Verify: Password can be verified
-    let password = Password::new("SecurePassword123!".to_string()).unwrap();
+    let password = Password::try_from("SecurePassword123!".to_string()).unwrap();
     let is_valid = password_hasher
         .verify(&password, stored_user.password_hash())
         .await
@@ -117,7 +117,7 @@ async fn test_create_user_end_to_end_success() {
     assert!(is_valid, "Original password should verify against hash");
 
     // Verify: Wrong password doesn't verify
-    let wrong_password = Password::new("WrongPassword123!".to_string()).unwrap();
+    let wrong_password = Password::try_from("WrongPassword123!".to_string()).unwrap();
     let is_invalid = password_hasher
         .verify(&wrong_password, stored_user.password_hash())
         .await

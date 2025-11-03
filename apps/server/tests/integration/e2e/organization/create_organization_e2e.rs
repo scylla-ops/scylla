@@ -80,7 +80,7 @@ async fn test_create_organization_end_to_end_success() {
     let db = setup_test_db().await;
     let user_repo = SurrealUserRepository::new(db);
     let creator = User::create(
-        Username::new("creator".to_string()).unwrap(),
+        Username::try_from("creator".to_string()).unwrap(),
         "hashed_password".to_string(),
     );
     let created_user = user_repo.create(&creator).await.unwrap();
@@ -153,7 +153,7 @@ async fn test_create_duplicate_organization_end_to_end() {
     let db = setup_test_db().await;
     let user_repo = SurrealUserRepository::new(db);
     let creator = User::create(
-        Username::new("creator2".to_string()).unwrap(),
+        Username::try_from("creator2".to_string()).unwrap(),
         "hashed_password".to_string(),
     );
     let created_user = user_repo.create(&creator).await.unwrap();

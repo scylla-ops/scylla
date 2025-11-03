@@ -41,7 +41,7 @@ async fn setup_infrastructure() -> (
     let db = setup_test_db().await;
 
     let user_repo: Arc<dyn UserRepository> = Arc::new(SurrealUserRepository::new(db.clone()));
-    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::new());
+    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
 
     let mut rbac_enforcer = MockRbacEnforcer::new();
     rbac_enforcer
@@ -63,7 +63,7 @@ async fn test_create_multiple_users_end_to_end() {
 
     let use_case = CreateUserUseCase::new(
         Arc::clone(&user_repo),
-        Arc::new(Argon2PasswordHasher::new()),
+        Arc::new(Argon2PasswordHasher::default()),
         Arc::clone(&rbac_enforcer),
     );
 
@@ -74,8 +74,8 @@ async fn test_create_multiple_users_end_to_end() {
 
     for username in &usernames {
         let request = CreateUserRequestDto {
-            username: Username::new(username.to_string()).unwrap(),
-            password: Password::new("Password123!".to_string()).unwrap(),
+            username: Username::try_from(username.to_string()).unwrap(),
+            password: Password::try_from("Password123!".to_string()).unwrap(),
         };
 
         let result = use_case

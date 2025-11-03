@@ -41,7 +41,7 @@ async fn setup_infrastructure() -> (
     let db = setup_test_db().await;
 
     let user_repo: Arc<dyn UserRepository> = Arc::new(SurrealUserRepository::new(db.clone()));
-    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::new());
+    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
 
     let mut rbac_enforcer = MockRbacEnforcer::new();
     rbac_enforcer
@@ -64,8 +64,8 @@ async fn test_create_duplicate_user_end_to_end() {
     );
 
     let request1 = CreateUserRequestDto {
-        username: Username::new("duplicate".to_string()).unwrap(),
-        password: Password::new("Password123!".to_string()).unwrap(),
+        username: Username::try_from("duplicate".to_string()).unwrap(),
+        password: Password::try_from("Password123!".to_string()).unwrap(),
     };
 
     // Act: Create first user
@@ -74,8 +74,8 @@ async fn test_create_duplicate_user_end_to_end() {
 
     // Act: Try to create duplicate user
     let request2 = CreateUserRequestDto {
-        username: Username::new("duplicate".to_string()).unwrap(),
-        password: Password::new("DifferentPass123!".to_string()).unwrap(),
+        username: Username::try_from("duplicate".to_string()).unwrap(),
+        password: Password::try_from("DifferentPass123!".to_string()).unwrap(),
     };
 
     let result2 = use_case.execute(request2).await;
@@ -87,7 +87,7 @@ async fn test_create_duplicate_user_end_to_end() {
     );
 
     // Verify: Only one user exists in database
-    let username = Username::new("duplicate".to_string()).unwrap();
+    let username = Username::try_from("duplicate".to_string()).unwrap();
     let exists = user_repo
         .username_exists(&username)
         .await
@@ -102,7 +102,7 @@ async fn test_create_duplicate_user_end_to_end() {
         .expect("First user should be retrievable");
 
     // The stored password should match the first user's password, not the second
-    let first_password = Password::new("Password123!".to_string()).unwrap();
+    let first_password = Password::try_from("Password123!".to_string()).unwrap();
     let is_valid = password_hasher
         .verify(&first_password, stored_user.password_hash())
         .await

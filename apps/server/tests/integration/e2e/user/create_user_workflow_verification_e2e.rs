@@ -40,7 +40,7 @@ async fn setup_infrastructure() -> (
     let db = setup_test_db().await;
 
     let user_repo: Arc<dyn UserRepository> = Arc::new(SurrealUserRepository::new(db.clone()));
-    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::new());
+    let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
 
     let mut rbac_enforcer = MockRbacEnforcer::new();
     rbac_enforcer
@@ -62,13 +62,13 @@ async fn test_create_user_workflow_verification() {
 
     let use_case = CreateUserUseCase::new(
         Arc::clone(&user_repo),
-        Arc::new(Argon2PasswordHasher::new()),
+        Arc::new(Argon2PasswordHasher::default()),
         Arc::clone(&rbac_enforcer),
     );
 
     let request = CreateUserRequestDto {
-        username: Username::new("workflowtest".to_string()).unwrap(),
-        password: Password::new("TestPass123!".to_string()).unwrap(),
+        username: Username::try_from("workflowtest".to_string()).unwrap(),
+        password: Password::try_from("TestPass123!".to_string()).unwrap(),
     };
 
     // Act: Create user
@@ -93,7 +93,7 @@ async fn test_create_user_workflow_verification() {
     );
 
     // 3. Username is searchable
-    let username = Username::new("workflowtest".to_string()).unwrap();
+    let username = Username::try_from("workflowtest".to_string()).unwrap();
     let searchable = user_repo.find_by_username(&username).await.is_ok();
     assert!(searchable, "User should be findable by username");
 
