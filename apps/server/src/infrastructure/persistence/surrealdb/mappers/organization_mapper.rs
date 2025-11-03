@@ -1,3 +1,4 @@
+use crate::domain::DomainError;
 use crate::domain::entities::Organization;
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{Description, OrganizationId, OrganizationName};
@@ -7,13 +8,13 @@ use crate::infrastructure::persistence::surrealdb::models::{
     OrganizationInsert, OrganizationRecord,
 };
 use chrono::DateTime;
+use std::convert::{From, TryFrom};
 
-/// Mapper between Organization domain entity and database records
-pub struct OrganizationMapper;
+impl TryFrom<OrganizationRecord> for Organization {
+    type Error = DomainError;
 
-impl OrganizationMapper {
     /// Convert database record to domain entity
-    pub fn to_domain(record: OrganizationRecord) -> DomainResult<Organization> {
+    fn try_from(record: OrganizationRecord) -> DomainResult<Self> {
         let id = OrganizationId::from_record_id(record.id);
         let name = OrganizationName::new(record.name)?;
         let description = record.description.map(Description::new).transpose()?;
@@ -27,18 +28,22 @@ impl OrganizationMapper {
             DateTime::from(record.updated_at),
         ))
     }
+}
 
+impl From<&Organization> for OrganizationInsert {
     /// Convert domain entity to insert record
-    pub fn to_insert(organization: &Organization) -> OrganizationInsert {
+    fn from(organization: &Organization) -> Self {
         OrganizationInsert {
             name: organization.name().as_str().to_string(),
             description: organization.description().map(|d| d.as_str().to_string()),
             is_active: organization.is_active(),
         }
     }
+}
 
+impl From<&Organization> for OrganizationUpdate {
     /// Convert domain entity to update record
-    pub fn to_update(organization: &Organization) -> OrganizationUpdate {
+    fn from(organization: &Organization) -> Self {
         OrganizationUpdate {
             name: organization.name().as_str().to_string(),
             description: organization.description().map(|d| d.as_str().to_string()),

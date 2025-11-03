@@ -150,7 +150,7 @@ async fn bootstrap_admin_user(
     );
 
     // Create username value object
-    let username = Username::new(bootstrap_config.username.clone())
+    let username = Username::try_from(bootstrap_config.username.clone())
         .with_context(|| "Failed to create username for bootstrap admin")?;
 
     // Create password value object

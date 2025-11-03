@@ -3,7 +3,6 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::UserOrganizationRepository;
 use crate::domain::value_objects::{OrganizationId, UserId, UserOrganizationId};
 use crate::infrastructure::persistence::mappers::{FromRecordId, ToRecordId};
-use crate::infrastructure::persistence::surrealdb::mappers::UserOrganizationMapper;
 use crate::infrastructure::persistence::surrealdb::models::UserOrganizationRecord;
 use async_trait::async_trait;
 use derive_more::Constructor;
@@ -35,7 +34,7 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         match created {
-            Some(record) => Ok(UserOrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure(
                 "Failed to create user organization",
             )),
@@ -50,7 +49,7 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match result {
-            Some(record) => Ok(UserOrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found("User organization", id.to_string())),
         }
     }
@@ -73,7 +72,7 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         let result = results.into_iter().next();
 
         match result {
-            Some(record) => Ok(UserOrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found(
                 "User organization",
                 format!(
@@ -87,23 +86,23 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
 
     async fn update(&self, user_organization: &UserOrganization) -> DomainResult<UserOrganization> {
         let results: Vec<UserOrganizationRecord> = self
-            .db
-            .query("UPDATE user_organization SET role = $role WHERE in = $user_id AND out = $organization_id")
-            .bind(("user_id", user_organization.user_id().to_record_id()))
-            .bind((
-                "organization_id",
-                user_organization.organization_id().to_record_id(),
-            ))
-            .bind(("role", user_organization.role().to_string()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+			.db
+			.query("UPDATE user_organization SET role = $role WHERE in = $user_id AND out = $organization_id")
+			.bind(("user_id", user_organization.user_id().to_record_id()))
+			.bind((
+				"organization_id",
+				user_organization.organization_id().to_record_id(),
+			))
+			.bind(("role", user_organization.role().to_string()))
+			.await
+			.map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+			.take(0)
+			.map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         let updated = results.into_iter().next();
 
         match updated {
-            Some(record) => Ok(UserOrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure(
                 "Failed to update user organization",
             )),
@@ -128,7 +127,7 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
 
         records
             .into_iter()
-            .map(|record| UserOrganizationMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect()
     }
 

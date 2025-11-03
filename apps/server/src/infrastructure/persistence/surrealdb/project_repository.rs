@@ -3,8 +3,8 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::ProjectRepository;
 use crate::domain::value_objects::ProjectId;
 use crate::infrastructure::persistence::mappers::ToRecordId;
-use crate::infrastructure::persistence::surrealdb::mappers::ProjectMapper;
 use crate::infrastructure::persistence::surrealdb::models::ProjectRecord;
+use crate::infrastructure::persistence::{ProjectInsert, ProjectUpdate};
 use async_trait::async_trait;
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -20,7 +20,7 @@ pub struct SurrealProjectRepository {
 #[async_trait]
 impl ProjectRepository for SurrealProjectRepository {
     async fn create(&self, project: &Project) -> DomainResult<Project> {
-        let insert = ProjectMapper::to_insert(project);
+        let insert = ProjectInsert::from(project);
         let created: Option<ProjectRecord> = self
             .db
             .create("projects")
@@ -29,7 +29,7 @@ impl ProjectRepository for SurrealProjectRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match created {
-            Some(record) => Ok(ProjectMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to create project")),
         }
     }
@@ -42,13 +42,13 @@ impl ProjectRepository for SurrealProjectRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match result {
-            Some(record) => Ok(ProjectMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found("Project", id.to_string())),
         }
     }
 
     async fn update(&self, project: &Project) -> DomainResult<Project> {
-        let record = ProjectMapper::to_update(project);
+        let record = ProjectUpdate::from(project);
         let updated: Option<ProjectRecord> = self
             .db
             .update(project.id().to_record_id())
@@ -57,7 +57,7 @@ impl ProjectRepository for SurrealProjectRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match updated {
-            Some(record) => Ok(ProjectMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to update project")),
         }
     }
@@ -109,7 +109,7 @@ impl ProjectRepository for SurrealProjectRepository {
 
         let projects: DomainResult<Vec<Project>> = records
             .into_iter()
-            .map(|record| ProjectMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect();
 
         Ok(PaginatedResult::new(projects?, &params, total_count))
@@ -142,18 +142,18 @@ impl ProjectRepository for SurrealProjectRepository {
 
         // Get paginated records
         let records: Vec<ProjectRecord> = self
-            .db
-            .query("SELECT * FROM projects WHERE is_active = true ORDER BY created_at DESC LIMIT $limit START $start")
-            .bind(("limit", params.limit()))
-            .bind(("start", params.offset()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+			.db
+			.query("SELECT * FROM projects WHERE is_active = true ORDER BY created_at DESC LIMIT $limit START $start")
+			.bind(("limit", params.limit()))
+			.bind(("start", params.offset()))
+			.await
+			.map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+			.take(0)
+			.map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         let projects: DomainResult<Vec<Project>> = records
             .into_iter()
-            .map(|record| ProjectMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect();
 
         Ok(PaginatedResult::new(projects?, &params, total_count))

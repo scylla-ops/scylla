@@ -1,3 +1,4 @@
+use crate::domain::DomainError;
 use crate::domain::entities::UserOrganization;
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::UserOrganizationRole;
@@ -8,13 +9,13 @@ use crate::infrastructure::persistence::surrealdb::models::{
     UserOrganizationInsert, UserOrganizationRecord, UserOrganizationUpdate,
 };
 use chrono::DateTime;
+use std::convert::{From, TryFrom};
 
-/// Mapper between UserOrganization domain entity and database records
-pub struct UserOrganizationMapper;
+impl TryFrom<UserOrganizationRecord> for UserOrganization {
+    type Error = DomainError;
 
-impl UserOrganizationMapper {
     /// Convert database record to domain entity
-    pub fn to_domain(record: UserOrganizationRecord) -> DomainResult<UserOrganization> {
+    fn try_from(record: UserOrganizationRecord) -> DomainResult<Self> {
         let id = UserOrganizationId::from_record_id(record.id);
         let user_id = UserId::from_record_id(record.user_id);
         let organization_id = OrganizationId::from_record_id(record.organization_id);
@@ -28,18 +29,22 @@ impl UserOrganizationMapper {
             DateTime::from(record.joined_at),
         ))
     }
+}
 
+impl From<&UserOrganization> for UserOrganizationInsert {
     /// Convert domain entity to insert record
-    pub fn to_insert(user_organization: &UserOrganization) -> UserOrganizationInsert {
+    fn from(user_organization: &UserOrganization) -> Self {
         UserOrganizationInsert {
             user_id: user_organization.user_id().to_record_id(),
             organization_id: user_organization.organization_id().to_record_id(),
             role: user_organization.role().to_string(),
         }
     }
+}
 
+impl From<&UserOrganization> for UserOrganizationUpdate {
     /// Convert domain entity to update record
-    pub fn to_update(user_organization: &UserOrganization) -> UserOrganizationUpdate {
+    fn from(user_organization: &UserOrganization) -> Self {
         UserOrganizationUpdate {
             role: user_organization.role().to_string(),
         }

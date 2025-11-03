@@ -9,10 +9,10 @@ pub struct Username {
     inner: String,
 }
 
-impl Username {
-    /// Create a new Username with validation
-    pub fn new(value: impl Into<String>) -> DomainResult<Self> {
-        let value = value.into();
+impl TryFrom<String> for Username {
+    type Error = DomainError;
+
+    fn try_from(value: String) -> DomainResult<Self> {
         let trimmed = value.trim();
 
         if trimmed.is_empty() {
@@ -30,7 +30,9 @@ impl Username {
             inner: trimmed.to_string(),
         })
     }
+}
 
+impl Username {
     /// Get the username as a string slice
     pub fn as_str(&self) -> &str {
         &self.inner
@@ -82,40 +84,40 @@ mod tests {
 
     #[test]
     fn test_username_creation() {
-        assert!(Username::new("valid_user").is_ok());
-        assert!(Username::new("  valid_user  ").is_ok()); // trimming
-        assert!(Username::new("").is_err()); // empty
-        assert!(Username::new("   ").is_err()); // whitespace only
+        assert!(Username::try_from("valid_user".to_string()).is_ok());
+        assert!(Username::try_from("  valid_user  ".to_string()).is_ok()); // trimming
+        assert!(Username::try_from("".to_string()).is_err()); // empty
+        assert!(Username::try_from("   ".to_string()).is_err()); // whitespace only
     }
 
     #[test]
     fn test_username_validation() {
         // Valid usernames
-        assert!(Username::new("user123").is_ok());
-        assert!(Username::new("A").is_ok());
+        assert!(Username::try_from("user123".to_string()).is_ok());
+        assert!(Username::try_from("A".to_string()).is_ok());
 
         // Invalid usernames
-        assert!(Username::new("").is_err());
-        assert!(Username::new("   ").is_err());
+        assert!(Username::try_from("".to_string()).is_err());
+        assert!(Username::try_from("   ".to_string()).is_err());
 
         // Too long
         let long_username = "a".repeat(MAX_USERNAME_LENGTH + 1);
-        assert!(Username::new(long_username).is_err());
+        assert!(Username::try_from(long_username).is_err());
 
         // Exactly max length should be ok
         let max_username = "a".repeat(MAX_USERNAME_LENGTH);
-        assert!(Username::new(max_username).is_ok());
+        assert!(Username::try_from(max_username).is_ok());
     }
 
     #[test]
     fn test_username_trimming() {
-        let username = Username::new("  myuser  ").unwrap();
+        let username = Username::try_from("  myuser  ".to_string()).unwrap();
         assert_eq!(username.as_str(), "myuser");
     }
 
     #[test]
     fn test_username_comparison() {
-        let username = Username::new("myuser").unwrap();
+        let username = Username::try_from("myuser".to_string()).unwrap();
         assert_eq!(username, "myuser");
         assert_eq!(username.as_str(), "myuser");
     }

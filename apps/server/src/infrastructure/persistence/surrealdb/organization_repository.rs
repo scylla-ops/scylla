@@ -3,10 +3,11 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::OrganizationRepository;
 use crate::domain::value_objects::{OrganizationId, OrganizationName};
 use crate::infrastructure::persistence::mappers::ToRecordId;
-use crate::infrastructure::persistence::surrealdb::mappers::OrganizationMapper;
 use crate::infrastructure::persistence::surrealdb::models::OrganizationRecord;
+use crate::infrastructure::persistence::{OrganizationInsert, OrganizationUpdate};
 use async_trait::async_trait;
 use derive_more::Constructor;
+use std::convert::TryInto;
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
@@ -20,7 +21,7 @@ pub struct SurrealOrganizationRepository {
 #[async_trait]
 impl OrganizationRepository for SurrealOrganizationRepository {
     async fn create(&self, organization: &Organization) -> DomainResult<Organization> {
-        let insert = OrganizationMapper::to_insert(organization);
+        let insert = OrganizationInsert::from(organization);
         let created: Option<OrganizationRecord> = self
             .db
             .create("organizations")
@@ -29,7 +30,7 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match created {
-            Some(record) => Ok(OrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to create organization")),
         }
     }
@@ -42,7 +43,7 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match result {
-            Some(record) => Ok(OrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found("Organization", id.to_string())),
         }
     }
@@ -58,13 +59,13 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         match results.pop() {
-            Some(record) => Ok(OrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found("Organization", name.to_string())),
         }
     }
 
     async fn update(&self, organization: &Organization) -> DomainResult<Organization> {
-        let record = OrganizationMapper::to_update(organization);
+        let record = OrganizationUpdate::from(organization);
         let updated: Option<OrganizationRecord> = self
             .db
             .update(organization.id().to_record_id())
@@ -73,7 +74,7 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match updated {
-            Some(record) => Ok(OrganizationMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to update organization")),
         }
     }
@@ -125,7 +126,7 @@ impl OrganizationRepository for SurrealOrganizationRepository {
 
         let organizations: DomainResult<Vec<Organization>> = records
             .into_iter()
-            .map(|record| OrganizationMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect();
 
         Ok(PaginatedResult::new(organizations?, &params, total_count))
@@ -167,10 +168,8 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             .take(0)
             .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-        let organizations: DomainResult<Vec<Organization>> = records
-            .into_iter()
-            .map(|record| OrganizationMapper::to_domain(record))
-            .collect();
+        let organizations: DomainResult<Vec<Organization>> =
+            records.into_iter().map(TryFrom::try_from).collect();
 
         Ok(PaginatedResult::new(organizations?, &params, total_count))
     }

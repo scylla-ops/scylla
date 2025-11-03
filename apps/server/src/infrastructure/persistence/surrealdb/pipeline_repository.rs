@@ -3,8 +3,8 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::PipelineRepository;
 use crate::domain::value_objects::PipelineId;
 use crate::infrastructure::persistence::mappers::ToRecordId;
-use crate::infrastructure::persistence::surrealdb::mappers::PipelineMapper;
 use crate::infrastructure::persistence::surrealdb::models::PipelineRecord;
+use crate::infrastructure::persistence::{PipelineInsert, PipelineUpdate};
 use async_trait::async_trait;
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -20,7 +20,7 @@ pub struct SurrealPipelineRepository {
 #[async_trait]
 impl PipelineRepository for SurrealPipelineRepository {
     async fn create(&self, pipeline: &Pipeline) -> DomainResult<Pipeline> {
-        let insert = PipelineMapper::to_insert(pipeline);
+        let insert = PipelineInsert::from(pipeline);
         let created: Option<PipelineRecord> = self
             .db
             .create("pipelines")
@@ -29,7 +29,7 @@ impl PipelineRepository for SurrealPipelineRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match created {
-            Some(record) => Ok(PipelineMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to create pipeline")),
         }
     }
@@ -42,13 +42,13 @@ impl PipelineRepository for SurrealPipelineRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match result {
-            Some(record) => Ok(PipelineMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found("Pipeline", id.to_string())),
         }
     }
 
     async fn update(&self, pipeline: &Pipeline) -> DomainResult<Pipeline> {
-        let record = PipelineMapper::to_update(pipeline);
+        let record = PipelineUpdate::from(pipeline);
         let updated: Option<PipelineRecord> = self
             .db
             .update(pipeline.id().to_record_id())
@@ -57,7 +57,7 @@ impl PipelineRepository for SurrealPipelineRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match updated {
-            Some(record) => Ok(PipelineMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found(
                 "Pipeline",
                 pipeline.id().to_string(),
@@ -110,10 +110,8 @@ impl PipelineRepository for SurrealPipelineRepository {
             .take(0)
             .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-        let pipelines: DomainResult<Vec<Pipeline>> = records
-            .into_iter()
-            .map(|record| PipelineMapper::to_domain(record))
-            .collect();
+        let pipelines: DomainResult<Vec<Pipeline>> =
+            records.into_iter().map(TryFrom::try_from).collect();
 
         Ok(PaginatedResult::new(pipelines?, &params, total_count))
     }

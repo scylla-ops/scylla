@@ -9,8 +9,8 @@ use scylla_core::infrastructure::rbac::casbin_enforcer::CasbinRbacEnforcer;
 use serial_test::serial;
 use std::sync::Arc;
 use surreal_casbin_adapter::SurrealAdapter;
-use surrealdb::engine::any::Any;
 use surrealdb::Surreal;
+use surrealdb::engine::any::Any;
 
 /// Creates an in-memory SurrealDB instance for testing
 async fn setup_test_db() -> Arc<Surreal<Any>> {

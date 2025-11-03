@@ -1,17 +1,17 @@
 use crate::domain::entities::User;
-use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{UserId, Username};
+use crate::domain::{DomainError, DomainResult};
 use crate::infrastructure::persistence::surrealdb::models::{UserInsert, UserRecord, UserUpdate};
 use chrono::DateTime;
+use std::convert::{From, TryFrom};
 
-/// Mapper between User domain entity and database records
-pub struct UserMapper;
+impl TryFrom<UserRecord> for User {
+    type Error = DomainError;
 
-impl UserMapper {
     /// Convert database record to domain entity
-    pub fn to_domain(record: UserRecord) -> DomainResult<User> {
+    fn try_from(record: UserRecord) -> DomainResult<Self> {
         let id = UserId::new(record.id.key().to_string());
-        let username = Username::new(record.username)?;
+        let username = Username::try_from(record.username)?;
 
         Ok(User::new(
             id,
@@ -22,18 +22,22 @@ impl UserMapper {
             DateTime::from(record.updated_at),
         ))
     }
+}
 
+impl From<&User> for UserInsert {
     /// Convert domain entity to insert record
-    pub fn to_insert(user: &User) -> UserInsert {
+    fn from(user: &User) -> Self {
         UserInsert {
             username: user.username().to_string(),
             password_hash: user.password_hash().to_string(),
             is_active: user.is_active(),
         }
     }
+}
 
+impl From<&User> for UserUpdate {
     /// Convert domain entity to update record
-    pub fn to_update(user: &User) -> UserUpdate {
+    fn from(user: &User) -> Self {
         UserUpdate {
             username: user.username().to_string(),
             is_active: user.is_active(),

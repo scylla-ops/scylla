@@ -41,7 +41,7 @@ impl user_service_server::UserService for UserHandler {
         let req = request.into_inner();
 
         let dto = CreateUserRequestDto {
-            username: Username::new(req.username).map_err(map_domain_error_to_status)?,
+            username: Username::try_from(req.username).map_err(map_domain_error_to_status)?,
             password: Password::new(req.password).map_err(map_domain_error_to_status)?,
         };
 
@@ -110,7 +110,7 @@ impl user_service_server::UserService for UserHandler {
             username: req
                 .username
                 .filter(|s| !s.is_empty())
-                .map(Username::new)
+                .map(Username::try_from)
                 .transpose()
                 .map_err(map_domain_error_to_status)?,
         };

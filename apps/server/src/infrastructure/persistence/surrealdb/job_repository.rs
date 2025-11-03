@@ -3,9 +3,10 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::JobRepository;
 use crate::domain::value_objects::JobStatus;
 use crate::domain::value_objects::{JobId, PipelineId};
-use crate::infrastructure::persistence::surrealdb::mappers::{JobMapper, ToRecordId};
+use crate::infrastructure::persistence::surrealdb::mappers::ToRecordId;
 use crate::infrastructure::persistence::surrealdb::models::JobRecord;
 
+use crate::infrastructure::persistence::{JobInsert, JobUpdate};
 use async_trait::async_trait;
 use std::sync::Arc;
 use surrealdb::Surreal;
@@ -25,7 +26,7 @@ impl SurrealJobRepository {
 #[async_trait]
 impl JobRepository for SurrealJobRepository {
     async fn create(&self, job: &Job) -> DomainResult<Job> {
-        let insert = JobMapper::to_insert(job);
+        let insert = JobInsert::from(job);
 
         let created: Option<JobRecord> = self
             .db
@@ -35,7 +36,7 @@ impl JobRepository for SurrealJobRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match created {
-            Some(record) => Ok(JobMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to create job")),
         }
     }
@@ -48,13 +49,13 @@ impl JobRepository for SurrealJobRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match result {
-            Some(record) => Ok(JobMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found("Job", id.to_string())),
         }
     }
 
     async fn update(&self, job: &Job) -> DomainResult<Job> {
-        let update: crate::infrastructure::persistence::JobUpdate = JobMapper::to_update(job);
+        let update = JobUpdate::from(job);
 
         let updated: Option<JobRecord> = self
             .db
@@ -64,7 +65,7 @@ impl JobRepository for SurrealJobRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match updated {
-            Some(record) => Ok(JobMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to update job")),
         }
     }
@@ -116,7 +117,7 @@ impl JobRepository for SurrealJobRepository {
 
         let jobs: DomainResult<Vec<Job>> = records
             .into_iter()
-            .map(|record| JobMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect();
 
         Ok(PaginatedResult::new(jobs?, &params, total_count))
@@ -152,19 +153,19 @@ impl JobRepository for SurrealJobRepository {
 
         // Get paginated records
         let records: Vec<JobRecord> = self
-            .db
-            .query("SELECT * FROM jobs WHERE status = $status ORDER BY created_at DESC LIMIT $limit START $start")
-            .bind(("status", status_str))
-            .bind(("limit", params.limit()))
-            .bind(("start", params.offset()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+			.db
+			.query("SELECT * FROM jobs WHERE status = $status ORDER BY created_at DESC LIMIT $limit START $start")
+			.bind(("status", status_str))
+			.bind(("limit", params.limit()))
+			.bind(("start", params.offset()))
+			.await
+			.map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+			.take(0)
+			.map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         let jobs: DomainResult<Vec<Job>> = records
             .into_iter()
-            .map(|record| JobMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect();
 
         Ok(PaginatedResult::new(jobs?, &params, total_count))
@@ -199,19 +200,19 @@ impl JobRepository for SurrealJobRepository {
 
         // Get paginated records
         let records: Vec<JobRecord> = self
-            .db
-            .query("SELECT * FROM jobs WHERE pipeline_id = $pipeline_id ORDER BY created_at DESC LIMIT $limit START $start")
-            .bind(("pipeline_id", PipelineId::to_record_id(pipeline_id)))
-            .bind(("limit", params.limit()))
-            .bind(("start", params.offset()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+			.db
+			.query("SELECT * FROM jobs WHERE pipeline_id = $pipeline_id ORDER BY created_at DESC LIMIT $limit START $start")
+			.bind(("pipeline_id", PipelineId::to_record_id(pipeline_id)))
+			.bind(("limit", params.limit()))
+			.bind(("start", params.offset()))
+			.await
+			.map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+			.take(0)
+			.map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         let jobs: DomainResult<Vec<Job>> = records
             .into_iter()
-            .map(|record| JobMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect();
 
         Ok(PaginatedResult::new(jobs?, &params, total_count))

@@ -3,7 +3,6 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::repositories::UserProjectRepository;
 use crate::domain::value_objects::{ProjectId, UserId, UserProjectId};
 use crate::infrastructure::persistence::mappers::{FromRecordId, ToRecordId};
-use crate::infrastructure::persistence::surrealdb::mappers::UserProjectMapper;
 use crate::infrastructure::persistence::surrealdb::models::UserProjectRecord;
 use async_trait::async_trait;
 use derive_more::Constructor;
@@ -32,7 +31,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
             .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         match created {
-            Some(record) => Ok(UserProjectMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to create user project")),
         }
     }
@@ -45,7 +44,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
         match result {
-            Some(record) => Ok(UserProjectMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found("User project", id.to_string())),
         }
     }
@@ -68,7 +67,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let result = results.into_iter().next();
 
         match result {
-            Some(record) => Ok(UserProjectMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::not_found(
                 "User project",
                 format!(
@@ -95,7 +94,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let updated = results.into_iter().next();
 
         match updated {
-            Some(record) => Ok(UserProjectMapper::to_domain(record)?),
+            Some(record) => Ok(record.try_into()?),
             None => Err(DomainError::infrastructure("Failed to update user project")),
         }
     }
@@ -118,55 +117,8 @@ impl UserProjectRepository for SurrealUserProjectRepository {
 
         records
             .into_iter()
-            .map(|record| UserProjectMapper::to_domain(record))
+            .map(|record| record.try_into())
             .collect()
-    }
-
-    async fn list_users_in_project(
-        &self,
-        project_id: &ProjectId,
-        pagination: Option<&crate::domain::value_objects::PaginationParams>,
-    ) -> DomainResult<crate::domain::value_objects::PaginatedResult<UserId>> {
-        use crate::domain::value_objects::{PaginatedResult, PaginationParams};
-
-        let params = pagination
-            .cloned()
-            .unwrap_or_else(PaginationParams::default);
-
-        // Get total count
-        let count_result: Vec<serde_json::Value> = self
-            .db
-            .query("SELECT count() FROM $project_id<-user_project GROUP ALL")
-            .bind(("project_id", project_id.to_record_id()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
-
-        let total_count = count_result
-            .first()
-            .and_then(|v| v.get("count"))
-            .and_then(|v| v.as_u64())
-            .unwrap_or(0);
-
-        // Get paginated records
-        let records: Vec<UserProjectRecord> = self
-            .db
-            .query("SELECT * FROM $project_id<-user_project LIMIT $limit START $start")
-            .bind(("project_id", project_id.to_record_id()))
-            .bind(("limit", params.limit()))
-            .bind(("start", params.offset()))
-            .await
-            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-            .take(0)
-            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
-
-        let user_ids: DomainResult<Vec<UserId>> = records
-            .into_iter()
-            .map(|record| Ok(UserId::from_record_id(record.user_id)))
-            .collect();
-
-        Ok(PaginatedResult::new(user_ids?, &params, total_count))
     }
 
     async fn list_projects_for_user(
@@ -214,6 +166,53 @@ impl UserProjectRepository for SurrealUserProjectRepository {
             .collect();
 
         Ok(PaginatedResult::new(project_ids?, &params, total_count))
+    }
+
+    async fn list_users_in_project(
+        &self,
+        project_id: &ProjectId,
+        pagination: Option<&crate::domain::value_objects::PaginationParams>,
+    ) -> DomainResult<crate::domain::value_objects::PaginatedResult<UserId>> {
+        use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+
+        let params = pagination
+            .cloned()
+            .unwrap_or_else(PaginationParams::default);
+
+        // Get total count
+        let count_result: Vec<serde_json::Value> = self
+            .db
+            .query("SELECT count() FROM $project_id<-user_project GROUP ALL")
+            .bind(("project_id", project_id.to_record_id()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+
+        let total_count = count_result
+            .first()
+            .and_then(|v| v.get("count"))
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+
+        // Get paginated records
+        let records: Vec<UserProjectRecord> = self
+            .db
+            .query("SELECT * FROM $project_id<-user_project LIMIT $limit START $start")
+            .bind(("project_id", project_id.to_record_id()))
+            .bind(("limit", params.limit()))
+            .bind(("start", params.offset()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+
+        let user_ids: DomainResult<Vec<UserId>> = records
+            .into_iter()
+            .map(|record| Ok(UserId::from_record_id(record.user_id)))
+            .collect();
+
+        Ok(PaginatedResult::new(user_ids?, &params, total_count))
     }
 
     async fn add_user_to_project(
