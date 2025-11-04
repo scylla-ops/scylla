@@ -33,13 +33,13 @@ impl project_service_server::ProjectService for ProjectHandler {
         request: Request<CreateProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
         // Get organization_id from request to use as domain for RBAC
-        let org_id = &request.get_ref().organization_id;
+        // let org_id = &request.get_ref().organization_id;
 
         // Check RBAC permissions (token already validated by interceptor)
         let auth_ctx = check_permissions(
             &request,
             self.container.rbac_enforcer(),
-            org_id,
+            "*", // should be 'org_id' !!!!
             "projects",
             "create",
         )

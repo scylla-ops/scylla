@@ -1,4 +1,4 @@
-use crate::domain::value_objects::{Password, Username};
+use crate::domain::value_objects::{Password, UserId, Username};
 
 #[derive(Debug, Clone)]
 pub struct LoginRequestDto {
@@ -9,6 +9,7 @@ pub struct LoginRequestDto {
 #[derive(Debug, Clone)]
 pub struct LoginResponseDto {
     pub token: String,
+    pub user_id: UserId,
 }
 
 #[derive(Debug, Clone)]

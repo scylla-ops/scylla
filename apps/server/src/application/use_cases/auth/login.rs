@@ -44,6 +44,9 @@ where
         // Generate token
         let token = self.auth_service.generate_token(user.id()).await?;
 
-        Ok(LoginResponseDto { token })
+        Ok(LoginResponseDto {
+            token,
+            user_id: user.id().to_owned(),
+        })
     }
 }
