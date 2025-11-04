@@ -1,22 +1,17 @@
 //TODO: move that into domain
 import MarketItemCard from '@/modules/marketplace/presentation/ui/MarketItemCard.tsx';
-
-export type MarketItem = {
-  provider: string;
-  title: string;
-  descrption: string;
-};
+import type { MarketItem } from '@/modules/marketplace/domain/models/MarketItem.ts';
 
 export type MarketItemListProps = {
-  items: MarketItem[];
+  items: MarketItem[] | undefined;
   filter: string;
 };
 
 export const MarketItemList = ({ items, filter }: MarketItemListProps) => {
   return (
     <div className={'flex flex-row flex-wrap h-fit gap-4'}>
-      {items.map((item, index) => {
-        if (item.title.includes(filter))
+      {items?.map((item, index) => {
+        if (item.title.includes(filter) || item.provider.includes(filter))
           return (
             <MarketItemCard
               key={index}
