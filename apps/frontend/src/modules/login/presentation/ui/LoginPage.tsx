@@ -8,7 +8,7 @@ import {
 } from '@/modules/core/presentation/ui/shadcn';
 import LogoScylla from '@/assets/logo_scylla.png';
 import { Trans } from '@lingui/react/macro';
-import { useLogin } from '@/modules/login/presentation/hooks/login.ts';
+import { useLogin } from '@/modules/login/presentation/hooks/useLogin.ts';
 import { type FormEvent } from 'react';
 import { useToken } from '@/modules/login/presentation/stores/tokenStore.ts';
 
