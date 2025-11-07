@@ -12,7 +12,7 @@ export const MarketplacePage = () => {
   if (isError) return <p>Error : {error.message}</p>;
 
   return (
-    <div className='flex flex-col bg-background h-screen'>
+    <div className='flex flex-col bg-background'>
       <div className='flex flex-row w-full justify-between bg-gray-100 border-b-2 items-center p-2'>
         <Input
           value={filter}

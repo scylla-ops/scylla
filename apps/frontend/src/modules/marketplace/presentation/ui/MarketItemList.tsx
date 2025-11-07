@@ -11,7 +11,10 @@ export const MarketItemList = ({ items, filter }: MarketItemListProps) => {
   return (
     <div className={'flex flex-row flex-wrap h-fit gap-4'}>
       {items?.map((item, index) => {
-        if (item.title.includes(filter) || item.provider.includes(filter))
+        if (
+          item.title.includes(filter) ||
+          item.provider.toLowerCase().includes(filter.toLowerCase())
+        )
           return (
             <MarketItemCard
               key={index}

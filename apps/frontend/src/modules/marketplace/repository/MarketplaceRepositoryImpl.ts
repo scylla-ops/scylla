@@ -10,7 +10,7 @@ export class MarketplaceRepositoryImpl implements MarketplaceRepository {
       value: [
         { provider: 'Corp', title: 'Title', descrption: 'Description' },
         { provider: 'Corp', title: 'Title', descrption: 'Description' },
-        { provider: 'Corp', title: 'Title', descrption: 'Description' },
+        { provider: 'Epitech', title: 'TestFiltre', descrption: 'Description' },
       ],
     });
   }

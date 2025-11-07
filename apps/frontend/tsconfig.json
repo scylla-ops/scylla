@@ -8,8 +8,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@core/*": ["src/core/*"],
-      "@shadcn": ["src/core/presentation/ui/shadcn"]
+      "@core/*": ["src/modules/core/*"],
+      "@shadcn/*": ["src/modules/core/presentation/ui/shadcn/*"]
     },
   },
 }

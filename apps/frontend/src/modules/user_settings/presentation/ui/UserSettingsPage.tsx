@@ -1,7 +1,5 @@
-import { LeftPanel } from '@/modules/user_settings/presentation/ui/LeftPanel.tsx';
 import { UserInformation } from '@/modules/user_settings/presentation/ui/UserInformation.tsx';
 import { Organizations } from '@/modules/user_settings/presentation/ui/Organizations.tsx';
-import { Boxes } from 'lucide-react';
 
 export const UserSettingsPage = () => {
   return (
@@ -16,7 +14,7 @@ export const UserSettingsPage = () => {
         </select>
       </div>
 
-      <div className='flex-1 p-6 space-x-6 flex bg-[#fafafa]'>
+      <div className='flex pr-2 pl-2 space-x-6 bg-[#fafafa]'>
         <div className='w-1/2'>
           <UserInformation />
         </div>

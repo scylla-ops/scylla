@@ -35,7 +35,7 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className={'flex items-center h-screen flex-col'}>
+    <div className={'flex items-center flex-col'}>
       <div className='flex flex-row items-center space-x-1 mb-4 mt-12 pr-6'>
         <img src={LogoScylla} alt='logo' className='object-contain w-32 h-32' />
         <h1 className='text-4xl font-bold'>Scylla</h1>

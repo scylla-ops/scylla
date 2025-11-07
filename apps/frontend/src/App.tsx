@@ -1,8 +1,8 @@
-import './App.css';
-import CoreRoot from '@/modules/core/presentation/ui/CoreRoot.tsx';
+import { RouterProvider } from 'react-router-dom';
+import { coreRouter } from '@core/presentation/ui/CoreRouter.tsx';
 
 function App() {
-  return <CoreRoot />;
+  return <RouterProvider router={coreRouter} />;
 }
 
 export default App;
