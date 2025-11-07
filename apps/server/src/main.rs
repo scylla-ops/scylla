@@ -155,7 +155,9 @@ async fn bootstrap_admin_user(
         return Ok(());
     }
 
-    let BootstrapConfig { username, password, .. } = bootstrap_config;
+    let BootstrapConfig {
+        username, password, ..
+    } = bootstrap_config;
 
     // No admins exist - proceed with bootstrap
     info!(
@@ -249,7 +251,6 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 
     // Create gRPC servers
     let auth_grpc = AuthServiceServer::new(auth_handler);
-    // let user_grpc = UserServiceServer::new(user_handler);
 
     let user_grpc = UserServiceServer::with_interceptor(user_handler, interceptor.clone());
     let organization_grpc =

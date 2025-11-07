@@ -1,4 +1,4 @@
-# Production Configuration Template for Scylla Server
+# Production Configuration Template for Scylla Core
 
 [core_config]
 

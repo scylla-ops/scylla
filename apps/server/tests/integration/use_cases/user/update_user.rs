@@ -1,4 +1,3 @@
-
 //! Integration tests for UpdateUserUseCase
 
 use scylla_core::application::dto::UpdateUserRequestDto;
