@@ -12,7 +12,7 @@ export const MarketItemList = ({ items, filter }: MarketItemListProps) => {
     <div className={'flex flex-row flex-wrap h-fit gap-4'}>
       {items?.map((item, index) => {
         if (
-          item.title.includes(filter) ||
+          item.title.toLowerCase().includes(filter.toLowerCase()) ||
           item.provider.toLowerCase().includes(filter.toLowerCase())
         )
           return (

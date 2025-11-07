@@ -1,9 +1,10 @@
 import { MarketItemList } from '@/modules/marketplace/presentation/ui/MarketItemList.tsx';
 import { useMarketplace } from '@/modules/marketplace/presentation/hooks/useMarketplace.ts';
+import { useFilterStore } from '@/modules/marketplace/presentation/stores/useFilter.ts';
 
-//TODO: take the filter from zustand store
 export const MarketplacePage = () => {
   const { data, isLoading, isError, error } = useMarketplace();
+  const filter = useFilterStore(state => state.filter);
 
   if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Error : {error.message}</p>;
@@ -11,7 +12,7 @@ export const MarketplacePage = () => {
   return (
     <div className='flex flex-col bg-background'>
       <div className='flex flex-col gap-4 w-full h-full p-2'>
-        <MarketItemList items={data} filter={''} />
+        <MarketItemList items={data} filter={filter} />
       </div>
     </div>
   );

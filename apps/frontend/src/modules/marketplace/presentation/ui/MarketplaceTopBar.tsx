@@ -1,9 +1,11 @@
 import { Input } from '@shadcn/input.tsx';
-import { useState } from 'react';
+
+import { useFilterStore } from '@/modules/marketplace/presentation/stores/useFilter.ts';
 
 //todo: store filter in zustand store
 export const MarketplaceTopBar = () => {
-  const [filter, setFilter] = useState('');
+  const filter = useFilterStore(state => state.filter);
+  const setFilter = useFilterStore(state => state.setFilter);
 
   return (
     <Input
