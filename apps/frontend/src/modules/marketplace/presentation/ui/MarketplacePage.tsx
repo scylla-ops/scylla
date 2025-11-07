@@ -1,11 +1,8 @@
 import { MarketItemList } from '@/modules/marketplace/presentation/ui/MarketItemList.tsx';
-import { Input } from '@/modules/core/presentation/ui/shadcn';
-import { useState } from 'react';
 import { useMarketplace } from '@/modules/marketplace/presentation/hooks/useMarketplace.ts';
 
-//TODO: for the topbar, make it reusable for each module of the app
+//TODO: take the filter from zustand store
 export const MarketplacePage = () => {
-  const [filter, setFilter] = useState('');
   const { data, isLoading, isError, error } = useMarketplace();
 
   if (isLoading) return <p>Loading...</p>;
@@ -13,18 +10,8 @@ export const MarketplacePage = () => {
 
   return (
     <div className='flex flex-col bg-background'>
-      <div className='flex flex-row w-full justify-between bg-gray-100 border-b-2 items-center p-2'>
-        <Input
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
-          placeholder='🔍 Search'
-          className='w-[20%] bg-background'
-        />
-        <p>Account: Example account</p>
-        <p>Connected in: Example organisation</p>
-      </div>
       <div className='flex flex-col gap-4 w-full h-full p-2'>
-        <MarketItemList items={data} filter={filter} />
+        <MarketItemList items={data} filter={''} />
       </div>
     </div>
   );

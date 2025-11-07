@@ -5,6 +5,7 @@ import LoginPage from '@/modules/login/presentation/ui/LoginPage';
 import UserSettingsPage from '@/modules/user_settings/presentation/ui/UserSettingsPage';
 import MarketplacePage from '@/modules/marketplace/presentation/ui/MarketplacePage';
 import { Layout } from '@/modules/core/presentation/ui/Layout';
+import { MarketplaceTopBar } from '@/modules/marketplace/presentation/ui/MarketplaceTopBar.tsx';
 
 export const coreRouter = createBrowserRouter([
   {
@@ -17,15 +18,12 @@ export const coreRouter = createBrowserRouter([
       {
         path: '/user_settings',
         element: <UserSettingsPage />,
-        handle: {
-          topbar: <div> test </div>,
-        },
       },
       {
         path: '/marketplace',
         element: <MarketplacePage />,
         handle: {
-          topbar: <div />,
+          topbar: <MarketplaceTopBar />,
         },
       },
     ],
