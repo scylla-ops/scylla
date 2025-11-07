@@ -3,3 +3,8 @@ export * from './input.tsx';
 export * from './card.tsx';
 export * from './label.tsx';
 export * from './avatar.tsx';
+export * from './progress.tsx';
+export * from './chart.tsx';
+export * from './select.tsx';
+export * from './toggle.tsx';
+export * from './toggle-group.tsx';

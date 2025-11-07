@@ -3,6 +3,7 @@ import LoginPage from '@/modules/login/presentation/ui/LoginPage.tsx';
 
 import UserSettingsPage from '@/modules/user_settings/presentation/ui/UserSettingsPage.tsx';
 import MarketplacePage from '@/modules/marketplace/presentation/ui/MarketplacePage.tsx';
+import { DashboardPipelinePage } from '@/modules/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
 
 //TODO: navigation and overlay
 export const CoreRoot = () => {
@@ -12,6 +13,7 @@ export const CoreRoot = () => {
         <Route path='/login' element={<LoginPage />} />
         <Route path='/user_settings' element={<UserSettingsPage />} />
         <Route path='/marketplace' element={<MarketplacePage />}></Route>
+        <Route path='/pipeline_dashboard' element={<DashboardPipelinePage />} />
         <Route path='*' element={<Navigate to='/login' replace />} />
       </Routes>
     </BrowserRouter>
