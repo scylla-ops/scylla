@@ -133,10 +133,6 @@ const chartConfig = {
     label: "Desktop",
     color: "var(--primary)",
   },
-  mobile: {
-    label: "Mobile",
-    color: "var(--primary)",
-  },
 } satisfies ChartConfig
 
 export const PipelineChart = () => {

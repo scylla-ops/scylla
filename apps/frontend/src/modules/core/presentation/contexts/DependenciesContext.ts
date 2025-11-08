@@ -8,6 +8,11 @@ import { LoginUseCase } from '@/modules/login/domain/usecases/LoginUseCase.ts';
 import type MarketplaceRepository from '@/modules/marketplace/domain/repository/MarketplaceRepository.ts';
 import { MarketplaceRepositoryImpl } from '@/modules/marketplace/repository/MarketplaceRepositoryImpl.ts';
 import { GetMarketplaceUseCase } from '@/modules/marketplace/domain/GetMarketplaceUseCase.ts';
+import { GetPipelineStatsUseCase } from '@/modules/pipeline-dashboard/domain/usecases/GetPipelineStatsUseCase';
+import { PipelineDashboardRepositoryImpl } from '@/modules/pipeline-dashboard/repository/PipelineDashboardRepositoryImpl';
+import { PipelineDashboardStoreImpl } from '@/modules/pipeline-dashboard/data/remote/PipelineDashboardStoreImpl';
+import type { PipelineDashboardStore } from '@/modules/pipeline-dashboard/repository/store/PipelineDashboardStore';
+import type { PipelineDashboardRepository } from '@/modules/pipeline-dashboard/domain/repository/PipelineDashboardRepository';
 
 //todo: scind this by domain
 class Dependencies {
@@ -19,6 +24,11 @@ class Dependencies {
   public getMarketplaceUseCase: GetMarketplaceUseCase = new GetMarketplaceUseCase(
     this.marketPlaceRepository,
   );
+
+
+  private pipelineDashboardStore: PipelineDashboardStore = new PipelineDashboardStoreImpl();
+  private pipelineDashboardRepository: PipelineDashboardRepository = new PipelineDashboardRepositoryImpl(this.pipelineDashboardStore)
+  public pipelineDashboardUseCase = new GetPipelineStatsUseCase(this.pipelineDashboardRepository)
 }
 
 export const DependenciesContext = createContext<Dependencies | null>(new Dependencies());
