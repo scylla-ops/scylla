@@ -3,3 +3,4 @@ export * from './input.tsx';
 export * from './card.tsx';
 export * from './label.tsx';
 export * from './avatar.tsx';
+export * from './select.tsx';

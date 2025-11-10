@@ -9,7 +9,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@core/*": ["src/modules/core/*"],
-      "@shadcn/*": ["src/modules/core/presentation/ui/shadcn/*"]
+      "@shadcn/*": ["src/modules/core/presentation/ui/shadcn/*"],
+      "@shadcn": ["src/modules/core/presentation/ui/shadcn"]
     },
   },
 }
