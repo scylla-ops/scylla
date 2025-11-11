@@ -5510,6 +5510,7 @@ dependencies = [
  "clap",
  "derive_builder",
  "derive_more",
+ "http",
  "include_dir",
  "mockall",
  "pasetors",

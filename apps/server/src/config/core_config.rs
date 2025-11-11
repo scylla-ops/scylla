@@ -31,6 +31,10 @@ pub struct CoreConfig {
     /// Bootstrap configuration
     #[serde(default)]
     pub bootstrap_config: BootstrapConfig,
+
+    /// CORS configuration
+    #[serde(default)]
+    pub cors_config: CorsConfig,
 }
 
 /// Database connection configuration
@@ -84,6 +88,70 @@ pub struct BootstrapConfig {
     pub password: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CorsConfig {
+    /// Preset configuration: none | permissive | very_permissive
+    #[serde(default)]
+    pub preset: CorsPreset,
+
+    /// List of allowed origins (as HeaderValue parseable strings)
+    #[serde(default)]
+    pub allow_origins: Vec<String>,
+
+    /// List of allowed methods (GET, POST, ...)
+    #[serde(default)]
+    pub allow_methods: Vec<String>,
+
+    /// List of allowed request headers
+    #[serde(default)]
+    pub allow_headers: Vec<String>,
+
+    /// List of exposed response headers
+    #[serde(default)]
+    pub expose_headers: Vec<String>,
+
+    /// Allow credentials
+    #[serde(default)]
+    pub allow_credentials: Option<bool>,
+
+    /// Allow Private Network
+    #[serde(default)]
+    pub allow_private_network: Option<bool>,
+
+    /// Max age in seconds for preflight caching
+    #[serde(default)]
+    pub max_age_seconds: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CorsPreset {
+    None,
+    Permissive,
+    VeryPermissive,
+}
+
+impl Default for CorsPreset {
+    fn default() -> Self {
+        CorsPreset::Permissive
+    }
+}
+
+impl Default for CorsConfig {
+    fn default() -> Self {
+        Self {
+            preset: CorsPreset::Permissive,
+            allow_origins: Vec::new(),
+            allow_methods: Vec::new(),
+            allow_headers: Vec::new(),
+            expose_headers: Vec::new(),
+            allow_credentials: Some(true),
+            allow_private_network: None,
+            max_age_seconds: Some(600),
+        }
+    }
+}
+
 impl Default for CoreConfig {
     fn default() -> Self {
         Self {
@@ -92,6 +160,7 @@ impl Default for CoreConfig {
             auth_config: AuthConfig::default(),
             rbac_config: RbacConfig::default(),
             bootstrap_config: BootstrapConfig::default(),
+            cors_config: CorsConfig::default(),
         }
     }
 }

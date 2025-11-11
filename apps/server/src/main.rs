@@ -17,10 +17,12 @@ use scylla_core::shared::di::AppContainer;
 use anyhow::{Context, Result};
 use casbin::{CoreApi, DefaultModel, Enforcer, MgmtApi};
 use clap::Parser;
+use http::{HeaderName, HeaderValue, Method};
 use std::sync::Arc;
 use tower_http::LatencyUnit;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
-use tracing::{Level, info, warn};
+use tracing::{Level, debug, info, warn};
 use tracing_subscriber::EnvFilter;
 
 /// Scylla Core - The core component for the Scylla CI/CD system
@@ -212,6 +214,7 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
         auth_config,
         rbac_config,
         bootstrap_config,
+        cors_config,
     } = core_config;
 
     // Initialize database connection
@@ -281,10 +284,85 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
                 .latency_unit(LatencyUnit::Millis),
         );
 
+    // Build CORS layer from config
+    use scylla_core::config::core_config::CorsPreset;
+    let mut cors_layer = match cors_config.preset {
+        CorsPreset::Permissive => CorsLayer::permissive(),
+        CorsPreset::VeryPermissive => CorsLayer::very_permissive(),
+        CorsPreset::None => CorsLayer::new(),
+    };
+
+    // Allowed origins (apply explicit list if provided)
+    if !cors_config.allow_origins.is_empty() {
+        let mut origins: Vec<HeaderValue> = Vec::new();
+        for o in &cors_config.allow_origins {
+            if let Ok(v) = o.parse::<HeaderValue>() {
+                origins.push(v);
+            }
+        }
+        if !origins.is_empty() {
+            cors_layer = cors_layer.allow_origin(origins);
+        }
+    }
+
+    // Allowed methods (apply explicit list if provided)
+    if !cors_config.allow_methods.is_empty() {
+        let mut methods: Vec<Method> = Vec::new();
+        for m in &cors_config.allow_methods {
+            if let Ok(v) = m.parse::<Method>() {
+                methods.push(v);
+            }
+        }
+        if !methods.is_empty() {
+            cors_layer = cors_layer.allow_methods(methods);
+        }
+    }
+
+    // Allowed headers (apply explicit list if provided)
+    if !cors_config.allow_headers.is_empty() {
+        let mut headers: Vec<HeaderName> = Vec::new();
+        for h in &cors_config.allow_headers {
+            if let Ok(v) = h.parse::<HeaderName>() {
+                headers.push(v);
+            }
+        }
+        if !headers.is_empty() {
+            cors_layer = cors_layer.allow_headers(headers);
+        }
+    }
+
+    // Expose headers (apply explicit list if provided)
+    if !cors_config.expose_headers.is_empty() {
+        let mut headers: Vec<HeaderName> = Vec::new();
+        for h in &cors_config.expose_headers {
+            if let Ok(v) = h.parse::<HeaderName>() {
+                headers.push(v);
+            }
+        }
+        if !headers.is_empty() {
+            cors_layer = cors_layer.expose_headers(headers);
+        }
+    }
+
+    if let Some(b) = cors_config.allow_credentials {
+        cors_layer = cors_layer.allow_credentials(b);
+    }
+    if let Some(b) = cors_config.allow_private_network {
+        cors_layer = cors_layer.allow_private_network(b);
+    }
+    if let Some(secs) = cors_config.max_age_seconds {
+        cors_layer = cors_layer.max_age(std::time::Duration::from_secs(secs));
+    }
+
+    debug!("Configured CORS layer: {:#?}", cors_layer);
+
     let mut server = Server::builder()
         .accept_http1(true)
         .layer(trace_layer)
         .layer(tonic_web::GrpcWebLayer::new())
+        .layer(cors_layer);
+
+    let mut server = server
         .add_service(user_grpc)
         .add_service(auth_grpc)
         .add_service(organization_grpc)

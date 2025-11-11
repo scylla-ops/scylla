@@ -23,3 +23,12 @@ model_path = "casbin/model.conf"
 enabled = true
 username = "admin"
 password = "admin123"
+
+[core_config.cors_config]
+preset = "very_permissive"
+allow_origins = []
+allow_methods = []
+allow_headers = []
+expose_headers = []
+allow_credentials = true
+max_age_seconds = 600
