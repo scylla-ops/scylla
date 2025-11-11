@@ -13,5 +13,3 @@ DEFINE FIELD joined_at ON user_project TYPE datetime DEFAULT time::now() READONL
 
 -- ensure a user can only be added to a project once
 DEFINE INDEX unique_user_project ON user_project FIELDS in, out UNIQUE;
-
-

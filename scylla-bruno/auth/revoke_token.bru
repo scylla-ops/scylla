@@ -1,0 +1,23 @@
+meta {
+  name: revoke_token
+  type: grpc
+  seq: 3
+}
+
+grpc {
+  url: localhost:50051
+  method: /auth.AuthService/RevokeToken
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "token": "{{token}}"
+    }
+  '''
+}
+

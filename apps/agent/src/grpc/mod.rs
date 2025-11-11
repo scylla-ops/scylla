@@ -124,7 +124,7 @@ impl Agent {
                 match converted {
                     Ok(ok) => Some(ok),
                     Err(err) => {
-                        tracing::warn!("Impossible de convertir PipelineEvent: {err}");
+                        tracing::warn!("Failed to convert PipelineEvent: {err}");
                         None
                     }
                 }

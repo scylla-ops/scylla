@@ -2,19 +2,80 @@ syntax = "proto3";
 
 package job;
 
-message CreateJobRequest {
-  string pipeline_id = 1; // UUID of the pipeline to execute
-}
-
-message CreateJobResponse {
-  string job_id = 1; // UUID of the job created
-  string snapshot_id = 2; // UUID of the snapshot used
-}
+import "common.proto";
 
 service JobService {
-  rpc CreateJob (CreateJobRequest) returns (CreateJobResponse);
-  //rpc GetJob (GetJobRequest) returns (JobResponse);
-  //rpc ListJobs (ListJobsRequest) returns (ListJobsResponse);
-  //rpc UpdateJob (UpdateJobRequest) returns (JobResponse);
-  //rpc DeleteJob (DeleteJobRequest) returns (DeleteJobResponse);
+  // Create a job
+  rpc CreateJob(CreateJobRequest) returns (JobResponse);
+
+  // Get a job by ID
+  rpc GetJob(GetJobRequest) returns (JobResponse);
+
+  // Update a job
+  rpc UpdateJob(UpdateJobRequest) returns (JobResponse);
+
+  // Delete a job
+  rpc DeleteJob(DeleteJobRequest) returns (DeleteJobResponse);
+
+  // List all jobs
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
+
+  // List jobs by status
+  rpc ListJobsByStatus(ListJobsByStatusRequest)
+      returns (ListJobsByStatusResponse);
+
+  // List jobs by pipeline
+  rpc ListJobsByPipeline(ListJobsByPipelineRequest)
+      returns (ListJobsByPipelineResponse);
+}
+
+message CreateJobRequest { string pipeline_id = 1; }
+
+message GetJobRequest { string job_id = 1; }
+
+message UpdateJobRequest {
+  string job_id = 1;
+  optional string status = 2;
+}
+
+message JobResponse {
+  string job_id = 1;
+  string pipeline_id = 2;
+  string status = 3;
+  string content = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message DeleteJobRequest { string job_id = 1; }
+
+message DeleteJobResponse {}
+
+message ListJobsRequest {
+  optional common.PaginationRequest pagination = 1;
+}
+
+message ListJobsResponse {
+  repeated JobResponse jobs = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ListJobsByStatusRequest {
+  string status = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListJobsByStatusResponse {
+  repeated JobResponse jobs = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ListJobsByPipelineRequest {
+  string pipeline_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListJobsByPipelineResponse {
+  repeated JobResponse jobs = 1;
+  common.PaginationMetadata pagination = 2;
 }
