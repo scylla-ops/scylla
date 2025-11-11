@@ -359,8 +359,8 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
     let mut server = Server::builder()
         .accept_http1(true)
         .layer(trace_layer)
-        .layer(tonic_web::GrpcWebLayer::new())
-        .layer(cors_layer);
+        .layer(cors_layer)
+        .layer(tonic_web::GrpcWebLayer::new());
 
     let mut server = server
         .add_service(user_grpc)
