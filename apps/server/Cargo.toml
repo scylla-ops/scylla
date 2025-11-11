@@ -1,6 +1,46 @@
 [package]
-name = "scylla-server"
-version = "0.1.0"
+name = "scylla-core"
+version = "0.2.1"
 edition = "2024"
 
 [dependencies]
+tokio = { version = "1.48.0", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
+protocol = { path = "../../libs/protocol" }
+anyhow = "1.0.100"
+thiserror = "2.0.16"
+clap = { version = "4.5.51", features = ["derive"] }
+argon2 = "0.6.0-rc.1"
+pasetors = "0.7.7"
+base64 = "0.22"
+surrealdb = { version = "2.3.10", features = ["kv-mem"] }
+chrono = { version = "0.4.42", features = ["serde"] }
+async-trait = "0.1.89"
+tonic-reflection = "0.14.2"
+derive_more = { version = "2.0.1", features = ["full"] }
+derive_builder = "0.20.2"
+sha2 = "0.11.0-rc.2"
+tower-http = { version = "0.6.6", features = ["trace", "cors"]}
+http = "1.3.1"
+surreal-casbin-adapter = { path = "../../libs/surreal-casbin-adapter" }
+casbin = { version = "2.15.0" }
+surrealdb-migrations = "2.3.0"
+include_dir = "0.7.4"
+tonic-web = "0.14.2"
+ulid = "1.2.1"
+rand = "0.9.2"
+
+[dev-dependencies]
+tokio = { version = "1.48.0", features = ["full", "test-util"] }
+serde_json = "1.0"
+mockall = "0.13.1"
+serial_test = "3.0"
+
+[features]
+# Enable gRPC server reflection service by default; you can build without it using `--no-default-features`.
+default = ["reflection", "surreal"]
+reflection = []
+surreal = []

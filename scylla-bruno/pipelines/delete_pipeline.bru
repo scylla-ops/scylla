@@ -1,0 +1,23 @@
+meta {
+  name: delete_pipeline
+  type: grpc
+  seq: 4
+}
+
+grpc {
+  url: localhost:50051
+  method: /pipeline.Pipeline/DeletePipeline
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "pipeline_id": "pipeline_id_here"
+    }
+  '''
+}
+

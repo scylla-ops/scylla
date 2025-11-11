@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package orchestrator;
+
+service Orchestrator {
+  rpc RunPipeline(RunPipelineRequest) returns (RunPipelineResponse);
+}
+
+message RunPipelineRequest { string pipeline_id = 1; }
+
+message RunPipelineResponse { string job_id = 1; }
+
+// service Orchestrator {
+//   rpc SubscribeJob(WorkerId) returns (stream Job);
+//   rpc ReportStatus(stream PipelineStatuUpdate) returns (Ack);
+// }
+
+// message Job {
+//   string id = 1;       // unique job identifier
+//   string job_toml = 2; // fully qualified job definition in TOML format
+// }
+
+// message WorkerId { string id = 1; }
+
+// message PipelineStatuUpdate {
+//   string job_id = 1;        // unique job identifier
+//   string job_data_toml = 2; // job data in toml format
+// }
+
+// message JobEvent {}
+
+// message StageEvent {}
+
+// message StepEvent {}
+
+// message Ack {}

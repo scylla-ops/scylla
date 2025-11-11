@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package user;
+
+import "common.proto";
+
+service UserService {
+  // Create a user
+  rpc CreateUser(CreateUserRequest) returns (UserResponse);
+
+  // Get a user by ID
+  rpc GetUser(GetUserRequest) returns (UserResponse);
+
+  // Update a user
+  rpc UpdateUser(UpdateUserRequest) returns (UserResponse);
+
+  // Delete a user
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+
+  // List all users
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+
+  // Change a user's global role
+  rpc ChangeUserGlobalRole(ChangeUserGlobalRoleRequest)
+      returns (ChangeUserGlobalRoleResponse);
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2; // not hashed
+}
+
+message GetUserRequest { string user_id = 1; }
+
+message UpdateUserRequest {
+  string user_id = 1;
+  optional string username = 2;
+}
+
+message UserResponse {
+  string user_id = 1;
+  string username = 2;
+  bool is_active = 3;
+  string created_at = 4;
+  string updated_at = 5;
+}
+
+message DeleteUserRequest { string user_id = 1; }
+
+message DeleteUserResponse {}
+
+message ListUsersRequest { optional common.PaginationRequest pagination = 1; }
+
+message ListUsersResponse {
+  repeated UserResponse users = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ChangeUserGlobalRoleRequest {
+  string user_id = 1;
+  string new_role = 2; // "admin" or "user"
+}
+
+message ChangeUserGlobalRoleResponse {
+  string user_id = 1;
+  string new_role = 2;
+}

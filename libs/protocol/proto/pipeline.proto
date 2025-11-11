@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package pipeline;
+
+import "common.proto";
+
+service Pipeline {
+  // Create a pipeline
+  rpc CreatePipeline(CreatePipelineRequest) returns (PipelineResponse);
+
+  // Get a pipeline by ID
+  rpc GetPipeline(GetPipelineRequest) returns (PipelineResponse);
+
+  // Update a pipeline
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (PipelineResponse);
+
+  // Delete a pipeline
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
+
+  // List all pipelines
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
+}
+
+message CreatePipelineRequest { string content = 1; }
+
+message GetPipelineRequest { string pipeline_id = 1; }
+
+message UpdatePipelineRequest {
+  string pipeline_id = 1;
+  string content = 2;
+}
+
+message PipelineResponse {
+  string pipeline_id = 1;
+  string content = 2;
+  string created_at = 3;
+  string updated_at = 4;
+}
+
+message DeletePipelineRequest { string pipeline_id = 1; }
+
+message DeletePipelineResponse {}
+
+message ListPipelinesRequest {
+  optional common.PaginationRequest pagination = 1;
+}
+
+message ListPipelinesResponse {
+  repeated PipelineResponse pipelines = 1;
+  common.PaginationMetadata pagination = 2;
+}
