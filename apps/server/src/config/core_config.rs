@@ -123,18 +123,13 @@ pub struct CorsConfig {
     pub max_age_seconds: Option<u64>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum CorsPreset {
+    #[default]
     None,
     Permissive,
     VeryPermissive,
-}
-
-impl Default for CorsPreset {
-    fn default() -> Self {
-        CorsPreset::Permissive
-    }
 }
 
 impl Default for CorsConfig {

@@ -5499,7 +5499,7 @@ dependencies = [
 
 [[package]]
 name = "scylla-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "argon2 0.6.0-rc.2",
