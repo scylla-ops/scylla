@@ -75,7 +75,7 @@ export const ScyllaForm = ({ items, className, buttonLabel, onSubmit }: ScyllaFo
         ))}
       </FieldGroup>
 
-      <div className='flex justify-end mt-4'>
+      <div className='flex justify-end mt-8'>
         <Button type='submit'>{buttonLabel}</Button>
       </div>
     </form>
