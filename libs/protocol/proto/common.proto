@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package common;
+
+// Pagination request parameters
+message PaginationRequest {
+  // Page number (1-indexed, defaults to 1)
+  uint32 page = 1;
+  // Number of items per page (defaults to 20, max 100)
+  uint32 page_size = 2;
+}
+
+// Pagination metadata included in list responses
+message PaginationMetadata {
+  // Total number of items across all pages
+  uint32 total_count = 1;
+  // Current page number (1-indexed)
+  uint32 page = 2;
+  // Number of items per page
+  uint32 page_size = 3;
+  // Total number of pages
+  uint32 total_pages = 4;
+  // Whether there is a next page
+  bool has_next = 5;
+  // Whether there is a previous page
+  bool has_previous = 6;
+}

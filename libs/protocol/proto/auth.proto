@@ -2,6 +2,17 @@ syntax = "proto3";
 
 package auth;
 
+service AuthService {
+  // Login
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Validate token
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  // Revoke token
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}
+
 message LoginRequest {
   string username = 1;
   string password = 2;
@@ -9,9 +20,13 @@ message LoginRequest {
 
 message LoginResponse {
   string token = 1;
+  string user_id = 2;
 }
 
-// Service Auth
-service AuthService {
-  rpc Login(LoginRequest) returns (LoginResponse);
-}
+message ValidateTokenRequest { string token = 1; }
+
+message ValidateTokenResponse { bool is_valid = 1; }
+
+message RevokeTokenRequest { string token = 1; }
+
+message RevokeTokenResponse {}
