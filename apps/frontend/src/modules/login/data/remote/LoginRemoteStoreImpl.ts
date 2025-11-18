@@ -1,9 +1,9 @@
-import type { LoginStore } from '@/modules/login/repository/store/LoginStore.ts';
+import type { LoginRemoteStore } from '@/modules/login/repository/store/LoginRemoteStore.ts';
 import type { ScyllaResult } from '@/modules/core/domain/ScyllaResult.ts';
 import { GrpcWebFetchTransport } from '@protobuf-ts/grpcweb-transport';
 import { AuthServiceClient } from '@/generated/auth.client.ts';
 
-export class LoginStoreImpl implements LoginStore {
+export class LoginRemoteStoreImpl implements LoginRemoteStore {
   private readonly _authClient: AuthServiceClient;
 
   //todo: injection for grpc web transport and clients
