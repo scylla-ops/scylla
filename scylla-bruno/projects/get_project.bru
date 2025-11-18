@@ -1,0 +1,22 @@
+meta {
+  name: get_project
+  type: grpc
+  seq: 2
+}
+
+grpc {
+  url: localhost:50051
+  method: /project.ProjectService/GetProject
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "project_id": "project_id_here"
+    }
+  '''
+}

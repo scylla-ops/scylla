@@ -1,0 +1,22 @@
+meta {
+  name: get_user
+  type: grpc
+  seq: 2
+}
+
+grpc {
+  url: localhost:50051
+  method: /user.UserService/GetUser
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "user_id": "user123"
+    }
+  '''
+}

@@ -1,4 +1,4 @@
-import type { ScyllaResult } from '@/modules/core/domain/ScyllaResult.ts';
+import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import type { LoginRepository } from '@/modules/login/domain/repository/LoginRepository.ts';
 
 export class LoginUseCase {

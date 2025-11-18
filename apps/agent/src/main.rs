@@ -1,16 +1,11 @@
-//mod command;
-#[allow(dead_code)]
 mod config;
 mod executors;
+mod grpc;
 mod model;
 
 use crate::config::AgentConfig;
-use crate::executors::local::LocalExecutor;
-use crate::model::executor::PipelineRunner;
+use crate::grpc::Agent;
 use clap::Parser;
-use protocol::pipeline::{PStage, PStep, Pipeline};
-use protocol::shell::Shell;
-use protocol::toml;
 use std::error::Error;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
@@ -28,13 +23,21 @@ struct Args {
     config: Option<String>,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn init_logger() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug,h2=warn")),
         )
+        .pretty()
+        .with_target(true)
+        .with_line_number(false)
+        .with_file(false)
         .init();
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    init_logger();
     // Parse command-line arguments using clap
     let args = Args::parse();
 
@@ -45,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Load configuration from a file if specified, otherwise use default
-    let _config = match args.config {
+    let config = match args.config {
         Some(config_path) => match AgentConfig::from_toml_file(&config_path) {
             Ok(config) => {
                 info!("Loaded configuration from {}", config_path);
@@ -58,43 +61,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         },
         None => {
-            let defaut_config = AgentConfig::default();
+            let default_config = AgentConfig::default();
             info!(
                 "No configuration file specified, using default configuration : {:#?}",
-                defaut_config
+                default_config
             );
-            defaut_config
+            default_config
         }
     };
 
-    let pipeline = Pipeline {
-        name: "demo".to_string(),
-        stages: vec![PStage {
-            name: "build".to_string(),
-            steps: vec![
-                PStep {
-                    name: "echo_1".to_string(),
-                    shell: Shell::Sh,
-                    command: "echo".to_string(),
-                    args: vec!["From".into(), "sh".into(), "$RUST_LOG".into()],
-                },
-                PStep {
-                    name: "echo_2".to_string(),
-                    shell: Shell::Bash,
-                    command: "echo".to_string(),
-                    args: vec!["From".into(), "bash".into()],
-                },
-            ],
-        }],
-    };
+    Agent::new(config.grpc_url).run().await?;
 
-    println!("{}", toml::to_string_pretty(&pipeline)?);
-
-    let executor = LocalExecutor::new();
-    let runner = PipelineRunner::new(executor)
-        .with_workdir(".")
-        .with_env_var("RUST_LOG", "info");
-
-    runner.run_pipeline(&pipeline).await?;
     Ok(())
 }

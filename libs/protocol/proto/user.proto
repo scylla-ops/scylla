@@ -1,21 +1,28 @@
 syntax = "proto3";
+
 package user;
+
+import "common.proto";
 
 service UserService {
   // Create a user
-  rpc CreateUser (CreateUserRequest) returns (UserResponse);
+  rpc CreateUser(CreateUserRequest) returns (UserResponse);
 
   // Get a user by ID
-  rpc GetUser (GetUserRequest) returns (UserResponse);
-
-  // List all users
-  rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser(GetUserRequest) returns (UserResponse);
 
   // Update a user
-  rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UserResponse);
 
   // Delete a user
-  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+
+  // List all users
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+
+  // Change a user's global role
+  rpc ChangeUserGlobalRole(ChangeUserGlobalRoleRequest)
+      returns (ChangeUserGlobalRoleResponse);
 }
 
 message CreateUserRequest {
@@ -23,41 +30,38 @@ message CreateUserRequest {
   string password = 2; // not hashed
 }
 
-message GetUserRequest {
-  string user_uuid = 1;  // Using UUID instead of user_id
-}
-
-message ListUsersRequest {
-  uint64 page = 1;
-  uint64 page_size = 2;
-}
+message GetUserRequest { string user_id = 1; }
 
 message UpdateUserRequest {
-  string user_uuid = 1;
+  string user_id = 1;
   optional string username = 2;
-  optional string password = 3;
-}
-
-message DeleteUserRequest {
-  string user_uuid = 1;
 }
 
 message UserResponse {
-  string user_uuid = 1;
+  string user_id = 1;
   string username = 2;
-  string password_hash = 3;
+  bool is_active = 3;
   string created_at = 4;
   string updated_at = 5;
-  bool is_active = 6;
 }
+
+message DeleteUserRequest { string user_id = 1; }
+
+message DeleteUserResponse {}
+
+message ListUsersRequest { optional common.PaginationRequest pagination = 1; }
 
 message ListUsersResponse {
   repeated UserResponse users = 1;
-  uint64 total_count = 2;
-  uint64 page = 3;
-  uint64 page_size = 4;
+  common.PaginationMetadata pagination = 2;
 }
 
-message DeleteUserResponse {
-  bool success = 1;
+message ChangeUserGlobalRoleRequest {
+  string user_id = 1;
+  string new_role = 2; // "admin" or "user"
+}
+
+message ChangeUserGlobalRoleResponse {
+  string user_id = 1;
+  string new_role = 2;
 }

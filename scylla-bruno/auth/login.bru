@@ -1,0 +1,30 @@
+meta {
+  name: login
+  type: grpc
+  seq: 1
+}
+
+grpc {
+  url: localhost:50051
+  method: /auth.AuthService/Login
+  body: grpc
+  auth: none
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "username": "admin",
+      "password": "admin123"
+    }
+  '''
+}
+
+script:post-response {
+  // Automatically save the auth token to the collection
+  if (res.body.token) {
+    bru.setVar("token", res.body.token);
+  }
+}
