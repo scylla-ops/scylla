@@ -1,4 +1,4 @@
-import type { ScyllaResult } from '@/modules/core/domain/ScyllaResult.ts';
+import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 
 export interface LoginRepository {
   //remote

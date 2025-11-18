@@ -7,7 +7,7 @@ export const useMarketplace = () => {
   return useQuery({
     queryKey: ['marketplace'],
     queryFn: async () => {
-      const result = await deps.getMarketplaceUseCase.execute();
+      const result = await deps.marketplace.getMarketplaceUseCase.execute();
 
       if (!result.ok) {
         throw new Error(result.error.message);

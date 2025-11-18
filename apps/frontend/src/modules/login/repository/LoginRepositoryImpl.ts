@@ -1,5 +1,5 @@
 import type { LoginRepository } from '@/modules/login/domain/repository/LoginRepository.ts';
-import type { ScyllaResult } from '@/modules/core/domain/ScyllaResult.ts';
+import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import type { LoginRemoteStore } from '@/modules/login/repository/store/LoginRemoteStore.ts';
 import type { LoginMemoryStore } from '@/modules/login/repository/store/LoginMemoryStore.ts';
 

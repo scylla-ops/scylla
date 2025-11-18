@@ -10,29 +10,16 @@ import LogoScylla from '@/assets/logo_scylla.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/login/presentation/hooks/useLogin.ts';
 import { type FormEvent } from 'react';
-import { useToken } from '@/modules/login/presentation/stores/tokenStore.ts';
 
 export const LoginPage = () => {
-  const { mutate: login, status, error } = useLogin();
-  const setToken = useToken(state => state.setToken);
+  const { mutate: login, error, isPending, isSuccess } = useLogin();
 
   const handleSubmit = (e: FormEvent, loginValue: string, passwordValue: string) => {
     e.preventDefault();
-
-    login(
-      { login: loginValue, password: passwordValue },
-      {
-        onSuccess: res => {
-          if (!res.ok) {
-            console.log('Error logging in!', res.error);
-          } else {
-            setToken(res.value);
-            console.log('Logged in!', res.value);
-          }
-        },
-      },
-    );
+    login({ login: loginValue, password: passwordValue });
   };
+
+  if (isPending || isSuccess) return <p>Loading... (todo change that)</p>;
 
   return (
     <div className={'flex items-center flex-col'}>
@@ -51,6 +38,7 @@ export const LoginPage = () => {
         </CardHeader>
         <CardContent>
           <LoginForm handleSubmit={handleSubmit} />
+          {error ? <div>{error.message}</div> : <></>}
         </CardContent>
       </Card>
     </div>
