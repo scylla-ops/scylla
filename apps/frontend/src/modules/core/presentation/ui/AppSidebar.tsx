@@ -47,7 +47,7 @@ const data = {
       items: [
         {
           title: 'Pipelines',
-          url: '/pipelines',
+          url: '/pipeline-creation',
         },
         {
           title: 'Marketplace',

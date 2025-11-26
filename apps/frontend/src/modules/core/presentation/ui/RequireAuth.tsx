@@ -6,8 +6,10 @@ export const RequireAuth = () => {
   const token = deps.core.getTokenUseCase.execute();
 
   if (!token) {
+    console.log('notoken');
     return <Navigate to='/login' replace />;
   }
+  console.log(token);
 
   return <Outlet />;
 };
