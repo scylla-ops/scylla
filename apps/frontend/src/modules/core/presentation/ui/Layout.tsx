@@ -4,11 +4,11 @@ import { SidebarProvider } from '@shadcn/sidebar.tsx';
 import { TopBar } from '@core/presentation/ui/TopBar.tsx';
 
 export const Layout = () => (
-  <SidebarProvider>
+  <SidebarProvider className={'h-screen w-screen'}>
     <AppSidebar />
-    <div className={'h-full w-full'}>
+    <div className={'h-full w-full flex flex-col'}>
       <TopBar />
-      <main className={'w-full h-full p-2'}>
+      <main className={'h-full w-full p-2'}>
         <Outlet />
       </main>
     </div>
