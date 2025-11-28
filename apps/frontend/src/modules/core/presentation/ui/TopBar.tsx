@@ -1,10 +1,6 @@
 import { useMatches } from 'react-router-dom';
-import type { ReactNode } from 'react';
 import { SidebarTrigger } from '@shadcn/sidebar.tsx';
-
-interface RouteHandle {
-  topbar?: ReactNode;
-}
+import type { RouteHandle } from '@core/presentation/models/RouteHandle.ts';
 
 //TODO: variable for the bg of the topbar
 export const TopBar = () => {
@@ -16,9 +12,7 @@ export const TopBar = () => {
 
   return (
     <header
-      className={
-        'flex flex-row items-center justify-between px-4 py-2 bg-background border-b-2 h-12'
-      }
+      className={'flex flex-row items-center justify-between px-4 bg-background border-b-2 h-12'}
     >
       <SidebarTrigger />
       {content}

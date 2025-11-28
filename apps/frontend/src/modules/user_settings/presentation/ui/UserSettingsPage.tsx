@@ -3,7 +3,7 @@ import { Organizations } from '@/modules/user_settings/presentation/ui/Organizat
 
 export const UserSettingsPage = () => {
   return (
-    <div className='flex pr-2 pl-2 space-x-6 bg-background'>
+    <div className='flex space-x-6 bg-background'>
       <div className='w-1/2'>
         <UserInformation />
       </div>

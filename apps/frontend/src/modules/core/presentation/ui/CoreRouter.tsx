@@ -7,6 +7,7 @@ import { Layout } from '@/modules/core/presentation/ui/Layout';
 import { MarketplaceTopBar } from '@/modules/marketplace/presentation/ui/MarketplaceTopBar';
 import { RequireAuth } from '@core/presentation/ui/RequireAuth.tsx';
 import { PipelineCreationPage } from '@/modules/pipeline-creation/presentation/ui/PipelineCreationPage.tsx';
+import { PipelineCreationTopbar } from '@/modules/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
 
 export const coreRouter = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ export const coreRouter = createBrowserRouter([
           {
             path: '/pipeline-creation',
             element: <PipelineCreationPage />,
+            handle: {
+              topbar: <PipelineCreationTopbar />,
+              tabsDefaultValue: 'scripting',
+            },
           },
           {
             path: '/user_settings',
