@@ -1,5 +1,5 @@
 import type MarketplaceRepository from '@/modules/marketplace/domain/repository/MarketplaceRepository.ts';
-import type { ScyllaResult } from '@/modules/core/domain/ScyllaResult.ts';
+import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import type { MarketItem } from '@/modules/marketplace/domain/models/MarketItem.ts';
 
 export class MarketplaceRepositoryImpl implements MarketplaceRepository {
@@ -10,7 +10,7 @@ export class MarketplaceRepositoryImpl implements MarketplaceRepository {
       value: [
         { provider: 'Corp', title: 'Title', descrption: 'Description' },
         { provider: 'Corp', title: 'Title', descrption: 'Description' },
-        { provider: 'Corp', title: 'Title', descrption: 'Description' },
+        { provider: 'Epitech', title: 'TestFiltre', descrption: 'Description' },
       ],
     });
   }

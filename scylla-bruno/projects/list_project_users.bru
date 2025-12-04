@@ -1,0 +1,26 @@
+meta {
+  name: list_project_users
+  type: grpc
+  seq: 9
+}
+
+grpc {
+  url: localhost:50051
+  method: /project.ProjectService/ListProjectUsers
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "project_id": "project_id_here",
+      "pagination": {
+        "page": 1,
+        "page_size": 10
+      }
+    }
+  '''
+}

@@ -1,0 +1,25 @@
+meta {
+  name: list_projects
+  type: grpc
+  seq: 3
+}
+
+grpc {
+  url: localhost:50051
+  method: /project.ProjectService/ListProjects
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "pagination": {
+        "page": 1,
+        "page_size": 10
+      }
+    }
+  '''
+}

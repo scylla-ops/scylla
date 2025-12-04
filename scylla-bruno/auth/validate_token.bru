@@ -1,0 +1,22 @@
+meta {
+  name: validate_token
+  type: grpc
+  seq: 2
+}
+
+grpc {
+  url: localhost:50051
+  method: /auth.AuthService/ValidateToken
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "token": "my_token"
+    }
+  '''
+}

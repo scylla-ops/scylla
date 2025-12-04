@@ -1,0 +1,22 @@
+meta {
+  name: delete_user
+  type: grpc
+  seq: 5
+}
+
+grpc {
+  url: localhost:50051
+  method: /user.UserService/DeleteUser
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "user_id": "user123"
+    }
+  '''
+}

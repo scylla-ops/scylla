@@ -2,46 +2,50 @@ syntax = "proto3";
 
 package pipeline;
 
-message PipelineRequest {
-  string pipeline_toml = 1; // pipeline in toml format
+import "common.proto";
+
+service Pipeline {
+  // Create a pipeline
+  rpc CreatePipeline(CreatePipelineRequest) returns (PipelineResponse);
+
+  // Get a pipeline by ID
+  rpc GetPipeline(GetPipelineRequest) returns (PipelineResponse);
+
+  // Update a pipeline
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (PipelineResponse);
+
+  // Delete a pipeline
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
+
+  // List all pipelines
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
 }
 
-message CreatePipelineResponse {
-  string pipeline_id = 1; // Pipeline UUID
+message CreatePipelineRequest { string content = 1; }
+
+message GetPipelineRequest { string pipeline_id = 1; }
+
+message UpdatePipelineRequest {
+  string pipeline_id = 1;
+  string content = 2;
 }
 
-message GetPipelineRequest {
-  string pipeline_id = 1; // Pipeline UUID
+message PipelineResponse {
+  string pipeline_id = 1;
+  string content = 2;
+  string created_at = 3;
+  string updated_at = 4;
 }
 
-message DeletePipelineRequest {
-  string pipeline_id = 1; // Pipeline UUID
-}
+message DeletePipelineRequest { string pipeline_id = 1; }
 
 message DeletePipelineResponse {}
 
-message UpdatePipelineRequest {
-  string pipeline_id = 1;   // Pipeline UUID
-  string pipeline_toml = 2; // pipeline in toml format
+message ListPipelinesRequest {
+  optional common.PaginationRequest pagination = 1;
 }
 
-message UpdatePipelineResponse {}
-
-message PipelineRecord {
-  string pipeline_id = 1; // Pipeline UUID
-  string pipeline_toml = 2; // pipeline in toml format
-  string created_at = 3; // timestamp
-  string updated_at = 4; // timestamp
-  optional string name = 5; // pipeline name
+message ListPipelinesResponse {
+  repeated PipelineResponse pipelines = 1;
+  common.PaginationMetadata pagination = 2;
 }
-
-service Pipeline {
-  rpc CreatePipeline(PipelineRequest) returns (CreatePipelineResponse);
-  rpc GetPipeline(GetPipelineRequest) returns (PipelineRecord);
-  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
-  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse);
-  //rpc listPipelines(PipelineRequest) returns (PipelineResponse);
-}
-
-// User -> Send a Pipeline (executePipeline) -> PipelineService -> channel<Pipeline> -> Core -> channel<Job> -> Orchestrator
-// -> stream<Job> -> Worker

@@ -1,37 +1,28 @@
-mod api;
-mod config;
-mod database;
-
-use crate::api::grpc::auth::controller::AuthController;
-use crate::api::grpc::orchestrator::Orchestrator;
-use crate::api::grpc::pipeline::controller::PipelineController;
-use crate::api::grpc::pipeline::repo::PipelineRepositoryDiesel;
-use crate::api::grpc::pipeline::service::PipelineService;
-use crate::api::grpc::pipeline::snapshot::controller::PipelineSnapshotController;
-use crate::api::grpc::pipeline::snapshot::repo::PipelineSnapshotRepositoryDiesel;
-use crate::api::grpc::pipeline::snapshot::service::PipelineSnapshotService;
-use crate::api::grpc::pipeline::worker::PipelineWorker;
-use crate::api::grpc::user::controller::UserController;
-use crate::api::grpc::{AuthService, BackgroundWorker, UserRepositoryDiesel};
-use crate::config::CoreConfig;
-use crate::config::core_config::DatabaseConfig;
-use crate::database::DieselDatabase;
-use anyhow::{Result, anyhow};
-use api::grpc::user::service::UserService;
-use clap::Parser;
-use pasetors::keys::{Generate, SymmetricKey};
 use protocol::services;
-use protocol::services::auth_service_server::AuthServiceServer;
-use protocol::services::orchestrator::orchestrator_server::OrchestratorServer;
+use protocol::services::auth::auth_service_server::AuthServiceServer;
+use protocol::services::job::job_service_server::JobServiceServer;
+use protocol::services::organization::organization_service_server::OrganizationServiceServer;
 use protocol::services::pipeline::pipeline_server::PipelineServer;
-use protocol::services::pipeline::snapshot::pipeline_snapshot_server::PipelineSnapshotServer;
-use protocol::services::user_service_server::UserServiceServer;
+use protocol::services::project::project_service_server::ProjectServiceServer;
+use protocol::services::user::user_service_server::UserServiceServer;
 use protocol::tonic::transport::Server;
+
+use scylla_core::config::{BootstrapConfig, CoreConfig};
+use scylla_core::infrastructure::database::{apply_migrations, db, init_db, login};
+use scylla_core::presentation::grpc::handlers::{
+    AuthHandler, JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler, UserHandler,
+};
+use scylla_core::shared::di::AppContainer;
+
+use anyhow::{Context, Result};
+use casbin::{CoreApi, DefaultModel, Enforcer, MgmtApi};
+use clap::Parser;
+use http::{HeaderName, HeaderValue, Method};
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::task::JoinSet;
+use tower_http::LatencyUnit;
 use tower_http::cors::CorsLayer;
-use tracing::info;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tracing::{Level, debug, info, warn};
 use tracing_subscriber::EnvFilter;
 
 /// Scylla Core - The core component for the Scylla CI/CD system
@@ -49,12 +40,8 @@ struct Args {
 
 fn load_config(args: &Args) -> Result<CoreConfig> {
     if let Some(config_path) = &args.config {
-        match CoreConfig::from_toml_file(config_path) {
-            Ok(config) => Ok(config),
-            Err(e) => {
-                panic!("Failed to load configuration from {config_path}: {e}");
-            }
-        }
+        CoreConfig::from_toml_file(config_path)
+            .with_context(|| format!("Failed to load configuration from {}", config_path))
     } else {
         let default_config = CoreConfig::default();
         info!(
@@ -65,105 +52,330 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
     }
 }
 
-async fn init_database_pool(database_config: DatabaseConfig) -> Result<DieselDatabase> {
-    // Initialize database and run migrations
-    let diesel_db = DieselDatabase::new(&database_config)
-        .map_err(|e| anyhow!("Database connection failed: {}", e))?;
+async fn init_rbac_enforcer(
+    db: Arc<surrealdb::Surreal<surrealdb::engine::any::Any>>,
+    rbac_config: &scylla_core::config::RbacConfig,
+) -> Result<Enforcer> {
+    // Try to read model from configured path, fall back to embedded default if not found
+    let model_text = match std::fs::read_to_string(&rbac_config.model_path) {
+        Ok(content) => {
+            info!("Loaded Casbin model from: {}", rbac_config.model_path);
+            content
+        }
+        Err(_) => {
+            // Fall back to embedded default if configured path doesn't exist
+            info!(
+                "Model file not found at {}, using embedded default",
+                rbac_config.model_path
+            );
+            include_str!("../casbin/model.conf").to_string()
+        }
+    };
+    let model = DefaultModel::from_str(&model_text).await?;
 
-    diesel_db
-        .run_migrations()
-        .map_err(|e| anyhow!("Database migration failed: {}", e))?;
+    // Use SurrealDB adapter for persistent policy storage
+    let adapter = surreal_casbin_adapter::SurrealAdapter::new(db, "casbin_rules");
+    let mut enforcer = Enforcer::new(model, adapter).await?;
 
-    info!("Database connection established and migrations completed successfully");
-    Ok(diesel_db)
+    // Bootstrap default policies if none exist
+    let policies = enforcer.get_all_policy();
+    if policies.is_empty() {
+        info!("No existing policies found, bootstrapping default RBAC policies");
+
+        let bootstrap_policies = [
+            ("admin", "*", "organizations", "create"),
+            ("admin", "*", "organizations", "read"),
+            ("admin", "*", "organizations", "update"),
+            ("admin", "*", "organizations", "delete"),
+            ("admin", "*", "projects", "create"),
+            ("admin", "*", "projects", "read"),
+            ("admin", "*", "projects", "update"),
+            ("admin", "*", "projects", "delete"),
+            ("admin", "*", "pipelines", "create"),
+            ("admin", "*", "pipelines", "read"),
+            ("admin", "*", "pipelines", "update"),
+            ("admin", "*", "pipelines", "delete"),
+            ("admin", "*", "jobs", "create"),
+            ("admin", "*", "jobs", "read"),
+            ("admin", "*", "jobs", "update"),
+            ("admin", "*", "jobs", "delete"),
+            ("admin", "*", "users", "create"),
+            ("admin", "*", "users", "read"),
+            ("admin", "*", "users", "update"),
+            ("admin", "*", "users", "delete"),
+            ("user", "*", "organizations", "read"),
+        ];
+
+        for (role, domain, resource, action) in bootstrap_policies {
+            enforcer
+                .add_policy(vec![
+                    role.to_string(),
+                    domain.to_string(),
+                    resource.to_string(),
+                    action.to_string(),
+                ])
+                .await?;
+        }
+
+        info!("Default RBAC policies bootstrapped successfully");
+    } else {
+        info!(
+            "Loaded {} existing RBAC policies from database",
+            policies.len()
+        );
+    }
+
+    info!("RBAC enforcer initialized with SurrealDB adapter");
+    Ok(enforcer)
+}
+
+async fn bootstrap_admin_user(
+    container: &AppContainer,
+    bootstrap_config: BootstrapConfig,
+) -> Result<()> {
+    use scylla_core::domain::entities::User;
+    use scylla_core::domain::value_objects::{Password, Username};
+
+    // Check if bootstrap is enabled
+    if !bootstrap_config.enabled {
+        info!("Bootstrap admin user creation is disabled");
+        return Ok(());
+    }
+
+    // Check if any admins exist in the global domain ("*")
+    let rbac_enforcer = container.rbac_enforcer();
+    let admin_users = rbac_enforcer
+        .get_users_for_role("admin", "*")
+        .await
+        .with_context(|| "Failed to check for existing admin users")?;
+
+    if !admin_users.is_empty() {
+        info!(
+            "Admin user(s) already exist (count: {}), skipping bootstrap",
+            admin_users.len()
+        );
+        return Ok(());
+    }
+
+    let BootstrapConfig {
+        username, password, ..
+    } = bootstrap_config;
+
+    // No admins exist - proceed with bootstrap
+    info!(
+        "No admin users found, creating bootstrap admin user: {}",
+        username
+    );
+
+    // Create username value object
+    let username = Username::try_from(username)
+        .with_context(|| "Failed to create username for bootstrap admin")?;
+
+    // Create password value object
+    let password = Password::try_from(password)
+        .with_context(|| "Failed to create password for bootstrap admin")?;
+
+    // Hash the password
+    let password_hasher = container.password_hasher();
+    let password_hash = password_hasher
+        .hash(&password)
+        .await
+        .with_context(|| "Failed to hash bootstrap admin password")?;
+
+    // Create the user entity
+    let user = User::create(username, password_hash);
+
+    // Save to repository
+    let user_repo = container.user_repo();
+    let created_user = user_repo
+        .create(&user)
+        .await
+        .with_context(|| "Failed to create bootstrap admin user in database")?;
+
+    // Assign admin role in global domain
+    rbac_enforcer
+        .add_role_for_user(created_user.id(), "admin", "*")
+        .await
+        .with_context(|| "Failed to assign admin role to bootstrap user")?;
+
+    info!(
+        "Bootstrap admin user created successfully with ID: {}",
+        created_user.id().as_str()
+    );
+    warn!("SECURITY WARNING: Change the bootstrap admin password immediately after first login!");
+
+    Ok(())
 }
 
 async fn start_application(core_config: CoreConfig) -> Result<()> {
     let CoreConfig {
         database_config,
         grpc_config,
+        auth_config,
+        rbac_config,
+        bootstrap_config,
+        cors_config,
     } = core_config;
 
-    // Initialize databases with migrations
-    let diesel_db = init_database_pool(database_config).await?;
+    // Initialize database connection
+    init_db(
+        &database_config.url,
+        &database_config.namespace,
+        &database_config.database,
+    )
+    .await?;
 
-    // Channels
-    let (tx_pipeline_service, rx_pipeline_service) = mpsc::channel(100);
+    login(&database_config.username, &database_config.password)
+        .await
+        .with_context(|| "Failed to login to database")?;
 
-    let (tx_shutdown, rx_shutdown) = tokio::sync::watch::channel(false);
+    apply_migrations(db()?).await?;
 
-    /* GRPC Api */
-    let reflection = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(services::FILE_DESCRIPTOR_SET)
-        .build_v1alpha()?;
+    // Initialize RBAC enforcer with SurrealDB adapter
+    let enforcer = init_rbac_enforcer(db()?, &rbac_config).await?;
 
-    let user_service = Arc::new(UserService::new(Arc::new(UserRepositoryDiesel::new(
-        diesel_db.pool.clone(),
-    ))));
-    let user_grpc = UserServiceServer::new(UserController::new(user_service));
+    // Initialize dependency injection container
+    let container = Arc::new(AppContainer::new(db()?, enforcer, &auth_config)?);
 
-    let auth_service = Arc::new(AuthService::new(
-        Arc::new(UserRepositoryDiesel::new(diesel_db.pool.clone())),
-        SymmetricKey::generate()?,
-    ));
-    let auth_grpc = AuthServiceServer::new(AuthController::new(auth_service));
+    // Bootstrap admin user if configured
+    bootstrap_admin_user(&container, bootstrap_config).await?;
 
-    let pipeline_repo = PipelineRepositoryDiesel::new(diesel_db.pool.clone());
-    let pipeline_service = Arc::new(PipelineService::new(Arc::new(pipeline_repo.clone())));
-    let pipeline_worker = PipelineWorker::new(Arc::clone(&pipeline_service), rx_pipeline_service);
-    let pipeline_grpc = PipelineServer::new(PipelineController::new(pipeline_service));
+    // Create gRPC handlers
+    let user_handler = UserHandler::new(container.clone());
+    let auth_handler = AuthHandler::new(container.clone());
+    let organization_handler = OrganizationHandler::new(container.clone());
+    let project_handler = ProjectHandler::new(container.clone());
+    let pipeline_handler = PipelineHandler::new(container.clone());
+    let job_handler = JobHandler::new(container.clone());
 
-    let pipeline_snapshot_service = Arc::new(PipelineSnapshotService::new(
-        Arc::new(PipelineSnapshotRepositoryDiesel::new(diesel_db.pool)),
-        tx_pipeline_service,
-    ));
-    let pipeline_snapshot_grpc =
-        PipelineSnapshotServer::new(PipelineSnapshotController::new(pipeline_snapshot_service));
+    // Create auth interceptor
+    let interceptor =
+        scylla_core::presentation::grpc::middleware::auth_interceptor(container.clone());
 
-    let orchestrator = Orchestrator::default();
-    let orchestrator_grpc = OrchestratorServer::new(orchestrator.clone());
+    // Create gRPC servers
+    let auth_grpc = AuthServiceServer::new(auth_handler);
 
-    /*let cert = fs::read("certs/origin-cert.pem").await?;
-    let key = fs::read("certs/origin-key.pem").await?;
+    let user_grpc = UserServiceServer::with_interceptor(user_handler, interceptor.clone());
+    let organization_grpc =
+        OrganizationServiceServer::with_interceptor(organization_handler, interceptor.clone());
+    let project_grpc = ProjectServiceServer::with_interceptor(project_handler, interceptor.clone());
+    let pipeline_grpc = PipelineServer::with_interceptor(pipeline_handler, interceptor.clone());
+    let job_grpc = JobServiceServer::with_interceptor(job_handler, interceptor.clone());
 
-    let identity = Identity::from_pem(cert, key);*/
-
-    let grpc_web_service = tower::ServiceBuilder::new()
-        .layer(tower_http::trace::TraceLayer::new_for_http())
-        .layer(CorsLayer::very_permissive()) //todo : make this configurable
-        .layer(tonic_web::GrpcWebLayer::new())
-        .into_inner();
-
-    let mut threads = JoinSet::new();
-    threads.spawn(BackgroundWorker::spawn_worker(
-        orchestrator,
-        rx_shutdown.clone(),
-    ));
-    threads.spawn(BackgroundWorker::spawn_worker(
-        pipeline_worker,
-        rx_shutdown.clone(),
-    ));
-
-    let grpc_server_fn = move || {
-        info!("GRPC server running on {}", grpc_config);
-        Server::builder()
-            /*.tls_config(ServerTlsConfig::new().identity(identity)).unwrap()*/
-            .layer(grpc_web_service)
-            .accept_http1(true)
-            .add_service(reflection)
-            .add_service(user_grpc)
-            .add_service(auth_grpc)
-            .add_service(pipeline_grpc)
-            .add_service(orchestrator_grpc)
-            .add_service(pipeline_snapshot_grpc)
-            .serve_with_shutdown(grpc_config, async move {
-                tokio::signal::ctrl_c().await.ok();
-                let _ = tx_shutdown.send(true);
-            })
+    // Setup reflection
+    #[cfg(feature = "reflection")]
+    let reflection = {
+        use tonic_reflection::server::Builder as ReflectionBuilder;
+        Some(
+            ReflectionBuilder::configure()
+                .register_encoded_file_descriptor_set(services::FILE_DESCRIPTOR_SET)
+                .build_v1alpha()?,
+        )
     };
 
-    let _res = grpc_server_fn().await;
-    let _res = threads.join_all().await;
+    // Start gRPC server
+    info!("GRPC server running on {}", grpc_config.address);
+    let trace_layer = TraceLayer::new_for_http()
+        .make_span_with(DefaultMakeSpan::new().include_headers(true))
+        .on_request(DefaultOnRequest::new().level(Level::INFO))
+        .on_response(
+            DefaultOnResponse::new()
+                .level(Level::INFO)
+                .latency_unit(LatencyUnit::Millis),
+        );
+
+    // Build CORS layer from config
+    use scylla_core::config::core_config::CorsPreset;
+    let mut cors_layer = match cors_config.preset {
+        CorsPreset::Permissive => CorsLayer::permissive(),
+        CorsPreset::VeryPermissive => CorsLayer::very_permissive(),
+        CorsPreset::None => CorsLayer::new(),
+    };
+
+    // Allowed origins (apply explicit list if provided)
+    if !cors_config.allow_origins.is_empty() {
+        let mut origins: Vec<HeaderValue> = Vec::new();
+        for o in &cors_config.allow_origins {
+            if let Ok(v) = o.parse::<HeaderValue>() {
+                origins.push(v);
+            }
+        }
+        if !origins.is_empty() {
+            cors_layer = cors_layer.allow_origin(origins);
+        }
+    }
+
+    // Allowed methods (apply explicit list if provided)
+    if !cors_config.allow_methods.is_empty() {
+        let mut methods: Vec<Method> = Vec::new();
+        for m in &cors_config.allow_methods {
+            if let Ok(v) = m.parse::<Method>() {
+                methods.push(v);
+            }
+        }
+        if !methods.is_empty() {
+            cors_layer = cors_layer.allow_methods(methods);
+        }
+    }
+
+    // Allowed headers (apply explicit list if provided)
+    if !cors_config.allow_headers.is_empty() {
+        let mut headers: Vec<HeaderName> = Vec::new();
+        for h in &cors_config.allow_headers {
+            if let Ok(v) = h.parse::<HeaderName>() {
+                headers.push(v);
+            }
+        }
+        if !headers.is_empty() {
+            cors_layer = cors_layer.allow_headers(headers);
+        }
+    }
+
+    // Expose headers (apply explicit list if provided)
+    if !cors_config.expose_headers.is_empty() {
+        let mut headers: Vec<HeaderName> = Vec::new();
+        for h in &cors_config.expose_headers {
+            if let Ok(v) = h.parse::<HeaderName>() {
+                headers.push(v);
+            }
+        }
+        if !headers.is_empty() {
+            cors_layer = cors_layer.expose_headers(headers);
+        }
+    }
+
+    if let Some(b) = cors_config.allow_credentials {
+        cors_layer = cors_layer.allow_credentials(b);
+    }
+    if let Some(b) = cors_config.allow_private_network {
+        cors_layer = cors_layer.allow_private_network(b);
+    }
+    if let Some(secs) = cors_config.max_age_seconds {
+        cors_layer = cors_layer.max_age(std::time::Duration::from_secs(secs));
+    }
+
+    debug!("Configured CORS layer: {:#?}", cors_layer);
+
+    let mut server = Server::builder()
+        .accept_http1(true)
+        .layer(trace_layer)
+        .layer(cors_layer)
+        .layer(tonic_web::GrpcWebLayer::new());
+
+    let mut server = server
+        .add_service(user_grpc)
+        .add_service(auth_grpc)
+        .add_service(organization_grpc)
+        .add_service(project_grpc)
+        .add_service(pipeline_grpc)
+        .add_service(job_grpc);
+
+    #[cfg(feature = "reflection")]
+    if let Some(reflection) = reflection {
+        server = server.add_service(reflection);
+    }
+
+    server.serve(grpc_config.address).await?;
 
     Ok(())
 }
@@ -171,8 +383,12 @@ async fn start_application(core_config: CoreConfig) -> Result<()> {
 fn init_logger() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug,h2=warn")),
         )
+        .pretty()
+        .with_target(true)
+        .with_line_number(false)
+        .with_file(false)
         .init();
 }
 

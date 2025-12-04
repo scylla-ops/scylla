@@ -6,10 +6,10 @@ import { lingui } from '@lingui/vite-plugin';
 
 export default defineConfig({
   plugins: [
+    lingui(),
     react({
       plugins: [['@lingui/swc-plugin', {}]],
     }),
-    lingui(),
     tailwindcss(),
     tsconfigPaths(),
   ],

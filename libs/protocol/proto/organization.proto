@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package organization;
+
+import "common.proto";
+
+service OrganizationService {
+  // Create an organization
+  rpc CreateOrganization(CreateOrganizationRequest)
+      returns (OrganizationResponse);
+
+  // Get an organization by ID
+  rpc GetOrganization(GetOrganizationRequest) returns (OrganizationResponse);
+
+  // Update an organization
+  rpc UpdateOrganization(UpdateOrganizationRequest)
+      returns (OrganizationResponse);
+
+  // Toggle an organization active state
+  rpc ToggleOrganizationActive(ToggleOrganizationActiveRequest)
+      returns (ToggleOrganizationActiveResponse);
+
+  // Delete an organization
+  rpc DeleteOrganization(DeleteOrganizationRequest)
+      returns (DeleteOrganizationResponse);
+
+  // List all organizations
+  rpc ListOrganizations(ListOrganizationsRequest)
+      returns (ListOrganizationsResponse);
+
+  // List users in an organization
+  rpc ListOrganizationUsers(ListOrganizationUsersRequest)
+      returns (ListOrganizationUsersResponse);
+
+  // List organizations for a user
+  rpc ListUserOrganizations(ListUserOrganizationsRequest)
+      returns (ListUserOrganizationsResponse);
+
+  // Add a user to an organization
+  rpc AddUserToOrganization(AddUserToOrganizationRequest)
+      returns (AddUserToOrganizationResponse);
+
+  // Remove a user from an organization
+  rpc RemoveUserFromOrganization(RemoveUserFromOrganizationRequest)
+      returns (RemoveUserFromOrganizationResponse);
+}
+
+message CreateOrganizationRequest {
+  string name = 1;
+  optional string description = 2;
+}
+
+message GetOrganizationRequest { string organization_id = 1; }
+
+message UpdateOrganizationRequest {
+  string organization_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message OrganizationResponse {
+  string organization_id = 1;
+  string name = 2;
+  string description = 3;
+  bool is_active = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message ToggleOrganizationActiveRequest { string organization_id = 1; }
+
+message ToggleOrganizationActiveResponse {}
+
+message DeleteOrganizationRequest { string organization_id = 1; }
+
+message DeleteOrganizationResponse {}
+
+message ListOrganizationsRequest {
+  optional common.PaginationRequest pagination = 1;
+}
+
+message ListOrganizationsResponse {
+  repeated OrganizationResponse organizations = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ListOrganizationUsersRequest {
+  string organization_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message OrganizationUserInfoResponse {
+  string user_id = 1;
+  string username = 2;
+  string role = 3;
+  string joined_at = 4;
+}
+
+message ListOrganizationUsersResponse {
+  repeated OrganizationUserInfoResponse users = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ListUserOrganizationsRequest {
+  string user_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListUserOrganizationsResponse {
+  repeated OrganizationResponse organizations = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message AddUserToOrganizationRequest {
+  string user_id = 1;
+  string organization_id = 2;
+  string role = 3; // e.g., "member", "admin", "owner"
+}
+
+message AddUserToOrganizationResponse { string relation_id = 1; }
+
+message RemoveUserFromOrganizationRequest {
+  string user_id = 1;
+  string organization_id = 2;
+}
+
+message RemoveUserFromOrganizationResponse {}
