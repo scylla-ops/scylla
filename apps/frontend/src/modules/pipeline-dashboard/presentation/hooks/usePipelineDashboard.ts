@@ -1,44 +1,33 @@
 import { useCallback } from 'react';
 import { usePipelineDashboardStore } from '@/modules/pipeline-dashboard/presentation/stores/usePipelineDashboardStore.ts';
-import { PipelineClient } from '@/generated/pipeline.client.ts';
-import { GrpcWebFetchTransport } from '@protobuf-ts/grpcweb-transport';
+import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
 
 export const usePipelineDashboard = () => {
-    const { pipelines, loading, error, setPipelines, setLoading, setError } = usePipelineDashboardStore();
+  const { pipelines, loading, error, setPipelines, setLoading, setError } =
+    usePipelineDashboardStore();
 
-    const fetchPipelines = useCallback(async () => {
-        setLoading(true);
-        setError("");
+  const getPipelines = useDependencies().pipelineDashboard.getPipelinesUseCase;
 
-        try {
-            const apiUrl = import.meta.env.VITE_API_URL ?? '';
-            const transport = new GrpcWebFetchTransport({
-                baseUrl: apiUrl,
-                format: 'binary',
-            });
-            const client = new PipelineClient(transport);
-            
-            const { response } = await client.listPipelines({
-                pagination: {
-                    page: 1,
-                    pageSize: 10,
-                },
-            });
-            
-            if (response.pipelines) {
-                setPipelines(response.pipelines);
-            }
-        } catch (error) {
-            setError('Failed to fetch pipelines.' + error);
-        } finally {
-            setLoading(false);
-        }
-    }, [setLoading, setError, setPipelines]);
+  const fetchPipelines = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
-    return {
-        pipelines,
-        loading,
-        error,
-        fetchPipelines,
-    };
+    try {
+      const res = await getPipelines.execute();
+
+      if (res.ok) setPipelines(res.value.pipelines);
+      else setError(res.error.message);
+    } catch (error) {
+      setError('Failed to fetch pipelines.' + error);
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError, getPipelines, setPipelines]);
+
+  return {
+    pipelines,
+    loading,
+    error,
+    fetchPipelines,
+  };
 };

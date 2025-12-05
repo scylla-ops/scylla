@@ -46,8 +46,12 @@ const data = {
       isActive: true,
       items: [
         {
-          title: 'Pipelines',
+          title: 'Create pipeline',
           url: '/pipeline-creation',
+        },
+        {
+          title: 'Pipelines',
+          url: '/pipeline-dashboard',
         },
         {
           title: 'Marketplace',
@@ -64,7 +68,7 @@ const data = {
       items: [
         {
           title: 'Users',
-          url: '/user_settings',
+          url: '/user-settings',
         },
       ],
     },

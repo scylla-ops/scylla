@@ -1,27 +1,36 @@
-import type { ScyllaResult } from '@/modules/core/domain/ScyllaResult.ts';
 import type { PipelineDashboardStore } from '@/modules/pipeline-dashboard/repository/store/PipelineDashboardStore.ts';
 import { PipelineClient } from '@/generated/pipeline.client.ts';
-import { GrpcWebFetchTransport } from '@protobuf-ts/grpcweb-transport';
-import type { PipelineRecord } from '@/generated/pipeline';
+import type { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';
+import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ListPipelinesResponse, PipelineResponse } from '@/generated/pipeline.ts';
 
 export class PipelineDashboardStoreImpl implements PipelineDashboardStore {
-    private readonly _pipelineClient: PipelineClient;
+  private readonly _pipelineClient: PipelineClient;
 
-    constructor() {
-        const apiUrl = import.meta.env.VITE_API_URL ?? '';
-        const transport = new GrpcWebFetchTransport({
-            baseUrl: apiUrl,
-            format: 'binary',
-        });
-        this._pipelineClient = new PipelineClient(transport);
-    }
+  constructor(transport: CoreGrpcTransport) {
+    this._pipelineClient = new PipelineClient(transport.getTransport());
+  }
 
-    async getPipelineStatsById(id: string): Promise<ScyllaResult<PipelineRecord>> {
-        try {
-            const { response } = await this._pipelineClient.getPipeline({pipelineId: id});
-            return { ok: true, value: response };
-        } catch (error) {
-            return { ok: false, error: {message: `Failed to fetch pipeline for id: ${id}` + error }};
-        }
+  async getPipelineStatsById(id: string): Promise<ScyllaResult<PipelineResponse>> {
+    try {
+      const { response } = await this._pipelineClient.getPipeline({ pipelineId: id });
+      return { ok: true, value: response };
+    } catch (error) {
+      return { ok: false, error: { message: `Failed to fetch pipeline for id: ${id}` + error } };
     }
+  }
+
+  async getPipelines(): Promise<ScyllaResult<ListPipelinesResponse>> {
+    try {
+      const { response } = await this._pipelineClient.listPipelines({
+        pagination: {
+          page: 1,
+          pageSize: 10,
+        },
+      });
+      return { ok: true, value: response };
+    } catch (error) {
+      return { ok: false, error: { message: `Failed to fetch pipelines.` + error } };
+    }
+  }
 }

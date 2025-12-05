@@ -31,11 +31,11 @@ export const coreRouter = createBrowserRouter([
             },
           },
           {
-            path: '/user_settings',
+            path: '/user-settings',
             element: <UserSettingsPage />,
           },
           {
-            path: '/pipeline_dashboard',
+            path: '/pipeline-dashboard',
             element: <DashboardPipelinePage />,
           },
           {

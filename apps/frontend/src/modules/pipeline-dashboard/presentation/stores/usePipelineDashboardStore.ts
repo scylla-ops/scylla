@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { PipelineResponse } from '@/generated/pipeline';
-import type { ScyllaError } from '@/modules/core/domain/ScyllaResult';
+import type { ScyllaError } from '@core/utils/ScyllaResult.ts';
 
 interface PipelineDashboardState {
   pipelines: PipelineResponse[];
@@ -12,28 +12,28 @@ interface PipelineDashboardState {
   reset: () => void;
 }
 
-export const usePipelineDashboardStore = create<PipelineDashboardState>((set) => ({
+export const usePipelineDashboardStore = create<PipelineDashboardState>(set => ({
   pipelines: [],
   loading: false,
-  error: "",
-  
+  error: '',
+
   setPipelines: (pipelines: PipelineResponse[]) => {
     set({ pipelines });
   },
-  
+
   setLoading: (loading: boolean) => {
     set({ loading });
   },
-  
+
   setError: (error: string | ScyllaError) => {
     set({ error });
   },
-  
+
   reset: () => {
     set({
       pipelines: [],
       loading: false,
-      error: "",
+      error: '',
     });
   },
 }));

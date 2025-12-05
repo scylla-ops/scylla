@@ -14,7 +14,7 @@ export const useLogin = () => {
     },
     onSuccess: token => {
       deps.core.setTokenUseCase.execute(token);
-      navigate('/user_settings');
+      navigate('/user-settings');
     },
     onError: err => {
       console.error('Erreur login:', err);

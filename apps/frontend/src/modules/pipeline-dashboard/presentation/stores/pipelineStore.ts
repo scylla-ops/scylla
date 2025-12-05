@@ -1,14 +1,14 @@
-import type { PipelineRecord } from '@/generated/pipeline';
-import type { ScyllaError } from '@/modules/core/domain/ScyllaResult';
+import type { PipelineResponse } from '@/generated/pipeline';
+import type { ScyllaError } from '@core/utils/ScyllaResult.ts';
 
 export class PipelineStore {
-  private pipeline: PipelineRecord | null = null;
+  private pipeline: PipelineResponse | null = null;
   private loading = false;
-  private error: string | ScyllaError = "";
+  private error: string | ScyllaError = '';
 
   constructor() {}
 
-  setPipeline(pipeline: PipelineRecord) {
+  setPipeline(pipeline: PipelineResponse) {
     this.pipeline = pipeline;
   }
 

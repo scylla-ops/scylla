@@ -1,11 +1,11 @@
-import type { PipelineResponse } from '@/generated/pipeline';
 import type { PipelineDashboardRepository } from '@/modules/pipeline-dashboard/domain/repository/PipelineDashboardRepository.ts';
 import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 
-export class GetPipelineStatsUseCase {
+export class GetPipelinesUseCase {
   constructor(private readonly pipelineDashboardRepository: PipelineDashboardRepository) {}
 
-  public async execute(id: string): Promise<ScyllaResult<PipelineResponse>> {
-    return this.pipelineDashboardRepository.getPipelineStatsById(id);
+  public async execute(): Promise<ScyllaResult<ListPipelinesResponse>> {
+    return this.pipelineDashboardRepository.getPipelines();
   }
 }
