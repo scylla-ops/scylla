@@ -2,7 +2,7 @@ import { Input } from '@shadcn/input.tsx';
 
 import { useFilterStore } from '@/modules/marketplace/presentation/stores/useFilter.ts';
 
-//todo: store filter in zustand store
+//todo: stores filter in zustand stores
 export const MarketplaceTopBar = () => {
   const filter = useFilterStore(state => state.filter);
   const setFilter = useFilterStore(state => state.setFilter);

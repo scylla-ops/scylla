@@ -3,6 +3,7 @@ import { StreamLanguage } from '@codemirror/language';
 import { toml } from '@codemirror/legacy-modes/mode/toml';
 import { TabsContent } from '@shadcn/tabs.tsx';
 import { Card } from '@shadcn';
+import { useScriptStore } from '@/modules/pipeline-creation/presentation/stores/useScript.ts';
 
 const codeMirrorTheme = EditorView.theme({
   '&': {
@@ -38,11 +39,15 @@ const codeMirrorTheme = EditorView.theme({
 });
 
 export const PipelineCreationPage = () => {
+  const { script, setScript } = useScriptStore(state => state);
+
   return (
     <div className={'h-full'}>
       <TabsContent value='scripting' className={'h-full'}>
         <Card className={'h-full p-0'}>
           <ReactCodeMirror
+            value={script}
+            onChange={value => setScript(value)}
             className='h-full'
             height='100%'
             extensions={[StreamLanguage.define(toml), codeMirrorTheme]}
