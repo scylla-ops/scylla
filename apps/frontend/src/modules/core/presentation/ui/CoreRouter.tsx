@@ -8,6 +8,7 @@ import { MarketplaceTopBar } from '@/modules/marketplace/presentation/ui/Marketp
 import { RequireAuth } from '@core/presentation/ui/RequireAuth.tsx';
 import { PipelineCreationPage } from '@/modules/pipeline-creation/presentation/ui/PipelineCreationPage.tsx';
 import { PipelineCreationTopbar } from '@/modules/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
+import { DashboardPipelinePage } from '@/modules/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
 
 export const coreRouter = createBrowserRouter([
   {
@@ -32,6 +33,10 @@ export const coreRouter = createBrowserRouter([
           {
             path: '/user_settings',
             element: <UserSettingsPage />,
+          },
+          {
+            path: '/pipeline_dashboard',
+            element: <DashboardPipelinePage />,
           },
           {
             path: '/marketplace',

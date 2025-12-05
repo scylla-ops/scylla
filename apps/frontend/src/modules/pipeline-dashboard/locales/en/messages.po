@@ -1,0 +1,15 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=utf-8\n"
+"POT-Creation-Date: 2023-11-08\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Pipeline Dashboard"
+msgstr "Pipeline Dashboard"
+
+msgid "Pipeline Status"
+msgstr "Pipeline Status"
+
+msgid "Failed to fetch pipeline stats"
+msgstr "Failed to fetch pipeline stats"
