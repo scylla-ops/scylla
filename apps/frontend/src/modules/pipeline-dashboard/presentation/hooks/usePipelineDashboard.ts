@@ -1,33 +1,44 @@
 import { useCallback } from 'react';
-import { PipelineStore } from '@/modules/pipeline-dashboard/presentation/stores/pipelineStore.ts';
-import { useDependencies } from '@/modules/core/presentation/hooks/useDependencies';
+import { usePipelineDashboardStore } from '@/modules/pipeline-dashboard/presentation/stores/usePipelineDashboardStore.ts';
+import { PipelineClient } from '@/generated/pipeline.client.ts';
+import { GrpcWebFetchTransport } from '@protobuf-ts/grpcweb-transport';
 
 export const usePipelineDashboard = () => {
-    const deps = useDependencies();
-    const store = new PipelineStore();
+    const { pipelines, loading, error, setPipelines, setLoading, setError } = usePipelineDashboardStore();
 
-    const fetchPipelineStats = useCallback(async (id: string) => {
-        store.setLoading(true);
-        store.setError("");
+    const fetchPipelines = useCallback(async () => {
+        setLoading(true);
+        setError("");
 
         try {
-            const result = await deps.pipelineDashboardUseCase.execute(id);
-            if (result.ok) {
-                store.setPipeline(result.value);
-            } else {
-                store.setError(result.error);
+            const apiUrl = import.meta.env.VITE_API_URL ?? '';
+            const transport = new GrpcWebFetchTransport({
+                baseUrl: apiUrl,
+                format: 'binary',
+            });
+            const client = new PipelineClient(transport);
+            
+            const { response } = await client.listPipelines({
+                pagination: {
+                    page: 1,
+                    pageSize: 10,
+                },
+            });
+            
+            if (response.pipelines) {
+                setPipelines(response.pipelines);
             }
         } catch (error) {
-            store.setError('Failed to fetch pipeline stats.' + error);
+            setError('Failed to fetch pipelines.' + error);
         } finally {
-            store.setLoading(false);
+            setLoading(false);
         }
-    }, [deps.getMarketplaceUseCase, store]);
+    }, [setLoading, setError, setPipelines]);
 
     return {
-        pipelines: store.getPipeline,
-        loading: store.isLoading,
-        error: store.getError,
-        fetchPipelineStats,
+        pipelines,
+        loading,
+        error,
+        fetchPipelines,
     };
 };

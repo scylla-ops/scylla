@@ -1,87 +1,35 @@
+import { useEffect } from 'react';
 import { PipelineChart } from "./PipelineChart"
 import { StatusCard } from "./StatusCard"
-
-const PIPELINES = [
-    {
-        id: "58ba122d-9aac-4b38-93ec-ad7ddb10d238",
-        name: "pipeline 1",
-        steps: [
-            {
-                name: "Build",
-                commands: ["echo 'Un\ndeux\ntrois'"],
-                status: "SUCCESS",
-            },
-            {
-                name: "Deploy",
-                commands: [
-                "echo Deploy"
-                ],
-                status: "IN PROGRESS"
-            }
-        ]
-    },
-    {
-        id: "58ba122d-9aac-4b38-93ec-ad7ddb10d239",
-        name: "pipeline 2",
-        steps: [
-            {
-                name: "Build",
-                commands: ["echo 'Un\ndeux\ntrois'"],
-                status: "SUCCESS",
-            },
-            {
-                name: "Deploy",
-                commands: [
-                "echo Deploy"
-                ],
-                status: "SUCCESS"
-            },
-            {
-                name: "Test",
-                commands: [
-                "echo Test"
-                ],
-                status: "FAILED"
-            }
-        ]
-    },
-{
-        id: "58ba122d-9aac-4b38-93ec-ad7ddb10d240",
-        name: "pipeline 3",
-        steps: [
-            {
-                name: "Build",
-                commands: ["echo 'Un\ndeux\ntrois'"],
-                status: "SUCCESS",
-            },
-            {
-                name: "Deploy",
-                commands: [
-                "echo Deploy"
-                ],
-                status: "SUCCESS"
-            },
-            {
-                name: "Test",
-                commands: [
-                "echo Test"
-                ],
-                status: "SUCCESS"
-            }
-        ]
-    },
-]
-
+import { usePipelineDashboard } from '../hooks/usePipelineDashboard';
 
 export const DashboardPipelinePage = () => {
+    const { pipelines, loading, error, fetchPipelines } = usePipelineDashboard();
+
+    useEffect(() => {
+        fetchPipelines();
+    }, [fetchPipelines]);
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-screen">Loading pipelines...</div>;
+    }
+
+    if (error) {
+        return <div className="flex items-center justify-center h-screen text-red-500">Error: {String(error)}</div>;
+    }
+
     return (
         <>
-        <div className="flex-1 p-6 space-x-6 flex">
-            <StatusCard pipeline={PIPELINES[0]}/>
-            <StatusCard pipeline={PIPELINES[1]}/>
-            <StatusCard pipeline={PIPELINES[2]}/>
-        </div>
-        <PipelineChart/>
+            <div className="flex-1 p-6 space-x-6 flex">
+                {pipelines.length > 0 ? (
+                    pipelines.map((pipeline) => (
+                        <StatusCard key={pipeline.pipelineId} pipeline={pipeline} />
+                    ))
+                ) : (
+                    <div className="text-gray-500">No pipelines found</div>
+                )}
+            </div>
+            <PipelineChart />
         </>
     )
 }
