@@ -10,7 +10,9 @@ pub static DB: OnceCell<Arc<Surreal<Any>>> = OnceCell::const_new();
 
 /// Initialize the database connection
 pub async fn init_db(url: &str, ns: &str, db: &str) -> anyhow::Result<()> {
-    let client = surrealdb::engine::any::connect(url).await?;
+    let client = surrealdb::engine::any::connect(url)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to connect to database at {}: {:?}", url, e))?;
     client.use_ns(ns).use_db(db).await?;
     DB.set(Arc::new(client))
         .map_err(|_| anyhow::anyhow!("DB already initialised"))?;

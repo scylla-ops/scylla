@@ -41,14 +41,7 @@ pub struct OrganizationResponseDto {
 
 impl From<Organization> for OrganizationResponseDto {
     fn from(org: Organization) -> Self {
-        Self {
-            id: org.id().to_owned(),
-            name: org.name().to_owned(),
-            description: org.description().map(|d| d.to_owned()),
-            is_active: org.is_active(),
-            created_at: org.created_at(),
-            updated_at: org.updated_at(),
-        }
+        Self::from(&org)
     }
 }
 
@@ -63,11 +56,6 @@ impl From<&Organization> for OrganizationResponseDto {
             updated_at: org.updated_at(),
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct ToggleOrganizationActiveRequestDto {
-    pub organization_id: OrganizationId,
 }
 
 #[derive(Debug, Clone)]

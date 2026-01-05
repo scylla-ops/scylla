@@ -22,7 +22,7 @@ use std::sync::Arc;
 use tower_http::LatencyUnit;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
-use tracing::{Level, debug, info, warn};
+use tracing::{Level, debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 
 /// Scylla Core - The core component for the Scylla CI/CD system
@@ -44,10 +44,7 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
             .with_context(|| format!("Failed to load configuration from {}", config_path))
     } else {
         let default_config = CoreConfig::default();
-        info!(
-            "No configuration file provided, using default configuration : {:#?}",
-            default_config
-        );
+        info!("No configuration file provided, using default configuration");
         Ok(default_config)
     }
 }
@@ -393,16 +390,25 @@ fn init_logger() {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     init_logger();
     let args = Args::parse();
 
     if args.print_example_config {
         CoreConfig::print_example_toml();
-        return Ok(());
+        return;
     }
 
     info!("Core starting");
+
+    if let Err(e) = run(args).await {
+        error!("Application error: {:#}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn run(args: Args) -> Result<()> {
     let config = load_config(&args)?;
+    debug!("Configuration : {:#?}", config);
     start_application(config).await
 }
