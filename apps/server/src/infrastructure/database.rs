@@ -1,5 +1,6 @@
 use include_dir::{Dir, include_dir};
 use std::sync::Arc;
+use anyhow::Context;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb_migrations::MigrationRunner;
@@ -12,7 +13,7 @@ pub static DB: OnceCell<Arc<Surreal<Any>>> = OnceCell::const_new();
 pub async fn init_db(url: &str, ns: &str, db: &str) -> anyhow::Result<()> {
     let client = surrealdb::engine::any::connect(url)
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to connect to database at {}: {:?}", url, e))?;
+        .context(format!("Failed to connect to database at {}", url))?;
     client.use_ns(ns).use_db(db).await?;
     DB.set(Arc::new(client))
         .map_err(|_| anyhow::anyhow!("DB already initialised"))?;
@@ -28,7 +29,7 @@ pub async fn login(user: &str, password: &str) -> anyhow::Result<()> {
         password,
     })
     .await
-    .map_err(|e| anyhow::anyhow!("Failed to login: {:?}", e))?;
+    .context("Failed to login")?;
 
     Ok(())
 }

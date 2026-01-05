@@ -384,8 +384,8 @@ fn init_logger() {
         )
         .pretty()
         .with_target(true)
-        .with_line_number(false)
-        .with_file(false)
+        .with_line_number(true)
+        .with_file(true)
         .init();
 }
 
@@ -402,7 +402,7 @@ async fn main() {
     info!("Core starting");
 
     if let Err(e) = run(args).await {
-        error!("Application error: {:#}", e);
+        error!("Application error: {:}", e);
         std::process::exit(1);
     }
 }
