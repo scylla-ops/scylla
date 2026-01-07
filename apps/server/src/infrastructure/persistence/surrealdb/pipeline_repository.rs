@@ -23,7 +23,7 @@ impl PipelineRepository for SurrealPipelineRepository {
         let insert = PipelineInsert::from(pipeline);
         let created: Option<PipelineRecord> = self
             .db
-            .create("pipelines")
+            .create(PipelineId::table_name())
             .content(insert)
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -87,7 +87,8 @@ impl PipelineRepository for SurrealPipelineRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM pipelines GROUP ALL")
+            .query("SELECT count() FROM type::table($table) GROUP ALL")
+            .bind(("table", PipelineId::table_name()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -102,7 +103,8 @@ impl PipelineRepository for SurrealPipelineRepository {
         // Get paginated records
         let records: Vec<PipelineRecord> = self
             .db
-            .query("SELECT * FROM pipelines ORDER BY created_at DESC LIMIT $limit START $start")
+            .query("SELECT * FROM type::table($table) ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", PipelineId::table_name()))
             .bind(("limit", params.limit()))
             .bind(("start", params.offset()))
             .await

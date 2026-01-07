@@ -61,7 +61,10 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
     ) -> DomainResult<UserOrganization> {
         let results: Vec<UserOrganizationRecord> = self
             .db
-            .query("SELECT * FROM user_organization WHERE in = $user_id AND out = $organization_id")
+            .query(
+                "SELECT * FROM type::table($table) WHERE in = $user_id AND out = $organization_id",
+            )
+            .bind(("table", UserOrganizationId::table_name()))
             .bind(("user_id", user_id.to_record_id()))
             .bind(("organization_id", organization_id.to_record_id()))
             .await
@@ -87,8 +90,9 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
     async fn update(&self, user_organization: &UserOrganization) -> DomainResult<UserOrganization> {
         let results: Vec<UserOrganizationRecord> = self
 			.db
-			.query("UPDATE user_organization SET role = $role WHERE in = $user_id AND out = $organization_id")
-			.bind(("user_id", user_organization.user_id().to_record_id()))
+			.query("UPDATE type::table($table) SET role = $role WHERE in = $user_id AND out = $organization_id")
+            .bind(("table", UserOrganizationId::table_name()))
+            .bind(("user_id", user_organization.user_id().to_record_id()))
 			.bind((
 				"organization_id",
 				user_organization.organization_id().to_record_id(),
@@ -121,7 +125,7 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
     async fn list_all(&self) -> DomainResult<Vec<UserOrganization>> {
         let records: Vec<UserOrganizationRecord> = self
             .db
-            .select("user_organizations")
+            .select(UserOrganizationId::table_name())
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -261,7 +265,8 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
     ) -> DomainResult<()> {
         let _: Vec<UserOrganizationRecord> = self
             .db
-            .query("DELETE user_organization WHERE in = $user_id AND out = $organization_id")
+            .query("DELETE type::table($table) WHERE in = $user_id AND out = $organization_id")
+            .bind(("table", UserOrganizationId::table_name()))
             .bind(("user_id", user_id.to_record_id()))
             .bind(("organization_id", organization_id.to_record_id()))
             .await

@@ -36,7 +36,7 @@ impl UserRepository for SurrealUserRepository {
     async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
         let result: Option<UserRecord> = self
             .db
-            .select(("users", id.as_str()))
+            .select(id.to_record_id())
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -49,7 +49,8 @@ impl UserRepository for SurrealUserRepository {
     async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
         let mut results: Vec<UserRecord> = self
             .db
-            .query("SELECT * FROM users WHERE username = $username LIMIT 1")
+            .query("SELECT * FROM type::table($table) WHERE username = $username LIMIT 1")
+            .bind(("table", UserId::table_name()))
             .bind(("username", username.to_string()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
@@ -100,7 +101,8 @@ impl UserRepository for SurrealUserRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM users GROUP ALL")
+            .query("SELECT count() FROM type::table($table) GROUP ALL")
+            .bind(("table", UserId::table_name()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -115,7 +117,8 @@ impl UserRepository for SurrealUserRepository {
         // Get paginated records
         let records: Vec<UserRecord> = self
             .db
-            .query("SELECT * FROM users ORDER BY created_at DESC LIMIT $limit START $start")
+            .query("SELECT * FROM type::table($table) ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", UserId::table_name()))
             .bind(("limit", params.limit()))
             .bind(("start", params.offset()))
             .await

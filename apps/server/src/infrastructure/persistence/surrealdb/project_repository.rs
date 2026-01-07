@@ -23,7 +23,7 @@ impl ProjectRepository for SurrealProjectRepository {
         let insert = ProjectInsert::from(project);
         let created: Option<ProjectRecord> = self
             .db
-            .create("projects")
+            .create(ProjectId::table_name())
             .content(insert)
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -84,7 +84,8 @@ impl ProjectRepository for SurrealProjectRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM projects GROUP ALL")
+            .query("SELECT count() FROM type::table($table) GROUP ALL")
+            .bind(("table", ProjectId::table_name()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -99,7 +100,8 @@ impl ProjectRepository for SurrealProjectRepository {
         // Get paginated records
         let records: Vec<ProjectRecord> = self
             .db
-            .query("SELECT * FROM projects ORDER BY created_at DESC LIMIT $limit START $start")
+            .query("SELECT * FROM type::table($table) ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", ProjectId::table_name()))
             .bind(("limit", params.limit()))
             .bind(("start", params.offset()))
             .await
@@ -128,7 +130,8 @@ impl ProjectRepository for SurrealProjectRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM projects WHERE is_active = true GROUP ALL")
+            .query("SELECT count() FROM type::table($table) WHERE is_active = true GROUP ALL")
+            .bind(("table", ProjectId::table_name()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -143,8 +146,9 @@ impl ProjectRepository for SurrealProjectRepository {
         // Get paginated records
         let records: Vec<ProjectRecord> = self
 			.db
-			.query("SELECT * FROM projects WHERE is_active = true ORDER BY created_at DESC LIMIT $limit START $start")
-			.bind(("limit", params.limit()))
+			.query("SELECT * FROM type::table($table) WHERE is_active = true ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", ProjectId::table_name()))
+            .bind(("limit", params.limit()))
 			.bind(("start", params.offset()))
 			.await
 			.map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?

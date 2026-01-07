@@ -24,7 +24,7 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let insert = OrganizationInsert::from(organization);
         let created: Option<OrganizationRecord> = self
             .db
-            .create("organizations")
+            .create(OrganizationId::table_name())
             .content(insert)
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -51,7 +51,8 @@ impl OrganizationRepository for SurrealOrganizationRepository {
     async fn find_by_name(&self, name: &OrganizationName) -> DomainResult<Organization> {
         let mut results: Vec<OrganizationRecord> = self
             .db
-            .query("SELECT * FROM organizations WHERE name = $name LIMIT 1")
+            .query("SELECT * FROM type::table($table) WHERE name = $name LIMIT 1")
+            .bind(("table", OrganizationId::table_name()))
             .bind(("name", name.to_string()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
@@ -101,7 +102,8 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM organizations GROUP ALL")
+            .query("SELECT count() FROM type::table($table) GROUP ALL")
+            .bind(("table", OrganizationId::table_name()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -116,7 +118,8 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         // Get paginated records
         let records: Vec<OrganizationRecord> = self
             .db
-            .query("SELECT * FROM organizations ORDER BY created_at DESC LIMIT $limit START $start")
+            .query("SELECT * FROM type::table($table) ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", OrganizationId::table_name()))
             .bind(("limit", params.limit()))
             .bind(("start", params.offset()))
             .await
@@ -145,7 +148,8 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM organizations WHERE is_active = true GROUP ALL")
+            .query("SELECT count() FROM type::table($table) WHERE is_active = true GROUP ALL")
+            .bind(("table", OrganizationId::table_name()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -160,7 +164,8 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         // Get paginated records
         let records: Vec<OrganizationRecord> = self
             .db
-            .query("SELECT * FROM organizations WHERE is_active = true ORDER BY created_at DESC LIMIT $limit START $start")
+            .query("SELECT * FROM type::table($table) WHERE is_active = true ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", OrganizationId::table_name()))
             .bind(("limit", params.limit()))
             .bind(("start", params.offset()))
             .await

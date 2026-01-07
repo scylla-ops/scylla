@@ -56,7 +56,8 @@ impl UserProjectRepository for SurrealUserProjectRepository {
     ) -> DomainResult<UserProject> {
         let results: Vec<UserProjectRecord> = self
             .db
-            .query("SELECT * FROM user_project WHERE in = $user_id AND out = $project_id")
+            .query("SELECT * FROM type::table($table) WHERE in = $user_id AND out = $project_id")
+            .bind(("table", UserProjectId::table_name()))
             .bind(("user_id", user_id.to_record_id()))
             .bind(("project_id", project_id.to_record_id()))
             .await
@@ -82,7 +83,8 @@ impl UserProjectRepository for SurrealUserProjectRepository {
     async fn update(&self, user_project: &UserProject) -> DomainResult<UserProject> {
         let results: Vec<UserProjectRecord> = self
             .db
-            .query("UPDATE user_project SET role = $role WHERE in = $user_id AND out = $project_id")
+            .query("UPDATE type::table($table) SET role = $role WHERE in = $user_id AND out = $project_id")
+            .bind(("table", UserProjectId::table_name()))
             .bind(("user_id", user_project.user_id().to_record_id()))
             .bind(("project_id", user_project.project_id().to_record_id()))
             .bind(("role", user_project.role().to_string()))
@@ -111,7 +113,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
     async fn list_all(&self) -> DomainResult<Vec<UserProject>> {
         let records: Vec<UserProjectRecord> = self
             .db
-            .select("user_projects")
+            .select(UserProjectId::table_name())
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -245,7 +247,8 @@ impl UserProjectRepository for SurrealUserProjectRepository {
     ) -> DomainResult<()> {
         let _: Vec<UserProjectRecord> = self
             .db
-            .query("DELETE user_project WHERE in = $user_id AND out = $project_id")
+            .query("DELETE type::table($table) WHERE in = $user_id AND out = $project_id")
+            .bind(("table", UserProjectId::table_name()))
             .bind(("user_id", user_id.to_record_id()))
             .bind(("project_id", project_id.to_record_id()))
             .await
