@@ -27,6 +27,7 @@ use crate::application::use_cases::user::{
     ChangeUserGlobalRoleUseCase, CreateUserUseCase, DeleteUserUseCase, GetUserUseCase,
     ListUsersUseCase, UpdateUserUseCase,
 };
+use crate::domain::repositories::blacklist_repository::BlacklistRepository;
 use crate::domain::repositories::{
     JobRepository, OrganizationRepository, PipelineRepository, ProjectRepository,
     UserOrganizationRepository, UserProjectRepository, UserRepository,
@@ -160,10 +161,21 @@ impl AppContainer {
             Arc::new(SurrealUserProjectRepository::new(db.clone()));
 
         // Initialize services
-        let auth_service: Arc<dyn AuthService> =
-            Arc::new(PasetoAuthService::from_config(auth_config).map_err(|e| {
-                anyhow::anyhow!("Failed to create auth service from config: {}", e)
-            })?);
+        let blacklist_repo: Arc<dyn BlacklistRepository> =
+            match &auth_config.blacklist_config {
+                crate::config::core_config::BlacklistConfig::InMemory => {
+                    // TODO: Implement/Use InMemoryBlacklistRepository
+                    unimplemented!("InMemory blacklist not yet implemented")
+                }
+                crate::config::core_config::BlacklistConfig::Database => {
+                    Arc::new(crate::infrastructure::persistence::blacklist_repository::SurrealBlacklistRepository::new(db.clone()))
+                }
+            };
+
+        let auth_service: Arc<dyn AuthService> = Arc::new(
+            PasetoAuthService::from_config(auth_config, blacklist_repo)
+                .map_err(|e| anyhow::anyhow!("Failed to create auth service from config: {}", e))?,
+        );
         let password_hasher: Arc<dyn PasswordHasher> = Arc::new(Argon2PasswordHasher::default());
         let rbac_enforcer: Arc<dyn RbacEnforcer> = Arc::new(CasbinRbacEnforcer::new(enforcer));
 

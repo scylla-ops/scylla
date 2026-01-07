@@ -1,3 +1,4 @@
+pub mod blacklist_repository;
 pub mod job_repo;
 pub mod organization_repo;
 pub mod pipeline_repo;

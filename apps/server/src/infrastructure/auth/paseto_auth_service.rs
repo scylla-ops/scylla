@@ -1,36 +1,32 @@
 use crate::application::ports::AuthService;
 use crate::config::AuthConfig;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::repositories::blacklist_repository::BlacklistRepository;
 use crate::domain::value_objects::UserId;
 use async_trait::async_trait;
 use base64::Engine;
+use derive_more::Constructor;
 use pasetors::claims::{Claims, ClaimsValidationRules};
 use pasetors::keys::{Generate, SymmetricKey};
 use pasetors::token::UntrustedToken;
 use pasetors::{Local, local, version4::V4};
-use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::RwLock;
 
+#[derive(Constructor)]
 pub struct PasetoAuthService {
     key: SymmetricKey<V4>,
     token_duration: Duration,
     // blacklist stores token hashes for revoked tokens
-    blacklist: Arc<RwLock<HashSet<String>>>,
+    blacklist: Arc<dyn BlacklistRepository>,
 }
 
 impl PasetoAuthService {
-    pub fn new(key: SymmetricKey<V4>, token_duration: Duration) -> Self {
-        Self {
-            key,
-            token_duration,
-            blacklist: Arc::new(RwLock::new(HashSet::new())),
-        }
-    }
-
     /// Create from configuration
-    pub fn from_config(config: &AuthConfig) -> DomainResult<Self> {
+    pub fn from_config(
+        config: &AuthConfig,
+        blacklist: Arc<dyn BlacklistRepository>,
+    ) -> DomainResult<Self> {
         let token_duration = Duration::from_secs(config.token_duration_seconds);
 
         let key = if let Some(key_b64) = &config.token_key {
@@ -50,7 +46,7 @@ impl PasetoAuthService {
             })?
         };
 
-        Ok(Self::new(key, token_duration))
+        Ok(Self::new(key, token_duration, blacklist))
     }
 
     // hash token for blacklist storage (using sha2 for consistent hashing)
@@ -90,8 +86,7 @@ impl AuthService for PasetoAuthService {
         // check if token is in blacklist
         let token_hash = self.hash_token(token);
         {
-            let blacklist = self.blacklist.read().await;
-            if blacklist.contains(&token_hash) {
+            if self.blacklist.is_blacklisted(&token_hash).await? {
                 return Err(DomainError::unauthorized("Token has been revoked"));
             }
         }
@@ -121,11 +116,9 @@ impl AuthService for PasetoAuthService {
     async fn extract_user_id(&self, token: &str) -> DomainResult<UserId> {
         // check if token is in blacklist
         let token_hash = self.hash_token(token);
-        let blacklist = self.blacklist.read().await;
-        if blacklist.contains(&token_hash) {
+        if self.blacklist.is_blacklisted(&token_hash).await? {
             return Err(DomainError::unauthorized("Token has been revoked"));
         }
-        drop(blacklist); // release lock early
 
         let validation_rules = ClaimsValidationRules::new();
         let untrusted_token = UntrustedToken::<Local, V4>::try_from(token)
@@ -169,8 +162,12 @@ impl AuthService for PasetoAuthService {
 
         // add token hash to blacklist
         let token_hash = self.hash_token(token);
-        let mut blacklist = self.blacklist.write().await;
-        blacklist.insert(token_hash);
+        if self.blacklist.is_blacklisted(&token_hash).await? {
+            return Err(DomainError::Conflict(
+                "Token has already been revoked".to_string(),
+            ));
+        }
+        self.blacklist.add_to_blacklist(token_hash).await?;
 
         Ok(())
     }

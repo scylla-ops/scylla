@@ -16,6 +16,9 @@ database = "main"
 token_duration_seconds = 86400
 token_key = "c+uv5g8UBWbzJ2S5A1QYKTLz4jsJmY5lIT0vzSVs8Ww="
 
+[core_config.auth_config.blacklist_config]
+type = "database"
+
 [core_config.rbac_config]
 model_path = "casbin/model.conf"
 

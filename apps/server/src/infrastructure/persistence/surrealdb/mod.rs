@@ -1,3 +1,4 @@
+pub mod blacklist_repository;
 pub mod job_repository;
 pub mod mappers;
 pub mod organization_repository;

@@ -67,6 +67,17 @@ pub struct AuthConfig {
     /// Encryption key for tokens (base64 encoded)
     /// If not provided, will be auto-generated (not recommended for production)
     pub token_key: Option<String>,
+    /// Blacklist configuration
+    pub blacklist_config: BlacklistConfig,
+}
+
+/// Blacklist configuration
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum BlacklistConfig {
+    InMemory,
+    #[default]
+    Database,
 }
 
 /// RBAC configuration
@@ -185,6 +196,7 @@ impl Default for AuthConfig {
         Self {
             token_duration_seconds: 86400, // 24 hours
             token_key: None,
+            blacklist_config: BlacklistConfig::default(),
         }
     }
 }

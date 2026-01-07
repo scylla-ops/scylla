@@ -30,7 +30,7 @@ impl JobRepository for SurrealJobRepository {
 
         let created: Option<JobRecord> = self
             .db
-            .create("jobs")
+            .create(JobId::table_name())
             .content(insert)
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -92,7 +92,8 @@ impl JobRepository for SurrealJobRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM jobs GROUP ALL")
+            .query("SELECT count() FROM $table GROUP ALL")
+            .bind(("table", JobId::table_name()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -107,7 +108,8 @@ impl JobRepository for SurrealJobRepository {
         // Get paginated records
         let records: Vec<JobRecord> = self
             .db
-            .query("SELECT * FROM jobs ORDER BY created_at DESC LIMIT $limit START $start")
+            .query("SELECT * FROM $table ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", JobId::table_name()))
             .bind(("limit", params.limit()))
             .bind(("start", params.offset()))
             .await
@@ -138,7 +140,8 @@ impl JobRepository for SurrealJobRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM jobs WHERE status = $status GROUP ALL")
+            .query("SELECT count() FROM $table WHERE status = $status GROUP ALL")
+            .bind(("table", JobId::table_name()))
             .bind(("status", status_str))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
@@ -154,7 +157,8 @@ impl JobRepository for SurrealJobRepository {
         // Get paginated records
         let records: Vec<JobRecord> = self
 			.db
-			.query("SELECT * FROM jobs WHERE status = $status ORDER BY created_at DESC LIMIT $limit START $start")
+			.query("SELECT * FROM $table WHERE status = $status ORDER BY created_at DESC LIMIT $limit START $start")
+			.bind(("table", JobId::table_name()))
 			.bind(("status", status_str))
 			.bind(("limit", params.limit()))
 			.bind(("start", params.offset()))
@@ -185,7 +189,8 @@ impl JobRepository for SurrealJobRepository {
         // Get total count
         let count_result: Vec<serde_json::Value> = self
             .db
-            .query("SELECT count() FROM jobs WHERE pipeline_id = $pipeline_id GROUP ALL")
+            .query("SELECT count() FROM $table WHERE pipeline_id = $pipeline_id GROUP ALL")
+            .bind(("table", JobId::table_name()))
             .bind(("pipeline_id", PipelineId::to_record_id(pipeline_id)))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
@@ -201,7 +206,8 @@ impl JobRepository for SurrealJobRepository {
         // Get paginated records
         let records: Vec<JobRecord> = self
 			.db
-			.query("SELECT * FROM jobs WHERE pipeline_id = $pipeline_id ORDER BY created_at DESC LIMIT $limit START $start")
+			.query("SELECT * FROM $table WHERE pipeline_id = $pipeline_id ORDER BY created_at DESC LIMIT $limit START $start")
+			.bind(("table", JobId::table_name()))
 			.bind(("pipeline_id", PipelineId::to_record_id(pipeline_id)))
 			.bind(("limit", params.limit()))
 			.bind(("start", params.offset()))

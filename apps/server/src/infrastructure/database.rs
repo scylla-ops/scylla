@@ -1,6 +1,6 @@
+use anyhow::Context;
 use include_dir::{Dir, include_dir};
 use std::sync::Arc;
-use anyhow::Context;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb_migrations::MigrationRunner;

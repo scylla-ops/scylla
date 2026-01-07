@@ -20,6 +20,9 @@ database = "scylla"
 [core_config.auth_config]
 token_duration_seconds = 3600 # 1 hour
 
+[core_config.auth_config.blacklist_config]
+type = "database"
+
 # TODO: Generate with: openssl rand -base64 32
 # token_key = "REPLACE_WITH_SECURE_BASE64_KEY"
 

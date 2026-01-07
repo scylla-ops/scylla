@@ -402,7 +402,7 @@ async fn main() {
     info!("Core starting");
 
     if let Err(e) = run(args).await {
-        error!("Application error: {:}", e);
+        error!("Application error: {:#}", e);
         std::process::exit(1);
     }
 }

@@ -180,3 +180,12 @@ pub struct UserProjectInsert {
 pub struct UserProjectUpdate {
     pub role: String,
 }
+
+/// Blacklist database record
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlacklistRecord {
+    #[serde(skip_serializing)]
+    pub id: RecordId,
+    pub item: String,
+    pub created_at: Datetime,
+}
