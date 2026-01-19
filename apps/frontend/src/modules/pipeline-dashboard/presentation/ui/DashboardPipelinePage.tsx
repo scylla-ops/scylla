@@ -1,10 +1,55 @@
 import { useEffect } from 'react';
-import { PipelineChart } from './PipelineChart';
 import { StatusCard } from './StatusCard';
 import { usePipelineDashboard } from '../hooks/usePipelineDashboard';
+import { PipelineResponse } from '@/generated/pipeline.ts';
+
+const pipelinesTest: PipelineResponse[] = [
+  {
+    pipelineId: '1',
+    content: 'success',
+    createdAt: 'test',
+    updatedAt: 'test',
+  },
+  {
+    pipelineId: 'running',
+    content: 'failure',
+    createdAt: 'test',
+    updatedAt: 'test',
+  },
+  {
+    pipelineId: '3',
+    content: 'success',
+    createdAt: 'test',
+    updatedAt: 'test',
+  },
+  {
+    pipelineId: '4',
+    content: 'failure',
+    createdAt: 'test',
+    updatedAt: 'test',
+  },
+  {
+    pipelineId: '5',
+    content: 'running',
+    createdAt: 'test',
+    updatedAt: 'test',
+  },
+  {
+    pipelineId: '6',
+    content: 'success',
+    createdAt: 'test',
+    updatedAt: 'test',
+  },
+  {
+    pipelineId: '7',
+    content: 'failure',
+    createdAt: 'test',
+    updatedAt: 'test',
+  },
+];
 
 export const DashboardPipelinePage = () => {
-  const { pipelines, loading, error, fetchPipelines } = usePipelineDashboard();
+  const { loading, error, fetchPipelines } = usePipelineDashboard();
 
   useEffect(() => {
     fetchPipelines().finally();
@@ -24,14 +69,15 @@ export const DashboardPipelinePage = () => {
 
   return (
     <>
-      <div className='flex-1 p-6 space-x-6 flex'>
-        {pipelines.length > 0 ? (
-          pipelines.map(pipeline => <StatusCard key={pipeline.pipelineId} pipeline={pipeline} />)
+      <div className='p-6 flex flex-row flex-wrap h-fit gap-4'>
+        {pipelinesTest.length > 0 ? (
+          pipelinesTest.map(pipeline => (
+            <StatusCard key={pipeline.pipelineId} pipeline={pipeline} />
+          ))
         ) : (
           <div className='text-gray-500'>No pipelines found</div>
         )}
       </div>
-      <PipelineChart />
     </>
   );
 };

@@ -12,7 +12,9 @@ export const TopBar = () => {
 
   return (
     <header
-      className={'flex flex-row items-center justify-between px-4 bg-background border-b-2 h-12'}
+      className={
+        'flex flex-row items-center justify-between px-4 bg-background border-b-2 h-12 min-h-12'
+      }
     >
       <SidebarTrigger />
       {content}
