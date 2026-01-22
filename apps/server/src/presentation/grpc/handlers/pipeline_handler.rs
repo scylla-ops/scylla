@@ -2,7 +2,7 @@ use crate::application::dto::{
     CreatePipelineRequestDto, DeletePipelineRequestDto, GetPipelineRequestDto,
     ListPipelinesRequestDto, UpdatePipelineRequestDto,
 };
-use crate::domain::value_objects::{PipelineContent, PipelineId};
+use crate::domain::value_objects::PipelineId;
 use crate::presentation::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 // use crate::presentation::grpc::middleware::check_permissions;
 use crate::shared::di::AppContainer;
@@ -37,8 +37,17 @@ impl pipeline_server::Pipeline for PipelineHandler {
         // .await?;
 
         let req = request.into_inner();
-        let dto = CreatePipelineRequestDto {
-            content: PipelineContent::new(req.content)?,
+        let dto = match req.content {
+            Some(proto_pipeline_content) => {
+                let domain_pipeline_content: PipelineContent<TemplateProfile> =
+                    proto_pipeline_content.try_into()?;
+                CreatePipelineRequestDto {
+                    content: domain_pipeline_content,
+                }
+            }
+            None => {
+                return Err(Status::invalid_argument("Pipeline content is required"));
+            }
         };
 
         let response = self
@@ -95,8 +104,15 @@ impl pipeline_server::Pipeline for PipelineHandler {
         let req = request.into_inner();
         let pipeline_id = PipelineId::new(req.pipeline_id);
         let dto = UpdatePipelineRequestDto {
-            pipeline_id: pipeline_id,
-            content: PipelineContent::new(req.content)?,
+            pipeline_id,
+            content: match req.content {
+                Some(proto_pipeline_content) => proto_pipeline_content.try_into()?,
+                None => {
+                    return Err(Status::invalid_argument(
+                        "Pipeline content is required for update",
+                    ));
+                }
+            },
         };
 
         let response = self

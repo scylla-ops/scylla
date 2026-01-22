@@ -26,7 +26,7 @@ where
     ) -> DomainResult<RunPipelineResponseDto> {
         let pipeline = self.pipeline_repo.find_by_id(&request.pipeline_id).await?;
 
-        let job_draft = Job::create(request.pipeline_id, pipeline.content().to_owned())?;
+        let job_draft = Job::create(request.pipeline_id, pipeline.content().clone().try_into()?)?;
         let created_job = self.job_repo.create(&job_draft).await?;
 
         // TODO: Cmon... Do something...

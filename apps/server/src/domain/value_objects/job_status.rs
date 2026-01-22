@@ -1,131 +1,82 @@
 use crate::domain::errors::{DomainError, DomainResult};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// JobStatus value object with validation and business rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct JobStatus {
-    inner: JobStatusInner,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum JobStatusInner {
+/// JobStatus value object representing the state of a job execution
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum JobStatus {
+    /// Job is waiting to be executed
     Pending,
+    /// Job is currently executing
     Running,
+    /// Job completed successfully
     Completed,
+    /// Job failed during execution
     Failed,
+    /// Job was cancelled before completion
     Cancelled,
 }
 
 impl JobStatus {
-    /// Create a new JobStatus from string with validation
+    /// Create a JobStatus from a string with validation
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
-        let value = value.into();
-        let trimmed = value.trim().to_lowercase();
-
-        let inner = match trimmed.as_str() {
-            "pending" => JobStatusInner::Pending,
-            "running" => JobStatusInner::Running,
-            "completed" => JobStatusInner::Completed,
-            "failed" => JobStatusInner::Failed,
-            "cancelled" => JobStatusInner::Cancelled,
-            _ => {
-                return Err(DomainError::validation(format!(
-                    "Invalid job status: {}",
-                    value
-                )));
-            }
-        };
-
-        Ok(Self { inner })
-    }
-
-    /// Create a pending job status
-    pub fn pending() -> Self {
-        Self {
-            inner: JobStatusInner::Pending,
-        }
-    }
-
-    /// Create a running job status
-    pub fn running() -> Self {
-        Self {
-            inner: JobStatusInner::Running,
-        }
-    }
-
-    /// Create a completed job status
-    pub fn completed() -> Self {
-        Self {
-            inner: JobStatusInner::Completed,
-        }
-    }
-
-    /// Create a failed job status
-    pub fn failed() -> Self {
-        Self {
-            inner: JobStatusInner::Failed,
-        }
-    }
-
-    /// Create a cancelled job status
-    pub fn cancelled() -> Self {
-        Self {
-            inner: JobStatusInner::Cancelled,
+        let trimmed = value.into().trim().to_lowercase();
+        match trimmed.as_str() {
+            "pending" => Ok(JobStatus::Pending),
+            "running" => Ok(JobStatus::Running),
+            "completed" => Ok(JobStatus::Completed),
+            "failed" => Ok(JobStatus::Failed),
+            "cancelled" => Ok(JobStatus::Cancelled),
+            _ => Err(DomainError::validation(format!(
+                "Invalid job status: {}",
+                trimmed
+            ))),
         }
     }
 
     /// Get the status as a string slice
     pub fn as_str(&self) -> &'static str {
-        match self.inner {
-            JobStatusInner::Pending => "pending",
-            JobStatusInner::Running => "running",
-            JobStatusInner::Completed => "completed",
-            JobStatusInner::Failed => "failed",
-            JobStatusInner::Cancelled => "cancelled",
+        match self {
+            JobStatus::Pending => "pending",
+            JobStatus::Running => "running",
+            JobStatus::Completed => "completed",
+            JobStatus::Failed => "failed",
+            JobStatus::Cancelled => "cancelled",
         }
     }
 
-    /// Convert to string
-    pub fn to_string(&self) -> String {
-        self.as_str().to_string()
-    }
-
-    /// Check if the status is terminal (completed, failed, or cancelled)
+    /// Check if the status is terminal (job execution finished)
     pub fn is_terminal(&self) -> bool {
         matches!(
-            self.inner,
-            JobStatusInner::Completed | JobStatusInner::Failed | JobStatusInner::Cancelled
+            self,
+            JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled
         )
     }
 
-    /// Check if the status can transition to another status
-    pub fn can_transition_to(&self, new_status: &JobStatus) -> bool {
-        match (&self.inner, &new_status.inner) {
-            // Pending can go to Running or Cancelled
-            (JobStatusInner::Pending, JobStatusInner::Running) => true,
-            (JobStatusInner::Pending, JobStatusInner::Cancelled) => true,
-
-            // Running can go to Completed, Failed, or Cancelled
-            (JobStatusInner::Running, JobStatusInner::Completed) => true,
-            (JobStatusInner::Running, JobStatusInner::Failed) => true,
-            (JobStatusInner::Running, JobStatusInner::Cancelled) => true,
-
-            // Terminal states cannot transition
-            (JobStatusInner::Completed, _) => false,
-            (JobStatusInner::Failed, _) => false,
-            (JobStatusInner::Cancelled, _) => false,
-
+    /// Check if transition to another status is allowed
+    pub fn can_transition_to(&self, next: JobStatus) -> bool {
+        match (self, &next) {
+            // Pending can transition to Running or Cancelled
+            (JobStatus::Pending, JobStatus::Running | JobStatus::Cancelled) => true,
+            // Running can transition to Completed, Failed, or Cancelled
+            (
+                JobStatus::Running,
+                JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled,
+            ) => true,
+            // Terminal states cannot transition anywhere
+            (s, _) if s.is_terminal() => false,
             _ => false,
         }
     }
 
-    /// Validate transition to new status
-    pub fn validate_transition_to(&self, new_status: &JobStatus) -> DomainResult<()> {
-        if !self.can_transition_to(new_status) {
+    /// Validate transition to new status, returning error if invalid
+    pub fn validate_transition_to(&self, next: &JobStatus) -> DomainResult<()> {
+        if !self.can_transition_to(*next) {
             return Err(DomainError::business_rule(format!(
                 "Cannot transition job from {} to {}",
                 self.as_str(),
-                new_status.as_str()
+                next.as_str()
             )));
         }
         Ok(())
@@ -144,12 +95,18 @@ impl AsRef<str> for JobStatus {
     }
 }
 
+impl From<JobStatus> for String {
+    fn from(status: JobStatus) -> Self {
+        status.as_str().to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_job_status_creation() {
+    fn test_job_status_creation_from_string() {
         assert!(JobStatus::new("pending").is_ok());
         assert!(JobStatus::new("running").is_ok());
         assert!(JobStatus::new("completed").is_ok());
@@ -160,44 +117,35 @@ mod tests {
 
     #[test]
     fn test_job_status_case_insensitive() {
-        assert_eq!(JobStatus::new("PENDING").unwrap().as_str(), "pending");
-        assert_eq!(JobStatus::new("Running").unwrap().as_str(), "running");
-        assert_eq!(JobStatus::new("COMPLETED").unwrap().as_str(), "completed");
+        assert_eq!(JobStatus::new("PENDING").unwrap(), JobStatus::Pending);
+        assert_eq!(JobStatus::new("Running").unwrap(), JobStatus::Running);
+        assert_eq!(JobStatus::new("COMPLETED").unwrap(), JobStatus::Completed);
     }
 
     #[test]
-    fn test_job_status_terminal() {
-        assert!(!JobStatus::pending().is_terminal());
-        assert!(!JobStatus::running().is_terminal());
-        assert!(JobStatus::completed().is_terminal());
-        assert!(JobStatus::failed().is_terminal());
-        assert!(JobStatus::cancelled().is_terminal());
+    fn test_is_terminal() {
+        assert!(!JobStatus::Pending.is_terminal());
+        assert!(!JobStatus::Running.is_terminal());
+        assert!(JobStatus::Completed.is_terminal());
+        assert!(JobStatus::Failed.is_terminal());
+        assert!(JobStatus::Cancelled.is_terminal());
     }
 
     #[test]
-    fn test_job_status_transitions() {
-        let pending = JobStatus::pending();
-        let running = JobStatus::running();
-        let completed = JobStatus::completed();
-        let failed = JobStatus::failed();
-        let cancelled = JobStatus::cancelled();
+    fn test_valid_transitions() {
+        // Pending -> Running | Cancelled
+        assert!(JobStatus::Pending.can_transition_to(JobStatus::Running));
+        assert!(JobStatus::Pending.can_transition_to(JobStatus::Cancelled));
+        assert!(!JobStatus::Pending.can_transition_to(JobStatus::Completed));
 
-        // Pending transitions
-        assert!(pending.can_transition_to(&running));
-        assert!(pending.can_transition_to(&cancelled));
-        assert!(!pending.can_transition_to(&completed));
-        assert!(!pending.can_transition_to(&failed));
-
-        // Running transitions
-        assert!(running.can_transition_to(&completed));
-        assert!(running.can_transition_to(&failed));
-        assert!(running.can_transition_to(&cancelled));
-        assert!(!running.can_transition_to(&pending));
+        // Running -> Completed | Failed | Cancelled
+        assert!(JobStatus::Running.can_transition_to(JobStatus::Completed));
+        assert!(JobStatus::Running.can_transition_to(JobStatus::Failed));
+        assert!(JobStatus::Running.can_transition_to(JobStatus::Cancelled));
 
         // Terminal states cannot transition
-        assert!(!completed.can_transition_to(&pending));
-        assert!(!completed.can_transition_to(&running));
-        assert!(!failed.can_transition_to(&pending));
-        assert!(!cancelled.can_transition_to(&pending));
+        assert!(!JobStatus::Completed.can_transition_to(JobStatus::Pending));
+        assert!(!JobStatus::Failed.can_transition_to(JobStatus::Running));
+        assert!(!JobStatus::Cancelled.can_transition_to(JobStatus::Completed));
     }
 }

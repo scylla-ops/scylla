@@ -24,7 +24,8 @@ async fn test_create_pipeline_end_to_end() {
 
     // Execute the use case
     let request = CreatePipelineRequestDto {
-        content: PipelineContent::new("test pipeline content".to_string()).unwrap(),
+        content: PipelineContent::new("test pipeline content".to_string(), Default::default())
+            .unwrap(),
     };
 
     let result = create_pipeline_use_case.execute(request).await;

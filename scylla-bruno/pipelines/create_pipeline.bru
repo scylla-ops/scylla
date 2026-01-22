@@ -16,8 +16,96 @@ body:grpc {
   name: message 1
   content: '''
     {
-      "content": "pipeline content here"
+      "content": {
+      "name": "Full Stack Production Pipeline",
+      "stages": {
+        "1_lint_and_check": {
+          "description": "Validation du code et analyse statique",
+          "steps": [
+            {
+              "name": "Rust Lint",
+              "command": "cargo",
+              "args": ["clippy", "--", "-D", "warnings"]
+            },
+            {
+              "name": "Frontend Lint",
+              "command": "npm",
+              "args": ["run", "lint"]
+            },
+            {
+              "name": "Security Audit",
+              "command": "cargo",
+              "args": ["audit"]
+            }
+          ]
+        },
+        "2_testing_suite": {
+          "description": "Exécution des tests unitaires et d'intégration",
+          "steps": [
+            {
+              "name": "Backend Unit Tests",
+              "command": "cargo",
+              "args": ["test", "--lib"]
+            },
+            {
+              "name": "Frontend Unit Tests",
+              "command": "npm",
+              "args": ["test", "--", "--watchAll=false"]
+            },
+            {
+              "name": "E2E Testing",
+              "command": "cypress",
+              "args": ["run", "--browser", "chrome"]
+            }
+          ]
+        },
+        "3_build_artifacts": {
+          "description": "Compilation et création des images Docker",
+          "steps": [
+            {
+              "name": "Compile Backend",
+              "command": "cargo",
+              "args": ["build", "--release"]
+            },
+            {
+              "name": "Build Docker Image",
+              "command": "docker",
+              "args": [
+                "build",
+                "-t",
+                "registry.scylla.io/app:v1.2.0",
+                "."
+              ]
+            }
+          ]
+        },
+        "4_deployment": {
+          "description": "Déploiement sur l'infrastructure de production",
+          "steps": [
+            {
+              "name": "Push to Registry",
+              "command": "docker",
+              "args": ["push", "registry.scylla.io/app:v1.2.0"]
+            },
+            {
+              "name": "Update K8S Deployment",
+              "command": "kubectl",
+              "args": [
+                "set",
+                "image",
+                "deployment/scylla-app",
+                "app=registry.scylla.io/app:v1.2.0"
+              ]
+            },
+            {
+              "name": "Clean Up",
+              "command": "docker",
+              "args": ["image", "prune", "-f"]
+            }
+          ]
+        }
+      }
+    }
     }
   '''
 }
-

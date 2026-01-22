@@ -1,4 +1,7 @@
+use crate::domain::entities::{JobNodeExecution, PipelineNode};
+use crate::domain::value_objects::JobStatus;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use surrealdb::RecordId;
 use surrealdb::sql::Datetime;
 
@@ -87,19 +90,22 @@ pub struct ProjectUpdate {
 pub struct PipelineRecord {
     #[serde(skip_serializing)]
     pub id: RecordId,
-    pub content: String,
+    pub name: String,
+    pub nodes: Vec<PipelineNode>,
     pub created_at: Datetime,
     pub updated_at: Datetime,
 }
 
 #[derive(Debug, Serialize)]
 pub struct PipelineInsert {
-    pub content: String,
+    pub name: String,
+    pub nodes: Vec<PipelineNode>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct PipelineUpdate {
-    pub content: String,
+    pub name: String,
+    pub nodes: Vec<PipelineNode>,
 }
 
 /// Job database record
@@ -107,24 +113,32 @@ pub struct PipelineUpdate {
 pub struct JobRecord {
     #[serde(skip_serializing)]
     pub id: RecordId,
-    #[serde(skip_serializing)]
-    pub pipeline_id: RecordId,
-    pub status: String,
-    pub content: String,
+    pub pipeline_id: String,
+    pub status: JobStatus,
+    pub executions: HashMap<String, JobNodeExecutionRecord>,
     pub created_at: Datetime,
     pub updated_at: Datetime,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobNodeExecutionRecord {
+    pub node_id: String,
+    pub state: JobStatus,
+    pub started_at: Option<Datetime>,
+    pub finished_at: Option<Datetime>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct JobInsert {
-    pub pipeline_id: RecordId,
-    pub status: String,
-    pub content: String,
+    pub pipeline_id: String,
+    pub status: JobStatus,
+    pub executions: HashMap<String, JobNodeExecutionRecord>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct JobUpdate {
-    pub status: String,
+    pub status: JobStatus,
+    pub executions: HashMap<String, JobNodeExecutionRecord>,
 }
 
 /// User organization database record

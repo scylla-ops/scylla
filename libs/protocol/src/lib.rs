@@ -31,6 +31,14 @@ pub mod services {
         tonic::include_proto!("project");
     }
 
+    pub mod pipeline_def {
+        tonic::include_proto!("pipeline_def");
+    }
+
+    pub mod job_def {
+        tonic::include_proto!("job_def");
+    }
+
     pub const FILE_DESCRIPTOR_SET: &[u8] =
         tonic::include_file_descriptor_set!("services_descriptor");
 }

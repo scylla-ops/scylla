@@ -8,7 +8,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "proto/auth.proto",
         "proto/orchestrator.proto",
         "proto/pipeline.proto",
+        "proto/pipeline_def.proto",
         "proto/job.proto",
+        "proto/job_def.proto",
         "proto/organization.proto",
         "proto/project.proto",
     ];
