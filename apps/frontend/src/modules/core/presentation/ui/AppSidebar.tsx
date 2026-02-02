@@ -4,7 +4,7 @@ import * as React from 'react';
 import { AudioWaveform, Command, GalleryVerticalEnd, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@core/presentation/ui/NavMain';
-import { TeamSwitcher } from '@core/presentation/ui/TeamSwitcher';
+import { OrganisationSwitcher } from '@core/presentation/ui/OrganisationSwitcher';
 import {
   Sidebar,
   SidebarContent,
@@ -21,21 +21,21 @@ const data = {
     email: 'm@example.com',
     avatar: '/avatars/shadcn.jpg',
   },
-  teams: [
+  organisations: [
     {
-      name: 'Acme Inc',
+      name: 'Alpha',
       logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
+      description: 'Enterprise',
     },
     {
-      name: 'Acme Corp.',
+      name: 'Beta',
       logo: AudioWaveform,
-      plan: 'Startup',
+      description: 'Startup',
     },
     {
-      name: 'Evil Corp.',
+      name: 'Zeta',
       logo: Command,
-      plan: 'Free',
+      description: 'Free',
     },
   ],
   navMain: [
@@ -79,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible='icon' {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <OrganisationSwitcher organisations={data.organisations} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

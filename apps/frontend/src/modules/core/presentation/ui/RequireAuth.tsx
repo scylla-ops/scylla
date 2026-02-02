@@ -3,7 +3,11 @@ import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
 
 export const RequireAuth = () => {
   const deps = useDependencies();
-  const token = deps.core.getTokenUseCase.execute();
+  let token = deps.core.getTokenUseCase.execute();
+
+  if (!token && import.meta.env.DEV) {
+    token = 'dev-mock-token';
+  }
 
   if (!token) {
     console.log('notoken');
