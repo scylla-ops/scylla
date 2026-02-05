@@ -69,4 +69,4 @@ define_id!(PipelineId, "pipelines");
 define_id!(JobId, "jobs");
 define_id!(UserOrganizationId, "user_organization");
 define_id!(UserProjectId, "user_project");
-define_id!(BlacklistId, "blacklist");
+define_id!(SessionId, "sessions");
