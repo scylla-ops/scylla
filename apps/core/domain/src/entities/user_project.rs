@@ -3,9 +3,10 @@ use crate::errors::DomainResult;
 use crate::value_objects::user_project::UserProjectRole;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
+use serde::{Deserialize, Serialize};
 
 /// UserProject domain entity
-#[derive(Debug, Clone, Constructor)]
+#[derive(Debug, Clone, Constructor, Serialize, Deserialize)]
 pub struct UserProject {
     id: UserProjectId,
     user_id: UserId,
