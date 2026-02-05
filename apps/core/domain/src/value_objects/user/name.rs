@@ -32,14 +32,6 @@ impl UserName {
     }
 }
 
-impl TryFrom<String> for UserName {
-    type Error = DomainError;
-
-    fn try_from(value: String) -> DomainResult<Self> {
-        UserName::new(value)
-    }
-}
-
 impl UserName {
     /// Get the username as a string slice
     pub fn as_str(&self) -> &str {
@@ -92,40 +84,40 @@ mod tests {
 
     #[test]
     fn test_username_creation() {
-        assert!(UserName::try_from("valid_user".to_string()).is_ok());
-        assert!(UserName::try_from("  valid_user  ".to_string()).is_ok()); // trimming
-        assert!(UserName::try_from("".to_string()).is_err()); // empty
-        assert!(UserName::try_from("   ".to_string()).is_err()); // whitespace only
+        assert!(UserName::new("valid_user").is_ok());
+        assert!(UserName::new("  valid_user  ").is_ok()); // trimming
+        assert!(UserName::new("").is_err()); // empty
+        assert!(UserName::new("   ").is_err()); // whitespace only
     }
 
     #[test]
     fn test_username_validation() {
         // Valid usernames
-        assert!(UserName::try_from("user123".to_string()).is_ok());
-        assert!(UserName::try_from("A".to_string()).is_ok());
+        assert!(UserName::new("user123").is_ok());
+        assert!(UserName::new("A").is_ok());
 
         // Invalid usernames
-        assert!(UserName::try_from("".to_string()).is_err());
-        assert!(UserName::try_from("   ".to_string()).is_err());
+        assert!(UserName::new("").is_err());
+        assert!(UserName::new("   ").is_err());
 
         // Too long
         let long_username = "a".repeat(MAX_USERNAME_LENGTH + 1);
-        assert!(UserName::try_from(long_username).is_err());
+        assert!(UserName::new(long_username).is_err());
 
         // Exactly max length should be ok
         let max_username = "a".repeat(MAX_USERNAME_LENGTH);
-        assert!(UserName::try_from(max_username).is_ok());
+        assert!(UserName::new(max_username).is_ok());
     }
 
     #[test]
     fn test_username_trimming() {
-        let username = UserName::try_from("  myuser  ".to_string()).unwrap();
+        let username = UserName::new("  myuser  ").unwrap();
         assert_eq!(username.as_str(), "myuser");
     }
 
     #[test]
     fn test_username_comparison() {
-        let username = UserName::try_from("myuser".to_string()).unwrap();
+        let username = UserName::new("myuser").unwrap();
         assert_eq!(username, "myuser");
         assert_eq!(username.as_str(), "myuser");
     }
