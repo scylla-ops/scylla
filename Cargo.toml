@@ -2,8 +2,12 @@
 resolver = "3"
 members = [
     "apps/core",
+    "apps/core/domain",
+    "apps/core/application",
+    "apps/core/infrastructure",
+    "apps/core/interfaces",
     # "apps/server",
-    "apps/tui",
+    # "apps/tui",
     # "apps/agent",
     "libs/protocol",
     "libs/surreal-casbin-adapter",
