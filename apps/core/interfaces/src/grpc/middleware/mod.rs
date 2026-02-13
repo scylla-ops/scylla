@@ -1,5 +1,3 @@
 pub mod auth_interceptor;
 
-pub use auth_interceptor::{
-    AuthContext, auth_interceptor, check_permissions, extract_auth_context,
-};
+pub use auth_interceptor::{AuthContext, auth_interceptor, extract_auth_context, validate_token};

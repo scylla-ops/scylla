@@ -15,12 +15,6 @@ pub trait SessionRepository: Send + Sync {
     /// Delete a session by its token (logout)
     fn delete_by_token(&self, token: &str) -> impl Future<Output = DomainResult<()>> + Send;
 
-    /// Delete all sessions for a user (logout everywhere)
-    fn delete_all_for_user(
-        &self,
-        user_id: &UserId,
-    ) -> impl Future<Output = DomainResult<u64>> + Send;
-
     /// Delete all expired sessions
     fn delete_expired(&self) -> impl Future<Output = DomainResult<u64>> + Send;
 

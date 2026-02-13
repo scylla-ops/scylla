@@ -1,6 +1,6 @@
 use derive_more::Constructor;
 use domain::entities::UserId;
-/// Authentication interceptor for gRPC services
+use domain::ports::SessionRepository;
 use std::sync::Arc;
 use tonic::{Request, Status};
 
@@ -29,29 +29,43 @@ fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {
     ))
 }
 
-/// Tonic interceptor that validates tokens and attaches auth context to requests
-/// This runs before each handler method and validates the bearer token
-pub fn auth_interceptor(
-    container: Arc<AppContainer>,
+/// Tonic interceptor that validates session tokens and attaches auth context to requests.
+/// This runs before each handler method and validates the bearer token against the session repository.
+///
+/// # Type Parameters
+/// * `S` - A type implementing `SessionRepository`
+///
+/// # Arguments
+/// * `session_repo` - Arc-wrapped session repository for looking up sessions
+///
+/// # Returns
+/// A closure that can be used as a tonic interceptor
+pub fn auth_interceptor<S: SessionRepository + 'static>(
+    session_repo: Arc<S>,
 ) -> impl Fn(Request<()>) -> Result<Request<()>, Status> + Clone {
     move |mut req: Request<()>| {
-        // Extract and validate token
+        // Extract bearer token from request
         let token = extract_bearer_token(&req)?;
 
         // Validate token and extract user_id synchronously by blocking on the async operation
         // Note: This is necessary because tonic interceptors are sync functions
-        let auth_service = container.auth_service();
+        let session_repo = session_repo.clone();
         let user_id = tokio::task::block_in_place(|| {
             tokio::runtime::Handle::current().block_on(async {
-                // First validate the token
-                auth_service.validate_token(&token).await.map_err(|e| {
-                    Status::unauthenticated(format!("Token validation failed: {}", e))
-                })?;
+                // Find session by token
+                let session = session_repo
+                    .find_by_token(&token)
+                    .await
+                    .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
 
-                // Then extract the user_id
-                auth_service.extract_user_id(&token).await.map_err(|e| {
-                    Status::unauthenticated(format!("Failed to extract user_id: {}", e))
-                })
+                // Check if session is expired
+                if session.is_expired() {
+                    // Attempt to clean up expired session (don't fail if cleanup fails)
+                    let _ = session_repo.delete_by_token(&token).await;
+                    return Err(Status::unauthenticated("Token has expired"));
+                }
+
+                Ok(session.user_id().clone())
             })
         })?;
 
@@ -62,8 +76,14 @@ pub fn auth_interceptor(
     }
 }
 
-/// Extract authenticated user context from request
-/// Does not check permissions, just extracts the authenticated user ID
+/// Extract authenticated user context from request.
+/// Does not check permissions, just extracts the authenticated user ID.
+///
+/// # Arguments
+/// * `request` - The gRPC request to extract auth context from
+///
+/// # Returns
+/// The `AuthContext` if present, or an error status if the interceptor wasn't configured
 pub fn extract_auth_context<T>(request: &Request<T>) -> Result<AuthContext, Status> {
     request
         .extensions()
@@ -74,30 +94,33 @@ pub fn extract_auth_context<T>(request: &Request<T>) -> Result<AuthContext, Stat
         .map(|ctx| ctx.clone())
 }
 
-/// Check RBAC permissions for an authenticated request
-/// Extracts the pre-validated AuthContext from request extensions and checks permissions
-pub async fn check_permissions<T>(
-    request: &Request<T>,
-    rbac_enforcer: Arc<dyn RbacEnforcer>,
-    domain: &str,
-    resource: &str,
-    action: &str,
-) -> Result<AuthContext, Status> {
-    // Get the auth context that was set by the interceptor
-    let auth_ctx = extract_auth_context(request)?;
-
-    // Check permissions
-    let allowed = rbac_enforcer
-        .enforce(&auth_ctx.user_id, domain, resource, action)
-        .await
-        .map_err(|e| Status::internal(format!("Permission check failed: {}", e)))?;
-
-    if !allowed {
-        return Err(Status::permission_denied(format!(
-            "User does not have permission to {} {} in domain {}",
-            action, resource, domain
-        )));
+/// Validate a token directly without going through the interceptor.
+/// Useful for endpoints that need to validate tokens programmatically.
+///
+/// # Arguments
+/// * `session_repo` - The session repository to use for validation
+/// * `token` - The token to validate
+///
+/// # Returns
+/// The user ID if the token is valid, or an error status
+pub async fn validate_token<S: SessionRepository>(
+    session_repo: &S,
+    token: &str,
+) -> Result<UserId, Status> {
+    if token.is_empty() {
+        return Err(Status::unauthenticated("Token cannot be empty"));
     }
 
-    Ok(auth_ctx)
+    let session = session_repo
+        .find_by_token(token)
+        .await
+        .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
+
+    if session.is_expired() {
+        // Attempt to clean up expired session
+        let _ = session_repo.delete_by_token(token).await;
+        return Err(Status::unauthenticated("Token has expired"));
+    }
+
+    Ok(session.user_id().clone())
 }

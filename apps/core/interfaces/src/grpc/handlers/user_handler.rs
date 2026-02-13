@@ -1,187 +1,125 @@
-use crate::grpc::services::services::user::*;
+use crate::grpc::mappers::{
+    domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
+};
+use crate::grpc::services::services::user::{
+    CreateUserRequest, DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest,
+    ListUsersResponse, UpdateUserRequest, UserResponse, user_service_server::UserService,
+};
+use application::UserUseCases;
 use derive_more::Constructor;
+use domain::entities::UserId;
+use domain::ports::{HashService, UserRepository};
+use domain::value_objects::user::{Password, UserName};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct UserHandler {
-    container: Arc<AppContainer>,
+pub struct UserHandler<U: UserRepository, H: HashService> {
+    use_cases: Arc<UserUseCases<U, H>>,
 }
 
 #[async_trait::async_trait]
-impl user_service_server::UserService for UserHandler {
+impl<U: UserRepository + 'static, H: HashService + 'static> UserService for UserHandler<U, H> {
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,
     ) -> Result<Response<UserResponse>, Status> {
-        // Check RBAC permissions for creating users (admin only)
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     "*",
-        //     "users",
-        //     "create",
-        // )
-        // .await?;
-
         let req = request.into_inner();
 
-        let dto = CreateUserRequestDto {
-            username: Username::try_from(req.username)?,
-            password: Password::try_from(req.password)?,
-        };
+        let username = UserName::new(&req.username).map_err(domain_error_to_status)?;
+        let password = Password::new(&req.password).map_err(domain_error_to_status)?;
 
-        let response = self.container.create_user_use_case().execute(dto).await?;
+        let user = self
+            .use_cases
+            .create(username, password)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(response.into()))
+        Ok(Response::new(user_to_proto(&user)))
     }
 
     async fn get_user(
         &self,
         request: Request<GetUserRequest>,
     ) -> Result<Response<UserResponse>, Status> {
-        // let user_id = &request.get_ref().user_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     user_id,
-        //     "users",
-        //     "read",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = GetUserRequestDto {
-            user_id: UserId::new(req.user_id),
-        };
+        let user_id = UserId::new(&req.user_id);
 
-        let response = self.container.get_user_use_case().execute(dto).await?;
+        let user = self
+            .use_cases
+            .get(&user_id)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(response.into()))
+        Ok(Response::new(user_to_proto(&user)))
     }
 
     async fn update_user(
         &self,
         request: Request<UpdateUserRequest>,
     ) -> Result<Response<UserResponse>, Status> {
-        // let user_id = &request.get_ref().user_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     user_id,
-        //     "users",
-        //     "update",
-        // )
-        // .await?;
-
         let req = request.into_inner();
+        let user_id = UserId::new(&req.user_id);
 
-        // Convert optional string fields to optional value objects
-        let dto = UpdateUserRequestDto {
-            user_id: UserId::new(req.user_id),
-            username: req
-                .username
-                .filter(|s| !s.is_empty())
-                .map(Username::try_from)
-                .transpose()?,
-        };
+        let username = req
+            .username
+            .map(|u| UserName::new(&u))
+            .transpose()
+            .map_err(domain_error_to_status)?;
 
-        let response = self.container.update_user_use_case().execute(dto).await?;
+        let user = self
+            .use_cases
+            .update(&user_id, username)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(response.into()))
+        Ok(Response::new(user_to_proto(&user)))
     }
 
     async fn delete_user(
         &self,
         request: Request<DeleteUserRequest>,
     ) -> Result<Response<DeleteUserResponse>, Status> {
-        // let user_id = &request.get_ref().user_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     user_id,
-        //     "users",
-        //     "delete",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = DeleteUserRequestDto {
-            user_id: UserId::new(req.user_id),
-        };
+        let user_id = UserId::new(&req.user_id);
 
-        let _response = self.container.delete_user_use_case().execute(dto).await?;
+        self.use_cases
+            .delete(&user_id)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(DeleteUserResponse::default()))
+        Ok(Response::new(DeleteUserResponse {}))
     }
 
     async fn list_users(
         &self,
         request: Request<ListUsersRequest>,
     ) -> Result<Response<ListUsersResponse>, Status> {
-        // Check RBAC permissions for listing all users
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     "*",
-        //     "users",
-        //     "read",
-        // )
-        // .await?;
-
         let req = request.into_inner();
         let pagination = proto_to_domain_pagination(req.pagination);
 
-        let response = self
-            .container
-            .list_users_use_case()
-            .execute(ListUsersRequestDto { pagination })
-            .await?;
+        let result = self
+            .use_cases
+            .list(pagination.as_ref())
+            .await
+            .map_err(domain_error_to_status)?;
 
-        let users: Vec<UserResponse> = response.users.into_iter().map(Into::into).collect();
-        let pagination = response.pagination.map(domain_to_proto_metadata);
+        let (users, metadata) = result.into_parts();
+        let user_responses: Vec<UserResponse> = users.iter().map(user_to_proto).collect();
 
-        Ok(Response::new(ListUsersResponse { users, pagination }))
+        Ok(Response::new(ListUsersResponse {
+            users: user_responses,
+            pagination: Some(domain_to_proto_metadata(&metadata)),
+        }))
     }
 
     async fn change_user_global_role(
         &self,
-        request: Request<ChangeUserGlobalRoleRequest>,
-    ) -> Result<Response<ChangeUserGlobalRoleResponse>, Status> {
-        // Check RBAC permissions for changing global roles (admin only)
-        let auth_ctx = check_permissions(
-            &request,
-            self.container.rbac_enforcer(),
-            "*",
-            "users",
-            "update",
-        )
-        .await?;
-
-        let req = request.into_inner();
-        let new_role = UserGlobalRole::new(req.new_role)?;
-
-        let dto = ChangeUserGlobalRoleRequestDto {
-            user_id: UserId::new(req.user_id),
-            new_role,
-            caller_id: Some(auth_ctx.user_id),
-        };
-
-        let response = self
-            .container
-            .change_user_global_role_use_case()
-            .execute(dto)
-            .await?;
-
-        Ok(Response::new(ChangeUserGlobalRoleResponse {
-            user_id: response.user_id.to_string(),
-            new_role: response.new_role.to_string(),
-        }))
+        _request: Request<crate::grpc::services::services::user::ChangeUserGlobalRoleRequest>,
+    ) -> Result<Response<crate::grpc::services::services::user::ChangeUserGlobalRoleResponse>, Status>
+    {
+        Err(Status::unimplemented(
+            "Global role management requires RBAC configuration",
+        ))
     }
 }

@@ -5,11 +5,18 @@ edition = "2024"
 
 [dependencies]
 domain = { path = "../domain" }
+application = { path = "../application" }
+infrastructure = { path = "../infrastructure" }
 tonic = { version = "0.14.2", features = ["server"] }
+tonic-prost = "0.14"
+prost = "0.14"
 log = "0.4.28"
 derive_more = { version = "2.1.1", features = ["constructor"] }
 async-trait = "0.1.89"
 toml = "0.9.8"
+tokio = { version = "1", features = ["full"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
 
 [build-dependencies]
 tonic-prost-build = "0.14.2"

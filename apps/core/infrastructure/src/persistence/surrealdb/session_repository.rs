@@ -80,41 +80,6 @@ impl SessionRepository for SurrealSessionRepository {
         }
     }
 
-    fn delete_all_for_user(
-        &self,
-        user_id: &UserId,
-    ) -> impl Future<Output = DomainResult<u64>> + Send {
-        let db = self.db.clone();
-        let user_id_str = user_id.to_string();
-        let table = SessionId::table_name().to_string();
-        async move {
-            // First count how many we'll delete
-            let count_result: Vec<serde_json::Value> = db
-                .query("SELECT count() FROM type::table($table) WHERE user_id = $user_id GROUP ALL")
-                .bind(("table", table.clone()))
-                .bind(("user_id", user_id_str.clone()))
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
-                .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
-
-            let count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
-
-            // Then delete
-            db.query("DELETE FROM type::table($table) WHERE user_id = $user_id")
-                .bind(("table", table))
-                .bind(("user_id", user_id_str))
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
-
-            Ok(count)
-        }
-    }
-
     fn delete_expired(&self) -> impl Future<Output = DomainResult<u64>> + Send {
         let db = self.db.clone();
         let table = SessionId::table_name().to_string();

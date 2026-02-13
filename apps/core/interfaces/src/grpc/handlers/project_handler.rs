@@ -1,204 +1,149 @@
-use crate::grpc::services::services::project::*;
+use crate::grpc::mappers::{
+    domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
+};
+use crate::grpc::services::services::project::{
+    AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
+    DeleteProjectResponse, GetProjectRequest, ListProjectUsersRequest, ListProjectUsersResponse,
+    ListProjectsRequest, ListProjectsResponse, ListUserProjectsRequest, ProjectResponse,
+    ProjectUserInfoResponse, RemoveUserFromProjectRequest, RemoveUserFromProjectResponse,
+    ToggleProjectActiveRequest, ToggleProjectActiveResponse, UpdateProjectRequest,
+    project_service_server::ProjectService,
+};
+use application::ProjectUseCases;
 use derive_more::Constructor;
+use domain::entities::{OrganizationId, ProjectId, UserId};
+use domain::ports::{ProjectRepository, UserProjectRepository, UserRepository};
+use domain::value_objects::project::{ProjectDescription, ProjectName};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct ProjectHandler {
-    container: Arc<AppContainer>,
+pub struct ProjectHandler<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> {
+    use_cases: Arc<ProjectUseCases<P, UP, U>>,
 }
 
 #[async_trait::async_trait]
-impl project_service_server::ProjectService for ProjectHandler {
+impl<
+    P: ProjectRepository + 'static,
+    UP: UserProjectRepository + 'static,
+    U: UserRepository + 'static,
+> ProjectService for ProjectHandler<P, UP, U>
+{
     async fn create_project(
         &self,
         request: Request<CreateProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
-        // Get organization_id from request to use as domain for RBAC
-        // let org_id = &request.get_ref().organization_id;
-
-        // Check RBAC permissions (token already validated by interceptor)
-        let auth_ctx = check_permissions(
-            &request,
-            self.container.rbac_enforcer(),
-            "*", // should be 'org_id' !!!!
-            "projects",
-            "create",
-        )
-        .await?;
-
         let req = request.into_inner();
-        let dto = CreateProjectRequestDto {
-            name: ProjectName::new(req.name)?,
-            description: req.description.map(|s| Description::new(s)).transpose()?,
-            organization_id: OrganizationId::new(req.organization_id),
-            creator_id: auth_ctx.user_id,
-        };
 
-        let response = self
-            .container
-            .create_project_use_case()
-            .execute(dto)
-            .await?;
+        let name = ProjectName::new(&req.name).map_err(domain_error_to_status)?;
+        let description = req
+            .description
+            .map(|d| ProjectDescription::new(&d))
+            .transpose()
+            .map_err(domain_error_to_status)?;
+        let organization_id = OrganizationId::new(&req.organization_id);
 
-        Ok(Response::new(response.into()))
+        let project = self
+            .use_cases
+            .create(name, description, organization_id)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(project_to_proto(&project)))
     }
 
     async fn get_project(
         &self,
         request: Request<GetProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
-        // let project_id = &request.get_ref().project_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     project_id,
-        //     "projects",
-        //     "read",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = GetProjectRequestDto {
-            project_id: ProjectId::new(req.project_id),
-        };
+        let id = ProjectId::new(&req.project_id);
 
-        let response = self.container.get_project_use_case().execute(dto).await?;
+        let project = self
+            .use_cases
+            .get(&id)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(response.into()))
+        Ok(Response::new(project_to_proto(&project)))
     }
 
     async fn update_project(
         &self,
         request: Request<UpdateProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
-        // let project_id = &request.get_ref().project_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     project_id,
-        //     "projects",
-        //     "update",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = UpdateProjectRequestDto {
-            project_id: ProjectId::new(req.project_id),
-            name: req
-                .name
-                .filter(|s| !s.is_empty())
-                .map(|s| ProjectName::new(s))
-                .transpose()?,
-            description: req
-                .description
-                .filter(|s| !s.is_empty())
-                .map(Description::new)
-                .transpose()?,
-        };
+        let id = ProjectId::new(&req.project_id);
 
-        let response = self
-            .container
-            .update_project_use_case()
-            .execute(dto)
-            .await?;
+        let name = req
+            .name
+            .map(|n| ProjectName::new(&n))
+            .transpose()
+            .map_err(domain_error_to_status)?;
+        let description = req
+            .description
+            .map(|d| ProjectDescription::new(&d).map(Some))
+            .transpose()
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(response.into()))
+        let project = self
+            .use_cases
+            .update(&id, name, description)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(project_to_proto(&project)))
     }
 
     async fn toggle_project_active(
         &self,
         request: Request<ToggleProjectActiveRequest>,
     ) -> Result<Response<ToggleProjectActiveResponse>, Status> {
-        // let project_id = &request.get_ref().project_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     project_id,
-        //     "projects",
-        //     "update",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = ToggleProjectActiveRequestDto {
-            project_id: ProjectId::new(req.project_id),
-        };
+        let id = ProjectId::new(&req.project_id);
 
-        let _response = self
-            .container
-            .toggle_project_active_use_case()
-            .execute(dto)
-            .await?;
+        self.use_cases
+            .toggle_active(&id)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(ToggleProjectActiveResponse::default()))
+        Ok(Response::new(ToggleProjectActiveResponse {}))
     }
 
     async fn delete_project(
         &self,
         request: Request<DeleteProjectRequest>,
     ) -> Result<Response<DeleteProjectResponse>, Status> {
-        // let project_id = &request.get_ref().project_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     project_id,
-        //     "projects",
-        //     "delete",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = DeleteProjectRequestDto {
-            project_id: ProjectId::new(req.project_id),
-        };
+        let id = ProjectId::new(&req.project_id);
 
-        let _response = self
-            .container
-            .delete_project_use_case()
-            .execute(dto)
-            .await?;
+        self.use_cases
+            .delete(&id)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(DeleteProjectResponse::default()))
+        Ok(Response::new(DeleteProjectResponse {}))
     }
 
     async fn list_projects(
         &self,
         request: Request<ListProjectsRequest>,
     ) -> Result<Response<ListProjectsResponse>, Status> {
-        // Check RBAC permissions for listing all projects
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     "*",
-        //     "projects",
-        //     "read",
-        // )
-        // .await?;
-
         let req = request.into_inner();
         let pagination = proto_to_domain_pagination(req.pagination);
 
-        let response = self
-            .container
-            .list_projects_use_case()
-            .execute(ListProjectsRequestDto { pagination })
-            .await?;
+        let result = self
+            .use_cases
+            .list(pagination.as_ref())
+            .await
+            .map_err(domain_error_to_status)?;
 
-        let projects = response.projects.into_iter().map(Into::into).collect();
-        let pagination = response.pagination.map(domain_to_proto_metadata);
+        let (projects, metadata) = result.into_parts();
+        let projects: Vec<ProjectResponse> = projects.iter().map(project_to_proto).collect();
 
         Ok(Response::new(ListProjectsResponse {
             projects,
-            pagination,
+            pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
 
@@ -206,38 +151,29 @@ impl project_service_server::ProjectService for ProjectHandler {
         &self,
         request: Request<ListProjectUsersRequest>,
     ) -> Result<Response<ListProjectUsersResponse>, Status> {
-        // let project_id = &request.get_ref().project_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     project_id,
-        //     "projects",
-        //     "read",
-        // )
-        // .await?;
-
         let req = request.into_inner();
+        let project_id = ProjectId::new(&req.project_id);
         let pagination = proto_to_domain_pagination(req.pagination);
 
-        let dto = ListProjectUsersRequestDto {
-            project_id: ProjectId::new(req.project_id),
-            pagination,
-        };
+        let (pairs, metadata) = self
+            .use_cases
+            .list_users(&project_id, pagination.as_ref())
+            .await
+            .map_err(domain_error_to_status)?;
 
-        let response = self
-            .container
-            .list_project_users_use_case()
-            .execute(dto)
-            .await?;
-
-        let users = response.users.into_iter().map(Into::into).collect();
-        let pagination = response.pagination.map(domain_to_proto_metadata);
+        let users = pairs
+            .iter()
+            .map(|(user, membership)| ProjectUserInfoResponse {
+                user_id: user.id().to_string(),
+                username: user.username().to_string(),
+                role: membership.role().as_str().to_string(),
+                joined_at: membership.joined_at().to_rfc3339(),
+            })
+            .collect();
 
         Ok(Response::new(ListProjectUsersResponse {
             users,
-            pagination,
+            pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
 
@@ -245,36 +181,21 @@ impl project_service_server::ProjectService for ProjectHandler {
         &self,
         request: Request<ListUserProjectsRequest>,
     ) -> Result<Response<ListProjectsResponse>, Status> {
-        // Check RBAC permissions for listing user projects
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     "*",
-        //     "projects",
-        //     "read",
-        // )
-        // .await?;
-
         let req = request.into_inner();
+        let user_id = UserId::new(&req.user_id);
         let pagination = proto_to_domain_pagination(req.pagination);
 
-        let dto = ListUserProjectsRequestDto {
-            user_id: UserId::new(req.user_id),
-            pagination,
-        };
+        let (projects, metadata) = self
+            .use_cases
+            .list_user_projects(&user_id, pagination.as_ref())
+            .await
+            .map_err(domain_error_to_status)?;
 
-        let response = self
-            .container
-            .list_user_projects_use_case()
-            .execute(dto)
-            .await?;
-
-        let projects = response.projects.into_iter().map(Into::into).collect();
-        let pagination = response.pagination.map(domain_to_proto_metadata);
+        let projects: Vec<ProjectResponse> = projects.iter().map(project_to_proto).collect();
 
         Ok(Response::new(ListProjectsResponse {
             projects,
-            pagination,
+            pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
 
@@ -282,33 +203,18 @@ impl project_service_server::ProjectService for ProjectHandler {
         &self,
         request: Request<AddUserToProjectRequest>,
     ) -> Result<Response<AddUserToProjectResponse>, Status> {
-        // let project_id = &request.get_ref().project_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     project_id,
-        //     "projects",
-        //     "update",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = AddUserToProjectRequestDto {
-            user_id: UserId::new(req.user_id),
-            project_id: ProjectId::new(req.project_id),
-            role: UserProjectRole::new(req.role)?,
-        };
+        let user_id = UserId::new(&req.user_id);
+        let project_id = ProjectId::new(&req.project_id);
 
-        let response = self
-            .container
-            .add_user_to_project_use_case()
-            .execute(dto)
-            .await?;
+        let relation_id = self
+            .use_cases
+            .add_user(&user_id, &project_id, &req.role)
+            .await
+            .map_err(domain_error_to_status)?;
 
         Ok(Response::new(AddUserToProjectResponse {
-            relation_id: response.relation_id.to_string(),
+            relation_id: relation_id.to_string(),
         }))
     }
 
@@ -316,30 +222,15 @@ impl project_service_server::ProjectService for ProjectHandler {
         &self,
         request: Request<RemoveUserFromProjectRequest>,
     ) -> Result<Response<RemoveUserFromProjectResponse>, Status> {
-        // let project_id = &request.get_ref().project_id;
-
-        // Check RBAC permissions
-        // check_permissions(
-        //     &request,
-        //     self.container.rbac_enforcer(),
-        //     project_id,
-        //     "projects",
-        //     "update",
-        // )
-        // .await?;
-
         let req = request.into_inner();
-        let dto = RemoveUserFromProjectRequestDto {
-            user_id: UserId::new(req.user_id),
-            project_id: ProjectId::new(req.project_id),
-        };
+        let user_id = UserId::new(&req.user_id);
+        let project_id = ProjectId::new(&req.project_id);
 
-        let _response = self
-            .container
-            .remove_user_from_project_use_case()
-            .execute(dto)
-            .await?;
+        self.use_cases
+            .remove_user(&user_id, &project_id)
+            .await
+            .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(RemoveUserFromProjectResponse::default()))
+        Ok(Response::new(RemoveUserFromProjectResponse {}))
     }
 }
