@@ -2,8 +2,9 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
 };
 use protocol::services::user::{
-    CreateUserRequest, DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest,
-    ListUsersResponse, UpdateUserRequest, UserResponse, user_service_server::UserService,
+    ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest, DeleteUserRequest,
+    DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse, UpdateUserRequest,
+    UserResponse, user_service_server::UserService,
 };
 use application::UserUseCases;
 use derive_more::Constructor;
@@ -115,8 +116,8 @@ impl<U: UserRepository + 'static, H: HashService + 'static> UserService for User
 
     async fn change_user_global_role(
         &self,
-        _request: Request<protocol::services::user::ChangeUserGlobalRoleRequest>,
-    ) -> Result<Response<protocol::services::user::ChangeUserGlobalRoleResponse>, Status>
+        _request: Request<ChangeUserGlobalRoleRequest>,
+    ) -> Result<Response<ChangeUserGlobalRoleResponse>, Status>
     {
         Err(Status::unimplemented(
             "Global role management requires RBAC configuration",

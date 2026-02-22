@@ -5,6 +5,7 @@ use protocol::services::auth::{
 };
 use application::AuthUseCases;
 use derive_more::Constructor;
+use domain::entities::UserId;
 use domain::ports::{HashService, SessionRepository, UserRepository};
 use domain::value_objects::user::{Password, UserName};
 use std::sync::Arc;
@@ -86,7 +87,7 @@ impl<U: UserRepository, S: SessionRepository, H: HashService> AuthHandler<U, S, 
     pub async fn get_user_id_from_token(
         &self,
         token: &str,
-    ) -> Result<domain::entities::UserId, Status> {
+    ) -> Result<UserId, Status> {
         if token.is_empty() {
             return Err(Status::unauthenticated("Token cannot be empty"));
         }
