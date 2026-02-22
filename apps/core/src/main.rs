@@ -27,6 +27,7 @@ use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use tonic::transport::Server;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Scylla Core gRPC server")]
@@ -45,7 +46,7 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
         CoreConfig::from_file(config_path)
             .with_context(|| format!("Failed to load configuration from {}", config_path))
     } else {
-        log::info!("No configuration file provided, using defaults");
+        tracing::info!("No configuration file provided, using defaults");
         Ok(CoreConfig::default())
     }
 }
@@ -53,7 +54,6 @@ fn load_config(args: &Args) -> Result<CoreConfig> {
 fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
     let mut layer = CorsLayer::new();
 
-    // Origins
     if cors.allow_origins.iter().any(|o| o == "*") {
         layer = layer.allow_origin(tower_http::cors::Any);
     } else {
@@ -65,7 +65,6 @@ fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
         layer = layer.allow_origin(origins);
     }
 
-    // Methods
     let methods: Vec<Method> = cors
         .allow_methods
         .iter()
@@ -73,7 +72,6 @@ fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
         .collect();
     layer = layer.allow_methods(methods);
 
-    // Headers
     let headers: Vec<HeaderName> = cors
         .allow_headers
         .iter()
@@ -81,7 +79,6 @@ fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
         .collect();
     layer = layer.allow_headers(headers);
 
-    // Max age
     layer = layer.max_age(std::time::Duration::from_secs(cors.max_age_seconds));
 
     layer
@@ -96,14 +93,14 @@ async fn bootstrap_admin<U: domain::ports::UserRepository, H: domain::ports::Has
 
     match user_uc.create(username, password).await {
         Ok(user) => {
-            log::info!(
+            tracing::info!(
                 "Bootstrap user '{}' created (id: {})",
                 bootstrap.username,
                 user.id()
             );
         }
         Err(DomainError::Conflict(_)) => {
-            log::debug!(
+            tracing::debug!(
                 "Bootstrap user '{}' already exists, skipping",
                 bootstrap.username
             );
@@ -116,7 +113,9 @@ async fn bootstrap_admin<U: domain::ports::UserRepository, H: domain::ports::Has
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
     let args = Args::parse();
 
     if args.print_example_config {
@@ -125,25 +124,24 @@ async fn main() {
     }
 
     if let Err(e) = run(args).await {
-        log::error!("Application error: {:#}", e);
+        tracing::error!("Application error: {:#}", e);
         std::process::exit(1);
     }
 }
 
 async fn run(args: Args) -> Result<()> {
     let config = load_config(&args)?;
-    log::debug!("Configuration: {:#?}", config);
+    tracing::debug!("Configuration: {:#?}", config);
 
     let db_config = &config.database;
 
-    // Connect to SurrealDB
     let db: Surreal<Any> = Surreal::init();
     db.connect(&db_config.url)
         .await
         .with_context(|| format!("Failed to connect to database at {}", db_config.url))?;
     db.signin(surrealdb::opt::auth::Root {
-        username: &db_config.username,
-        password: &db_config.password,
+        username: db_config.username.clone(),
+        password: db_config.password.clone(),
     })
     .await
     .context("Failed to authenticate with database")?;
@@ -151,9 +149,24 @@ async fn run(args: Args) -> Result<()> {
         .use_db(&db_config.database)
         .await
         .context("Failed to select namespace/database")?;
+
+    db.query(
+        "
+        DEFINE TABLE IF NOT EXISTS users SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS sessions SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS organizations SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS projects SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS user_organization SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS user_project SCHEMALESS;
+    ",
+    )
+    .await
+    .context("Failed to initialize database tables")?
+    .check()
+    .context("Database schema init returned an error")?;
+
     let db = Arc::new(db);
 
-    // Repositories
     let user_repo = Arc::new(SurrealUserRepository::new(db.clone()));
     let session_repo = Arc::new(SurrealSessionRepository::new(db.clone()));
     let org_repo = Arc::new(SurrealOrganizationRepository::new(db.clone()));
@@ -162,7 +175,6 @@ async fn run(args: Args) -> Result<()> {
     let user_project_repo = Arc::new(SurrealUserProjectRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
 
-    // Use cases
     let auth_uc = Arc::new(AuthUseCases::new(
         user_repo.clone(),
         session_repo.clone(),
@@ -180,28 +192,30 @@ async fn run(args: Args) -> Result<()> {
         user_repo.clone(),
     ));
 
-    // Bootstrap
     if let Some(bootstrap) = &config.bootstrap {
         bootstrap_admin(&user_uc, bootstrap).await?;
     }
 
-    // Handlers
     let auth_handler = AuthHandler::new(auth_uc);
     let user_handler = UserHandler::new(user_uc);
     let org_handler = OrganizationHandler::new(org_uc);
     let project_handler = ProjectHandler::new(project_uc);
 
-    // Auth interceptor
     let interceptor = auth_interceptor(session_repo);
-
-    // CORS
     let cors_layer = build_cors_layer(&config.cors);
 
-    // Serve
-    log::info!("gRPC server listening on {}", config.grpc.address);
+    tracing::info!("gRPC server listening on {}", config.grpc.address);
+
+    let reflection = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(
+            interfaces::grpc::services::services::FILE_DESCRIPTOR_SET,
+        )
+        .build_v1alpha()?;
 
     Server::builder()
+        .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
+        .add_service(reflection)
         .add_service(AuthServiceServer::new(auth_handler))
         .add_service(UserServiceServer::with_interceptor(
             user_handler,

@@ -1,7 +1,8 @@
 services:
   db:
-    image: surrealdb/surrealdb:latest-dev
+    image: surrealdb/surrealdb:v3.0.0
     container_name: surrealdb
+    user: "root"
     command:
       - start
       - --log=debug
@@ -21,19 +22,18 @@ services:
   core:
     build:
       context: .
-      dockerfile: apps/server/Dockerfile
+      dockerfile: apps/core/Dockerfile
     container_name: scylla-core
     depends_on:
       db-health:
         condition: service_completed_successfully
     ports:
-      - "50051:50051"   # gRPC
+      - "50051:50051" # gRPC
     environment:
       RUST_LOG: info
-    command: [ "--config", "/app/config/docker.toml" ]
+    command: ["--config", "/app/config/docker.toml"]
     volumes:
-      - ./apps/server/config:/app/config
-
+      - ./apps/core/config:/app/config
 
 volumes:
   db_data:
