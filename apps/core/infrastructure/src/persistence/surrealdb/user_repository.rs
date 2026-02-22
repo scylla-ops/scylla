@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use domain::entities::{User, UserId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::UserRepository;
@@ -18,103 +19,89 @@ impl SurrealUserRepository {
     }
 }
 
+#[async_trait]
 impl UserRepository for SurrealUserRepository {
-    fn create(&self, user: &User) -> impl Future<Output = DomainResult<User>> + Send {
+    async fn create(&self, user: &User) -> DomainResult<User> {
         let db = self.db.clone();
         let user = user.clone();
-        async move {
-            let created: Option<User> = db
-                .create(RecordId::new(UserId::table_name(), user.id().as_str()))
-                .content(user.clone())
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+        let created: Option<User> = db
+            .create(RecordId::new(UserId::table_name(), user.id().as_str()))
+            .content(user.clone())
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
-            created
-                .ok_or_else(|| DomainError::infrastructure("Create returned no record".to_string()))
-        }
+        created.ok_or_else(|| DomainError::infrastructure("Create returned no record".to_string()))
     }
 
-    fn find_by_id(&self, id: &UserId) -> impl Future<Output = DomainResult<User>> + Send {
+    async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
         let db = self.db.clone();
         let id = id.clone();
-        async move {
-            let result: Option<User> = db
-                .select(RecordId::new(UserId::table_name(), id.as_str()))
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+        let result: Option<User> = db
+            .select(RecordId::new(UserId::table_name(), id.as_str()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
-            result.ok_or_else(|| DomainError::not_found("User", id.to_string()))
-        }
+        result.ok_or_else(|| DomainError::not_found("User", id.to_string()))
     }
 
-    fn find_by_username(
-        &self,
-        username: &UserName,
-    ) -> impl Future<Output = DomainResult<User>> + Send {
+    async fn find_by_username(&self, username: &UserName) -> DomainResult<User> {
         let db = self.db.clone();
         let username_str = username.to_string();
         let table = UserId::table_name().to_string();
-        async move {
-            let mut results: Vec<User> = db
-                .query("SELECT * FROM type::table($table) WHERE username = $username LIMIT 1")
-                .bind(("table", table))
-                .bind(("username", username_str.clone()))
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
-                .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+        let mut results: Vec<User> = db
+            .query("SELECT * FROM type::table($table) WHERE username = $username LIMIT 1")
+            .bind(("table", table))
+            .bind(("username", username_str.clone()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            results
-                .pop()
-                .ok_or_else(|| DomainError::not_found("User", username_str))
-        }
+        results
+            .pop()
+            .ok_or_else(|| DomainError::not_found("User", username_str))
     }
 
-    fn update(&self, user: &User) -> impl Future<Output = DomainResult<User>> + Send {
+    async fn update(&self, user: &User) -> DomainResult<User> {
         let db = self.db.clone();
         let user = user.clone();
-        async move {
-            let updated: Option<User> = db
-                .update(RecordId::new(UserId::table_name(), user.id().as_str()))
-                .content(user.clone())
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+        let updated: Option<User> = db
+            .update(RecordId::new(UserId::table_name(), user.id().as_str()))
+            .content(user.clone())
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
-            updated.ok_or_else(|| DomainError::not_found("User", user.id().to_string()))
-        }
+        updated.ok_or_else(|| DomainError::not_found("User", user.id().to_string()))
     }
 
-    fn delete(&self, id: &UserId) -> impl Future<Output = DomainResult<()>> + Send {
+    async fn delete(&self, id: &UserId) -> DomainResult<()> {
         let db = self.db.clone();
         let id = id.clone();
-        async move {
-            db.delete::<Option<User>>(RecordId::new(UserId::table_name(), id.as_str()))
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+        db.delete::<Option<User>>(RecordId::new(UserId::table_name(), id.as_str()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
-            Ok(())
-        }
+        Ok(())
     }
 
-    fn list_all(
+    async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
-    ) -> impl Future<Output = DomainResult<PaginatedResult<User>>> + Send {
+    ) -> DomainResult<PaginatedResult<User>> {
         let db = self.db.clone();
         let params = pagination.cloned().unwrap_or_default();
         let table = UserId::table_name().to_string();
-        async move {
-            let count_result: Vec<i64> = db
-                .query("SELECT count() FROM type::table($table) GROUP ALL")
-                .bind(("table", table.clone()))
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take("count")
-                .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+        let count_result: Vec<i64> = db
+            .query("SELECT count() FROM type::table($table) GROUP ALL")
+            .bind(("table", table.clone()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take("count")
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result.first().copied().unwrap_or(0) as u64;
+        let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
-            let users: Vec<User> = db
+        let users: Vec<User> = db
                 .query("SELECT * FROM type::table($table) ORDER BY created_at DESC LIMIT $limit START $start")
                 .bind(("table", table))
                 .bind(("limit", params.limit()))
@@ -124,31 +111,23 @@ impl UserRepository for SurrealUserRepository {
                 .take(0)
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            Ok(PaginatedResult::new(users, &params, total_count))
-        }
+        Ok(PaginatedResult::new(users, &params, total_count))
     }
 
-    fn username_exists(
-        &self,
-        username: &UserName,
-    ) -> impl Future<Output = DomainResult<bool>> + Send {
+    async fn username_exists(&self, username: &UserName) -> DomainResult<bool> {
         let db = self.db.clone();
         let username_str = username.to_string();
         let table = UserId::table_name().to_string();
-        async move {
-            let count_result: Vec<i64> = db
-                .query(
-                    "SELECT count() FROM type::table($table) WHERE username = $username GROUP ALL",
-                )
-                .bind(("table", table))
-                .bind(("username", username_str))
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take("count")
-                .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
+        let count_result: Vec<i64> = db
+            .query("SELECT count() FROM type::table($table) WHERE username = $username GROUP ALL")
+            .bind(("table", table))
+            .bind(("username", username_str))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+            .take("count")
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let count = count_result.first().copied().unwrap_or(0);
-            Ok(count > 0)
-        }
+        let count = count_result.first().copied().unwrap_or(0);
+        Ok(count > 0)
     }
 }

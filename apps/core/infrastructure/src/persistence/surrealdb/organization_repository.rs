@@ -7,6 +7,7 @@ use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use async_trait::async_trait;
 
 pub struct SurrealOrganizationRepository {
     db: Arc<Surreal<Any>>,
@@ -18,14 +19,14 @@ impl SurrealOrganizationRepository {
     }
 }
 
+#[async_trait]
 impl OrganizationRepository for SurrealOrganizationRepository {
-    fn create(
+    async fn create(
         &self,
         organization: &Organization,
-    ) -> impl Future<Output = DomainResult<Organization>> + Send {
+    ) -> DomainResult<Organization> {
         let db = self.db.clone();
         let organization = organization.clone();
-        async move {
             let created: Option<Organization> = db
                 .create(RecordId::new(
                     OrganizationId::table_name(),
@@ -37,33 +38,29 @@ impl OrganizationRepository for SurrealOrganizationRepository {
 
             created
                 .ok_or_else(|| DomainError::infrastructure("Create returned no record".to_string()))
-        }
     }
 
-    fn find_by_id(
+    async fn find_by_id(
         &self,
         id: &OrganizationId,
-    ) -> impl Future<Output = DomainResult<Organization>> + Send {
+    ) -> DomainResult<Organization> {
         let db = self.db.clone();
         let id = id.clone();
-        async move {
             let result: Option<Organization> = db
                 .select(RecordId::new(OrganizationId::table_name(), id.as_str()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             result.ok_or_else(|| DomainError::not_found("Organization", id.to_string()))
-        }
     }
 
-    fn find_by_name(
+    async fn find_by_name(
         &self,
         name: &OrganizationName,
-    ) -> impl Future<Output = DomainResult<Organization>> + Send {
+    ) -> DomainResult<Organization> {
         let db = self.db.clone();
         let name_str = name.to_string();
         let table = OrganizationId::table_name().to_string();
-        async move {
             let mut results: Vec<Organization> = db
                 .query("SELECT * FROM type::table($table) WHERE name = $name LIMIT 1")
                 .bind(("table", table))
@@ -76,16 +73,14 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             results
                 .pop()
                 .ok_or_else(|| DomainError::not_found("Organization", name_str))
-        }
     }
 
-    fn update(
+    async fn update(
         &self,
         organization: &Organization,
-    ) -> impl Future<Output = DomainResult<Organization>> + Send {
+    ) -> DomainResult<Organization> {
         let db = self.db.clone();
         let organization = organization.clone();
-        async move {
             let updated: Option<Organization> = db
                 .update(RecordId::new(
                     OrganizationId::table_name(),
@@ -98,13 +93,11 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             updated.ok_or_else(|| {
                 DomainError::not_found("Organization", organization.id().to_string())
             })
-        }
     }
 
-    fn delete(&self, id: &OrganizationId) -> impl Future<Output = DomainResult<()>> + Send {
+    async fn delete(&self, id: &OrganizationId) -> DomainResult<()> {
         let db = self.db.clone();
         let id = id.clone();
-        async move {
             db.delete::<Option<Organization>>(RecordId::new(
                 OrganizationId::table_name(),
                 id.as_str(),
@@ -113,17 +106,15 @@ impl OrganizationRepository for SurrealOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(())
-        }
     }
 
-    fn list_all(
+    async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
-    ) -> impl Future<Output = DomainResult<PaginatedResult<Organization>>> + Send {
+    ) -> DomainResult<PaginatedResult<Organization>> {
         let db = self.db.clone();
         let params = pagination.cloned().unwrap_or_default();
         let table = OrganizationId::table_name().to_string();
-        async move {
             let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) GROUP ALL")
                 .bind(("table", table.clone()))
@@ -145,17 +136,15 @@ impl OrganizationRepository for SurrealOrganizationRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
             Ok(PaginatedResult::new(organizations, &params, total_count))
-        }
     }
 
-    fn list_active(
+    async fn list_active(
         &self,
         pagination: Option<&PaginationParams>,
-    ) -> impl Future<Output = DomainResult<PaginatedResult<Organization>>> + Send {
+    ) -> DomainResult<PaginatedResult<Organization>> {
         let db = self.db.clone();
         let params = pagination.cloned().unwrap_or_default();
         let table = OrganizationId::table_name().to_string();
-        async move {
             let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE is_active = true GROUP ALL")
                 .bind(("table", table.clone()))
@@ -177,17 +166,15 @@ impl OrganizationRepository for SurrealOrganizationRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
             Ok(PaginatedResult::new(organizations, &params, total_count))
-        }
     }
 
-    fn name_exists(
+    async fn name_exists(
         &self,
         name: &OrganizationName,
-    ) -> impl Future<Output = DomainResult<bool>> + Send {
+    ) -> DomainResult<bool> {
         let db = self.db.clone();
         let name_str = name.to_string();
         let table = OrganizationId::table_name().to_string();
-        async move {
             let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE name = $name GROUP ALL")
                 .bind(("table", table))
@@ -199,6 +186,5 @@ impl OrganizationRepository for SurrealOrganizationRepository {
 
             let count = count_result.first().copied().unwrap_or(0);
             Ok(count > 0)
-        }
     }
 }

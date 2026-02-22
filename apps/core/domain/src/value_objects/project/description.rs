@@ -1,10 +1,13 @@
 use crate::errors::{DomainError, DomainResult};
 use std::fmt;
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 const MAX_DESCRIPTION_LENGTH: usize = 1024;
 
 /// Description value object with validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct ProjectDescription {
     inner: String,
 }
@@ -59,35 +62,5 @@ impl fmt::Display for ProjectDescription {
 impl AsRef<str> for ProjectDescription {
     fn as_ref(&self) -> &str {
         &self.inner
-    }
-}
-
-#[cfg(feature = "surrealdb")]
-impl surrealdb_types::SurrealValue for ProjectDescription {
-    fn kind_of() -> surrealdb_types::Kind {
-        surrealdb_types::Kind::Either(vec![
-            surrealdb_types::Kind::String,
-            surrealdb_types::Kind::None,
-        ])
-    }
-
-    fn into_value(self) -> surrealdb_types::Value {
-        if self.inner.is_empty() {
-            surrealdb_types::Value::None
-        } else {
-            surrealdb_types::Value::String(self.inner)
-        }
-    }
-
-    fn from_value(value: surrealdb_types::Value) -> Result<Self, surrealdb_types::Error> {
-        match value {
-            surrealdb_types::Value::String(s) => Self::new(s).map_err(|e| {
-                surrealdb_types::Error::internal(format!("Invalid ProjectDescription: {}", e))
-            }),
-            surrealdb_types::Value::None | surrealdb_types::Value::Null => Ok(Self::empty()),
-            other => {
-                Err(surrealdb_types::ConversionError::from_value(Self::kind_of(), &other).into())
-            }
-        }
     }
 }

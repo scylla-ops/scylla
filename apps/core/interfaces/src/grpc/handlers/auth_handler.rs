@@ -1,13 +1,13 @@
 use crate::grpc::mappers::domain_error_to_status;
-use protocol::services::auth::{
-    LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
-    ValidateTokenResponse, auth_service_server::AuthService,
-};
 use application::AuthUseCases;
 use derive_more::Constructor;
 use domain::entities::UserId;
 use domain::ports::{HashService, SessionRepository, UserRepository};
 use domain::value_objects::user::{Password, UserName};
+use protocol::services::auth::{
+    LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
+    ValidateTokenResponse, auth_service_server::AuthService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -17,8 +17,11 @@ pub struct AuthHandler<U: UserRepository, S: SessionRepository, H: HashService> 
 }
 
 #[async_trait::async_trait]
-impl<U: UserRepository + 'static, S: SessionRepository + 'static, H: HashService + 'static>
-    AuthService for AuthHandler<U, S, H>
+impl<
+    U: UserRepository + Send + Sync + 'static,
+    S: SessionRepository + Send + Sync + 'static,
+    H: HashService + Send + Sync + 'static,
+> AuthService for AuthHandler<U, S, H>
 {
     async fn login(
         &self,
@@ -84,10 +87,7 @@ impl<U: UserRepository + 'static, S: SessionRepository + 'static, H: HashService
 }
 
 impl<U: UserRepository, S: SessionRepository, H: HashService> AuthHandler<U, S, H> {
-    pub async fn get_user_id_from_token(
-        &self,
-        token: &str,
-    ) -> Result<UserId, Status> {
+    pub async fn get_user_id_from_token(&self, token: &str) -> Result<UserId, Status> {
         if token.is_empty() {
             return Err(Status::unauthenticated("Token cannot be empty"));
         }

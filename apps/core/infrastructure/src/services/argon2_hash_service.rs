@@ -6,6 +6,7 @@ use argon2::{
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::HashService;
 use domain::value_objects::user::Password;
+use async_trait::async_trait;
 
 #[derive(Default)]
 pub struct Argon2HashService {
@@ -18,28 +19,26 @@ impl Argon2HashService {
     }
 }
 
+#[async_trait]
 impl HashService for Argon2HashService {
-    fn hash(&self, password: &Password) -> impl Future<Output = DomainResult<String>> + Send {
+    async fn hash(&self, password: &Password) -> DomainResult<String> {
         let argon2 = self.argon2.clone();
         let password = password.clone();
-        async move {
             let hash = argon2
                 .hash_password(password.as_str().as_bytes())
                 .map_err(|e| DomainError::internal(format!("Failed to hash password: {}", e)))?;
 
             Ok(hash.to_string())
-        }
     }
 
-    fn verify(
+    async fn verify(
         &self,
         password: &Password,
         hash: &str,
-    ) -> impl Future<Output = DomainResult<bool>> + Send {
+    ) -> DomainResult<bool> {
         let argon2 = self.argon2.clone();
         let password = password.clone();
         let hash = hash.to_string();
-        async move {
             let parsed_hash = PasswordHash::new(&hash)
                 .map_err(|e| DomainError::internal(format!("Failed to parse hash: {}", e)))?;
 
@@ -47,5 +46,4 @@ impl HashService for Argon2HashService {
                 .verify_password(password.as_str().as_bytes(), &parsed_hash)
                 .is_ok())
         }
-    }
 }

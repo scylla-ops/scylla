@@ -34,7 +34,7 @@ fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {
 /// Tonic interceptors are synchronous, so token validation is performed in a
 /// dedicated OS thread with its own single-threaded Tokio runtime to avoid
 /// blocking the parent executor.
-pub fn auth_interceptor<S: SessionRepository + 'static>(
+pub fn auth_interceptor<S: SessionRepository + Send + Sync + 'static>(
     session_repo: Arc<S>,
 ) -> impl Fn(Request<()>) -> Result<Request<()>, Status> + Clone {
     move |mut req: Request<()>| {

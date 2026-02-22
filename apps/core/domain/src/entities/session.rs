@@ -5,7 +5,7 @@ use surrealdb_types::SurrealValue;
 
 /// Session domain entity for authentication
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Session {
     id: SessionId,
     token: String,

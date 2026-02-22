@@ -1,13 +1,17 @@
 use crate::errors::{DomainError, DomainResult};
 use std::fmt;
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// UserProjectRole value object with validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct UserProjectRole {
     inner: UserProjectRoleInner,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 enum UserProjectRoleInner {
     Owner,
     Admin,
@@ -110,27 +114,5 @@ impl AsRef<str> for UserProjectRole {
 impl fmt::Display for UserProjectRole {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
-    }
-}
-
-#[cfg(feature = "surrealdb")]
-impl surrealdb_types::SurrealValue for UserProjectRole {
-    fn kind_of() -> surrealdb_types::Kind {
-        surrealdb_types::Kind::String
-    }
-
-    fn into_value(self) -> surrealdb_types::Value {
-        surrealdb_types::Value::String(self.as_str().to_string())
-    }
-
-    fn from_value(value: surrealdb_types::Value) -> Result<Self, surrealdb_types::Error> {
-        match value {
-            surrealdb_types::Value::String(s) => Self::new(s).map_err(|e| {
-                surrealdb_types::Error::internal(format!("Invalid UserProjectRole: {}", e))
-            }),
-            other => {
-                Err(surrealdb_types::ConversionError::from_value(Self::kind_of(), &other).into())
-            }
-        }
     }
 }

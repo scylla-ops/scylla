@@ -7,7 +7,7 @@ use surrealdb_types::SurrealValue;
 
 /// User domain entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct User {
     id: UserId,
     username: UserName,

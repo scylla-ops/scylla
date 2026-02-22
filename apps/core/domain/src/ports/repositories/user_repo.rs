@@ -2,36 +2,32 @@ use crate::entities::{User, UserId};
 use crate::errors::DomainResult;
 use crate::value_objects::user::UserName;
 use crate::value_objects::{PaginatedResult, PaginationParams};
+use async_trait::async_trait;
 
 /// Repository trait for User entity
-pub trait UserRepository: Send + Sync {
+#[async_trait]
+pub trait UserRepository {
     /// Create a user
-    fn create(&self, user: &User) -> impl Future<Output = DomainResult<User>> + Send;
+    async fn create(&self, user: &User) -> DomainResult<User>;
 
     /// Find a user by ID
-    fn find_by_id(&self, id: &UserId) -> impl Future<Output = DomainResult<User>> + Send;
+    async fn find_by_id(&self, id: &UserId) -> DomainResult<User>;
 
     /// Find a user by username
-    fn find_by_username(
-        &self,
-        username: &UserName,
-    ) -> impl Future<Output = DomainResult<User>> + Send;
+    async fn find_by_username(&self, username: &UserName) -> DomainResult<User>;
 
     /// Update a user
-    fn update(&self, user: &User) -> impl Future<Output = DomainResult<User>> + Send;
+    async fn update(&self, user: &User) -> DomainResult<User>;
 
     /// Delete a user by ID
-    fn delete(&self, id: &UserId) -> impl Future<Output = DomainResult<()>> + Send;
+    async fn delete(&self, id: &UserId) -> DomainResult<()>;
 
     /// List all users
-    fn list_all(
+    async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
-    ) -> impl Future<Output = DomainResult<PaginatedResult<User>>> + Send;
+    ) -> DomainResult<PaginatedResult<User>>;
 
     /// Check if a username already exists
-    fn username_exists(
-        &self,
-        username: &UserName,
-    ) -> impl Future<Output = DomainResult<bool>> + Send;
+    async fn username_exists(&self, username: &UserName) -> DomainResult<bool>;
 }

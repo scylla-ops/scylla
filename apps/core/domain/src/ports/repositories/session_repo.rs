@@ -1,26 +1,25 @@
 use crate::entities::{Session, UserId};
 use crate::errors::DomainResult;
+use async_trait::async_trait;
 
 /// Repository trait for Session management
-pub trait SessionRepository: Send + Sync {
+#[async_trait]
+pub trait SessionRepository {
     /// Create a new session for a user
-    fn create(&self, session: &Session) -> impl Future<Output = DomainResult<Session>> + Send;
+    async fn create(&self, session: &Session) -> DomainResult<Session>;
 
     /// Find a session by its token
-    fn find_by_token(&self, token: &str) -> impl Future<Output = DomainResult<Session>> + Send;
+    async fn find_by_token(&self, token: &str) -> DomainResult<Session>;
 
     /// Update a session
-    fn update(&self, session: &Session) -> impl Future<Output = DomainResult<Session>> + Send;
+    async fn update(&self, session: &Session) -> DomainResult<Session>;
 
     /// Delete a session by its token (logout)
-    fn delete_by_token(&self, token: &str) -> impl Future<Output = DomainResult<()>> + Send;
+    async fn delete_by_token(&self, token: &str) -> DomainResult<()>;
 
     /// Delete all expired sessions
-    fn delete_expired(&self) -> impl Future<Output = DomainResult<u64>> + Send;
+    async fn delete_expired(&self) -> DomainResult<u64>;
 
     /// List all active sessions for a user
-    fn list_for_user(
-        &self,
-        user_id: &UserId,
-    ) -> impl Future<Output = DomainResult<Vec<Session>>> + Send;
+    async fn list_for_user(&self, user_id: &UserId) -> DomainResult<Vec<Session>>;
 }

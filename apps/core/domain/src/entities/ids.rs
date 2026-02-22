@@ -1,9 +1,12 @@
 use std::fmt;
+//#[cfg(feature = "surrealdb")]
+//use surrealdb_types::SurrealValue;
 
 /// Macro to generate type-safe ID wrappers for domain entities
 macro_rules! define_id {
     ($name:ident, $table:expr) => {
         #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+        //cfg_attr(feature = "surrealdb", derive(SurrealValue))]
         pub struct $name(String);
 
         impl $name {

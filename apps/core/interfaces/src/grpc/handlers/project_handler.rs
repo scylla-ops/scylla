@@ -24,9 +24,9 @@ pub struct ProjectHandler<P: ProjectRepository, UP: UserProjectRepository, U: Us
 
 #[async_trait::async_trait]
 impl<
-    P: ProjectRepository + 'static,
-    UP: UserProjectRepository + 'static,
-    U: UserRepository + 'static,
+    P: ProjectRepository + Send + Sync + 'static,
+    UP: UserProjectRepository + Send + Sync + 'static,
+    U: UserRepository + Send + Sync + 'static,
 > ProjectService for ProjectHandler<P, UP, U>
 {
     async fn create_project(

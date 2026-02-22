@@ -1,15 +1,13 @@
 use crate::errors::DomainResult;
 use crate::value_objects::user::Password;
+use async_trait::async_trait;
 
 /// Port for hashing services
-pub trait HashService: Send + Sync {
+#[async_trait]
+pub trait HashService {
     /// Hash a plaintext password
-    fn hash(&self, password: &Password) -> impl Future<Output = DomainResult<String>> + Send;
+    async fn hash(&self, password: &Password) -> DomainResult<String>;
 
     /// Verify a password against a hash
-    fn verify(
-        &self,
-        password: &Password,
-        hash: &str,
-    ) -> impl Future<Output = DomainResult<bool>> + Send;
+    async fn verify(&self, password: &Password, hash: &str) -> DomainResult<bool>;
 }

@@ -7,6 +7,7 @@ use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use async_trait::async_trait;
 
 pub struct SurrealUserOrganizationRepository {
     db: Arc<Surreal<Any>>,
@@ -18,14 +19,14 @@ impl SurrealUserOrganizationRepository {
     }
 }
 
+#[async_trait]
 impl UserOrganizationRepository for SurrealUserOrganizationRepository {
-    fn create(
+    async fn create(
         &self,
         user_organization: &UserOrganization,
-    ) -> impl Future<Output = DomainResult<UserOrganization>> + Send {
+    ) -> DomainResult<UserOrganization> {
         let db = self.db.clone();
         let user_organization = user_organization.clone();
-        async move {
             let created: Option<UserOrganization> = db
                 .create(RecordId::new(
                     UserOrganizationId::table_name(),
@@ -36,16 +37,14 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             created.ok_or_else(|| DomainError::infrastructure("Failed to create user organization"))
-        }
     }
 
-    fn find_by_id(
+    async fn find_by_id(
         &self,
         id: &UserOrganizationId,
-    ) -> impl Future<Output = DomainResult<UserOrganization>> + Send {
+    ) -> DomainResult<UserOrganization> {
         let db = self.db.clone();
         let id = id.clone();
-        async move {
             let result: Option<UserOrganization> = db
                 .select(RecordId::new(
                     UserOrganizationId::table_name(),
@@ -55,19 +54,17 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             result.ok_or_else(|| DomainError::not_found("UserOrganization", id.to_string()))
-        }
     }
 
-    fn find_by_user_and_organization(
+    async fn find_by_user_and_organization(
         &self,
         user_id: &UserId,
         organization_id: &OrganizationId,
-    ) -> impl Future<Output = DomainResult<UserOrganization>> + Send {
+    ) -> DomainResult<UserOrganization> {
         let db = self.db.clone();
         let user_id_str = user_id.to_string();
         let organization_id_str = organization_id.to_string();
         let table = UserOrganizationId::table_name().to_string();
-        async move {
             let mut results: Vec<UserOrganization> = db
                 .query("SELECT * FROM type::table($table) WHERE user_id = $user_id AND organization_id = $organization_id LIMIT 1")
                 .bind(("table", table))
@@ -87,16 +84,14 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                     ),
                 )
             })
-        }
     }
 
-    fn update(
+    async fn update(
         &self,
         user_organization: &UserOrganization,
-    ) -> impl Future<Output = DomainResult<UserOrganization>> + Send {
+    ) -> DomainResult<UserOrganization> {
         let db = self.db.clone();
         let user_organization = user_organization.clone();
-        async move {
             let updated: Option<UserOrganization> = db
                 .update(RecordId::new(
                     UserOrganizationId::table_name(),
@@ -109,13 +104,11 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
             updated.ok_or_else(|| {
                 DomainError::not_found("UserOrganization", user_organization.id().to_string())
             })
-        }
     }
 
-    fn delete(&self, id: &UserOrganizationId) -> impl Future<Output = DomainResult<()>> + Send {
+    async fn delete(&self, id: &UserOrganizationId) -> DomainResult<()> {
         let db = self.db.clone();
         let id = id.clone();
-        async move {
             db.delete::<Option<UserOrganization>>(RecordId::new(
                 UserOrganizationId::table_name(),
                 id.as_str(),
@@ -124,13 +117,11 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(())
-        }
     }
 
-    fn list_all(&self) -> impl Future<Output = DomainResult<Vec<UserOrganization>>> + Send {
+    async fn list_all(&self) -> DomainResult<Vec<UserOrganization>> {
         let db = self.db.clone();
         let table = UserOrganizationId::table_name().to_string();
-        async move {
             let results: Vec<UserOrganization> = db
                 .query("SELECT * FROM type::table($table)")
                 .bind(("table", table))
@@ -140,19 +131,17 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
             Ok(results)
-        }
     }
 
-    fn list_organizations_for_user(
+    async fn list_organizations_for_user(
         &self,
         user_id: &UserId,
         pagination: Option<&PaginationParams>,
-    ) -> impl Future<Output = DomainResult<PaginatedResult<OrganizationId>>> + Send {
+    ) -> DomainResult<PaginatedResult<OrganizationId>> {
         let db = self.db.clone();
         let user_id_str = user_id.to_string();
         let params = pagination.cloned().unwrap_or_default();
         let table = UserOrganizationId::table_name().to_string();
-        async move {
             let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE user_id = $user_id GROUP ALL")
                 .bind(("table", table.clone()))
@@ -181,19 +170,17 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                 .collect();
 
             Ok(PaginatedResult::new(org_ids, &params, total_count))
-        }
     }
 
-    fn list_users_in_organization(
+    async fn list_users_in_organization(
         &self,
         organization_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
-    ) -> impl Future<Output = DomainResult<PaginatedResult<UserId>>> + Send {
+    ) -> DomainResult<PaginatedResult<UserId>> {
         let db = self.db.clone();
         let organization_id_str = organization_id.to_string();
         let params = pagination.cloned().unwrap_or_default();
         let table = UserOrganizationId::table_name().to_string();
-        async move {
             let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE organization_id = $organization_id GROUP ALL")
                 .bind(("table", table.clone()))
@@ -220,20 +207,18 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                 results.into_iter().map(|uo| uo.user_id().clone()).collect();
 
             Ok(PaginatedResult::new(user_ids, &params, total_count))
-        }
     }
 
-    fn add_user_to_organization(
+    async fn add_user_to_organization(
         &self,
         user_id: &UserId,
         organization_id: &OrganizationId,
         role: &str,
-    ) -> impl Future<Output = DomainResult<UserOrganizationId>> + Send {
+    ) -> DomainResult<UserOrganizationId> {
         let db = self.db.clone();
         let user_id = user_id.clone();
         let organization_id = organization_id.clone();
         let role = role.to_string();
-        async move {
             let parsed_role = UserOrganizationRole::new(&role)?;
 
             let user_org = UserOrganization::create(user_id, organization_id, parsed_role)?;
@@ -249,19 +234,17 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(id)
-        }
     }
 
-    fn remove_user_from_organization(
+    async fn remove_user_from_organization(
         &self,
         user_id: &UserId,
         organization_id: &OrganizationId,
-    ) -> impl Future<Output = DomainResult<()>> + Send {
+    ) -> DomainResult<()> {
         let db = self.db.clone();
         let user_id_str = user_id.to_string();
         let organization_id_str = organization_id.to_string();
         let table = UserOrganizationId::table_name().to_string();
-        async move {
             db.query("DELETE FROM type::table($table) WHERE user_id = $user_id AND organization_id = $organization_id")
                 .bind(("table", table))
                 .bind(("user_id", user_id_str))
@@ -270,6 +253,5 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(())
-        }
     }
 }

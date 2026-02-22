@@ -31,9 +31,9 @@ pub struct OrganizationHandler<
 
 #[async_trait::async_trait]
 impl<
-    O: OrganizationRepository + 'static,
-    UO: UserOrganizationRepository + 'static,
-    U: UserRepository + 'static,
+    O: OrganizationRepository + Send + Sync + 'static,
+    UO: UserOrganizationRepository + Send + Sync + 'static,
+    U: UserRepository + Send + Sync + 'static,
 > OrganizationService for OrganizationHandler<O, UO, U>
 {
     async fn create_organization(

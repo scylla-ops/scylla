@@ -20,7 +20,7 @@ pub struct UserHandler<U: UserRepository, H: HashService> {
 }
 
 #[async_trait::async_trait]
-impl<U: UserRepository + 'static, H: HashService + 'static> UserService for UserHandler<U, H> {
+impl<U: UserRepository + Send + Sync + 'static, H: HashService + Send + Sync + 'static> UserService for UserHandler<U, H> {
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,

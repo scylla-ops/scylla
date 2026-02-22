@@ -1,13 +1,17 @@
 use crate::errors::{DomainError, DomainResult};
 use std::fmt;
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// UserOrganizationRole value object with validation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct UserOrganizationRole {
     inner: UserOrganizationRoleInner,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 enum UserOrganizationRoleInner {
     Owner,
     Admin,
@@ -110,28 +114,6 @@ impl fmt::Display for UserOrganizationRole {
 impl AsRef<str> for UserOrganizationRole {
     fn as_ref(&self) -> &str {
         self.as_str()
-    }
-}
-
-#[cfg(feature = "surrealdb")]
-impl surrealdb_types::SurrealValue for UserOrganizationRole {
-    fn kind_of() -> surrealdb_types::Kind {
-        surrealdb_types::Kind::String
-    }
-
-    fn into_value(self) -> surrealdb_types::Value {
-        surrealdb_types::Value::String(self.as_str().to_string())
-    }
-
-    fn from_value(value: surrealdb_types::Value) -> Result<Self, surrealdb_types::Error> {
-        match value {
-            surrealdb_types::Value::String(s) => Self::new(s).map_err(|e| {
-                surrealdb_types::Error::internal(format!("Invalid UserOrganizationRole: {}", e))
-            }),
-            other => {
-                Err(surrealdb_types::ConversionError::from_value(Self::kind_of(), &other).into())
-            }
-        }
     }
 }
 

@@ -5,6 +5,7 @@ use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use async_trait::async_trait;
 
 pub struct SurrealSessionRepository {
     db: Arc<Surreal<Any>>,
@@ -16,11 +17,11 @@ impl SurrealSessionRepository {
     }
 }
 
+#[async_trait]
 impl SessionRepository for SurrealSessionRepository {
-    fn create(&self, session: &Session) -> impl Future<Output = DomainResult<Session>> + Send {
+    async fn create(&self, session: &Session) -> DomainResult<Session> {
         let db = self.db.clone();
         let session = session.clone();
-        async move {
             let created: Option<Session> = db
                 .create(RecordId::new(SessionId::table_name(), session.id().as_str()))
                 .content(session.clone())
@@ -28,14 +29,12 @@ impl SessionRepository for SurrealSessionRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             created.ok_or_else(|| DomainError::infrastructure("Failed to create session"))
-        }
     }
 
-    fn find_by_token(&self, token: &str) -> impl Future<Output = DomainResult<Session>> + Send {
+    async fn find_by_token(&self, token: &str) -> DomainResult<Session> {
         let db = self.db.clone();
         let token = token.to_string();
         let table = SessionId::table_name().to_string();
-        async move {
             let mut response = db
                 .query("SELECT * FROM type::table($table) WHERE token = $session_token LIMIT 1")
                 .bind(("table", table))
@@ -50,13 +49,11 @@ impl SessionRepository for SurrealSessionRepository {
             results
                 .pop()
                 .ok_or_else(|| DomainError::not_found("Session", token))
-        }
     }
 
-    fn update(&self, session: &Session) -> impl Future<Output = DomainResult<Session>> + Send {
+    async fn update(&self, session: &Session) -> DomainResult<Session> {
         let db = self.db.clone();
         let session = session.clone();
-        async move {
             let updated: Option<Session> = db
                 .update(RecordId::new(SessionId::table_name(), session.id().as_str()))
                 .content(session.clone())
@@ -64,14 +61,12 @@ impl SessionRepository for SurrealSessionRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             updated.ok_or_else(|| DomainError::not_found("Session", session.id().to_string()))
-        }
     }
 
-    fn delete_by_token(&self, token: &str) -> impl Future<Output = DomainResult<()>> + Send {
+    async fn delete_by_token(&self, token: &str) -> DomainResult<()> {
         let db = self.db.clone();
         let token = token.to_string();
         let table = SessionId::table_name().to_string();
-        async move {
             db.query("DELETE FROM type::table($table) WHERE token = $session_token")
                 .bind(("table", table))
                 .bind(("session_token", token))
@@ -79,13 +74,12 @@ impl SessionRepository for SurrealSessionRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(())
-        }
     }
 
-    fn delete_expired(&self) -> impl Future<Output = DomainResult<u64>> + Send {
+    async fn delete_expired(&self) -> DomainResult<u64> {
         let db = self.db.clone();
         let table = SessionId::table_name().to_string();
-        async move {
+        
             let now = chrono::Utc::now().to_rfc3339();
 
             let count_result: Vec<i64> = db
@@ -106,17 +100,15 @@ impl SessionRepository for SurrealSessionRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(count)
-        }
     }
 
-    fn list_for_user(
+    async fn list_for_user(
         &self,
         user_id: &UserId,
-    ) -> impl Future<Output = DomainResult<Vec<Session>>> + Send {
+    ) -> DomainResult<Vec<Session>> {
         let db = self.db.clone();
         let user_id_str = user_id.to_string();
         let table = SessionId::table_name().to_string();
-        async move {
             let sessions: Vec<Session> = db
                 .query("SELECT * FROM type::table($table) WHERE user_id = $user_id ORDER BY created_at DESC")
                 .bind(("table", table))
@@ -127,6 +119,5 @@ impl SessionRepository for SurrealSessionRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
             Ok(sessions)
-        }
     }
 }
