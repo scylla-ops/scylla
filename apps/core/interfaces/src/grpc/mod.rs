@@ -1,7 +1,6 @@
 mod handlers;
 pub mod mappers;
 pub mod middleware;
-pub mod services;
 
 pub use handlers::{AuthHandler, OrganizationHandler, ProjectHandler, UserHandler};
 pub use mappers::{

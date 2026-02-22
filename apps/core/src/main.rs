@@ -7,14 +7,12 @@ use infrastructure::{
     SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
     SurrealUserRepository,
 };
-use interfaces::{
-    AuthHandler, OrganizationHandler, ProjectHandler, UserHandler, auth_interceptor,
-    services::{
-        auth::auth_service_server::AuthServiceServer,
-        organization::organization_service_server::OrganizationServiceServer,
-        project::project_service_server::ProjectServiceServer,
-        user::user_service_server::UserServiceServer,
-    },
+use interfaces::{AuthHandler, OrganizationHandler, ProjectHandler, UserHandler, auth_interceptor};
+use protocol::services::{
+    auth::auth_service_server::AuthServiceServer,
+    organization::organization_service_server::OrganizationServiceServer,
+    project::project_service_server::ProjectServiceServer,
+    user::user_service_server::UserServiceServer,
 };
 
 use anyhow::{Context, Result};
@@ -207,9 +205,7 @@ async fn run(args: Args) -> Result<()> {
     tracing::info!("gRPC server listening on {}", config.grpc.address);
 
     let reflection = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(
-            interfaces::grpc::services::services::FILE_DESCRIPTOR_SET,
-        )
+        .register_encoded_file_descriptor_set(protocol::services::FILE_DESCRIPTOR_SET)
         .build_v1alpha()?;
 
     Server::builder()

@@ -8,6 +8,7 @@ domain = { path = "./domain", features = ["surrealdb"] }
 application = { path = "./application" }
 infrastructure = { path = "./infrastructure" }
 interfaces = { path = "./interfaces" }
+protocol.workspace = true
 tokio.workspace = true
 tonic.workspace = true
 tonic-reflection.workspace = true

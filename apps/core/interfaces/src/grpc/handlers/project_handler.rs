@@ -1,7 +1,7 @@
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
 };
-use crate::grpc::services::services::project::{
+use protocol::services::project::{
     AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
     DeleteProjectResponse, GetProjectRequest, ListProjectUsersRequest, ListProjectUsersResponse,
     ListProjectsRequest, ListProjectsResponse, ListUserProjectsRequest, ProjectResponse,

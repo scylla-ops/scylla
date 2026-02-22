@@ -5,6 +5,7 @@ members = [
     # "apps/server",
     # "apps/tui",
     # "apps/agent",
+    "libs/protocol",
     # "libs/surreal-casbin-adapter",
 ]
 
@@ -19,6 +20,7 @@ tonic-prost = "0.14"
 tonic-reflection = "0.14.2"
 prost = "0.14"
 tonic-prost-build = "0.14.2"
+protocol = { path = "libs/protocol" }
 
 # serialization
 serde = { version = "1", features = ["derive"] }

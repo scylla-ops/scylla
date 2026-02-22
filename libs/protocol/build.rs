@@ -3,18 +3,9 @@ use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
+    let proto_dir = manifest_dir.join("proto");
 
-    let workspace_root = manifest_dir
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap();
-
-    let proto_dir = workspace_root.join("libs/protocol/proto");
-
-    let proto_files = vec![
+    let protos = [
         "common.proto",
         "user.proto",
         "auth.proto",
@@ -25,14 +16,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "job_def.proto",
         "organization.proto",
         "project.proto",
-    ];
-
-    let protos: Vec<PathBuf> = proto_files.iter().map(|f| proto_dir.join(f)).collect();
+    ]
+    .map(|f| proto_dir.join(f));
 
     for proto in &protos {
-        if !proto.exists() {
-            return Err(format!("ERREUR : Fichier introuvable à l'adresse : {:?}", proto).into());
-        }
         println!("cargo:rerun-if-changed={}", proto.display());
     }
 
@@ -42,6 +29,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .file_descriptor_set_path(out_dir.join("services_descriptor.bin"))
         .compile_protos(&protos, &[proto_dir])?;
 
-    println!("cargo:rustc-env=OUT_DIR={}", out_dir.display());
     Ok(())
 }

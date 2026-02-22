@@ -1,4 +1,4 @@
-use crate::grpc::services::services::organization::OrganizationResponse;
+use protocol::services::organization::OrganizationResponse;
 use domain::entities::Organization;
 
 pub fn organization_to_proto(org: &Organization) -> OrganizationResponse {

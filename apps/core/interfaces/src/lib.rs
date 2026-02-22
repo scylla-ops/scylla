@@ -1,6 +1,5 @@
 pub mod grpc;
 
-pub use grpc::services::services;
 pub use grpc::{
     AuthContext, AuthHandler, OrganizationHandler, ProjectHandler, UserHandler,
     auth_interceptor, domain_error_to_status, domain_to_proto_metadata, extract_auth_context,

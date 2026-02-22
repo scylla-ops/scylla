@@ -1,4 +1,4 @@
-use crate::grpc::services::services::user::UserResponse;
+use protocol::services::user::UserResponse;
 use domain::entities::User;
 
 pub fn user_to_proto(user: &User) -> UserResponse {

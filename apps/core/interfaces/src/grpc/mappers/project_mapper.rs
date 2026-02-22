@@ -1,4 +1,4 @@
-use crate::grpc::services::services::project::ProjectResponse;
+use protocol::services::project::ProjectResponse;
 use domain::entities::Project;
 
 pub fn project_to_proto(project: &Project) -> ProjectResponse {

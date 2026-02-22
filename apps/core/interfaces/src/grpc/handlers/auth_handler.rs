@@ -1,5 +1,5 @@
 use crate::grpc::mappers::domain_error_to_status;
-use crate::grpc::services::services::auth::{
+use protocol::services::auth::{
     LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
     ValidateTokenResponse, auth_service_server::AuthService,
 };

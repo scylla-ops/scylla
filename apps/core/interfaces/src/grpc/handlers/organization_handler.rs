@@ -2,7 +2,7 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, organization_to_proto,
     proto_to_domain_pagination,
 };
-use crate::grpc::services::services::organization::{
+use protocol::services::organization::{
     AddUserToOrganizationRequest, AddUserToOrganizationResponse, CreateOrganizationRequest,
     DeleteOrganizationRequest, DeleteOrganizationResponse, GetOrganizationRequest,
     ListOrganizationUsersRequest, ListOrganizationUsersResponse, ListOrganizationsRequest,
