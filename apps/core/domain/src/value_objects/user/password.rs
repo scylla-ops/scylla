@@ -14,7 +14,6 @@ pub struct Password {
 }
 
 impl Password {
-    /// Create a new Password with validation
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
         let value = value.into();
         let len = value.chars().count();
@@ -43,12 +42,10 @@ impl Password {
         Ok(Self { inner: value })
     }
 
-    /// Get the password as a string slice
     pub fn as_str(&self) -> &str {
         &self.inner
     }
 
-    /// Convert to inner String
     pub fn into_string(self) -> String {
         self.inner
     }

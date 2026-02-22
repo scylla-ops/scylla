@@ -2,11 +2,12 @@ use crate::entities::{ProjectId, UserId, UserProjectId};
 use crate::errors::DomainResult;
 use crate::value_objects::user_project::UserProjectRole;
 use chrono::{DateTime, Utc};
-use derive_more::Constructor;
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// UserProject domain entity
-#[derive(Debug, Clone, Constructor, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
 pub struct UserProject {
     id: UserProjectId,
     user_id: UserId,
@@ -16,7 +17,6 @@ pub struct UserProject {
 }
 
 impl UserProject {
-    /// Create a new project
     pub fn create(
         user_id: UserId,
         project_id: ProjectId,
@@ -32,7 +32,6 @@ impl UserProject {
         })
     }
 
-    // Getters
     pub fn id(&self) -> &UserProjectId {
         &self.id
     }

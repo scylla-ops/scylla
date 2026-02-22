@@ -2,10 +2,12 @@ use crate::entities::UserId;
 use crate::errors::{DomainError, DomainResult};
 use crate::value_objects::user::UserName;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// User domain entity
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
 pub struct User {
     id: UserId,
     username: UserName,
@@ -16,7 +18,6 @@ pub struct User {
 }
 
 impl User {
-    /// Create a new user
     pub fn create(username: UserName, password_hash: String) -> Self {
         let now = Utc::now();
         Self {
@@ -29,14 +30,12 @@ impl User {
         }
     }
 
-    /// Update the username
     pub fn update_username(&mut self, username: UserName) -> DomainResult<()> {
         self.username = username;
         self.updated_at = Utc::now();
         Ok(())
     }
 
-    /// Update the password hash
     pub fn update_password_hash(&mut self, password_hash: String) -> DomainResult<()> {
         if password_hash.is_empty() {
             return Err(DomainError::validation("Password hash cannot be empty"));
@@ -46,7 +45,6 @@ impl User {
         Ok(())
     }
 
-    /// Deactivate the user
     pub fn deactivate(&mut self) -> DomainResult<()> {
         if !self.is_active {
             return Err(DomainError::business_rule("User is already inactive"));
@@ -56,7 +54,6 @@ impl User {
         Ok(())
     }
 
-    /// Activate the user
     pub fn activate(&mut self) -> DomainResult<()> {
         if self.is_active {
             return Err(DomainError::business_rule("User is already active"));
@@ -66,7 +63,6 @@ impl User {
         Ok(())
     }
 
-    // Getters
     pub fn id(&self) -> &UserId {
         &self.id
     }

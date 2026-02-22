@@ -2,10 +2,12 @@ use crate::entities::{OrganizationId, ProjectId};
 use crate::errors::{DomainError, DomainResult};
 use crate::value_objects::project::{ProjectDescription, ProjectName};
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// Project domain entity
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
 pub struct Project {
     id: ProjectId,
     name: ProjectName,
@@ -17,7 +19,6 @@ pub struct Project {
 }
 
 impl Project {
-    /// Create a new project
     pub fn create(
         name: ProjectName,
         description: Option<ProjectDescription>,
@@ -35,14 +36,12 @@ impl Project {
         })
     }
 
-    /// Update the project name
     pub fn update_name(&mut self, name: ProjectName) -> DomainResult<()> {
         self.name = name;
         self.updated_at = Utc::now();
         Ok(())
     }
 
-    /// Update the project description
     pub fn update_description(
         &mut self,
         description: Option<ProjectDescription>,
@@ -52,14 +51,12 @@ impl Project {
         Ok(())
     }
 
-    /// Toggle the project active state
     pub fn toggle_active(&mut self) -> DomainResult<()> {
         self.is_active = !self.is_active;
         self.updated_at = Utc::now();
         Ok(())
     }
 
-    /// Deactivate the project
     pub fn deactivate(&mut self) -> DomainResult<()> {
         if !self.is_active {
             return Err(DomainError::business_rule("Project is already inactive"));
@@ -69,7 +66,6 @@ impl Project {
         Ok(())
     }
 
-    /// Activate the project
     pub fn activate(&mut self) -> DomainResult<()> {
         if self.is_active {
             return Err(DomainError::business_rule("Project is already active"));
@@ -79,7 +75,6 @@ impl Project {
         Ok(())
     }
 
-    // Getters
     pub fn id(&self) -> &ProjectId {
         &self.id
     }

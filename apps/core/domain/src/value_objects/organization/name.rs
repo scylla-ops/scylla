@@ -1,17 +1,15 @@
 use crate::errors::{DomainError, DomainResult};
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
 const MAX_NAME_LENGTH: usize = 255;
 
 /// OrganizationName value object with validation
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OrganizationName {
     inner: String,
 }
 
 impl OrganizationName {
-    /// Create a new OrganizationName with validation
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
         let value = value.into();
         let trimmed = value.trim();
@@ -32,22 +30,18 @@ impl OrganizationName {
         })
     }
 
-    /// Get the name as a string slice
     pub fn as_str(&self) -> &str {
         &self.inner
     }
 
-    /// Convert to inner String
     pub fn into_string(self) -> String {
         self.inner
     }
 
-    /// Get the length of the name
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
-    /// Check if the name is empty
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
@@ -77,6 +71,28 @@ impl PartialEq<&str> for OrganizationName {
     }
 }
 
+#[cfg(feature = "surrealdb")]
+impl surrealdb_types::SurrealValue for OrganizationName {
+    fn kind_of() -> surrealdb_types::Kind {
+        surrealdb_types::Kind::String
+    }
+
+    fn into_value(self) -> surrealdb_types::Value {
+        surrealdb_types::Value::String(self.inner)
+    }
+
+    fn from_value(value: surrealdb_types::Value) -> Result<Self, surrealdb_types::Error> {
+        match value {
+            surrealdb_types::Value::String(s) => Self::new(s).map_err(|e| {
+                surrealdb_types::Error::internal(format!("Invalid OrganizationName: {}", e))
+            }),
+            other => {
+                Err(surrealdb_types::ConversionError::from_value(Self::kind_of(), &other).into())
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,26 +100,21 @@ mod tests {
     #[test]
     fn test_organization_name_creation() {
         assert!(OrganizationName::new("Valid Org").is_ok());
-        assert!(OrganizationName::new("  Valid Org  ").is_ok()); // trimming
-        assert!(OrganizationName::new("").is_err()); // empty
-        assert!(OrganizationName::new("   ").is_err()); // whitespace only
+        assert!(OrganizationName::new("  Valid Org  ").is_ok());
+        assert!(OrganizationName::new("").is_err());
+        assert!(OrganizationName::new("   ").is_err());
     }
 
     #[test]
     fn test_organization_name_validation() {
-        // Valid names
         assert!(OrganizationName::new("My Organization").is_ok());
         assert!(OrganizationName::new("A").is_ok());
-
-        // Invalid names
         assert!(OrganizationName::new("").is_err());
         assert!(OrganizationName::new("   ").is_err());
 
-        // Too long
         let long_name = "a".repeat(MAX_NAME_LENGTH + 1);
         assert!(OrganizationName::new(long_name).is_err());
 
-        // Exactly max length should be ok
         let max_name = "a".repeat(MAX_NAME_LENGTH);
         assert!(OrganizationName::new(max_name).is_ok());
     }

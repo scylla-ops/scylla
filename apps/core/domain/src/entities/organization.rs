@@ -2,10 +2,12 @@ use crate::entities::ids::OrganizationId;
 use crate::errors::{DomainError, DomainResult};
 use crate::value_objects::organization::{OrganizationDescription, OrganizationName};
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// Organization domain entity
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
 pub struct Organization {
     id: OrganizationId,
     name: OrganizationName,
@@ -16,8 +18,6 @@ pub struct Organization {
 }
 
 impl Organization {
-    /// Create a new organization
-    /// active by default
     pub fn create(
         name: OrganizationName,
         description: Option<OrganizationDescription>,
@@ -33,14 +33,12 @@ impl Organization {
         })
     }
 
-    /// Update the organization name
     pub fn update_name(&mut self, name: OrganizationName) -> DomainResult<()> {
         self.name = name;
         self.updated_at = Utc::now();
         Ok(())
     }
 
-    /// Update the organization description
     pub fn update_description(
         &mut self,
         description: Option<OrganizationDescription>,
@@ -50,14 +48,12 @@ impl Organization {
         Ok(())
     }
 
-    /// Toggle the organization active state
     pub fn toggle_active(&mut self) -> DomainResult<()> {
         self.is_active = !self.is_active;
         self.updated_at = Utc::now();
         Ok(())
     }
 
-    /// Deactivate the organization
     pub fn deactivate(&mut self) -> DomainResult<()> {
         if !self.is_active {
             return Err(DomainError::business_rule(
@@ -69,7 +65,6 @@ impl Organization {
         Ok(())
     }
 
-    /// Activate the organization
     pub fn activate(&mut self) -> DomainResult<()> {
         if self.is_active {
             return Err(DomainError::business_rule("Organization is already active"));
@@ -79,7 +74,6 @@ impl Organization {
         Ok(())
     }
 
-    // Getters
     pub fn id(&self) -> &OrganizationId {
         &self.id
     }

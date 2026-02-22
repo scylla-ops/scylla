@@ -2,10 +2,12 @@ use crate::entities::{OrganizationId, UserId, UserOrganizationId};
 use crate::errors::DomainResult;
 use crate::value_objects::user_organization::user_organization_role::UserOrganizationRole;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// UserOrganization domain entity
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
 pub struct UserOrganization {
     id: UserOrganizationId,
     user_id: UserId,
@@ -15,7 +17,6 @@ pub struct UserOrganization {
 }
 
 impl UserOrganization {
-    /// Create a new organization
     pub fn create(
         user_id: UserId,
         organization_id: OrganizationId,
@@ -31,7 +32,6 @@ impl UserOrganization {
         })
     }
 
-    // Getters
     pub fn id(&self) -> &UserOrganizationId {
         &self.id
     }

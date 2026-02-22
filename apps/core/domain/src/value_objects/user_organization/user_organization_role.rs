@@ -1,14 +1,13 @@
 use crate::errors::{DomainError, DomainResult};
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// UserOrganizationRole value object with validation
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UserOrganizationRole {
     inner: UserOrganizationRoleInner,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum UserOrganizationRoleInner {
     Owner,
     Admin,
@@ -16,7 +15,6 @@ enum UserOrganizationRoleInner {
 }
 
 impl UserOrganizationRole {
-    /// Create a new UserOrganizationRole from string with validation
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
         let value = value.into();
         let trimmed = value.trim().to_lowercase();
@@ -36,28 +34,24 @@ impl UserOrganizationRole {
         Ok(Self { inner })
     }
 
-    /// Create an owner role
     pub fn owner() -> Self {
         Self {
             inner: UserOrganizationRoleInner::Owner,
         }
     }
 
-    /// Create an admin role
     pub fn admin() -> Self {
         Self {
             inner: UserOrganizationRoleInner::Admin,
         }
     }
 
-    /// Create a user role
-    pub fn user() -> Self {
+    pub fn member() -> Self {
         Self {
             inner: UserOrganizationRoleInner::Member,
         }
     }
 
-    /// Get the role as a string slice
     pub fn as_str(&self) -> &'static str {
         match self.inner {
             UserOrganizationRoleInner::Owner => "owner",
@@ -66,52 +60,42 @@ impl UserOrganizationRole {
         }
     }
 
-    /// Convert to string
     pub fn to_string(&self) -> String {
         self.as_str().to_string()
     }
 
-    /// Check if the role is owner
     pub fn is_owner(&self) -> bool {
         matches!(self.inner, UserOrganizationRoleInner::Owner)
     }
 
-    /// Check if the role is admin
     pub fn is_admin(&self) -> bool {
         matches!(self.inner, UserOrganizationRoleInner::Admin)
     }
 
-    /// Check if the role is user
     pub fn is_user(&self) -> bool {
         matches!(self.inner, UserOrganizationRoleInner::Member)
     }
 
-    /// Check if the role is a member
     pub fn is_member(&self) -> bool {
         matches!(self.inner, UserOrganizationRoleInner::Member)
     }
 
-    /// Check if the role has owner privileges
     pub fn has_owner_privileges(&self) -> bool {
         self.is_owner()
     }
 
-    /// Check if the role has admin privileges
     pub fn has_admin_privileges(&self) -> bool {
         self.is_admin()
     }
 
-    /// Check if the role can manage users
     pub fn can_manage_users(&self) -> bool {
         self.is_admin() || self.is_owner()
     }
 
-    /// Check if the role can view content
     pub fn can_view(&self) -> bool {
-        true // all roles can view
+        true
     }
 
-    /// Check if the role can edit content
     pub fn can_edit(&self) -> bool {
         self.is_admin() || self.is_owner() || self.is_member()
     }
@@ -126,6 +110,28 @@ impl fmt::Display for UserOrganizationRole {
 impl AsRef<str> for UserOrganizationRole {
     fn as_ref(&self) -> &str {
         self.as_str()
+    }
+}
+
+#[cfg(feature = "surrealdb")]
+impl surrealdb_types::SurrealValue for UserOrganizationRole {
+    fn kind_of() -> surrealdb_types::Kind {
+        surrealdb_types::Kind::String
+    }
+
+    fn into_value(self) -> surrealdb_types::Value {
+        surrealdb_types::Value::String(self.as_str().to_string())
+    }
+
+    fn from_value(value: surrealdb_types::Value) -> Result<Self, surrealdb_types::Error> {
+        match value {
+            surrealdb_types::Value::String(s) => Self::new(s).map_err(|e| {
+                surrealdb_types::Error::internal(format!("Invalid UserOrganizationRole: {}", e))
+            }),
+            other => {
+                Err(surrealdb_types::ConversionError::from_value(Self::kind_of(), &other).into())
+            }
+        }
     }
 }
 
@@ -157,9 +163,8 @@ mod tests {
     fn test_user_organization_role_methods() {
         let owner = UserOrganizationRole::owner();
         let admin = UserOrganizationRole::admin();
-        let user = UserOrganizationRole::user();
+        let user = UserOrganizationRole::member();
 
-        // Owner tests
         assert!(owner.is_owner());
         assert!(!owner.is_admin());
         assert!(!owner.is_user());
@@ -169,7 +174,6 @@ mod tests {
         assert!(owner.can_view());
         assert!(owner.can_edit());
 
-        // Admin tests
         assert!(admin.is_admin());
         assert!(!admin.is_user());
         assert!(!admin.is_member());
@@ -178,7 +182,6 @@ mod tests {
         assert!(admin.can_view());
         assert!(admin.can_edit());
 
-        // User tests
         assert!(!user.is_admin());
         assert!(user.is_user());
         assert!(user.is_member());

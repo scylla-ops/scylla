@@ -1,9 +1,11 @@
 use crate::entities::{SessionId, UserId};
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
 /// Session domain entity for authentication
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(surrealdb_types::SurrealValue))]
 pub struct Session {
     id: SessionId,
     token: String,
@@ -14,7 +16,6 @@ pub struct Session {
 }
 
 impl Session {
-    /// Create a new session with a random token
     pub fn create(user_id: UserId, token: String, duration: Duration) -> Self {
         let now = Utc::now();
         Self {
@@ -27,23 +28,19 @@ impl Session {
         }
     }
 
-    /// Check if the session is expired
     pub fn is_expired(&self) -> bool {
         Utc::now() > self.expires_at
     }
 
-    /// Update the last active timestamp
     pub fn touch(&mut self) {
         self.last_active_at = Utc::now();
     }
 
-    /// Extend the session expiration
     pub fn extend(&mut self, duration: Duration) {
         self.expires_at = Utc::now() + duration;
         self.last_active_at = Utc::now();
     }
 
-    // Getters
     pub fn id(&self) -> &SessionId {
         &self.id
     }

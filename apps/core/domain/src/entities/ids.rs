@@ -1,10 +1,9 @@
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Macro to generate type-safe ID wrappers for domain entities
 macro_rules! define_id {
     ($name:ident, $table:expr) => {
-        #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
         pub struct $name(String);
 
         impl $name {
@@ -56,6 +55,31 @@ macro_rules! define_id {
         impl AsRef<str> for $name {
             fn as_ref(&self) -> &str {
                 &self.0
+            }
+        }
+
+        #[cfg(feature = "surrealdb")]
+        impl surrealdb_types::SurrealValue for $name {
+            fn kind_of() -> surrealdb_types::Kind {
+                surrealdb_types::Kind::Record(vec![surrealdb_types::Table::from($table)])
+            }
+
+            fn into_value(self) -> surrealdb_types::Value {
+                surrealdb_types::Value::RecordId(surrealdb_types::RecordId::new($table, self.0))
+            }
+
+            fn from_value(value: surrealdb_types::Value) -> Result<Self, surrealdb_types::Error> {
+                match value {
+                    surrealdb_types::Value::RecordId(record_id) => match record_id.key {
+                        surrealdb_types::RecordIdKey::String(s) => Ok(Self(s)),
+                        other => Ok(Self(format!("{:?}", other))),
+                    },
+                    other => Err(surrealdb_types::ConversionError::from_value(
+                        Self::kind_of(),
+                        &other,
+                    )
+                    .into()),
+                }
             }
         }
     };

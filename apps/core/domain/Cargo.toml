@@ -3,10 +3,13 @@ name = "domain"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+surrealdb = ["dep:surrealdb-types"]
+
 [dependencies]
 thiserror = "2.0.18"
 anyhow = "1.0.100"
-serde = { version = "1.0.228", features = ["derive"] }
 derive_more = { version = "2.1.1", features = ["full"] }
-chrono = { version = "0.4.43", features = ["serde"] }
-ulid = { version = "1.2.1", features = ["serde"] }
+chrono = { version = "0.4.43" }
+ulid = { version = "1.2.1" }
+surrealdb-types = { version = "3.0.0", optional = true }
