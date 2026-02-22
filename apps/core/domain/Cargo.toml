@@ -7,9 +7,9 @@ edition = "2024"
 surrealdb = ["dep:surrealdb-types"]
 
 [dependencies]
-thiserror = "2.0.18"
-anyhow = "1.0.100"
-derive_more = { version = "2.1.1", features = ["full"] }
-chrono = { version = "0.4.43" }
-ulid = { version = "1.2.1" }
-surrealdb-types = { version = "3.0.0", optional = true }
+thiserror.workspace = true
+anyhow.workspace = true
+derive_more.workspace = true
+chrono.workspace = true
+ulid.workspace = true
+surrealdb-types = { workspace = true, optional = true }

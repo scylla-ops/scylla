@@ -5,6 +5,46 @@ members = [
     # "apps/server",
     # "apps/tui",
     # "apps/agent",
-    "libs/protocol",
     # "libs/surreal-casbin-adapter",
 ]
+
+[workspace.dependencies]
+# async
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1.89"
+
+# grpc / proto
+tonic = { version = "0.14.2", features = ["server"] }
+tonic-prost = "0.14"
+tonic-reflection = "0.14.2"
+prost = "0.14"
+tonic-prost-build = "0.14.2"
+
+# serialization
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"
+
+# database
+surrealdb = "3.0"
+surrealdb-types = "3.0.0"
+
+# domain / utilities
+thiserror = "2"
+anyhow = "1"
+chrono = "0.4"
+ulid = "1.2.1"
+uuid = { version = "1", features = ["v4"] }
+derive_more = { version = "2.1.1", features = ["full"] }
+argon2 = "0.6.0-rc.1"
+
+# web / tracing
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+http = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# cli
+clap = { version = "4", features = ["derive"] }
+
+# logging
+log = "0.4.28"

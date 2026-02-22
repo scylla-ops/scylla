@@ -5,9 +5,9 @@ edition = "2024"
 
 [dependencies]
 domain = { path = "../domain", features = ["surrealdb"] }
-surrealdb = "3.0"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-chrono = { version = "0.4", features = ["serde"] }
-argon2 = "0.6.0-rc.1"
-thiserror = "2"
+surrealdb.workspace = true
+tokio.workspace = true
+serde.workspace = true
+chrono.workspace = true
+argon2.workspace = true
+thiserror.workspace = true
