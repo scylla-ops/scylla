@@ -1,10 +1,10 @@
-use crate::persistence::surrealdb::id_mapper::ToRecordId;
 use domain::entities::{Session, SessionId, UserId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::SessionRepository;
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::types::RecordId;
 
 pub struct SurrealSessionRepository {
     db: Arc<Surreal<Any>>,
@@ -22,7 +22,7 @@ impl SessionRepository for SurrealSessionRepository {
         let session = session.clone();
         async move {
             let created: Option<Session> = db
-                .create(session.id().to_record_id())
+                .create(RecordId::new(SessionId::table_name(), session.id().as_str()))
                 .content(session.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -36,12 +36,14 @@ impl SessionRepository for SurrealSessionRepository {
         let token = token.to_string();
         let table = SessionId::table_name().to_string();
         async move {
-            let mut results: Vec<Session> = db
-                .query("SELECT * FROM type::table($table) WHERE token = $token LIMIT 1")
+            let mut response = db
+                .query("SELECT * FROM type::table($table) WHERE token = $session_token LIMIT 1")
                 .bind(("table", table))
-                .bind(("token", token.clone()))
+                .bind(("session_token", token.clone()))
                 .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
+                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+
+            let mut results: Vec<Session> = response
                 .take(0)
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
@@ -56,7 +58,7 @@ impl SessionRepository for SurrealSessionRepository {
         let session = session.clone();
         async move {
             let updated: Option<Session> = db
-                .update(session.id().to_record_id())
+                .update(RecordId::new(SessionId::table_name(), session.id().as_str()))
                 .content(session.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -70,9 +72,9 @@ impl SessionRepository for SurrealSessionRepository {
         let token = token.to_string();
         let table = SessionId::table_name().to_string();
         async move {
-            db.query("DELETE FROM type::table($table) WHERE token = $token")
+            db.query("DELETE FROM type::table($table) WHERE token = $session_token")
                 .bind(("table", table))
-                .bind(("token", token))
+                .bind(("session_token", token))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -86,23 +88,17 @@ impl SessionRepository for SurrealSessionRepository {
         async move {
             let now = chrono::Utc::now().to_rfc3339();
 
-            // First count how many we'll delete
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE expires_at < $now GROUP ALL")
                 .bind(("table", table.clone()))
                 .bind(("now", now.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let count = count_result.first().copied().unwrap_or(0) as u64;
 
-            // Then delete
             db.query("DELETE FROM type::table($table) WHERE expires_at < $now")
                 .bind(("table", table))
                 .bind(("now", now))

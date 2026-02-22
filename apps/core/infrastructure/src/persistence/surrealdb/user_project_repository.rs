@@ -1,4 +1,3 @@
-use crate::persistence::surrealdb::id_mapper::ToRecordId;
 use domain::entities::{ProjectId, UserId, UserProject, UserProjectId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::UserProjectRepository;
@@ -7,6 +6,7 @@ use domain::value_objects::{PaginatedResult, PaginationParams};
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::types::RecordId;
 
 pub struct SurrealUserProjectRepository {
     db: Arc<Surreal<Any>>,
@@ -27,7 +27,10 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let user_project = user_project.clone();
         async move {
             let created: Option<UserProject> = db
-                .create(user_project.id().to_record_id())
+                .create(RecordId::new(
+                    UserProjectId::table_name(),
+                    user_project.id().as_str(),
+                ))
                 .content(user_project.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -44,7 +47,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let id = id.clone();
         async move {
             let result: Option<UserProject> = db
-                .select(id.to_record_id())
+                .select(RecordId::new(UserProjectId::table_name(), id.as_str()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -89,7 +92,10 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let user_project = user_project.clone();
         async move {
             let updated: Option<UserProject> = db
-                .update(user_project.id().to_record_id())
+                .update(RecordId::new(
+                    UserProjectId::table_name(),
+                    user_project.id().as_str(),
+                ))
                 .content(user_project.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -103,9 +109,12 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let db = self.db.clone();
         let id = id.clone();
         async move {
-            db.delete::<Option<UserProject>>(id.to_record_id())
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+            db.delete::<Option<UserProject>>(RecordId::new(
+                UserProjectId::table_name(),
+                id.as_str(),
+            ))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(())
         }
@@ -137,20 +146,16 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let params = pagination.cloned().unwrap_or_default();
         let table = UserProjectId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE user_id = $user_id GROUP ALL")
                 .bind(("table", table.clone()))
                 .bind(("user_id", user_id_str.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
             let results: Vec<UserProject> = db
                 .query("SELECT * FROM type::table($table) WHERE user_id = $user_id ORDER BY joined_at DESC LIMIT $limit START $start")
@@ -182,20 +187,16 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         let params = pagination.cloned().unwrap_or_default();
         let table = UserProjectId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE project_id = $project_id GROUP ALL")
                 .bind(("table", table.clone()))
                 .bind(("project_id", project_id_str.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
             let results: Vec<UserProject> = db
                 .query("SELECT * FROM type::table($table) WHERE project_id = $project_id ORDER BY joined_at DESC LIMIT $limit START $start")
@@ -232,7 +233,10 @@ impl UserProjectRepository for SurrealUserProjectRepository {
             let id = user_project.id().clone();
 
             let _created: Option<UserProject> = db
-                .create(user_project.id().to_record_id())
+                .create(RecordId::new(
+                    UserProjectId::table_name(),
+                    user_project.id().as_str(),
+                ))
                 .content(user_project)
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;

@@ -1,4 +1,3 @@
-use crate::persistence::surrealdb::id_mapper::ToRecordId;
 use domain::entities::{Organization, OrganizationId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::OrganizationRepository;
@@ -7,6 +6,7 @@ use domain::value_objects::{PaginatedResult, PaginationParams};
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::types::RecordId;
 
 pub struct SurrealOrganizationRepository {
     db: Arc<Surreal<Any>>,
@@ -27,12 +27,16 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let organization = organization.clone();
         async move {
             let created: Option<Organization> = db
-                .create(organization.id().to_record_id())
+                .create(RecordId::new(
+                    OrganizationId::table_name(),
+                    organization.id().as_str(),
+                ))
                 .content(organization.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
-            created.ok_or_else(|| DomainError::infrastructure("Failed to create organization"))
+            created
+                .ok_or_else(|| DomainError::infrastructure("Create returned no record".to_string()))
         }
     }
 
@@ -44,7 +48,7 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let id = id.clone();
         async move {
             let result: Option<Organization> = db
-                .select(id.to_record_id())
+                .select(RecordId::new(OrganizationId::table_name(), id.as_str()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -83,7 +87,10 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let organization = organization.clone();
         async move {
             let updated: Option<Organization> = db
-                .update(organization.id().to_record_id())
+                .update(RecordId::new(
+                    OrganizationId::table_name(),
+                    organization.id().as_str(),
+                ))
                 .content(organization.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -98,9 +105,12 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let db = self.db.clone();
         let id = id.clone();
         async move {
-            db.delete::<Option<Organization>>(id.to_record_id())
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+            db.delete::<Option<Organization>>(RecordId::new(
+                OrganizationId::table_name(),
+                id.as_str(),
+            ))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(())
         }
@@ -114,19 +124,15 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let params = pagination.cloned().unwrap_or_default();
         let table = OrganizationId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) GROUP ALL")
                 .bind(("table", table.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
             let organizations: Vec<Organization> = db
                 .query("SELECT * FROM type::table($table) ORDER BY created_at DESC LIMIT $limit START $start")
@@ -150,19 +156,15 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let params = pagination.cloned().unwrap_or_default();
         let table = OrganizationId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE is_active = true GROUP ALL")
                 .bind(("table", table.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
             let organizations: Vec<Organization> = db
                 .query("SELECT * FROM type::table($table) WHERE is_active = true ORDER BY created_at DESC LIMIT $limit START $start")
@@ -186,21 +188,16 @@ impl OrganizationRepository for SurrealOrganizationRepository {
         let name_str = name.to_string();
         let table = OrganizationId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE name = $name GROUP ALL")
                 .bind(("table", table))
                 .bind(("name", name_str))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
-
+            let count = count_result.first().copied().unwrap_or(0);
             Ok(count > 0)
         }
     }

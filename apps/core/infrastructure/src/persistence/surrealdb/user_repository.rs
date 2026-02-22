@@ -1,4 +1,3 @@
-use crate::persistence::surrealdb::id_mapper::ToRecordId;
 use domain::entities::{User, UserId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::UserRepository;
@@ -7,6 +6,7 @@ use domain::value_objects::{PaginatedResult, PaginationParams};
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::types::RecordId;
 
 pub struct SurrealUserRepository {
     db: Arc<Surreal<Any>>,
@@ -24,12 +24,13 @@ impl UserRepository for SurrealUserRepository {
         let user = user.clone();
         async move {
             let created: Option<User> = db
-                .create(user.id().to_record_id())
+                .create(RecordId::new(UserId::table_name(), user.id().as_str()))
                 .content(user.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
-            created.ok_or_else(|| DomainError::infrastructure("Failed to create user"))
+            created
+                .ok_or_else(|| DomainError::infrastructure("Create returned no record".to_string()))
         }
     }
 
@@ -38,7 +39,7 @@ impl UserRepository for SurrealUserRepository {
         let id = id.clone();
         async move {
             let result: Option<User> = db
-                .select(id.to_record_id())
+                .select(RecordId::new(UserId::table_name(), id.as_str()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -74,7 +75,7 @@ impl UserRepository for SurrealUserRepository {
         let user = user.clone();
         async move {
             let updated: Option<User> = db
-                .update(user.id().to_record_id())
+                .update(RecordId::new(UserId::table_name(), user.id().as_str()))
                 .content(user.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -87,7 +88,7 @@ impl UserRepository for SurrealUserRepository {
         let db = self.db.clone();
         let id = id.clone();
         async move {
-            db.delete::<Option<User>>(id.to_record_id())
+            db.delete::<Option<User>>(RecordId::new(UserId::table_name(), id.as_str()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -103,22 +104,16 @@ impl UserRepository for SurrealUserRepository {
         let params = pagination.cloned().unwrap_or_default();
         let table = UserId::table_name().to_string();
         async move {
-            // Get total count
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) GROUP ALL")
                 .bind(("table", table.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
-            // Get paginated records
             let users: Vec<User> = db
                 .query("SELECT * FROM type::table($table) ORDER BY created_at DESC LIMIT $limit START $start")
                 .bind(("table", table))
@@ -141,7 +136,7 @@ impl UserRepository for SurrealUserRepository {
         let username_str = username.to_string();
         let table = UserId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query(
                     "SELECT count() FROM type::table($table) WHERE username = $username GROUP ALL",
                 )
@@ -149,15 +144,10 @@ impl UserRepository for SurrealUserRepository {
                 .bind(("username", username_str))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
-
+            let count = count_result.first().copied().unwrap_or(0);
             Ok(count > 0)
         }
     }

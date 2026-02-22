@@ -1,4 +1,3 @@
-use crate::persistence::surrealdb::id_mapper::ToRecordId;
 use domain::entities::{OrganizationId, UserId, UserOrganization, UserOrganizationId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::UserOrganizationRepository;
@@ -7,6 +6,7 @@ use domain::value_objects::{PaginatedResult, PaginationParams};
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::types::RecordId;
 
 pub struct SurrealUserOrganizationRepository {
     db: Arc<Surreal<Any>>,
@@ -27,7 +27,10 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         let user_organization = user_organization.clone();
         async move {
             let created: Option<UserOrganization> = db
-                .create(user_organization.id().to_record_id())
+                .create(RecordId::new(
+                    UserOrganizationId::table_name(),
+                    user_organization.id().as_str(),
+                ))
                 .content(user_organization.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -44,7 +47,10 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         let id = id.clone();
         async move {
             let result: Option<UserOrganization> = db
-                .select(id.to_record_id())
+                .select(RecordId::new(
+                    UserOrganizationId::table_name(),
+                    id.as_str(),
+                ))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
@@ -92,7 +98,10 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         let user_organization = user_organization.clone();
         async move {
             let updated: Option<UserOrganization> = db
-                .update(user_organization.id().to_record_id())
+                .update(RecordId::new(
+                    UserOrganizationId::table_name(),
+                    user_organization.id().as_str(),
+                ))
                 .content(user_organization.clone())
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -107,9 +116,12 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         let db = self.db.clone();
         let id = id.clone();
         async move {
-            db.delete::<Option<UserOrganization>>(id.to_record_id())
-                .await
-                .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
+            db.delete::<Option<UserOrganization>>(RecordId::new(
+                UserOrganizationId::table_name(),
+                id.as_str(),
+            ))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
 
             Ok(())
         }
@@ -141,20 +153,16 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         let params = pagination.cloned().unwrap_or_default();
         let table = UserOrganizationId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE user_id = $user_id GROUP ALL")
                 .bind(("table", table.clone()))
                 .bind(("user_id", user_id_str.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
             let results: Vec<UserOrganization> = db
                 .query("SELECT * FROM type::table($table) WHERE user_id = $user_id ORDER BY joined_at DESC LIMIT $limit START $start")
@@ -186,20 +194,16 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         let params = pagination.cloned().unwrap_or_default();
         let table = UserOrganizationId::table_name().to_string();
         async move {
-            let count_result: Vec<serde_json::Value> = db
+            let count_result: Vec<i64> = db
                 .query("SELECT count() FROM type::table($table) WHERE organization_id = $organization_id GROUP ALL")
                 .bind(("table", table.clone()))
                 .bind(("organization_id", organization_id_str.clone()))
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
-                .take(0)
+                .take("count")
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
-            let total_count = count_result
-                .first()
-                .and_then(|v| v.get("count"))
-                .and_then(|v| v.as_u64())
-                .unwrap_or(0);
+            let total_count = count_result.first().copied().unwrap_or(0) as u64;
 
             let results: Vec<UserOrganization> = db
                 .query("SELECT * FROM type::table($table) WHERE organization_id = $organization_id ORDER BY joined_at DESC LIMIT $limit START $start")
@@ -236,7 +240,10 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
             let id = user_org.id().clone();
 
             let _created: Option<UserOrganization> = db
-                .create(user_org.id().to_record_id())
+                .create(RecordId::new(
+                    UserOrganizationId::table_name(),
+                    user_org.id().as_str(),
+                ))
                 .content(user_org)
                 .await
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;

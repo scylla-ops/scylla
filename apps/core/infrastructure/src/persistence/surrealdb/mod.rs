@@ -1,4 +1,3 @@
-pub mod id_mapper;
 pub mod organization_repository;
 pub mod project_repository;
 pub mod session_repository;
