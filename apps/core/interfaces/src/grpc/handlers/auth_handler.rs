@@ -47,7 +47,9 @@ impl<U: UserRepository + 'static, S: SessionRepository + 'static, H: HashService
         let req = request.into_inner();
 
         if req.token.is_empty() {
-            return Ok(Response::new(ValidateTokenResponse { is_valid: false }));
+            return Ok(Response::new(ValidateTokenResponse {
+                is_valid: Some(false),
+            }));
         }
 
         let is_valid = self
@@ -56,7 +58,9 @@ impl<U: UserRepository + 'static, S: SessionRepository + 'static, H: HashService
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(ValidateTokenResponse { is_valid }))
+        Ok(Response::new(ValidateTokenResponse {
+            is_valid: Some(is_valid),
+        }))
     }
 
     async fn revoke_token(
