@@ -4,18 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-domain = { path = "./domain" }
+domain = { path = "./domain", features = ["surrealdb"] }
 application = { path = "./application" }
 infrastructure = { path = "./infrastructure" }
 interfaces = { path = "./interfaces" }
 tokio = { version = "1", features = ["full"] }
 tonic = { version = "0.14.2", features = ["server"] }
-surrealdb = "2.3"
+surrealdb = "3.0"
 serde = { version = "1", features = ["derive"] }
 toml = "0.9"
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
-tower-http = { version = "0.6", features = ["cors"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
 http = "1"
-log = "0.4"
-env_logger = "0.11"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tonic-reflection = "0.14.2"

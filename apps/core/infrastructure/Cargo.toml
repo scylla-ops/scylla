@@ -4,11 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-domain = { path = "../domain" }
-surrealdb = "2.3"
+domain = { path = "../domain", features = ["surrealdb"] }
+surrealdb = "3.0"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 argon2 = "0.6.0-rc.1"
 thiserror = "2"
