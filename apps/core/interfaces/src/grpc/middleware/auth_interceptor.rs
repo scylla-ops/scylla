@@ -4,13 +4,12 @@ use domain::ports::SessionRepository;
 use std::sync::Arc;
 use tonic::{Request, Status};
 
-/// User context extracted from authentication
+/// Authenticated user context attached to each request by the auth interceptor.
 #[derive(Debug, Clone, Constructor)]
 pub struct AuthContext {
     pub user_id: UserId,
 }
 
-/// Extract bearer token from request metadata
 fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {
     let metadata = request.metadata();
 
@@ -29,80 +28,60 @@ fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {
     ))
 }
 
-/// Tonic interceptor that validates session tokens and attaches auth context to requests.
-/// This runs before each handler method and validates the bearer token against the session repository.
+/// Returns a tonic interceptor that validates the bearer token on each request
+/// and attaches an [`AuthContext`] to the request extensions on success.
 ///
-/// # Type Parameters
-/// * `S` - A type implementing `SessionRepository`
-///
-/// # Arguments
-/// * `session_repo` - Arc-wrapped session repository for looking up sessions
-///
-/// # Returns
-/// A closure that can be used as a tonic interceptor
+/// Tonic interceptors are synchronous, so token validation is performed in a
+/// dedicated OS thread with its own single-threaded Tokio runtime to avoid
+/// blocking the parent executor.
 pub fn auth_interceptor<S: SessionRepository + 'static>(
     session_repo: Arc<S>,
 ) -> impl Fn(Request<()>) -> Result<Request<()>, Status> + Clone {
     move |mut req: Request<()>| {
-        // Extract bearer token from request
         let token = extract_bearer_token(&req)?;
 
-        // Validate token and extract user_id synchronously by blocking on the async operation
-        // Note: This is necessary because tonic interceptors are sync functions
         let session_repo = session_repo.clone();
-        let user_id = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                // Find session by token
+        let user_id = std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|_| Status::internal("Failed to build tokio runtime for auth interceptor"))?;
+            rt.block_on(async move {
                 let session = session_repo
                     .find_by_token(&token)
                     .await
                     .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
 
-                // Check if session is expired
                 if session.is_expired() {
-                    // Attempt to clean up expired session (don't fail if cleanup fails)
                     let _ = session_repo.delete_by_token(&token).await;
                     return Err(Status::unauthenticated("Token has expired"));
                 }
 
                 Ok(session.user_id().clone())
             })
-        })?;
+        })
+        .join()
+        .map_err(|_| Status::internal("Auth interceptor thread panicked"))??;
 
-        // Store the validated user ID in request extensions for handlers to use
         req.extensions_mut().insert(AuthContext::new(user_id));
 
         Ok(req)
     }
 }
 
-/// Extract authenticated user context from request.
-/// Does not check permissions, just extracts the authenticated user ID.
-///
-/// # Arguments
-/// * `request` - The gRPC request to extract auth context from
-///
-/// # Returns
-/// The `AuthContext` if present, or an error status if the interceptor wasn't configured
+/// Extracts the [`AuthContext`] previously attached by the auth interceptor.
 pub fn extract_auth_context<T>(request: &Request<T>) -> Result<AuthContext, Status> {
     request
         .extensions()
         .get::<AuthContext>()
-        .ok_or_else(|| {
-            Status::internal("Auth context not found - interceptor may not be configured")
-        })
+        .ok_or_else(|| Status::internal("Auth context not found — interceptor may not be configured"))
         .map(|ctx| ctx.clone())
 }
 
-/// Validate a token directly without going through the interceptor.
-/// Useful for endpoints that need to validate tokens programmatically.
+/// Validates a session token directly against the repository.
 ///
-/// # Arguments
-/// * `session_repo` - The session repository to use for validation
-/// * `token` - The token to validate
-///
-/// # Returns
-/// The user ID if the token is valid, or an error status
+/// Returns the associated user ID if the token is valid and not expired.
+/// Expired sessions are deleted as a side effect.
 pub async fn validate_token<S: SessionRepository>(
     session_repo: &S,
     token: &str,
@@ -117,7 +96,6 @@ pub async fn validate_token<S: SessionRepository>(
         .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
 
     if session.is_expired() {
-        // Attempt to clean up expired session
         let _ = session_repo.delete_by_token(token).await;
         return Err(Status::unauthenticated("Token has expired"));
     }
