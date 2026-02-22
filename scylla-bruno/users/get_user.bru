@@ -5,7 +5,7 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
+  url: {{host}}
   method: /user.UserService/GetUser
   body: grpc
   auth: inherit
