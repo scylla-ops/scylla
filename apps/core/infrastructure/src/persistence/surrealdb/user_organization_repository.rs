@@ -4,17 +4,16 @@ use domain::errors::{DomainError, DomainResult};
 use domain::ports::UserOrganizationRepository;
 use domain::value_objects::user_organization::user_organization_role::UserOrganizationRole;
 use domain::value_objects::{PaginatedResult, PaginationParams};
-use std::sync::Arc;
-use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use surrealdb::Surreal;
 
 pub struct SurrealUserOrganizationRepository {
-    db: Arc<Surreal<Any>>,
+    db: Surreal<Any>,
 }
 
 impl SurrealUserOrganizationRepository {
-    pub fn new(db: Arc<Surreal<Any>>) -> Self {
+    pub fn new(db: Surreal<Any>) -> Self {
         Self { db }
     }
 }

@@ -2,18 +2,17 @@ use async_trait::async_trait;
 use domain::entities::{Session, SessionId, UserId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::SessionRepository;
-use std::sync::Arc;
-use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use surrealdb::Surreal;
 
 #[derive(Clone)]
 pub struct SurrealSessionRepository {
-    db: Arc<Surreal<Any>>,
+    db: Surreal<Any>,
 }
 
 impl SurrealSessionRepository {
-    pub fn new(db: Arc<Surreal<Any>>) -> Self {
+    pub fn new(db: Surreal<Any>) -> Self {
         Self { db }
     }
 }

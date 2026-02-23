@@ -3,17 +3,16 @@ use domain::entities::{Project, ProjectId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::ProjectRepository;
 use domain::value_objects::{PaginatedResult, PaginationParams};
-use std::sync::Arc;
-use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use surrealdb::Surreal;
 
 pub struct SurrealProjectRepository {
-    db: Arc<Surreal<Any>>,
+    db: Surreal<Any>,
 }
 
 impl SurrealProjectRepository {
-    pub fn new(db: Arc<Surreal<Any>>) -> Self {
+    pub fn new(db: Surreal<Any>) -> Self {
         Self { db }
     }
 }
