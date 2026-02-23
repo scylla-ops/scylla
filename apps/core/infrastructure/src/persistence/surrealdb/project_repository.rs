@@ -3,9 +3,9 @@ use domain::entities::{Project, ProjectId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::ProjectRepository;
 use domain::value_objects::{PaginatedResult, PaginationParams};
+use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
-use surrealdb::Surreal;
 
 pub struct SurrealProjectRepository {
     db: Surreal<Any>,
@@ -128,5 +128,194 @@ impl ProjectRepository for SurrealProjectRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {}", e)))?;
 
         Ok(PaginatedResult::new(projects, &params, total_count))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::init_db;
+    use domain::entities::{OrganizationId, Project};
+    use domain::value_objects::PaginationParams;
+    use domain::value_objects::project::{ProjectDescription, ProjectName};
+
+    async fn setup() -> Surreal<Any> {
+        init_db(&[ProjectId::table_name()]).await
+    }
+
+    fn test_org_id() -> OrganizationId {
+        OrganizationId::generate()
+    }
+
+    #[tokio::test]
+    async fn test_create() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let name = ProjectName::new("Test Project").expect("Invalid name");
+        let org_id = test_org_id();
+        let project = Project::create(name, None, org_id).unwrap();
+        let project_id = project.id().clone();
+
+        let created = repo
+            .create(&project)
+            .await
+            .expect("Failed to create project");
+        assert_eq!(created.id(), &project_id);
+        assert_eq!(created.name(), project.name());
+        assert_eq!(created.description(), project.description());
+        assert_eq!(created.organization_id(), project.organization_id());
+        assert_eq!(created.is_active(), project.is_active());
+        assert_eq!(created.created_at(), project.created_at());
+        assert_eq!(created.updated_at(), project.updated_at());
+    }
+
+    #[tokio::test]
+    async fn test_find_by_id() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let name = ProjectName::new("Find By Id Project").expect("Invalid name");
+        let org_id = test_org_id();
+        let project = Project::create(name, None, org_id).unwrap();
+        let project_id = project.id().clone();
+
+        repo.create(&project).await.expect("Failed to create");
+
+        let found = repo
+            .find_by_id(&project_id)
+            .await
+            .expect("Failed to find project by id");
+        assert_eq!(found.id(), &project_id);
+        assert_eq!(found.name(), project.name());
+    }
+
+    #[tokio::test]
+    async fn test_find_by_id_not_found() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let fake_id = ProjectId::generate();
+        let result = repo.find_by_id(&fake_id).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_update() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let name = ProjectName::new("Update Project").expect("Invalid name");
+        let org_id = test_org_id();
+        let mut project = Project::create(name, None, org_id).unwrap();
+        let project_id = project.id().clone();
+
+        repo.create(&project).await.expect("Failed to create");
+
+        let new_name = ProjectName::new("Updated Project Name").expect("Invalid name");
+        project.update_name(new_name.clone()).unwrap();
+
+        let desc = ProjectDescription::new("A description").unwrap();
+        project.update_description(Some(desc)).unwrap();
+
+        let updated = repo.update(&project).await.expect("Failed to update");
+        assert_eq!(updated.id(), &project_id);
+        assert_eq!(updated.name(), &new_name);
+        assert!(updated.description().is_some());
+    }
+
+    #[tokio::test]
+    async fn test_delete() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let name = ProjectName::new("Delete Project").expect("Invalid name");
+        let org_id = test_org_id();
+        let project = Project::create(name, None, org_id).unwrap();
+        let project_id = project.id().clone();
+
+        repo.create(&project).await.expect("Failed to create");
+
+        repo.delete(&project_id).await.expect("Failed to delete");
+
+        let result = repo.find_by_id(&project_id).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_list_all() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+        let org_id = test_org_id();
+
+        let name1 = ProjectName::new("List All Project 1").expect("Invalid name");
+        let project1 = Project::create(name1, None, org_id.clone()).unwrap();
+        repo.create(&project1)
+            .await
+            .expect("Failed to create project1");
+
+        let name2 = ProjectName::new("List All Project 2").expect("Invalid name");
+        let project2 = Project::create(name2, None, org_id).unwrap();
+        repo.create(&project2)
+            .await
+            .expect("Failed to create project2");
+
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_all(Some(&pagination))
+            .await
+            .expect("Failed to list all");
+        assert!(result.items().len() >= 2);
+        assert!(result.metadata().total_count() >= 2);
+    }
+
+    #[tokio::test]
+    async fn test_list_all_default_pagination() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let name = ProjectName::new("List All Default Project").expect("Invalid name");
+        let org_id = test_org_id();
+        let project = Project::create(name, None, org_id).unwrap();
+        repo.create(&project).await.expect("Failed to create");
+
+        let result = repo
+            .list_all(None)
+            .await
+            .expect("Failed to list all with default pagination");
+        assert!(!result.items().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_list_active() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+        let org_id = test_org_id();
+
+        let name_active = ProjectName::new("Active Project").expect("Invalid name");
+        let project_active = Project::create(name_active, None, org_id.clone()).unwrap();
+        repo.create(&project_active)
+            .await
+            .expect("Failed to create active project");
+
+        let name_inactive = ProjectName::new("Inactive Project").expect("Invalid name");
+        let mut project_inactive = Project::create(name_inactive, None, org_id).unwrap();
+        project_inactive.deactivate().unwrap();
+        repo.create(&project_inactive)
+            .await
+            .expect("Failed to create inactive project");
+
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_active(Some(&pagination))
+            .await
+            .expect("Failed to list active");
+
+        // All returned items must be active
+        for item in result.items() {
+            assert!(item.is_active());
+        }
+        // The active project should be in the results
+        assert!(result.items().iter().any(|p| p.id() == project_active.id()));
     }
 }

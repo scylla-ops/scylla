@@ -13,3 +13,6 @@ argon2.workspace = true
 thiserror.workspace = true
 async-trait.workspace = true
 surrealdb-types.workspace = true
+
+[dev-dependencies]
+surrealdb = { workspace = true, features = ["kv-mem", "kv-rocksdb"] }
