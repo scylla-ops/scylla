@@ -202,7 +202,7 @@ async fn run(args: Args) -> Result<()> {
     let org_handler = OrganizationHandler::new(org_uc);
     let project_handler = ProjectHandler::new(project_uc);
 
-    let auth_interceptor = AuthInterceptor::new(session_repo.clone());
+    let auth_interceptor = async_interceptor(AuthInterceptor::new(session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);
 
     tracing::info!("gRPC server listening on {}", config.grpc.address);
@@ -214,15 +214,15 @@ async fn run(args: Args) -> Result<()> {
     let auth_service = AuthServiceServer::new(auth_handler);
 
     let user_service = ServiceBuilder::new()
-        .layer(async_interceptor(auth_interceptor.clone()))
+        .layer(auth_interceptor.clone())
         .service(UserServiceServer::new(user_handler));
 
     let org_service = ServiceBuilder::new()
-        .layer(async_interceptor(auth_interceptor.clone()))
+        .layer(auth_interceptor.clone())
         .service(OrganizationServiceServer::new(org_handler));
 
     let project_service = ServiceBuilder::new()
-        .layer(async_interceptor(auth_interceptor.clone()))
+        .layer(auth_interceptor)
         .service(ProjectServiceServer::new(project_handler));
 
     Server::builder()
