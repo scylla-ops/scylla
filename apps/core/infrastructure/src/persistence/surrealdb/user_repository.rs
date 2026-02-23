@@ -8,6 +8,7 @@ use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use surrealdb_types::SurrealValue;
 
 pub struct SurrealUserRepository {
     db: Arc<Surreal<Any>>,
@@ -46,12 +47,16 @@ impl UserRepository for SurrealUserRepository {
 
     async fn find_by_username(&self, username: &UserName) -> DomainResult<User> {
         let db = self.db.clone();
-        let username_str = username.to_string();
         let table = UserId::table_name().to_string();
         let mut results: Vec<User> = db
             .query("SELECT * FROM type::table($table) WHERE username = $username LIMIT 1")
             .bind(("table", table))
-            .bind(("username", username_str.clone()))
+            .bind((
+                "username",
+                username.clone().into_value().into_object().map_err(|_| {
+                    DomainError::infrastructure("Failed to convert username to object".to_string())
+                })?,
+            ))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)
@@ -59,7 +64,7 @@ impl UserRepository for SurrealUserRepository {
 
         results
             .pop()
-            .ok_or_else(|| DomainError::not_found("User", username_str))
+            .ok_or_else(|| DomainError::not_found("User", username.as_str()))
     }
 
     async fn update(&self, user: &User) -> DomainResult<User> {
@@ -116,12 +121,16 @@ impl UserRepository for SurrealUserRepository {
 
     async fn username_exists(&self, username: &UserName) -> DomainResult<bool> {
         let db = self.db.clone();
-        let username_str = username.to_string();
         let table = UserId::table_name().to_string();
         let count_result: Vec<i64> = db
             .query("SELECT count() FROM type::table($table) WHERE username = $username GROUP ALL")
             .bind(("table", table))
-            .bind(("username", username_str))
+            .bind((
+                "username",
+                username.clone().into_value().into_object().map_err(|_| {
+                    DomainError::infrastructure("Failed to convert username to object".to_string())
+                })?,
+            ))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take("count")
