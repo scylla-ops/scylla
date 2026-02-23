@@ -2,6 +2,11 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, organization_to_proto,
     proto_to_domain_pagination,
 };
+use application::OrganizationUseCases;
+use derive_more::Constructor;
+use domain::entities::{OrganizationId, UserId};
+use domain::ports::{OrganizationRepository, UserOrganizationRepository, UserRepository};
+use domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use protocol::services::organization::{
     AddUserToOrganizationRequest, AddUserToOrganizationResponse, CreateOrganizationRequest,
     DeleteOrganizationRequest, DeleteOrganizationResponse, GetOrganizationRequest,
@@ -12,11 +17,6 @@ use protocol::services::organization::{
     ToggleOrganizationActiveResponse, UpdateOrganizationRequest,
     organization_service_server::OrganizationService,
 };
-use application::OrganizationUseCases;
-use derive_more::Constructor;
-use domain::entities::{OrganizationId, UserId};
-use domain::ports::{OrganizationRepository, UserOrganizationRepository, UserRepository};
-use domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 

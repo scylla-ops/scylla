@@ -7,16 +7,10 @@ use async_trait::async_trait;
 #[async_trait]
 pub trait UserOrganizationRepository {
     /// Create a user organization
-    async fn create(
-        &self,
-        user_organization: &UserOrganization,
-    ) -> DomainResult<UserOrganization>;
+    async fn create(&self, user_organization: &UserOrganization) -> DomainResult<UserOrganization>;
 
     /// Find a user organization by ID
-    async fn find_by_id(
-        &self,
-        id: &UserOrganizationId,
-    ) -> DomainResult<UserOrganization>;
+    async fn find_by_id(&self, id: &UserOrganizationId) -> DomainResult<UserOrganization>;
 
     /// Find a user organization by user and organization
     async fn find_by_user_and_organization(
@@ -26,10 +20,7 @@ pub trait UserOrganizationRepository {
     ) -> DomainResult<UserOrganization>;
 
     /// Update a user organization
-    async fn update(
-        &self,
-        user_organization: &UserOrganization,
-    ) -> DomainResult<UserOrganization>;
+    async fn update(&self, user_organization: &UserOrganization) -> DomainResult<UserOrganization>;
 
     /// Delete a user organization
     async fn delete(&self, id: &UserOrganizationId) -> DomainResult<()>;

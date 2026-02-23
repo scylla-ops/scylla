@@ -7,16 +7,10 @@ use async_trait::async_trait;
 #[async_trait]
 pub trait UserProjectRepository {
     /// Create a user project
-    async fn create(
-        &self,
-        user_project: &UserProject,
-    ) -> DomainResult<UserProject>;
+    async fn create(&self, user_project: &UserProject) -> DomainResult<UserProject>;
 
     /// Find a user project by ID
-    async fn find_by_id(
-        &self,
-        id: &UserProjectId,
-    ) -> DomainResult<UserProject>;
+    async fn find_by_id(&self, id: &UserProjectId) -> DomainResult<UserProject>;
 
     /// Find a user project by user and project
     async fn find_by_user_and_project(
@@ -26,10 +20,7 @@ pub trait UserProjectRepository {
     ) -> DomainResult<UserProject>;
 
     /// Update a user project
-    async fn update(
-        &self,
-        user_project: &UserProject,
-    ) -> DomainResult<UserProject>;
+    async fn update(&self, user_project: &UserProject) -> DomainResult<UserProject>;
 
     /// Delete a user project
     async fn delete(&self, id: &UserProjectId) -> DomainResult<()>;

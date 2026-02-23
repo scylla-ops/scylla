@@ -16,3 +16,5 @@ chrono.workspace = true
 uuid.workspace = true
 log.workspace = true
 toml.workspace = true
+tower.workspace = true
+tonic-async-interceptor.workspace = true

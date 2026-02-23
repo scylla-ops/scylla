@@ -1,6 +1,11 @@
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
 };
+use application::ProjectUseCases;
+use derive_more::Constructor;
+use domain::entities::{OrganizationId, ProjectId, UserId};
+use domain::ports::{ProjectRepository, UserProjectRepository, UserRepository};
+use domain::value_objects::project::{ProjectDescription, ProjectName};
 use protocol::services::project::{
     AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
     DeleteProjectResponse, GetProjectRequest, ListProjectUsersRequest, ListProjectUsersResponse,
@@ -9,11 +14,6 @@ use protocol::services::project::{
     ToggleProjectActiveRequest, ToggleProjectActiveResponse, UpdateProjectRequest,
     project_service_server::ProjectService,
 };
-use application::ProjectUseCases;
-use derive_more::Constructor;
-use domain::entities::{OrganizationId, ProjectId, UserId};
-use domain::ports::{ProjectRepository, UserProjectRepository, UserRepository};
-use domain::value_objects::project::{ProjectDescription, ProjectName};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 

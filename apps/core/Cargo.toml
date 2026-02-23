@@ -21,3 +21,5 @@ tower-http.workspace = true
 http.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+tower.workspace = true
+tonic-async-interceptor.workspace = true

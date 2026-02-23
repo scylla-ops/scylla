@@ -1,5 +1,5 @@
-use protocol::services::project::ProjectResponse;
 use domain::entities::Project;
+use protocol::services::project::ProjectResponse;
 
 pub fn project_to_proto(project: &Project) -> ProjectResponse {
     ProjectResponse {

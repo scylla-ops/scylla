@@ -7,7 +7,7 @@ use infrastructure::{
     SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
     SurrealUserRepository,
 };
-use interfaces::{AuthHandler, OrganizationHandler, ProjectHandler, UserHandler, auth_interceptor};
+use interfaces::{AuthHandler, OrganizationHandler, ProjectHandler, UserHandler};
 use protocol::services::{
     auth::auth_service_server::AuthServiceServer,
     organization::organization_service_server::OrganizationServiceServer,
@@ -20,10 +20,13 @@ use clap::Parser;
 use domain::errors::DomainError;
 use domain::value_objects::user::{Password, UserName};
 use http::{HeaderName, HeaderValue, Method};
+use interfaces::auth_interceptor::AuthInterceptor;
 use std::sync::Arc;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use tonic::transport::Server;
+use tonic_async_interceptor::async_interceptor;
+use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
@@ -199,7 +202,7 @@ async fn run(args: Args) -> Result<()> {
     let org_handler = OrganizationHandler::new(org_uc);
     let project_handler = ProjectHandler::new(project_uc);
 
-    let interceptor = auth_interceptor(session_repo);
+    let auth_interceptor = AuthInterceptor::new(session_repo.clone());
     let cors_layer = build_cors_layer(&config.cors);
 
     tracing::info!("gRPC server listening on {}", config.grpc.address);
@@ -208,23 +211,28 @@ async fn run(args: Args) -> Result<()> {
         .register_encoded_file_descriptor_set(protocol::services::FILE_DESCRIPTOR_SET)
         .build_v1alpha()?;
 
+    let auth_service = AuthServiceServer::new(auth_handler);
+
+    let user_service = ServiceBuilder::new()
+        .layer(async_interceptor(auth_interceptor.clone()))
+        .service(UserServiceServer::new(user_handler));
+
+    let org_service = ServiceBuilder::new()
+        .layer(async_interceptor(auth_interceptor.clone()))
+        .service(OrganizationServiceServer::new(org_handler));
+
+    let project_service = ServiceBuilder::new()
+        .layer(async_interceptor(auth_interceptor.clone()))
+        .service(ProjectServiceServer::new(project_handler));
+
     Server::builder()
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
         .add_service(reflection)
-        .add_service(AuthServiceServer::new(auth_handler))
-        .add_service(UserServiceServer::with_interceptor(
-            user_handler,
-            interceptor.clone(),
-        ))
-        .add_service(OrganizationServiceServer::with_interceptor(
-            org_handler,
-            interceptor.clone(),
-        ))
-        .add_service(ProjectServiceServer::with_interceptor(
-            project_handler,
-            interceptor,
-        ))
+        .add_service(auth_service)
+        .add_service(user_service)
+        .add_service(org_service)
+        .add_service(project_service)
         .serve(config.grpc.address)
         .await?;
 

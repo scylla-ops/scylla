@@ -1,5 +1,5 @@
-use protocol::services::user::UserResponse;
 use domain::entities::User;
+use protocol::services::user::UserResponse;
 
 pub fn user_to_proto(user: &User) -> UserResponse {
     UserResponse {

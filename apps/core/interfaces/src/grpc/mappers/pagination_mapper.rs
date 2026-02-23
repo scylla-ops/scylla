@@ -1,7 +1,7 @@
+use domain::value_objects::{PaginationMetadata, PaginationParams};
 use protocol::services::common::{
     PaginationMetadata as ProtoPaginationMetadata, PaginationRequest as ProtoPaginationRequest,
 };
-use domain::value_objects::{PaginationMetadata, PaginationParams};
 
 pub fn proto_to_domain_pagination(
     proto: Option<ProtoPaginationRequest>,

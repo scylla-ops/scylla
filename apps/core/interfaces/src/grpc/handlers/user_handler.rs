@@ -1,16 +1,16 @@
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
 };
-use protocol::services::user::{
-    ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest, DeleteUserRequest,
-    DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse, UpdateUserRequest,
-    UserResponse, user_service_server::UserService,
-};
 use application::UserUseCases;
 use derive_more::Constructor;
 use domain::entities::UserId;
 use domain::ports::{HashService, UserRepository};
 use domain::value_objects::user::{Password, UserName};
+use protocol::services::user::{
+    ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest,
+    DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse,
+    UpdateUserRequest, UserResponse, user_service_server::UserService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -20,7 +20,9 @@ pub struct UserHandler<U: UserRepository, H: HashService> {
 }
 
 #[async_trait::async_trait]
-impl<U: UserRepository + Send + Sync + 'static, H: HashService + Send + Sync + 'static> UserService for UserHandler<U, H> {
+impl<U: UserRepository + Send + Sync + 'static, H: HashService + Send + Sync + 'static> UserService
+    for UserHandler<U, H>
+{
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,
@@ -117,8 +119,7 @@ impl<U: UserRepository + Send + Sync + 'static, H: HashService + Send + Sync + '
     async fn change_user_global_role(
         &self,
         _request: Request<ChangeUserGlobalRoleRequest>,
-    ) -> Result<Response<ChangeUserGlobalRoleResponse>, Status>
-    {
+    ) -> Result<Response<ChangeUserGlobalRoleResponse>, Status> {
         Err(Status::unimplemented(
             "Global role management requires RBAC configuration",
         ))
