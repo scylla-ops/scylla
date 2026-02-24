@@ -1,5 +1,0 @@
-mod job_repository_tests;
-mod organization_repository_tests;
-mod pipeline_repository_tests;
-mod project_repository_tests;
-mod user_repository_tests;
