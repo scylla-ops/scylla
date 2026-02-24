@@ -6,7 +6,7 @@ members = [
     # "apps/tui",
     # "apps/agent",
     "libs/protocol",
-    # "libs/surreal-casbin-adapter",
+    "libs/surreal-casbin-adapter",
 ]
 
 [workspace.dependencies]
