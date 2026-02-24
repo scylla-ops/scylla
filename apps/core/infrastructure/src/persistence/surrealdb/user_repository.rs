@@ -24,8 +24,9 @@ impl UserRepository for SurrealUserRepository {
     async fn create(&self, user: &User) -> DomainResult<User> {
         let db = self.db.clone();
         let user = user.clone();
+        let user_id = user.id().clone().into_value();
         let created: Option<User> = db
-            .create(RecordId::new(UserId::table_name(), user.id().as_str()))
+            .create(RecordId::from_value(user_id).unwrap())
             .content(user.clone())
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?;
@@ -52,9 +53,7 @@ impl UserRepository for SurrealUserRepository {
             .bind(("table", table))
             .bind((
                 "username",
-                username.clone().into_value().into_object().map_err(|_| {
-                    DomainError::infrastructure("Failed to convert username to object".to_string())
-                })?,
+                username.clone().into_value(),
             ))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
@@ -124,12 +123,7 @@ impl UserRepository for SurrealUserRepository {
         let count_result: Vec<i64> = db
             .query("SELECT count() FROM type::table($table) WHERE username = $username GROUP ALL")
             .bind(("table", table))
-            .bind((
-                "username",
-                username.clone().into_value().into_object().map_err(|_| {
-                    DomainError::infrastructure("Failed to convert username to object".to_string())
-                })?,
-            ))
+            .bind(("username", username.clone().into_value()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take("count")

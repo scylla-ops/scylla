@@ -165,7 +165,7 @@ async fn run(args: Args) -> Result<()> {
     .context("Failed to initialize database tables")?
     .check()
     .context("Database schema init returned an error")?;
-    
+
     let user_repo = Arc::new(SurrealUserRepository::new(db.clone()));
     let session_repo = Arc::new(SurrealSessionRepository::new(db.clone()));
     let org_repo = Arc::new(SurrealOrganizationRepository::new(db.clone()));
