@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         username: "root".to_string(),
         password: "secret".to_string(),
     })
-        .await?;
+    .await?;
     db.use_ns("test").use_db("test").await?;
     db.query("DEFINE TABLE IF NOT EXISTS $table SCHEMALESS;")
         .bind(("table", surreal_casbin_adapter::TABLE))
@@ -49,9 +49,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut enforcer = Enforcer::new(model, adapter).await?;
 
     // ─── Permissions ────────────────────────────────────────────────────────
-    enforcer.add_policy(vec!["admin".to_string(), "data".to_string(), "read".to_string()]).await?;
-    enforcer.add_policy(vec!["admin".to_string(), "data".to_string(), "write".to_string()]).await?;
-    enforcer.add_policy(vec!["user".to_string(),  "data".to_string(), "read".to_string()]).await?;
+    enforcer
+        .add_policy(vec![
+            "admin".to_string(),
+            "data".to_string(),
+            "read".to_string(),
+        ])
+        .await?;
+    enforcer
+        .add_policy(vec![
+            "admin".to_string(),
+            "data".to_string(),
+            "write".to_string(),
+        ])
+        .await?;
+    enforcer
+        .add_policy(vec![
+            "user".to_string(),
+            "data".to_string(),
+            "read".to_string(),
+        ])
+        .await?;
 
     // ─── Rôles via g (alice) ─────────────────────────────────────────────────
     enforcer
@@ -72,30 +90,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("─── Test enforce ────────────────────────────────────");
 
     // alice est dans g → admin
-    println!("alice  read  (g)  : {}", enforcer.enforce(("alice",   "data", "read"))?);   // true
-    println!("alice  write (g)  : {}", enforcer.enforce(("alice",   "data", "write"))?);  // true
+    println!(
+        "alice  read  (g)  : {}",
+        enforcer.enforce(("alice", "data", "read"))?
+    ); // true
+    println!(
+        "alice  write (g)  : {}",
+        enforcer.enforce(("alice", "data", "write"))?
+    ); // true
 
     // charlie est dans g2 → admin, le matcher utilise g2 aussi
-    println!("charlie read  (g2): {}", enforcer.enforce(("charlie", "data", "read"))?);   // true
-    println!("charlie write (g2): {}", enforcer.enforce(("charlie", "data", "write"))?);  // true
+    println!(
+        "charlie read  (g2): {}",
+        enforcer.enforce(("charlie", "data", "read"))?
+    ); // true
+    println!(
+        "charlie write (g2): {}",
+        enforcer.enforce(("charlie", "data", "write"))?
+    ); // true
 
     // bob est dans g → user (read only)
-    println!("bob    read  (g)  : {}", enforcer.enforce(("bob",     "data", "read"))?);   // true
-    println!("bob    write (g)  : {}", enforcer.enforce(("bob",     "data", "write"))?);  // false
+    println!(
+        "bob    read  (g)  : {}",
+        enforcer.enforce(("bob", "data", "read"))?
+    ); // true
+    println!(
+        "bob    write (g)  : {}",
+        enforcer.enforce(("bob", "data", "write"))?
+    ); // false
 
     // ═══════════════════════════════════════════════════════════════════════════
     println!("\n─── Rôles ───────────────────────────────────────────");
 
-    println!("roles alice   (g)  : {:?}", enforcer.get_roles_for_user("alice",   None)); // ["admin"]
-    println!("roles charlie (g2) : {:?}", enforcer.get_roles_for_user("charlie", None)); // [] ← g2 non résolu par get_roles_for_user
-    println!("roles bob     (g)  : {:?}", enforcer.get_roles_for_user("bob",     None)); // ["user"]
+    println!(
+        "roles alice   (g)  : {:?}",
+        enforcer.get_roles_for_user("alice", None)
+    ); // ["admin"]
+    println!(
+        "roles charlie (g2) : {:?}",
+        enforcer.get_roles_for_user("charlie", None)
+    ); // [] ← g2 non résolu par get_roles_for_user
+    println!(
+        "roles bob     (g)  : {:?}",
+        enforcer.get_roles_for_user("bob", None)
+    ); // ["user"]
 
     // ═══════════════════════════════════════════════════════════════════════════
     println!("\n─── Permissions implicites ──────────────────────────");
 
-    println!("implicit alice   : {:?}", enforcer.get_implicit_permissions_for_user("alice",   None));
-    println!("implicit charlie : {:?}", enforcer.get_implicit_permissions_for_user("charlie", None));
-    println!("implicit bob     : {:?}", enforcer.get_implicit_permissions_for_user("bob",     None));
+    println!(
+        "implicit alice   : {:?}",
+        enforcer.get_implicit_permissions_for_user("alice", None)
+    );
+    println!(
+        "implicit charlie : {:?}",
+        enforcer.get_implicit_permissions_for_user("charlie", None)
+    );
+    println!(
+        "implicit bob     : {:?}",
+        enforcer.get_implicit_permissions_for_user("bob", None)
+    );
 
     // Tout ce qui est dans g
     println!("tout g  : {:?}", enforcer.get_named_grouping_policy("g"));

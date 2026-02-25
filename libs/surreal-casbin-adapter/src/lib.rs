@@ -1,15 +1,10 @@
 use async_trait::async_trait;
 use casbin::{Adapter, Filter, Model, Result as CasbinResult};
-use surrealdb::{
-    engine::any::Any,
-    Surreal,
-};
+use surrealdb::{Surreal, engine::any::Any};
 use surrealdb_types::SurrealValue;
-// ─── Constantes ────────────────────────────────────────────────────────────────
 
 pub const TABLE: &str = "casbin_rule";
 
-// ─── Structure d'une règle stockée en SurrealDB ─────────────────────────────
 #[derive(Debug, Clone, SurrealValue)]
 struct CasbinRule {
     sec: String,
@@ -46,28 +41,6 @@ impl CasbinRule {
 }
 
 // ─── Adapter ────────────────────────────────────────────────────────────────
-
-/// Adapter casbin utilisant SurrealDB 3.0 comme backend.
-///
-/// # Exemple
-///
-/// ```rust,no_run
-/// use casbin::{CoreApi, DefaultModel, Enforcer};
-/// use surrealdb::{Surreal, engine::any::connect, opt::auth::Root};
-/// use casbin_surreal_adapter::SurrealAdapter;
-///
-/// #[tokio::main]
-/// async fn main() -> anyhow::Result<()> {
-///     let db = connect("ws://localhost:8000").await?;
-///     db.signin(Root { username: "root", password: "root" }).await?;
-///     db.use_ns("my_ns").use_db("my_db").await?;
-///
-///     let adapter = SurrealAdapter::new(db);
-///     let model = DefaultModel::from_file("rbac_model.conf").await?;
-///     let enforcer = Enforcer::new(model, adapter).await?;
-///     Ok(())
-/// }
-/// ```
 pub struct SurrealAdapter {
     db: Surreal<Any>,
     is_filtered: bool,
@@ -81,8 +54,6 @@ impl SurrealAdapter {
         }
     }
 }
-
-// ─── Implémentation du trait Adapter ─────────────────────────────────────────
 
 #[async_trait]
 impl Adapter for SurrealAdapter {
@@ -108,9 +79,10 @@ impl Adapter for SurrealAdapter {
             let values = rule.to_rule();
             let filter = if rule.sec == "p" { &f.p } else { &f.g };
 
-            let matches = filter.iter().enumerate().all(|(i, fv)| {
-                fv.is_empty() || values.get(i).map(|v| v == fv).unwrap_or(false)
-            });
+            let matches = filter
+                .iter()
+                .enumerate()
+                .all(|(i, fv)| fv.is_empty() || values.get(i).map(|v| v == fv).unwrap_or(false));
 
             if matches {
                 load_rule_into_model(m, rule);
@@ -144,14 +116,12 @@ impl Adapter for SurrealAdapter {
     }
 
     async fn clear_policy(&mut self) -> CasbinResult<()> {
-        let _: Vec<CasbinRule> = self
-            .db
-            .delete(TABLE)
-            .await
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let _: Vec<CasbinRule> = self.db.delete(TABLE).await.map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
         Ok(())
     }
 
@@ -170,15 +140,13 @@ impl Adapter for SurrealAdapter {
         }
 
         let entry = CasbinRule::from_rule(sec, ptype, &rule);
-        let _: Option<CasbinRule> = self
-            .db
-            .create(TABLE)
-            .content(entry)
-            .await
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+
+        let _: Option<CasbinRule> = self.db.create(TABLE).content(entry).await.map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
 
         Ok(true)
     }
@@ -212,26 +180,23 @@ impl Adapter for SurrealAdapter {
         rule: Vec<String>,
     ) -> CasbinResult<bool> {
         let query = build_delete_query(sec, ptype, &rule, None, &[]);
-        let mut result = self
-            .db
-            .query(query)
-            .await
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let mut result = self.db.query(query).await.map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
 
-        let deleted: Vec<CasbinRule> = result
-            .take(0)
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let deleted: Vec<CasbinRule> = result.take(0).map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
 
         Ok(!deleted.is_empty())
     }
 
-    /// Supprime plusieurs règles en batch.
     async fn remove_policies(
         &mut self,
         sec: &str,
@@ -247,8 +212,6 @@ impl Adapter for SurrealAdapter {
         Ok(removed_any)
     }
 
-    /// Supprime les règles dont les champs à partir de `field_index`
-    /// correspondent aux `field_values` donnés.
     async fn remove_filtered_policy(
         &mut self,
         sec: &str,
@@ -257,94 +220,73 @@ impl Adapter for SurrealAdapter {
         field_values: Vec<String>,
     ) -> CasbinResult<bool> {
         let query = build_delete_query(sec, ptype, &[], Some(field_index), &field_values);
-        let mut result = self
-            .db
-            .query(query)
-            .await
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let mut result = self.db.query(query).await.map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
 
-        let deleted: Vec<CasbinRule> = result
-            .take(0)
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let deleted: Vec<CasbinRule> = result.take(0).map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
 
         Ok(!deleted.is_empty())
     }
 }
 
-// ─── Helpers privés ──────────────────────────────────────────────────────────
-
 impl SurrealAdapter {
     async fn insert_entries(&self, entries: Vec<CasbinRule>) -> CasbinResult<bool> {
-        let _: Vec<CasbinRule> = self
-            .db
-            .insert(TABLE)
-            .content(entries)
-            .await
-            .map_err(|e| casbin::Error::IoError(
-                std::io::Error::new(std::io::ErrorKind::Other, e.to_string()),
-            ))?;
+        let _: Vec<CasbinRule> = self.db.insert(TABLE).content(entries).await.map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ))
+        })?;
 
         Ok(true)
     }
 
     async fn get_all_rules(&self) -> CasbinResult<Vec<CasbinRule>> {
-        let rules: Vec<CasbinRule> = self
-            .db
-            .select(TABLE)
-            .await
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let rules: Vec<CasbinRule> = self.db.select(TABLE).await.map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
         Ok(rules)
     }
 
-    async fn rule_exists(
-        &self,
-        sec: &str,
-        ptype: &str,
-        rule: &[String],
-    ) -> CasbinResult<bool> {
+    async fn rule_exists(&self, sec: &str, ptype: &str, rule: &[String]) -> CasbinResult<bool> {
         let query = build_select_query(sec, ptype, rule);
-        let mut result = self
-            .db
-            .query(query)
-            .await
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let mut result = self.db.query(query).await.map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
 
-        let found: Vec<CasbinRule> = result
-            .take(0)
-            .map_err(|e| casbin::Error::IoError(std::io::Error::new(
+        let found: Vec<CasbinRule> = result.take(0).map_err(|e| {
+            casbin::Error::IoError(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 e.to_string(),
-            )))?;
+            ))
+        })?;
 
         Ok(!found.is_empty())
     }
 }
 
-/// Construit une requête SELECT SurrealQL pour trouver une règle exacte.
 fn build_select_query(sec: &str, ptype: &str, rule: &[String]) -> String {
-    let mut conditions = format!(
-        "sec = '{}' AND ptype = '{}'",
-        escape(sec),
-        escape(ptype)
-    );
+    let mut conditions = format!("sec = '{}' AND ptype = '{}'", escape(sec), escape(ptype));
 
     for (i, v) in rule.iter().enumerate() {
         conditions.push_str(&format!(" AND v{} = '{}'", i, escape(v)));
     }
 
-    // S'assure que les colonnes non fournies sont NULL
     for i in rule.len()..6 {
         conditions.push_str(&format!(" AND v{} = NONE", i));
     }
@@ -352,10 +294,6 @@ fn build_select_query(sec: &str, ptype: &str, rule: &[String]) -> String {
     format!("SELECT * FROM {} WHERE {}", TABLE, conditions)
 }
 
-/// Construit une requête DELETE SurrealQL.
-///
-/// - Si `rule` est non-vide : suppression d'une règle exacte.
-/// - Si `field_index` + `field_values` sont fournis : suppression filtrée.
 fn build_delete_query(
     sec: &str,
     ptype: &str,
@@ -363,14 +301,9 @@ fn build_delete_query(
     field_index: Option<usize>,
     field_values: &[String],
 ) -> String {
-    let mut conditions = format!(
-        "sec = '{}' AND ptype = '{}'",
-        escape(sec),
-        escape(ptype)
-    );
+    let mut conditions = format!("sec = '{}' AND ptype = '{}'", escape(sec), escape(ptype));
 
     if !rule.is_empty() {
-        // Suppression exacte
         for (i, v) in rule.iter().enumerate() {
             conditions.push_str(&format!(" AND v{} = '{}'", i, escape(v)));
         }
@@ -378,14 +311,9 @@ fn build_delete_query(
             conditions.push_str(&format!(" AND v{} = NONE", i));
         }
     } else if let Some(idx) = field_index {
-        // Suppression filtrée à partir de field_index
         for (offset, v) in field_values.iter().enumerate() {
             if !v.is_empty() {
-                conditions.push_str(&format!(
-                    " AND v{} = '{}'",
-                    idx + offset,
-                    escape(v)
-                ));
+                conditions.push_str(&format!(" AND v{} = '{}'", idx + offset, escape(v)));
             }
         }
     }

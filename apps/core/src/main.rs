@@ -16,12 +16,15 @@ use protocol::services::{
 };
 
 use anyhow::{Context, Result};
+use casbin_permission_service::CasbinPermissionService;
 use clap::Parser;
 use domain::errors::DomainError;
 use domain::value_objects::user::{Password, UserName};
 use http::{HeaderName, HeaderValue, Method};
+use infrastructure::services::casbin_permission_service;
 use interfaces::auth_interceptor::AuthInterceptor;
 use std::sync::Arc;
+use surreal_casbin_adapter::SurrealAdapter;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use tonic::transport::Server;
@@ -117,6 +120,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
+
     let args = Args::parse();
 
     if args.print_example_config {
@@ -159,6 +163,7 @@ async fn run(args: Args) -> Result<()> {
         DEFINE TABLE IF NOT EXISTS projects SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS user_organization SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS user_project SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS casbin_rule SCHEMALESS;
     ",
     )
     .await
@@ -195,8 +200,20 @@ async fn run(args: Args) -> Result<()> {
         bootstrap_admin(&user_uc, bootstrap).await?;
     }
 
+    let casbin_service =
+        CasbinPermissionService::new("model.conf", SurrealAdapter::new(db.clone())).await?;
+
+    /*let _ = casbin_service
+    .add_policy(
+        &UserId::new("01kja0xyx6x304d93djb38rp52".to_string()),
+        Policy::new(Scope::System, Resource::User, Act::Create),
+    )
+    .await;*/
+
+    let permission_checker = Arc::new(casbin_service);
+
     let auth_handler = AuthHandler::new(auth_uc);
-    let user_handler = UserHandler::new(user_uc);
+    let user_handler = UserHandler::new(user_uc, permission_checker);
     let org_handler = OrganizationHandler::new(org_uc);
     let project_handler = ProjectHandler::new(project_uc);
 

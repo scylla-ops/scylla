@@ -51,10 +51,7 @@ impl UserRepository for SurrealUserRepository {
         let mut results: Vec<User> = db
             .query("SELECT * FROM type::table($table) WHERE username = $username LIMIT 1")
             .bind(("table", table))
-            .bind((
-                "username",
-                username.clone().into_value(),
-            ))
+            .bind(("username", username.clone().into_value()))
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {}", e)))?
             .take(0)

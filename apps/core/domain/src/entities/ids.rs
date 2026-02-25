@@ -88,6 +88,9 @@ macro_rules! define_id {
     };
 }
 
+pub trait EntityId: fmt::Display + AsRef<str> + Send + Sync {}
+impl<T: fmt::Display + AsRef<str> + Send + Sync> EntityId for T {}
+
 // Define ID types for all domain entities
 define_id!(UserId, "users");
 define_id!(OrganizationId, "organizations");
