@@ -53,6 +53,14 @@ impl SurrealAdapter {
             is_filtered: false,
         }
     }
+
+    pub async fn create_table(&self) {
+        self.db
+            .query("DEFINE TABLE IF NOT EXISTS $table SCHEMALESS;")
+            .bind(("table", TABLE))
+            .await
+            .ok();
+    }
 }
 
 #[async_trait]

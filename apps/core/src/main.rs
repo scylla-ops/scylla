@@ -163,7 +163,6 @@ async fn run(args: Args) -> Result<()> {
         DEFINE TABLE IF NOT EXISTS projects SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS user_organization SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS user_project SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS casbin_rule SCHEMALESS;
     ",
     )
     .await
@@ -200,8 +199,10 @@ async fn run(args: Args) -> Result<()> {
         bootstrap_admin(&user_uc, bootstrap).await?;
     }
 
-    let casbin_service =
-        CasbinPermissionService::new("model.conf", SurrealAdapter::new(db.clone())).await?;
+    let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
+    surreal_casbin_adapter.create_table().await;
+
+    let casbin_service = CasbinPermissionService::new("model.conf", surreal_casbin_adapter).await?;
 
     /*let _ = casbin_service
     .add_policy(
