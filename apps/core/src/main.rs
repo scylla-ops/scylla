@@ -19,6 +19,7 @@ use anyhow::{Context, Result};
 use casbin_permission_service::CasbinPermissionService;
 use clap::Parser;
 use domain::errors::DomainError;
+use domain::value_objects::permission::policy::Policy;
 use domain::value_objects::user::{Password, UserName};
 use http::{HeaderName, HeaderValue, Method};
 use infrastructure::services::casbin_permission_service;
@@ -88,8 +89,13 @@ fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
     layer
 }
 
-async fn bootstrap_admin<U: domain::ports::UserRepository, H: domain::ports::HashService>(
+async fn bootstrap_admin<
+    U: domain::ports::UserRepository,
+    H: domain::ports::HashService,
+    P: domain::ports::PermissionService,
+>(
     user_uc: &UserUseCases<U, H>,
+    permission_service: &mut P,
     bootstrap: &BootstrapConfig,
 ) -> Result<()> {
     let username = UserName::new(&bootstrap.username).context("Invalid bootstrap username")?;
@@ -101,6 +107,16 @@ async fn bootstrap_admin<U: domain::ports::UserRepository, H: domain::ports::Has
                 "Bootstrap user '{}' created (id: {})",
                 bootstrap.username,
                 user.id()
+            );
+
+            permission_service
+                .add_policy(user.id().clone(), Policy::absolute())
+                .await
+                .context("Failed to add admin permissions for bootstrap user")?;
+
+            tracing::info!(
+                "Admin permissions granted to bootstrap user '{}'",
+                bootstrap.username
             );
         }
         Err(DomainError::Conflict(_)) => {
@@ -195,28 +211,22 @@ async fn run(args: Args) -> Result<()> {
         user_repo.clone(),
     ));
 
-    if let Some(bootstrap) = &config.bootstrap {
-        bootstrap_admin(&user_uc, bootstrap).await?;
-    }
-
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
     surreal_casbin_adapter.create_table().await;
 
-    let casbin_service = CasbinPermissionService::new("model.conf", surreal_casbin_adapter).await?;
+    let mut casbin_service =
+        CasbinPermissionService::new("model.conf", surreal_casbin_adapter).await?;
 
-    /*let _ = casbin_service
-    .add_policy(
-        &UserId::new("01kja0xyx6x304d93djb38rp52".to_string()),
-        Policy::new(Scope::System, Resource::User, Act::Create),
-    )
-    .await;*/
+    if let Some(bootstrap) = &config.bootstrap {
+        bootstrap_admin(&user_uc, &mut casbin_service, bootstrap).await?;
+    }
 
     let permission_checker = Arc::new(casbin_service);
 
     let auth_handler = AuthHandler::new(auth_uc);
-    let user_handler = UserHandler::new(user_uc, permission_checker);
-    let org_handler = OrganizationHandler::new(org_uc);
-    let project_handler = ProjectHandler::new(project_uc);
+    let user_handler = UserHandler::new(user_uc, permission_checker.clone());
+    let org_handler = OrganizationHandler::new(org_uc, permission_checker.clone());
+    let project_handler = ProjectHandler::new(project_uc, permission_checker.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);

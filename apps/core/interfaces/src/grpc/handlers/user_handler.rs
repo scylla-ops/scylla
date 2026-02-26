@@ -18,9 +18,9 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct UserHandler<U: UserRepository, H: HashService, P: PermissionService> {
+pub struct UserHandler<U: UserRepository, H: HashService, PS: PermissionService> {
     use_cases: Arc<UserUseCases<U, H>>,
-    permission_checker: Arc<P>,
+    permission_checker: Arc<PS>,
 }
 #[async_trait::async_trait]
 impl<

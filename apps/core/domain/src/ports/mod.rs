@@ -9,3 +9,4 @@ pub use repositories::user_project_repo::UserProjectRepository;
 pub use repositories::user_repo::UserRepository;
 
 pub use services::hash_service::HashService;
+pub use services::permission_service::PermissionService;
