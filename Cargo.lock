@@ -857,6 +857,7 @@ dependencies = [
  "interfaces",
  "protocol",
  "serde",
+ "surreal-casbin-adapter",
  "surrealdb",
  "tokio",
  "toml",
@@ -2247,9 +2248,12 @@ version = "0.1.0"
 dependencies = [
  "argon2 0.6.0-rc.7",
  "async-trait",
+ "casbin",
  "chrono",
  "domain",
+ "log",
  "serde",
+ "surreal-casbin-adapter",
  "surrealdb",
  "surrealdb-types",
  "thiserror 2.0.18",
@@ -4465,7 +4469,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "surreal-casbin-adapter"
-version = "0.1.0"
+version = "3.0.1"
 dependencies = [
  "async-trait",
  "casbin",

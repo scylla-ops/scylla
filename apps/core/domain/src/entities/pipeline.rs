@@ -10,8 +10,8 @@ use std::collections::HashSet;
 pub enum PipelineNode {
     /// A group node (logical grouping of actions)
     Group {
-        id: NodeId,
-        name: NodeName,
+        id: NodeId, //
+        name: NodeName, //build
         deps: Vec<NodeId>,
     },
     /// An action node (executable task)

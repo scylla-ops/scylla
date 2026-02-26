@@ -1,3 +1,4 @@
+use crate::extract_auth_context;
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, organization_to_proto,
     proto_to_domain_pagination,
@@ -5,8 +6,10 @@ use crate::grpc::mappers::{
 use application::OrganizationUseCases;
 use derive_more::Constructor;
 use domain::entities::{OrganizationId, UserId};
+use domain::ports::services::permission_service::PermissionService;
 use domain::ports::{OrganizationRepository, UserOrganizationRepository, UserRepository};
 use domain::value_objects::organization::{OrganizationDescription, OrganizationName};
+use domain::value_objects::permission::policy;
 use protocol::services::organization::{
     AddUserToOrganizationRequest, AddUserToOrganizationResponse, CreateOrganizationRequest,
     DeleteOrganizationRequest, DeleteOrganizationResponse, GetOrganizationRequest,
@@ -25,8 +28,10 @@ pub struct OrganizationHandler<
     O: OrganizationRepository,
     UO: UserOrganizationRepository,
     U: UserRepository,
+    PS: PermissionService,
 > {
     use_cases: Arc<OrganizationUseCases<O, UO, U>>,
+    permission_checker: Arc<PS>,
 }
 
 #[async_trait::async_trait]
@@ -34,12 +39,14 @@ impl<
     O: OrganizationRepository + Send + Sync + 'static,
     UO: UserOrganizationRepository + Send + Sync + 'static,
     U: UserRepository + Send + Sync + 'static,
-> OrganizationService for OrganizationHandler<O, UO, U>
+    PS: PermissionService + Send + Sync + 'static,
+> OrganizationService for OrganizationHandler<O, UO, U, PS>
 {
     async fn create_organization(
         &self,
         request: Request<CreateOrganizationRequest>,
     ) -> Result<Response<OrganizationResponse>, Status> {
+        require_permission!(self, request, policy::organization::create());
         let req = request.into_inner();
 
         let name = OrganizationName::new(&req.name).map_err(domain_error_to_status)?;
@@ -62,12 +69,13 @@ impl<
         &self,
         request: Request<GetOrganizationRequest>,
     ) -> Result<Response<OrganizationResponse>, Status> {
-        let req = request.into_inner();
-        let id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(self, request, policy::organization::get(org_id.clone()));
+        let _ = request.into_inner();
 
         let org = self
             .use_cases
-            .get(&id)
+            .get(&org_id)
             .await
             .map_err(domain_error_to_status)?;
 
@@ -78,8 +86,9 @@ impl<
         &self,
         request: Request<UpdateOrganizationRequest>,
     ) -> Result<Response<OrganizationResponse>, Status> {
+        let org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(self, request, policy::organization::update(org_id.clone()));
         let req = request.into_inner();
-        let id = OrganizationId::new(&req.organization_id);
 
         let name = req
             .name
@@ -94,7 +103,7 @@ impl<
 
         let org = self
             .use_cases
-            .update(&id, name, description)
+            .update(&org_id, name, description)
             .await
             .map_err(domain_error_to_status)?;
 
@@ -105,11 +114,16 @@ impl<
         &self,
         request: Request<ToggleOrganizationActiveRequest>,
     ) -> Result<Response<ToggleOrganizationActiveResponse>, Status> {
-        let req = request.into_inner();
-        let id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(
+            self,
+            request,
+            policy::organization::toggle_active(org_id.clone())
+        );
+        let _ = request.into_inner();
 
         self.use_cases
-            .toggle_active(&id)
+            .toggle_active(&org_id)
             .await
             .map_err(domain_error_to_status)?;
 
@@ -120,11 +134,12 @@ impl<
         &self,
         request: Request<DeleteOrganizationRequest>,
     ) -> Result<Response<DeleteOrganizationResponse>, Status> {
-        let req = request.into_inner();
-        let id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(self, request, policy::organization::delete(org_id.clone()));
+        let _ = request.into_inner();
 
         self.use_cases
-            .delete(&id)
+            .delete(&org_id)
             .await
             .map_err(domain_error_to_status)?;
 
@@ -135,6 +150,7 @@ impl<
         &self,
         request: Request<ListOrganizationsRequest>,
     ) -> Result<Response<ListOrganizationsResponse>, Status> {
+        require_permission!(self, request, policy::organization::list());
         let req = request.into_inner();
         let pagination = proto_to_domain_pagination(req.pagination);
 
@@ -158,8 +174,13 @@ impl<
         &self,
         request: Request<ListOrganizationUsersRequest>,
     ) -> Result<Response<ListOrganizationUsersResponse>, Status> {
+        let org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(
+            self,
+            request,
+            policy::organization::list_users(org_id.clone())
+        );
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let (pairs, metadata) = self
@@ -188,9 +209,13 @@ impl<
         &self,
         request: Request<ListUserOrganizationsRequest>,
     ) -> Result<Response<ListUserOrganizationsResponse>, Status> {
-        let req = request.into_inner();
-        let user_id = UserId::new(&req.user_id);
-        let pagination = proto_to_domain_pagination(req.pagination);
+        let user_id = UserId::new(&request.get_ref().user_id);
+        require_permission!(
+            self,
+            request,
+            policy::organization::list_user_orgs(user_id.clone())
+        );
+        let pagination = proto_to_domain_pagination(request.get_ref().pagination.clone());
 
         let (orgs, metadata) = self
             .use_cases
@@ -211,9 +236,14 @@ impl<
         &self,
         request: Request<AddUserToOrganizationRequest>,
     ) -> Result<Response<AddUserToOrganizationResponse>, Status> {
+        let org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(
+            self,
+            request,
+            policy::organization::add_user_to_organization(org_id.clone())
+        );
         let req = request.into_inner();
         let user_id = UserId::new(&req.user_id);
-        let org_id = OrganizationId::new(&req.organization_id);
 
         let relation_id = self
             .use_cases
@@ -230,9 +260,14 @@ impl<
         &self,
         request: Request<RemoveUserFromOrganizationRequest>,
     ) -> Result<Response<RemoveUserFromOrganizationResponse>, Status> {
+        let org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(
+            self,
+            request,
+            policy::organization::remove_user_from_organization(org_id.clone())
+        );
         let req = request.into_inner();
         let user_id = UserId::new(&req.user_id);
-        let org_id = OrganizationId::new(&req.organization_id);
 
         self.use_cases
             .remove_user(&user_id, &org_id)

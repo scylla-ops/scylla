@@ -1,11 +1,10 @@
 [package]
 name = "surreal-casbin-adapter"
-version = "0.1.0"
+version = "3.0.1"
 edition = "2024"
 authors = ["Scylla Contributors"]
 description = "A SurrealDB adapter for casbin-rs - an authorization library that supports access control models like ACL, RBAC, ABAC"
 license = "Apache-2.0"
-repository = "https://github.com/yourusername/surreal-casbin-adapter"
 keywords = ["casbin", "surrealdb", "authorization", "rbac", "acl"]
 categories = ["authentication", "database"]
 

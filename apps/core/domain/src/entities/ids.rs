@@ -1,6 +1,5 @@
 use std::fmt;
-//#[cfg(feature = "surrealdb")]
-//use surrealdb_types::SurrealValue;
+use std::str::FromStr;
 
 /// Macro to generate type-safe ID wrappers for domain entities
 macro_rules! define_id {
@@ -61,6 +60,19 @@ macro_rules! define_id {
             }
         }
 
+        impl FromStr for $name {
+            type Err = IdParseError;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                if s.trim().is_empty() {
+                    Err(IdParseError {
+                        value: s.to_string(),
+                    })
+                } else {
+                    Ok(Self::from(s.to_string()))
+                }
+            }
+        }
+
         #[cfg(feature = "surrealdb")]
         impl surrealdb_types::SurrealValue for $name {
             fn kind_of() -> surrealdb_types::Kind {
@@ -87,6 +99,22 @@ macro_rules! define_id {
         }
     };
 }
+
+#[derive(Debug)]
+pub struct IdParseError {
+    value: String,
+}
+
+impl fmt::Display for IdParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "invalid id format: {}", self.value)
+    }
+}
+
+impl std::error::Error for IdParseError {}
+
+pub trait EntityId: fmt::Display + AsRef<str> + Send + Sync {}
+impl<T: fmt::Display + AsRef<str> + Send + Sync> EntityId for T {}
 
 // Define ID types for all domain entities
 define_id!(UserId, "users");

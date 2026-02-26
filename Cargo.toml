@@ -25,7 +25,7 @@ tonic-async-interceptor = "0.14.1"
 
 # serialization
 serde = { version = "1", features = ["derive"] }
-toml = "0.9"
+toml = "0.9.8"
 
 # database
 surrealdb = { version = "3.0" }
@@ -39,6 +39,8 @@ ulid = "1.2.1"
 uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
 argon2 = "0.6.0-rc.7"
+casbin = "2.20.0"
+surreal-casbin-adapter = { path = "libs/surreal-casbin-adapter" }
 
 # web / tracing
 tower = { version = "0.5.3" }

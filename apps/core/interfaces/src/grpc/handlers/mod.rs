@@ -1,3 +1,6 @@
+#[macro_use]
+pub mod macros;
+
 pub mod auth_handler;
 pub mod organization_handler;
 pub mod project_handler;

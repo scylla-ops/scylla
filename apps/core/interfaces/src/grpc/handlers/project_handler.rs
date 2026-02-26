@@ -1,10 +1,12 @@
+use crate::extract_auth_context;
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
 };
 use application::ProjectUseCases;
 use derive_more::Constructor;
 use domain::entities::{OrganizationId, ProjectId, UserId};
-use domain::ports::{ProjectRepository, UserProjectRepository, UserRepository};
+use domain::ports::{PermissionService, ProjectRepository, UserProjectRepository, UserRepository};
+use domain::value_objects::permission::policy;
 use domain::value_objects::project::{ProjectDescription, ProjectName};
 use protocol::services::project::{
     AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
@@ -18,8 +20,14 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct ProjectHandler<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> {
+pub struct ProjectHandler<
+    P: ProjectRepository,
+    UP: UserProjectRepository,
+    U: UserRepository,
+    PS: PermissionService,
+> {
     use_cases: Arc<ProjectUseCases<P, UP, U>>,
+    permission_checker: Arc<PS>,
 }
 
 #[async_trait::async_trait]
@@ -27,12 +35,15 @@ impl<
     P: ProjectRepository + Send + Sync + 'static,
     UP: UserProjectRepository + Send + Sync + 'static,
     U: UserRepository + Send + Sync + 'static,
-> ProjectService for ProjectHandler<P, UP, U>
+    PS: PermissionService + Send + Sync + 'static,
+> ProjectService for ProjectHandler<P, UP, U, PS>
 {
     async fn create_project(
         &self,
         request: Request<CreateProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
+        let target_orga_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(self, request, policy::project::create(target_orga_id));
         let req = request.into_inner();
 
         let name = ProjectName::new(&req.name).map_err(domain_error_to_status)?;
@@ -56,6 +67,9 @@ impl<
         &self,
         request: Request<GetProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
+        let target_project_id = ProjectId::new(&request.get_ref().project_id);
+        require_permission!(self, request, policy::project::get(target_project_id));
+
         let req = request.into_inner();
         let id = ProjectId::new(&req.project_id);
 
@@ -72,6 +86,9 @@ impl<
         &self,
         request: Request<UpdateProjectRequest>,
     ) -> Result<Response<ProjectResponse>, Status> {
+        let target_project_id = ProjectId::new(&request.get_ref().project_id);
+        require_permission!(self, request, policy::project::update(target_project_id));
+
         let req = request.into_inner();
         let id = ProjectId::new(&req.project_id);
 
@@ -99,6 +116,13 @@ impl<
         &self,
         request: Request<ToggleProjectActiveRequest>,
     ) -> Result<Response<ToggleProjectActiveResponse>, Status> {
+        let target_project_id = ProjectId::new(&request.get_ref().project_id);
+        require_permission!(
+            self,
+            request,
+            policy::project::toggle_active(target_project_id)
+        );
+
         let req = request.into_inner();
         let id = ProjectId::new(&req.project_id);
 
@@ -114,6 +138,9 @@ impl<
         &self,
         request: Request<DeleteProjectRequest>,
     ) -> Result<Response<DeleteProjectResponse>, Status> {
+        let target_project_id = ProjectId::new(&request.get_ref().project_id);
+        require_permission!(self, request, policy::project::delete(target_project_id));
+
         let req = request.into_inner();
         let id = ProjectId::new(&req.project_id);
 
@@ -129,6 +156,8 @@ impl<
         &self,
         request: Request<ListProjectsRequest>,
     ) -> Result<Response<ListProjectsResponse>, Status> {
+        require_permission!(self, request, policy::project::list());
+
         let req = request.into_inner();
         let pagination = proto_to_domain_pagination(req.pagination);
 
@@ -151,6 +180,13 @@ impl<
         &self,
         request: Request<ListProjectUsersRequest>,
     ) -> Result<Response<ListProjectUsersResponse>, Status> {
+        let target_project_id = ProjectId::new(&request.get_ref().project_id);
+        require_permission!(
+            self,
+            request,
+            policy::project::list_users(target_project_id)
+        );
+
         let req = request.into_inner();
         let project_id = ProjectId::new(&req.project_id);
         let pagination = proto_to_domain_pagination(req.pagination);
@@ -181,6 +217,13 @@ impl<
         &self,
         request: Request<ListUserProjectsRequest>,
     ) -> Result<Response<ListProjectsResponse>, Status> {
+        let target_user_id = UserId::new(&request.get_ref().user_id);
+        require_permission!(
+            self,
+            request,
+            policy::project::list_user_projects(target_user_id)
+        );
+
         let req = request.into_inner();
         let user_id = UserId::new(&req.user_id);
         let pagination = proto_to_domain_pagination(req.pagination);
@@ -203,6 +246,13 @@ impl<
         &self,
         request: Request<AddUserToProjectRequest>,
     ) -> Result<Response<AddUserToProjectResponse>, Status> {
+        let target_project_id = ProjectId::new(&request.get_ref().project_id);
+        require_permission!(
+            self,
+            request,
+            policy::project::add_user_to_project(target_project_id)
+        );
+
         let req = request.into_inner();
         let user_id = UserId::new(&req.user_id);
         let project_id = ProjectId::new(&req.project_id);
@@ -222,6 +272,13 @@ impl<
         &self,
         request: Request<RemoveUserFromProjectRequest>,
     ) -> Result<Response<RemoveUserFromProjectResponse>, Status> {
+        let target_project_id = ProjectId::new(&request.get_ref().project_id);
+        require_permission!(
+            self,
+            request,
+            policy::project::remove_user_from_project(target_project_id)
+        );
+
         let req = request.into_inner();
         let user_id = UserId::new(&req.user_id);
         let project_id = ProjectId::new(&req.project_id);
