@@ -1,0 +1,16 @@
+[package]
+name = "domain"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+surrealdb = ["dep:surrealdb-types"]
+
+[dependencies]
+async-trait.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+derive_more.workspace = true
+chrono.workspace = true
+ulid.workspace = true
+surrealdb-types = { workspace = true, optional = true }

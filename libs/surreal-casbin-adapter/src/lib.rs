@@ -1,428 +1,264 @@
-//! # SurrealDB Adapter for Casbin
-//!
-//! This crate provides a SurrealDB adapter for [Casbin](https://casbin.org/), an authorization
-//! library that supports access control models like ACL, RBAC, ABAC for Rust projects.
-//!
-//! ## Features
-//!
-//! - Async/await support
-//! - All Casbin adapter operations (load, save, add, remove policies)
-//! - Filtered policy loading
-//! - Generic over SurrealDB connection types
-//!
-//! ## Usage
-//!
-//! ```rust,no_run
-//! use surreal_casbin_adapter::SurrealAdapter;
-//! use casbin::prelude::*;
-//! use surrealdb::Surreal;
-//! use std::sync::Arc;
-//!
-//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! // Initialize your SurrealDB client
-//! let db = Surreal::new::<surrealdb::engine::remote::ws::Ws>("127.0.0.1:8000").await?;
-//! db.signin(surrealdb::opt::auth::Root {
-//!     username: "root",
-//!     password: "root",
-//! }).await?;
-//! db.use_ns("test").use_db("test").await?;
-//!
-//! // Create the adapter with a custom table name
-//! let adapter = SurrealAdapter::new(Arc::new(db), "casbin_rules");
-//!
-//! // Create a Casbin enforcer
-//! let mut enforcer = Enforcer::new("model.conf", adapter).await?;
-//!
-//! // Use the enforcer
-//! enforcer.add_policy(vec!["alice".to_string(), "data1".to_string(), "read".to_string()]).await?;
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! ## Database Schema
-//!
-//! The adapter expects a table with the following structure (SurrealQL):
-//!
-//! ```sql
-//! DEFINE TABLE casbin_rules SCHEMAFULL;
-//! DEFINE FIELD ptype ON TABLE casbin_rules TYPE string;
-//! DEFINE FIELD v0 ON TABLE casbin_rules TYPE option<string>;
-//! DEFINE FIELD v1 ON TABLE casbin_rules TYPE option<string>;
-//! DEFINE FIELD v2 ON TABLE casbin_rules TYPE option<string>;
-//! DEFINE FIELD v3 ON TABLE casbin_rules TYPE option<string>;
-//! DEFINE FIELD v4 ON TABLE casbin_rules TYPE option<string>;
-//! DEFINE FIELD v5 ON TABLE casbin_rules TYPE option<string>;
-//! DEFINE INDEX casbin_ptype_idx ON TABLE casbin_rules COLUMNS ptype;
-//! ```
-
 use async_trait::async_trait;
 use casbin::{Adapter, Filter, Model, Result as CasbinResult};
-use serde::{Deserialize, Serialize};
-use surrealdb::Connection;
+use surrealdb::{Surreal, engine::any::Any};
+use surrealdb_types::SurrealValue;
 
-/// Represents a row in the casbin_rules table
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CasbinRule {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<surrealdb::RecordId>,
-    pub ptype: String,
-    pub v0: Option<String>,
-    pub v1: Option<String>,
-    pub v2: Option<String>,
-    pub v3: Option<String>,
-    pub v4: Option<String>,
-    pub v5: Option<String>,
+pub const TABLE: &str = "casbin_rule";
+
+#[derive(Debug, Clone)]
+struct RuleValues {
+    v0: Option<String>,
+    v1: Option<String>,
+    v2: Option<String>,
+    v3: Option<String>,
+    v4: Option<String>,
+    v5: Option<String>,
+}
+
+impl RuleValues {
+    fn from_slice(rule: &[String]) -> Self {
+        let get = |i: usize| rule.get(i).cloned();
+        Self {
+            v0: get(0),
+            v1: get(1),
+            v2: get(2),
+            v3: get(3),
+            v4: get(4),
+            v5: get(5),
+        }
+    }
+
+    fn to_vec(&self) -> Vec<String> {
+        [&self.v0, &self.v1, &self.v2, &self.v3, &self.v4, &self.v5]
+            .iter()
+            .filter_map(|v| v.as_deref().map(str::to_owned))
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct ExactRuleParams {
+    sec: String,
+    ptype: String,
+    values: RuleValues,
+}
+
+impl ExactRuleParams {
+    fn new(sec: &str, ptype: &str, rule: &[String]) -> Self {
+        Self {
+            sec: sec.to_owned(),
+            ptype: ptype.to_owned(),
+            values: RuleValues::from_slice(rule),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct FilteredRuleParams {
+    sec: String,
+    ptype: String,
+    field_index: usize,
+    field_values: Vec<String>,
+}
+
+impl FilteredRuleParams {
+    fn new(sec: &str, ptype: &str, field_index: usize, field_values: Vec<String>) -> Self {
+        Self {
+            sec: sec.to_owned(),
+            ptype: ptype.to_owned(),
+            field_index,
+            field_values,
+        }
+    }
+}
+
+// ─── CasbinRule ──────────────────────────────────────────────────────────────
+#[derive(Debug, Clone, SurrealValue)]
+struct CasbinRule {
+    sec: String,
+    ptype: String,
+    v0: Option<String>,
+    v1: Option<String>,
+    v2: Option<String>,
+    v3: Option<String>,
+    v4: Option<String>,
+    v5: Option<String>,
 }
 
 impl CasbinRule {
-    /// Creates a CasbinRule from a policy type and rule
-    fn from_policy(ptype: &str, rule: &[String]) -> Self {
-        let mut r = CasbinRule {
-            id: None,
-            ptype: ptype.to_owned(),
-            v0: None,
-            v1: None,
-            v2: None,
-            v3: None,
-            v4: None,
-            v5: None,
-        };
-
-        if !rule.is_empty() {
-            r.v0 = Some(rule[0].clone());
-        }
-        if rule.len() > 1 {
-            r.v1 = Some(rule[1].clone());
-        }
-        if rule.len() > 2 {
-            r.v2 = Some(rule[2].clone());
-        }
-        if rule.len() > 3 {
-            r.v3 = Some(rule[3].clone());
-        }
-        if rule.len() > 4 {
-            r.v4 = Some(rule[4].clone());
-        }
-        if rule.len() > 5 {
-            r.v5 = Some(rule[5].clone());
-        }
-
-        r
-    }
-
-    /// Converts a CasbinRule to a policy vector
-    fn to_policy(&self) -> Vec<String> {
-        let mut policy = Vec::new();
-
-        if let Some(ref v) = self.v0 {
-            policy.push(v.clone());
-        }
-        if let Some(ref v) = self.v1 {
-            policy.push(v.clone());
-        }
-        if let Some(ref v) = self.v2 {
-            policy.push(v.clone());
-        }
-        if let Some(ref v) = self.v3 {
-            policy.push(v.clone());
-        }
-        if let Some(ref v) = self.v4 {
-            policy.push(v.clone());
-        }
-        if let Some(ref v) = self.v5 {
-            policy.push(v.clone());
-        }
-
-        policy
-    }
-}
-
-/// SurrealDB adapter for Casbin
-///
-/// This adapter implements the Casbin Adapter trait to store and retrieve
-/// authorization policies from a SurrealDB database.
-///
-/// # Type Parameters
-///
-/// * `C` - The SurrealDB connection type (e.g., `surrealdb::engine::remote::ws::Client`)
-pub struct SurrealAdapter<C>
-where
-    C: Connection,
-{
-    db: std::sync::Arc<surrealdb::Surreal<C>>,
-    table_name: String,
-}
-
-impl<C> SurrealAdapter<C>
-where
-    C: Connection,
-{
-    /// Creates a new SurrealAdapter
-    ///
-    /// # Arguments
-    ///
-    /// * `db` - A SurrealDB client instance
-    /// * `table_name` - The name of the table to store Casbin rules (default: "casbin_rules")
-    ///
-    /// # Example
-    ///
-    /// ```rust,no_run
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// use surreal_casbin_adapter::SurrealAdapter;
-    /// use surrealdb::Surreal;
-    /// use std::sync::Arc;
-    ///
-    /// let db = Surreal::new::<surrealdb::engine::remote::ws::Ws>("127.0.0.1:8000").await?;
-    /// let adapter = SurrealAdapter::new(Arc::new(db), "casbin_rules");
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn new(
-        db: impl Into<std::sync::Arc<surrealdb::Surreal<C>>>,
-        table_name: impl Into<String>,
-    ) -> Self {
+    fn new(sec: &str, ptype: &str, rule: &[String]) -> Self {
+        let v = RuleValues::from_slice(rule);
         Self {
-            db: db.into(),
-            table_name: table_name.into(),
+            sec: sec.to_owned(),
+            ptype: ptype.to_owned(),
+            v0: v.v0,
+            v1: v.v1,
+            v2: v.v2,
+            v3: v.v3,
+            v4: v.v4,
+            v5: v.v5,
         }
     }
 
-    /// Loads a policy line into the model
-    fn load_policy_line(&self, rule: &CasbinRule, model: &mut dyn Model) {
-        let sec = &rule.ptype[0..1];
-        let ptype = &rule.ptype;
-        let policy = rule.to_policy();
+    fn to_rule(&self) -> Vec<String> {
+        RuleValues {
+            v0: self.v0.clone(),
+            v1: self.v1.clone(),
+            v2: self.v2.clone(),
+            v3: self.v3.clone(),
+            v4: self.v4.clone(),
+            v5: self.v5.clone(),
+        }
+        .to_vec()
+    }
+}
 
-        if let Some(ast_map) = model.get_mut_model().get_mut(sec) {
-            if let Some(ast) = ast_map.get_mut(ptype) {
-                ast.policy.insert(policy);
-            }
+// ─── load helper ─────────────────────────────────────────────────────────────
+fn load_policy_line(m: &mut dyn Model, rule: &CasbinRule) {
+    let values = rule.to_rule();
+    if values.is_empty() {
+        return;
+    }
+    if let Some(sec_map) = m.get_mut_model().get_mut(&rule.sec) {
+        if let Some(assertion) = sec_map.get_mut(&rule.ptype) {
+            assertion.get_mut_policy().insert(values);
+        }
+    }
+}
+
+// ─── Adapter ─────────────────────────────────────────────────────────────────
+
+pub struct SurrealAdapter {
+    db: Surreal<Any>,
+    is_filtered: bool,
+}
+
+impl SurrealAdapter {
+    pub fn new(db: Surreal<Any>) -> Self {
+        Self {
+            db,
+            is_filtered: false,
         }
     }
 
-    /// Internal method to load policies with optional filtering
-    async fn load_filtered_policy_internal<'a>(
-        &self,
-        model: &mut dyn Model,
-        filter: Option<Filter<'a>>,
-    ) -> CasbinResult<()> {
-        let rules: Vec<CasbinRule> = if let Some(filter) = filter {
-            // build filtered query based on filter
-            let mut query_str = format!("SELECT * FROM {}", self.table_name);
-            let mut conditions = Vec::new();
-
-            if !filter.p.is_empty() {
-                conditions.push(format!("ptype = '{}'", filter.p[0]));
-            }
-            if !filter.g.is_empty() {
-                conditions.push(format!("ptype = '{}'", filter.g[0]));
-            }
-
-            if !conditions.is_empty() {
-                query_str.push_str(" WHERE ");
-                query_str.push_str(&conditions.join(" OR "));
-            }
-
-            let mut result = self.db.query(query_str).await.map_err(|e| {
-                casbin::error::AdapterError(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to load filtered policies: {}", e),
-                )))
-            })?;
-
-            result.take(0).map_err(|e| {
-                casbin::error::AdapterError(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to parse policies: {}", e),
-                )))
-            })?
-        } else {
-            // load all rules
-            self.db.select(&self.table_name).await.map_err(|e| {
-                casbin::error::AdapterError(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to load policies: {}", e),
-                )))
-            })?
-        };
-
-        for rule in rules {
-            self.load_policy_line(&rule, model);
-        }
-
-        Ok(())
-    }
-
-    /// Internal method to save all policies
-    async fn save_policy_internal(&self, model: &mut dyn Model) -> CasbinResult<()> {
-        // first, delete all existing rules
+    pub async fn create_table(&self) {
         self.db
-            .query(format!("DELETE FROM {}", self.table_name))
+            .query("DEFINE TABLE IF NOT EXISTS $table SCHEMALESS;")
+            .bind(("table", TABLE))
             .await
-            .map_err(|e| {
-                casbin::error::AdapterError(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to clear policies: {}", e),
-                )))
-            })?;
-
-        let mut rules = Vec::new();
-
-        // collect all policies from model
-        if let Some(ast_map) = model.get_model().get("p") {
-            for (ptype, ast) in ast_map {
-                for policy in &ast.policy {
-                    let rule = CasbinRule::from_policy(ptype, policy);
-                    rules.push(rule);
-                }
-            }
-        }
-
-        // collect all role definitions from model
-        if let Some(ast_map) = model.get_model().get("g") {
-            for (ptype, ast) in ast_map {
-                for policy in &ast.policy {
-                    let rule = CasbinRule::from_policy(ptype, policy);
-                    rules.push(rule);
-                }
-            }
-        }
-
-        // insert all rules
-        if !rules.is_empty() {
-            for rule in rules {
-                let _: Option<CasbinRule> = self
-                    .db
-                    .create(&self.table_name)
-                    .content(rule)
-                    .await
-                    .map_err(|e| {
-                        casbin::error::AdapterError(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            format!("Failed to save policy: {}", e),
-                        )))
-                    })?;
-            }
-        }
-
-        Ok(())
+            .ok();
     }
 }
 
 #[async_trait]
-impl<C> Adapter for SurrealAdapter<C>
-where
-    C: Connection,
-{
-    async fn load_policy(&mut self, model: &mut dyn Model) -> CasbinResult<()> {
-        self.load_filtered_policy_internal(model, None).await
-    }
-
-    async fn save_policy(&mut self, model: &mut dyn Model) -> CasbinResult<()> {
-        self.save_policy_internal(model).await
-    }
-
-    async fn clear_policy(&mut self) -> CasbinResult<()> {
-        self.db
-            .query(format!("DELETE FROM {}", self.table_name))
-            .await
-            .map_err(|e| {
-                casbin::error::AdapterError(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to clear policies: {}", e),
-                )))
-            })?;
+impl Adapter for SurrealAdapter {
+    async fn load_policy(&mut self, m: &mut dyn Model) -> CasbinResult<()> {
+        for rule in self.get_all_rules().await? {
+            load_policy_line(m, &rule);
+        }
+        self.is_filtered = false;
         Ok(())
     }
 
     async fn load_filtered_policy<'a>(
         &mut self,
-        model: &mut dyn Model,
-        filter: Filter<'a>,
+        m: &mut dyn Model,
+        f: Filter<'a>,
     ) -> CasbinResult<()> {
-        self.load_filtered_policy_internal(model, Some(filter))
-            .await
+        for rule in self.get_all_rules().await? {
+            let values = rule.to_rule();
+
+            let filter = match rule.sec.as_str() {
+                "p" => &f.p,
+                "g" => &f.g,
+                _ => continue,
+            };
+
+            let matches = filter
+                .iter()
+                .enumerate()
+                .all(|(i, fv)| fv.is_empty() || values.get(i).map(|v| v == fv).unwrap_or(false));
+
+            if matches {
+                load_policy_line(m, &rule);
+            }
+        }
+        self.is_filtered = true;
+        Ok(())
+    }
+
+    async fn save_policy(&mut self, m: &mut dyn Model) -> CasbinResult<()> {
+        self.clear_policy().await?;
+
+        let mut all_rules: Vec<CasbinRule> = Vec::new();
+        for sec in ["p", "g"] {
+            if let Some(sec_map) = m.get_model().get(sec) {
+                for (ptype, assertion) in sec_map {
+                    for policy in assertion.get_policy() {
+                        all_rules.push(CasbinRule::new(sec, ptype, policy));
+                    }
+                }
+            }
+        }
+
+        if !all_rules.is_empty() {
+            self.insert_entries(all_rules).await?;
+        }
+        Ok(())
+    }
+
+    async fn clear_policy(&mut self) -> CasbinResult<()> {
+        let _: Vec<CasbinRule> = self.db.delete(TABLE).await.map_err(io_err)?;
+        Ok(())
     }
 
     fn is_filtered(&self) -> bool {
-        false
+        self.is_filtered
     }
 
     async fn add_policy(
         &mut self,
-        _sec: &str,
+        sec: &str,
         ptype: &str,
         rule: Vec<String>,
     ) -> CasbinResult<bool> {
-        let casbin_rule = CasbinRule::from_policy(ptype, &rule);
-
-        let _: Option<CasbinRule> = self
-            .db
-            .create(&self.table_name)
-            .content(casbin_rule)
-            .await
-            .map_err(|e| {
-                casbin::error::AdapterError(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to add policy: {}", e),
-                )))
-            })?;
-
+        let params = ExactRuleParams::new(sec, ptype, &rule);
+        if self.rule_exists(&params).await? {
+            return Ok(false);
+        }
+        let entry = CasbinRule::new(sec, ptype, &rule);
+        let _: Option<CasbinRule> = self.db.create(TABLE).content(entry).await.map_err(io_err)?;
         Ok(true)
     }
 
     async fn add_policies(
         &mut self,
-        _sec: &str,
+        sec: &str,
         ptype: &str,
         rules: Vec<Vec<String>>,
     ) -> CasbinResult<bool> {
-        for rule in rules {
-            let casbin_rule = CasbinRule::from_policy(ptype, &rule);
-            let _: Option<CasbinRule> = self
-                .db
-                .create(&self.table_name)
-                .content(casbin_rule)
-                .await
-                .map_err(|e| {
-                    casbin::error::AdapterError(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to add policy: {}", e),
-                    )))
-                })?;
+        for rule in &rules {
+            let params = ExactRuleParams::new(sec, ptype, rule);
+            if self.rule_exists(&params).await? {
+                return Ok(false);
+            }
         }
-
+        let entries: Vec<CasbinRule> = rules
+            .iter()
+            .map(|r| CasbinRule::new(sec, ptype, r))
+            .collect();
+        self.insert_entries(entries).await?;
         Ok(true)
     }
 
     async fn remove_policy(
         &mut self,
-        _sec: &str,
+        sec: &str,
         ptype: &str,
         rule: Vec<String>,
     ) -> CasbinResult<bool> {
-        // build a query to find and delete the matching rule
-        let mut query = format!("DELETE FROM {} WHERE ptype = $ptype", self.table_name);
-
-        for (i, _) in rule.iter().enumerate() {
-            query.push_str(&format!(" AND v{} = $v{}", i, i));
-        }
-
-        let mut q = self.db.query(query);
-        q = q.bind(("ptype", ptype.to_string()));
-
-        for (i, value) in rule.iter().enumerate() {
-            q = q.bind((format!("v{}", i), value.clone()));
-        }
-
-        q.await.map_err(|e| {
-            casbin::error::AdapterError(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Failed to remove policy: {}", e),
-            )))
-        })?;
-
-        Ok(true)
+        let params = ExactRuleParams::new(sec, ptype, &rule);
+        self.delete_exact(&params).await
     }
 
     async fn remove_policies(
@@ -431,78 +267,148 @@ where
         ptype: &str,
         rules: Vec<Vec<String>>,
     ) -> CasbinResult<bool> {
+        let mut removed_any = false;
         for rule in rules {
-            self.remove_policy(sec, ptype, rule).await?;
+            let params = ExactRuleParams::new(sec, ptype, &rule);
+            if self.delete_exact(&params).await? {
+                removed_any = true;
+            }
         }
-        Ok(true)
+        Ok(removed_any)
     }
 
     async fn remove_filtered_policy(
         &mut self,
-        _sec: &str,
+        sec: &str,
         ptype: &str,
         field_index: usize,
         field_values: Vec<String>,
     ) -> CasbinResult<bool> {
-        let mut query = format!("DELETE FROM {} WHERE ptype = $ptype", self.table_name);
-
-        let mut bind_params = vec![];
-        for (i, value) in field_values.iter().enumerate() {
-            if !value.is_empty() {
-                let param_name = format!("v{}", field_index + i);
-                query.push_str(&format!(" AND {} = ${}", param_name, param_name));
-                bind_params.push((param_name, value.clone()));
-            }
-        }
-
-        let mut q = self.db.query(query);
-        q = q.bind(("ptype", ptype.to_string()));
-
-        for (param_name, value) in bind_params {
-            q = q.bind((param_name, value));
-        }
-
-        q.await.map_err(|e| {
-            casbin::error::AdapterError(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Failed to remove filtered policy: {}", e),
-            )))
-        })?;
-
-        Ok(true)
+        let params = FilteredRuleParams::new(sec, ptype, field_index, field_values);
+        self.delete_filtered(&params).await
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// ─── Private helpers ─────────────────────────────────────────────────────────
 
-    #[test]
-    fn test_casbin_rule_from_policy() {
-        let rule = CasbinRule::from_policy(
-            "p",
-            &["alice".to_string(), "data1".to_string(), "read".to_string()],
-        );
-        assert_eq!(rule.ptype, "p");
-        assert_eq!(rule.v0, Some("alice".to_string()));
-        assert_eq!(rule.v1, Some("data1".to_string()));
-        assert_eq!(rule.v2, Some("read".to_string()));
-        assert_eq!(rule.v3, None);
+impl SurrealAdapter {
+    async fn insert_entries(&self, entries: Vec<CasbinRule>) -> CasbinResult<bool> {
+        let _: Vec<CasbinRule> = self
+            .db
+            .insert(TABLE)
+            .content(entries)
+            .await
+            .map_err(io_err)?;
+        Ok(true)
     }
 
-    #[test]
-    fn test_casbin_rule_to_policy() {
-        let rule = CasbinRule {
-            id: None,
-            ptype: "p".to_string(),
-            v0: Some("alice".to_string()),
-            v1: Some("data1".to_string()),
-            v2: Some("read".to_string()),
-            v3: None,
-            v4: None,
-            v5: None,
+    async fn get_all_rules(&self) -> CasbinResult<Vec<CasbinRule>> {
+        self.db.select(TABLE).await.map_err(io_err)
+    }
+
+    async fn rule_exists(&self, params: &ExactRuleParams) -> CasbinResult<bool> {
+        let found: Vec<CasbinRule> = self
+            .db
+            .query(
+                "SELECT * FROM type::table($table)
+                 WHERE sec = $sec AND ptype = $ptype
+                   AND v0 = $v0 AND v1 = $v1 AND v2 = $v2
+                   AND v3 = $v3 AND v4 = $v4 AND v5 = $v5",
+            )
+            .bind(("table", TABLE))
+            .bind(("sec", params.sec.clone()))
+            .bind(("ptype", params.ptype.clone()))
+            .bind(("v0", params.values.v0.clone()))
+            .bind(("v1", params.values.v1.clone()))
+            .bind(("v2", params.values.v2.clone()))
+            .bind(("v3", params.values.v3.clone()))
+            .bind(("v4", params.values.v4.clone()))
+            .bind(("v5", params.values.v5.clone()))
+            .await
+            .map_err(io_err)?
+            .take(0)
+            .map_err(io_err)?;
+
+        Ok(!found.is_empty())
+    }
+
+    async fn delete_exact(&self, params: &ExactRuleParams) -> CasbinResult<bool> {
+        let deleted: Vec<CasbinRule> = self
+            .db
+            .query(
+                "DELETE type::table($table)
+                 WHERE sec = $sec AND ptype = $ptype
+                   AND v0 = $v0 AND v1 = $v1 AND v2 = $v2
+                   AND v3 = $v3 AND v4 = $v4 AND v5 = $v5
+                 RETURN BEFORE",
+            )
+            .bind(("table", TABLE))
+            .bind(("sec", params.sec.clone()))
+            .bind(("ptype", params.ptype.clone()))
+            .bind(("v0", params.values.v0.clone()))
+            .bind(("v1", params.values.v1.clone()))
+            .bind(("v2", params.values.v2.clone()))
+            .bind(("v3", params.values.v3.clone()))
+            .bind(("v4", params.values.v4.clone()))
+            .bind(("v5", params.values.v5.clone()))
+            .await
+            .map_err(io_err)?
+            .take(0)
+            .map_err(io_err)?;
+
+        Ok(!deleted.is_empty())
+    }
+
+    async fn delete_filtered(&self, params: &FilteredRuleParams) -> CasbinResult<bool> {
+        let col_conditions: String = params
+            .field_values
+            .iter()
+            .enumerate()
+            .filter(|(_, v)| !v.is_empty())
+            .map(|(offset, _)| {
+                let col = params.field_index + offset;
+                let bind = format!("fv{}", offset);
+                format!("v{} = ${}", col, bind)
+            })
+            .collect::<Vec<_>>()
+            .join(" AND ");
+
+        let where_clause = if col_conditions.is_empty() {
+            "sec = $sec AND ptype = $ptype".to_owned()
+        } else {
+            format!("sec = $sec AND ptype = $ptype AND {}", col_conditions)
         };
-        let policy = rule.to_policy();
-        assert_eq!(policy, vec!["alice", "data1", "read"]);
+
+        let query_str = format!(
+            "DELETE type::table($table) WHERE {} RETURN BEFORE",
+            where_clause
+        );
+
+        let mut q = self
+            .db
+            .query(query_str)
+            .bind(("table", TABLE))
+            .bind(("sec", params.sec.clone()))
+            .bind(("ptype", params.ptype.clone()));
+
+        for (offset, v) in params
+            .field_values
+            .iter()
+            .enumerate()
+            .filter(|(_, v)| !v.is_empty())
+        {
+            q = q.bind((format!("fv{}", offset), v.clone()));
+        }
+
+        let deleted: Vec<CasbinRule> = q.await.map_err(io_err)?.take(0).map_err(io_err)?;
+        Ok(!deleted.is_empty())
     }
+}
+
+// ─── Error helper ─────────────────────────────────────────────────────────────
+fn io_err(e: impl std::fmt::Display) -> casbin::Error {
+    casbin::Error::IoError(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        e.to_string(),
+    ))
 }

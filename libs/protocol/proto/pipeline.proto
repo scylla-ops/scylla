@@ -3,6 +3,7 @@ syntax = "proto3";
 package pipeline;
 
 import "common.proto";
+import "pipeline_def.proto";
 
 service Pipeline {
   // Create a pipeline
@@ -21,18 +22,18 @@ service Pipeline {
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
 }
 
-message CreatePipelineRequest { string content = 1; }
+message CreatePipelineRequest { pipeline_def.PipelineContent content = 1; }
 
 message GetPipelineRequest { string pipeline_id = 1; }
 
 message UpdatePipelineRequest {
   string pipeline_id = 1;
-  string content = 2;
+  pipeline_def.PipelineContent content = 2;
 }
 
 message PipelineResponse {
   string pipeline_id = 1;
-  string content = 2;
+  pipeline_def.PipelineContent content = 2;
   string created_at = 3;
   string updated_at = 4;
 }

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package pipeline_def;
+
+message PipelineContent {
+  string name = 1;
+  map<string, PipelineStageContent> stages = 2;
+}
+
+message PipelineStageContent {
+  string description = 1;
+  repeated PipelineStepContent steps = 2;
+}
+
+message PipelineStepContent {
+  string name = 1;
+  string command = 2;
+  repeated string args = 3;
+}

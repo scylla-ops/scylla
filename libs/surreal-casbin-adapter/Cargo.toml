@@ -1,11 +1,10 @@
 [package]
 name = "surreal-casbin-adapter"
-version = "0.1.0"
+version = "3.0.1"
 edition = "2024"
 authors = ["Scylla Contributors"]
 description = "A SurrealDB adapter for casbin-rs - an authorization library that supports access control models like ACL, RBAC, ABAC"
 license = "Apache-2.0"
-repository = "https://github.com/yourusername/surreal-casbin-adapter"
 keywords = ["casbin", "surrealdb", "authorization", "rbac", "acl"]
 categories = ["authentication", "database"]
 
@@ -13,15 +12,14 @@ categories = ["authentication", "database"]
 doctest = false
 
 [dependencies]
-casbin = "2.13.0"
-surrealdb = { version = "2.3.9", default-features = false }
-async-trait = "0.1"
-serde = { version = "1.0", features = ["derive"] }
+casbin = "2.20.0"
+surrealdb = { version = "3.0.1" }
+surrealdb-types = "3.0.1"
+async-trait = "0.1.89"
 
 [dev-dependencies]
-tokio = { version = "1.47", features = ["full"] }
-surrealdb = { version = "2.3.9", features = ["kv-mem"] }
-serial_test = "3.2.0"
+tokio = { version = "1.49.0", features = ["full"] }
+surrealdb = { version = "3.0.1", features = ["kv-mem"] }
 
 [features]
 default = []
