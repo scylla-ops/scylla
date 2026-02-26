@@ -16,6 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "job_def.proto",
         "organization.proto",
         "project.proto",
+        "permission.proto",
     ]
     .map(|f| proto_dir.join(f));
 

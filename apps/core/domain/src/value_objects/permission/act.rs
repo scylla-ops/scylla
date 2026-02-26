@@ -18,3 +18,17 @@ impl Act {
         }
     }
 }
+
+impl std::str::FromStr for Act {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "create" => Ok(Act::Create),
+            "read" => Ok(Act::Read),
+            "write" => Ok(Act::Write),
+            "delete" => Ok(Act::Delete),
+            _ => Ok(Act::All),
+        }
+    }
+}
