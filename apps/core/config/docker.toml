@@ -9,7 +9,13 @@ namespace = "scylla"
 database = "core"
 
 [cors]
-allow_origins = ["*"]
+allow_origins = ["http://localhost:5173"]
+allow_headers = [
+    "content-type",
+    "authorization",
+    "x-grpc-web",
+    "x-user-agent"
+]
 
 [bootstrap]
 username = "admin"

@@ -1,6 +1,6 @@
 services:
   db:
-    image: surrealdb/surrealdb:v3.0.0
+    image: surrealdb/surrealdb:v3.0.1
     container_name: surrealdb
     user: "root"
     command:
@@ -28,9 +28,9 @@ services:
       db-health:
         condition: service_completed_successfully
     ports:
-      - "50051:50051" # gRPC
+      - "50051:50051"
     environment:
-      RUST_LOG: info
+      RUST_LOG: debug
     command: ["--config", "/app/config/docker.toml"]
     volumes:
       - ./apps/core/config:/app/config

@@ -11,6 +11,7 @@ interfaces = { path = "./interfaces" }
 protocol.workspace = true
 tokio.workspace = true
 tonic.workspace = true
+tonic-web.workspace = true
 tonic-reflection.workspace = true
 surrealdb.workspace = true
 serde.workspace = true

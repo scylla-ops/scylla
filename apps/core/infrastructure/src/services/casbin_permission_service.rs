@@ -1,4 +1,4 @@
-use casbin::{CoreApi, Enforcer};
+use casbin::{CoreApi, DefaultModel, Enforcer};
 use casbin::{MgmtApi, Result as CasbinResult};
 use domain::entities::EntityId;
 use domain::errors::DomainResult;
@@ -11,9 +11,12 @@ pub struct CasbinPermissionService {
     enforcer: Enforcer,
 }
 
+const MODEL: &'static str = include_str!("../../../config/casbin/rbac_model.conf");
+
 impl CasbinPermissionService {
-    pub async fn new(model_path: &'static str, adapter: SurrealAdapter) -> CasbinResult<Self> {
-        let enforcer = Enforcer::new(model_path, adapter).await?;
+    pub async fn new(adapter: SurrealAdapter) -> CasbinResult<Self> {
+        let model = DefaultModel::from_str(MODEL).await?;
+        let enforcer = Enforcer::new(model, adapter).await?;
         Ok(Self { enforcer })
     }
 }

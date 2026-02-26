@@ -63,7 +63,12 @@ fn default_allow_methods() -> Vec<String> {
 }
 
 fn default_allow_headers() -> Vec<String> {
-    vec!["content-type".to_string(), "authorization".to_string()]
+    vec![
+        "content-type".to_string(),
+        "authorization".to_string(),
+        "x-grpc-web".to_string(),
+        "x-user-agent".to_string(),
+    ]
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -30,6 +30,7 @@ use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use tonic::transport::Server;
 use tonic_async_interceptor::async_interceptor;
+use tonic_web::GrpcWebLayer;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -85,6 +86,16 @@ fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
     layer = layer.allow_headers(headers);
 
     layer = layer.max_age(std::time::Duration::from_secs(cors.max_age_seconds));
+
+    // Expose gRPC trailing metadata headers for gRPC-Web clients
+    let expose_headers: Vec<HeaderName> = vec![
+        "grpc-status".parse().unwrap(),
+        "grpc-message".parse().unwrap(),
+        "grpc-status-details-bin".parse().unwrap(),
+    ];
+    layer = layer.expose_headers(expose_headers);
+
+    dbg!(&layer);
 
     layer
 }
@@ -214,8 +225,7 @@ async fn run(args: Args) -> Result<()> {
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
     surreal_casbin_adapter.create_table().await;
 
-    let mut casbin_service =
-        CasbinPermissionService::new("model.conf", surreal_casbin_adapter).await?;
+    let mut casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await?;
 
     if let Some(bootstrap) = &config.bootstrap {
         bootstrap_admin(&user_uc, &mut casbin_service, bootstrap).await?;
@@ -252,8 +262,10 @@ async fn run(args: Args) -> Result<()> {
         .service(ProjectServiceServer::new(project_handler));
 
     Server::builder()
+        .accept_http1(true)
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
+        .layer(GrpcWebLayer::new())
         .add_service(reflection)
         .add_service(auth_service)
         .add_service(user_service)
