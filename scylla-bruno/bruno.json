@@ -2,8 +2,35 @@
   "version": "1",
   "name": "scylla-bruno",
   "type": "collection",
-  "ignore": [
-    "node_modules",
-    ".git"
-  ]
+  "ignore": ["node_modules", ".git"],
+  "presets": {
+    "requestType": "grpc",
+    "requestUrl": ""
+  },
+  "protobuf": {
+    "importPaths": [
+      {
+        "path": "../libs/protocol/proto",
+        "enabled": true
+      }
+    ],
+    "protoFiles": [
+      {
+        "path": "../libs/protocol/proto/auth.proto",
+        "type": "file"
+      },
+      {
+        "path": "../libs/protocol/proto/user.proto",
+        "type": "file"
+      },
+      {
+        "path": "../libs/protocol/proto/organization.proto",
+        "type": "file"
+      },
+      {
+        "path": "../libs/protocol/proto/project.proto",
+        "type": "file"
+      }
+    ]
+  }
 }

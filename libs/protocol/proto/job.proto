@@ -3,6 +3,7 @@ syntax = "proto3";
 package job;
 
 import "common.proto";
+import "job_def.proto";
 
 service JobService {
   // Create a job
@@ -42,7 +43,7 @@ message JobResponse {
   string job_id = 1;
   string pipeline_id = 2;
   string status = 3;
-  string content = 4;
+  job_def.JobContent content = 4;
   string created_at = 5;
   string updated_at = 6;
 }
