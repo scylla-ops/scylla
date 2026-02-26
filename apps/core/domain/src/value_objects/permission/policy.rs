@@ -214,3 +214,17 @@ pub mod organization {
         )
     }
 }
+
+pub mod permission {
+    use super::*;
+
+    /// Any write operation on permissions requires absolute (super-admin) access.
+    pub fn manage() -> Policy {
+        Policy::absolute()
+    }
+
+    /// Listing permission rules requires system-level read-all.
+    pub fn list() -> Policy {
+        Policy::new(Scope::System, Resource::All, Act::Read)
+    }
+}

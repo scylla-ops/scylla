@@ -1,16 +1,21 @@
 mod config;
 
-use application::{AuthUseCases, OrganizationUseCases, ProjectUseCases, UserUseCases};
+use application::{
+    AuthUseCases, OrganizationUseCases, PermissionUseCases, ProjectUseCases, UserUseCases,
+};
 use config::{BootstrapConfig, CoreConfig};
 use infrastructure::{
     Argon2HashService, SurrealOrganizationRepository, SurrealProjectRepository,
     SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
     SurrealUserRepository,
 };
-use interfaces::{AuthHandler, OrganizationHandler, ProjectHandler, UserHandler};
+use interfaces::{
+    AuthHandler, OrganizationHandler, PermissionHandler, ProjectHandler, UserHandler,
+};
 use protocol::services::{
     auth::auth_service_server::AuthServiceServer,
     organization::organization_service_server::OrganizationServiceServer,
+    permission::permission_service_server::PermissionServiceServer,
     project::project_service_server::ProjectServiceServer,
     user::user_service_server::UserServiceServer,
 };
@@ -233,10 +238,13 @@ async fn run(args: Args) -> Result<()> {
 
     let permission_checker = Arc::new(casbin_service);
 
+    let permission_uc = Arc::new(PermissionUseCases::new(permission_checker.clone()));
+
     let auth_handler = AuthHandler::new(auth_uc);
     let user_handler = UserHandler::new(user_uc, permission_checker.clone());
     let org_handler = OrganizationHandler::new(org_uc, permission_checker.clone());
     let project_handler = ProjectHandler::new(project_uc, permission_checker.clone());
+    let permission_handler = PermissionHandler::new(permission_uc, permission_checker.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);
@@ -258,8 +266,12 @@ async fn run(args: Args) -> Result<()> {
         .service(OrganizationServiceServer::new(org_handler));
 
     let project_service = ServiceBuilder::new()
-        .layer(auth_interceptor)
+        .layer(auth_interceptor.clone())
         .service(ProjectServiceServer::new(project_handler));
+
+    let permission_service = ServiceBuilder::new()
+        .layer(auth_interceptor)
+        .service(PermissionServiceServer::new(permission_handler));
 
     Server::builder()
         .accept_http1(true)
@@ -271,6 +283,7 @@ async fn run(args: Args) -> Result<()> {
         .add_service(user_service)
         .add_service(org_service)
         .add_service(project_service)
+        .add_service(permission_service)
         .serve(config.grpc.address)
         .await?;
 
