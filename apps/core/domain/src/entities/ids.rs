@@ -5,7 +5,6 @@ use std::str::FromStr;
 macro_rules! define_id {
     ($name:ident, $table:expr) => {
         #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-        //cfg_attr(feature = "surrealdb", derive(SurrealValue))]
         pub struct $name(String);
 
         impl $name {
