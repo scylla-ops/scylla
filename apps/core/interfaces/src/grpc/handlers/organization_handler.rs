@@ -183,19 +183,17 @@ impl<
         let req = request.into_inner();
         let pagination = proto_to_domain_pagination(req.pagination);
 
-        let (pairs, metadata) = self
+        let (users, metadata) = self
             .use_cases
             .list_users(&org_id, pagination.as_ref())
             .await
             .map_err(domain_error_to_status)?;
 
-        let users = pairs
+        let users = users
             .iter()
-            .map(|(user, membership)| OrganizationUserInfoResponse {
+            .map(|user| OrganizationUserInfoResponse {
                 user_id: user.id().to_string(),
                 username: user.username().to_string(),
-                role: membership.role().as_str().to_string(),
-                joined_at: membership.joined_at().to_rfc3339(),
             })
             .collect();
 
@@ -245,15 +243,12 @@ impl<
         let req = request.into_inner();
         let user_id = UserId::new(&req.user_id);
 
-        let relation_id = self
-            .use_cases
-            .add_user(&user_id, &org_id, &req.role)
+        self.use_cases
+            .add_user(&user_id, &org_id)
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(AddUserToOrganizationResponse {
-            relation_id: relation_id.to_string(),
-        }))
+        Ok(Response::new(AddUserToOrganizationResponse {}))
     }
 
     async fn remove_user_from_organization(

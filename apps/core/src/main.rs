@@ -188,8 +188,8 @@ async fn run(args: Args) -> Result<()> {
         DEFINE TABLE IF NOT EXISTS sessions SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS organizations SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS projects SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS user_organization SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS user_project SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS user_organization TYPE RELATION IN users OUT organizations SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS user_project TYPE RELATION IN users OUT projects SCHEMALESS;
     ",
     )
     .await
