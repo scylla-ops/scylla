@@ -1,7 +1,9 @@
 pub mod repositories;
 pub mod services;
 
+pub use repositories::job_repo::JobRepository;
 pub use repositories::organization_repo::OrganizationRepository;
+pub use repositories::pipeline_repo::PipelineRepository;
 pub use repositories::project_repo::ProjectRepository;
 pub use repositories::session_repo::SessionRepository;
 pub use repositories::user_organization_repo::UserOrganizationRepository;
