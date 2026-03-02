@@ -9,13 +9,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "common.proto",
         "user.proto",
         "auth.proto",
-        "orchestrator.proto",
-        "pipeline.proto",
-        "pipeline_def.proto",
-        "job.proto",
-        "job_def.proto",
         "organization.proto",
         "project.proto",
+        "pipeline.proto",
+        "job.proto",
+        // "orchestrator.proto",
     ]
     .map(|f| proto_dir.join(f));
 

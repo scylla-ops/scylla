@@ -1,7 +1,5 @@
 use derive_more::Constructor;
-use domain::entities::{
-    Organization, OrganizationId, User, UserId, UserOrganization, UserOrganizationId,
-};
+use domain::entities::{Organization, OrganizationId, User, UserId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::{OrganizationRepository, UserOrganizationRepository, UserRepository};
 use domain::value_objects::organization::{OrganizationDescription, OrganizationName};
@@ -83,24 +81,20 @@ impl<O: OrganizationRepository, UO: UserOrganizationRepository, U: UserRepositor
         &self,
         org_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
-    ) -> DomainResult<(Vec<(User, UserOrganization)>, PaginationMetadata)> {
+    ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
         let paginated = self
             .user_org_repo
-            .list_users_in_organization(org_id, pagination)
+            .list_members(org_id, pagination)
             .await?;
         let (user_ids, metadata) = paginated.into_parts();
 
-        let mut pairs = Vec::with_capacity(user_ids.len());
+        let mut users = Vec::with_capacity(user_ids.len());
         for user_id in &user_ids {
             let user = self.user_repo.find_by_id(user_id).await?;
-            let membership = self
-                .user_org_repo
-                .find_by_user_and_organization(user_id, org_id)
-                .await?;
-            pairs.push((user, membership));
+            users.push(user);
         }
 
-        Ok((pairs, metadata))
+        Ok((users, metadata))
     }
 
     pub async fn list_user_orgs(
@@ -110,7 +104,7 @@ impl<O: OrganizationRepository, UO: UserOrganizationRepository, U: UserRepositor
     ) -> DomainResult<(Vec<Organization>, PaginationMetadata)> {
         let paginated = self
             .user_org_repo
-            .list_organizations_for_user(user_id, pagination)
+            .list_user_organizations(user_id, pagination)
             .await?;
         let (org_ids, metadata) = paginated.into_parts();
 
@@ -127,27 +121,17 @@ impl<O: OrganizationRepository, UO: UserOrganizationRepository, U: UserRepositor
         &self,
         user_id: &UserId,
         org_id: &OrganizationId,
-        role: &str,
-    ) -> DomainResult<UserOrganizationId> {
-        if self
-            .user_org_repo
-            .find_by_user_and_organization(user_id, org_id)
-            .await
-            .is_ok()
-        {
+    ) -> DomainResult<()> {
+        if self.user_org_repo.is_member(user_id, org_id).await? {
             return Err(DomainError::conflict(
                 "User is already a member of this organization",
             ));
         }
 
-        self.user_org_repo
-            .add_user_to_organization(user_id, org_id, role)
-            .await
+        self.user_org_repo.add_member(user_id, org_id).await
     }
 
     pub async fn remove_user(&self, user_id: &UserId, org_id: &OrganizationId) -> DomainResult<()> {
-        self.user_org_repo
-            .remove_user_from_organization(user_id, org_id)
-            .await
+        self.user_org_repo.remove_member(user_id, org_id).await
     }
 }

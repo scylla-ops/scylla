@@ -23,10 +23,16 @@ message LoginResponse {
   string user_id = 2;
 }
 
-message ValidateTokenRequest { string token = 1; }
+message ValidateTokenRequest {
+  string token = 1;
+}
 
-message ValidateTokenResponse { optional bool is_valid = 1; }
+message ValidateTokenResponse {
+  optional bool is_valid = 1;
+}
 
-message RevokeTokenRequest { string token = 1; }
+message RevokeTokenRequest {
+  string token = 1;
+}
 
 message RevokeTokenResponse {}

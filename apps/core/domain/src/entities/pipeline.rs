@@ -1,158 +1,246 @@
-use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::{NodeId, NodeName, PipelineId};
+use crate::entities::{PipelineId, ProjectId};
+use crate::errors::{DomainError, DomainResult};
+use crate::value_objects::pipeline::{NodeId, PipelineName};
 use chrono::{DateTime, Utc};
-use derive_more::Constructor;
-use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashMap, HashSet};
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
-/// PipelineNode represents a node (action or group) in a pipeline definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum PipelineNode {
-    /// A group node (logical grouping of actions)
-    Group {
-        id: NodeId, //
-        name: NodeName, //build
-        deps: Vec<NodeId>,
-    },
-    /// An action node (executable task)
-    Action {
-        id: NodeId,
-        name: NodeName,
-        deps: Vec<NodeId>,
-        command: String,
-        args: Vec<String>,
-    },
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
+pub struct PipelineNode {
+    id: NodeId,
+    deps: Vec<NodeId>,
+    command: String,
+    args: Vec<String>,
 }
 
 impl PipelineNode {
-    /// Get the node's ID
+    pub fn new(
+        id: NodeId,
+        deps: Vec<NodeId>,
+        command: String,
+        args: Vec<String>,
+    ) -> DomainResult<Self> {
+        if command.trim().is_empty() {
+            return Err(DomainError::validation("Action command cannot be empty"));
+        }
+        Ok(Self {
+            id,
+            deps,
+            command,
+            args,
+        })
+    }
+
     pub fn id(&self) -> &NodeId {
-        match self {
-            PipelineNode::Group { id, .. } | PipelineNode::Action { id, .. } => id,
-        }
+        &self.id
     }
 
-    /// Get the node's name
-    pub fn name(&self) -> &NodeName {
-        match self {
-            PipelineNode::Group { name, .. } | PipelineNode::Action { name, .. } => name,
-        }
-    }
-
-    /// Get the node's dependencies
     pub fn deps(&self) -> &[NodeId] {
-        match self {
-            PipelineNode::Group { deps, .. } | PipelineNode::Action { deps, .. } => deps,
-        }
+        &self.deps
     }
 
-    /// Validate that all dependencies exist in the pipeline
-    fn validate_deps(&self, all_ids: &[NodeId]) -> DomainResult<()> {
-        for dep_id in self.deps() {
-            if !all_ids.contains(dep_id) {
-                return Err(DomainError::validation(format!(
-                    "Invalid dependency: {}",
-                    dep_id
-                )));
-            }
-        }
-        Ok(())
+    pub fn command(&self) -> &str {
+        &self.command
+    }
+
+    pub fn args(&self) -> &[String] {
+        &self.args
     }
 }
 
-/// Pipeline domain entity - represents the definition of a pipeline
-#[derive(Debug, Clone, Serialize, Deserialize, Constructor)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Pipeline {
     id: PipelineId,
-    name: String,
+    project_id: ProjectId,
+    name: PipelineName,
     nodes: Vec<PipelineNode>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
 
 impl Pipeline {
-    /// Create a new pipeline with validation
-    pub fn create(name: impl Into<String>, nodes: Vec<PipelineNode>) -> DomainResult<Self> {
-        let name = name.into();
-        let trimmed = name.trim();
-
-        if trimmed.is_empty() {
-            return Err(DomainError::validation("Pipeline name cannot be empty"));
-        }
-
-        if nodes.is_empty() {
-            return Err(DomainError::validation(
-                "Pipeline must have at least one node",
-            ));
-        }
-
-        let all_ids: Vec<NodeId> = nodes.iter().map(|n| n.id().clone()).collect();
-
-        // Validate all dependencies
-        for node in &nodes {
-            node.validate_deps(&all_ids)?;
-        }
-
-        // Validate no cycles
-        Self::validate_no_cycles(&nodes)?;
+    pub fn create(
+        name: PipelineName,
+        project_id: ProjectId,
+        nodes: Vec<PipelineNode>,
+    ) -> DomainResult<Self> {
+        Self::validate_nodes(&nodes)?;
 
         let now = Utc::now();
         Ok(Pipeline {
             id: PipelineId::generate(),
-            name: trimmed.to_string(),
+            project_id,
+            name,
             nodes,
             created_at: now,
             updated_at: now,
         })
     }
 
-    /// Validate that there are no cycles in the pipeline DAG
-    fn validate_no_cycles(nodes: &[PipelineNode]) -> DomainResult<()> {
-        let mut visited = HashSet::new();
-        let mut rec_stack = HashSet::new();
+    pub fn update_name(&mut self, name: PipelineName) -> DomainResult<()> {
+        self.name = name;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    pub fn update_nodes(&mut self, nodes: Vec<PipelineNode>) -> DomainResult<()> {
+        Self::validate_nodes(&nodes)?;
+        self.nodes = nodes;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    fn validate_nodes(nodes: &[PipelineNode]) -> DomainResult<()> {
+        if nodes.is_empty() {
+            return Err(DomainError::validation(
+                "Pipeline must have at least one node",
+            ));
+        }
+
+        let mut node_ids = HashSet::new();
+        for node in nodes {
+            if !node_ids.insert(node.id()) {
+                return Err(DomainError::validation(format!(
+                    "Duplicate node ID: {}",
+                    node.id()
+                )));
+            }
+        }
 
         for node in nodes {
-            if !visited.contains(node.id()) {
-                Self::dfs(node.id(), nodes, &mut visited, &mut rec_stack)?;
+            let mut seen_deps = HashSet::new();
+            for dep_id in node.deps() {
+                if dep_id == node.id() {
+                    return Err(DomainError::validation(format!(
+                        "Node '{}' cannot depend on itself",
+                        node.id()
+                    )));
+                }
+                if !node_ids.contains(dep_id) {
+                    return Err(DomainError::validation(format!(
+                        "Node '{}' has invalid dependency: {}",
+                        node.id(),
+                        dep_id
+                    )));
+                }
+                if !seen_deps.insert(dep_id) {
+                    return Err(DomainError::validation(format!(
+                        "Node '{}' has duplicate dependency: {}",
+                        node.id(),
+                        dep_id
+                    )));
+                }
             }
         }
 
-        Ok(())
-    }
+        // cycle detection, Kahn's algorithm
+        let mut in_degree: HashMap<&NodeId, usize> =
+            nodes.iter().map(|n| (n.id(), n.deps().len())).collect();
 
-    /// Depth-first search to detect cycles
-    fn dfs(
-        node_id: &NodeId,
-        nodes: &[PipelineNode],
-        visited: &mut HashSet<NodeId>,
-        rec_stack: &mut HashSet<NodeId>,
-    ) -> DomainResult<()> {
-        visited.insert(node_id.clone());
-        rec_stack.insert(node_id.clone());
+        let mut adjacency: HashMap<&NodeId, Vec<&NodeId>> =
+            nodes.iter().map(|n| (n.id(), Vec::new())).collect();
+        for node in nodes {
+            for dep_id in node.deps() {
+                adjacency.get_mut(dep_id).unwrap().push(node.id());
+            }
+        }
 
-        let node = nodes
+        let mut ready: BTreeSet<&NodeId> = in_degree
             .iter()
-            .find(|n| n.id() == node_id)
-            .ok_or(DomainError::validation("Node not found"))?;
+            .filter(|(_, deg)| **deg == 0)
+            .map(|(id, _)| *id)
+            .collect();
 
-        for dep in node.deps() {
-            if !visited.contains(dep) {
-                Self::dfs(dep, nodes, visited, rec_stack)?;
-            } else if rec_stack.contains(dep) {
-                return Err(DomainError::business_rule("Cycle detected in pipeline"));
+        let mut visited = 0usize;
+
+        while let Some(current) = ready.pop_first() {
+            visited += 1;
+            if let Some(dependents) = adjacency.get(current) {
+                for dependent in dependents {
+                    let deg = in_degree.get_mut(dependent).unwrap();
+                    *deg -= 1;
+                    if *deg == 0 {
+                        ready.insert(dependent);
+                    }
+                }
             }
         }
 
-        rec_stack.remove(node_id);
+        if visited != nodes.len() {
+            return Err(DomainError::business_rule("Cycle detected in pipeline"));
+        }
+
         Ok(())
     }
 
-    // Getters
+    /// compute forward adjacency map from nodes on demand
+    pub fn adjacency(&self) -> HashMap<NodeId, Vec<NodeId>> {
+        let mut adj: HashMap<NodeId, Vec<NodeId>> = self
+            .nodes
+            .iter()
+            .map(|n| (n.id().clone(), Vec::new()))
+            .collect();
+        for node in &self.nodes {
+            for dep_id in node.deps() {
+                adj.get_mut(dep_id).unwrap().push(node.id().clone());
+            }
+        }
+        adj
+    }
+
+    /// compute topological order via Kahn's algorithm on demand
+    /// uses BTreeSet for deterministic ordering
+    pub fn topo_order(&self) -> Vec<NodeId> {
+        let mut in_degree: HashMap<&NodeId, usize> = self
+            .nodes
+            .iter()
+            .map(|n| (n.id(), n.deps().len()))
+            .collect();
+
+        let mut adjacency: HashMap<&NodeId, Vec<&NodeId>> =
+            self.nodes.iter().map(|n| (n.id(), Vec::new())).collect();
+        for node in &self.nodes {
+            for dep_id in node.deps() {
+                adjacency.get_mut(dep_id).unwrap().push(node.id());
+            }
+        }
+
+        let mut ready: BTreeSet<&NodeId> = in_degree
+            .iter()
+            .filter(|(_, deg)| **deg == 0)
+            .map(|(id, _)| *id)
+            .collect();
+
+        let mut order = Vec::with_capacity(self.nodes.len());
+
+        while let Some(current) = ready.pop_first() {
+            order.push(current.clone());
+            if let Some(dependents) = adjacency.get(current) {
+                for dependent in dependents {
+                    let deg = in_degree.get_mut(dependent).unwrap();
+                    *deg -= 1;
+                    if *deg == 0 {
+                        ready.insert(dependent);
+                    }
+                }
+            }
+        }
+
+        order
+    }
+
     pub fn id(&self) -> &PipelineId {
         &self.id
     }
 
-    pub fn name(&self) -> &str {
+    pub fn project_id(&self) -> &ProjectId {
+        &self.project_id
+    }
+
+    pub fn name(&self) -> &PipelineName {
         &self.name
     }
 
@@ -168,11 +256,150 @@ impl Pipeline {
         self.updated_at
     }
 
-    /// Get the dependencies of a specific node
+    pub fn get_node(&self, node_id: &NodeId) -> Option<&PipelineNode> {
+        self.nodes.iter().find(|n| n.id() == node_id)
+    }
+
     pub fn get_node_dependencies(&self, node_id: &NodeId) -> Option<Vec<NodeId>> {
-        self.nodes
-            .iter()
-            .find(|n| n.id() == node_id)
-            .map(|n| n.deps().to_vec())
+        self.get_node(node_id).map(|n| n.deps().to_vec())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn node_id(s: &str) -> NodeId {
+        NodeId::new(s).unwrap()
+    }
+
+    fn pipeline_name() -> PipelineName {
+        PipelineName::new("test-pipeline").unwrap()
+    }
+
+    fn project_id() -> ProjectId {
+        ProjectId::generate()
+    }
+
+    fn action(id: &str, deps: &[&str]) -> PipelineNode {
+        PipelineNode::new(
+            node_id(id),
+            deps.iter().map(|d| node_id(d)).collect(),
+            "echo".into(),
+            vec![],
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn valid_dag() {
+        let nodes = vec![
+            action("a", &[]),
+            action("b", &["a"]),
+            action("c", &["a", "b"]),
+        ];
+        let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
+        assert_eq!(pipeline.nodes().len(), 3);
+    }
+
+    #[test]
+    fn topo_order_respects_dependencies() {
+        let nodes = vec![
+            action("a", &[]),
+            action("b", &["a"]),
+            action("c", &["a", "b"]),
+        ];
+        let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
+        let order = pipeline.topo_order();
+
+        let pos = |id: &str| order.iter().position(|n| n.as_str() == id).unwrap();
+        assert!(pos("a") < pos("b"));
+        assert!(pos("a") < pos("c"));
+        assert!(pos("b") < pos("c"));
+    }
+
+    #[test]
+    fn topo_order_is_deterministic() {
+        let nodes = vec![action("c", &[]), action("a", &[]), action("b", &[])];
+        let p1 = Pipeline::create(pipeline_name(), project_id(), nodes.clone()).unwrap();
+        let p2 = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
+        assert_eq!(p1.topo_order(), p2.topo_order());
+    }
+
+    #[test]
+    fn adjacency_maps_forward_edges() {
+        let nodes = vec![action("a", &[]), action("b", &["a"]), action("c", &["a"])];
+        let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
+        let adj = pipeline.adjacency();
+
+        let dependents_of_a: HashSet<&NodeId> = adj[&node_id("a")].iter().collect();
+        assert!(dependents_of_a.contains(&node_id("b")));
+        assert!(dependents_of_a.contains(&node_id("c")));
+        assert!(adj[&node_id("b")].is_empty());
+        assert!(adj[&node_id("c")].is_empty());
+    }
+
+    #[test]
+    fn get_node_returns_correct_node() {
+        let nodes = vec![action("a", &[]), action("b", &["a"])];
+        let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
+        let node = pipeline.get_node(&node_id("a")).unwrap();
+        assert_eq!(node.id(), &node_id("a"));
+        assert!(pipeline.get_node(&node_id("z")).is_none());
+    }
+
+    #[test]
+    fn rejects_cycle() {
+        let nodes = vec![
+            action("a", &["c"]),
+            action("b", &["a"]),
+            action("c", &["b"]),
+        ];
+        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_dependency() {
+        let nodes = vec![action("a", &["nonexistent"])];
+        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_ids() {
+        let nodes = vec![action("a", &[]), action("a", &[])];
+        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_deps() {
+        let nodes = vec![action("a", &[]), action("b", &["a", "a"])];
+        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+    }
+
+    #[test]
+    fn update_nodes_preserves_on_failure() {
+        let mut pipeline =
+            Pipeline::create(pipeline_name(), project_id(), vec![action("a", &[])]).unwrap();
+
+        let cyclic = vec![action("x", &["y"]), action("y", &["x"])];
+        assert!(pipeline.update_nodes(cyclic).is_err());
+        assert_eq!(pipeline.nodes().len(), 1);
+    }
+
+    #[test]
+    fn update_nodes_recomputes_topology() {
+        let mut pipeline =
+            Pipeline::create(pipeline_name(), project_id(), vec![action("a", &[])]).unwrap();
+
+        let new_nodes = vec![action("x", &[]), action("y", &["x"])];
+        pipeline.update_nodes(new_nodes).unwrap();
+
+        assert_eq!(pipeline.topo_order().len(), 2);
+        assert!(pipeline.adjacency().contains_key(&node_id("x")));
+    }
+
+    #[test]
+    fn rejects_empty_action_command() {
+        assert!(PipelineNode::new(node_id("a"), vec![], "   ".into(), vec![]).is_err());
     }
 }

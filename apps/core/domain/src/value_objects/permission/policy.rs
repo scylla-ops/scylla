@@ -134,6 +134,108 @@ pub mod project {
     }
 }
 
+pub mod pipeline {
+    use super::*;
+    use crate::entities::{OrganizationId, PipelineId, ProjectId};
+
+    pub fn create(project_id: ProjectId) -> Policy {
+        Policy::new(
+            Scope::Project(project_id),
+            Resource::Pipeline(Target::All),
+            Act::Create,
+        )
+    }
+
+    pub fn get(pipeline_id: PipelineId) -> Policy {
+        Policy::new(
+            Scope::Project(ProjectId::new("*".to_string())),
+            Resource::Pipeline(Target::Single(pipeline_id)),
+            Act::Read,
+        )
+    }
+
+    pub fn update(pipeline_id: PipelineId) -> Policy {
+        Policy::new(
+            Scope::Project(ProjectId::new("*".to_string())),
+            Resource::Pipeline(Target::Single(pipeline_id)),
+            Act::Write,
+        )
+    }
+
+    pub fn delete(pipeline_id: PipelineId) -> Policy {
+        Policy::new(
+            Scope::Project(ProjectId::new("*".to_string())),
+            Resource::Pipeline(Target::Single(pipeline_id)),
+            Act::Delete,
+        )
+    }
+
+    pub fn list() -> Policy {
+        Policy::new(
+            Scope::Project(ProjectId::new("*".to_string())),
+            Resource::Pipeline(Target::All),
+            Act::Read,
+        )
+    }
+
+    pub fn list_by_project(project_id: ProjectId) -> Policy {
+        Policy::new(
+            Scope::Project(project_id),
+            Resource::Pipeline(Target::All),
+            Act::Read,
+        )
+    }
+
+    pub fn list_by_organization(organization_id: OrganizationId) -> Policy {
+        Policy::new(
+            Scope::Org(organization_id),
+            Resource::Pipeline(Target::All),
+            Act::Read,
+        )
+    }
+}
+
+pub mod job {
+    use super::*;
+    use crate::entities::{JobId, OrganizationId, ProjectId};
+
+    pub fn get(job_id: JobId) -> Policy {
+        Policy::new(Scope::All, Resource::Job(Target::Single(job_id)), Act::Read)
+    }
+
+    pub fn delete(job_id: JobId) -> Policy {
+        Policy::new(
+            Scope::All,
+            Resource::Job(Target::Single(job_id)),
+            Act::Delete,
+        )
+    }
+
+    pub fn list() -> Policy {
+        Policy::new(Scope::All, Resource::Job(Target::All), Act::Read)
+    }
+
+    pub fn list_by_pipeline() -> Policy {
+        Policy::new(Scope::All, Resource::Job(Target::All), Act::Read)
+    }
+
+    pub fn list_by_project(project_id: ProjectId) -> Policy {
+        Policy::new(
+            Scope::Project(project_id),
+            Resource::Job(Target::All),
+            Act::Read,
+        )
+    }
+
+    pub fn list_by_organization(organization_id: OrganizationId) -> Policy {
+        Policy::new(
+            Scope::Org(organization_id),
+            Resource::Job(Target::All),
+            Act::Read,
+        )
+    }
+}
+
 pub mod organization {
     use super::*;
     use crate::entities::{OrganizationId, UserId};

@@ -1,67 +1,35 @@
-use crate::domain::entities::pipeline::Pipeline;
-use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::{JobId, JobStatus, NodeId, PipelineId};
+use crate::entities::{JobId, Pipeline, PipelineId};
+use crate::errors::{DomainError, DomainResult};
+use crate::value_objects::job::{JobStatus, NodeState};
+use crate::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+#[cfg(feature = "surrealdb")]
+use surrealdb_types::SurrealValue;
 
-/// JobNodeExecution tracks the execution state of a node within a job
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JobNodeExecution {
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
+pub struct JobNode {
     node_id: NodeId,
-    state: JobStatus,
+    state: NodeState,
     started_at: Option<DateTime<Utc>>,
     finished_at: Option<DateTime<Utc>>,
 }
 
-impl JobNodeExecution {
-    /// Create a new node execution
+impl JobNode {
     pub fn new(node_id: NodeId) -> Self {
         Self {
             node_id,
-            state: JobStatus::Pending,
+            state: NodeState::Pending,
             started_at: None,
             finished_at: None,
         }
     }
 
-    /// Start the node execution
-    pub fn start(&mut self) -> DomainResult<()> {
-        if self.state != JobStatus::Pending {
-            return Err(DomainError::business_rule(
-                "Node must be pending to start execution",
-            ));
-        }
-        self.state = JobStatus::Running;
-        self.started_at = Some(Utc::now());
-        Ok(())
-    }
-
-    /// Complete the node execution with a final state
-    pub fn finish(&mut self, state: JobStatus) -> DomainResult<()> {
-        if self.state != JobStatus::Running {
-            return Err(DomainError::business_rule(
-                "Node must be running to finish execution",
-            ));
-        }
-
-        if state == JobStatus::Pending || state == JobStatus::Running {
-            return Err(DomainError::business_rule(
-                "Final state cannot be pending or running",
-            ));
-        }
-
-        self.state = state;
-        self.finished_at = Some(Utc::now());
-        Ok(())
-    }
-
-    // Getters
     pub fn node_id(&self) -> &NodeId {
         &self.node_id
     }
 
-    pub fn state(&self) -> JobStatus {
+    pub fn state(&self) -> NodeState {
         self.state
     }
 
@@ -74,141 +42,135 @@ impl JobNodeExecution {
     }
 }
 
-/// Job domain entity - represents an instance of a pipeline execution
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Job {
     id: JobId,
     pipeline_id: PipelineId,
     status: JobStatus,
-    executions: HashMap<NodeId, JobNodeExecution>,
+    node_executions: Vec<JobNode>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
 
 impl Job {
-    /// Create a new job from a pipeline
-    pub fn create_from_pipeline(pipeline: &Pipeline) -> DomainResult<Self> {
+    pub fn create_from_pipeline(pipeline: &Pipeline) -> Self {
         let now = Utc::now();
 
-        let mut executions = HashMap::new();
-        for node in pipeline.nodes() {
-            executions.insert(node.id().clone(), JobNodeExecution::new(node.id().clone()));
-        }
+        let node_executions: Vec<JobNode> = pipeline
+            .nodes()
+            .iter()
+            .map(|node| JobNode::new(node.id().clone()))
+            .collect();
 
-        Ok(Self {
+        Self {
             id: JobId::generate(),
-            pipeline_id: PipelineId::from(pipeline.id()),
+            pipeline_id: pipeline.id().clone(),
             status: JobStatus::Pending,
-            executions,
+            node_executions,
             created_at: now,
             updated_at: now,
-        })
+        }
     }
 
-    /// Update job status with validation
     pub fn update_status(&mut self, new_status: JobStatus) -> DomainResult<()> {
-        self.status.validate_transition_to(&new_status)?;
+        self.status.transition_to(&new_status)?;
         self.status = new_status;
         self.updated_at = Utc::now();
         Ok(())
     }
 
-    /// Start the job (transition from Pending to Running)
     pub fn start(&mut self) -> DomainResult<()> {
         self.update_status(JobStatus::Running)
     }
 
-    /// Mark job as completed
     pub fn complete(&mut self) -> DomainResult<()> {
         self.update_status(JobStatus::Completed)
     }
 
-    /// Mark job as failed
     pub fn fail(&mut self) -> DomainResult<()> {
         self.update_status(JobStatus::Failed)
     }
 
-    /// Cancel the job
     pub fn cancel(&mut self) -> DomainResult<()> {
-        self.update_status(JobStatus::Cancelled)
+        self.update_status(JobStatus::Cancelled)?;
+        for execution in &mut self.node_executions {
+            if execution.state == NodeState::Pending || execution.state == NodeState::Running {
+                execution.state = NodeState::Cancelled;
+            }
+        }
+        Ok(())
     }
 
-    /// Check if job can be cancelled
+    pub fn apply_node_started(
+        &mut self,
+        node_id: &NodeId,
+        started_at: DateTime<Utc>,
+    ) -> DomainResult<()> {
+        let exec = self
+            .find_execution_mut(node_id)
+            .ok_or_else(|| DomainError::validation(format!("Node not found: {}", node_id)))?;
+
+        if exec.state != NodeState::Pending {
+            return Err(DomainError::business_rule(
+                "Node must be pending to start execution",
+            ));
+        }
+
+        exec.state = NodeState::Running;
+        exec.started_at = Some(started_at);
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    pub fn apply_node_finished(
+        &mut self,
+        node_id: &NodeId,
+        state: NodeState,
+        finished_at: DateTime<Utc>,
+    ) -> DomainResult<()> {
+        if !state.is_terminal() {
+            return Err(DomainError::business_rule(
+                "Final state must be terminal (completed, failed, or cancelled)",
+            ));
+        }
+
+        let exec = self
+            .find_execution_mut(node_id)
+            .ok_or_else(|| DomainError::validation(format!("Node not found: {}", node_id)))?;
+
+        if exec.state != NodeState::Running {
+            return Err(DomainError::business_rule(
+                "Node must be running to finish execution",
+            ));
+        }
+
+        exec.state = state;
+        exec.finished_at = Some(finished_at);
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
     pub fn can_cancel(&self) -> bool {
         matches!(self.status, JobStatus::Pending | JobStatus::Running)
     }
 
-    /// Start a node execution within the job
-    pub fn start_node(&mut self, node_id: &NodeId) -> DomainResult<()> {
-        if !matches!(self.status, JobStatus::Pending | JobStatus::Running) {
-            return Err(DomainError::business_rule(
-                "Cannot execute nodes in a terminal job",
-            ));
-        }
-
-        if self.status == JobStatus::Pending {
-            self.start()?;
-        }
-
-        if let Some(execution) = self.executions.get_mut(node_id) {
-            execution.start()?;
-            Ok(())
-        } else {
-            Err(DomainError::validation(format!(
-                "Node not found: {}",
-                node_id
-            )))
-        }
+    pub fn is_terminal(&self) -> bool {
+        self.status.is_terminal()
     }
 
-    /// Finish a node execution within the job
-    pub fn finish_node(&mut self, node_id: &NodeId, state: JobStatus) -> DomainResult<()> {
-        if let Some(execution) = self.executions.get_mut(node_id) {
-            execution.finish(state)?;
-
-            // Update job status based on node results
-            if state == JobStatus::Failed {
-                self.fail()?;
-            } else if self
-                .executions
-                .values()
-                .all(|n| n.state() == JobStatus::Completed)
-            {
-                self.complete()?;
-            }
-
-            Ok(())
-        } else {
-            Err(DomainError::validation(format!(
-                "Node not found: {}",
-                node_id
-            )))
-        }
+    fn find_execution_mut(&mut self, node_id: &NodeId) -> Option<&mut JobNode> {
+        self.node_executions
+            .iter_mut()
+            .find(|e| e.node_id() == node_id)
     }
 
-    /// Get nodes that are ready to be executed
-    pub fn runnable_nodes(&self, pipeline: &Pipeline) -> Vec<&NodeId> {
-        self.executions
-            .values()
-            .filter(|execution| {
-                execution.state() == JobStatus::Pending
-                    && pipeline
-                        .get_node_dependencies(execution.node_id())
-                        .map(|deps| {
-                            deps.iter().all(|dep_id| {
-                                self.executions
-                                    .get(dep_id)
-                                    .map(|dep_exec| dep_exec.state() == JobStatus::Completed)
-                                    .unwrap_or(false)
-                            })
-                        })
-                        .unwrap_or(true)
-            })
-            .map(|e| e.node_id())
-            .collect()
+    pub fn find_execution(&self, node_id: &NodeId) -> Option<&JobNode> {
+        self.node_executions.iter().find(|e| e.node_id() == node_id)
     }
 
     // Getters
+
     pub fn id(&self) -> &JobId {
         &self.id
     }
@@ -217,12 +179,12 @@ impl Job {
         &self.pipeline_id
     }
 
-    pub fn status(&self) -> &JobStatus {
-        &self.status
+    pub fn status(&self) -> JobStatus {
+        self.status
     }
 
-    pub fn executions(&self) -> &HashMap<NodeId, JobNodeExecution> {
-        &self.executions
+    pub fn node_executions(&self) -> &[JobNode] {
+        &self.node_executions
     }
 
     pub fn created_at(&self) -> DateTime<Utc> {
@@ -232,8 +194,160 @@ impl Job {
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }
+}
 
-    pub fn is_terminal(&self) -> bool {
-        self.status.is_terminal()
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::entities::ProjectId;
+    use crate::value_objects::pipeline::PipelineName;
+
+    fn node_id(s: &str) -> NodeId {
+        NodeId::new(s).unwrap()
+    }
+
+    fn make_pipeline(nodes: Vec<crate::entities::PipelineNode>) -> Pipeline {
+        Pipeline::create(
+            PipelineName::new("test").unwrap(),
+            ProjectId::generate(),
+            nodes,
+        )
+        .unwrap()
+    }
+
+    fn action(id: &str, deps: &[&str]) -> crate::entities::PipelineNode {
+        crate::entities::PipelineNode::new(
+            node_id(id),
+            deps.iter().map(|d| node_id(d)).collect(),
+            "echo".into(),
+            vec![],
+        )
+        .unwrap()
+    }
+
+    // --- Creation ---
+
+    #[test]
+    fn creates_job_from_pipeline() {
+        let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
+        let job = Job::create_from_pipeline(&pipeline);
+
+        assert_eq!(job.status(), JobStatus::Pending);
+        assert_eq!(job.node_executions().len(), 2);
+        assert_eq!(job.pipeline_id(), pipeline.id());
+    }
+
+    // --- Status transitions ---
+
+    #[test]
+    fn start_transitions_to_running() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        assert_eq!(job.status(), JobStatus::Pending);
+        job.start().unwrap();
+        assert_eq!(job.status(), JobStatus::Running);
+    }
+
+    #[test]
+    fn complete_transitions_from_running() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        job.start().unwrap();
+        job.complete().unwrap();
+        assert_eq!(job.status(), JobStatus::Completed);
+    }
+
+    #[test]
+    fn fail_transitions_from_running() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        job.start().unwrap();
+        job.fail().unwrap();
+        assert_eq!(job.status(), JobStatus::Failed);
+    }
+
+    #[test]
+    fn cancel_cancels_all_non_terminal_nodes() {
+        let pipeline = make_pipeline(vec![action("a", &[]), action("b", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        job.start().unwrap();
+        job.apply_node_started(&node_id("a"), Utc::now()).unwrap();
+        job.cancel().unwrap();
+
+        assert_eq!(job.status(), JobStatus::Cancelled);
+        assert_eq!(
+            job.find_execution(&node_id("a")).unwrap().state(),
+            NodeState::Cancelled
+        );
+        assert_eq!(
+            job.find_execution(&node_id("b")).unwrap().state(),
+            NodeState::Cancelled
+        );
+    }
+
+    // --- Node events ---
+
+    #[test]
+    fn apply_node_started_sets_running() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        let now = Utc::now();
+        job.apply_node_started(&node_id("a"), now).unwrap();
+
+        let exec = job.find_execution(&node_id("a")).unwrap();
+        assert_eq!(exec.state(), NodeState::Running);
+        assert!(exec.started_at().is_some());
+    }
+
+    #[test]
+    fn apply_node_finished_sets_terminal() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        let now = Utc::now();
+        job.apply_node_started(&node_id("a"), now).unwrap();
+        job.apply_node_finished(&node_id("a"), NodeState::Completed, now)
+            .unwrap();
+
+        let exec = job.find_execution(&node_id("a")).unwrap();
+        assert_eq!(exec.state(), NodeState::Completed);
+        assert!(exec.finished_at().is_some());
+    }
+
+    #[test]
+    fn cannot_finish_pending_node() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        assert!(
+            job.apply_node_finished(&node_id("a"), NodeState::Completed, Utc::now())
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn cannot_start_nonexistent_node() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        assert!(job.apply_node_started(&node_id("z"), Utc::now()).is_err());
+    }
+
+    #[test]
+    fn is_terminal_reflects_status() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+        assert!(!job.is_terminal());
+
+        job.start().unwrap();
+        assert!(!job.is_terminal());
+
+        job.complete().unwrap();
+        assert!(job.is_terminal());
     }
 }
