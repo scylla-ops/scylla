@@ -1,0 +1,37 @@
+meta {
+  name: create_pipeline
+  type: grpc
+  seq: 1
+}
+
+grpc {
+  url: {{host}}
+  method: /pipeline.PipelineService/CreatePipeline
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "name": "my-pipeline",
+      "project_id": "project_id_here",
+      "nodes": [
+        {
+          "node_id": "build",
+          "deps": [],
+          "command": "cargo",
+          "args": ["build", "--release"]
+        },
+        {
+          "node_id": "test",
+          "deps": ["build"],
+          "command": "cargo",
+          "args": ["test"]
+        }
+      ]
+    }
+  '''
+}

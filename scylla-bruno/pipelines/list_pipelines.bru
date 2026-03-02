@@ -1,0 +1,25 @@
+meta {
+  name: list_pipelines
+  type: grpc
+  seq: 5
+}
+
+grpc {
+  url: {{host}}
+  method: /pipeline.PipelineService/ListPipelines
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "pagination": {
+        "page": 1,
+        "page_size": 10
+      }
+    }
+  '''
+}
