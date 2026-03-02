@@ -5,7 +5,8 @@ pub mod services;
 pub mod test_utils;
 
 pub use persistence::surrealdb::{
-    SurrealOrganizationRepository, SurrealProjectRepository, SurrealSessionRepository,
-    SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
+    SurrealJobRepository, SurrealOrganizationRepository, SurrealPipelineRepository,
+    SurrealProjectRepository, SurrealSessionRepository, SurrealUserOrganizationRepository,
+    SurrealUserProjectRepository, SurrealUserRepository,
 };
 pub use services::Argon2HashService;

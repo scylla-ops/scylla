@@ -1,16 +1,23 @@
 mod config;
 
-use application::{AuthUseCases, OrganizationUseCases, ProjectUseCases, UserUseCases};
+use application::{
+    AuthUseCases, JobUseCases, OrganizationUseCases, PipelineUseCases, ProjectUseCases,
+    UserUseCases,
+};
 use config::{BootstrapConfig, CoreConfig};
 use infrastructure::{
-    Argon2HashService, SurrealOrganizationRepository, SurrealProjectRepository,
-    SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
-    SurrealUserRepository,
+    Argon2HashService, SurrealJobRepository, SurrealOrganizationRepository,
+    SurrealPipelineRepository, SurrealProjectRepository, SurrealSessionRepository,
+    SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
 };
-use interfaces::{AuthHandler, OrganizationHandler, ProjectHandler, UserHandler};
+use interfaces::{
+    AuthHandler, JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler, UserHandler,
+};
 use protocol::services::{
     auth::auth_service_server::AuthServiceServer,
+    job::job_service_server::JobServiceServer,
     organization::organization_service_server::OrganizationServiceServer,
+    pipeline::pipeline_service_server::PipelineServiceServer,
     project::project_service_server::ProjectServiceServer,
     user::user_service_server::UserServiceServer,
 };
@@ -87,15 +94,12 @@ fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
 
     layer = layer.max_age(std::time::Duration::from_secs(cors.max_age_seconds));
 
-    // Expose gRPC trailing metadata headers for gRPC-Web clients
     let expose_headers: Vec<HeaderName> = vec![
         "grpc-status".parse().unwrap(),
         "grpc-message".parse().unwrap(),
         "grpc-status-details-bin".parse().unwrap(),
     ];
     layer = layer.expose_headers(expose_headers);
-
-    dbg!(&layer);
 
     layer
 }
@@ -188,6 +192,8 @@ async fn run(args: Args) -> Result<()> {
         DEFINE TABLE IF NOT EXISTS sessions SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS organizations SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS projects SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS pipelines SCHEMALESS;
+        DEFINE TABLE IF NOT EXISTS jobs SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS user_organization TYPE RELATION IN users OUT organizations SCHEMALESS;
         DEFINE TABLE IF NOT EXISTS user_project TYPE RELATION IN users OUT projects SCHEMALESS;
     ",
@@ -201,6 +207,8 @@ async fn run(args: Args) -> Result<()> {
     let session_repo = Arc::new(SurrealSessionRepository::new(db.clone()));
     let org_repo = Arc::new(SurrealOrganizationRepository::new(db.clone()));
     let project_repo = Arc::new(SurrealProjectRepository::new(db.clone()));
+    let pipeline_repo = Arc::new(SurrealPipelineRepository::new(db.clone()));
+    let job_repo = Arc::new(SurrealJobRepository::new(db.clone()));
     let user_org_repo = Arc::new(SurrealUserOrganizationRepository::new(db.clone()));
     let user_project_repo = Arc::new(SurrealUserProjectRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
@@ -221,6 +229,8 @@ async fn run(args: Args) -> Result<()> {
         user_project_repo.clone(),
         user_repo.clone(),
     ));
+    let pipeline_uc = Arc::new(PipelineUseCases::new(pipeline_repo.clone(), project_repo.clone()));
+    let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
     surreal_casbin_adapter.create_table().await;
@@ -237,6 +247,8 @@ async fn run(args: Args) -> Result<()> {
     let user_handler = UserHandler::new(user_uc, permission_checker.clone());
     let org_handler = OrganizationHandler::new(org_uc, permission_checker.clone());
     let project_handler = ProjectHandler::new(project_uc, permission_checker.clone());
+    let pipeline_handler = PipelineHandler::new(pipeline_uc, permission_checker.clone());
+    let job_handler = JobHandler::new(job_uc, permission_checker.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);
@@ -258,8 +270,16 @@ async fn run(args: Args) -> Result<()> {
         .service(OrganizationServiceServer::new(org_handler));
 
     let project_service = ServiceBuilder::new()
-        .layer(auth_interceptor)
+        .layer(auth_interceptor.clone())
         .service(ProjectServiceServer::new(project_handler));
+
+    let pipeline_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(PipelineServiceServer::new(pipeline_handler));
+
+    let job_service = ServiceBuilder::new()
+        .layer(auth_interceptor)
+        .service(JobServiceServer::new(job_handler));
 
     Server::builder()
         .accept_http1(true)
@@ -271,6 +291,8 @@ async fn run(args: Args) -> Result<()> {
         .add_service(user_service)
         .add_service(org_service)
         .add_service(project_service)
+        .add_service(pipeline_service)
+        .add_service(job_service)
         .serve(config.grpc.address)
         .await?;
 

@@ -18,3 +18,5 @@ log.workspace = true
 toml.workspace = true
 tower.workspace = true
 tonic-async-interceptor.workspace = true
+ulid.workspace = true
+tracing.workspace = true
