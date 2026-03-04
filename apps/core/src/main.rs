@@ -3,21 +3,24 @@ mod config;
 mod db;
 
 use application::{
-    AuthUseCases, OrganizationUseCases, PermissionUseCases, ProjectUseCases, UserUseCases,
+    AuthUseCases, JobUseCases, OrganizationUseCases, PermissionUseCases, PipelineUseCases,
+    ProjectUseCases, UserUseCases,
 };
 use config::CoreConfig;
 use infrastructure::{
-    Argon2HashService, SurrealOrganizationRepository, SurrealProjectRepository,
-    SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
-    SurrealUserRepository,
+    Argon2HashService, SurrealJobRepository, SurrealOrganizationRepository,
+    SurrealPipelineRepository, SurrealProjectRepository, SurrealSessionRepository,
+    SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
 };
 use interfaces::{
-    AuthHandler, OrganizationHandler, PermissionHandler, ProjectHandler, UserHandler,
+    AuthHandler, JobHandler, OrganizationHandler, PermissionHandler, PipelineHandler,
+    ProjectHandler, UserHandler,
 };
 use protocol::services::{
-    auth::auth_service_server::AuthServiceServer,
+    auth::auth_service_server::AuthServiceServer, job::job_service_server::JobServiceServer,
     organization::organization_service_server::OrganizationServiceServer,
     permission::permission_service_server::PermissionServiceServer,
+    pipeline::pipeline_service_server::PipelineServiceServer,
     project::project_service_server::ProjectServiceServer,
     user::user_service_server::UserServiceServer,
 };
@@ -128,6 +131,8 @@ async fn run(args: Args) -> Result<()> {
     let session_repo = Arc::new(SurrealSessionRepository::new(db.clone()));
     let org_repo = Arc::new(SurrealOrganizationRepository::new(db.clone()));
     let project_repo = Arc::new(SurrealProjectRepository::new(db.clone()));
+    let pipeline_repo = Arc::new(SurrealPipelineRepository::new(db.clone()));
+    let job_repo = Arc::new(SurrealJobRepository::new(db.clone()));
     let user_org_repo = Arc::new(SurrealUserOrganizationRepository::new(db.clone()));
     let user_project_repo = Arc::new(SurrealUserProjectRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
@@ -148,6 +153,11 @@ async fn run(args: Args) -> Result<()> {
         user_project_repo.clone(),
         user_repo.clone(),
     ));
+    let pipeline_uc = Arc::new(PipelineUseCases::new(
+        pipeline_repo.clone(),
+        project_repo.clone(),
+    ));
+    let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
     surreal_casbin_adapter.create_table().await;
@@ -164,6 +174,8 @@ async fn run(args: Args) -> Result<()> {
     let user_handler = UserHandler::new(user_uc, permission_checker.clone());
     let org_handler = OrganizationHandler::new(org_uc, permission_checker.clone());
     let project_handler = ProjectHandler::new(project_uc, permission_checker.clone());
+    let pipeline_handler = PipelineHandler::new(pipeline_uc, permission_checker.clone());
+    let job_handler = JobHandler::new(job_uc, permission_checker.clone());
     let permission_handler = PermissionHandler::new(permission_uc, permission_checker.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(session_repo.clone()));
@@ -189,6 +201,14 @@ async fn run(args: Args) -> Result<()> {
         .layer(auth_interceptor.clone())
         .service(ProjectServiceServer::new(project_handler));
 
+    let pipeline_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(PipelineServiceServer::new(pipeline_handler));
+
+    let job_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(JobServiceServer::new(job_handler));
+
     let permission_service = ServiceBuilder::new()
         .layer(auth_interceptor)
         .service(PermissionServiceServer::new(permission_handler));
@@ -203,6 +223,8 @@ async fn run(args: Args) -> Result<()> {
         .add_service(user_service)
         .add_service(org_service)
         .add_service(project_service)
+        .add_service(pipeline_service)
+        .add_service(job_service)
         .add_service(permission_service)
         .serve(config.grpc.address)
         .await?;

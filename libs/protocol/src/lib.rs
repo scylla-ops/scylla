@@ -14,21 +14,15 @@ pub mod services {
     pub mod project {
         tonic::include_proto!("project");
     }
-    pub mod orchestrator {
-        tonic::include_proto!("orchestrator");
-    }
     pub mod pipeline {
         tonic::include_proto!("pipeline");
-    }
-    pub mod pipeline_def {
-        tonic::include_proto!("pipeline_def");
     }
     pub mod job {
         tonic::include_proto!("job");
     }
-    pub mod job_def {
-        tonic::include_proto!("job_def");
-    }
+    // pub mod orchestrator {
+    //     tonic::include_proto!("orchestrator");
+    // }
     pub mod permission {
         tonic::include_proto!("permission");
     }

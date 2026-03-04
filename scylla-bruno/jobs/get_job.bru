@@ -1,0 +1,22 @@
+meta {
+  name: get_job
+  type: grpc
+  seq: 1
+}
+
+grpc {
+  url: {{host}}
+  method: /job.JobService/GetJob
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "job_id": "job_id_here"
+    }
+  '''
+}

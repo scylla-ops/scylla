@@ -149,14 +149,18 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("testuser").expect("Invalid username");
-        let password_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash123").unwrap();
+        let password_hash =
+            PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash123").unwrap();
         let user = User::create(username, password_hash);
         let user_id = user.id().clone();
 
         let created = repo.create(&user).await.expect("Failed to create user");
         assert_eq!(created.id(), &user_id);
         assert_eq!(created.username(), user.username());
-        assert_eq!(created.password_hash().as_str(), user.password_hash().as_str());
+        assert_eq!(
+            created.password_hash().as_str(),
+            user.password_hash().as_str()
+        );
         assert_eq!(created.is_active(), user.is_active());
         assert_eq!(created.created_at(), user.created_at());
         assert_eq!(created.updated_at(), user.updated_at());
@@ -242,7 +246,10 @@ mod tests {
         let updated = repo.update(&user).await.expect("Failed to update");
         assert_eq!(updated.id(), &user_id);
         assert_eq!(updated.username(), &new_username);
-        assert_eq!(updated.password_hash().as_str(), "$argon2id$v=19$m=19456,t=2,p=1$test$newhash");
+        assert_eq!(
+            updated.password_hash().as_str(),
+            "$argon2id$v=19$m=19456,t=2,p=1$test$newhash"
+        );
     }
 
     #[tokio::test]
