@@ -1,4 +1,4 @@
-use domain::entities::{OrganizationId, PipelineId, ProjectId, UserId};
+use domain::entities::{JobId, OrganizationId, PipelineId, ProjectId, UserId};
 use domain::errors::{DomainError, DomainResult};
 use domain::value_objects::permission::{Act, Resource, Scope, Target};
 use protocol::services::permission::{
@@ -108,6 +108,10 @@ pub fn proto_resource_to_domain(proto: ProtoResource) -> DomainResult<Resource> 
             Ok(Resource::Pipeline(Target::Single(PipelineId::new(id))))
         }
         (ResourceType::ResourceAll, _) => Ok(Resource::All),
+        (ResourceType::ResourceJob, None) => Ok(Resource::Job(Target::All)),
+        (ResourceType::ResourceJob, Some(id)) => {
+            Ok(Resource::Job(Target::Single(JobId::new(id))))
+        }
     }
 }
 
@@ -147,6 +151,14 @@ pub fn domain_resource_to_proto(resource: &Resource) -> ProtoResource {
         },
         Resource::Pipeline(Target::Single(id)) => ProtoResource {
             r#type: ResourceType::ResourcePipeline.into(),
+            id: Some(id.to_string()),
+        },
+        Resource::Job(Target::All) => ProtoResource {
+            r#type: ResourceType::ResourceJob.into(),
+            id: None,
+        },
+        Resource::Job(Target::Single(id)) => ProtoResource {
+            r#type: ResourceType::ResourceJob.into(),
             id: Some(id.to_string()),
         },
     }

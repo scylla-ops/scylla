@@ -3,6 +3,7 @@ use crate::errors::{DomainError, DomainResult};
 use crate::value_objects::job::{JobStatus, NodeState};
 use crate::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
+
 #[cfg(feature = "surrealdb")]
 use surrealdb_types::SurrealValue;
 
