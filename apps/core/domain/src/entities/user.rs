@@ -1,6 +1,6 @@
 use crate::entities::UserId;
 use crate::errors::{DomainError, DomainResult};
-use crate::value_objects::user::UserName;
+use crate::value_objects::user::{PasswordHash, UserName};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "surrealdb")]
 use surrealdb_types::SurrealValue;
@@ -11,14 +11,14 @@ use surrealdb_types::SurrealValue;
 pub struct User {
     id: UserId,
     username: UserName,
-    password_hash: String,
+    password_hash: PasswordHash,
     is_active: bool,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
 
 impl User {
-    pub fn create(username: UserName, password_hash: String) -> Self {
+    pub fn create(username: UserName, password_hash: PasswordHash) -> Self {
         let now = Utc::now();
         Self {
             id: UserId::generate(),
@@ -36,13 +36,9 @@ impl User {
         Ok(())
     }
 
-    pub fn update_password_hash(&mut self, password_hash: String) -> DomainResult<()> {
-        if password_hash.is_empty() {
-            return Err(DomainError::validation("Password hash cannot be empty"));
-        }
+    pub fn update_password_hash(&mut self, password_hash: PasswordHash) {
         self.password_hash = password_hash;
         self.updated_at = Utc::now();
-        Ok(())
     }
 
     pub fn deactivate(&mut self) -> DomainResult<()> {
@@ -71,7 +67,7 @@ impl User {
         &self.username
     }
 
-    pub fn password_hash(&self) -> &str {
+    pub fn password_hash(&self) -> &PasswordHash {
         &self.password_hash
     }
 

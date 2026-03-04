@@ -20,3 +20,18 @@ impl Scope {
         }
     }
 }
+
+impl std::str::FromStr for Scope {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_once('/') {
+            None if s == "system" => Ok(Scope::System),
+            None if s == "*" => Ok(Scope::All),
+            Some(("org", id)) => Ok(Scope::Org(OrganizationId::new(id.to_string()))),
+            Some(("project", id)) => Ok(Scope::Project(ProjectId::new(id.to_string()))),
+            Some(("user", id)) => Ok(Scope::User(UserId::new(id.to_string()))),
+            _ => Err(()),
+        }
+    }
+}

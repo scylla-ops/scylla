@@ -44,6 +44,9 @@ pub struct CorsConfig {
     #[serde(default = "default_allow_headers")]
     pub allow_headers: Vec<String>,
 
+    #[serde(default = "default_expose_headers")]
+    pub expose_headers: Vec<String>,
+
     #[serde(default = "default_max_age")]
     pub max_age_seconds: u64,
 }
@@ -68,6 +71,14 @@ fn default_allow_headers() -> Vec<String> {
         "authorization".to_string(),
         "x-grpc-web".to_string(),
         "x-user-agent".to_string(),
+    ]
+}
+
+fn default_expose_headers() -> Vec<String> {
+    vec![
+        "grpc-status".to_string(),
+        "grpc-message".to_string(),
+        "grpc-status-details-bin".to_string(),
     ]
 }
 
@@ -128,6 +139,7 @@ impl Default for CorsConfig {
             allow_origins: default_allow_origins(),
             allow_methods: default_allow_methods(),
             allow_headers: default_allow_headers(),
+            expose_headers: default_expose_headers(),
             max_age_seconds: default_max_age(),
         }
     }

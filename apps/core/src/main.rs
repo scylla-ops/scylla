@@ -1,22 +1,24 @@
+mod bootstrap;
 mod config;
+mod db;
 
 use application::{
-    AuthUseCases, JobUseCases, OrganizationUseCases, PipelineUseCases, ProjectUseCases,
-    UserUseCases,
+    AuthUseCases, JobUseCases, OrganizationUseCases, PipelineUseCases, PermissionUseCases, ProjectUseCases, UserUseCases,
 };
-use config::{BootstrapConfig, CoreConfig};
+use config::CoreConfig;
 use infrastructure::{
     Argon2HashService, SurrealJobRepository, SurrealOrganizationRepository,
     SurrealPipelineRepository, SurrealProjectRepository, SurrealSessionRepository,
     SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
 };
 use interfaces::{
-    AuthHandler, JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler, UserHandler,
+    AuthHandler, OrganizationHandler, PermissionHandler, ProjectHandler, UserHandler, PipelineHandler, JobHandler,
 };
 use protocol::services::{
     auth::auth_service_server::AuthServiceServer,
     job::job_service_server::JobServiceServer,
     organization::organization_service_server::OrganizationServiceServer,
+    permission::permission_service_server::PermissionServiceServer,
     pipeline::pipeline_service_server::PipelineServiceServer,
     project::project_service_server::ProjectServiceServer,
     user::user_service_server::UserServiceServer,
@@ -25,16 +27,11 @@ use protocol::services::{
 use anyhow::{Context, Result};
 use casbin_permission_service::CasbinPermissionService;
 use clap::Parser;
-use domain::errors::DomainError;
-use domain::value_objects::permission::policy::Policy;
-use domain::value_objects::user::{Password, UserName};
 use http::{HeaderName, HeaderValue, Method};
 use infrastructure::services::casbin_permission_service;
 use interfaces::auth_interceptor::AuthInterceptor;
 use std::sync::Arc;
 use surreal_casbin_adapter::SurrealAdapter;
-use surrealdb::Surreal;
-use surrealdb::engine::any::Any;
 use tonic::transport::Server;
 use tonic_async_interceptor::async_interceptor;
 use tonic_web::GrpcWebLayer;
@@ -94,56 +91,14 @@ fn build_cors_layer(cors: &config::CorsConfig) -> CorsLayer {
 
     layer = layer.max_age(std::time::Duration::from_secs(cors.max_age_seconds));
 
-    let expose_headers: Vec<HeaderName> = vec![
-        "grpc-status".parse().unwrap(),
-        "grpc-message".parse().unwrap(),
-        "grpc-status-details-bin".parse().unwrap(),
-    ];
+    let expose_headers: Vec<HeaderName> = cors
+        .expose_headers
+        .iter()
+        .filter_map(|h| h.parse().ok())
+        .collect();
     layer = layer.expose_headers(expose_headers);
 
     layer
-}
-
-async fn bootstrap_admin<
-    U: domain::ports::UserRepository,
-    H: domain::ports::HashService,
-    P: domain::ports::PermissionService,
->(
-    user_uc: &UserUseCases<U, H>,
-    permission_service: &mut P,
-    bootstrap: &BootstrapConfig,
-) -> Result<()> {
-    let username = UserName::new(&bootstrap.username).context("Invalid bootstrap username")?;
-    let password = Password::new(&bootstrap.password).context("Invalid bootstrap password")?;
-
-    match user_uc.create(username, password).await {
-        Ok(user) => {
-            tracing::info!(
-                "Bootstrap user '{}' created (id: {})",
-                bootstrap.username,
-                user.id()
-            );
-
-            permission_service
-                .add_policy(user.id().clone(), Policy::absolute())
-                .await
-                .context("Failed to add admin permissions for bootstrap user")?;
-
-            tracing::info!(
-                "Admin permissions granted to bootstrap user '{}'",
-                bootstrap.username
-            );
-        }
-        Err(DomainError::Conflict(_)) => {
-            tracing::debug!(
-                "Bootstrap user '{}' already exists, skipping",
-                bootstrap.username
-            );
-        }
-        Err(e) => return Err(e).context("Failed to bootstrap admin user"),
-    }
-
-    Ok(())
 }
 
 #[tokio::main]
@@ -169,39 +124,7 @@ async fn run(args: Args) -> Result<()> {
     let config = load_config(&args)?;
     tracing::debug!("Configuration: {:#?}", config);
 
-    let db_config = &config.database;
-
-    let db: Surreal<Any> = Surreal::init();
-    db.connect(&db_config.url)
-        .await
-        .with_context(|| format!("Failed to connect to database at {}", db_config.url))?;
-    db.signin(surrealdb::opt::auth::Root {
-        username: db_config.username.clone(),
-        password: db_config.password.clone(),
-    })
-    .await
-    .context("Failed to authenticate with database")?;
-    db.use_ns(&db_config.namespace)
-        .use_db(&db_config.database)
-        .await
-        .context("Failed to select namespace/database")?;
-
-    db.query(
-        "
-        DEFINE TABLE IF NOT EXISTS users SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS sessions SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS organizations SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS projects SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS pipelines SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS jobs SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS user_organization TYPE RELATION IN users OUT organizations SCHEMALESS;
-        DEFINE TABLE IF NOT EXISTS user_project TYPE RELATION IN users OUT projects SCHEMALESS;
-    ",
-    )
-    .await
-    .context("Failed to initialize database tables")?
-    .check()
-    .context("Database schema init returned an error")?;
+    let db = db::init_db(&config.database).await?;
 
     let user_repo = Arc::new(SurrealUserRepository::new(db.clone()));
     let session_repo = Arc::new(SurrealSessionRepository::new(db.clone()));
@@ -234,14 +157,14 @@ async fn run(args: Args) -> Result<()> {
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
     surreal_casbin_adapter.create_table().await;
-
     let mut casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await?;
 
-    if let Some(bootstrap) = &config.bootstrap {
-        bootstrap_admin(&user_uc, &mut casbin_service, bootstrap).await?;
+    if let Some(cfg) = &config.bootstrap {
+        bootstrap::bootstrap_admin(&user_uc, &mut casbin_service, cfg).await?;
     }
 
     let permission_checker = Arc::new(casbin_service);
+    let permission_uc = Arc::new(PermissionUseCases::new(permission_checker.clone()));
 
     let auth_handler = AuthHandler::new(auth_uc);
     let user_handler = UserHandler::new(user_uc, permission_checker.clone());
@@ -249,6 +172,7 @@ async fn run(args: Args) -> Result<()> {
     let project_handler = ProjectHandler::new(project_uc, permission_checker.clone());
     let pipeline_handler = PipelineHandler::new(pipeline_uc, permission_checker.clone());
     let job_handler = JobHandler::new(job_uc, permission_checker.clone());
+    let permission_handler = PermissionHandler::new(permission_uc, permission_checker.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);
@@ -281,7 +205,11 @@ async fn run(args: Args) -> Result<()> {
         .layer(auth_interceptor)
         .service(JobServiceServer::new(job_handler));
 
-    Server::builder()
+	let permission_service = ServiceBuilder::new()
+		.layer(auth_interceptor)
+		.service(PermissionServiceServer::new(permission_handler));
+
+	Server::builder()
         .accept_http1(true)
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
@@ -293,6 +221,7 @@ async fn run(args: Args) -> Result<()> {
         .add_service(project_service)
         .add_service(pipeline_service)
         .add_service(job_service)
+        .add_service(permission_service)
         .serve(config.grpc.address)
         .await?;
 

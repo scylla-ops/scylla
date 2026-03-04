@@ -1,5 +1,7 @@
 FROM rust:1.93.1-bookworm AS builder
 
+ARG GIT_COMMIT=unknown
+
 WORKDIR /app
 
 RUN apt-get update && \
@@ -16,6 +18,11 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 FROM debian:bookworm-slim AS runtime
 
+ARG GIT_COMMIT=unknown
+
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}" \
+      org.opencontainers.image.source="https://github.com/scylla-ops/scylla"
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -30,6 +37,8 @@ WORKDIR /home/appuser
 COPY --from=builder /app/core-bin ./core
 
 RUN chown appuser:appuser ./core
+
+ENV GIT_COMMIT=${GIT_COMMIT}
 
 USER appuser
 
