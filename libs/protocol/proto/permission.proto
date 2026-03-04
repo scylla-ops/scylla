@@ -32,6 +32,7 @@ enum ResourceType {
   RESOURCE_ORGANIZATION = 2;
   RESOURCE_PIPELINE     = 3;
   RESOURCE_ALL          = 4;
+  RESOURCE_JOB          = 5;
 }
 
 // A resource is a type plus an optional id.

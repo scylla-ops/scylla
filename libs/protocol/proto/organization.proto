@@ -92,8 +92,6 @@ message ListOrganizationUsersRequest {
 message OrganizationUserInfoResponse {
   string user_id = 1;
   string username = 2;
-  string role = 3;
-  string joined_at = 4;
 }
 
 message ListOrganizationUsersResponse {
@@ -114,10 +112,9 @@ message ListUserOrganizationsResponse {
 message AddUserToOrganizationRequest {
   string user_id = 1;
   string organization_id = 2;
-  string role = 3; // e.g., "member", "admin", "owner"
 }
 
-message AddUserToOrganizationResponse { string relation_id = 1; }
+message AddUserToOrganizationResponse {}
 
 message RemoveUserFromOrganizationRequest {
   string user_id = 1;

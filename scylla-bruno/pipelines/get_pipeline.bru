@@ -1,0 +1,22 @@
+meta {
+  name: get_pipeline
+  type: grpc
+  seq: 2
+}
+
+grpc {
+  url: {{host}}
+  method: /pipeline.PipelineService/GetPipeline
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "pipeline_id": "pipeline_id_here"
+    }
+  '''
+}

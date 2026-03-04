@@ -5,7 +5,6 @@ use std::str::FromStr;
 macro_rules! define_id {
     ($name:ident, $table:expr) => {
         #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-        //cfg_attr(feature = "surrealdb", derive(SurrealValue))]
         pub struct $name(String);
 
         impl $name {
@@ -73,6 +72,9 @@ macro_rules! define_id {
             }
         }
 
+        impl EntityId for $name {}
+        impl EntityId for &$name {}
+
         #[cfg(feature = "surrealdb")]
         impl surrealdb_types::SurrealValue for $name {
             fn kind_of() -> surrealdb_types::Kind {
@@ -114,7 +116,6 @@ impl fmt::Display for IdParseError {
 impl std::error::Error for IdParseError {}
 
 pub trait EntityId: fmt::Display + AsRef<str> + Send + Sync {}
-impl<T: fmt::Display + AsRef<str> + Send + Sync> EntityId for T {}
 
 // Define ID types for all domain entities
 define_id!(UserId, "users");

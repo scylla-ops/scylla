@@ -1,6 +1,6 @@
 services:
   db:
-    image: surrealdb/surrealdb:v3.0.1
+    image: surrealdb/surrealdb:v3.0.2
     container_name: surrealdb
     user: "root"
     command:

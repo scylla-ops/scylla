@@ -1,7 +1,5 @@
 use derive_more::Constructor;
-use domain::entities::{
-    OrganizationId, Project, ProjectId, User, UserId, UserProject, UserProjectId,
-};
+use domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use domain::errors::{DomainError, DomainResult};
 use domain::ports::{ProjectRepository, UserProjectRepository, UserRepository};
 use domain::value_objects::project::{ProjectDescription, ProjectName};
@@ -71,24 +69,20 @@ impl<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> Project
         &self,
         project_id: &ProjectId,
         pagination: Option<&PaginationParams>,
-    ) -> DomainResult<(Vec<(User, UserProject)>, PaginationMetadata)> {
+    ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
         let paginated = self
             .user_project_repo
-            .list_users_in_project(project_id, pagination)
+            .list_members(project_id, pagination)
             .await?;
         let (user_ids, metadata) = paginated.into_parts();
 
-        let mut pairs = Vec::with_capacity(user_ids.len());
+        let mut users = Vec::with_capacity(user_ids.len());
         for user_id in &user_ids {
             let user = self.user_repo.find_by_id(user_id).await?;
-            let membership = self
-                .user_project_repo
-                .find_by_user_and_project(user_id, project_id)
-                .await?;
-            pairs.push((user, membership));
+            users.push(user);
         }
 
-        Ok((pairs, metadata))
+        Ok((users, metadata))
     }
 
     pub async fn list_user_projects(
@@ -98,7 +92,7 @@ impl<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> Project
     ) -> DomainResult<(Vec<Project>, PaginationMetadata)> {
         let paginated = self
             .user_project_repo
-            .list_projects_for_user(user_id, pagination)
+            .list_user_projects(user_id, pagination)
             .await?;
         let (project_ids, metadata) = paginated.into_parts();
 
@@ -111,31 +105,23 @@ impl<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> Project
         Ok((projects, metadata))
     }
 
-    pub async fn add_user(
-        &self,
-        user_id: &UserId,
-        project_id: &ProjectId,
-        role: &str,
-    ) -> DomainResult<UserProjectId> {
+    pub async fn add_user(&self, user_id: &UserId, project_id: &ProjectId) -> DomainResult<()> {
         if self
             .user_project_repo
-            .find_by_user_and_project(user_id, project_id)
-            .await
-            .is_ok()
+            .is_member(user_id, project_id)
+            .await?
         {
             return Err(DomainError::conflict(
                 "User is already a member of this project",
             ));
         }
 
-        self.user_project_repo
-            .add_user_to_project(user_id, project_id, role)
-            .await
+        self.user_project_repo.add_member(user_id, project_id).await
     }
 
     pub async fn remove_user(&self, user_id: &UserId, project_id: &ProjectId) -> DomainResult<()> {
         self.user_project_repo
-            .remove_user_from_project(user_id, project_id)
+            .remove_member(user_id, project_id)
             .await
     }
 }

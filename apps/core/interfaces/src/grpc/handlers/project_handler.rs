@@ -191,19 +191,17 @@ impl<
         let project_id = ProjectId::new(&req.project_id);
         let pagination = proto_to_domain_pagination(req.pagination);
 
-        let (pairs, metadata) = self
+        let (users, metadata) = self
             .use_cases
             .list_users(&project_id, pagination.as_ref())
             .await
             .map_err(domain_error_to_status)?;
 
-        let users = pairs
+        let users = users
             .iter()
-            .map(|(user, membership)| ProjectUserInfoResponse {
+            .map(|user| ProjectUserInfoResponse {
                 user_id: user.id().to_string(),
                 username: user.username().to_string(),
-                role: membership.role().as_str().to_string(),
-                joined_at: membership.joined_at().to_rfc3339(),
             })
             .collect();
 
@@ -257,15 +255,12 @@ impl<
         let user_id = UserId::new(&req.user_id);
         let project_id = ProjectId::new(&req.project_id);
 
-        let relation_id = self
-            .use_cases
-            .add_user(&user_id, &project_id, &req.role)
+        self.use_cases
+            .add_user(&user_id, &project_id)
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(AddUserToProjectResponse {
-            relation_id: relation_id.to_string(),
-        }))
+        Ok(Response::new(AddUserToProjectResponse {}))
     }
 
     async fn remove_user_from_project(

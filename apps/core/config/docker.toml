@@ -16,6 +16,11 @@ allow_headers = [
     "x-grpc-web",
     "x-user-agent"
 ]
+expose_headers = [
+    "grpc-status",
+    "grpc-message",
+    "grpc-status-details-bin"
+]
 
 [bootstrap]
 username = "admin"

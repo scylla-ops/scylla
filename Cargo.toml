@@ -11,33 +11,33 @@ members = [
 
 [workspace.dependencies]
 # async
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.50.0", features = ["full"] }
 async-trait = "0.1.89"
 
 # grpc / proto
-tonic = { version = "0.14.2", features = ["server"] }
-tonic-web = "0.14"
-tonic-prost = "0.14"
-tonic-reflection = "0.14.2"
-prost = "0.14"
-tonic-prost-build = "0.14.2"
+tonic = { version = "0.14.5", features = ["server"] }
+tonic-web = "0.14.5"
+tonic-prost = "0.14.5"
+tonic-reflection = "0.14.5"
+prost = "0.14.3"
+tonic-prost-build = "0.14.5"
 protocol = { path = "libs/protocol" }
 tonic-async-interceptor = "0.14.1"
 
 # serialization
 serde = { version = "1", features = ["derive"] }
-toml = "0.9.8"
+toml = "1.0.3"
 
 # database
-surrealdb = { version = "3.0" }
-surrealdb-types = "3.0.0"
+surrealdb = { version = "3.0.2" }
+surrealdb-types = "3.0.2"
 
 # domain / utilities
-thiserror = "2"
-anyhow = "1"
-chrono = "0.4"
+thiserror = "2.0.18"
+anyhow = "1.0.102"
+chrono = "0.4.44"
 ulid = "1.2.1"
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1.21.0", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
 argon2 = "0.6.0-rc.7"
 casbin = "2.20.0"
@@ -45,13 +45,13 @@ surreal-casbin-adapter = { path = "libs/surreal-casbin-adapter" }
 
 # web / tracing
 tower = { version = "0.5.3" }
-tower-http = { version = "0.6", features = ["cors", "trace"] }
-http = "1"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tower-http = { version = "0.6.8", features = ["cors", "trace"] }
+http = "1.4.0"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 
 # cli
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4.5.60", features = ["derive"] }
 
 # logging
 log = "0.4.29"

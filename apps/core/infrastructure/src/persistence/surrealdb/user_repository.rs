@@ -137,7 +137,7 @@ mod tests {
     use crate::test_utils::init_db;
     use domain::entities::User;
     use domain::value_objects::PaginationParams;
-    use domain::value_objects::user::UserName;
+    use domain::value_objects::user::{PasswordHash, UserName};
 
     async fn setup() -> Surreal<Any> {
         init_db(&[UserId::table_name()]).await
@@ -149,13 +149,18 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("testuser").expect("Invalid username");
-        let user = User::create(username, "hashed_password_123".to_string());
+        let password_hash =
+            PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash123").unwrap();
+        let user = User::create(username, password_hash);
         let user_id = user.id().clone();
 
         let created = repo.create(&user).await.expect("Failed to create user");
         assert_eq!(created.id(), &user_id);
         assert_eq!(created.username(), user.username());
-        assert_eq!(created.password_hash(), user.password_hash());
+        assert_eq!(
+            created.password_hash().as_str(),
+            user.password_hash().as_str()
+        );
         assert_eq!(created.is_active(), user.is_active());
         assert_eq!(created.created_at(), user.created_at());
         assert_eq!(created.updated_at(), user.updated_at());
@@ -167,7 +172,8 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("find_by_id_user").expect("Invalid username");
-        let user = User::create(username, "hashed_password".to_string());
+        let password_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash").unwrap();
+        let user = User::create(username, password_hash);
         let user_id = user.id().clone();
 
         repo.create(&user).await.expect("Failed to create");
@@ -196,7 +202,8 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("find_by_username_user").expect("Invalid username");
-        let user = User::create(username.clone(), "hashed_password".to_string());
+        let password_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash").unwrap();
+        let user = User::create(username.clone(), password_hash);
         let user_id = user.id().clone();
 
         repo.create(&user).await.expect("Failed to create");
@@ -225,20 +232,24 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("update_user").expect("Invalid username");
-        let mut user = User::create(username, "hashed_password".to_string());
+        let password_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash").unwrap();
+        let mut user = User::create(username, password_hash);
         let user_id = user.id().clone();
 
         repo.create(&user).await.expect("Failed to create");
 
         let new_username = UserName::new("updated_username").expect("Invalid username");
         user.update_username(new_username.clone()).unwrap();
-        user.update_password_hash("new_hashed_password".to_string())
-            .unwrap();
+        let new_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$newhash").unwrap();
+        user.update_password_hash(new_hash);
 
         let updated = repo.update(&user).await.expect("Failed to update");
         assert_eq!(updated.id(), &user_id);
         assert_eq!(updated.username(), &new_username);
-        assert_eq!(updated.password_hash(), "new_hashed_password");
+        assert_eq!(
+            updated.password_hash().as_str(),
+            "$argon2id$v=19$m=19456,t=2,p=1$test$newhash"
+        );
     }
 
     #[tokio::test]
@@ -247,7 +258,8 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("delete_user").expect("Invalid username");
-        let user = User::create(username, "hashed_password".to_string());
+        let password_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash").unwrap();
+        let user = User::create(username, password_hash);
         let user_id = user.id().clone();
 
         repo.create(&user).await.expect("Failed to create");
@@ -264,11 +276,13 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username1 = UserName::new("list_all_user_1").expect("Invalid username");
-        let user1 = User::create(username1, "hash1".to_string());
+        let hash1 = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash1").unwrap();
+        let user1 = User::create(username1, hash1);
         repo.create(&user1).await.expect("Failed to create user1");
 
         let username2 = UserName::new("list_all_user_2").expect("Invalid username");
-        let user2 = User::create(username2, "hash2".to_string());
+        let hash2 = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash2").unwrap();
+        let user2 = User::create(username2, hash2);
         repo.create(&user2).await.expect("Failed to create user2");
 
         let pagination = PaginationParams::new(1, 20).unwrap();
@@ -286,7 +300,8 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("list_all_default_user").expect("Invalid username");
-        let user = User::create(username, "hash".to_string());
+        let password_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash").unwrap();
+        let user = User::create(username, password_hash);
         repo.create(&user).await.expect("Failed to create");
 
         let result = repo
@@ -302,7 +317,8 @@ mod tests {
         let repo = SurrealUserRepository::new(db);
 
         let username = UserName::new("exists_user").expect("Invalid username");
-        let user = User::create(username.clone(), "hash".to_string());
+        let password_hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$test$hash").unwrap();
+        let user = User::create(username.clone(), password_hash);
         repo.create(&user).await.expect("Failed to create");
 
         let exists = repo

@@ -1,9 +1,10 @@
-use crate::entities::{EntityId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::entities::{EntityId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
 
 #[derive(Debug)]
 pub enum Resource {
     User(Target<UserId>),
     Pipeline(Target<PipelineId>),
+    Job(Target<JobId>),
     Project(Target<ProjectId>),
     Organization(Target<OrganizationId>),
     All,
@@ -22,6 +23,8 @@ impl Resource {
             Resource::User(Target::Single(id)) => format!("user/{}", id),
             Resource::Pipeline(Target::All) => "pipeline/*".to_string(),
             Resource::Pipeline(Target::Single(id)) => format!("pipeline/{}", id),
+            Resource::Job(Target::All) => "job/*".to_string(),
+            Resource::Job(Target::Single(id)) => format!("job/{}", id),
             Resource::All => "*".to_string(),
             Resource::Project(Target::All) => "project/*".to_string(),
             Resource::Project(Target::Single(id)) => format!("project/{}", id),

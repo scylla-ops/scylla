@@ -1,11 +1,16 @@
-syntax = "proto3";
+// syntax = "proto3";
 
-package orchestrator;
+// package orchestrator;
 
-service Orchestrator {
-  rpc RunPipeline(RunPipelineRequest) returns (RunPipelineResponse);
-}
+// import "common.proto";
 
-message RunPipelineRequest { string pipeline_id = 1; }
+// service OrchestratorService {
+//   // for clients
+//   rpc RunPipeline(RunPipelineRequest) returns (JobResponse);
+//   rpc CancelJob(CancelJobRequest) returns (JobResponse);
+//   rpc GetJob(GetJobRequest) returns (JobResponse);
+//   rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
 
-message RunPipelineResponse { string job_id = 1; }
+//   // for agents
+//   rpc Chat(stream AgentMessage) returns (stream CoreMessage);
+// }
