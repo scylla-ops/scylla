@@ -57,17 +57,13 @@ mod tests {
 
     #[test]
     fn test_valid_argon2_hash() {
-        let hash = PasswordHash::new(
-            "$argon2id$v=19$m=19456,t=2,p=1$abc$def"
-        );
+        let hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def");
         assert!(hash.is_ok());
     }
 
     #[test]
     fn test_valid_bcrypt_hash() {
-        let hash = PasswordHash::new(
-            "$2b$12$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01"
-        );
+        let hash = PasswordHash::new("$2b$12$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01");
         assert!(hash.is_ok());
     }
 
@@ -83,17 +79,13 @@ mod tests {
 
     #[test]
     fn test_display_masked() {
-        let hash = PasswordHash::new(
-            "$argon2id$v=19$m=19456,t=2,p=1$abc$def"
-        ).unwrap();
+        let hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap();
         assert_eq!(format!("{}", hash), "[HASH]");
     }
 
     #[test]
     fn test_debug_masked() {
-        let hash = PasswordHash::new(
-            "$argon2id$v=19$m=19456,t=2,p=1$abc$def"
-        ).unwrap();
+        let hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap();
         let debug = format!("{:?}", hash);
         assert!(!debug.contains("argon2"));
         assert!(debug.contains("[HASH]"));

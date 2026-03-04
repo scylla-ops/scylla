@@ -105,11 +105,7 @@ impl<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> Project
         Ok((projects, metadata))
     }
 
-    pub async fn add_user(
-        &self,
-        user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<()> {
+    pub async fn add_user(&self, user_id: &UserId, project_id: &ProjectId) -> DomainResult<()> {
         if self
             .user_project_repo
             .is_member(user_id, project_id)
@@ -120,9 +116,7 @@ impl<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> Project
             ));
         }
 
-        self.user_project_repo
-            .add_member(user_id, project_id)
-            .await
+        self.user_project_repo.add_member(user_id, project_id).await
     }
 
     pub async fn remove_user(&self, user_id: &UserId, project_id: &ProjectId) -> DomainResult<()> {

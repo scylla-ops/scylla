@@ -1,6 +1,8 @@
 use crate::config::DatabaseConfig;
 use anyhow::{Context, Result};
-use domain::entities::{OrganizationId, ProjectId, SessionId, UserOrganizationId, UserProjectId, UserId};
+use domain::entities::{
+    OrganizationId, ProjectId, SessionId, UserId, UserOrganizationId, UserProjectId,
+};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
@@ -53,10 +55,7 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
     }
 
     if !errors.is_empty() {
-        anyhow::bail!(
-            "Database schema init failed for {} table(s)",
-            errors.len()
-        );
+        anyhow::bail!("Database schema init failed for {} table(s)", errors.len());
     }
 
     Ok(db)

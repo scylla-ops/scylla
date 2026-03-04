@@ -32,7 +32,9 @@ impl<J: JobRepository> JobUseCases<J> {
         pipeline_id: &PipelineId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        self.job_repo.list_by_pipeline(pipeline_id, pagination).await
+        self.job_repo
+            .list_by_pipeline(pipeline_id, pagination)
+            .await
     }
 
     pub async fn list_by_project(
@@ -48,6 +50,8 @@ impl<J: JobRepository> JobUseCases<J> {
         organization_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        self.job_repo.list_by_organization(organization_id, pagination).await
+        self.job_repo
+            .list_by_organization(organization_id, pagination)
+            .await
     }
 }

@@ -82,10 +82,7 @@ impl<O: OrganizationRepository, UO: UserOrganizationRepository, U: UserRepositor
         org_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
-        let paginated = self
-            .user_org_repo
-            .list_members(org_id, pagination)
-            .await?;
+        let paginated = self.user_org_repo.list_members(org_id, pagination).await?;
         let (user_ids, metadata) = paginated.into_parts();
 
         let mut users = Vec::with_capacity(user_ids.len());
@@ -117,11 +114,7 @@ impl<O: OrganizationRepository, UO: UserOrganizationRepository, U: UserRepositor
         Ok((orgs, metadata))
     }
 
-    pub async fn add_user(
-        &self,
-        user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<()> {
+    pub async fn add_user(&self, user_id: &UserId, org_id: &OrganizationId) -> DomainResult<()> {
         if self.user_org_repo.is_member(user_id, org_id).await? {
             return Err(DomainError::conflict(
                 "User is already a member of this organization",

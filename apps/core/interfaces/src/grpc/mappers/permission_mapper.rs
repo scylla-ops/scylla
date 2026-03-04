@@ -109,9 +109,7 @@ pub fn proto_resource_to_domain(proto: ProtoResource) -> DomainResult<Resource> 
         }
         (ResourceType::ResourceAll, _) => Ok(Resource::All),
         (ResourceType::ResourceJob, None) => Ok(Resource::Job(Target::All)),
-        (ResourceType::ResourceJob, Some(id)) => {
-            Ok(Resource::Job(Target::Single(JobId::new(id))))
-        }
+        (ResourceType::ResourceJob, Some(id)) => Ok(Resource::Job(Target::Single(JobId::new(id)))),
     }
 }
 

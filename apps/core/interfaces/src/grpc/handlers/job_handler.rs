@@ -9,8 +9,8 @@ use domain::ports::{JobRepository, PermissionService};
 use domain::value_objects::permission::policy;
 use protocol::services::job::{
     DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobResponse, ListJobsRequest,
-    ListJobsResponse, ListOrganizationJobsRequest, ListPipelineJobsRequest,
-    ListProjectJobsRequest, job_service_server::JobService,
+    ListJobsResponse, ListOrganizationJobsRequest, ListPipelineJobsRequest, ListProjectJobsRequest,
+    job_service_server::JobService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -22,10 +22,8 @@ pub struct JobHandler<J: JobRepository, PS: PermissionService> {
 }
 
 #[async_trait::async_trait]
-impl<
-    J: JobRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-> JobService for JobHandler<J, PS>
+impl<J: JobRepository + Send + Sync + 'static, PS: PermissionService + Send + Sync + 'static>
+    JobService for JobHandler<J, PS>
 {
     async fn get_job(
         &self,

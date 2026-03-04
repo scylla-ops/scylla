@@ -3,7 +3,8 @@ mod config;
 mod db;
 
 use application::{
-    AuthUseCases, JobUseCases, OrganizationUseCases, PipelineUseCases, PermissionUseCases, ProjectUseCases, UserUseCases,
+    AuthUseCases, JobUseCases, OrganizationUseCases, PermissionUseCases, PipelineUseCases,
+    ProjectUseCases, UserUseCases,
 };
 use config::CoreConfig;
 use infrastructure::{
@@ -12,11 +13,11 @@ use infrastructure::{
     SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
 };
 use interfaces::{
-    AuthHandler, OrganizationHandler, PermissionHandler, ProjectHandler, UserHandler, PipelineHandler, JobHandler,
+    AuthHandler, JobHandler, OrganizationHandler, PermissionHandler, PipelineHandler,
+    ProjectHandler, UserHandler,
 };
 use protocol::services::{
-    auth::auth_service_server::AuthServiceServer,
-    job::job_service_server::JobServiceServer,
+    auth::auth_service_server::AuthServiceServer, job::job_service_server::JobServiceServer,
     organization::organization_service_server::OrganizationServiceServer,
     permission::permission_service_server::PermissionServiceServer,
     pipeline::pipeline_service_server::PipelineServiceServer,
@@ -152,7 +153,10 @@ async fn run(args: Args) -> Result<()> {
         user_project_repo.clone(),
         user_repo.clone(),
     ));
-    let pipeline_uc = Arc::new(PipelineUseCases::new(pipeline_repo.clone(), project_repo.clone()));
+    let pipeline_uc = Arc::new(PipelineUseCases::new(
+        pipeline_repo.clone(),
+        project_repo.clone(),
+    ));
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
@@ -202,14 +206,14 @@ async fn run(args: Args) -> Result<()> {
         .service(PipelineServiceServer::new(pipeline_handler));
 
     let job_service = ServiceBuilder::new()
-        .layer(auth_interceptor)
+        .layer(auth_interceptor.clone())
         .service(JobServiceServer::new(job_handler));
 
-	let permission_service = ServiceBuilder::new()
-		.layer(auth_interceptor)
-		.service(PermissionServiceServer::new(permission_handler));
+    let permission_service = ServiceBuilder::new()
+        .layer(auth_interceptor)
+        .service(PermissionServiceServer::new(permission_handler));
 
-	Server::builder()
+    Server::builder()
         .accept_http1(true)
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)

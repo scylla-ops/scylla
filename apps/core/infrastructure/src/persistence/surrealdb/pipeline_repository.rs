@@ -113,7 +113,9 @@ impl PipelineRepository for SurrealPipelineRepository {
         let project_id = project_id.clone();
 
         let count_result: Vec<i64> = db
-            .query("SELECT count() FROM type::table($table) WHERE project_id = $project_id GROUP ALL")
+            .query(
+                "SELECT count() FROM type::table($table) WHERE project_id = $project_id GROUP ALL",
+            )
             .bind(("table", table.clone()))
             .bind(("project_id", project_id.clone().into_value()))
             .await
@@ -175,8 +177,8 @@ mod tests {
     use super::*;
     use crate::test_utils::init_db;
     use domain::entities::{PipelineNode, ProjectId};
-    use domain::value_objects::pipeline::{NodeId, PipelineName};
     use domain::value_objects::PaginationParams;
+    use domain::value_objects::pipeline::{NodeId, PipelineName};
 
     async fn setup() -> Surreal<Any> {
         init_db(&[PipelineId::table_name()]).await

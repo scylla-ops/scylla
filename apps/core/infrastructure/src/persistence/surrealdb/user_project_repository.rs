@@ -19,11 +19,7 @@ impl SurrealUserProjectRepository {
 
 #[async_trait]
 impl UserProjectRepository for SurrealUserProjectRepository {
-    async fn add_member(
-        &self,
-        user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<()> {
+    async fn add_member(&self, user_id: &UserId, project_id: &ProjectId) -> DomainResult<()> {
         let user_record = user_id.clone().into_value();
         let project_record = project_id.clone().into_value();
 
@@ -37,11 +33,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         Ok(())
     }
 
-    async fn remove_member(
-        &self,
-        user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<()> {
+    async fn remove_member(&self, user_id: &UserId, project_id: &ProjectId) -> DomainResult<()> {
         let user_record = user_id.clone().into_value();
         let project_record = project_id.clone().into_value();
 
@@ -55,11 +47,7 @@ impl UserProjectRepository for SurrealUserProjectRepository {
         Ok(())
     }
 
-    async fn is_member(
-        &self,
-        user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<bool> {
+    async fn is_member(&self, user_id: &UserId, project_id: &ProjectId) -> DomainResult<bool> {
         let user_record = user_id.clone().into_value();
         let project_record = project_id.clone().into_value();
 
@@ -130,7 +118,9 @@ impl UserProjectRepository for SurrealUserProjectRepository {
 
         let results: Vec<ProjectId> = self
             .db
-            .query("SELECT VALUE out FROM user_project WHERE in = $user_id LIMIT $limit START $start")
+            .query(
+                "SELECT VALUE out FROM user_project WHERE in = $user_id LIMIT $limit START $start",
+            )
             .bind(("user_id", user_record))
             .bind(("limit", params.limit()))
             .bind(("start", params.offset()))

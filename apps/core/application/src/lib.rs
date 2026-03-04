@@ -1,6 +1,6 @@
 pub mod use_cases;
 
 pub use use_cases::{
-    AuthUseCases, JobUseCases, PermissionUseCases, OrganizationUseCases, PipelineUseCases, ProjectUseCases,
-    UserUseCases,
+    AuthUseCases, JobUseCases, OrganizationUseCases, PermissionUseCases, PipelineUseCases,
+    ProjectUseCases, UserUseCases,
 };

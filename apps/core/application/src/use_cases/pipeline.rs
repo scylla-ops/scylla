@@ -1,5 +1,5 @@
 use derive_more::Constructor;
-use domain::entities::{OrganizationId, Pipeline, PipelineNode, PipelineId, ProjectId};
+use domain::entities::{OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId};
 use domain::errors::DomainResult;
 use domain::ports::{PipelineRepository, ProjectRepository};
 use domain::value_objects::pipeline::PipelineName;
@@ -63,7 +63,9 @@ impl<P: PipelineRepository, PR: ProjectRepository> PipelineUseCases<P, PR> {
         project_id: &ProjectId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Pipeline>> {
-        self.pipeline_repo.list_by_project(project_id, pagination).await
+        self.pipeline_repo
+            .list_by_project(project_id, pagination)
+            .await
     }
 
     pub async fn list_by_organization(
@@ -71,6 +73,8 @@ impl<P: PipelineRepository, PR: ProjectRepository> PipelineUseCases<P, PR> {
         organization_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Pipeline>> {
-        self.pipeline_repo.list_by_organization(organization_id, pagination).await
+        self.pipeline_repo
+            .list_by_organization(organization_id, pagination)
+            .await
     }
 }

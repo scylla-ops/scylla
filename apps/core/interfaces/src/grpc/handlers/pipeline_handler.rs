@@ -1,7 +1,6 @@
 use crate::extract_auth_context;
 use crate::grpc::mappers::{
-    domain_error_to_status, domain_to_proto_metadata, pipeline_to_proto,
-    proto_to_domain_pagination,
+    domain_error_to_status, domain_to_proto_metadata, pipeline_to_proto, proto_to_domain_pagination,
 };
 use application::PipelineUseCases;
 use derive_more::Constructor;
@@ -52,8 +51,7 @@ impl<
                     .iter()
                     .map(|d| NodeId::new(d).map_err(domain_error_to_status))
                     .collect::<Result<_, _>>()?;
-                PipelineNode::new(node_id, deps, n.command, n.args)
-                    .map_err(domain_error_to_status)
+                PipelineNode::new(node_id, deps, n.command, n.args).map_err(domain_error_to_status)
             })
             .collect::<Result<_, _>>()?;
 
@@ -164,8 +162,7 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (pipelines, metadata) = result.into_parts();
-        let pipelines: Vec<PipelineResponse> =
-            pipelines.iter().map(pipeline_to_proto).collect();
+        let pipelines: Vec<PipelineResponse> = pipelines.iter().map(pipeline_to_proto).collect();
 
         Ok(Response::new(ListPipelinesResponse {
             pipelines,
@@ -195,8 +192,7 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (pipelines, metadata) = result.into_parts();
-        let pipelines: Vec<PipelineResponse> =
-            pipelines.iter().map(pipeline_to_proto).collect();
+        let pipelines: Vec<PipelineResponse> = pipelines.iter().map(pipeline_to_proto).collect();
 
         Ok(Response::new(ListPipelinesResponse {
             pipelines,
@@ -226,8 +222,7 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (pipelines, metadata) = result.into_parts();
-        let pipelines: Vec<PipelineResponse> =
-            pipelines.iter().map(pipeline_to_proto).collect();
+        let pipelines: Vec<PipelineResponse> = pipelines.iter().map(pipeline_to_proto).collect();
 
         Ok(Response::new(ListPipelinesResponse {
             pipelines,

@@ -19,11 +19,7 @@ impl SurrealUserOrganizationRepository {
 
 #[async_trait]
 impl UserOrganizationRepository for SurrealUserOrganizationRepository {
-    async fn add_member(
-        &self,
-        user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<()> {
+    async fn add_member(&self, user_id: &UserId, org_id: &OrganizationId) -> DomainResult<()> {
         let user_record = user_id.clone().into_value();
         let org_record = org_id.clone().into_value();
 
@@ -37,11 +33,7 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         Ok(())
     }
 
-    async fn remove_member(
-        &self,
-        user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<()> {
+    async fn remove_member(&self, user_id: &UserId, org_id: &OrganizationId) -> DomainResult<()> {
         let user_record = user_id.clone().into_value();
         let org_record = org_id.clone().into_value();
 
@@ -55,11 +47,7 @@ impl UserOrganizationRepository for SurrealUserOrganizationRepository {
         Ok(())
     }
 
-    async fn is_member(
-        &self,
-        user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<bool> {
+    async fn is_member(&self, user_id: &UserId, org_id: &OrganizationId) -> DomainResult<bool> {
         let user_record = user_id.clone().into_value();
         let org_record = org_id.clone().into_value();
 
