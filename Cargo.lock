@@ -1185,6 +1185,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "derive_more",
+ "surrealdb",
  "surrealdb-types",
  "thiserror 2.0.18",
  "ulid",
@@ -4483,9 +4484,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a18997a4c20c9559461846bff0dad185854c32639407904e2bb97567b4fa6a63"
+checksum = "a4743fbc9ef13ad8dc83d8015bdab3d2bbe799b50335d597b8ea595cd4fb8ded"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -4505,6 +4506,7 @@ dependencies = [
  "serde_json",
  "surrealdb-core",
  "surrealdb-types",
+ "surrealdb-types-derive",
  "tokio",
  "tokio-tungstenite",
  "tokio-tungstenite-wasm",
@@ -4520,9 +4522,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-core"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "470a61158ca8b4e774f8be3a8fbe1393bd33c026d9025a3db8f5ada0a06adf6a"
+checksum = "c68692e07cb32e3d14fcf8ecd4d359178168b05d6995d40974e79431b775d97c"
 dependencies = [
  "addr",
  "affinitypool",
@@ -4660,9 +4662,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-types"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58db59440236ec593dbbb2487c4db11e4452ee636f9a1da3e3672c1cc1f42259"
+checksum = "47ff6e65d183500794b407cd650ca92143ec1980c8dd7fc99f3ffbaef6be14ff"
 dependencies = [
  "anyhow",
  "bytes",
@@ -4686,9 +4688,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-types-derive"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "617a808c9b3a2cd688c98027f4781c522507df73b42b1c56820ae72407eda016"
+checksum = "78dcd6796474fbb368e502b98c47843ec28d32c3e1a42d1291d65f060f30b1e8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4928,9 +4930,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.49.0"
+version = "1.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72a2903cd7736441aac9df9d7688bd0ce48edccaadf181c3b90be801e81d3d86"
+checksum = "27ad5e34374e03cfffefc301becb44e9dc3c17584f414349ebe29ed26661822d"
 dependencies = [
  "bytes",
  "libc",
@@ -5026,14 +5028,14 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.9.12+spec-1.1.0"
+version = "1.0.3+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf92845e79fc2e2def6a5d828f0801e29a2f8acc037becc5ab08595c7d5e9863"
+checksum = "c7614eaf19ad818347db24addfa201729cf2a9b6fdfd9eb0ab870fcacc606c0c"
 dependencies = [
  "indexmap",
  "serde_core",
  "serde_spanned",
- "toml_datetime",
+ "toml_datetime 1.0.0+spec-1.1.0",
  "toml_parser",
  "toml_writer",
  "winnow",
@@ -5049,13 +5051,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml_datetime"
+version = "1.0.0+spec-1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32c2555c699578a4f59f0cc68e5116c8d7cabbd45e1409b989d4be085b53f13e"
+dependencies = [
+ "serde_core",
+]
+
+[[package]]
 name = "toml_edit"
 version = "0.23.10+spec-1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84c8b9f757e028cee9fa244aea147aab2a9ec09d5325a9b01e0a49730c2b5269"
 dependencies = [
  "indexmap",
- "toml_datetime",
+ "toml_datetime 0.7.5+spec-1.1.0",
  "toml_parser",
  "winnow",
 ]

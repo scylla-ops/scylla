@@ -13,13 +13,13 @@ doctest = false
 
 [dependencies]
 casbin = "2.20.0"
-surrealdb = { version = "3.0.1" }
-surrealdb-types = "3.0.1"
+surrealdb = { version = "3.0.2" }
+surrealdb-types = "3.0.2"
 async-trait = "0.1.89"
 
 [dev-dependencies]
-tokio = { version = "1.49.0", features = ["full"] }
-surrealdb = { version = "3.0.1", features = ["kv-mem"] }
+tokio = { version = "1.50.0", features = ["full"] }
+surrealdb = { version = "3.0.2", features = ["kv-mem"] }
 
 [features]
 default = []
