@@ -9,38 +9,36 @@ interface StatusIndicatorProps {
   labelClassName?: string;
 }
 
-//TODO: add spinning border when state is running
-
 const getStateColors = (state: StatusIndicatorProps['state']) => {
   switch (state) {
     case 'success':
       return {
         dot: 'bg-green-500',
         ping: 'bg-green-300',
-        container:
-          'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300',
+        container: 'border-green-200 text-green-800 dark:border-green-800 dark:text-green-300',
+        gradient: 'from-green-400 to-green-500',
       };
     case 'failure':
       return {
         dot: 'bg-red-500',
         ping: 'bg-red-300',
-        container:
-          'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300',
+        container: 'border-red-200 text-red-800 dark:border-red-800 dark:text-red-300',
+        gradient: 'from-red-400 to-red-500',
       };
     case 'running':
       return {
         dot: 'bg-blue-500',
         ping: 'bg-blue-300',
-        container:
-          'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300',
+        container: 'border-blue-200 text-blue-800 dark:border-blue-800 dark:text-blue-300',
+        gradient: 'from-blue-400 to-blue-500',
       };
     case 'idle':
     default:
       return {
         dot: 'bg-slate-700',
         ping: 'bg-slate-400',
-        container:
-          'bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300',
+        container: 'border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-300',
+        gradient: 'from-slate-400 to-slate-500',
       };
   }
 };
@@ -77,16 +75,24 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   labelClassName,
 }) => {
   const shouldAnimate = state === 'success' || state === 'running' || state === 'failure';
-
   const colors = getStateColors(state);
   const sizeClasses = getSizeClasses(size);
 
   return (
-    <>
+    <div className='relative inline-flex rounded-full p-[2px] overflow-hidden bg-gradient-to-r from-transparent via-transparent to-transparent'>
+      {/* Gradient TODO */
+      /*{state === 'running' && (
+        <span
+          className={cn(
+            'absolute inset-0 rounded-full animate-spin pointer-events-none opacity-75',
+            `bg-gradient-to-r ${colors.gradient}`,
+          )}
+        />
+      )} */}
+
       <div
         className={cn(
-          'inline-flex items-center gap-2 rounded-full border px-3 py-1.5',
-          'transition-colors',
+          'relative inline-flex items-center gap-2 rounded-full bg-white dark:bg-slate-900 transition-all duration-300',
           sizeClasses.container,
           colors.container,
           className,
@@ -105,9 +111,9 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
           <span className={cn('relative inline-flex rounded-full', sizeClasses.dot, colors.dot)} />
         </div>
 
-        {label && <p className={cn('text-sm font-medium', labelClassName)}>{label}</p>}
+        {label && <p className={cn('font-medium', labelClassName)}>{label}</p>}
       </div>
-    </>
+    </div>
   );
 };
 

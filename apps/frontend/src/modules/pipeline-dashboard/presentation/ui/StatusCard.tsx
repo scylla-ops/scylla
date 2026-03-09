@@ -10,7 +10,7 @@ import {
 } from '@/modules/core/presentation/ui/shadcn/card';
 import type { PipelineResponse } from '@/generated/pipeline';
 import { PlayIcon, SettingsIcon } from 'lucide-react';
-import StatusIndicator from '@shadcn/status-indicator.tsx';
+import StatusIndicator from '@core/presentation/ui/status-indicator.tsx';
 
 type StatusPipeline = 'success' | 'failure' | 'running';
 
