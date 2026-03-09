@@ -1,14 +1,14 @@
 import type { PipelineDashboardStore } from '@/modules/pipeline-dashboard/repository/store/PipelineDashboardStore.ts';
-import { PipelineClient } from '@/generated/pipeline.client.ts';
 import type { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';
 import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse, PipelineResponse } from '@/generated/pipeline.ts';
+import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 
 export class PipelineDashboardStoreImpl implements PipelineDashboardStore {
-  private readonly _pipelineClient: PipelineClient;
+  private readonly _pipelineClient: PipelineServiceClient;
 
   constructor(transport: CoreGrpcTransport) {
-    this._pipelineClient = new PipelineClient(transport.getTransport());
+    this._pipelineClient = new PipelineServiceClient(transport.getTransport());
   }
 
   async getPipelineStatsById(id: string): Promise<ScyllaResult<PipelineResponse>> {

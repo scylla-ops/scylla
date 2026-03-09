@@ -12,8 +12,7 @@ export const useLogin = () => {
       if (!result.ok) throw result.error;
       return result.value;
     },
-    onSuccess: token => {
-      deps.core.setTokenUseCase.execute(token);
+    onSuccess: () => {
       navigate('/user-settings');
     },
     onError: err => {

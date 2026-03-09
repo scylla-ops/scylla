@@ -9,7 +9,7 @@ namespace = "scylla"
 database = "core"
 
 [cors]
-allow_origins = ["localhost:5173"]
+allow_origins = ["*"]
 allow_headers = [
     "content-type",
     "authorization",

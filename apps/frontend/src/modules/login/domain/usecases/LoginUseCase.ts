@@ -3,7 +3,7 @@ import type { LoginRepository } from '@/modules/login/domain/repository/LoginRep
 
 export class LoginUseCase {
   constructor(private readonly loginRepository: LoginRepository) {}
-  public execute(login: string, password: string): Promise<ScyllaResult<string>> {
+  public execute(login: string, password: string): Promise<ScyllaResult<void>> {
     return this.loginRepository.login(login, password);
   }
 }

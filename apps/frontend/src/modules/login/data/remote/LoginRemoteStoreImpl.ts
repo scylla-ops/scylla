@@ -11,10 +11,11 @@ export class LoginRemoteStoreImpl implements LoginRemoteStore {
   }
 
   //TODO: add a logger (console error for developer, only if a debug env var is set) ??
-  public async login(username: string, password: string): Promise<ScyllaResult<string>> {
+  public async login(username: string, password: string): Promise<ScyllaResult<void>> {
     try {
       const { response } = await this._authClient.login({ username, password });
-      return { ok: true, value: response.token };
+      localStorage.setItem('token', response.token);
+      return { ok: true, value: undefined };
     } catch (err) {
       console.error('Login failed:', err); //todo: here
       return { ok: false, error: { message: String(err) } };
