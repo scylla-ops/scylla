@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package permission;
+
+// ── Shared typed enums ───────────────────────────────────────────────────────
+
+enum Act {
+  ACT_CREATE      = 0;
+  ACT_READ        = 1;
+  ACT_WRITE       = 2;
+  ACT_DELETE      = 3;
+  ACT_ALL         = 4;
+}
+
+enum ScopeType {
+  SCOPE_SYSTEM    = 0;
+  SCOPE_ORG       = 1; // id required
+  SCOPE_PROJECT   = 2; // id required
+  SCOPE_USER      = 3; // id required
+  SCOPE_ALL       = 4;
+}
+
+// A scope is a type (system-wide, org, project, user) plus an optional id.
+message Scope {
+  ScopeType type    = 1;
+  optional string id = 2;
+}
+
+enum ResourceType {
+  RESOURCE_USER         = 0;
+  RESOURCE_PROJECT      = 1;
+  RESOURCE_ORGANIZATION = 2;
+  RESOURCE_PIPELINE     = 3;
+  RESOURCE_ALL          = 4;
+  RESOURCE_JOB          = 5;
+}
+
+// A resource is a type plus an optional id.
+// Absence of id means Target::All (wildcard).
+message Resource {
+  ResourceType type  = 1;
+  optional string id = 2;
+}
+
+// ── Service ──────────────────────────────────────────────────────────────────
+
+service PermissionService {
+  rpc AddPolicy(AddPolicyRequest)                         returns (AddPolicyResponse);
+  rpc RemovePolicy(RemovePolicyRequest)                   returns (RemovePolicyResponse);
+  rpc ListPolicies(ListPoliciesRequest)                   returns (ListPoliciesResponse);
+
+  rpc AddGroupingPolicy(AddGroupingPolicyRequest)         returns (AddGroupingPolicyResponse);
+  rpc RemoveGroupingPolicy(RemoveGroupingPolicyRequest)   returns (RemoveGroupingPolicyResponse);
+  rpc ListGroupingPolicies(ListGroupingPoliciesRequest)   returns (ListGroupingPoliciesResponse);
+}
+
+// ── Policy RPCs ──────────────────────────────────────────────────────────────
+
+message PolicyEntry {
+  string   subject  = 1;
+  Scope    scope    = 2;
+  Resource resource = 3;
+  Act      act      = 4;
+}
+
+message AddPolicyRequest {
+  string   subject  = 1;
+  Scope    scope    = 2;
+  Resource resource = 3;
+  Act      act      = 4;
+}
+
+message AddPolicyResponse { bool added = 1; }
+
+message RemovePolicyRequest {
+  string   subject  = 1;
+  Scope    scope    = 2;
+  Resource resource = 3;
+  Act      act      = 4;
+}
+
+message RemovePolicyResponse { bool removed = 1; }
+
+message ListPoliciesRequest {
+  optional string subject = 1;
+}
+
+message ListPoliciesResponse { repeated PolicyEntry policies = 1; }
+
+// ── Grouping policy RPCs ─────────────────────────────────────────────────────
+
+message GroupingPolicyEntry {
+  string subject = 1;
+  string role    = 2;
+  Scope  scope   = 3;
+}
+
+message AddGroupingPolicyRequest {
+  string subject = 1;
+  string role    = 2;
+  Scope  scope   = 3;
+}
+
+message AddGroupingPolicyResponse { bool added = 1; }
+
+message RemoveGroupingPolicyRequest {
+  string subject = 1;
+  string role    = 2;
+  Scope  scope   = 3;
+}
+
+message RemoveGroupingPolicyResponse { bool removed = 1; }
+
+message ListGroupingPoliciesRequest {
+  optional string subject = 1;
+}
+
+message ListGroupingPoliciesResponse {
+  repeated GroupingPolicyEntry grouping_policies = 1;
+}

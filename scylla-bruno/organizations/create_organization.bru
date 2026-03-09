@@ -5,7 +5,7 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
+  url: {{host}}
   method: /organization.OrganizationService/CreateOrganization
   body: grpc
   auth: inherit

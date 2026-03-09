@@ -5,7 +5,7 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
+  url: {{host}}
   method: /auth.AuthService/Login
   body: grpc
   auth: none
@@ -20,6 +20,10 @@ body:grpc {
       "password": "admin123"
     }
   '''
+}
+
+vars:pre-request {
+  host: localhost:50051
 }
 
 script:post-response {

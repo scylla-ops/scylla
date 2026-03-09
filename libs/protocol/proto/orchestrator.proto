@@ -1,36 +1,16 @@
-syntax = "proto3";
+// syntax = "proto3";
 
-package orchestrator;
+// package orchestrator;
 
-service Orchestrator {
-  rpc RunPipeline(RunPipelineRequest) returns (RunPipelineResponse);
-}
+// import "common.proto";
 
-message RunPipelineRequest { string pipeline_id = 1; }
+// service OrchestratorService {
+//   // for clients
+//   rpc RunPipeline(RunPipelineRequest) returns (JobResponse);
+//   rpc CancelJob(CancelJobRequest) returns (JobResponse);
+//   rpc GetJob(GetJobRequest) returns (JobResponse);
+//   rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
 
-message RunPipelineResponse { string job_id = 1; }
-
-// service Orchestrator {
-//   rpc SubscribeJob(WorkerId) returns (stream Job);
-//   rpc ReportStatus(stream PipelineStatuUpdate) returns (Ack);
+//   // for agents
+//   rpc Chat(stream AgentMessage) returns (stream CoreMessage);
 // }
-
-// message Job {
-//   string id = 1;       // unique job identifier
-//   string job_toml = 2; // fully qualified job definition in TOML format
-// }
-
-// message WorkerId { string id = 1; }
-
-// message PipelineStatuUpdate {
-//   string job_id = 1;        // unique job identifier
-//   string job_data_toml = 2; // job data in toml format
-// }
-
-// message JobEvent {}
-
-// message StageEvent {}
-
-// message StepEvent {}
-
-// message Ack {}

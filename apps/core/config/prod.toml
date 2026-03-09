@@ -1,0 +1,16 @@
+[grpc]
+address = "0.0.0.0:50051"
+
+[database]
+url = "wss://your-production-db.example.com"
+# use environment variables or smth else for credentials
+username = "production_user"
+password = "REPLACE_WITH_SECURE_PASSWORD"
+namespace = "production"
+database = "core"
+
+[cors]
+allow_origins = ["https://your-domain.example.com"]
+allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allow_headers = ["content-type", "authorization"]
+max_age_seconds = 3600

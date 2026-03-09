@@ -1,0 +1,26 @@
+meta {
+  name: list_project_pipelines
+  type: grpc
+  seq: 6
+}
+
+grpc {
+  url: {{host}}
+  method: /pipeline.PipelineService/ListProjectPipelines
+  body: grpc
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "project_id": "project_id_here",
+      "pagination": {
+        "page": 1,
+        "page_size": 10
+      }
+    }
+  '''
+}

@@ -5,8 +5,8 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
-  method: /pipeline.Pipeline/CreatePipeline
+  url: {{host}}
+  method: /pipeline.PipelineService/CreatePipeline
   body: grpc
   auth: inherit
   methodType: unary
@@ -16,8 +16,22 @@ body:grpc {
   name: message 1
   content: '''
     {
-      "content": "pipeline content here"
+      "name": "my-pipeline",
+      "project_id": "project_id_here",
+      "nodes": [
+        {
+          "node_id": "build",
+          "deps": [],
+          "command": "cargo",
+          "args": ["build", "--release"]
+        },
+        {
+          "node_id": "test",
+          "deps": ["build"],
+          "command": "cargo",
+          "args": ["test"]
+        }
+      ]
     }
   '''
 }
-
