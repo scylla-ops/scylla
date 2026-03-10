@@ -23,7 +23,7 @@ export const coreRouter = createBrowserRouter([
         element: <Layout />,
         children: [
           {
-            path: '/pipeline-creation',
+            path: '/pipeline-creation/:id?',
             element: <PipelineCreationPage />,
             handle: {
               topbar: <PipelineCreationTopbar />,

@@ -22,7 +22,7 @@ export const StatusCard = ({ pipeline }: StatusCardProps) => {
   const navigate = useNavigate();
   const createdAt = '10/10/2023';
 
-  const goToSettings = () => navigate(`/pipeline/${pipeline.pipelineId}/settings`);
+  const goToSettings = () => navigate(`/pipeline-creation/${pipeline.pipelineId}`);
 
   return (
     <Card className='hover:bg-gray-50 transition-colors duration-100'>
