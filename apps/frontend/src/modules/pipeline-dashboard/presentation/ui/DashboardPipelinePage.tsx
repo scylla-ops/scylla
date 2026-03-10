@@ -5,7 +5,7 @@ import { PipelineResponse } from '@/generated/pipeline.ts';
 
 const pipelinesTest: PipelineResponse[] = [
   {
-    name: 'lala',
+    name: 'Pipeline 1',
     projectId: '1',
     pipelineId: '1',
     nodes: [],
@@ -13,7 +13,7 @@ const pipelinesTest: PipelineResponse[] = [
     updatedAt: 'test',
   },
   {
-    name: 'lala',
+    name: 'Pipeline 2',
     projectId: '1',
     pipelineId: '1',
     nodes: [],
@@ -21,7 +21,7 @@ const pipelinesTest: PipelineResponse[] = [
     updatedAt: 'test',
   },
   {
-    name: 'lala',
+    name: 'Pipeline 3',
     projectId: '1',
     pipelineId: '1',
     nodes: [],
@@ -29,7 +29,7 @@ const pipelinesTest: PipelineResponse[] = [
     updatedAt: 'test',
   },
   {
-    name: 'lala',
+    name: 'Pipeline 4',
     projectId: '1',
     pipelineId: '1',
     nodes: [],
@@ -37,7 +37,7 @@ const pipelinesTest: PipelineResponse[] = [
     updatedAt: 'test',
   },
   {
-    name: 'lala',
+    name: 'Pipeline 5',
     projectId: '1',
     pipelineId: '1',
     nodes: [],
@@ -45,7 +45,7 @@ const pipelinesTest: PipelineResponse[] = [
     updatedAt: 'test',
   },
   {
-    name: 'lala',
+    name: 'Pipeline 6',
     projectId: '1',
     pipelineId: '1',
     nodes: [],
@@ -58,7 +58,7 @@ export const DashboardPipelinePage = () => {
   const { loading, error, fetchPipelines } = usePipelineDashboard();
 
   useEffect(() => {
-    fetchPipelines().finally();
+    //fetchPipelines().finally();
   }, [fetchPipelines]);
 
   if (loading) {
@@ -75,7 +75,7 @@ export const DashboardPipelinePage = () => {
 
   return (
     <>
-      <div className='p-6 flex flex-row flex-wrap h-fit gap-4'>
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-4 w-full'>
         {pipelinesTest.length > 0 ? (
           pipelinesTest.map(pipeline => (
             <StatusCard key={pipeline.pipelineId} pipeline={pipeline} />

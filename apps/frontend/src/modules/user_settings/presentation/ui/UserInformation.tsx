@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@shadcn';
-import { ScyllaForm } from '@core/presentation/ui/ScyllaForm.tsx';
+import { ScyllaForm } from '@core/presentation/ui/utils/ScyllaForm.tsx';
 import { type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
 
 const FormItems: FormItem[] = [

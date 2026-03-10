@@ -6,7 +6,7 @@ import {
   CardContent,
 } from '@/modules/core/presentation/ui/shadcn';
 import { type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
-import { ScyllaForm } from '@core/presentation/ui/ScyllaForm.tsx';
+import { ScyllaForm } from '@core/presentation/ui/utils/ScyllaForm.tsx';
 
 const FormItems: FormItem[] = [
   {
