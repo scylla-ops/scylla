@@ -4,6 +4,7 @@ import { toml } from '@codemirror/legacy-modes/mode/toml';
 import { TabsContent } from '@shadcn/tabs.tsx';
 import { Card } from '@shadcn';
 import { useScriptStore } from '@/modules/pipeline-creation/presentation/stores/useScript.ts';
+import { json } from '@codemirror/legacy-modes/mode/javascript';
 
 const codeMirrorTheme = EditorView.theme({
   '&': {
@@ -50,7 +51,7 @@ export const PipelineCreationPage = () => {
             onChange={value => setScript(value)}
             className='h-full'
             height='100%'
-            extensions={[StreamLanguage.define(toml), codeMirrorTheme]}
+            extensions={[StreamLanguage.define(json), codeMirrorTheme]}
           />
         </Card>
       </TabsContent>

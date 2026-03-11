@@ -12,22 +12,20 @@ export const usePipelineDashboard = () => {
     setLoading(true);
     setError('');
 
-    try {
-      const res = await getPipelines.execute();
+    const result = await getPipelines.execute();
 
-      if (res.ok) setPipelines(res.value.pipelines);
-      else setError(res.error.message);
-    } catch (error) {
-      setError('Failed to fetch pipelines.' + error);
-    } finally {
-      setLoading(false);
-    }
-  }, [setLoading, setError, getPipelines, setPipelines]);
+    result.fold(
+      data => {
+        setPipelines(data.pipelines);
+      },
+      err => {
+        err.log();
+        setError(err.message);
+      },
+    );
 
-  return {
-    pipelines,
-    loading,
-    error,
-    fetchPipelines,
-  };
+    setLoading(false);
+  }, [getPipelines, setPipelines, setLoading, setError]);
+
+  return { pipelines, loading, error, fetchPipelines };
 };

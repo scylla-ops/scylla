@@ -15,8 +15,10 @@ export const PipelineCreationTopbar = () => {
       <Button
         onClick={() => {
           createPipeline.execute(script).then(res => {
-            if (res.ok) alert('pipeline created');
-            else alert('error: ' + res.error.message);
+            res.fold(
+              _ => alert('success'),
+              err => alert(err.message + ' ' + err.cause),
+            );
           });
         }}
       >

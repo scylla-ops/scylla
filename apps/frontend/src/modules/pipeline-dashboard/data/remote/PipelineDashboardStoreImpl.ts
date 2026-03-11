@@ -1,7 +1,7 @@
 import type { PipelineDashboardStore } from '@/modules/pipeline-dashboard/repository/store/PipelineDashboardStore.ts';
 import type { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
-import type { ListPipelinesResponse, PipelineResponse } from '@/generated/pipeline.ts';
+import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 
 export class PipelineDashboardStoreImpl implements PipelineDashboardStore {
@@ -11,26 +11,15 @@ export class PipelineDashboardStoreImpl implements PipelineDashboardStore {
     this._pipelineClient = new PipelineServiceClient(transport.getTransport());
   }
 
-  async getPipelineStatsById(id: string): Promise<ScyllaResult<PipelineResponse>> {
-    try {
-      const { response } = await this._pipelineClient.getPipeline({ pipelineId: id });
-      return { ok: true, value: response };
-    } catch (error) {
-      return { ok: false, error: { message: `Failed to fetch pipeline for id: ${id}` + error } };
-    }
-  }
-
   async getPipelines(): Promise<ScyllaResult<ListPipelinesResponse>> {
-    try {
-      const { response } = await this._pipelineClient.listPipelines({
-        pagination: {
-          page: 1,
-          pageSize: 10,
-        },
-      });
-      return { ok: true, value: response };
-    } catch (error) {
-      return { ok: false, error: { message: `Failed to fetch pipelines.` + error } };
-    }
+    const pagination = {
+      page: 1,
+      pageSize: 10,
+    };
+
+    return ScyllaResult.tryAsync<ListPipelinesResponse>(
+      async () => (await this._pipelineClient.listPipelines({ pagination })).response,
+      'Error getting pipelines',
+    );
   }
 }
