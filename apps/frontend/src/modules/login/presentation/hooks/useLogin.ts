@@ -1,22 +1,22 @@
 import { useMutation } from '@tanstack/react-query';
 import { useDependencies } from '@/modules/core/presentation/hooks/useDependencies.ts';
 import { useNavigate } from 'react-router-dom';
+import type { ScyllaError } from '@core/utils/ScyllaResult.ts';
 
 export const useLogin = () => {
   const deps = useDependencies();
   const navigate = useNavigate();
 
-  return useMutation({
-    mutationFn: async ({ login, password }: { login: string; password: string }) => {
+  return useMutation<void, ScyllaError, { login: string; password: string }>({
+    mutationFn: async ({ login, password }) => {
       const result = await deps.login.loginUseCase.execute(login, password);
-      if (!result.ok) throw result.error;
-      return result.value;
+      return result.unwrap();
     },
     onSuccess: () => {
       navigate('/user-settings');
     },
     onError: err => {
-      console.error('Erreur login:', err);
+      err.log();
     },
   });
 };

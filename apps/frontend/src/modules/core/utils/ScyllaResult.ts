@@ -38,9 +38,21 @@ export class ScyllaResult<T> {
     return this._value;
   }
 
-  public static Try<T>(fn: () => T, errorMessage: string): ScyllaResult<T> {
+  public static try<T>(fn: () => T, errorMessage: string): ScyllaResult<T> {
     try {
       return new ScyllaResult<T>(fn());
+    } catch (error) {
+      return new ScyllaResult<T>(new ScyllaError(errorMessage, { cause: error }));
+    }
+  }
+
+  public static async tryAsync<T>(
+    fn: () => Promise<T>,
+    errorMessage: string,
+  ): Promise<ScyllaResult<T>> {
+    try {
+      const value = await fn();
+      return new ScyllaResult<T>(value);
     } catch (error) {
       return new ScyllaResult<T>(new ScyllaError(errorMessage, { cause: error }));
     }
