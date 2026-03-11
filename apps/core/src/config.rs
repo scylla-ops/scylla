@@ -4,7 +4,7 @@ use std::fs;
 use std::net::SocketAddr;
 use std::path::Path;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct CoreConfig {
     #[serde(default)]
     pub grpc: GrpcConfig,
@@ -102,16 +102,6 @@ fn default_max_age() -> u64 {
     600
 }
 
-impl Default for CoreConfig {
-    fn default() -> Self {
-        Self {
-            grpc: GrpcConfig::default(),
-            database: DatabaseConfig::default(),
-            cors: CorsConfig::default(),
-            bootstrap: None,
-        }
-    }
-}
 
 impl Default for GrpcConfig {
     fn default() -> Self {

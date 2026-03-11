@@ -119,10 +119,10 @@ fn load_policy_line(m: &mut dyn Model, rule: &CasbinRule) {
     if values.is_empty() {
         return;
     }
-    if let Some(sec_map) = m.get_mut_model().get_mut(&rule.sec) {
-        if let Some(assertion) = sec_map.get_mut(&rule.ptype) {
-            assertion.get_mut_policy().insert(values);
-        }
+    if let Some(sec_map) = m.get_mut_model().get_mut(&rule.sec)
+        && let Some(assertion) = sec_map.get_mut(&rule.ptype)
+    {
+        assertion.get_mut_policy().insert(values);
     }
 }
 
@@ -407,8 +407,5 @@ impl SurrealAdapter {
 
 // ─── Error helper ─────────────────────────────────────────────────────────────
 fn io_err(e: impl std::fmt::Display) -> casbin::Error {
-    casbin::Error::IoError(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        e.to_string(),
-    ))
+    casbin::Error::IoError(std::io::Error::other(e.to_string()))
 }

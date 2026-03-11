@@ -213,7 +213,7 @@ impl<
             request,
             policy::organization::list_user_orgs(user_id.clone())
         );
-        let pagination = proto_to_domain_pagination(request.get_ref().pagination.clone());
+        let pagination = proto_to_domain_pagination(request.get_ref().pagination);
 
         let (orgs, metadata) = self
             .use_cases
