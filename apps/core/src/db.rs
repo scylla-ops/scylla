@@ -1,7 +1,8 @@
 use crate::config::DatabaseConfig;
 use anyhow::{Context, Result};
 use domain::entities::{
-    OrganizationId, ProjectId, SessionId, UserId, UserOrganizationId, UserProjectId,
+    JobId, OrganizationId, PipelineId, ProjectId, SessionId, UserId, UserOrganizationId,
+    UserProjectId,
 };
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
@@ -32,6 +33,8 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
         ProjectId::table_name(),
         UserOrganizationId::table_name(),
         UserProjectId::table_name(),
+        PipelineId::table_name(),
+        JobId::table_name(),
     ];
 
     let ddl = tables
