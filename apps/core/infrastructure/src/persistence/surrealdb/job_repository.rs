@@ -205,7 +205,12 @@ mod tests {
     use domain::value_objects::pipeline::{NodeId, PipelineName};
 
     async fn setup() -> Surreal<Any> {
-        init_db(&[JobId::table_name()]).await
+        init_db(&[
+            JobId::table_name(),
+            PipelineId::table_name(),
+            ProjectId::table_name(),
+        ])
+        .await
     }
 
     fn node(id: &str, deps: &[&str]) -> PipelineNode {
@@ -341,5 +346,71 @@ mod tests {
 
         assert_eq!(result.items().len(), 1);
         assert_eq!(result.items()[0].pipeline_id(), pipeline_a.id());
+    }
+
+    #[tokio::test]
+    async fn test_list_all_empty() {
+        let db = setup().await;
+        let repo = SurrealJobRepository::new(db);
+
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo.list_all(Some(&pagination)).await.unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_all_default_pagination() {
+        let db = setup().await;
+        let repo = SurrealJobRepository::new(db);
+
+        let result = repo.list_all(None).await.unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_by_pipeline_empty() {
+        let db = setup().await;
+        let repo = SurrealJobRepository::new(db);
+
+        let pipeline_id = PipelineId::generate();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_by_pipeline(&pipeline_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_by_project_empty() {
+        let db = setup().await;
+        let repo = SurrealJobRepository::new(db);
+
+        let project_id = ProjectId::generate();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_by_project(&project_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_by_organization_empty() {
+        let db = setup().await;
+        let repo = SurrealJobRepository::new(db);
+
+        let org_id = OrganizationId::generate();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_by_organization(&org_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
     }
 }

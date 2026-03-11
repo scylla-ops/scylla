@@ -176,12 +176,12 @@ impl PipelineRepository for SurrealPipelineRepository {
 mod tests {
     use super::*;
     use crate::test_utils::init_db;
-    use domain::entities::{PipelineNode, ProjectId};
+    use domain::entities::{OrganizationId, PipelineNode, ProjectId};
     use domain::value_objects::PaginationParams;
     use domain::value_objects::pipeline::{NodeId, PipelineName};
 
     async fn setup() -> Surreal<Any> {
-        init_db(&[PipelineId::table_name()]).await
+        init_db(&[PipelineId::table_name(), ProjectId::table_name()]).await
     }
 
     fn test_project_id() -> ProjectId {
@@ -319,5 +319,56 @@ mod tests {
 
         assert_eq!(result.items().len(), 1);
         assert_eq!(result.items()[0].project_id(), &project_a);
+    }
+
+    #[tokio::test]
+    async fn test_list_all_empty() {
+        let db = setup().await;
+        let repo = SurrealPipelineRepository::new(db);
+
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo.list_all(Some(&pagination)).await.unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_all_default_pagination() {
+        let db = setup().await;
+        let repo = SurrealPipelineRepository::new(db);
+
+        let result = repo.list_all(None).await.unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_by_project_empty() {
+        let db = setup().await;
+        let repo = SurrealPipelineRepository::new(db);
+
+        let project_id = test_project_id();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_by_project(&project_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_by_organization_empty() {
+        let db = setup().await;
+        let repo = SurrealPipelineRepository::new(db);
+
+        let org_id = OrganizationId::generate();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_by_organization(&org_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
     }
 }

@@ -19,7 +19,7 @@ pub fn extract_auth_context<T>(request: &Request<T>) -> Result<AuthContext, Stat
         .ok_or_else(|| {
             Status::internal("Auth context not found — interceptor may not be configured")
         })
-        .map(|ctx| ctx.clone())
+        .cloned()
 }
 
 fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {

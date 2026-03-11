@@ -14,7 +14,7 @@ pub struct CasbinPermissionService {
     enforcer: RwLock<Enforcer>,
 }
 
-const MODEL: &'static str = include_str!("../../../config/casbin/rbac_model.conf");
+const MODEL: &str = include_str!("../../../config/casbin/rbac_model.conf");
 
 impl CasbinPermissionService {
     pub async fn new(adapter: SurrealAdapter) -> CasbinResult<Self> {
