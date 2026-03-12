@@ -4,7 +4,7 @@ import * as React from 'react';
 import { AudioWaveform, Command, GalleryVerticalEnd, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@core/presentation/ui/NavMain';
-import { OrganisationSwitcher } from '@core/presentation/ui/OrganisationSwitcher';
+import { OrganisationSwitcher } from '@/modules/organization/presentation/OrganisationSwitcher.tsx';
 import {
   Sidebar,
   SidebarContent,

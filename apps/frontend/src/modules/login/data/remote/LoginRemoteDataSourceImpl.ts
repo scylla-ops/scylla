@@ -1,9 +1,9 @@
-import type { LoginRemoteStore } from '@/modules/login/repository/store/LoginRemoteStore.ts';
+import type { LoginRemoteDataSource } from '@/modules/login/repository/dataSources/LoginRemoteDataSource.ts';
 import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import { AuthServiceClient } from '@/generated/auth.client.ts';
 import type { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';
 
-export class LoginRemoteStoreImpl implements LoginRemoteStore {
+export class LoginRemoteDataSourceImpl implements LoginRemoteDataSource {
   private readonly _authClient: AuthServiceClient;
 
   constructor(transport: CoreGrpcTransport) {

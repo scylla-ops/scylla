@@ -1,10 +1,10 @@
-import type { PipelineDashboardStore } from '@/modules/pipeline-dashboard/repository/store/PipelineDashboardStore.ts';
+import type { PipelineDashboardRemoteDataSource } from '@/modules/pipeline-dashboard/repository/dataSources/PipelineDashboardRemoteDataSource.ts';
 import type { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';
 import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 
-export class PipelineDashboardStoreImpl implements PipelineDashboardStore {
+export class PipelineDashboardRemoteDataStoreImpl implements PipelineDashboardRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
 
   constructor(transport: CoreGrpcTransport) {

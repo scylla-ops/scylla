@@ -1,10 +1,10 @@
 import type { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';
 import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
-import type { PipelineCreationRemoteStore } from '@/modules/pipeline-creation/repository/stores/PipelineCreationRemoteStore.ts';
+import type { PipelineCreationRemoteDataSource } from '@/modules/pipeline-creation/repository/dataSources/PipelineCreationRemoteDataSource.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 import type { CreatePipelineRequest, PipelineResponse } from '@/generated/pipeline.ts';
 
-export class PipelineCreationRemoteStoreImpl implements PipelineCreationRemoteStore {
+export class PipelineCreationRemoteDataSourceImpl implements PipelineCreationRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
 
   constructor(transport: CoreGrpcTransport) {

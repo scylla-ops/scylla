@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { Button } from '@shadcn/button';
-import { Input } from '@shadcn/input';
-import { Label } from '@shadcn/label';
+import { Button } from '@shadcn/button.tsx';
+import { Input } from '@shadcn/input.tsx';
+import { Label } from '@shadcn/label.tsx';
 import {
   Dialog,
   DialogContent,
@@ -11,11 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@shadcn/dialog';
-// import { OrganizationServiceClient } from '@/generated/organization.client';
-// import { CreateOrganizationRequest } from '@/generated/organization';
-// import { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport';
-// import { getCoreMemoryStore } from '@core/repository/store/CoreMemoryStore';
+} from '@shadcn/dialog.tsx';
 
 interface AddOrganizationDialogProps {
   open: boolean;
@@ -23,7 +19,11 @@ interface AddOrganizationDialogProps {
   onAddOrganization: (organization: { name: string; description: string }) => Promise<void>;
 }
 
-export function AddOrganizationDialog({ open, onOpenChange, onAddOrganization }: AddOrganizationDialogProps) {
+export function AddOrganizationDialog({
+  open,
+  onOpenChange,
+  onAddOrganization,
+}: AddOrganizationDialogProps) {
   const [organizationName, setOrganizationName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -82,40 +82,39 @@ export function AddOrganizationDialog({ open, onOpenChange, onAddOrganization }:
         <DialogHeader>
           <DialogTitle>Create a new organization</DialogTitle>
           <DialogDescription>
-            Enter a name and description for your new organization. You can change these later in settings.
+            Enter a name and description for your new organization. You can change these later in
+            settings.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className='space-y-4'>
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
+            <div className='rounded-md bg-destructive/10 p-3 text-sm text-destructive'>{error}</div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="organization-name">Organization name</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='organization-name'>Organization name</Label>
             <Input
-              id="organization-name"
-              placeholder="e.g., My Organization"
+              id='organization-name'
+              placeholder='e.g., My Organization'
               value={organizationName}
-              onChange={(e) => setOrganizationName(e.target.value)}
+              onChange={e => setOrganizationName(e.target.value)}
               autoFocus
               disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="organization-description">Description</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='organization-description'>Description</Label>
             <Input
-              id="organization-description"
+              id='organization-description'
               placeholder="e.g., Our company's main organization"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               disabled={isLoading}
             />
           </div>
           <DialogFooter>
             <Button
-              type="button"
-              variant="outline"
+              type='button'
+              variant='outline'
               onClick={() => {
                 setOrganizationName('');
                 setDescription('');
@@ -126,7 +125,7 @@ export function AddOrganizationDialog({ open, onOpenChange, onAddOrganization }:
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={!organizationName.trim() || isLoading}>
+            <Button type='submit' disabled={!organizationName.trim() || isLoading}>
               {isLoading ? 'Creating...' : 'Create Organization'}
             </Button>
           </DialogFooter>
