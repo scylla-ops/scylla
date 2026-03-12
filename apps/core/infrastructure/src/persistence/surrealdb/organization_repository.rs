@@ -337,6 +337,28 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_list_all_empty() {
+        let db = setup().await;
+        let repo = SurrealOrganizationRepository::new(db);
+
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo.list_all(Some(&pagination)).await.unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_active_empty() {
+        let db = setup().await;
+        let repo = SurrealOrganizationRepository::new(db);
+
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo.list_active(Some(&pagination)).await.unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
     async fn test_list_active() {
         let db = setup().await;
         let repo = SurrealOrganizationRepository::new(db);

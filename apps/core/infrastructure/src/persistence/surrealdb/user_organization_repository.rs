@@ -215,6 +215,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_list_members_empty() {
+        let db = setup().await;
+        let repo = SurrealUserOrganizationRepository::new(db);
+
+        let org_id = test_org_id();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_members(&org_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_user_organizations_empty() {
+        let db = setup().await;
+        let repo = SurrealUserOrganizationRepository::new(db);
+
+        let user_id = test_user_id();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+        let result = repo
+            .list_user_organizations(&user_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
+    }
+
+    #[tokio::test]
     async fn test_list_members() {
         let db = setup().await;
         let repo = SurrealUserOrganizationRepository::new(db);

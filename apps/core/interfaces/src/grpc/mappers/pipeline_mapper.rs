@@ -21,6 +21,6 @@ pub fn pipeline_node_to_proto(node: &domain::entities::PipelineNode) -> Pipeline
         node_id: node.id().to_string(),
         deps: node.deps().iter().map(|d| d.to_string()).collect(),
         command: node.command().to_string(),
-        args: node.args().iter().cloned().collect(),
+        args: node.args().to_vec(),
     }
 }
