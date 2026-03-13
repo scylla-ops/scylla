@@ -8,4 +8,6 @@ export * from './chart.tsx';
 export * from './select.tsx';
 export * from './toggle.tsx';
 export * from './toggle-group.tsx';
-export * from './select.tsx';
+export * from './dialog.tsx';
+export * from './alert-dialog.tsx';
+export * from './table.tsx';
