@@ -1,6 +1,6 @@
-import type MarketplaceRepository from '@/modules/marketplace/domain/repository/MarketplaceRepository.ts';
-import { GetMarketplaceUseCase } from '@/modules/marketplace/domain/GetMarketplaceUseCase.ts';
-import { MarketplaceRepositoryImpl } from '@/modules/marketplace/repository/MarketplaceRepositoryImpl.ts';
+import type MarketplaceRepository from '@/modules/features/marketplace/domain/repository/MarketplaceRepository.ts';
+import { GetMarketplaceUseCase } from '@/modules/features/marketplace/domain/GetMarketplaceUseCase.ts';
+import { MarketplaceRepositoryImpl } from '@/modules/features/marketplace/infrastructure/repository/MarketplaceRepositoryImpl.ts';
 
 const marketPlaceRepository: MarketplaceRepository = new MarketplaceRepositoryImpl();
 const getMarketplaceUseCase: GetMarketplaceUseCase = new GetMarketplaceUseCase(

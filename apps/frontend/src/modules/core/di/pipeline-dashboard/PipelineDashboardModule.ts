@@ -1,8 +1,8 @@
-import type { PipelineDashboardRemoteDataSource } from '@/modules/pipeline-dashboard/repository/dataSources/PipelineDashboardRemoteDataSource.ts';
-import { PipelineDashboardRemoteDataSourceImpl } from '@/modules/pipeline-dashboard/data/remote/PipelineDashboardRemoteDataSourceImpl.ts';
+import type { PipelineDashboardRemoteDataSource } from '@/modules/features/pipeline-dashboard/infrastructure/repository/data-sources/PipelineDashboardRemoteDataSource.ts';
+import { PipelineDashboardRemoteDataSourceImpl } from '@/modules/features/pipeline-dashboard/infrastructure/data/remote/PipelineDashboardRemoteDataSourceImpl.ts';
 import { CoreModule } from '@core/di/core/CoreModule.ts';
-import { GetPipelinesUseCase } from '@/modules/pipeline-dashboard/domain/usecases/GetPipelinesUseCase.ts';
-import { PipelineDashboardRepositoryImpl } from '@/modules/pipeline-dashboard/repository/PipelineDashboardRepositoryImpl.ts';
+import { GetPipelinesUseCase } from '@/modules/features/pipeline-dashboard/domain/usecases/GetPipelinesUseCase.ts';
+import { PipelineDashboardRepositoryImpl } from '@/modules/features/pipeline-dashboard/infrastructure/repository/PipelineDashboardRepositoryImpl.ts';
 
 const pipelineDashboardRemoteDataSource: PipelineDashboardRemoteDataSource =
   new PipelineDashboardRemoteDataSourceImpl(CoreModule.data.coreGrpcTransport);

@@ -1,5 +1,5 @@
 //core
-import { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';
+import { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 
 const coreGrpcTransport: CoreGrpcTransport = new CoreGrpcTransport();
 

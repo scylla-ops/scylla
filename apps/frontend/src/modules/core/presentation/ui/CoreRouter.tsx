@@ -1,14 +1,14 @@
 // CoreRouter.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import LoginPage from '@/modules/login/presentation/ui/LoginPage';
-import UserSettingsPage from '@/modules/user_settings/presentation/ui/UserSettingsPage';
-import MarketplacePage from '@/modules/marketplace/presentation/ui/MarketplacePage';
-import { Layout } from '@/modules/core/presentation/ui/Layout';
-import { MarketplaceTopBar } from '@/modules/marketplace/presentation/ui/MarketplaceTopBar';
+import LoginPage from '@/modules/features/login/presentation/ui/LoginPage';
+import UserSettingsPage from '@/modules/features/user_settings/presentation/ui/UserSettingsPage';
+import MarketplacePage from '@/modules/features/marketplace/presentation/ui/MarketplacePage';
+import { Layout } from '@/modules/layout/presentation/Layout.tsx';
+import { MarketplaceTopBar } from '@/modules/features/marketplace/presentation/ui/MarketplaceTopBar';
 import { RequireAuth } from '@core/presentation/ui/RequireAuth.tsx';
-import { PipelineCreationPage } from '@/modules/pipeline-creation/presentation/ui/PipelineCreationPage.tsx';
-import { PipelineCreationTopbar } from '@/modules/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
-import { DashboardPipelinePage } from '@/modules/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
+import { PipelineCreationPage } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationPage.tsx';
+import { PipelineCreationTopbar } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
+import { DashboardPipelinePage } from '@/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
 
 export const coreRouter = createBrowserRouter([
   {

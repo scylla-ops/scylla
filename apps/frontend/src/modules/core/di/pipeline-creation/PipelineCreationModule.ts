@@ -1,7 +1,7 @@
-import { PipelineCreationRemoteDataSourceImpl } from '@/modules/pipeline-creation/data/remote/PipelineCreationRemoteDataSourceImpl.ts';
+import { PipelineCreationRemoteDataSourceImpl } from '@/modules/features/pipeline-creation/infrastructure/data/remote/PipelineCreationRemoteDataSourceImpl.ts';
 import { CoreModule } from '@core/di/core/CoreModule.ts';
-import { PipelineCreationRepositoryImpl } from '@/modules/pipeline-creation/repository/PipelineCreationRepositoryImpl.ts';
-import { CreatePipelineUsecase } from '@/modules/pipeline-creation/domain/CreatePipelineUsecase.ts';
+import { PipelineCreationRepositoryImpl } from '@/modules/features/pipeline-creation/infrastructure/repository/PipelineCreationRepositoryImpl.ts';
+import { CreatePipelineUsecase } from '@/modules/features/pipeline-creation/domain/CreatePipelineUsecase.ts';
 
 const pipelineCreationRemoteDataSource = new PipelineCreationRemoteDataSourceImpl(
   CoreModule.data.coreGrpcTransport,
