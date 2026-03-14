@@ -1,31 +1,33 @@
 // modules/organisation/presentation/hooks/useOrganization.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import type { ScyllaError } from '@core/utils/ScyllaResult.ts';
 
 export const useOrganization = () => {
   const queryClient = useQueryClient();
+  const { getOrganizations, createOrganization } = useDependencies().organization;
 
-  // 1. Récupération (Query)
   const {
     data: organisations,
     isLoading,
     error,
   } = useQuery({
     queryKey: ['organisations'],
-    queryFn: () => {},
-    staleTime: 1000 * 60 * 5, // 5 minutes de cache "frais"
+    queryFn: async () => (await getOrganizations.execute()).unwrap(),
+    staleTime: 1000 * 60 * 5, // 5 minutes TODO: change
   });
 
-  // 2. Création (Mutation)
   const createMutation = useMutation({
-    mutationFn: () => {},
+    mutationFn: async (name: string) => (await createOrganization.execute(name)).unwrap(),
     onSuccess: () => {
-      // Invalidation du cache pour rafraîchir la liste automatiquement
-      queryClient.invalidateQueries({ queryKey: ['organisations'] });
+      //TODO: instead of that, createOrganization usecase return the organization created and we put in tanstack cache the new organization
+      return queryClient.invalidateQueries({ queryKey: ['organisations'] });
     },
+    onError: (err: ScyllaError) => err.log(),
   });
 
   return {
-    organisations: organisations ?? [],
+    organisations: organisations,
     isLoading,
     isError: !!error,
     createOrganisation: createMutation.mutate,

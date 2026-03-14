@@ -16,7 +16,7 @@ import {
 interface AddOrganizationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddOrganization: (organization: { name: string; description: string }) => Promise<void>;
+  onAddOrganization: (name: string, description: string) => void;
 }
 
 export function AddOrganizationDialog({
@@ -36,33 +36,7 @@ export function AddOrganizationDialog({
     setIsLoading(true);
     setError(null);
 
-    try {
-      // const tokenStore = getCoreMemoryStore();
-      // const transport = new CoreGrpcTransport(tokenStore);
-      // const client = new OrganizationServiceClient(transport.getTransport());
-
-      // const request: CreateOrganizationRequest = {
-      //   name: organizationName,
-      //   description: description.trim() || undefined,
-      // };
-
-      // await client.createOrganization(request);
-
-      await onAddOrganization({
-        name: organizationName,
-        description: description.trim(),
-      });
-
-      setOrganizationName('');
-      setDescription('');
-      onOpenChange(false);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create organization';
-      setError(errorMessage);
-      console.error('Error creating organization:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    onAddOrganization(organizationName, description);
   };
 
   const handleOpenChange = (newOpen: boolean) => {

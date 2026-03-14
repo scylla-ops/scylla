@@ -7,7 +7,8 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { messages as coreMessages } from './modules/core/locales/en/messages';
 import { messages as loginMessages } from './modules/login/locales/en/messages';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ScyllaError } from '@core/utils/ScyllaResult.ts';
 
 i18n.load('en', {
   ...coreMessages,
@@ -15,7 +16,18 @@ i18n.load('en', {
 });
 i18n.activate('en');
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: error => {
+      (error as ScyllaError).log();
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: error => {
+      (error as ScyllaError).log();
+    },
+  }),
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

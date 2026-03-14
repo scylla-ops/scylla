@@ -4,7 +4,7 @@ import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 
-export class PipelineDashboardRemoteDataStoreImpl implements PipelineDashboardRemoteDataSource {
+export class PipelineDashboardRemoteDataSourceImpl implements PipelineDashboardRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
 
   constructor(transport: CoreGrpcTransport) {

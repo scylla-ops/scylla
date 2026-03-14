@@ -1,4 +1,4 @@
-import type { LoginRemoteDataSource } from '@/modules/login/repository/dataSources/LoginRemoteDataSource.ts';
+import type { LoginRemoteDataSource } from '@/modules/login/repository/data-sources/LoginRemoteDataSource.ts';
 import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
 import { AuthServiceClient } from '@/generated/auth.client.ts';
 import type { CoreGrpcTransport } from '@core/data/grpc/CoreGrpcTransport.ts';

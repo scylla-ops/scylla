@@ -3,10 +3,12 @@ import { CoreModule } from '@core/di/core/CoreModule.ts';
 import { PipelineCreationRepositoryImpl } from '@/modules/pipeline-creation/repository/PipelineCreationRepositoryImpl.ts';
 import { CreatePipelineUsecase } from '@/modules/pipeline-creation/domain/CreatePipelineUsecase.ts';
 
-const pipelineCreationRemoteStore = new PipelineCreationRemoteDataSourceImpl(
+const pipelineCreationRemoteDataSource = new PipelineCreationRemoteDataSourceImpl(
   CoreModule.data.coreGrpcTransport,
 );
-const pipelineCreationRepository = new PipelineCreationRepositoryImpl(pipelineCreationRemoteStore);
+const pipelineCreationRepository = new PipelineCreationRepositoryImpl(
+  pipelineCreationRemoteDataSource,
+);
 
 const createPipelineUseCase = new CreatePipelineUsecase(pipelineCreationRepository);
 
