@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { SquareTerminal } from 'lucide-react';
+import { PlusIcon, ShoppingCartIcon, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/NavMain.tsx';
 import { OrganisationSwitcher } from '@/modules/features/organization/presentation/OrganisationSwitcher.tsx';
@@ -21,37 +21,24 @@ const data = {
   },
   navMain: [
     {
-      title: 'Pipelines',
-      url: '#',
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: 'Create pipeline',
-          url: '/pipeline-creation',
-        },
-        {
-          title: 'Pipelines',
-          url: '/pipeline-dashboard',
-        },
-        {
-          title: 'Marketplace',
-          url: '/marketplace',
-        },
-      ],
+      title: 'Create pipeline',
+      url: '/pipeline-creation',
+      icon: PlusIcon,
     },
-
+    {
+      title: 'Pipelines',
+      url: '/pipeline-dashboard',
+      icon: SquareTerminal,
+    },
+    {
+      title: 'Marketplace',
+      url: '/marketplace',
+      icon: ShoppingCartIcon,
+    },
     {
       title: 'Settings',
-      url: '#',
+      url: '/user-settings',
       icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: 'Users',
-          url: '/user-settings',
-        },
-      ],
     },
   ],
 };
