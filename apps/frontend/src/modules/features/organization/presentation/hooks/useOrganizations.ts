@@ -16,7 +16,7 @@ export const useOrganizations = () => {
   });
 
   return {
-    organizations: organizations,
+    organizations: organizations?.organizations,
     isLoading,
     isError: !!error,
   };

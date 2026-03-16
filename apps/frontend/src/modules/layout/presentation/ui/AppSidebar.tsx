@@ -14,6 +14,9 @@ import { ContextSelector } from '@/modules/layout/presentation/ui/context-select
 import { CurrentOrganizationDisplay } from '@/modules/features/organization/presentation/ui/CurrentOrganizationDisplay.tsx';
 import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
 import { AddOrganizationDialog } from '@/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx';
+import CurrentProjectDisplay from '@/modules/features/project/presentation/ui/CurrentProjectDisplay.tsx';
+import ProjectList from '@/modules/features/project/presentation/ui/ProjectList.tsx';
+import AddProjectDialog from '@/modules/features/project/presentation/ui/AddProjectDialog.tsx';
 
 // This is sample data.
 const data = {
@@ -55,6 +58,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           display={<CurrentOrganizationDisplay description={'Organization'} />}
           list={OrganizationList}
           addModal={AddOrganizationDialog}
+        />
+        <ContextSelector
+          label={'Project'}
+          display={<CurrentProjectDisplay description={'Project'} />}
+          list={ProjectList}
+          addModal={AddProjectDialog}
         />
       </SidebarHeader>
       <SidebarContent>

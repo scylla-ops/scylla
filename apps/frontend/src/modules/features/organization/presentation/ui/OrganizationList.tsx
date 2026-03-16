@@ -2,6 +2,7 @@ import { AvailableOrganizationItem } from '@/modules/features/organization/prese
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import type { ComponentType, ReactNode } from 'react';
 import { useOrganizationStore } from '@/modules/features/organization/presentation/stores/useOrganizationStore.ts';
+import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void }>;
@@ -10,13 +11,19 @@ interface OrganizationListProps {
 export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
   const { organizations } = useOrganizations();
   const setOrganiationName = useOrganizationStore(state => state.setCurrentOrganizationName);
+  const setOrganizationId = useContextStore(state => state.setOrganizationId);
+
+  if (!organizations) return <p>Loading...</p>;
 
   return (
     <>
-      {organizations?.organizations.map(organisation => (
+      {organizations.map(organisation => (
         <Wrapper
           key={organisation.organizationId}
-          onSelect={() => setOrganiationName(organisation.name)}
+          onSelect={() => {
+            setOrganizationId(organisation.organizationId);
+            setOrganiationName(organisation.name);
+          }}
         >
           <AvailableOrganizationItem name={organisation.name} />
         </Wrapper>
