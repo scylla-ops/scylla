@@ -20,15 +20,16 @@ export type StatusCardProps = {
 
 export const StatusCard = ({ pipeline }: StatusCardProps) => {
   const navigate = useNavigate();
-  const createdAt = '10/10/2023';
 
   const goToSettings = () => navigate(`/pipeline-creation/${pipeline.pipelineId}`);
+
+  const date = new Date(pipeline.createdAt);
 
   return (
     <Card className='hover:bg-gray-50 transition-colors duration-100'>
       <CardHeader>
         <CardTitle className='truncate'>{pipeline.name}</CardTitle>
-        <CardDescription>Created: {createdAt}</CardDescription>
+        <CardDescription>Created: {date.toDateString()}</CardDescription>
         <CardAction>
           <StatusIndicator state={'success'} label={'Success'} />
         </CardAction>
