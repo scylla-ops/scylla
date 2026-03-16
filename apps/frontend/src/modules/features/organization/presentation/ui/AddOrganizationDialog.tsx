@@ -1,5 +1,3 @@
-'use client';
-
 import * as React from 'react';
 import { Button } from '@shadcn/button.tsx';
 import { Input } from '@shadcn/input.tsx';
@@ -12,22 +10,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@shadcn/dialog.tsx';
+import { useEffect } from 'react';
+import { useCreateOrganization } from '@/modules/features/organization/presentation/hooks/useCreateOrganization.ts';
 
 interface AddOrganizationDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAddOrganization: (name: string, description: string) => void;
+  setOpen: (open: boolean) => void;
 }
 
-export function AddOrganizationDialog({
-  open,
-  onOpenChange,
-  onAddOrganization,
-}: AddOrganizationDialogProps) {
+export function AddOrganizationDialog({ open, setOpen }: AddOrganizationDialogProps) {
   const [organizationName, setOrganizationName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const createOrganization = useCreateOrganization();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,22 +32,26 @@ export function AddOrganizationDialog({
     setIsLoading(true);
     setError(null);
 
-    onAddOrganization(organizationName, description);
+    createOrganization.mutate(organizationName, {
+      onSuccess: () => {
+        setIsLoading(false);
+        setOpen(false);
+      },
+      onError: err => {
+        setIsLoading(false);
+        setError(err.message || 'Failed to create organization. Please try again.');
+      },
+    });
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!isLoading) {
-      onOpenChange(newOpen);
-      if (!newOpen) {
-        setOrganizationName('');
-        setDescription('');
-        setError(null);
-      }
-    }
-  };
+  useEffect(() => {
+    setOrganizationName('');
+    setDescription('');
+    setError(null);
+  }, [open]);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create a new organization</DialogTitle>
@@ -93,7 +93,7 @@ export function AddOrganizationDialog({
                 setOrganizationName('');
                 setDescription('');
                 setError(null);
-                onOpenChange(false);
+                setOpen(false);
               }}
               disabled={isLoading}
             >
