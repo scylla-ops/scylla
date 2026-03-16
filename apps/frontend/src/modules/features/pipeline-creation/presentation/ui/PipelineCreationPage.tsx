@@ -1,10 +1,11 @@
 import ReactCodeMirror, { EditorView } from '@uiw/react-codemirror';
 import { StreamLanguage } from '@codemirror/language';
-import { toml } from '@codemirror/legacy-modes/mode/toml';
 import { TabsContent } from '@shadcn/tabs.tsx';
 import { Card } from '@shadcn';
 import { useScriptStore } from '@/modules/features/pipeline-creation/presentation/stores/useScript.ts';
 import { json } from '@codemirror/legacy-modes/mode/javascript';
+import { useEffect } from 'react';
+import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 
 const codeMirrorTheme = EditorView.theme({
   '&': {
@@ -41,6 +42,17 @@ const codeMirrorTheme = EditorView.theme({
 
 export const PipelineCreationPage = () => {
   const { script, setScript } = useScriptStore(state => state);
+  const projectId = useContextStore(state => state.projectId);
+
+  useEffect(() => {
+    if (projectId) {
+      setScript(
+        `{\n"name": "my-pipeline",\n` + `"projectId": "${projectId}",\n` + `"nodes": []\n` + `}`,
+      );
+    }
+  }, [projectId, setScript]);
+
+  if (!projectId) return <p>Select a project first</p>;
 
   return (
     <div className={'h-full'}>

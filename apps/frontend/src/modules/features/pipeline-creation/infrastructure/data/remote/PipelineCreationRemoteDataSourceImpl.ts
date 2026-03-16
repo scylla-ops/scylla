@@ -14,6 +14,7 @@ export class PipelineCreationRemoteDataSourceImpl implements PipelineCreationRem
   public async createPipeline(content: string): Promise<ScyllaResult<void>> {
     return await ScyllaResult.tryAsync<void>(async () => {
       const request: CreatePipelineRequest = JSON.parse(content);
+
       await this._pipelineClient.createPipeline(request);
     }, 'Failed to create pipeline.');
   }

@@ -7,6 +7,7 @@ export const useProjects = () => {
 
   //TODO: currently refetch every time: change to cache
 
+  //TODO: by organization id
   const {
     data: projects,
     isLoading,
