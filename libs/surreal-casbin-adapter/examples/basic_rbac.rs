@@ -1,16 +1,16 @@
 //! Basic RBAC (Role-Based Access Control) Example
 //!
 //! This example demonstrates how to use the SurrealDB Casbin adapter
-//! for simple role-based access control.
+//! for simple role-based access control with both g and g2.
 //!
 //! Run with: cargo run --example basic_rbac
 
 use casbin::{CoreApi, DefaultModel, Enforcer, MgmtApi};
-use std::sync::Arc;
 use surreal_casbin_adapter::SurrealAdapter;
-use surrealdb::{Surreal, engine::local::Mem};
+use surrealdb::engine::any::connect;
+use surrealdb::opt::auth::Root;
 
-// Simple RBAC model
+// RBAC model avec g et g2
 const MODEL: &str = r#"
 [request_definition]
 r = sub, obj, act
@@ -31,73 +31,34 @@ m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize SurrealDB
-    let db = Surreal::new::<Mem>(()).await?;
-    db.use_ns("test").use_db("test").await?;
-    db.query(
-        r#"
-        DEFINE TABLE casbin_rules SCHEMAFULL;
-        DEFINE FIELD ptype ON TABLE casbin_rules TYPE string;
-        DEFINE FIELD v0 ON TABLE casbin_rules TYPE option<string>;
-        DEFINE FIELD v1 ON TABLE casbin_rules TYPE option<string>;
-        DEFINE FIELD v2 ON TABLE casbin_rules TYPE option<string>;
-        DEFINE FIELD v3 ON TABLE casbin_rules TYPE option<string>;
-        DEFINE FIELD v4 ON TABLE casbin_rules TYPE option<string>;
-        DEFINE FIELD v5 ON TABLE casbin_rules TYPE option<string>;
-    "#,
-    )
+    let db = connect("ws://localhost:8000").await?;
+    db.signin(Root {
+        username: "root".to_string(),
+        password: "secret".to_string(),
+    })
     .await?;
+    db.use_ns("test").use_db("test").await?;
+    db.query("DEFINE TABLE IF NOT EXISTS $table SCHEMALESS;")
+        .bind(("table", surreal_casbin_adapter::TABLE))
+        .await?;
 
     // Create enforcer
-    let adapter = SurrealAdapter::new(Arc::new(db), "casbin_rules");
+    let adapter = SurrealAdapter::new(db);
     let model = DefaultModel::from_str(MODEL).await?;
     let mut enforcer = Enforcer::new(model, adapter).await?;
 
-    // Setup roles and permissions
+    // ─── Permissions ────────────────────────────────────────────────────────
     enforcer
         .add_policy(vec![
-            "admin".to_string(),
+            "reader".to_string(),
             "data".to_string(),
             "read".to_string(),
         ])
-        .await?;
-    enforcer
-        .add_policy(vec![
-            "admin".to_string(),
-            "data".to_string(),
-            "write".to_string(),
-        ])
-        .await?;
-    enforcer
-        .add_policy(vec![
-            "user".to_string(),
-            "data".to_string(),
-            "read".to_string(),
-        ])
-        .await?;
-    enforcer
-        .add_grouping_policy(vec!["alice".to_string(), "admin".to_string()])
-        .await?;
-    enforcer
-        .add_grouping_policy(vec!["bob".to_string(), "user".to_string()])
         .await?;
 
-    // Test permissions
-    println!(
-        "alice read:  {}",
-        enforcer.enforce(("alice", "data", "read"))?
-    );
-    println!(
-        "alice write: {}",
-        enforcer.enforce(("alice", "data", "write"))?
-    );
-    println!(
-        "bob read:    {}",
-        enforcer.enforce(("bob", "data", "read"))?
-    );
-    println!(
-        "bob write:   {}",
-        enforcer.enforce(("bob", "data", "write"))?
-    );
+    enforcer
+        .add_named_grouping_policies("g", vec![vec!["alice".to_string(), "reader".to_string()]])
+        .await?;
 
     Ok(())
 }

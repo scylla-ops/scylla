@@ -4,40 +4,51 @@ package pipeline;
 
 import "common.proto";
 
-service Pipeline {
-  // Create a pipeline
+service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (PipelineResponse);
-
-  // Get a pipeline by ID
   rpc GetPipeline(GetPipelineRequest) returns (PipelineResponse);
-
-  // Update a pipeline
   rpc UpdatePipeline(UpdatePipelineRequest) returns (PipelineResponse);
-
-  // Delete a pipeline
   rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
-
-  // List all pipelines
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
+  rpc ListProjectPipelines(ListProjectPipelinesRequest) returns (ListPipelinesResponse);
+  rpc ListOrganizationPipelines(ListOrganizationPipelinesRequest) returns (ListPipelinesResponse);
 }
 
-message CreatePipelineRequest { string content = 1; }
+message PipelineNode {
+  string node_id = 1;
+  repeated string deps = 2;
+  string command = 3;
+  repeated string args = 4;
+}
 
-message GetPipelineRequest { string pipeline_id = 1; }
+message CreatePipelineRequest {
+  string name = 1;
+  string project_id = 2;
+  repeated PipelineNode nodes = 3;
+}
+
+message GetPipelineRequest {
+  string pipeline_id = 1;
+}
 
 message UpdatePipelineRequest {
   string pipeline_id = 1;
-  string content = 2;
+  optional string name = 2;
+  repeated PipelineNode nodes = 3;
 }
 
 message PipelineResponse {
   string pipeline_id = 1;
-  string content = 2;
-  string created_at = 3;
-  string updated_at = 4;
+  string project_id = 2;
+  string name = 3;
+  repeated PipelineNode nodes = 4;
+  string created_at = 5;
+  string updated_at = 6;
 }
 
-message DeletePipelineRequest { string pipeline_id = 1; }
+message DeletePipelineRequest {
+  string pipeline_id = 1;
+}
 
 message DeletePipelineResponse {}
 
@@ -48,4 +59,14 @@ message ListPipelinesRequest {
 message ListPipelinesResponse {
   repeated PipelineResponse pipelines = 1;
   common.PaginationMetadata pagination = 2;
+}
+
+message ListProjectPipelinesRequest {
+  string project_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListOrganizationPipelinesRequest {
+  string organization_id = 1;
+  optional common.PaginationRequest pagination = 2;
 }

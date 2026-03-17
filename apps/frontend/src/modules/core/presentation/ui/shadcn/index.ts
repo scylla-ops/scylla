@@ -11,3 +11,4 @@ export * from './toggle-group.tsx';
 export * from './dialog.tsx';
 export * from './alert-dialog.tsx';
 export * from './table.tsx';
+export * from './select.tsx';

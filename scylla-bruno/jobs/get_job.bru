@@ -1,11 +1,11 @@
 meta {
   name: get_job
   type: grpc
-  seq: 2
+  seq: 1
 }
 
 grpc {
-  url: localhost:50051
+  url: {{host}}
   method: /job.JobService/GetJob
   body: grpc
   auth: inherit
@@ -20,4 +20,3 @@ body:grpc {
     }
   '''
 }
-

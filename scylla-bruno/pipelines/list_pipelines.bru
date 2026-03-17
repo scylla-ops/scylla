@@ -5,8 +5,8 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
-  method: /pipeline.Pipeline/ListPipelines
+  url: {{host}}
+  method: /pipeline.PipelineService/ListPipelines
   body: grpc
   auth: inherit
   methodType: unary
@@ -23,4 +23,3 @@ body:grpc {
     }
   '''
 }
-

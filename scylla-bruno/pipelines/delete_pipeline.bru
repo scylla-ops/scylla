@@ -5,8 +5,8 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
-  method: /pipeline.Pipeline/DeletePipeline
+  url: {{host}}
+  method: /pipeline.PipelineService/DeletePipeline
   body: grpc
   auth: inherit
   methodType: unary
@@ -20,4 +20,3 @@ body:grpc {
     }
   '''
 }
-

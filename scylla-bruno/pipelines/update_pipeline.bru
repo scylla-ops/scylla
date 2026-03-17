@@ -5,8 +5,8 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
-  method: /pipeline.Pipeline/UpdatePipeline
+  url: {{host}}
+  method: /pipeline.PipelineService/UpdatePipeline
   body: grpc
   auth: inherit
   methodType: unary
@@ -17,8 +17,27 @@ body:grpc {
   content: '''
     {
       "pipeline_id": "pipeline_id_here",
-      "content": "updated pipeline content"
+      "name": "updated-pipeline",
+      "nodes": [
+        {
+          "node_id": "build",
+          "deps": [],
+          "command": "cargo",
+          "args": ["build", "--release"]
+        },
+        {
+          "node_id": "test",
+          "deps": ["build"],
+          "command": "cargo",
+          "args": ["test"]
+        },
+        {
+          "node_id": "deploy",
+          "deps": ["test"],
+          "command": "kubectl",
+          "args": ["apply", "-f", "k8s/"]
+        }
+      ]
     }
   '''
 }
-
