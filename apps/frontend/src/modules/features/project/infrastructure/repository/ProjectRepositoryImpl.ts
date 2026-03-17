@@ -4,7 +4,11 @@ import type { ProjectRepository } from '@/modules/features/project/domain/reposi
 export class ProjectRepositoryImpl implements ProjectRepository {
   constructor(private readonly _remoteDataSource: ProjectRemoteDataSource) {}
 
-  getAll = () => this._remoteDataSource.getAll();
-  create = (name: string, organizationId: string) =>
-    this._remoteDataSource.create(name, organizationId);
+  getAll() {
+    return this._remoteDataSource.getAll();
+  }
+
+  create(name: string, organizationId: string) {
+    return this._remoteDataSource.create(name, organizationId);
+  }
 }

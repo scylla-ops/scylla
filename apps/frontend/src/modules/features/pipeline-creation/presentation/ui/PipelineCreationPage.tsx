@@ -42,7 +42,7 @@ const codeMirrorTheme = EditorView.theme({
 
 export const PipelineCreationPage = () => {
   const { script, setScript } = useScriptStore(state => state);
-  const projectId = useContextStore(state => state.projectId);
+  const projectId = useContextStore(state => state.project.id);
 
   useEffect(() => {
     if (projectId) {

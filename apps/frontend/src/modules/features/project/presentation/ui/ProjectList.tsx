@@ -1,8 +1,8 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts';
-import { AvailableProjectItem } from '@/modules/features/project/presentation/ui/AvaiableProjectItem.tsx';
-import { useProjectStore } from '@/modules/features/project/presentation/stores/useProjectStore.ts';
+import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/ContextItem.tsx';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { FolderKanban } from 'lucide-react';
 
 interface ProjectListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void }>;
@@ -10,10 +10,8 @@ interface ProjectListProps {
 
 export const ProjectList = ({ Wrapper }: ProjectListProps) => {
   const { projects } = useProjects();
-  const setProjectName = useProjectStore(state => state.setCurrentProjectName);
-  const setProjectId = useContextStore(state => state.setProjectId);
-
-  const organizationId = useContextStore(state => state.organizationId);
+  const setProject = useContextStore(state => state.setProject);
+  const organizationId = useContextStore(state => state.organization.id);
 
   if (!organizationId) return <p>No organization selected</p>;
 
@@ -26,12 +24,9 @@ export const ProjectList = ({ Wrapper }: ProjectListProps) => {
       {projects.map(project => (
         <Wrapper
           key={project.projectId}
-          onSelect={() => {
-            setProjectId(project.projectId);
-            setProjectName(project.name);
-          }}
+          onSelect={() => setProject(project.projectId, project.name)}
         >
-          <AvailableProjectItem name={project.name} />
+          <ContextItem name={project.name} icon={FolderKanban} />
         </Wrapper>
       ))}
     </>

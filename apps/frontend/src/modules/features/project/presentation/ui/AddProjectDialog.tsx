@@ -26,7 +26,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const [error, setError] = React.useState<string | null>(null);
   const createProject = useCreateProject();
 
-  const organizationId = useContextStore(state => state.organizationId);
+  const organizationId = useContextStore(state => state.organization.id);
 
   useEffect(() => {
     setProjectName('');

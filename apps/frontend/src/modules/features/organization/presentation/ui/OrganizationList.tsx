@@ -1,8 +1,8 @@
-import { AvailableOrganizationItem } from '@/modules/features/organization/presentation/ui/AvailableOrganizationItem.tsx';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import type { ComponentType, ReactNode } from 'react';
-import { useOrganizationStore } from '@/modules/features/organization/presentation/stores/useOrganizationStore.ts';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/ContextItem.tsx';
+import { Building2 } from 'lucide-react';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void }>;
@@ -10,8 +10,7 @@ interface OrganizationListProps {
 
 export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
   const { organizations } = useOrganizations();
-  const setOrganiationName = useOrganizationStore(state => state.setCurrentOrganizationName);
-  const setOrganizationId = useContextStore(state => state.setOrganizationId);
+  const setOrganization = useContextStore(state => state.setOrganization);
 
   if (!organizations) return <p>Loading...</p>;
 
@@ -21,11 +20,10 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
         <Wrapper
           key={organisation.organizationId}
           onSelect={() => {
-            setOrganizationId(organisation.organizationId);
-            setOrganiationName(organisation.name);
+            setOrganization(organisation.organizationId, organisation.name);
           }}
         >
-          <AvailableOrganizationItem name={organisation.name} />
+          <ContextItem name={organisation.name} icon={Building2} />
         </Wrapper>
       ))}
     </>

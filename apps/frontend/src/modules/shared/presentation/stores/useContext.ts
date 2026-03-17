@@ -1,16 +1,35 @@
 import { create } from 'zustand';
 
 interface ContextStore {
-  organizationId: string | null;
-  setOrganizationId: (id: string) => void;
+  organization: {
+    id: string | null;
+    name: string | null;
+  };
+  setOrganization: (id: string, name: string) => void;
 
-  projectId: string | null;
-  setProjectId: (id: string) => void;
+  project: {
+    id: string | null;
+    name: string | null;
+  };
+  setProject: (id: string, name: string) => void;
 }
 
 export const useContextStore = create<ContextStore>(set => ({
-  organizationId: null,
-  setOrganizationId: id => set({ organizationId: id }),
-  projectId: null,
-  setProjectId: id => set({ projectId: id }),
+  organization: {
+    id: null,
+    name: null,
+  },
+  setOrganization: (id, name) =>
+    set({
+      organization: { id, name },
+    }),
+
+  project: {
+    id: null,
+    name: null,
+  },
+  setProject: (id, name) =>
+    set({
+      project: { id, name },
+    }),
 }));
