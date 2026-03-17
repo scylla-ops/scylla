@@ -1,14 +1,14 @@
-import type { LoginRemoteStore } from '@/modules/login/repository/store/LoginRemoteStore.ts';
-import { LoginRemoteStoreImpl } from '@/modules/login/data/remote/LoginRemoteStoreImpl.ts';
-import type { LoginRepository } from '@/modules/login/domain/repository/LoginRepository.ts';
-import { LoginRepositoryImpl } from '@/modules/login/repository/LoginRepositoryImpl.ts';
-import { LoginUseCase } from '@/modules/login/domain/usecases/LoginUseCase.ts';
+import type { LoginRemoteDataSource } from '@/modules/features/login/infrastructure/repository/data-sources/LoginRemoteDataSource.ts';
+import { LoginRemoteDataSourceImpl } from '@/modules/features/login/infrastructure/data/remote/LoginRemoteDataSourceImpl.ts';
+import type { LoginRepository } from '@/modules/features/login/domain/repository/LoginRepository.ts';
+import { LoginRepositoryImpl } from '@/modules/features/login/infrastructure/repository/LoginRepositoryImpl.ts';
+import { LoginUseCase } from '@/modules/features/login/domain/usecases/LoginUseCase.ts';
 import { CoreModule } from '@core/di/core/CoreModule.ts';
 
-const loginRemoteStore: LoginRemoteStore = new LoginRemoteStoreImpl(
+const loginRemoteDataSource: LoginRemoteDataSource = new LoginRemoteDataSourceImpl(
   CoreModule.data.coreGrpcTransport,
 );
-const loginRepository: LoginRepository = new LoginRepositoryImpl(loginRemoteStore);
+const loginRepository: LoginRepository = new LoginRepositoryImpl(loginRemoteDataSource);
 const loginUseCase = new LoginUseCase(loginRepository);
 
 export const LoginModule = {

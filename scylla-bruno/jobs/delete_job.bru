@@ -1,11 +1,11 @@
 meta {
   name: delete_job
   type: grpc
-  seq: 4
+  seq: 2
 }
 
 grpc {
-  url: localhost:50051
+  url: {{host}}
   method: /job.JobService/DeleteJob
   body: grpc
   auth: inherit
@@ -20,4 +20,3 @@ body:grpc {
     }
   '''
 }
-

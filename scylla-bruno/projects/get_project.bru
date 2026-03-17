@@ -5,7 +5,7 @@ meta {
 }
 
 grpc {
-  url: localhost:50051
+  url: {{host}}
   method: /project.ProjectService/GetProject
   body: grpc
   auth: inherit

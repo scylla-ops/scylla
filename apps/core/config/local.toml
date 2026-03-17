@@ -1,0 +1,27 @@
+[grpc]
+address = "127.0.0.1:50051"
+
+[database]
+url = "ws://127.0.0.1:8000"
+username = "root"
+password = "secret"
+namespace = "scylla"
+database = "core"
+
+[cors]
+allow_origins = ["*"]
+allow_headers = [
+    "content-type",
+    "authorization",
+    "x-grpc-web",
+    "x-user-agent"
+]
+expose_headers = [
+    "grpc-status",
+    "grpc-message",
+    "grpc-status-details-bin"
+]
+
+[bootstrap]
+username = "admin"
+password = "admin123"

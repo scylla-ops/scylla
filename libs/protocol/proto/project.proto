@@ -89,8 +89,6 @@ message ListProjectUsersRequest {
 message ProjectUserInfoResponse {
   string user_id = 1;
   string username = 2;
-  string role = 3;
-  string joined_at = 4;
 }
 
 message ListProjectUsersResponse {
@@ -111,10 +109,9 @@ message ListUserProjectsResponse {
 message AddUserToProjectRequest {
   string user_id = 1;
   string project_id = 2;
-  string role = 3; // e.g., "member", "admin", "owner"
 }
 
-message AddUserToProjectResponse { string relation_id = 1; }
+message AddUserToProjectResponse {}
 
 message RemoveUserFromProjectRequest {
   string user_id = 1;

@@ -5,49 +5,37 @@ package job;
 import "common.proto";
 
 service JobService {
-  // Create a job
-  rpc CreateJob(CreateJobRequest) returns (JobResponse);
-
-  // Get a job by ID
   rpc GetJob(GetJobRequest) returns (JobResponse);
-
-  // Update a job
-  rpc UpdateJob(UpdateJobRequest) returns (JobResponse);
-
-  // Delete a job
   rpc DeleteJob(DeleteJobRequest) returns (DeleteJobResponse);
-
-  // List all jobs
   rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
-
-  // List jobs by status
-  rpc ListJobsByStatus(ListJobsByStatusRequest)
-      returns (ListJobsByStatusResponse);
-
-  // List jobs by pipeline
-  rpc ListJobsByPipeline(ListJobsByPipelineRequest)
-      returns (ListJobsByPipelineResponse);
+  rpc ListPipelineJobs(ListPipelineJobsRequest) returns (ListJobsResponse);
+  rpc ListProjectJobs(ListProjectJobsRequest) returns (ListJobsResponse);
+  rpc ListOrganizationJobs(ListOrganizationJobsRequest) returns (ListJobsResponse);
 }
 
-message CreateJobRequest { string pipeline_id = 1; }
-
-message GetJobRequest { string job_id = 1; }
-
-message UpdateJobRequest {
-  string job_id = 1;
-  optional string status = 2;
+message JobNodeResponse {
+  string node_id = 1;
+  string state = 2;
+  optional string started_at = 3;
+  optional string finished_at = 4;
 }
 
 message JobResponse {
   string job_id = 1;
   string pipeline_id = 2;
   string status = 3;
-  string content = 4;
+  repeated JobNodeResponse node_executions = 4;
   string created_at = 5;
   string updated_at = 6;
 }
 
-message DeleteJobRequest { string job_id = 1; }
+message GetJobRequest {
+  string job_id = 1;
+}
+
+message DeleteJobRequest {
+  string job_id = 1;
+}
 
 message DeleteJobResponse {}
 
@@ -60,22 +48,17 @@ message ListJobsResponse {
   common.PaginationMetadata pagination = 2;
 }
 
-message ListJobsByStatusRequest {
-  string status = 1;
-  optional common.PaginationRequest pagination = 2;
-}
-
-message ListJobsByStatusResponse {
-  repeated JobResponse jobs = 1;
-  common.PaginationMetadata pagination = 2;
-}
-
-message ListJobsByPipelineRequest {
+message ListPipelineJobsRequest {
   string pipeline_id = 1;
   optional common.PaginationRequest pagination = 2;
 }
 
-message ListJobsByPipelineResponse {
-  repeated JobResponse jobs = 1;
-  common.PaginationMetadata pagination = 2;
+message ListProjectJobsRequest {
+  string project_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListOrganizationJobsRequest {
+  string organization_id = 1;
+  optional common.PaginationRequest pagination = 2;
 }

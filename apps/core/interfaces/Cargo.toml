@@ -1,0 +1,22 @@
+[package]
+name = "interfaces"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+domain = { path = "../domain" }
+application = { path = "../application" }
+infrastructure = { path = "../infrastructure" }
+protocol.workspace = true
+tonic.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+derive_more.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+log.workspace = true
+toml.workspace = true
+tower.workspace = true
+tonic-async-interceptor.workspace = true
+ulid.workspace = true
+tracing.workspace = true
