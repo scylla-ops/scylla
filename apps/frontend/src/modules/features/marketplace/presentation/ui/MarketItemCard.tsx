@@ -7,7 +7,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@shadcn';
+} from '@/modules/shared/presentation/ui/shadcn';
 import LogoScylla from '@/assets/logo_scylla.png';
 
 export type MarketItemCardProps = {

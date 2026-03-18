@@ -1,9 +1,10 @@
-import { LoginModule } from '@core/di/login/LoginModule.ts';
-import { MarketplaceModule } from '@core/di/marketplace/MarketplaceModule.ts';
-import { PipelineDashboardModule } from '@core/di/pipeline-dashboard/PipelineDashboardModule.ts';
-import { PipelineCreationModule } from '@core/di/pipeline-creation/PipelineCreationModule.ts';
-import { OrganizationModule } from '@core/di/organization/OrganizationModule.ts';
-import { ProjectModule } from '@core/di/project/ProjectModule.ts';
+import { LoginModule } from '@/modules/features/login/di/LoginModule.ts';
+import { MarketplaceModule } from '@/modules/features/marketplace/di/MarketplaceModule.ts';
+import { PipelineDashboardModule } from '@/modules/features/pipeline-dashboard/di/PipelineDashboardModule.ts';
+import { PipelineCreationModule } from '@/modules/features/pipeline-creation/di/PipelineCreationModule.ts';
+import { OrganizationModule } from '@/modules/features/organization/di/OrganizationModule.ts';
+import { ProjectModule } from '@/modules/features/project/di/ProjectModule.ts';
+import { UserSettingsModule } from '@/modules/features/user_settings/di/UserSettingsModule.ts';
 
 export const dependencies = {
   login: LoginModule.domain,
@@ -12,6 +13,7 @@ export const dependencies = {
   pipelineCreation: PipelineCreationModule.domain,
   organization: OrganizationModule.domain,
   project: ProjectModule.domain,
+  userSettings: UserSettingsModule.domain,
 };
 
 export type Dependencies = typeof dependencies;

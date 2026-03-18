@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
 import { useNavigate } from 'react-router-dom';
-import type { ScyllaError } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 
 export const useLogin = () => {
   const deps = useDependencies();

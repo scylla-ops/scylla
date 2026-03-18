@@ -1,5 +1,5 @@
 import type { PipelineDashboardRepository } from '@/modules/features/pipeline-dashboard/domain/repository/PipelineDashboardRepository.ts';
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 
 export class GetPipelinesUseCase {

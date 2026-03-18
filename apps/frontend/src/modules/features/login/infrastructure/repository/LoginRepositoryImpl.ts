@@ -1,5 +1,5 @@
 import type { LoginRepository } from '@/modules/features/login/domain/repository/LoginRepository.ts';
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { LoginRemoteDataSource } from '@/modules/features/login/infrastructure/repository/data-sources/LoginRemoteDataSource.ts';
 
 export class LoginRepositoryImpl implements LoginRepository {

@@ -1,5 +1,5 @@
 import { useMatches } from 'react-router-dom';
-import { SidebarTrigger } from '@shadcn/sidebar.tsx';
+import { SidebarTrigger } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import type { RouteHandle } from '@core/presentation/models/RouteHandle.ts';
 
 //TODO: variable for the bg of the topbar

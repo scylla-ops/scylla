@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
-import type { ScyllaError } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 
 export const usePipelines = () => {

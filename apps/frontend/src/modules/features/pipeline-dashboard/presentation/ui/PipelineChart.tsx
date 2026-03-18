@@ -1,4 +1,4 @@
-import { type ChartConfig, ChartContainer } from '@shadcn';
+import { type ChartConfig, ChartContainer } from '@/modules/shared/presentation/ui/shadcn';
 import { Bar, BarChart, CartesianGrid } from 'recharts';
 
 const chartData = [

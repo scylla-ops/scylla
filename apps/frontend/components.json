@@ -11,8 +11,8 @@
   "tsx": true,
   "rsc": false,
   "aliases": {
-    "ui": "@core/presentation/ui/shadcn",
-    "components": "@core/presentation/ui/shadcn",
-    "utils": "@core/presentation/utils"
+    "ui": "@shared/presentation/ui/shadcn",
+    "components": "@shared/presentation/ui/shadcn",
+    "utils": "@shared/presentation/utils"
   }
 }

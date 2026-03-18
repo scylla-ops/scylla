@@ -1,4 +1,4 @@
-import { Input } from '@shadcn/input.tsx';
+import { Input } from '@/modules/shared/presentation/ui/shadcn/input.tsx';
 
 import { useFilterStore } from '@/modules/features/marketplace/presentation/stores/useFilter.ts';
 

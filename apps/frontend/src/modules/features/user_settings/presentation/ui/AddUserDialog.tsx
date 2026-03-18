@@ -7,16 +7,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/modules/core/presentation/ui/shadcn';
-import { Button } from '@/modules/core/presentation/ui/shadcn';
+} from '@/modules/shared/presentation/ui/shadcn';
+import { Button } from '@/modules/shared/presentation/ui/shadcn';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/modules/core/presentation/ui/shadcn';
-import { Input } from '@/modules/core/presentation/ui/shadcn';
+} from '@/modules/shared/presentation/ui/shadcn';
 
 interface AddUserDialogProps {
   onAddUser: (userId: string, role: string) => void;
@@ -25,17 +24,7 @@ interface AddUserDialogProps {
 
 export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onAddUser, isLoading }) => {
   const [open, setOpen] = useState(false);
-  const [userId, setUserId] = useState('');
   const [role, setRole] = useState('member');
-
-  const handleSubmit = () => {
-    if (userId && role) {
-      onAddUser(userId, role);
-      setUserId('');
-      setRole('member');
-      setOpen(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -54,18 +43,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onAddUser, isLoadi
           </DialogDescription>
         </DialogHeader>
         <div className='grid gap-4 py-4'>
-          <div className='grid gap-2'>
-            <label htmlFor='user-id'>
-              <Trans>User ID</Trans>
-            </label>
-            <Input
-              id='user-id'
-              placeholder='Enter user ID'
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
           <div className='grid gap-2'>
             <label htmlFor='role'>
               <Trans>Role</Trans>
@@ -87,14 +64,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onAddUser, isLoadi
               </SelectContent>
             </Select>
           </div>
-        </div>
-        <div className='flex justify-end gap-2'>
-          <Button variant='outline' onClick={() => setOpen(false)} disabled={isLoading}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button onClick={handleSubmit} disabled={!userId || !role || isLoading}>
-            <Trans>Add User</Trans>
-          </Button>
+          <div className='grid gap-2'>Ici afficher liste des users</div>
         </div>
       </DialogContent>
     </Dialog>

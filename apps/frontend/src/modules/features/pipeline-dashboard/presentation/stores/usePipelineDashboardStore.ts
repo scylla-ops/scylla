@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { PipelineResponse } from '@/generated/pipeline.ts';
-import type { ScyllaError } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 
 interface PipelineDashboardState {
   pipelines: PipelineResponse[];

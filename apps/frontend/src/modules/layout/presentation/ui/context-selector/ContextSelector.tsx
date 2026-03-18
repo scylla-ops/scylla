@@ -1,4 +1,9 @@
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@shadcn/sidebar.tsx';
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@shadcn/dropdown-menu.tsx';
+} from '@/modules/shared/presentation/ui/shadcn/dropdown-menu.tsx';
 import { Plus } from 'lucide-react';
 import { type ComponentType, type ReactNode, useState } from 'react';
 

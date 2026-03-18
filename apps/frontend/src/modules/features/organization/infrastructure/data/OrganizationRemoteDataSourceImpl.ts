@@ -1,7 +1,7 @@
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 import { OrganizationServiceClient } from '@/generated/organization.client.ts';
 import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/OrganizationRemoteDataSource.ts';
-import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListOrganizationsResponse } from '@/generated/organization.ts';
 
 export default class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {

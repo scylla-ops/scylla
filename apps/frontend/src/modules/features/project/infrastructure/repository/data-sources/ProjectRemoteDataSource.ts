@@ -1,4 +1,4 @@
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
 
 export interface ProjectRemoteDataSource {

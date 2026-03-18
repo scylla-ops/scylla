@@ -1,4 +1,4 @@
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { PipelineResponse } from '@/generated/pipeline.ts';
 
 export interface PipelineCreationRemoteDataSource {

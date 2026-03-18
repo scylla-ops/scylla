@@ -1,5 +1,11 @@
 import { LoginForm } from '@/modules/features/login/presentation/ui/LoginForm.tsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/modules/shared/presentation/ui/shadcn';
 import LogoScylla from '@/assets/logo_scylla.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/features/login/presentation/hooks/useLogin.ts';

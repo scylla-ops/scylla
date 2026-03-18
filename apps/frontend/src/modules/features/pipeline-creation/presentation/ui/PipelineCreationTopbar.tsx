@@ -1,5 +1,5 @@
-import { Button } from '@shadcn';
-import { TabsList, TabsTrigger } from '@shadcn/tabs.tsx';
+import { Button } from '@/modules/shared/presentation/ui/shadcn';
+import { TabsList, TabsTrigger } from '@/modules/shared/presentation/ui/shadcn/tabs.tsx';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
 import { useScriptStore } from '@/modules/features/pipeline-creation/presentation/stores/useScript.ts';
 

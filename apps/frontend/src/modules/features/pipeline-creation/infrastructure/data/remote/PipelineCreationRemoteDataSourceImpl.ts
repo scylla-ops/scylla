@@ -1,5 +1,5 @@
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
-import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { PipelineCreationRemoteDataSource } from '@/modules/features/pipeline-creation/infrastructure/repository/data-sources/PipelineCreationRemoteDataSource.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 import type { CreatePipelineRequest, PipelineResponse } from '@/generated/pipeline.ts';

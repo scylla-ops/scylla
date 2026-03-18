@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Button } from '@shadcn/button.tsx';
-import { Input } from '@shadcn/input.tsx';
-import { Label } from '@shadcn/label.tsx';
+import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
+import { Input } from '@/modules/shared/presentation/ui/shadcn/input.tsx';
+import { Label } from '@/modules/shared/presentation/ui/shadcn/label.tsx';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@shadcn/dialog.tsx';
+} from '@/modules/shared/presentation/ui/shadcn/dialog.tsx';
 import { useEffect } from 'react';
 import { useCreateOrganization } from '@/modules/features/organization/presentation/hooks/useCreateOrganization.ts';
 

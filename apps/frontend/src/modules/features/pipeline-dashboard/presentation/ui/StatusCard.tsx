@@ -1,4 +1,4 @@
-import { Button } from '@shadcn';
+import { Button } from '@/modules/shared/presentation/ui/shadcn';
 import {
   Card,
   CardAction,
@@ -7,10 +7,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@shadcn/card.tsx';
+} from '@/modules/shared/presentation/ui/shadcn/card.tsx';
 import type { PipelineResponse } from '@/generated/pipeline.ts';
 import { PlayIcon, SettingsIcon } from 'lucide-react';
-import StatusIndicator from '@/modules/shared/presentation/status-indicator.tsx';
+import StatusIndicator from '@/modules/shared/presentation/ui/status-indicator.tsx';
 import { useNavigate } from 'react-router-dom';
 import { PipelineChart } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineChart.tsx';
 

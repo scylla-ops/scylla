@@ -1,5 +1,5 @@
 import type MarketplaceRepository from '@/modules/features/marketplace/domain/repository/MarketplaceRepository.ts';
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { MarketItem } from '@/modules/features/marketplace/domain/models/MarketItem.ts';
 
 export class MarketplaceRepositoryImpl implements MarketplaceRepository {

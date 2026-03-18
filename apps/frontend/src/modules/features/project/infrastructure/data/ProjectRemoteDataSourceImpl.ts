@@ -1,6 +1,6 @@
 import { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 import { ProjectServiceClient } from '@/generated/project.client.ts';
-import { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/ProjectRemoteDataSource.ts';
 

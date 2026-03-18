@@ -7,7 +7,7 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { DependenciesProvider } from '@core/presentation/providers/DependenciesProvider.tsx';
 import { messages as coreMessages } from '@core/locales/en/messages.ts';
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
-import { ScyllaError } from '@core/utils/ScyllaResult.ts';
+import { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 
 i18n.load('en', {
   ...coreMessages,

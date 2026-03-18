@@ -1,8 +1,8 @@
 import { AppSidebar } from '@/modules/layout/presentation/ui/AppSidebar.tsx';
 import { Outlet, useMatches } from 'react-router-dom';
-import { SidebarProvider } from '@shadcn/sidebar.tsx';
+import { SidebarProvider } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { TopBar } from '@/modules/layout/presentation/ui/TopBar.tsx';
-import { Tabs } from '@shadcn/tabs.tsx';
+import { Tabs } from '@/modules/shared/presentation/ui/shadcn/tabs.tsx';
 import type { RouteHandle } from '@core/presentation/models/RouteHandle.ts';
 
 export const Layout = () => {

@@ -1,5 +1,5 @@
 import type { ListOrganizationsResponse } from '@/generated/organization.ts';
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 
 export interface OrganizationRepository {
   getAll(): Promise<ScyllaResult<ListOrganizationsResponse>>;

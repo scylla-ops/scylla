@@ -1,5 +1,5 @@
 import type { OrganizationRepository } from '@/modules/features/organization/domain/repository/OrganizationRepository.ts';
-import type { ScyllaResult } from '@core/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListOrganizationsResponse } from '@/generated/organization.ts';
 
 export default class GetOrganizations {

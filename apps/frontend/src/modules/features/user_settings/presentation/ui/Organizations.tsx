@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
   Card,
@@ -6,62 +5,35 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/modules/core/presentation/ui/shadcn';
-import { UserSettingsModule } from '@/modules/user_settings/di/UserSettingsModule.ts';
+} from '@shadcn'; // Correction du path si tu as déplacé shadcn dans shared
+
 import {
   useAddUserToOrganization,
   useOrganizationUsers,
   useRemoveUserFromOrganization,
   useUpdateUserRole,
-} from '@/modules/user_settings/presentation/hooks/useUserSettings.ts';
-import { AddUserDialog } from '@/modules/user_settings/presentation/ui/AddUserDialog.tsx';
-import { RemoveUserDialog } from '@/modules/user_settings/presentation/ui/RemoveUserDialog.tsx';
-import { EditRoleDialog } from '@/modules/user_settings/presentation/ui/EditRoleDialog.tsx';
-import type { OrganizationUser } from '@/modules/user_settings/domain/models/OrganizationUser.ts';
+} from '@/modules/features/user_settings/presentation/hooks/useUserSettings.ts';
 
-// TODO: Get real organizations list from API
-const SAMPLE_ORGANIZATIONS = [
-  { id: 'org-1', name: 'Alpha organization' },
-  { id: 'org-2', name: 'Beta organization' },
-  { id: 'org-3', name: 'Zeta organization' },
-];
+import { AddUserDialog } from './AddUserDialog';
+import { RemoveUserDialog } from './RemoveUserDialog';
+import { EditRoleDialog } from './EditRoleDialog';
+import { useContextStore } from '@shared/presentation/stores/useContext.ts';
 
 export const Organizations = () => {
   const { i18n } = useLingui();
-  const [selectedOrgId, setSelectedOrgId] = useState<string>(SAMPLE_ORGANIZATIONS[0]?.id || '');
 
-  // Queries and mutations
-  const usersQuery = useOrganizationUsers(UserSettingsModule.repository, selectedOrgId);
-  const addUserMutation = useAddUserToOrganization(UserSettingsModule.repository);
-  const removeUserMutation = useRemoveUserFromOrganization(UserSettingsModule.repository);
-  const updateRoleMutation = useUpdateUserRole(UserSettingsModule.repository);
+  const selectedOrgId = useContextStore(state => state.organization.id);
 
-  // Refetch users when mutations succeed
-  useEffect(() => {
-    if (
-      addUserMutation.isSuccess ||
-      removeUserMutation.isSuccess ||
-      updateRoleMutation.isSuccess
-    ) {
-      usersQuery.refetch();
-    }
-  }, [
-    addUserMutation.isSuccess,
-    removeUserMutation.isSuccess,
-    updateRoleMutation.isSuccess,
-    usersQuery,
-  ]);
+  const usersQuery = useOrganizationUsers(selectedOrgId || '');
+  const addUserMutation = useAddUserToOrganization();
+  const removeUserMutation = useRemoveUserFromOrganization();
+  const updateRoleMutation = useUpdateUserRole();
 
   const handleAddUser = (userId: string, role: string) => {
     if (selectedOrgId) {
@@ -95,59 +67,38 @@ export const Organizations = () => {
       </CardHeader>
 
       <CardContent className='space-y-4'>
-        <div className='grid gap-2'>
-          <label htmlFor='org-select'>
-            <Trans>Select Organization</Trans>
-          </label>
-          <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
-            <SelectTrigger id='org-select'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SAMPLE_ORGANIZATIONS.map((org) => (
-                <SelectItem key={org.id} value={org.id}>
-                  {org.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Affichage des erreurs de mutations (Optionnel: tu peux utiliser un Toast global) */}
+        {[addUserMutation, removeUserMutation, updateRoleMutation].map(
+          (m, i) =>
+            m.error && (
+              <div key={i} className='bg-red-50 p-3 rounded text-red-800 text-sm'>
+                {m.error.message}
+              </div>
+            ),
+        )}
 
-        {selectedOrgId && (
+        {!selectedOrgId ? (
+          <div className='text-center py-8 text-gray-500'>
+            <Trans>Please select an organization first.</Trans>
+          </div>
+        ) : (
           <div className='space-y-4 border-t pt-6'>
             <div className='flex justify-between items-center'>
               <h3 className='text-lg font-semibold'>
                 <Trans>Members</Trans>
               </h3>
-              <AddUserDialog
-                onAddUser={handleAddUser}
-                isLoading={addUserMutation.isPending}
-              />
+              <AddUserDialog onAddUser={handleAddUser} isLoading={addUserMutation.isPending} />
             </div>
 
-            {addUserMutation.error && (
-              <div className='bg-red-50 p-3 rounded text-red-800'>
-                {(addUserMutation.error as any).message || 'Error adding user'}
+            {usersQuery.isLoading ? (
+              <div className='flex justify-center py-8'>
+                <Trans>Loading members...</Trans>
               </div>
-            )}
-
-            {removeUserMutation.error && (
-              <div className='bg-red-50 p-3 rounded text-red-800'>
-                {(removeUserMutation.error as any).message || 'Error removing user'}
+            ) : usersQuery.isError ? (
+              <div className='text-red-600'>
+                <Trans>Error loading members</Trans>
               </div>
-            )}
-
-            {updateRoleMutation.error && (
-              <div className='bg-red-50 p-3 rounded text-red-800'>
-                {(updateRoleMutation.error as any).message || 'Error updating role'}
-              </div>
-            )}
-
-            {usersQuery.isLoading && <div><Trans>Loading members...</Trans></div>}
-
-            {usersQuery.isError && <div><Trans>Error loading members</Trans></div>}
-
-            {users.length === 0 && !usersQuery.isLoading ? (
+            ) : users.length === 0 ? (
               <div className='text-center text-gray-500 py-8'>
                 <Trans>No members in this organization yet</Trans>
               </div>
@@ -170,9 +121,9 @@ export const Organizations = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user: OrganizationUser) => (
+                  {users.map(user => (
                     <TableRow key={user.user_id}>
-                      <TableCell>{user.username}</TableCell>
+                      <TableCell className='font-medium'>{user.username}</TableCell>
                       <TableCell>
                         <span className='inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700'>
                           {user.role}
@@ -184,7 +135,7 @@ export const Organizations = () => {
                       <TableCell className='text-right space-x-2'>
                         <EditRoleDialog
                           user={user}
-                          onUpdateRole={(newRole) => handleUpdateRole(user.user_id, newRole)}
+                          onUpdateRole={role => handleUpdateRole(user.user_id, role)}
                           isLoading={updateRoleMutation.isPending}
                         />
                         <RemoveUserDialog

@@ -9,8 +9,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/modules/core/presentation/ui/shadcn';
-import { Button } from '@/modules/core/presentation/ui/shadcn';
+  Button,
+} from '@shadcn';
 
 interface RemoveUserDialogProps {
   username: string;

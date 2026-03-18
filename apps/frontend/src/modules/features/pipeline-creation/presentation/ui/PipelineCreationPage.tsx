@@ -1,7 +1,7 @@
 import ReactCodeMirror, { EditorView } from '@uiw/react-codemirror';
 import { StreamLanguage } from '@codemirror/language';
-import { TabsContent } from '@shadcn/tabs.tsx';
-import { Card } from '@shadcn';
+import { TabsContent } from '@/modules/shared/presentation/ui/shadcn/tabs.tsx';
+import { Card } from '@/modules/shared/presentation/ui/shadcn';
 import { useScriptStore } from '@/modules/features/pipeline-creation/presentation/stores/useScript.ts';
 import { json } from '@codemirror/legacy-modes/mode/javascript';
 import { useEffect } from 'react';

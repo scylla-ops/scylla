@@ -6,7 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@shadcn/sidebar.tsx';
+} from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 
 export function NavMain({
   items,

@@ -8,7 +8,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from '@shadcn/sidebar.tsx';
+} from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { NavUser } from '@/modules/layout/presentation/ui/NavUser.tsx';
 import { ContextSelector } from '@/modules/layout/presentation/ui/context-selector/ContextSelector.tsx';
 import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
@@ -72,6 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           label={'Project'}
           display={
             <CurrentContextDisplay
+              variant={'secondary'}
               name={project.name || 'Select Project'}
               description={'Project'}
               icon={ProjectorIcon}

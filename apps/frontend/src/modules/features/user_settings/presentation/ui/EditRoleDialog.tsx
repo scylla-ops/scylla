@@ -7,16 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/modules/core/presentation/ui/shadcn';
-import { Button } from '@/modules/core/presentation/ui/shadcn';
+} from '@/modules/shared/presentation/ui/shadcn';
+import { Button } from '@/modules/shared/presentation/ui/shadcn';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/modules/core/presentation/ui/shadcn';
-import type { OrganizationUser } from '@/modules/user_settings/domain/models/OrganizationUser.ts';
+} from '@/modules/shared/presentation/ui/shadcn';
+import type { OrganizationUser } from '@/modules/features/user_settings/domain/models/OrganizationUser.ts';
 
 interface EditRoleDialogProps {
   user: OrganizationUser;
@@ -82,10 +82,7 @@ export const EditRoleDialog: React.FC<EditRoleDialogProps> = ({
           <Button variant='outline' onClick={() => setOpen(false)} disabled={isLoading}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!newRole || newRole === user.role || isLoading}
-          >
+          <Button onClick={handleSubmit} disabled={!newRole || newRole === user.role || isLoading}>
             <Trans>Update Role</Trans>
           </Button>
         </div>
