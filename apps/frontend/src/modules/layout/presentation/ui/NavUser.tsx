@@ -93,7 +93,12 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>
