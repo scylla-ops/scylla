@@ -1,14 +1,20 @@
 import type { PipelineDashboardRemoteDataSource } from '@/modules/features/pipeline-dashboard/infrastructure/repository/data-sources/PipelineDashboardRemoteDataSource.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
+import type { GrpcTransport } from '@core/infrastructure/grpc/GrpcTransport.ts';
 
 export class PipelineDashboardRemoteDataSourceImpl implements PipelineDashboardRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
 
-  public constructor(transport: CoreGrpcTransport) {
+  public constructor(transport: GrpcTransport) {
     this._pipelineClient = new PipelineServiceClient(transport.getTransport());
+  }
+
+  public async deleteById(id: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync<void>(async () => {
+      await this._pipelineClient.deletePipeline({ pipelineId: id });
+    }, 'Error deleting pipeline');
   }
 
   public async getAll(): Promise<ScyllaResult<ListPipelinesResponse>> {

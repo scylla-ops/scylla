@@ -1,39 +1,24 @@
 import { create } from 'zustand';
-import type { PipelineResponse } from '@/generated/pipeline.ts';
-import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 
 interface PipelineDashboardState {
-  pipelines: PipelineResponse[];
-  loading: boolean;
-  error: string | ScyllaError;
-  setPipelines: (pipelines: PipelineResponse[]) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | ScyllaError) => void;
-  reset: () => void;
+  selectedPipelineIds: string[];
+  // Actions
+  selectPipeline: (id: string) => void;
+  clearSelection: () => void;
 }
 
 export const usePipelineDashboardStore = create<PipelineDashboardState>(set => ({
-  pipelines: [],
-  loading: false,
-  error: '',
+  selectedPipelineIds: [],
 
-  setPipelines: (pipelines: PipelineResponse[]) => {
-    set({ pipelines });
-  },
+  selectPipeline: (id: string) =>
+    set(state => {
+      const isSelected = state.selectedPipelineIds.includes(id);
+      return {
+        selectedPipelineIds: isSelected
+          ? state.selectedPipelineIds.filter(pId => pId !== id)
+          : [...state.selectedPipelineIds, id],
+      };
+    }),
 
-  setLoading: (loading: boolean) => {
-    set({ loading });
-  },
-
-  setError: (error: string | ScyllaError) => {
-    set({ error });
-  },
-
-  reset: () => {
-    set({
-      pipelines: [],
-      loading: false,
-      error: '',
-    });
-  },
+  clearSelection: () => set({ selectedPipelineIds: [] }),
 }));

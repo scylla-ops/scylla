@@ -9,4 +9,8 @@ export class PipelineDashboardRepositoryImpl implements PipelineDashboardReposit
   public async getAll(): Promise<ScyllaResult<ListPipelinesResponse>> {
     return this.remoteDataSource.getAll();
   }
+
+  public async deleteById(id: string): Promise<ScyllaResult<void>> {
+    return this.remoteDataSource.deleteById(id);
+  }
 }

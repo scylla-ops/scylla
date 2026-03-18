@@ -4,7 +4,7 @@ import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 
 export const usePipelines = () => {
-  const { getPipelinesUseCase } = useDependencies().pipelineDashboard;
+  const { getPipelines } = useDependencies().pipelineDashboard;
 
   const {
     data: pipelines,
@@ -13,7 +13,7 @@ export const usePipelines = () => {
     isError,
   } = useQuery<ListPipelinesResponse, ScyllaError>({
     queryKey: ['pipelines'],
-    queryFn: async () => (await getPipelinesUseCase.execute()).unwrap(),
+    queryFn: async () => (await getPipelines.execute()).unwrap(),
     staleTime: 0,
     gcTime: 0,
   });

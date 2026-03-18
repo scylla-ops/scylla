@@ -44,10 +44,27 @@ export const PipelineCreationPage = () => {
   const { script, setScript } = useScriptStore(state => state);
   const projectId = useContextStore(state => state.project.id);
 
+  //TODO: change that
   useEffect(() => {
     if (projectId) {
       setScript(
-        `{\n"name": "my-pipeline",\n` + `"projectId": "${projectId}",\n` + `"nodes": []\n` + `}`,
+        `{\n"name": "my-pipeline",\n` +
+          `"projectId": "${projectId}",\n` +
+          `"nodes": [
+    {
+      "nodeId": "build",
+      "deps": [],
+      "command": "cargo",
+      "args": ["build", "--release"]
+    },
+    {
+      "nodeId": "test",
+      "deps": ["build"],
+      "command": "cargo",
+      "args": ["test"]
+    }
+  ]\n` +
+          `}`,
       );
     }
   }, [projectId, setScript]);

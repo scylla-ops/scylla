@@ -6,11 +6,11 @@ export default defineConfig({
   catalogs: [
     {
       path: '<rootDir>/src/modules/core/locales/{locale}/messages',
-      include: ['src/modules/core/'],
+      include: ['src/modules/features/core/'],
     },
     {
       path: '<rootDir>/src/modules/login/locales/{locale}/messages',
-      include: ['src/modules/login/'],
+      include: ['src/modules/features/login/'],
     },
   ],
   compileNamespace: 'default',

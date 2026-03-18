@@ -12,3 +12,11 @@ msgstr ""
 "Last-Translator: \n"
 "Language-Team: \n"
 "Plural-Forms: \n"
+
+#: src/modules/features/login/presentation/ui/LoginPage.tsx:36
+msgid "Enter your email below to login to your account"
+msgstr "Enter your email below to login to your account"
+
+#: src/modules/features/login/presentation/ui/LoginPage.tsx:33
+msgid "Login to your account"
+msgstr "Login to your account"
