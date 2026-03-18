@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Building2, PlusIcon, ProjectorIcon, ShoppingCartIcon, SquareTerminal } from 'lucide-react';
+import { Building2, PlusIcon, ProjectorIcon, ShoppingCartIcon, WorkflowIcon } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {
@@ -27,24 +27,14 @@ const data = {
   },
   navMain: [
     {
-      title: 'Create pipeline',
-      url: '/pipeline-creation',
-      icon: PlusIcon,
-    },
-    {
       title: 'Pipelines',
       url: '/pipeline-dashboard',
-      icon: SquareTerminal,
+      icon: WorkflowIcon,
     },
     {
       title: 'Marketplace',
       url: '/marketplace',
       icon: ShoppingCartIcon,
-    },
-    {
-      title: 'Settings',
-      url: '/user-settings',
-      icon: SquareTerminal,
     },
   ],
 };

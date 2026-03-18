@@ -22,7 +22,7 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>Main</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item, index) => (
           <SidebarMenuItem key={index}>

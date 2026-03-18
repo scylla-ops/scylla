@@ -9,8 +9,9 @@ import { RequireAuth } from '@core/presentation/ui/RequireAuth.tsx';
 import { PipelineCreationPage } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationPage.tsx';
 import { PipelineCreationTopbar } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
 import { DashboardPipelinePage } from '@/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
+import { PipelineDashboardTopBar } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardTopBar.tsx';
 
-export const coreRouter = createBrowserRouter([
+export const CoreRouter = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
@@ -37,6 +38,9 @@ export const coreRouter = createBrowserRouter([
           {
             path: '/pipeline-dashboard',
             element: <DashboardPipelinePage />,
+            handle: {
+              topbar: <PipelineDashboardTopBar />,
+            },
           },
           {
             path: '/marketplace',
@@ -52,6 +56,6 @@ export const coreRouter = createBrowserRouter([
 
   {
     path: '*',
-    element: <Navigate to='/login' replace />,
+    element: <Navigate to='/user-settings' replace />,
   },
 ]);

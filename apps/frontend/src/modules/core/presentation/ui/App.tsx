@@ -1,5 +1,5 @@
 import { RouterProvider } from 'react-router-dom';
-import { coreRouter } from '@core/presentation/ui/CoreRouter.tsx';
+import { CoreRouter } from '@core/presentation/ui/CoreRouter.tsx';
 import { StrictMode } from 'react';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
@@ -34,7 +34,7 @@ function App() {
       <I18nProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
           <DependenciesProvider>
-            <RouterProvider router={coreRouter} />
+            <RouterProvider router={CoreRouter} />
           </DependenciesProvider>
         </QueryClientProvider>
       </I18nProvider>
