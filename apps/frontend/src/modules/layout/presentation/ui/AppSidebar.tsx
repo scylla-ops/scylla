@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Building2, PlusIcon, ProjectorIcon, ShoppingCartIcon, WorkflowIcon } from 'lucide-react';
+import { Building2, ProjectorIcon, ShoppingCartIcon, WorkflowIcon } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {

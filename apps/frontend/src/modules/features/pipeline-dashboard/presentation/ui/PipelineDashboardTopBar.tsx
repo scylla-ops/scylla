@@ -3,18 +3,27 @@ import { useNavigate } from 'react-router-dom';
 import { Trash } from 'lucide-react';
 import { useDeletePipeline } from '@/modules/features/pipeline-dashboard/presentation/hooks/useDeletePipeline.ts';
 import { usePipelineDashboardStore } from '@/modules/features/pipeline-dashboard/presentation/stores/usePipelineDashboardStore.ts';
+import { useState } from 'react';
+import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 
+//TODO: put the delete pipeline action in a separate component
 export const PipelineDashboardTopBar = () => {
   const navigate = useNavigate();
   const deletePipeline = useDeletePipeline();
   const selectedPipelineIds = usePipelineDashboardStore(state => state.selectedPipelineIds);
   const clearSelection = usePipelineDashboardStore(state => state.clearSelection);
+  const [deleteDialogVisibility, setDeleteDialogVisibility] = useState(false);
 
-  const deleteSelectedPipelines = () => {
-    selectedPipelineIds.forEach(id => {
-      deletePipeline.mutate(id);
-    });
-    clearSelection();
+  const handleDelete = async () => {
+    try {
+      const promises = selectedPipelineIds.map(id => deletePipeline.mutateAsync(id));
+
+      await Promise.all(promises);
+      setDeleteDialogVisibility(false);
+      clearSelection();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
@@ -28,7 +37,7 @@ export const PipelineDashboardTopBar = () => {
             size='icon'
             variant='destructive'
             onClick={() => {
-              deleteSelectedPipelines();
+              setDeleteDialogVisibility(true);
             }}
             className='h-9 w-9'
           >
@@ -37,6 +46,11 @@ export const PipelineDashboardTopBar = () => {
         </>
       )}
       <Button onClick={() => navigate('pipeline-creation')}>New</Button>{' '}
+      <ConfirmOperationAlertDialog
+        onContinue={handleDelete}
+        open={deleteDialogVisibility}
+        onOpenChange={setDeleteDialogVisibility}
+      />
     </div>
   );
 };
