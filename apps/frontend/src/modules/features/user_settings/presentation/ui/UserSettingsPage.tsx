@@ -1,5 +1,5 @@
 import { UserInformation } from '@/modules/features/user_settings/presentation/ui/UserInformation.tsx';
-import { Organizations } from '@/modules/features/user_settings/presentation/ui/Organizations.tsx';
+import { Organization } from '@/modules/features/user_settings/presentation/ui/Organization.tsx';
 
 export const UserSettingsPage = () => {
   return (
@@ -9,7 +9,7 @@ export const UserSettingsPage = () => {
       </div>
 
       <div className='w-1/2'>
-        <Organizations />
+        <Organization />
       </div>
     </div>
   );

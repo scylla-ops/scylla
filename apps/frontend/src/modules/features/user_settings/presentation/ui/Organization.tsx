@@ -25,7 +25,7 @@ import { RemoveUserDialog } from './RemoveUserDialog';
 import { EditRoleDialog } from './EditRoleDialog';
 import { useContextStore } from '@shared/presentation/stores/useContext.ts';
 
-export const Organizations = () => {
+export const Organization = () => {
   const { i18n } = useLingui();
 
   const selectedOrgId = useContextStore(state => state.organization.id);
@@ -59,10 +59,10 @@ export const Organizations = () => {
     <Card className='w-full bg-white'>
       <CardHeader>
         <CardTitle>
-          <Trans>Organizations</Trans>
+          <Trans>Organization</Trans>
         </CardTitle>
         <CardDescription>
-          <Trans>Manage your organizations and their members.</Trans>
+          <Trans>Manage your organization and their members.</Trans>
         </CardDescription>
       </CardHeader>
 
