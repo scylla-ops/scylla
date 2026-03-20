@@ -18,7 +18,14 @@ i18n.activate('en');
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: error => {
-      (error as ScyllaError).log();
+      const scyllaError = error as ScyllaError;
+      const code = scyllaError.getCode();
+
+      //TODO: move this
+      if (code === 'UNAUTHENTICATED') {
+        localStorage.removeItem('token');
+      }
+      scyllaError.log();
     },
   }),
   mutationCache: new MutationCache({

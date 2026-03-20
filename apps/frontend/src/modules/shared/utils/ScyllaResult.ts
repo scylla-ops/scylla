@@ -9,6 +9,14 @@ export class ScyllaError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 
+  private hasCode(cause: unknown): cause is { code: string } {
+    return !!cause && typeof cause === 'object' && 'code' in cause;
+  }
+
+  public getCode(): string {
+    return this.hasCode(this.cause) ? this.cause.code : 'UNKNOWN_ERROR';
+  }
+
   public log(): void {
     console.error(`>[${this.constructor.name}]:`, this.message);
     if (this.cause) {
