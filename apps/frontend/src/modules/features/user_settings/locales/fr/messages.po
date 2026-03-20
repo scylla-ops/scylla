@@ -1,0 +1,125 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-03-20 01:55+0100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:119
+msgid "Actions"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:33
+msgid "Add User"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:39
+msgid "Add User to Organization"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:59
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:72
+msgid "Admin"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:46
+msgid "Are you sure you want to remove {username} from the organization?"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:83
+#: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:51
+msgid "Cancel"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:46
+msgid "Edit Role"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:42
+msgid "Enter the user ID and select their role"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:99
+msgid "Error loading members"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:116
+msgid "Joined"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:95
+msgid "Loading members..."
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:65
+msgid "Manage your organization and their members."
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:56
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:69
+msgid "Member"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:88
+msgid "Members"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:61
+msgid "New Role"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:103
+msgid "No members in this organization yet"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:62
+msgid "Organization"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:62
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:75
+msgid "Owner"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:82
+msgid "Please select an organization first."
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:37
+#: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:54
+msgid "Remove"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:43
+msgid "Remove User"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:48
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:113
+msgid "Role"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:86
+msgid "Update Role"
+msgstr ""
+
+#. placeholder {0}: user.username
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:55
+msgid "Update the role for {0}"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:52
+msgid "Update User Role"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/Organization.tsx:110
+msgid "Username"
+msgstr ""

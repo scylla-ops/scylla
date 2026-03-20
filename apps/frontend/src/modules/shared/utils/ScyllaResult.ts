@@ -1,0 +1,68 @@
+/** Class to represent errors in the application.
+ * @extends Error
+ * **/
+export class ScyllaError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+
+    Object.setPrototypeOf(this, ScyllaError.prototype);
+    Error.captureStackTrace(this, this.constructor);
+  }
+
+  private hasCode(cause: unknown): cause is { code: string } {
+    return !!cause && typeof cause === 'object' && 'code' in cause;
+  }
+
+  public getCode(): string {
+    return this.hasCode(this.cause) ? this.cause.code : 'UNKNOWN_ERROR';
+  }
+
+  public log(): void {
+    console.error(`>[${this.constructor.name}]:`, this.message);
+    if (this.cause) {
+      console.error('  Original cause:', this.cause);
+    }
+  }
+}
+
+/** Class to represent the result of an operation.
+ * @template T - The type of the result.
+ * **/
+export class ScyllaResult<T> {
+  constructor(private readonly _value: T | ScyllaError) {}
+
+  public fold<U>(callbacks: { onSuccess: (value: T) => U; onError: (error: ScyllaError) => U }): U {
+    if (this._value instanceof ScyllaError) {
+      return callbacks.onError(this._value);
+    } else {
+      return callbacks.onSuccess(this._value);
+    }
+  }
+
+  public unwrap(): T {
+    if (this._value instanceof ScyllaError) {
+      throw this._value;
+    }
+    return this._value;
+  }
+
+  public static try<T>(fn: () => T, errorMessage: string): ScyllaResult<T> {
+    try {
+      return new ScyllaResult<T>(fn());
+    } catch (error) {
+      return new ScyllaResult<T>(new ScyllaError(errorMessage, { cause: error }));
+    }
+  }
+
+  public static async tryAsync<T>(
+    fn: () => Promise<T>,
+    errorMessage: string,
+  ): Promise<ScyllaResult<T>> {
+    try {
+      const value = await fn();
+      return new ScyllaResult<T>(value);
+    } catch (error) {
+      return new ScyllaResult<T>(new ScyllaError(errorMessage, { cause: error }));
+    }
+  }
+}
