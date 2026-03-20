@@ -5,12 +5,12 @@ export default defineConfig({
   locales: ['fr', 'en'],
   catalogs: [
     {
-      path: '<rootDir>/src/modules/core/locales/{locale}/messages',
-      include: ['src/modules/features/core/'],
+      path: '<rootDir>/src/modules/features/login/locales/{locale}/messages',
+      include: ['src/modules/features/login/'],
     },
     {
-      path: '<rootDir>/src/modules/login/locales/{locale}/messages',
-      include: ['src/modules/features/login/'],
+      path: '<rootDir>/src/modules/features/user_settings/locales/{locale}/messages',
+      include: ['src/modules/features/user_settings/'],
     },
   ],
   compileNamespace: 'default',

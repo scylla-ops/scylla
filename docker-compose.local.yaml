@@ -19,6 +19,16 @@ services:
     depends_on:
       db:
         condition: service_started
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        VITE_API_URL: "http://localhost:50051"
+    container_name: scylla-frontend
+    ports:
+      - "8080:80"
+
   core:
     build:
       context: .

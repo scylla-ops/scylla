@@ -5,13 +5,13 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@core/presentation/providers/DependenciesProvider.tsx';
-import { messages as coreMessages } from '@core/locales/en/messages.ts';
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
+import { messages as userSettingsMessages } from '@/modules/features/user_settings/locales/en/messages.ts';
 import { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 
 i18n.load('en', {
-  ...coreMessages,
   ...loginMessages,
+  ...userSettingsMessages,
 });
 i18n.activate('en');
 
