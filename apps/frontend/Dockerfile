@@ -1,13 +1,14 @@
 FROM node:22-alpine AS build
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN apk add --no-cache protobuf
 
 WORKDIR /app
 
 ENV PATH="/app/node_modules/.bin:$PATH"
 
 COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml ./
-RUN echo "node-linker=hoisted" > .npmrc && pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 COPY libs/protocol/proto/ ../../libs/protocol/proto/
 COPY apps/frontend/ .
