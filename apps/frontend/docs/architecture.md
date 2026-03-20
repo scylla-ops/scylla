@@ -1,84 +1,393 @@
 # Architecture
 
-This document describes the structure and architectural choices of our React frontend, based on **Clean Architecture** and using **TanStack Query**.
+Ce document décrit la structure et les choix architecturaux de notre frontend React, basé sur la **Clean Architecture** et utilisant **TanStack Query** pour la gestion des données asynchrones.
 
-## 1. Architectural Choices
+---
+## 1. Vue d'ensemble de l'architecture
 
-### 1.1 Clean Architecture
-For the frontend of Scylla, we use the **Clean Architecture** concept.  
-It allows each module to be split into several layers:
+### 1.1 Principes fondamentaux
 
-- **Presentation**: Contains all code related to the UI (components, pages, hooks).
-- **Domain**: Contains the business logic and use cases.
-- **Repository**: Acts as a bridge between the data layer and the domain layer, mapping raw data from the data layer into business types.
-- **Data**: Contains stores and gateways to fetch data from local, remote, or other sources.
+L'application suit les principes de la **Clean Architecture** adaptée pour une application React moderne :
 
-## 2. Folder structure
-This is the modular folder structure of the application, following a **Clean Architecture** approach.
-Each module is in the `src/modules/` folder.
+- **Séparation des responsabilités** : Chaque couche a une responsabilité claire et limitée
+- **Indépendance des frameworks** : La logique métier ne dépend pas de React ou d'autres librairies UI
+- **Testabilité** : Les couches sont découplées, facilitant les tests unitaires
+- **Inversion de dépendance** : Les couches externes dépendent des couches internes via des interfaces
 
-### `presentation/`
-- Contains everything related to **UI** and **local state management**.
-- `ui/` → React components.
-- `hooks/` → Hooks specific to the module’s presentation layer.
-- `stores/` → Zustand store managing UI state (e.g., forms, modals).
+### 1.2 Gestion des erreurs et résultats
 
-### `domain/`
-- Pure **business logic**, independent of UI and data layers.
-- `useCases/` → Classes orchestrating business operations.
-- `repository/` → Abstract interfaces for data access (API, local storage, etc.).
+L'application utilise un système de gestion des résultats personnalisé via `ScyllaResult<T>` et `ScyllaError` :
 
-### `repository/`
-- Concrete implementation of the repositories defined in `domain/repository`.
-- `stores/` → Interfaces for stores used in this layer.
+- **ScyllaResult** : Encapsule le résultat d'une opération (succès ou erreur)
+- **ScyllaError** : Classe d'erreur personnalisée avec support du code d'erreur et du logging
+- Les méthodes `tryAsync` et `try` permettent d'encapsuler automatiquement les opérations dans un Result
+- Le pattern `fold` permet de gérer proprement les deux cas (succès/erreur)
 
-### `data/remote/`
-- Handles **API calls** and remote data sources.
-- Can be extended with `data/local/` if local data storage is needed (e.g., AsyncStorage, IndexedDB).
+```typescript
+const result = await ScyllaResult.tryAsync(
+  async () => await api.call(),
+  'Error message'
+);
+
+result.fold({
+  onSuccess: (data) => handleSuccess(data),
+  onError: (error) => handleError(error)
+});
+```
+
+---
+
+## 2. Structure modulaire
+
+L'application est organisée en **modules indépendants** dans `src/modules/`, chacun suivant une architecture en couches.
+
+### 2.1 Types de modules
+
+#### **Modules Core** (`core/`)
+Infrastructure partagée et configuration globale :
+- `di/` : Injection de dépendances (CoreModule, Dependencies)
+- `infrastructure/` : Services d'infrastructure (GrpcTransport)
+- `presentation/` : Composants React de base (App, CoreRouter, RequireAuth)
+
+#### **Modules Features** (`features/`)
+Fonctionnalités métier isolées :
+- `login/` : Authentification
+- `organization/` : Gestion des organisations
+- `project/` : Gestion des projets
+- `pipeline-dashboard/` : Tableau de bord des pipelines
+- `pipeline-creation/` : Création/édition de pipelines
+- `marketplace/` : Marketplace de composants
+- `user_settings/` : Paramètres utilisateur
+
+#### **Module Layout** (`layout/`)
+Structure visuelle de l'application :
+- Sidebar, TopBar, Navigation
+- Context Selector (sélection Organisation/Project)
+
+#### **Module Shared** (`shared/`)
+Composants et utilitaires réutilisables :
+- `presentation/ui/shadcn/` : Composants UI (shadcn)
+- `presentation/stores/` : Stores Zustand partagés (useContext)
+- `utils/` : Utilitaires (ScyllaResult)
+
+---
+
+## 3. Architecture des couches (par module feature)
+
+Chaque module feature suit la même structure en couches :
+
+### 3.1 Couche **Presentation**
+
+**Responsabilité** : Interface utilisateur et état UI local
+
+**Contenu** :
+- `ui/` : Composants React (pages, formulaires, dialogs)
+- `hooks/` : Hooks React pour la gestion des données (avec TanStack Query)
+- `stores/` : Stores Zustand pour l'état UI local (formulaires, modales, sélections)
+- `locales/` : Traductions i18n (optionnel)
+
+**Exemples** :
+- `useLogin.ts` : Hook pour l'authentification avec mutation TanStack Query
+- `LoginForm.tsx` : Formulaire de connexion
+- `usePipelineDashboardStore.ts` : Store Zustand pour la sélection de pipelines
+
+**Règles** :
+- Les composants n'appellent **jamais** directement les repositories ou data sources
+- Les hooks encapsulent les appels aux use cases via TanStack Query
+- Les stores Zustand gèrent uniquement l'état UI éphémère
+
+### 3.2 Couche **Domain**
+
+**Responsabilité** : Logique métier pure, indépendante de toute technologie
+
+**Contenu** :
+- `usecases/` : Classes de cas d'usage (orchestration de la logique métier)
+- `repository/` : Interfaces des repositories (contrats abstraits)
+- `models/` : Modèles métier (optionnel)
+
+**Exemples** :
+- `LoginUseCase.ts` : Cas d'usage pour la connexion
+- `GetPipelines.ts` : Cas d'usage pour récupérer les pipelines
+- `LoginRepository.ts` : Interface du repository de login
+
+**Règles** :
+- **Aucune dépendance** vers les couches externes (UI, API, gRPC)
+- Les use cases dépendent uniquement d'**interfaces** de repositories
+- Retourne toujours des `Promise<ScyllaResult<T>>`
+
+### 3.3 Couche **Infrastructure**
+
+**Responsabilité** : Implémentation concrète des abstractions du domain
+
+**Contenu** :
+- `repository/` : Implémentation des repositories
+  - `data-sources/` : Interfaces des sources de données (RemoteDataSource, LocalDataSource)
+  - Repository impl qui coordonne les data sources
+- `data/` : Implémentation des data sources
+  - `remote/` : Appels API/gRPC (RemoteDataSourceImpl)
+  - `local/` : Stockage local si nécessaire (optionnel)
+
+**Exemples** :
+- `LoginRepositoryImpl.ts` : Implémentation du LoginRepository
+- `LoginRemoteDataSource.ts` : Interface de la source de données remote
+- `LoginRemoteDataSourceImpl.ts` : Implémentation avec appels gRPC
+
+**Règles** :
+- Les repositories implémentent les interfaces du domain
+- Les data sources effectuent les appels techniques (gRPC, REST, localStorage)
+- Utilisation de `ScyllaResult.tryAsync` pour encapsuler les appels API
+
+### 3.4 Couche **DI** (Dependency Injection)
+
+**Responsabilité** : Wiring des dépendances et instanciation des objets
+
+**Contenu** :
+- `{Feature}Module.ts` : Factory pour créer et configurer les dépendances
+
+**Exemple** :
+```typescript
+// LoginModule.ts
+const loginRemoteDataSource = new LoginRemoteDataSourceImpl(
+  CoreModule.data.grpcTransport
+);
+const loginRepository = new LoginRepositoryImpl(loginRemoteDataSource);
+const loginUseCase = new LoginUseCase(loginRepository);
+
+export const LoginModule = {
+  domain: { loginUseCase }
+};
+```
+
+**Règles** :
+- Chaque module expose son API via la propriété `domain`
+- Les dépendances sont injectées manuellement (pas de container IoC)
+- Le `CoreModule` est importé pour obtenir les services d'infrastructure
+
+---
+
+## 4. Flux de données
+
+### 4.1 Flux classique (lecture de données)
+
+```
+┌─────────────────┐
+│  UI Component   │
+│  (ProjectList)  │
+└────────┬────────┘
+         │
+         │ appel hook
+         ▼
+┌─────────────────┐
+│   React Hook    │
+│ (useProjects)   │  ← TanStack Query (cache, loading, refetch)
+└────────┬────────┘
+         │
+         │ appel use case
+         ▼
+┌─────────────────┐
+│   Use Case      │
+│ (GetProjects)   │  ← Logique métier pure
+└────────┬────────┘
+         │
+         │ appel repository
+         ▼
+┌─────────────────┐
+│   Repository    │
+│   Interface     │  ← Abstraction
+└────────┬────────┘
+         │
+         │ implémentation
+         ▼
+┌─────────────────┐
+│   Repository    │
+│     Impl        │  ← Orchestration des data sources
+└────────┬────────┘
+         │
+         │ appel data source
+         ▼
+┌─────────────────┐
+│  RemoteData     │
+│   SourceImpl    │  ← Appels gRPC/API
+└────────┬────────┘
+         │
+         │ retour ScyllaResult<T>
+         ▼
+```
+
+### 4.2 Exemple concret (Login)
+
+1. **User clique sur "Login"** → `LoginForm.tsx`
+2. **Formulaire appelle** → `useLogin()` hook
+3. **Hook déclenche mutation** → `deps.login.loginUseCase.execute()`
+4. **Use case appelle** → `loginRepository.login()`
+5. **Repository appelle** → `loginRemoteDataSource.login()`
+6. **Data source effectue** → Appel gRPC via `AuthServiceClient`
+7. **Retour** → `ScyllaResult<void>`
+8. **Hook unwrap** → `result.unwrap()` (throw si erreur)
+9. **TanStack Query gère** → Success/error callbacks
+10. **UI met à jour** → Navigation vers /user-settings
+
+### 4.3 Gestion de l'état global (Context)
+
+L'application utilise un store Zustand partagé pour le contexte global :
+
+```typescript
+// shared/presentation/stores/useContext.ts
+useContextStore = {
+  organization: { id, name },
+  project: { id, name },
+  setOrganization(id, name),
+  setProject(id, name)
+}
+```
+
+**Utilisé par** :
+- **Layout** : ContextSelector pour afficher et changer le contexte
+- **Features** : Organization et Project lists pour mettre à jour le contexte
+- **Hooks** : Récupération du contexte pour filtrer les données
+
+---
+
+## 5. Injection de dépendances
+
+### 5.1 Structure
+
+```
+CoreModule (infrastructure partagée)
+    └── grpcTransport: GrpcTransport
+
+LoginModule, OrganizationModule, ProjectModule, etc.
+    ├── remoteDataSource (utilise CoreModule.grpcTransport)
+    ├── repository (utilise remoteDataSource)
+    └── useCases (utilisent repository)
+
+Dependencies (agrégation)
+    └── Expose tous les modules via leur API domain
+```
+
+### 5.2 Utilisation dans les composants
+
+```typescript
+// Hook utilisant les dépendances
+const deps = useDependencies(); // Via Context
+const result = await deps.login.loginUseCase.execute(login, password);
+```
+
+### 5.3 Configuration
+
+- `DependenciesProvider` wrap l'application dans `App.tsx`
+- `DependenciesContext` expose l'objet `dependencies`
+- Chaque module est instancié une seule fois au démarrage
+
+---
+
+## 6. Routing et Layout
+
+### 6.1 CoreRouter
+
+Configuration centralisée dans `CoreRouter.tsx` :
+- Routes publiques (`/login`)
+- Routes protégées (wrappées par `RequireAuth`)
+- Routes avec layout (wrappées par `Layout`)
+- Configuration via `handle` (topbar, tabs)
+
+### 6.2 Layout
+
+Composant `Layout.tsx` :
+- Sidebar (avec ContextSelector)
+- TopBar dynamique (via route handle)
+- Outlet pour le contenu de la page
+- Gestion des tabs (optionnel par route)
+
+### 6.3 Context Selector
+
+Système générique pour sélectionner Organisation/Project :
+- **CurrentContextDisplay** : Affichage du contexte actuel
+- **ContextItem** : Item de liste dans le dropdown
+- **ContextSelector** : Composant générique qui combine tout
+- **OrganizationList / ProjectList** : Listes spécifiques aux features
+
+---
+
+## 7. Bonnes pratiques
+
+### 7.1 Règles générales
+
+✅ **À FAIRE** :
+- Utiliser `ScyllaResult` pour toutes les opérations asynchrones
+- Les use cases retournent `Promise<ScyllaResult<T>>`
+- Les hooks unwrap les résultats avec `.unwrap()`
+- TanStack Query gère le cache et les erreurs
+- Les stores Zustand pour l'état UI local uniquement
+- Les interfaces dans le domain, implémentations dans infrastructure
+
+❌ **À ÉVITER** :
+- Appeler directement les repositories depuis les composants
+- Mettre de la logique métier dans les hooks ou composants
+- Utiliser les stores Zustand pour de la donnée backend
+- Coupler le domain à React, gRPC, ou toute techno externe
+
+### 7.2 Conventions de nommage
+
+- **Use Cases** : Verbe à l'infinitif (`GetProjects`, `CreatePipeline`)
+- **Repositories** : `{Feature}Repository` (interface) et `{Feature}RepositoryImpl`
+- **Data Sources** : `{Feature}RemoteDataSource` / `{Feature}RemoteDataSourceImpl`
+- **Hooks** : `use{Action}` (`useLogin`, `useProjects`, `useCreateProject`)
+- **Stores** : `use{Feature}Store` (`usePipelineDashboardStore`, `useScriptStore`)
+- **Modules** : `{Feature}Module` (`LoginModule`, `ProjectModule`)
+
+### 7.3 Organisation des fichiers
+
+```
+feature/
+├── di/
+│   └── FeatureModule.ts
+├── domain/
+│   ├── usecases/
+│   │   └── GetData.ts
+│   ├── repository/
+│   │   └── FeatureRepository.ts
+│   └── models/ (optionnel)
+├── infrastructure/
+│   ├── repository/
+│   │   ├── FeatureRepositoryImpl.ts
+│   │   └── data-sources/
+│   │       └── FeatureRemoteDataSource.ts
+│   └── data/
+│       └── remote/
+│           └── FeatureRemoteDataSourceImpl.ts
+└── presentation/
+    ├── hooks/
+    │   └── useFeature.ts
+    ├── stores/
+    │   └── useFeatureStore.ts
+    └── ui/
+        └── FeaturePage.tsx
+```
+
+---
+
+## 8. Technologies utilisées
+
+- **React 18** : UI library
+- **TypeScript** : Type safety
+- **TanStack Query** : Gestion des données asynchrones, cache
+- **Zustand** : State management local
+- **React Router** : Routing
+- **Lingui** : Internationalisation (i18n)
+- **gRPC-Web** : Communication backend
+- **shadcn/ui** : Composants UI
+- **Vite** : Build tool
+
+---
+
+## 9. Points d'attention
 
 
-## 3. Recommended call flow
-This section describes the **recommended data and action flow** in the app, following a modular and clean architecture approach.
+### 9.3 Gestion du contexte
 
-### 3.1 Step-by-Step Flow
+Le contexte Organisation/Project est géré de manière centralisée dans `shared/` :
+- Store global dans `useContext.ts`
+- Les features l'utilisent mais ne le possèdent pas
+---
 
-1. **UI Component → Hook (TanStack Query)**
-    - React components **do not call the domain or repository directly**.
-    - They use a **hook** (integrated with TanStack Query) to fetch or mutate data.
-    - The hook handles **caching, loading state, and re-fetching** automatically.
-
-2. **Hook → Domain Use Case**
-    - The hook calls a **use case** in the domain layer.
-    - The use case contains the **business logic** for the operation (e.g., `CreateUser`, `FetchEvents`).
-    - This ensures **all rules and validations** are applied before reaching the data layer.
-
-3. **Use Case → Repository Interface**
-    - The use case interacts with a **repository interface**, which abstracts the data access method.
-    - This keeps the **domain layer independent** from the actual data source (API, database, local storage).
-
-4. **Repository → Data Layer (Remote / Local)**
-    - The repository implementation calls the **data layer**, which performs the actual **API calls, database queries, or local storage operations**.
-    - The data is returned back up through the repository, use case, hook, and finally to the UI component.
-
-### 3.2 Visual Flow
-
-React Component
-│
-▼
-Hook (TanStack Query)
-│
-▼
-Domain Use Case
-│
-▼
-Repository Interface
-│
-▼
-Data Layer
-
-### 3.3 Key Principles
-
-- **UI components never communicate directly with the data layer.**
-- **All business logic resides in the domain layer.**
-- **Repositories act as a bridge** between the domain and data layers.
-- **Hooks encapsulate data fetching and state management**, keeping UI components clean and simple.
