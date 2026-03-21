@@ -11,6 +11,7 @@ pub enum JobStatus {
     Completed,
     Failed,
     Cancelled,
+    Orphaned,
 }
 
 impl JobStatus {
@@ -24,6 +25,7 @@ impl JobStatus {
             "completed" => Ok(Self::Completed),
             "failed" => Ok(Self::Failed),
             "cancelled" => Ok(Self::Cancelled),
+            "orphaned" => Ok(Self::Orphaned),
             _ => Err(DomainError::validation(format!(
                 "Invalid job status: {}",
                 value
@@ -38,20 +40,27 @@ impl JobStatus {
             Self::Completed => "completed",
             Self::Failed => "failed",
             Self::Cancelled => "cancelled",
+            Self::Orphaned => "orphaned",
         }
     }
 
     pub fn is_terminal(&self) -> bool {
-        matches!(self, Self::Completed | Self::Failed | Self::Cancelled)
+        matches!(
+            self,
+            Self::Completed | Self::Failed | Self::Cancelled | Self::Orphaned
+        )
     }
 
     pub fn transition_to(&self, target: &JobStatus) -> DomainResult<()> {
         let valid = match self {
             Self::Pending => matches!(target, Self::Running | Self::Cancelled),
             Self::Running => {
-                matches!(target, Self::Completed | Self::Failed | Self::Cancelled)
+                matches!(
+                    target,
+                    Self::Completed | Self::Failed | Self::Cancelled | Self::Orphaned
+                )
             }
-            Self::Completed | Self::Failed | Self::Cancelled => false,
+            Self::Completed | Self::Failed | Self::Cancelled | Self::Orphaned => false,
         };
 
         if !valid {
