@@ -3,7 +3,6 @@ resolver = "3"
 members = [
     "apps/core",
     # "apps/server",
-    # "apps/tui",
     # "apps/agent",
     "libs/protocol",
     "libs/surreal-casbin-adapter",

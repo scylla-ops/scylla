@@ -20,9 +20,6 @@ pub mod services {
     pub mod job {
         tonic::include_proto!("job");
     }
-    // pub mod orchestrator {
-    //     tonic::include_proto!("orchestrator");
-    // }
     pub mod permission {
         tonic::include_proto!("permission");
     }

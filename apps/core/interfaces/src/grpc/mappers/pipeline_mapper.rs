@@ -1,5 +1,5 @@
 use domain::entities::Pipeline;
-use protocol::services::pipeline::{PipelineNode, PipelineResponse};
+use protocol::services::pipeline::{PipelineNode, PipelineResponse, PipelineSummary};
 
 pub fn pipeline_to_proto(pipeline: &Pipeline) -> PipelineResponse {
     PipelineResponse {
@@ -11,6 +11,17 @@ pub fn pipeline_to_proto(pipeline: &Pipeline) -> PipelineResponse {
             .iter()
             .map(pipeline_node_to_proto)
             .collect(),
+        created_at: pipeline.created_at().to_rfc3339(),
+        updated_at: pipeline.updated_at().to_rfc3339(),
+    }
+}
+
+pub fn pipeline_to_proto_summary(pipeline: &Pipeline) -> PipelineSummary {
+    PipelineSummary {
+        pipeline_id: pipeline.id().to_string(),
+        project_id: pipeline.project_id().to_string(),
+        name: pipeline.name().to_string(),
+        node_count: pipeline.nodes().len() as u32,
         created_at: pipeline.created_at().to_rfc3339(),
         updated_at: pipeline.updated_at().to_rfc3339(),
     }
