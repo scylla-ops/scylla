@@ -9,3 +9,5 @@ chrono.workspace = true
 uuid.workspace = true
 derive_more.workspace = true
 async-trait.workspace = true
+tokio.workspace = true
+tracing.workspace = true

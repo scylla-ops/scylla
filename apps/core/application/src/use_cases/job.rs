@@ -11,8 +11,16 @@ pub struct JobUseCases<J: JobRepository> {
 }
 
 impl<J: JobRepository> JobUseCases<J> {
+    pub async fn create(&self, job: &Job) -> DomainResult<Job> {
+        self.job_repo.create(job).await
+    }
+
     pub async fn get(&self, id: &JobId) -> DomainResult<Job> {
         self.job_repo.find_by_id(id).await
+    }
+
+    pub async fn update(&self, job: &Job) -> DomainResult<Job> {
+        self.job_repo.update(job).await
     }
 
     pub async fn delete(&self, id: &JobId) -> DomainResult<()> {
