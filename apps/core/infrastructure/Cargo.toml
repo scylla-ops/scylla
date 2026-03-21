@@ -16,6 +16,8 @@ async-trait.workspace = true
 surrealdb-types.workspace = true
 casbin.workspace = true
 log.workspace = true
+protocol.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 surrealdb = { workspace = true, features = ["kv-mem", "kv-rocksdb"] }

@@ -46,6 +46,15 @@ message PipelineResponse {
   string updated_at = 6;
 }
 
+message PipelineSummary {
+  string pipeline_id = 1;
+  string project_id = 2;
+  string name = 3;
+  uint32 node_count = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
 message DeletePipelineRequest {
   string pipeline_id = 1;
 }
@@ -57,7 +66,7 @@ message ListPipelinesRequest {
 }
 
 message ListPipelinesResponse {
-  repeated PipelineResponse pipelines = 1;
+  repeated PipelineSummary pipelines = 1;
   common.PaginationMetadata pagination = 2;
 }
 
