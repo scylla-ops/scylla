@@ -27,9 +27,11 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
       className={cn(
         'w-full  group flex items-center gap-4 px-4 py-3 mb-2 rounded-xl border transition-all duration-200',
         onClick && 'cursor-pointer',
-        !selected
-          ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
-          : 'bg-primary-hover border-primary-border ring-1 ring-primary-border',
+        !selected &&
+          !className?.includes('hover:') && [
+            'bg-white border-slate-200',
+            'hover:border-slate-300 hover:shadow-sm', // Ces hovers ne s'appliquent que si...
+          ],
         className,
         height ? { height } : { height: '60px' },
       )}
@@ -49,6 +51,7 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
             {showSeparator && (
               <SeparatorVertical className='m-3 h-9/12 w-px bg-slate-200 shrink-0' />
             )}
+            {isLast && <div className='ml-3' />}
           </React.Fragment>
         );
       })}

@@ -5,7 +5,7 @@ import { Card } from '@/modules/shared/presentation/ui/shadcn';
 import { useScriptStore } from '@/modules/features/pipeline-creation/presentation/stores/useScript.ts';
 import { json } from '@codemirror/legacy-modes/mode/javascript';
 import { useEffect } from 'react';
-import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { useParams } from 'react-router-dom';
 
 const codeMirrorTheme = EditorView.theme({
   '&': {
@@ -42,7 +42,8 @@ const codeMirrorTheme = EditorView.theme({
 
 export const PipelineCreationPage = () => {
   const { script, setScript } = useScriptStore(state => state);
-  const projectId = useContextStore(state => state.project.id);
+
+  const { projectId } = useParams();
 
   //TODO: change that
   useEffect(() => {

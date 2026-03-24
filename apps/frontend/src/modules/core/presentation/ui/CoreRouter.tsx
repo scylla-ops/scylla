@@ -25,7 +25,7 @@ export const CoreRouter = createBrowserRouter([
         element: <Layout />,
         children: [
           {
-            path: '/pipeline-creation/:id?',
+            path: '/projects/:projectId/create',
             element: <PipelineCreationPage />,
             handle: {
               topbar: <PipelineCreationTopbar />,
