@@ -29,7 +29,7 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
         onClick && 'cursor-pointer',
         !selected
           ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
-          : 'bg-indigo-50/50 border-indigo-300 ring-1 ring-indigo-300',
+          : 'bg-primary-hover border-primary-border ring-1 ring-primary-border',
         className,
         height ? { height } : { height: '60px' },
       )}

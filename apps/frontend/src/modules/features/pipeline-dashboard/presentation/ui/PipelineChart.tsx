@@ -34,7 +34,7 @@ export const PipelineChart = () => {
             <TooltipContent side='top' className='text-xs p-3 shadow-lg border-slate-200'>
               <div className='flex flex-col gap-1.5'>
                 <div className='flex items-center justify-between gap-4'>
-                  <span className='font-bold text-slate-400'>Run #{412 - index}</span>
+                  <span className='font-bold text-slate-400'>Run #{412 + index}</span>
                   <span className='text-[10px] text-slate-400 font-mono'>main • a7f2e1</span>
                 </div>
 

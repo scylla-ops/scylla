@@ -45,7 +45,7 @@ export const PipelineDashboardTopBar = () => {
           </Button>
         </>
       )}
-      <Button onClick={() => navigate('pipeline-creation')}>New</Button>{' '}
+      <Button onClick={() => navigate('pipeline-creation')}>New pipeline</Button>{' '}
       <ConfirmOperationAlertDialog
         onContinue={handleDelete}
         open={deleteDialogVisibility}

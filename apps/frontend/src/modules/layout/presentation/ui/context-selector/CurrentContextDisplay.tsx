@@ -1,4 +1,5 @@
 import { ChevronsUpDown, type LucideIcon } from 'lucide-react';
+import { useSidebar } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 
 type CurrentContextDisplayProps = {
   name: string;
@@ -13,24 +14,46 @@ export const CurrentContextDisplay = ({
   icon: Icon,
   variant = 'primary',
 }: CurrentContextDisplayProps) => {
-  const bgClass =
-    variant === 'primary'
-      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-      : 'bg-primary text-sidebar-primary-foreground';
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  if (isCollapsed) {
+    return (
+      <div
+        className={`
+          flex items-center justify-center rounded-lg size-9
+          cursor-pointer
+          shadow-sm
+          ${variant === 'primary' ? 'bg-primary' : 'bg-gradient-to-br from-slate-500 to-slate-600'}
+        `}
+      >
+        <Icon className='size-4 text-white' strokeWidth={2.5} />
+      </div>
+    );
+  }
 
   return (
     <>
       <div
-        className={`${bgClass} flex aspect-square size-8 items-center justify-center rounded-lg`}
+        className={`
+          flex items-center justify-center rounded-lg size-9 shrink-0
+          shadow-sm
+          ${variant === 'primary' ? 'bg-primary' : 'bg-gradient-to-br from-slate-500 to-slate-600'}
+        `}
       >
-        <Icon className='size-4' />
+        <Icon className='size-4 text-white' strokeWidth={2.5} />
       </div>
-      <div className='grid flex-1 text-left text-sm leading-tight'>
-        <span className='truncate font-medium'>{name}</span>
-        <span className='truncate text-xs text-muted-foreground'>{description}</span>
+
+      <div className='flex-1 min-w-0 text-left'>
+        <p className='text-sm font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight'>
+          {name}
+        </p>
+        <p className='text-xs text-slate-500 dark:text-slate-400 truncate leading-tight'>
+          {description}
+        </p>
       </div>
-      <ChevronsUpDown className='ml-auto' />
+
+      <ChevronsUpDown className='size-4 text-slate-400 shrink-0 ml-auto' />
     </>
   );
 };
-

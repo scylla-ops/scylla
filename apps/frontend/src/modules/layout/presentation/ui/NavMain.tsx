@@ -25,7 +25,7 @@ export function NavMain({
       <SidebarGroupLabel>Main</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item, index) => (
-          <SidebarMenuItem key={index}>
+          <SidebarMenuItem className={'transition-all duration-200 hover:scale-105'} key={index}>
             <SidebarMenuButton tooltip={item.title} onClick={() => navigate(item.url)}>
               {item.icon && <item.icon />}
               <span>{item.title}</span>
