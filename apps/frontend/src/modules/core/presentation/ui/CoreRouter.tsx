@@ -10,6 +10,7 @@ import { PipelineCreationPage } from '@/modules/features/pipeline-creation/prese
 import { PipelineCreationTopbar } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
 import { DashboardPipelinePage } from '@/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
 import { PipelineDashboardTopBar } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardTopBar.tsx';
+import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
 
 export const CoreRouter = createBrowserRouter([
   {
@@ -36,7 +37,7 @@ export const CoreRouter = createBrowserRouter([
             element: <UserSettingsPage />,
           },
           {
-            path: '/pipeline-dashboard',
+            path: '/projects/:id',
             element: <DashboardPipelinePage />,
             handle: {
               topbar: <PipelineDashboardTopBar />,
@@ -48,6 +49,10 @@ export const CoreRouter = createBrowserRouter([
             handle: {
               topbar: <MarketplaceTopBar />,
             },
+          },
+          {
+            path: '/projects',
+            element: <ProjectPage />,
           },
         ],
       },

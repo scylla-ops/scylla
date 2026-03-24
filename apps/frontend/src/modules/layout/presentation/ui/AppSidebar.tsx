@@ -26,7 +26,7 @@ const data = {
   navMain: [
     {
       title: 'Pipelines',
-      url: '/pipeline-dashboard',
+      url: '/projects',
       icon: WorkflowIcon,
     },
     {

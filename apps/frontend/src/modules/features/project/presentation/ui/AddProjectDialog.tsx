@@ -77,10 +77,10 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
             <div className='rounded-md bg-destructive/10 p-3 text-sm text-destructive'>{error}</div>
           )}
           <div className='space-y-2'>
-            <Label htmlFor='organization-name'>Project name</Label>
+            <Label htmlFor='project-name'>Project name</Label>
             <Input
-              id='organization-name'
-              placeholder='e.g., My Organization'
+              id='project-name'
+              placeholder='e.g., My Project'
               value={projectName}
               onChange={e => setProjectName(e.target.value)}
               autoFocus
@@ -88,10 +88,10 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
             />
           </div>
           <div className='space-y-2'>
-            <Label htmlFor='organization-description'>Description</Label>
+            <Label htmlFor='project-description'>Description</Label>
             <Input
-              id='organization-description'
-              placeholder="e.g., Our company's main organization"
+              id='project-description'
+              placeholder="e.g., Our company's main project"
               value={description}
               onChange={e => setDescription(e.target.value)}
               disabled={isLoading}
@@ -112,7 +112,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
               Cancel
             </Button>
             <Button type='submit' disabled={!projectName.trim() || isLoading}>
-              {isLoading ? 'Creating...' : 'Create Organization'}
+              {isLoading ? 'Creating...' : 'Create Project'}
             </Button>
           </DialogFooter>
         </form>
