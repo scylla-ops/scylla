@@ -32,6 +32,7 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
             'bg-white border-slate-200',
             'hover:border-slate-300 hover:shadow-sm', // Ces hovers ne s'appliquent que si...
           ],
+        selected && 'bg-blue-200 border-blue-400',
         className,
         height ? { height } : { height: '60px' },
       )}
