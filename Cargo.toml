@@ -1,9 +1,9 @@
 [workspace]
 resolver = "3"
 members = [
-    "apps/core",
-    # "apps/server",
-    # "apps/agent",
+    "crates/scylla-core",
+    "crates/scylla-api",
+    "crates/scylla-broker",
     "libs/protocol",
     "libs/surreal-casbin-adapter",
 ]
@@ -31,6 +31,9 @@ toml = "1.0.3"
 surrealdb = { version = "3.0.2" }
 surrealdb-types = "3.0.2"
 
+# workspace crates
+scylla-core = { path = "crates/scylla-core" }
+
 # domain / utilities
 thiserror = "2.0.18"
 anyhow = "1.0.102"
@@ -38,16 +41,22 @@ chrono = "0.4.44"
 ulid = "1.2.1"
 uuid = { version = "1.21.0", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
-argon2 = "0.6.0-rc.7"
+argon2 = "0.6.0-rc.8"
 casbin = "2.20.0"
 surreal-casbin-adapter = { path = "libs/surreal-casbin-adapter" }
 
 # web / tracing
+axum = "0.8.4"
 tower = { version = "0.5.3" }
 tower-http = { version = "0.6.8", features = ["cors", "trace"] }
 http = "1.4.0"
+serde_json = "1"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+
+# openapi
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
 
 # cli
 clap = { version = "4.5.60", features = ["derive"] }

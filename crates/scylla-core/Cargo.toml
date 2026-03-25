@@ -1,0 +1,60 @@
+[package]
+name = "scylla-core"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "hash", "permission"]
+
+# database backends
+surrealdb = ["dep:surrealdb-types", "dep:surrealdb"]
+
+# domain features
+users = []
+auth = ["users"]
+organizations = ["users"]
+projects = ["users"]
+pipelines = ["projects"]
+jobs = ["pipelines"]
+
+# infrastructure services
+hash = ["dep:argon2", "users"]
+permission = ["dep:casbin", "dep:surreal-casbin-adapter"]
+
+[dependencies]
+# domain
+async-trait.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+derive_more.workspace = true
+chrono.workspace = true
+ulid.workspace = true
+
+# application
+uuid.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+# infrastructure (surrealdb feature-gated)
+surrealdb = { workspace = true, optional = true }
+surrealdb-types = { workspace = true, optional = true }
+serde.workspace = true
+
+# infrastructure optional services
+argon2 = { workspace = true, optional = true }
+casbin = { workspace = true, optional = true }
+surreal-casbin-adapter = { workspace = true, optional = true }
+
+[lints.rust]
+unsafe_code = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+struct_field_names = "allow"
+
+[dev-dependencies]
+surrealdb = { workspace = true, features = ["kv-mem", "kv-rocksdb"] }

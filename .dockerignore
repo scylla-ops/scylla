@@ -1,7 +1,6 @@
 .gitignore
 *.yaml
 .github
-./scylla-bruno
 ./target
 ./tests
 ./.venv
