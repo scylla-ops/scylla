@@ -75,37 +75,37 @@ impl Project {
         Ok(())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &ProjectId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn name(&self) -> &ProjectName {
         &self.name
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn description(&self) -> Option<&ProjectDescription> {
         self.description.as_ref()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn organization_id(&self) -> &OrganizationId {
         &self.organization_id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_active(&self) -> bool {
         self.is_active
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }

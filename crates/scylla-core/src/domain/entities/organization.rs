@@ -74,32 +74,32 @@ impl Organization {
         Ok(())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &OrganizationId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn name(&self) -> &OrganizationName {
         &self.name
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn description(&self) -> Option<&OrganizationDescription> {
         self.description.as_ref()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_active(&self) -> bool {
         self.is_active
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }

@@ -37,25 +37,25 @@ impl PaginationParams {
     }
 
     /// Get the current page number (1-indexed)
-    #[must_use] 
+    #[must_use]
     pub fn page(&self) -> u32 {
         self.page
     }
 
     /// Get the page size
-    #[must_use] 
+    #[must_use]
     pub fn page_size(&self) -> u32 {
         self.page_size
     }
 
     /// Calculate the offset for database queries (0-indexed)
-    #[must_use] 
+    #[must_use]
     pub fn offset(&self) -> u64 {
         u64::from(self.page - 1) * u64::from(self.page_size)
     }
 
     /// Get limit for database queries
-    #[must_use] 
+    #[must_use]
     pub fn limit(&self) -> u64 {
         u64::from(self.page_size)
     }
@@ -82,7 +82,7 @@ pub struct PaginationMetadata {
 }
 
 impl PaginationMetadata {
-    #[must_use] 
+    #[must_use]
     pub fn new(params: &PaginationParams, total_count: u64) -> Self {
         let total_pages = if total_count == 0 {
             0
@@ -104,37 +104,37 @@ impl PaginationMetadata {
     }
 
     /// Get total count of items across all pages
-    #[must_use] 
+    #[must_use]
     pub fn total_count(&self) -> u64 {
         self.total_count
     }
 
     /// Get current page number (1-indexed)
-    #[must_use] 
+    #[must_use]
     pub fn page(&self) -> u32 {
         self.page
     }
 
     /// Get page size
-    #[must_use] 
+    #[must_use]
     pub fn page_size(&self) -> u32 {
         self.page_size
     }
 
     /// Get total number of pages
-    #[must_use] 
+    #[must_use]
     pub fn total_pages(&self) -> u32 {
         self.total_pages
     }
 
     /// Check if there is a next page
-    #[must_use] 
+    #[must_use]
     pub fn has_next(&self) -> bool {
         self.has_next
     }
 
     /// Check if there is a previous page
-    #[must_use] 
+    #[must_use]
     pub fn has_previous(&self) -> bool {
         self.has_previous
     }
@@ -148,26 +148,26 @@ pub struct PaginatedResult<T> {
 }
 
 impl<T> PaginatedResult<T> {
-    #[must_use] 
+    #[must_use]
     pub fn new(items: Vec<T>, params: &PaginationParams, total_count: u64) -> Self {
         let metadata = PaginationMetadata::new(params, total_count);
         Self { items, metadata }
     }
 
     /// Get the items in this page
-    #[must_use] 
+    #[must_use]
     pub fn items(&self) -> &Vec<T> {
         &self.items
     }
 
     /// Get pagination metadata
-    #[must_use] 
+    #[must_use]
     pub fn metadata(&self) -> &PaginationMetadata {
         &self.metadata
     }
 
     /// Consume self and return items and metadata separately
-    #[must_use] 
+    #[must_use]
     pub fn into_parts(self) -> (Vec<T>, PaginationMetadata) {
         (self.items, self.metadata)
     }

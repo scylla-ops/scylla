@@ -31,12 +31,12 @@ impl PipelineName {
         })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.inner
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn into_string(self) -> String {
         self.inner
     }

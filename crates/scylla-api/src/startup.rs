@@ -180,18 +180,17 @@ pub async fn shutdown_signal() {
 
 #[cfg(feature = "grpc")]
 pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> {
-    use scylla_api::{
-        AuthHandler, JobHandler, OrganizationHandler, PermissionHandler, PipelineHandler,
-        ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
-    };
     use protocol::services::{
-        auth::auth_service_server::AuthServiceServer,
-        job::job_service_server::JobServiceServer,
+        auth::auth_service_server::AuthServiceServer, job::job_service_server::JobServiceServer,
         organization::organization_service_server::OrganizationServiceServer,
         permission::permission_service_server::PermissionServiceServer,
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         user::user_service_server::UserServiceServer,
+    };
+    use scylla_api::{
+        AuthHandler, JobHandler, OrganizationHandler, PermissionHandler, PipelineHandler,
+        ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
@@ -200,17 +199,25 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
     use tower_http::trace::TraceLayer;
 
     let auth_handler = AuthHandler::new(services.auth_uc.clone());
-    let user_handler = UserHandler::new(services.user_uc.clone(), services.permission_checker.clone());
+    let user_handler = UserHandler::new(
+        services.user_uc.clone(),
+        services.permission_checker.clone(),
+    );
     let org_handler =
         OrganizationHandler::new(services.org_uc.clone(), services.permission_checker.clone());
-    let project_handler =
-        ProjectHandler::new(services.project_uc.clone(), services.permission_checker.clone());
-    let pipeline_handler =
-        PipelineHandler::new(services.pipeline_uc.clone(), services.permission_checker.clone());
-    let job_handler =
-        JobHandler::new(services.job_uc.clone(), services.permission_checker.clone());
-    let permission_handler =
-        PermissionHandler::new(services.permission_uc.clone(), services.permission_checker.clone());
+    let project_handler = ProjectHandler::new(
+        services.project_uc.clone(),
+        services.permission_checker.clone(),
+    );
+    let pipeline_handler = PipelineHandler::new(
+        services.pipeline_uc.clone(),
+        services.permission_checker.clone(),
+    );
+    let job_handler = JobHandler::new(services.job_uc.clone(), services.permission_checker.clone());
+    let permission_handler = PermissionHandler::new(
+        services.permission_uc.clone(),
+        services.permission_checker.clone(),
+    );
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(services.session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);
@@ -297,7 +304,10 @@ pub async fn start_rest(config: &CoreConfig, services: &Services) -> Result<()> 
 
     let listener = tokio::net::TcpListener::bind(config.rest.address).await?;
     tracing::info!("REST server listening on {}", config.rest.address);
-    tracing::info!("Swagger UI available at http://{}/swagger-ui/", config.rest.address);
+    tracing::info!(
+        "Swagger UI available at http://{}/swagger-ui/",
+        config.rest.address
+    );
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())

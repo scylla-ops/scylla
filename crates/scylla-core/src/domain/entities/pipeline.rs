@@ -33,22 +33,22 @@ impl PipelineNode {
         })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &NodeId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn deps(&self) -> &[NodeId] {
         &self.deps
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn command(&self) -> &str {
         &self.command
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn args(&self) -> &[String] {
         &self.args
     }
@@ -181,7 +181,7 @@ impl Pipeline {
     }
 
     /// compute forward adjacency map from nodes on demand
-    #[must_use] 
+    #[must_use]
     pub fn adjacency(&self) -> HashMap<NodeId, Vec<NodeId>> {
         let mut adj: HashMap<NodeId, Vec<NodeId>> = self
             .nodes
@@ -198,7 +198,7 @@ impl Pipeline {
 
     /// compute topological order via Kahn's algorithm on demand
     /// uses `BTreeSet` for deterministic ordering
-    #[must_use] 
+    #[must_use]
     pub fn topo_order(&self) -> Vec<NodeId> {
         let mut in_degree: HashMap<&NodeId, usize> = self
             .nodes
@@ -238,42 +238,42 @@ impl Pipeline {
         order
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &PipelineId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn project_id(&self) -> &ProjectId {
         &self.project_id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn name(&self) -> &PipelineName {
         &self.name
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn nodes(&self) -> &[PipelineNode] {
         &self.nodes
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn get_node(&self, node_id: &NodeId) -> Option<&PipelineNode> {
         self.nodes.iter().find(|n| n.id() == node_id)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn get_node_dependencies(&self, node_id: &NodeId) -> Option<Vec<NodeId>> {
         self.get_node(node_id).map(|n| n.deps().to_vec())
     }

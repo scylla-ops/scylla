@@ -4,17 +4,17 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
 use surrealdb::Surreal;
-use tracing::instrument;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
 use surrealdb_types::SurrealValue;
+use tracing::instrument;
 
 pub struct SurrealPipelineRepository {
     db: Surreal<Any>,
 }
 
 impl SurrealPipelineRepository {
-    #[must_use] 
+    #[must_use]
     pub fn new(db: Surreal<Any>) -> Self {
         Self { db }
     }

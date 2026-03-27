@@ -13,7 +13,7 @@ pub struct SurrealUserProjectRepository {
 }
 
 impl SurrealUserProjectRepository {
-    #[must_use] 
+    #[must_use]
     pub fn new(db: Surreal<Any>) -> Self {
         Self { db }
     }

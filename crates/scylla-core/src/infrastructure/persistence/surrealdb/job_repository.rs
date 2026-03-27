@@ -14,7 +14,7 @@ pub struct SurrealJobRepository {
 }
 
 impl SurrealJobRepository {
-    #[must_use] 
+    #[must_use]
     pub fn new(db: Surreal<Any>) -> Self {
         Self { db }
     }

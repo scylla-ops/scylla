@@ -10,7 +10,7 @@ pub enum Scope {
 }
 
 impl Scope {
-    #[must_use] 
+    #[must_use]
     pub fn as_str(&self) -> String {
         match self {
             Scope::System => "system".to_string(),

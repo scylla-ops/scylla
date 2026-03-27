@@ -29,22 +29,22 @@ impl OrganizationName {
         })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.inner
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn into_string(self) -> String {
         self.inner
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }

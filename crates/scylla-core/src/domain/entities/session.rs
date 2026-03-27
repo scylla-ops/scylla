@@ -16,7 +16,7 @@ pub struct Session {
 }
 
 impl Session {
-    #[must_use] 
+    #[must_use]
     pub fn create(user_id: UserId, token: String, duration: Duration) -> Self {
         let now = Utc::now();
         Self {
@@ -29,7 +29,7 @@ impl Session {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_expired(&self) -> bool {
         Utc::now() > self.expires_at
     }
@@ -43,32 +43,32 @@ impl Session {
         self.last_active_at = Utc::now();
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &SessionId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn token(&self) -> &str {
         &self.token
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn user_id(&self) -> &UserId {
         &self.user_id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn expires_at(&self) -> DateTime<Utc> {
         self.expires_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn last_active_at(&self) -> DateTime<Utc> {
         self.last_active_at
     }

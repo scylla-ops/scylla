@@ -17,7 +17,7 @@ pub enum Target<T: EntityId> {
 }
 
 impl Resource {
-    #[must_use] 
+    #[must_use]
     pub fn as_str(&self) -> String {
         match self {
             Resource::User(Target::All) => "user/*".to_string(),

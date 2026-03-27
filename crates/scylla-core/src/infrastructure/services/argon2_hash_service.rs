@@ -15,7 +15,7 @@ pub struct Argon2HashService {
 }
 
 impl Argon2HashService {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }

@@ -27,22 +27,22 @@ impl RoleName {
         Ok(Self(trimmed.to_string()))
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn into_string(self) -> String {
         self.0
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }

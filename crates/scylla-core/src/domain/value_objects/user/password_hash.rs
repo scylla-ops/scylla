@@ -32,7 +32,7 @@ impl PasswordHash {
         Ok(Self { inner: hash })
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.inner
     }

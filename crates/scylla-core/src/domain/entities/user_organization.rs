@@ -8,7 +8,7 @@ pub struct UserOrganization {
 }
 
 impl UserOrganization {
-    #[must_use] 
+    #[must_use]
     pub fn new(id: UserOrganizationId, user_id: UserId, organization_id: OrganizationId) -> Self {
         Self {
             id,
@@ -17,17 +17,17 @@ impl UserOrganization {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &UserOrganizationId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn user_id(&self) -> &UserId {
         &self.user_id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn organization_id(&self) -> &OrganizationId {
         &self.organization_id
     }

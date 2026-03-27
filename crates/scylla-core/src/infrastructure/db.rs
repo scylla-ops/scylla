@@ -1,4 +1,7 @@
-use crate::domain::entities::{UserId, SessionId, OrganizationId, UserOrganizationId, ProjectId, UserProjectId, PipelineId, JobId};
+use crate::domain::entities::{
+    JobId, OrganizationId, PipelineId, ProjectId, SessionId, UserId, UserOrganizationId,
+    UserProjectId,
+};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
@@ -79,7 +82,11 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
     let errors = response.take_errors();
 
     for (i, table) in tables.iter().enumerate() {
-        if let Some(err) = errors.get(&i) { tracing::error!(table, %err, "Failed to define table") } else { tracing::debug!(table, "Table defined successfully") }
+        if let Some(err) = errors.get(&i) {
+            tracing::error!(table, %err, "Failed to define table")
+        } else {
+            tracing::debug!(table, "Table defined successfully")
+        }
     }
 
     if !errors.is_empty() {

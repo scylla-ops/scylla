@@ -18,7 +18,7 @@ pub struct User {
 }
 
 impl User {
-    #[must_use] 
+    #[must_use]
     pub fn create(username: Username, password_hash: PasswordHash) -> Self {
         let now = Utc::now();
         Self {
@@ -60,32 +60,32 @@ impl User {
         Ok(())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &UserId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn username(&self) -> &Username {
         &self.username
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn password_hash(&self) -> &PasswordHash {
         &self.password_hash
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_active(&self) -> bool {
         self.is_active
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }

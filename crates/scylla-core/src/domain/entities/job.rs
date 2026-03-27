@@ -17,7 +17,7 @@ pub struct JobNode {
 }
 
 impl JobNode {
-    #[must_use] 
+    #[must_use]
     pub fn new(node_id: NodeId) -> Self {
         Self {
             node_id,
@@ -27,22 +27,22 @@ impl JobNode {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn node_id(&self) -> &NodeId {
         &self.node_id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn state(&self) -> NodeState {
         self.state
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn started_at(&self) -> Option<DateTime<Utc>> {
         self.started_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn finished_at(&self) -> Option<DateTime<Utc>> {
         self.finished_at
     }
@@ -60,7 +60,7 @@ pub struct Job {
 }
 
 impl Job {
-    #[must_use] 
+    #[must_use]
     pub fn create_from_pipeline(pipeline: &Pipeline) -> Self {
         let now = Utc::now();
 
@@ -158,12 +158,12 @@ impl Job {
         Ok(())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn can_cancel(&self) -> bool {
         matches!(self.status, JobStatus::Pending | JobStatus::Running)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_terminal(&self) -> bool {
         self.status.is_terminal()
     }
@@ -174,39 +174,39 @@ impl Job {
             .find(|e| e.node_id() == node_id)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn find_execution(&self, node_id: &NodeId) -> Option<&JobNode> {
         self.node_executions.iter().find(|e| e.node_id() == node_id)
     }
 
     // Getters
 
-    #[must_use] 
+    #[must_use]
     pub fn id(&self) -> &JobId {
         &self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn pipeline_id(&self) -> &PipelineId {
         &self.pipeline_id
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn status(&self) -> JobStatus {
         self.status
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn node_executions(&self) -> &[JobNode] {
         &self.node_executions
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }
