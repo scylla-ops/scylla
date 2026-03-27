@@ -1893,6 +1893,74 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "hermes-broker-core"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79279b0b300a0d5641647bb5fa531d80211010200a65d46c189582b18d26dcd4"
+dependencies = [
+ "bincode",
+ "hermes-broker-macros",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "hermes-broker-macros"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "439b6390dc70a3ee056cd81094ecbbc00f7664ce8291495e6e596e43f2826bad"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "hermes-broker-proto"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a49e0c84a650f907ea02782fd86afd5a6fb314eeb1cc22f3e7500474c11fd12b"
+dependencies = [
+ "prost",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
+name = "hermes-broker-server"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a167c4d019de4d37f7d90fdb41b07e45bbab75cd6c5063f63856b572e3809aea"
+dependencies = [
+ "dashmap",
+ "hermes-broker-core",
+ "hermes-broker-proto",
+ "hermes-broker-store",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tonic",
+ "tonic-reflection",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "hermes-broker-store"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4c9b0471c0013dfe9767fc88857bf67a6a5979339cc6171a13c27babb80e661"
+dependencies = [
+ "hermes-broker-proto",
+ "redb",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3574,6 +3642,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbc4a4ea2a66a41a1152c4b3d86e8954dc087bdf33af35446e6e176db4e73c8c"
 
 [[package]]
+name = "redb"
+version = "3.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef99362319c782aa4639ad3a306b64c3bb90e12874e99b8df124cb679d988611"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4182,6 +4259,17 @@ dependencies = [
 [[package]]
 name = "scylla-broker"
 version = "0.1.0"
+dependencies = [
+ "hermes-broker-proto",
+ "hermes-broker-server",
+ "hermes-broker-store",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tonic-reflection",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "scylla-core"
