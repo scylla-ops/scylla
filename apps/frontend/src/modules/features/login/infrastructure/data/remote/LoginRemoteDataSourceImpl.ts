@@ -14,6 +14,7 @@ export class LoginRemoteDataSourceImpl implements LoginRemoteDataSource {
     return ScyllaResult.tryAsync<void>(async () => {
       const { response } = await this._authClient.login({ username, password });
       localStorage.setItem('token', response.token);
+      localStorage.setItem('userId', response.userId);
     }, 'Failed to login.');
   }
 }

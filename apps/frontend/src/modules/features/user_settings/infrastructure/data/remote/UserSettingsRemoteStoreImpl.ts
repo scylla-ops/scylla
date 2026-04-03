@@ -1,14 +1,32 @@
 import type { UserSettingsRemoteStore } from '@/modules/features/user_settings/infrastructure/repository/store/UserSettingsRemoteStore.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { OrganizationUser } from '@/modules/features/user_settings/domain/models/OrganizationUser.ts';
+import type { User } from '@/modules/features/user_settings/domain/models/User.ts';
 import { OrganizationServiceClient } from '@/generated/organization.client.ts';
+import { UserServiceClient } from '@/generated/user.client.ts';
 import type { GrpcTransport } from '@core/infrastructure/grpc/GrpcTransport.ts';
 
 export class UserSettingsRemoteStoreImpl implements UserSettingsRemoteStore {
   private readonly _organizationClient: OrganizationServiceClient;
+  private readonly _userClient: UserServiceClient;
 
   constructor(transport: GrpcTransport) {
     this._organizationClient = new OrganizationServiceClient(transport.getTransport());
+    this._userClient = new UserServiceClient(transport.getTransport());
+  }
+
+  async getUser(userId: string): Promise<ScyllaResult<User>> {
+    return ScyllaResult.tryAsync(async () => {
+      const response = (await this._userClient.getUser({ userId })).response;
+
+      return {
+        user_id: response.userId,
+        username: response.username,
+        is_active: response.isActive,
+        created_at: response.createdAt,
+        updated_at: response.updatedAt,
+      };
+    }, 'Error fetching user');
   }
 
   async getOrganizationUsers(

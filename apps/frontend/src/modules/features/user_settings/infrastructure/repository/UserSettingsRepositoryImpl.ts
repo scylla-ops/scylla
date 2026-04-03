@@ -1,10 +1,15 @@
 import type { UserSettingsRepository } from '@/modules/features/user_settings/domain/repository/UserSettingsRepository.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { OrganizationUser } from '@/modules/features/user_settings/domain/models/OrganizationUser.ts';
+import type { User } from '@/modules/features/user_settings/domain/models/User.ts';
 import type { UserSettingsRemoteStore } from '@/modules/features/user_settings/infrastructure/repository/store/UserSettingsRemoteStore.ts';
 
 export class UserSettingsRepositoryImpl implements UserSettingsRepository {
   constructor(private readonly remoteStore: UserSettingsRemoteStore) {}
+
+  async getUser(userId: string): Promise<ScyllaResult<User>> {
+    return this.remoteStore.getUser(userId);
+  }
 
   async getOrganizationUsers(
     organizationId: string,

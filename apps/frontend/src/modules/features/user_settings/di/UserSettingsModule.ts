@@ -2,6 +2,7 @@ import type { UserSettingsRemoteStore } from '@/modules/features/user_settings/i
 import { UserSettingsRemoteStoreImpl } from '@/modules/features/user_settings/infrastructure/data/remote/UserSettingsRemoteStoreImpl.ts';
 import type { UserSettingsRepository } from '@/modules/features/user_settings/domain/repository/UserSettingsRepository.ts';
 import { UserSettingsRepositoryImpl } from '@/modules/features/user_settings/infrastructure/repository/UserSettingsRepositoryImpl.ts';
+import { GetUser } from '@/modules/features/user_settings/domain/usecases/GetUser.ts';
 import { GetOrganizationUsers } from '@/modules/features/user_settings/domain/usecases/GetOrganizationUsers.ts';
 import { AddUserToOrganization } from '@/modules/features/user_settings/domain/usecases/AddUserToOrganization.ts';
 import { RemoveUserFromOrganization } from '@/modules/features/user_settings/domain/usecases/RemoveUserFromOrganization.ts';
@@ -15,6 +16,7 @@ const userSettingsRepository: UserSettingsRepository = new UserSettingsRepositor
   userSettingsRemoteStore,
 );
 
+const getUser = new GetUser(userSettingsRepository);
 const getOrganizationUsers = new GetOrganizationUsers(userSettingsRepository);
 const addUserToOrganization = new AddUserToOrganization(userSettingsRepository);
 const removeUserFromOrganization = new RemoveUserFromOrganization(userSettingsRepository);
@@ -22,6 +24,7 @@ const updateUserRole = new UpdateUserRole(userSettingsRepository);
 
 export const UserSettingsModule = {
   domain: {
+    getUser,
     getOrganizationUsers,
     addUserToOrganization,
     removeUserFromOrganization,

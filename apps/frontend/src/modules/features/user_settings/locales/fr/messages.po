@@ -17,6 +17,10 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:128
+msgid "Active account"
+msgstr ""
+
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:33
 msgid "Add User"
 msgstr ""
@@ -51,12 +55,27 @@ msgstr ""
 msgid "Error loading members"
 msgstr ""
 
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:74
+msgid "Error loading user information"
+msgstr ""
+
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:116
 msgid "Joined"
 msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:95
 msgid "Loading members..."
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:54
+msgid "Loading user information..."
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:29
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:49
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:69
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:115
+msgid "Manage your account details."
 msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:65
@@ -118,6 +137,17 @@ msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:52
 msgid "Update User Role"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:26
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:46
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:66
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:112
+msgid "User information"
+msgstr ""
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:34
+msgid "User information not available"
 msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:110

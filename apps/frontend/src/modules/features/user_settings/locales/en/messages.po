@@ -17,6 +17,10 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:128
+msgid "Active account"
+msgstr "Active account"
+
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:33
 msgid "Add User"
 msgstr "Add User"
@@ -51,6 +55,10 @@ msgstr "Enter the user ID and select their role"
 msgid "Error loading members"
 msgstr "Error loading members"
 
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:74
+msgid "Error loading user information"
+msgstr "Error loading user information"
+
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:116
 msgid "Joined"
 msgstr "Joined"
@@ -58,6 +66,17 @@ msgstr "Joined"
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:95
 msgid "Loading members..."
 msgstr "Loading members..."
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:54
+msgid "Loading user information..."
+msgstr "Loading user information..."
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:29
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:49
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:69
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:115
+msgid "Manage your account details."
+msgstr "Manage your account details."
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:65
 msgid "Manage your organization and their members."
@@ -119,6 +138,17 @@ msgstr "Update the role for {0}"
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:52
 msgid "Update User Role"
 msgstr "Update User Role"
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:26
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:46
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:66
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:112
+msgid "User information"
+msgstr "User information"
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:34
+msgid "User information not available"
+msgstr "User information not available"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:110
 msgid "Username"
