@@ -1,32 +1,9 @@
 services:
-  db:
-    image: surrealdb/surrealdb:v3.0.2
-    container_name: surrealdb
-    user: "root"
-    command:
-      - start
-      - --log=debug
-      - --user=root
-      - --pass=secret
-      - rocksdb:/data/database
-    ports:
-      - "8000:8000"
-    volumes:
-      - db_data:/data:rw
-  db-health:
-    image: curlimages/curl
-    command: sh -c "until curl -s http://db:8000/health; do echo 'Waiting for SurrealDB...'; sleep 2; done; echo 'SurrealDB is ready!'"
-    depends_on:
-      db:
-        condition: service_started
   core:
     build:
       context: .
       dockerfile: apps/core/Dockerfile
     container_name: scylla-core
-    depends_on:
-      db-health:
-        condition: service_completed_successfully
     ports:
       - "50051:50051"
     environment:
@@ -34,6 +11,4 @@ services:
     command: ["--config", "/app/config/docker.toml"]
     volumes:
       - ./apps/core/config:/app/config
-
-volumes:
-  db_data:
+      - core_data:/data

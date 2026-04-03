@@ -12,7 +12,6 @@ grpc = [
     "dep:tonic-async-interceptor",
     "dep:protocol",
 ]
-rest = ["dep:axum", "dep:serde_json", "dep:utoipa", "dep:utoipa-swagger-ui"]
 
 [dependencies]
 # shared
@@ -43,8 +42,12 @@ tonic-reflection = { workspace = true, optional = true }
 tonic-async-interceptor = { workspace = true, optional = true }
 protocol = { workspace = true, optional = true }
 
-# rest-only (optional)
-axum = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
-utoipa = { workspace = true, optional = true }
-utoipa-swagger-ui = { workspace = true, optional = true }
+[dev-dependencies]
+tokio = { workspace = true }
+tonic = { workspace = true }
+protocol = { workspace = true }
+surrealdb = { workspace = true }
+tokio-stream = "0.1"
+tonic-async-interceptor = { workspace = true }
+surreal-casbin-adapter = { workspace = true }
+scylla-core = { workspace = true, features = ["surrealdb", "hash", "permission"] }

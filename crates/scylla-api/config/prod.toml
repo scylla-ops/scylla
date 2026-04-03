@@ -2,10 +2,7 @@
 address = "0.0.0.0:50051"
 
 [database]
-url = "wss://your-production-db.example.com"
-# use environment variables or smth else for credentials
-username = "production_user"
-password = "REPLACE_WITH_SECURE_PASSWORD"
+url = "rocksdb:///data/scylla.db"
 namespace = "production"
 database = "core"
 

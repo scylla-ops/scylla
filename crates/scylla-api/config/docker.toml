@@ -2,9 +2,7 @@
 address = "0.0.0.0:50051"
 
 [database]
-url = "ws://db:8000"
-username = "root"
-password = "secret"
+url = "rocksdb:///data/scylla.db"
 namespace = "scylla"
 database = "core"
 

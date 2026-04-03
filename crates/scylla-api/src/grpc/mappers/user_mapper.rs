@@ -10,3 +10,24 @@ pub fn user_to_proto(user: &User) -> UserResponse {
         updated_at: user.updated_at().to_rfc3339(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use scylla_core::domain::value_objects::user::{PasswordHash, Username};
+
+    #[test]
+    fn user_to_proto_maps_all_fields() {
+        let user = User::create(
+            Username::new("alice").unwrap(),
+            PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap(),
+        );
+
+        let proto = user_to_proto(&user);
+        assert_eq!(proto.username, "alice");
+        assert!(proto.is_active);
+        assert!(!proto.user_id.is_empty());
+        assert!(!proto.created_at.is_empty());
+        assert!(!proto.updated_at.is_empty());
+    }
+}

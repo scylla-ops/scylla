@@ -10,8 +10,6 @@ use surrealdb::engine::any::Any;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DatabaseConfig {
     pub url: String,
-    pub username: String,
-    pub password: String,
     pub namespace: String,
     pub database: String,
 }
@@ -19,9 +17,7 @@ pub struct DatabaseConfig {
 impl Default for DatabaseConfig {
     fn default() -> Self {
         Self {
-            url: "ws://127.0.0.1:8000".to_string(),
-            username: "root".to_string(),
-            password: "secret".to_string(),
+            url: "memory".to_string(),
             namespace: "scylla".to_string(),
             database: "core".to_string(),
         }
@@ -29,18 +25,9 @@ impl Default for DatabaseConfig {
 }
 
 pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
-    let db: Surreal<Any> = Surreal::init();
-
-    db.connect(&config.url)
+    let db = surrealdb::engine::any::connect(&config.url)
         .await
         .with_context(|| format!("Failed to connect to database at {}", config.url))?;
-
-    db.signin(surrealdb::opt::auth::Root {
-        username: config.username.clone(),
-        password: config.password.clone(),
-    })
-    .await
-    .context("Failed to authenticate with database")?;
 
     db.use_ns(&config.namespace)
         .use_db(&config.database)
@@ -83,9 +70,9 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
 
     for (i, table) in tables.iter().enumerate() {
         if let Some(err) = errors.get(&i) {
-            tracing::error!(table, %err, "Failed to define table")
+            tracing::error!(table, %err, "Failed to define table");
         } else {
-            tracing::debug!(table, "Table defined successfully")
+            tracing::debug!(table, "Table defined successfully");
         }
     }
 

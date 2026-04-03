@@ -204,3 +204,171 @@ impl<PS: PermissionService + Send + Sync + 'static> PermissionServiceTrait
         }))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::auth_interceptor::AuthContext;
+    use protocol::services::permission::permission_service_server::PermissionService as PermissionServiceTrait;
+    use protocol::services::permission::{Scope, ScopeType, Resource, ResourceType};
+    use scylla_core::application::PermissionUseCases;
+    use scylla_core::application::ports::services::permission_service::PermissionService;
+    use scylla_core::domain::entities::EntityId;
+    use scylla_core::domain::errors::DomainResult;
+    use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
+    use async_trait::async_trait;
+    use std::sync::Arc;
+
+    // ── Stubs ──────────────────────────────────────────────────
+
+    struct StubPermission {
+        check_fn: Option<Box<dyn Fn() -> DomainResult<bool> + Send + Sync>>,
+        add_policy_fn: Option<Box<dyn Fn() -> DomainResult<bool> + Send + Sync>>,
+        remove_policy_fn: Option<Box<dyn Fn() -> DomainResult<bool> + Send + Sync>>,
+        list_policies_fn: Option<Box<dyn Fn(Option<&str>) -> DomainResult<Vec<(String, Policy)>> + Send + Sync>>,
+        add_grouping_fn: Option<Box<dyn Fn() -> DomainResult<bool> + Send + Sync>>,
+        remove_grouping_fn: Option<Box<dyn Fn() -> DomainResult<bool> + Send + Sync>>,
+        list_grouping_fn: Option<Box<dyn Fn(Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> + Send + Sync>>,
+    }
+
+    impl Default for StubPermission {
+        fn default() -> Self {
+            Self {
+                check_fn: Some(Box::new(|| Ok(true))),
+                add_policy_fn: Some(Box::new(|| Ok(true))),
+                remove_policy_fn: Some(Box::new(|| Ok(true))),
+                list_policies_fn: Some(Box::new(|_| Ok(vec![]))),
+                add_grouping_fn: Some(Box::new(|| Ok(true))),
+                remove_grouping_fn: Some(Box::new(|| Ok(true))),
+                list_grouping_fn: Some(Box::new(|_| Ok(vec![]))),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl PermissionService for StubPermission {
+        async fn check(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { (self.check_fn.as_ref().unwrap())() }
+        async fn add_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { (self.add_policy_fn.as_ref().unwrap())() }
+        async fn remove_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { (self.remove_policy_fn.as_ref().unwrap())() }
+        async fn list_policies(&self, s: Option<&str>) -> DomainResult<Vec<(String, Policy)>> { (self.list_policies_fn.as_ref().unwrap())(s) }
+        async fn add_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { (self.add_grouping_fn.as_ref().unwrap())() }
+        async fn remove_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { (self.remove_grouping_fn.as_ref().unwrap())() }
+        async fn list_grouping_policies(&self, s: Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> { (self.list_grouping_fn.as_ref().unwrap())(s) }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────
+
+    fn authed_request<T>(body: T) -> Request<T> {
+        let mut req = Request::new(body);
+        req.extensions_mut().insert(AuthContext::new(UserId::generate()));
+        req
+    }
+
+    fn make_handler(stub: StubPermission) -> PermissionHandler<StubPermission> {
+        let stub = Arc::new(stub);
+        let uc = Arc::new(PermissionUseCases::new(stub.clone()));
+        PermissionHandler::new(uc, stub)
+    }
+
+    // ── Tests ───────────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn add_policy_success() {
+        let handler = make_handler(StubPermission::default());
+        let req = authed_request(AddPolicyRequest {
+            subject: "user123".into(),
+            scope: Some(Scope { r#type: ScopeType::ScopeSystem.into(), id: None }),
+            resource: Some(Resource { r#type: ResourceType::ResourceUser.into(), id: None }),
+            act: ProtoAct::Read.into(),
+        });
+
+        let resp = handler.add_policy(req).await.unwrap();
+        assert!(resp.into_inner().added);
+    }
+
+    #[tokio::test]
+    async fn remove_policy_success() {
+        let handler = make_handler(StubPermission::default());
+        let req = authed_request(RemovePolicyRequest {
+            subject: "user123".into(),
+            scope: Some(Scope { r#type: ScopeType::ScopeSystem.into(), id: None }),
+            resource: Some(Resource { r#type: ResourceType::ResourceUser.into(), id: None }),
+            act: ProtoAct::Read.into(),
+        });
+
+        let resp = handler.remove_policy(req).await.unwrap();
+        assert!(resp.into_inner().removed);
+    }
+
+    #[tokio::test]
+    async fn list_policies_returns_empty() {
+        let handler = make_handler(StubPermission::default());
+        let req = authed_request(ListPoliciesRequest { subject: None });
+
+        let resp = handler.list_policies(req).await.unwrap();
+        assert!(resp.into_inner().policies.is_empty());
+    }
+
+    #[tokio::test]
+    async fn add_grouping_policy_success() {
+        let handler = make_handler(StubPermission::default());
+        let req = authed_request(AddGroupingPolicyRequest {
+            subject: "user123".into(),
+            role: "admin".into(),
+            scope: Some(Scope { r#type: ScopeType::ScopeSystem.into(), id: None }),
+        });
+
+        let resp = handler.add_grouping_policy(req).await.unwrap();
+        assert!(resp.into_inner().added);
+    }
+
+    #[tokio::test]
+    async fn remove_grouping_policy_success() {
+        let handler = make_handler(StubPermission::default());
+        let req = authed_request(RemoveGroupingPolicyRequest {
+            subject: "user123".into(),
+            role: "admin".into(),
+            scope: Some(Scope { r#type: ScopeType::ScopeSystem.into(), id: None }),
+        });
+
+        let resp = handler.remove_grouping_policy(req).await.unwrap();
+        assert!(resp.into_inner().removed);
+    }
+
+    #[tokio::test]
+    async fn list_grouping_policies_returns_empty() {
+        let handler = make_handler(StubPermission::default());
+        let req = authed_request(ListGroupingPoliciesRequest { subject: None });
+
+        let resp = handler.list_grouping_policies(req).await.unwrap();
+        assert!(resp.into_inner().grouping_policies.is_empty());
+    }
+
+    #[tokio::test]
+    async fn add_policy_without_auth_fails() {
+        let handler = make_handler(StubPermission::default());
+        let req = Request::new(AddPolicyRequest {
+            subject: "user123".into(),
+            scope: Some(Scope { r#type: ScopeType::ScopeSystem.into(), id: None }),
+            resource: Some(Resource { r#type: ResourceType::ResourceUser.into(), id: None }),
+            act: ProtoAct::Read.into(),
+        });
+
+        let err = handler.add_policy(req).await.unwrap_err();
+        assert_eq!(err.code(), tonic::Code::Internal);
+    }
+
+    #[tokio::test]
+    async fn add_policy_missing_scope_fails() {
+        let handler = make_handler(StubPermission::default());
+        let req = authed_request(AddPolicyRequest {
+            subject: "user123".into(),
+            scope: None,
+            resource: Some(Resource { r#type: ResourceType::ResourceUser.into(), id: None }),
+            act: ProtoAct::Read.into(),
+        });
+
+        let err = handler.add_policy(req).await.unwrap_err();
+        assert_eq!(err.code(), tonic::Code::InvalidArgument);
+    }
+}

@@ -234,3 +234,205 @@ impl<
         }))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::auth_interceptor::AuthContext;
+    use protocol::services::pipeline::pipeline_service_server::PipelineService;
+    use scylla_core::application::PipelineUseCases;
+    use scylla_core::application::ports::{PipelineRepository, ProjectRepository};
+    use scylla_core::application::ports::services::permission_service::PermissionService;
+    use scylla_core::domain::entities::{EntityId, Pipeline, Project};
+    use scylla_core::domain::errors::DomainResult;
+    use scylla_core::domain::value_objects::pipeline::PipelineName;
+    use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
+    use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
+    use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
+    use scylla_core::domain::entities::UserId;
+    use async_trait::async_trait;
+    use std::sync::Arc;
+
+    // ── Stubs ──────────────────────────────────────────────────
+
+    #[derive(Default)]
+    struct StubPipelineRepo {
+        create_fn: Option<Box<dyn Fn(&Pipeline) -> DomainResult<Pipeline> + Send + Sync>>,
+        find_by_id_fn: Option<Box<dyn Fn(&PipelineId) -> DomainResult<Pipeline> + Send + Sync>>,
+        update_fn: Option<Box<dyn Fn(&Pipeline) -> DomainResult<Pipeline> + Send + Sync>>,
+        delete_fn: Option<Box<dyn Fn(&PipelineId) -> DomainResult<()> + Send + Sync>>,
+        list_all_fn: Option<Box<dyn Fn() -> DomainResult<PaginatedResult<Pipeline>> + Send + Sync>>,
+        list_by_project_fn: Option<Box<dyn Fn(&ProjectId) -> DomainResult<PaginatedResult<Pipeline>> + Send + Sync>>,
+    }
+
+    #[async_trait]
+    impl PipelineRepository for StubPipelineRepo {
+        async fn create(&self, p: &Pipeline) -> DomainResult<Pipeline> { (self.create_fn.as_ref().unwrap())(p) }
+        async fn find_by_id(&self, id: &PipelineId) -> DomainResult<Pipeline> { (self.find_by_id_fn.as_ref().unwrap())(id) }
+        async fn update(&self, p: &Pipeline) -> DomainResult<Pipeline> { (self.update_fn.as_ref().unwrap())(p) }
+        async fn delete(&self, id: &PipelineId) -> DomainResult<()> { (self.delete_fn.as_ref().unwrap())(id) }
+        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Pipeline>> { (self.list_all_fn.as_ref().unwrap())() }
+        async fn list_by_project(&self, pid: &ProjectId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Pipeline>> { (self.list_by_project_fn.as_ref().unwrap())(pid) }
+        async fn list_by_organization(&self, _oid: &OrganizationId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Pipeline>> { unimplemented!() }
+    }
+
+    #[derive(Default)]
+    struct StubProjectRepo {
+        find_by_id_fn: Option<Box<dyn Fn(&ProjectId) -> DomainResult<Project> + Send + Sync>>,
+    }
+
+    #[async_trait]
+    impl ProjectRepository for StubProjectRepo {
+        async fn create(&self, _p: &Project) -> DomainResult<Project> { unimplemented!() }
+        async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> { (self.find_by_id_fn.as_ref().unwrap())(id) }
+        async fn update(&self, _p: &Project) -> DomainResult<Project> { unimplemented!() }
+        async fn delete(&self, _id: &ProjectId) -> DomainResult<()> { unimplemented!() }
+        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> { unimplemented!() }
+        async fn list_active(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> { unimplemented!() }
+    }
+
+    struct AllowAll;
+
+    #[async_trait]
+    impl PermissionService for AllowAll {
+        async fn check(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
+        async fn add_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
+        async fn remove_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
+        async fn list_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, Policy)>> { Ok(vec![]) }
+        async fn add_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { Ok(true) }
+        async fn remove_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { Ok(true) }
+        async fn list_grouping_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> { Ok(vec![]) }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────
+
+    fn test_pipeline() -> Pipeline {
+        Pipeline::create(
+            PipelineName::new("testpipe").unwrap(),
+            ProjectId::generate(),
+            vec![PipelineNode::new(
+                NodeId::new("step1").unwrap(),
+                vec![],
+                "echo".into(),
+                vec!["hello".into()],
+            ).unwrap()],
+        ).unwrap()
+    }
+
+    fn authed_request<T>(body: T) -> Request<T> {
+        let mut req = Request::new(body);
+        req.extensions_mut().insert(AuthContext::new(UserId::generate()));
+        req
+    }
+
+    fn make_handler(
+        pipeline_repo: StubPipelineRepo,
+        project_repo: StubProjectRepo,
+    ) -> PipelineHandler<StubPipelineRepo, StubProjectRepo, AllowAll> {
+        let uc = Arc::new(PipelineUseCases::new(
+            Arc::new(pipeline_repo),
+            Arc::new(project_repo),
+        ));
+        PipelineHandler::new(uc, Arc::new(AllowAll))
+    }
+
+    // ── Tests ───────────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn create_pipeline_returns_proto() {
+        let project = Project::create(
+            ProjectName::new("proj").unwrap(),
+            Some(ProjectDescription::new("d").unwrap()),
+            OrganizationId::generate(),
+        ).unwrap();
+        let proj_id = project.id().clone();
+
+        let mut proj_repo = StubProjectRepo::default();
+        proj_repo.find_by_id_fn = Some(Box::new(move |_| Ok(project.clone())));
+
+        let mut pipe_repo = StubPipelineRepo::default();
+        pipe_repo.create_fn = Some(Box::new(|p| Ok(p.clone())));
+
+        let handler = make_handler(pipe_repo, proj_repo);
+        let req = authed_request(CreatePipelineRequest {
+            name: "newpipe".into(),
+            project_id: proj_id.to_string(),
+            nodes: vec![protocol::services::pipeline::PipelineNode {
+                node_id: "step1".into(),
+                deps: vec![],
+                command: "echo".into(),
+                args: vec!["hi".into()],
+            }],
+        });
+
+        let resp = handler.create_pipeline(req).await.unwrap();
+        assert_eq!(resp.into_inner().name, "newpipe");
+    }
+
+    #[tokio::test]
+    async fn get_pipeline_returns_proto() {
+        let pipe = test_pipeline();
+        let pipe_id_str = pipe.id().to_string();
+        let p = pipe.clone();
+
+        let mut repo = StubPipelineRepo::default();
+        repo.find_by_id_fn = Some(Box::new(move |_| Ok(p.clone())));
+
+        let handler = make_handler(repo, StubProjectRepo::default());
+        let req = authed_request(GetPipelineRequest { pipeline_id: pipe_id_str });
+
+        let resp = handler.get_pipeline(req).await.unwrap();
+        assert_eq!(resp.into_inner().name, "testpipe");
+    }
+
+    #[tokio::test]
+    async fn delete_pipeline_success() {
+        let pipe = test_pipeline();
+        let pipe_id_str = pipe.id().to_string();
+
+        let mut repo = StubPipelineRepo::default();
+        repo.find_by_id_fn = Some(Box::new(move |_| Ok(pipe.clone())));
+        repo.delete_fn = Some(Box::new(|_| Ok(())));
+
+        let handler = make_handler(repo, StubProjectRepo::default());
+        let req = authed_request(DeletePipelineRequest { pipeline_id: pipe_id_str });
+        assert!(handler.delete_pipeline(req).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn list_pipelines_returns_empty() {
+        let mut repo = StubPipelineRepo::default();
+        repo.list_all_fn = Some(Box::new(|| {
+            let params = PaginationParams::default();
+            Ok(PaginatedResult::new(vec![], &params, 0))
+        }));
+
+        let handler = make_handler(repo, StubProjectRepo::default());
+        let req = authed_request(ListPipelinesRequest { pagination: None });
+
+        let resp = handler.list_pipelines(req).await.unwrap();
+        let inner = resp.into_inner();
+        assert!(inner.pipelines.is_empty());
+        assert!(inner.pagination.is_some());
+    }
+
+    #[tokio::test]
+    async fn list_project_pipelines_returns_empty() {
+        let project_id = ProjectId::generate();
+
+        let mut repo = StubPipelineRepo::default();
+        repo.list_by_project_fn = Some(Box::new(|_| {
+            let params = PaginationParams::default();
+            Ok(PaginatedResult::new(vec![], &params, 0))
+        }));
+
+        let handler = make_handler(repo, StubProjectRepo::default());
+        let req = authed_request(ListProjectPipelinesRequest {
+            project_id: project_id.to_string(),
+            pagination: None,
+        });
+
+        let resp = handler.list_project_pipelines(req).await.unwrap();
+        assert!(resp.into_inner().pipelines.is_empty());
+    }
+}

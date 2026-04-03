@@ -11,10 +11,6 @@ pub struct CoreConfig {
     #[serde(default)]
     pub grpc: GrpcConfig,
 
-    #[cfg(feature = "rest")]
-    #[serde(default)]
-    pub rest: RestConfig,
-
     #[serde(default)]
     pub database: DatabaseConfig,
 
@@ -98,21 +94,6 @@ impl Default for BootstrapConfig {
 
 fn default_max_age() -> u64 {
     600
-}
-
-#[cfg(feature = "rest")]
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct RestConfig {
-    pub address: SocketAddr,
-}
-
-#[cfg(feature = "rest")]
-impl Default for RestConfig {
-    fn default() -> Self {
-        Self {
-            address: SocketAddr::from(([127, 0, 0, 1], 3000)),
-        }
-    }
 }
 
 #[cfg(feature = "grpc")]

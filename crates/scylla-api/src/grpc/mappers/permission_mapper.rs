@@ -161,3 +161,95 @@ pub fn domain_resource_to_proto(resource: &Resource) -> ProtoResource {
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn act_roundtrip() {
+        let acts = [Act::Create, Act::Read, Act::Write, Act::Delete, Act::All];
+        for act in &acts {
+            let proto = domain_act_to_proto(act);
+            let back = proto_act_to_domain(proto).unwrap();
+            assert_eq!(act.as_str(), back.as_str());
+        }
+    }
+
+    #[test]
+    fn scope_system_roundtrip() {
+        let scope = Scope::System;
+        let proto = domain_scope_to_proto(&scope);
+        let back = proto_scope_to_domain(proto).unwrap();
+        assert!(matches!(back, Scope::System));
+    }
+
+    #[test]
+    fn scope_org_roundtrip() {
+        let oid = OrganizationId::generate();
+        let scope = Scope::Org(oid.clone());
+        let proto = domain_scope_to_proto(&scope);
+        let back = proto_scope_to_domain(proto).unwrap();
+        if let Scope::Org(id) = back {
+            assert_eq!(id.to_string(), oid.to_string());
+        } else {
+            panic!("Expected Scope::Org");
+        }
+    }
+
+    #[test]
+    fn scope_org_missing_id_errors() {
+        let proto = ProtoScope {
+            r#type: ScopeType::ScopeOrg.into(),
+            id: None,
+        };
+        assert!(proto_scope_to_domain(proto).is_err());
+    }
+
+    #[test]
+    fn resource_user_all_roundtrip() {
+        let resource = Resource::User(Target::All);
+        let proto = domain_resource_to_proto(&resource);
+        let back = proto_resource_to_domain(proto).unwrap();
+        assert!(matches!(back, Resource::User(Target::All)));
+    }
+
+    #[test]
+    fn resource_user_single_roundtrip() {
+        let uid = UserId::generate();
+        let resource = Resource::User(Target::Single(uid.clone()));
+        let proto = domain_resource_to_proto(&resource);
+        let back = proto_resource_to_domain(proto).unwrap();
+        if let Resource::User(Target::Single(id)) = back {
+            assert_eq!(id.to_string(), uid.to_string());
+        } else {
+            panic!("Expected Resource::User(Target::Single)");
+        }
+    }
+
+    #[test]
+    fn resource_all_roundtrip() {
+        let resource = Resource::All;
+        let proto = domain_resource_to_proto(&resource);
+        let back = proto_resource_to_domain(proto).unwrap();
+        assert!(matches!(back, Resource::All));
+    }
+
+    #[test]
+    fn invalid_scope_type_errors() {
+        let proto = ProtoScope {
+            r#type: 999,
+            id: None,
+        };
+        assert!(proto_scope_to_domain(proto).is_err());
+    }
+
+    #[test]
+    fn invalid_resource_type_errors() {
+        let proto = ProtoResource {
+            r#type: 999,
+            id: None,
+        };
+        assert!(proto_resource_to_domain(proto).is_err());
+    }
+}

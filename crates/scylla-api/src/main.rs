@@ -43,18 +43,7 @@ async fn run(args: Args) -> Result<()> {
 
     let services = startup::init_services(&config).await?;
 
-    #[cfg(all(feature = "grpc", feature = "rest"))]
-    {
-        let grpc_fut = startup::start_grpc(&config, &services);
-        let rest_fut = startup::start_rest(&config, &services);
-        tokio::try_join!(grpc_fut, rest_fut)?;
-    }
-
-    #[cfg(all(feature = "grpc", not(feature = "rest")))]
     startup::start_grpc(&config, &services).await?;
-
-    #[cfg(all(feature = "rest", not(feature = "grpc")))]
-    startup::start_rest(&config, &services).await?;
 
     Ok(())
 }
