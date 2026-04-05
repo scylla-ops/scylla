@@ -1850,7 +1850,9 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hermes-broker-client"
-version = "0.5.1"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60e56c0a4ad551ea9344c615341376678bb6641a2226b6a4d2564388f1e4be41"
 dependencies = [
  "bytes",
  "hermes-broker-proto",
@@ -1863,7 +1865,9 @@ dependencies = [
 
 [[package]]
 name = "hermes-broker-core"
-version = "0.5.1"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbcd6b1ac05b97dfd1b8b1e4899a6a1c85f55fca5c049b71f67b65286df777cf"
 dependencies = [
  "bytes",
  "smallvec 2.0.0-alpha.12",
@@ -1873,7 +1877,9 @@ dependencies = [
 
 [[package]]
 name = "hermes-broker-proto"
-version = "0.5.1"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51f5d18a9cf074047c02acee9f1bf6a48cfd070a0997d3d1fb358fd24641758a"
 dependencies = [
  "prost",
  "tonic",
@@ -1883,7 +1889,9 @@ dependencies = [
 
 [[package]]
 name = "hermes-broker-server"
-version = "0.5.1"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f6801c7abdbe4476af0b20d2040cf558911bae2b09e81012ad7d2d25543f6c9"
 dependencies = [
  "hermes-broker-core",
  "hermes-broker-proto",

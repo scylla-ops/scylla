@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# broker (local path until published on crates.io)
-hermes-broker-proto = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/proto" }
-hermes-broker-client = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/client" }
+# broker
+hermes-broker-proto = { workspace = true }
+hermes-broker-client = { workspace = true }
 
 # domain types (shared broker messages, no surrealdb)
 scylla-core = { path = "../scylla-core", default-features = false, features = ["jobs"] }

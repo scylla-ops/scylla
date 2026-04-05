@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-hermes-broker-core = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/core" }
-hermes-broker-proto = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/proto" }
-hermes-broker-server = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/server" }
+hermes-broker-core = { workspace = true }
+hermes-broker-proto = { workspace = true }
+hermes-broker-server = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 tonic = "0.14.5"
 tracing = "0.1"

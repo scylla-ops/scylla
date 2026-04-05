@@ -33,8 +33,8 @@ surreal-casbin-adapter.workspace = true
 log.workspace = true
 
 # broker
-hermes-broker-proto = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/proto" }
-hermes-broker-client = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/client" }
+hermes-broker-proto = { workspace = true }
+hermes-broker-client = { workspace = true }
 tokio-stream = "0.1"
 serde_json.workspace = true
 

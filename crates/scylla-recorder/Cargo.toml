@@ -8,7 +8,7 @@ edition = "2024"
 scylla-core = { workspace = true, features = ["surrealdb", "jobs"] }
 
 # broker
-hermes-broker-client = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/client" }
+hermes-broker-client = { workspace = true }
 
 # async
 tokio = { workspace = true }
