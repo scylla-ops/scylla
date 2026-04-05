@@ -6,7 +6,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 #[cfg(feature = "surrealdb")]
 use surrealdb_types::SurrealValue;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct PipelineNode {
     id: NodeId,

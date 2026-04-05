@@ -145,7 +145,9 @@ impl<O: OrganizationRepository, UO: UserOrganizationRepository, U: UserRepositor
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::ports::{OrganizationRepository, UserOrganizationRepository, UserRepository};
+    use crate::application::ports::{
+        OrganizationRepository, UserOrganizationRepository, UserRepository,
+    };
     use crate::domain::value_objects::user::{PasswordHash, Username};
     use async_trait::async_trait;
     use std::sync::Arc;
@@ -155,11 +157,13 @@ mod tests {
     #[derive(Default)]
     struct StubOrgRepo {
         create_fn: Option<Box<dyn Fn(&Organization) -> DomainResult<Organization> + Send + Sync>>,
-        find_by_id_fn: Option<Box<dyn Fn(&OrganizationId) -> DomainResult<Organization> + Send + Sync>>,
+        find_by_id_fn:
+            Option<Box<dyn Fn(&OrganizationId) -> DomainResult<Organization> + Send + Sync>>,
         update_fn: Option<Box<dyn Fn(&Organization) -> DomainResult<Organization> + Send + Sync>>,
         delete_fn: Option<Box<dyn Fn(&OrganizationId) -> DomainResult<()> + Send + Sync>>,
         name_exists_fn: Option<Box<dyn Fn(&OrganizationName) -> DomainResult<bool> + Send + Sync>>,
-        list_all_fn: Option<Box<dyn Fn() -> DomainResult<PaginatedResult<Organization>> + Send + Sync>>,
+        list_all_fn:
+            Option<Box<dyn Fn() -> DomainResult<PaginatedResult<Organization>> + Send + Sync>>,
     }
 
     #[async_trait]
@@ -179,10 +183,16 @@ mod tests {
         async fn delete(&self, id: &OrganizationId) -> DomainResult<()> {
             (self.delete_fn.as_ref().unwrap())(id)
         }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Organization>> {
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Organization>> {
             (self.list_all_fn.as_ref().unwrap())()
         }
-        async fn list_active(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Organization>> {
+        async fn list_active(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Organization>> {
             unimplemented!()
         }
         async fn name_exists(&self, name: &OrganizationName) -> DomainResult<bool> {
@@ -192,10 +202,15 @@ mod tests {
 
     #[derive(Default)]
     struct StubUserOrgRepo {
-        add_member_fn: Option<Box<dyn Fn(&UserId, &OrganizationId) -> DomainResult<()> + Send + Sync>>,
-        remove_member_fn: Option<Box<dyn Fn(&UserId, &OrganizationId) -> DomainResult<()> + Send + Sync>>,
-        is_member_fn: Option<Box<dyn Fn(&UserId, &OrganizationId) -> DomainResult<bool> + Send + Sync>>,
-        list_members_fn: Option<Box<dyn Fn(&OrganizationId) -> DomainResult<PaginatedResult<UserId>> + Send + Sync>>,
+        add_member_fn:
+            Option<Box<dyn Fn(&UserId, &OrganizationId) -> DomainResult<()> + Send + Sync>>,
+        remove_member_fn:
+            Option<Box<dyn Fn(&UserId, &OrganizationId) -> DomainResult<()> + Send + Sync>>,
+        is_member_fn:
+            Option<Box<dyn Fn(&UserId, &OrganizationId) -> DomainResult<bool> + Send + Sync>>,
+        list_members_fn: Option<
+            Box<dyn Fn(&OrganizationId) -> DomainResult<PaginatedResult<UserId>> + Send + Sync>,
+        >,
     }
 
     #[async_trait]
@@ -209,10 +224,18 @@ mod tests {
         async fn is_member(&self, uid: &UserId, oid: &OrganizationId) -> DomainResult<bool> {
             (self.is_member_fn.as_ref().unwrap())(uid, oid)
         }
-        async fn list_members(&self, oid: &OrganizationId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<UserId>> {
+        async fn list_members(
+            &self,
+            oid: &OrganizationId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<UserId>> {
             (self.list_members_fn.as_ref().unwrap())(oid)
         }
-        async fn list_user_organizations(&self, _uid: &UserId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<OrganizationId>> {
+        async fn list_user_organizations(
+            &self,
+            _uid: &UserId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<OrganizationId>> {
             unimplemented!()
         }
     }
@@ -224,24 +247,36 @@ mod tests {
 
     #[async_trait]
     impl UserRepository for StubUserRepo {
-        async fn create(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
+        async fn create(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
         async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
             (self.find_by_id_fn.as_ref().unwrap())(id)
         }
-        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> { unimplemented!() }
-        async fn update(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
-        async fn delete(&self, _id: &UserId) -> DomainResult<()> { unimplemented!() }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> { unimplemented!() }
-        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> { unimplemented!() }
+        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn update(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn delete(&self, _id: &UserId) -> DomainResult<()> {
+            unimplemented!()
+        }
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<User>> {
+            unimplemented!()
+        }
+        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> {
+            unimplemented!()
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────
 
     fn test_org() -> Organization {
-        Organization::create(
-            OrganizationName::new("Test Org").unwrap(),
-            None,
-        ).unwrap()
+        Organization::create(OrganizationName::new("Test Org").unwrap(), None).unwrap()
     }
 
     fn test_user() -> User {

@@ -105,7 +105,9 @@ mod tests {
         update_fn: Option<Box<dyn Fn(&Pipeline) -> DomainResult<Pipeline> + Send + Sync>>,
         delete_fn: Option<Box<dyn Fn(&PipelineId) -> DomainResult<()> + Send + Sync>>,
         list_all_fn: Option<Box<dyn Fn() -> DomainResult<PaginatedResult<Pipeline>> + Send + Sync>>,
-        list_by_project_fn: Option<Box<dyn Fn(&ProjectId) -> DomainResult<PaginatedResult<Pipeline>> + Send + Sync>>,
+        list_by_project_fn: Option<
+            Box<dyn Fn(&ProjectId) -> DomainResult<PaginatedResult<Pipeline>> + Send + Sync>,
+        >,
     }
 
     #[async_trait]
@@ -122,13 +124,24 @@ mod tests {
         async fn delete(&self, id: &PipelineId) -> DomainResult<()> {
             (self.delete_fn.as_ref().unwrap())(id)
         }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Pipeline>> {
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Pipeline>> {
             (self.list_all_fn.as_ref().unwrap())()
         }
-        async fn list_by_project(&self, pid: &ProjectId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Pipeline>> {
+        async fn list_by_project(
+            &self,
+            pid: &ProjectId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Pipeline>> {
             (self.list_by_project_fn.as_ref().unwrap())(pid)
         }
-        async fn list_by_organization(&self, _oid: &OrganizationId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Pipeline>> {
+        async fn list_by_organization(
+            &self,
+            _oid: &OrganizationId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Pipeline>> {
             unimplemented!()
         }
     }
@@ -140,14 +153,30 @@ mod tests {
 
     #[async_trait]
     impl ProjectRepository for StubProjectRepo {
-        async fn create(&self, _p: &Project) -> DomainResult<Project> { unimplemented!() }
+        async fn create(&self, _p: &Project) -> DomainResult<Project> {
+            unimplemented!()
+        }
         async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> {
             (self.find_by_id_fn.as_ref().unwrap())(id)
         }
-        async fn update(&self, _p: &Project) -> DomainResult<Project> { unimplemented!() }
-        async fn delete(&self, _id: &ProjectId) -> DomainResult<()> { unimplemented!() }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> { unimplemented!() }
-        async fn list_active(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> { unimplemented!() }
+        async fn update(&self, _p: &Project) -> DomainResult<Project> {
+            unimplemented!()
+        }
+        async fn delete(&self, _id: &ProjectId) -> DomainResult<()> {
+            unimplemented!()
+        }
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
+            unimplemented!()
+        }
+        async fn list_active(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
+            unimplemented!()
+        }
     }
 
     fn test_project() -> Project {
@@ -155,7 +184,8 @@ mod tests {
             ProjectName::new("Test").unwrap(),
             None,
             OrganizationId::generate(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn test_node() -> PipelineNode {
@@ -164,7 +194,8 @@ mod tests {
             vec![],
             "echo".into(),
             vec!["hello".into()],
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn make_uc(
@@ -186,7 +217,9 @@ mod tests {
 
         let uc = make_uc(pipeline_repo, project_repo);
         let name = PipelineName::new("my-pipeline").unwrap();
-        let result = uc.create(name, project.id().clone(), vec![test_node()]).await;
+        let result = uc
+            .create(name, project.id().clone(), vec![test_node()])
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap().nodes().len(), 1);
     }
@@ -200,7 +233,9 @@ mod tests {
 
         let uc = make_uc(StubPipelineRepo::default(), project_repo);
         let name = PipelineName::new("my-pipeline").unwrap();
-        let result = uc.create(name, ProjectId::generate(), vec![test_node()]).await;
+        let result = uc
+            .create(name, ProjectId::generate(), vec![test_node()])
+            .await;
         assert!(matches!(result.unwrap_err(), DomainError::NotFound { .. }));
     }
 
@@ -211,7 +246,8 @@ mod tests {
             PipelineName::new("test").unwrap(),
             project.id().clone(),
             vec![test_node()],
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut repo = StubPipelineRepo::default();
         let pl = pipeline.clone();
@@ -229,7 +265,8 @@ mod tests {
             PipelineName::new("test").unwrap(),
             project.id().clone(),
             vec![test_node()],
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut repo = StubPipelineRepo::default();
         let pl = pipeline.clone();
@@ -249,7 +286,10 @@ mod tests {
         }));
 
         let uc = make_uc(repo, StubProjectRepo::default());
-        let result = uc.list_by_project(&ProjectId::generate(), None).await.unwrap();
+        let result = uc
+            .list_by_project(&ProjectId::generate(), None)
+            .await
+            .unwrap();
         assert!(result.items().is_empty());
     }
 }

@@ -987,7 +987,7 @@ dependencies = [
  "dtoa-short",
  "itoa",
  "phf 0.11.3",
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -1850,51 +1850,30 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hermes-broker-client"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87e1e9d4e1878e256c41d296661a1cb7f608f657ced689dfc861c60857ee62d4"
+version = "0.5.1"
 dependencies = [
- "futures",
- "hermes-broker-core",
+ "bytes",
  "hermes-broker-proto",
- "serde",
  "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
  "tonic",
  "tracing",
- "uuid",
 ]
 
 [[package]]
 name = "hermes-broker-core"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a56404f74ba7279545344c7f81e59e75775805a59a1fa0276bee0c66eeffca4"
+version = "0.5.1"
 dependencies = [
- "bincode",
- "hermes-broker-macros",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "hermes-broker-macros"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f00c15e3a5117ab81540afa73a80b359a1202a7b9276c8acd3bd756d5c7a793"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
+ "bytes",
+ "smallvec 2.0.0-alpha.12",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
 name = "hermes-broker-proto"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79f19351c678e03e15b9fa0c0fb4b5b14c4cd1e56d6d1bc77d8be2bbd735c823"
+version = "0.5.1"
 dependencies = [
  "prost",
  "tonic",
@@ -1904,34 +1883,16 @@ dependencies = [
 
 [[package]]
 name = "hermes-broker-server"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "874675ad59628e68f5c3c5fbf295a24cda687c2a59e01ac952eeabbf00a092f9"
+version = "0.5.1"
 dependencies = [
- "dashmap",
  "hermes-broker-core",
  "hermes-broker-proto",
- "hermes-broker-store",
  "tokio",
  "tokio-stream",
- "tokio-util",
  "tonic",
  "tonic-reflection",
  "tracing",
  "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "hermes-broker-store"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dce2e4ba1def7a9b3fb9e63fd8209457452b9c0a46c8881c33a3ad185c2bf514"
-dependencies = [
- "hermes-broker-proto",
- "redb",
- "thiserror 2.0.18",
- "tracing",
 ]
 
 [[package]]
@@ -2053,7 +2014,7 @@ dependencies = [
  "itoa",
  "pin-project-lite",
  "pin-utils",
- "smallvec",
+ "smallvec 1.15.1",
  "tokio",
  "want",
 ]
@@ -2213,7 +2174,7 @@ dependencies = [
  "icu_normalizer_data",
  "icu_properties",
  "icu_provider",
- "smallvec",
+ "smallvec 1.15.1",
  "zerovec",
 ]
 
@@ -2271,7 +2232,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b0875f23caa03898994f6ddc501886a45c7d3d62d04d2d90788d47be1b1e4de"
 dependencies = [
  "idna_adapter",
- "smallvec",
+ "smallvec 1.15.1",
  "utf8_iter",
 ]
 
@@ -2724,7 +2685,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77a5d83df9f36fe23f0c3648c6bbb8b0298bb5f1939c8f2704431371f4b84d43"
 dependencies = [
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -2795,7 +2756,7 @@ dependencies = [
  "num-iter",
  "num-traits",
  "rand 0.8.5",
- "smallvec",
+ "smallvec 1.15.1",
  "zeroize",
 ]
 
@@ -2985,7 +2946,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "redox_syscall",
- "smallvec",
+ "smallvec 1.15.1",
  "windows-link 0.2.1",
 ]
 
@@ -3636,15 +3597,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbc4a4ea2a66a41a1152c4b3d86e8954dc087bdf33af35446e6e176db4e73c8c"
 
 [[package]]
-name = "redb"
-version = "3.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef99362319c782aa4639ad3a306b64c3bb90e12874e99b8df124cb679d988611"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3788,7 +3740,7 @@ dependencies = [
  "once_cell",
  "rhai_codegen",
  "serde",
- "smallvec",
+ "smallvec 1.15.1",
  "smartstring",
  "thin-vec",
  "web-time",
@@ -3914,7 +3866,7 @@ dependencies = [
  "num-traits",
  "pdqselect",
  "serde",
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -3926,7 +3878,7 @@ dependencies = [
  "heapless 0.7.17",
  "num-traits",
  "serde",
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -3938,7 +3890,7 @@ dependencies = [
  "heapless 0.7.17",
  "num-traits",
  "serde",
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -3950,7 +3902,7 @@ dependencies = [
  "heapless 0.7.17",
  "num-traits",
  "serde",
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -3962,7 +3914,7 @@ dependencies = [
  "heapless 0.8.0",
  "num-traits",
  "serde",
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -4181,12 +4133,20 @@ dependencies = [
 name = "scylla-agent"
 version = "0.1.0"
 dependencies = [
- "futures",
+ "anyhow",
+ "chrono",
+ "clap",
  "hermes-broker-client",
- "hermes-broker-core",
+ "hermes-broker-proto",
+ "scylla-core",
  "serde",
  "serde_json",
+ "thiserror 2.0.18",
  "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -4198,13 +4158,15 @@ dependencies = [
  "chrono",
  "clap",
  "derive_more",
+ "hermes-broker-client",
+ "hermes-broker-proto",
  "http",
  "log",
  "protocol",
  "scylla-core",
  "serde",
+ "serde_json",
  "surreal-casbin-adapter",
- "surrealdb",
  "tokio",
  "tokio-stream",
  "toml",
@@ -4216,19 +4178,16 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "ulid",
- "uuid",
 ]
 
 [[package]]
 name = "scylla-broker"
 version = "0.1.0"
 dependencies = [
+ "hermes-broker-core",
  "hermes-broker-proto",
  "hermes-broker-server",
- "hermes-broker-store",
  "tokio",
- "tokio-util",
  "tonic",
  "tonic-reflection",
  "tracing",
@@ -4254,6 +4213,22 @@ dependencies = [
  "tracing",
  "ulid",
  "uuid",
+]
+
+[[package]]
+name = "scylla-recorder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "hermes-broker-client",
+ "scylla-core",
+ "serde_json",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -4474,6 +4449,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "smallvec"
+version = "2.0.0-alpha.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef784004ca8777809dcdad6ac37629f0a97caee4c685fcea805278d81dd8b857"
+
+[[package]]
 name = "smartstring"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4504,7 +4485,7 @@ dependencies = [
  "hashbrown 0.16.1",
  "num-traits",
  "robust",
- "smallvec",
+ "smallvec 1.15.1",
 ]
 
 [[package]]
@@ -4845,7 +4826,7 @@ dependencies = [
  "papaya",
  "parking_lot",
  "serde",
- "smallvec",
+ "smallvec 1.15.1",
  "thiserror 2.0.18",
  "tracing",
  "web-time",
@@ -5231,6 +5212,7 @@ dependencies = [
  "socket2",
  "sync_wrapper",
  "tokio",
+ "tokio-rustls",
  "tokio-stream",
  "tower",
  "tower-layer",
@@ -5418,6 +5400,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing-serde"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "704b1aeb7be0d0a84fc9828cae51dab5970fee5088f83d1dd7ee6f6246fc6ff1"
+dependencies = [
+ "serde",
+ "tracing-core",
+]
+
+[[package]]
 name = "tracing-subscriber"
 version = "0.3.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5427,12 +5419,15 @@ dependencies = [
  "nu-ansi-term",
  "once_cell",
  "regex-automata",
+ "serde",
+ "serde_json",
  "sharded-slab",
- "smallvec",
+ "smallvec 1.15.1",
  "thread_local",
  "tracing",
  "tracing-core",
  "tracing-log",
+ "tracing-serde",
 ]
 
 [[package]]

@@ -4,6 +4,7 @@ pub enum Act {
     Read,
     Write,
     Delete,
+    Execute,
     All,
 }
 
@@ -15,6 +16,7 @@ impl Act {
             Act::Read => "read",
             Act::Write => "write",
             Act::Delete => "delete",
+            Act::Execute => "execute",
             Act::All => "*",
         }
     }
@@ -29,6 +31,7 @@ impl std::str::FromStr for Act {
             "read" => Ok(Act::Read),
             "write" => Ok(Act::Write),
             "delete" => Ok(Act::Delete),
+            "execute" => Ok(Act::Execute),
             _ => Ok(Act::All),
         }
     }

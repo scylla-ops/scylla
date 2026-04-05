@@ -216,6 +216,15 @@ pub mod pipeline {
             Act::Read,
         )
     }
+
+    #[must_use]
+    pub fn run(pipeline_id: PipelineId) -> Policy {
+        Policy::new(
+            Scope::Project(ProjectId::new("*".to_string())),
+            Resource::Pipeline(Target::Single(pipeline_id)),
+            Act::Execute,
+        )
+    }
 }
 
 pub mod job {

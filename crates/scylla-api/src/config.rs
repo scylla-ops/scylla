@@ -18,6 +18,9 @@ pub struct CoreConfig {
     pub cors: CorsConfig,
 
     #[serde(default)]
+    pub broker: BrokerConfig,
+
+    #[serde(default)]
     pub bootstrap: Option<BootstrapConfig>,
 }
 
@@ -88,6 +91,19 @@ impl Default for BootstrapConfig {
         Self {
             username: "admin".to_string(),
             password: "admin123".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BrokerConfig {
+    pub url: String,
+}
+
+impl Default for BrokerConfig {
+    fn default() -> Self {
+        Self {
+            url: "http://127.0.0.1:50052".to_string(),
         }
     }
 }

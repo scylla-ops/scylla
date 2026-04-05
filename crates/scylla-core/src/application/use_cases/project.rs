@@ -169,10 +169,16 @@ mod tests {
         async fn delete(&self, id: &ProjectId) -> DomainResult<()> {
             (self.delete_fn.as_ref().unwrap())(id)
         }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> {
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
             (self.list_all_fn.as_ref().unwrap())()
         }
-        async fn list_active(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> {
+        async fn list_active(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
             unimplemented!()
         }
     }
@@ -180,7 +186,8 @@ mod tests {
     #[derive(Default)]
     struct StubUserProjectRepo {
         add_member_fn: Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<()> + Send + Sync>>,
-        remove_member_fn: Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<()> + Send + Sync>>,
+        remove_member_fn:
+            Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<()> + Send + Sync>>,
         is_member_fn: Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<bool> + Send + Sync>>,
     }
 
@@ -195,10 +202,18 @@ mod tests {
         async fn is_member(&self, uid: &UserId, pid: &ProjectId) -> DomainResult<bool> {
             (self.is_member_fn.as_ref().unwrap())(uid, pid)
         }
-        async fn list_members(&self, _pid: &ProjectId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<UserId>> {
+        async fn list_members(
+            &self,
+            _pid: &ProjectId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<UserId>> {
             unimplemented!()
         }
-        async fn list_user_projects(&self, _uid: &UserId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<ProjectId>> {
+        async fn list_user_projects(
+            &self,
+            _uid: &UserId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<ProjectId>> {
             unimplemented!()
         }
     }
@@ -208,13 +223,30 @@ mod tests {
 
     #[async_trait]
     impl UserRepository for StubUserRepo {
-        async fn create(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
-        async fn find_by_id(&self, _id: &UserId) -> DomainResult<User> { unimplemented!() }
-        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> { unimplemented!() }
-        async fn update(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
-        async fn delete(&self, _id: &UserId) -> DomainResult<()> { unimplemented!() }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> { unimplemented!() }
-        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> { unimplemented!() }
+        async fn create(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn find_by_id(&self, _id: &UserId) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn update(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn delete(&self, _id: &UserId) -> DomainResult<()> {
+            unimplemented!()
+        }
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<User>> {
+            unimplemented!()
+        }
+        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> {
+            unimplemented!()
+        }
     }
 
     fn test_project() -> Project {
@@ -222,7 +254,8 @@ mod tests {
             ProjectName::new("Test Project").unwrap(),
             None,
             OrganizationId::generate(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn make_uc(
@@ -307,7 +340,11 @@ mod tests {
         up.add_member_fn = Some(Box::new(|_, _| Ok(())));
 
         let uc = make_uc(StubProjectRepo::default(), up, StubUserRepo);
-        assert!(uc.add_user(&UserId::generate(), &ProjectId::generate()).await.is_ok());
+        assert!(
+            uc.add_user(&UserId::generate(), &ProjectId::generate())
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]
@@ -316,7 +353,9 @@ mod tests {
         up.is_member_fn = Some(Box::new(|_, _| Ok(true)));
 
         let uc = make_uc(StubProjectRepo::default(), up, StubUserRepo);
-        let result = uc.add_user(&UserId::generate(), &ProjectId::generate()).await;
+        let result = uc
+            .add_user(&UserId::generate(), &ProjectId::generate())
+            .await;
         assert!(matches!(result.unwrap_err(), DomainError::Conflict(_)));
     }
 
@@ -326,6 +365,10 @@ mod tests {
         up.remove_member_fn = Some(Box::new(|_, _| Ok(())));
 
         let uc = make_uc(StubProjectRepo::default(), up, StubUserRepo);
-        assert!(uc.remove_user(&UserId::generate(), &ProjectId::generate()).await.is_ok());
+        assert!(
+            uc.remove_user(&UserId::generate(), &ProjectId::generate())
+                .await
+                .is_ok()
+        );
     }
 }

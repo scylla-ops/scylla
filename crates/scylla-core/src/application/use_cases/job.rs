@@ -90,7 +90,8 @@ mod tests {
         update_fn: Option<Box<dyn Fn(&Job) -> DomainResult<Job> + Send + Sync>>,
         delete_fn: Option<Box<dyn Fn(&JobId) -> DomainResult<()> + Send + Sync>>,
         list_all_fn: Option<Box<dyn Fn() -> DomainResult<PaginatedResult<Job>> + Send + Sync>>,
-        list_by_pipeline_fn: Option<Box<dyn Fn(&PipelineId) -> DomainResult<PaginatedResult<Job>> + Send + Sync>>,
+        list_by_pipeline_fn:
+            Option<Box<dyn Fn(&PipelineId) -> DomainResult<PaginatedResult<Job>> + Send + Sync>>,
     }
 
     #[async_trait]
@@ -107,32 +108,44 @@ mod tests {
         async fn delete(&self, id: &JobId) -> DomainResult<()> {
             (self.delete_fn.as_ref().unwrap())(id)
         }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Job>> {
             (self.list_all_fn.as_ref().unwrap())()
         }
-        async fn list_by_pipeline(&self, pid: &PipelineId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
+        async fn list_by_pipeline(
+            &self,
+            pid: &PipelineId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Job>> {
             (self.list_by_pipeline_fn.as_ref().unwrap())(pid)
         }
-        async fn list_by_project(&self, _pid: &ProjectId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
+        async fn list_by_project(
+            &self,
+            _pid: &ProjectId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Job>> {
             unimplemented!()
         }
-        async fn list_by_organization(&self, _oid: &OrganizationId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
+        async fn list_by_organization(
+            &self,
+            _oid: &OrganizationId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Job>> {
             unimplemented!()
         }
     }
 
     fn test_job() -> Job {
-        let node = PipelineNode::new(
-            NodeId::new("step1").unwrap(),
-            vec![],
-            "echo".into(),
-            vec![],
-        ).unwrap();
+        let node = PipelineNode::new(NodeId::new("step1").unwrap(), vec![], "echo".into(), vec![])
+            .unwrap();
         let pipeline = Pipeline::create(
             PipelineName::new("test").unwrap(),
             ProjectId::generate(),
             vec![node],
-        ).unwrap();
+        )
+        .unwrap();
         Job::create_from_pipeline(&pipeline)
     }
 
@@ -196,7 +209,10 @@ mod tests {
         }));
 
         let uc = make_uc(repo);
-        let result = uc.list_by_pipeline(&PipelineId::generate(), None).await.unwrap();
+        let result = uc
+            .list_by_pipeline(&PipelineId::generate(), None)
+            .await
+            .unwrap();
         assert!(result.items().is_empty());
     }
 }

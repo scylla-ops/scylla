@@ -141,12 +141,12 @@ impl SurrealAdapter {
         }
     }
 
-    pub async fn create_table(&self) {
+    pub async fn create_table(&self) -> Result<(), surrealdb::Error> {
         self.db
             .query("DEFINE TABLE IF NOT EXISTS $table SCHEMALESS;")
             .bind(("table", TABLE))
-            .await
-            .ok();
+            .await?;
+        Ok(())
     }
 }
 

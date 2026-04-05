@@ -36,7 +36,7 @@ tokio.workspace = true
 tracing.workspace = true
 
 # infrastructure (surrealdb feature-gated)
-surrealdb = { workspace = true, optional = true, features = ["kv-mem", "kv-rocksdb"] }
+surrealdb = { workspace = true, optional = true, features = ["kv-mem", "kv-rocksdb", "protocol-ws"] }
 surrealdb-types = { workspace = true, optional = true }
 serde.workspace = true
 

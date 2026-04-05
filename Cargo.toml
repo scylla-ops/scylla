@@ -5,7 +5,9 @@ members = [
     "crates/scylla-api",
     "crates/scylla-broker",
     "libs/protocol",
-    "libs/surreal-casbin-adapter", "crates/scylla-agent",
+    "libs/surreal-casbin-adapter",
+    "crates/scylla-agent",
+    "crates/scylla-recorder",
 ]
 
 [workspace.dependencies]
@@ -28,8 +30,8 @@ serde = { version = "1", features = ["derive"] }
 toml = "1"
 
 # database
-surrealdb = { version = "3" }
-surrealdb-types = "3"
+surrealdb = { version = "3.0.5" }
+surrealdb-types = "3.0.5"
 
 # workspace crates
 scylla-core = { path = "crates/scylla-core" }

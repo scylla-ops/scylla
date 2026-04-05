@@ -76,10 +76,15 @@ mod tests {
     struct StubPermissionService {
         add_policy_fn: Option<Box<dyn Fn(&str, &Policy) -> DomainResult<bool> + Send + Sync>>,
         remove_policy_fn: Option<Box<dyn Fn(&str, &Policy) -> DomainResult<bool> + Send + Sync>>,
-        list_policies_fn: Option<Box<dyn Fn(Option<&str>) -> DomainResult<Vec<(String, Policy)>> + Send + Sync>>,
-        add_grouping_fn: Option<Box<dyn Fn(&str, &GroupingPolicy) -> DomainResult<bool> + Send + Sync>>,
-        remove_grouping_fn: Option<Box<dyn Fn(&str, &GroupingPolicy) -> DomainResult<bool> + Send + Sync>>,
-        list_grouping_fn: Option<Box<dyn Fn(Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> + Send + Sync>>,
+        list_policies_fn:
+            Option<Box<dyn Fn(Option<&str>) -> DomainResult<Vec<(String, Policy)>> + Send + Sync>>,
+        add_grouping_fn:
+            Option<Box<dyn Fn(&str, &GroupingPolicy) -> DomainResult<bool> + Send + Sync>>,
+        remove_grouping_fn:
+            Option<Box<dyn Fn(&str, &GroupingPolicy) -> DomainResult<bool> + Send + Sync>>,
+        list_grouping_fn: Option<
+            Box<dyn Fn(Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> + Send + Sync>,
+        >,
     }
 
     impl Default for StubPermissionService {
@@ -106,16 +111,30 @@ mod tests {
         async fn remove_policy(&self, sub: impl EntityId, policy: Policy) -> DomainResult<bool> {
             (self.remove_policy_fn.as_ref().unwrap())(sub.as_ref(), &policy)
         }
-        async fn list_policies(&self, subject: Option<&str>) -> DomainResult<Vec<(String, Policy)>> {
+        async fn list_policies(
+            &self,
+            subject: Option<&str>,
+        ) -> DomainResult<Vec<(String, Policy)>> {
             (self.list_policies_fn.as_ref().unwrap())(subject)
         }
-        async fn add_grouping_policy(&self, sub: impl EntityId, policy: GroupingPolicy) -> DomainResult<bool> {
+        async fn add_grouping_policy(
+            &self,
+            sub: impl EntityId,
+            policy: GroupingPolicy,
+        ) -> DomainResult<bool> {
             (self.add_grouping_fn.as_ref().unwrap())(sub.as_ref(), &policy)
         }
-        async fn remove_grouping_policy(&self, sub: impl EntityId, policy: GroupingPolicy) -> DomainResult<bool> {
+        async fn remove_grouping_policy(
+            &self,
+            sub: impl EntityId,
+            policy: GroupingPolicy,
+        ) -> DomainResult<bool> {
             (self.remove_grouping_fn.as_ref().unwrap())(sub.as_ref(), &policy)
         }
-        async fn list_grouping_policies(&self, subject: Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> {
+        async fn list_grouping_policies(
+            &self,
+            subject: Option<&str>,
+        ) -> DomainResult<Vec<(String, GroupingPolicy)>> {
             (self.list_grouping_fn.as_ref().unwrap())(subject)
         }
     }
@@ -186,7 +205,11 @@ mod tests {
 
         let uc = make_uc(svc);
         let uid = UserId::generate();
-        assert!(uc.remove_grouping_policy(uid, test_grouping()).await.unwrap());
+        assert!(
+            uc.remove_grouping_policy(uid, test_grouping())
+                .await
+                .unwrap()
+        );
     }
 
     #[tokio::test]

@@ -1,4 +1,6 @@
 #[cfg(feature = "jobs")]
+pub mod job_log_repo;
+#[cfg(feature = "jobs")]
 pub mod job_repo;
 #[cfg(feature = "organizations")]
 pub mod organization_repo;

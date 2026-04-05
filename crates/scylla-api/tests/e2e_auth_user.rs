@@ -9,21 +9,19 @@ use protocol::services::{
         auth_service_client::AuthServiceClient,
     },
     user::{
-        CreateUserRequest, DeleteUserRequest, GetUserRequest, ListUsersRequest,
-        UpdateUserRequest,
+        CreateUserRequest, DeleteUserRequest, GetUserRequest, ListUsersRequest, UpdateUserRequest,
         user_service_client::UserServiceClient,
     },
 };
 use std::net::SocketAddr;
 use tokio::task::JoinHandle;
-use tonic::transport::Channel;
 use tonic::metadata::MetadataValue;
+use tonic::transport::Channel;
 
 /// Spin up an in-memory server and return the address + join handle.
 async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
     use protocol::services::{
-        auth::auth_service_server::AuthServiceServer,
-        user::user_service_server::UserServiceServer,
+        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
     };
     use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use scylla_core::application::{AuthUseCases, UserUseCases};
@@ -36,7 +34,9 @@ async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
     use tower::ServiceBuilder;
 
     let db_config = scylla_core::infrastructure::DatabaseConfig::default();
-    let db = scylla_core::infrastructure::init_db(&db_config).await.unwrap();
+    let db = scylla_core::infrastructure::init_db(&db_config)
+        .await
+        .unwrap();
 
     let user_repo = std::sync::Arc::new(SurrealUserRepository::new(db.clone()));
     let session_repo = std::sync::Arc::new(SurrealSessionRepository::new(db.clone()));
@@ -50,8 +50,10 @@ async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await;
-    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await.unwrap();
+    surreal_casbin_adapter.create_table().await.unwrap();
+    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
+        .await
+        .unwrap();
     let permission_checker = std::sync::Arc::new(casbin_service);
 
     let auth_handler = AuthHandler::new(auth_uc);
@@ -113,14 +115,18 @@ async fn e2e_auth_login_validate_revoke() {
 
     // Validate empty token returns false
     let resp = auth
-        .validate_token(ValidateTokenRequest { token: String::new() })
+        .validate_token(ValidateTokenRequest {
+            token: String::new(),
+        })
         .await
         .unwrap();
     assert_eq!(resp.into_inner().is_valid, Some(false));
 
     // Revoke empty token returns error
     let err = auth
-        .revoke_token(RevokeTokenRequest { token: String::new() })
+        .revoke_token(RevokeTokenRequest {
+            token: String::new(),
+        })
         .await
         .unwrap_err();
     assert_eq!(err.code(), tonic::Code::InvalidArgument);
@@ -128,24 +134,25 @@ async fn e2e_auth_login_validate_revoke() {
 
 #[tokio::test]
 async fn e2e_auth_full_flow_with_bootstrap() {
+    use protocol::services::{
+        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
+    };
+    use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use scylla_core::application::{AuthUseCases, UserUseCases};
+    use scylla_core::domain::value_objects::user::{Password, Username};
     use scylla_core::infrastructure::{
         Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
     };
-    use scylla_core::domain::value_objects::user::{Password, Username};
     use surreal_casbin_adapter::SurrealAdapter;
-    use protocol::services::{
-        auth::auth_service_server::AuthServiceServer,
-        user::user_service_server::UserServiceServer,
-    };
-    use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tower::ServiceBuilder;
 
     // Set up DB and repos
     let db_config = scylla_core::infrastructure::DatabaseConfig::default();
-    let db = scylla_core::infrastructure::init_db(&db_config).await.unwrap();
+    let db = scylla_core::infrastructure::init_db(&db_config)
+        .await
+        .unwrap();
 
     let user_repo = std::sync::Arc::new(SurrealUserRepository::new(db.clone()));
     let session_repo = std::sync::Arc::new(SurrealSessionRepository::new(db.clone()));
@@ -159,8 +166,10 @@ async fn e2e_auth_full_flow_with_bootstrap() {
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await;
-    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await.unwrap();
+    surreal_casbin_adapter.create_table().await.unwrap();
+    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
+        .await
+        .unwrap();
     let permission_checker = std::sync::Arc::new(casbin_service);
 
     // Bootstrap: create admin user directly via use case
@@ -212,16 +221,20 @@ async fn e2e_auth_full_flow_with_bootstrap() {
 
     // 2. Validate token
     let valid_resp = auth
-        .validate_token(ValidateTokenRequest { token: token.clone() })
+        .validate_token(ValidateTokenRequest {
+            token: token.clone(),
+        })
         .await
         .unwrap()
         .into_inner();
     assert_eq!(valid_resp.is_valid, Some(true));
 
     // 3. Revoke token
-    auth.revoke_token(RevokeTokenRequest { token: token.clone() })
-        .await
-        .unwrap();
+    auth.revoke_token(RevokeTokenRequest {
+        token: token.clone(),
+    })
+    .await
+    .unwrap();
 
     // 4. Token should no longer be valid
     let invalid_resp = auth
@@ -234,27 +247,28 @@ async fn e2e_auth_full_flow_with_bootstrap() {
 
 #[tokio::test]
 async fn e2e_user_crud_with_auth() {
+    use protocol::services::{
+        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
+    };
+    use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
+    use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::application::{AuthUseCases, UserUseCases};
+    use scylla_core::domain::value_objects::permission::policy::Policy;
+    use scylla_core::domain::value_objects::permission::{Act, Resource, Scope};
+    use scylla_core::domain::value_objects::user::{Password, Username};
     use scylla_core::infrastructure::{
         Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
     };
-    use scylla_core::domain::value_objects::user::{Password, Username};
-    use scylla_core::application::ports::services::permission_service::PermissionService;
-    use scylla_core::domain::value_objects::permission::{Act, Resource, Scope};
-    use scylla_core::domain::value_objects::permission::policy::Policy;
     use surreal_casbin_adapter::SurrealAdapter;
-    use protocol::services::{
-        auth::auth_service_server::AuthServiceServer,
-        user::user_service_server::UserServiceServer,
-    };
-    use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tower::ServiceBuilder;
 
     // Set up DB and repos
     let db_config = scylla_core::infrastructure::DatabaseConfig::default();
-    let db = scylla_core::infrastructure::init_db(&db_config).await.unwrap();
+    let db = scylla_core::infrastructure::init_db(&db_config)
+        .await
+        .unwrap();
 
     let user_repo = std::sync::Arc::new(SurrealUserRepository::new(db.clone()));
     let session_repo = std::sync::Arc::new(SurrealSessionRepository::new(db.clone()));
@@ -268,12 +282,17 @@ async fn e2e_user_crud_with_auth() {
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await;
-    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await.unwrap();
+    surreal_casbin_adapter.create_table().await.unwrap();
+    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
+        .await
+        .unwrap();
 
     // Bootstrap admin user
     let admin = user_uc
-        .create(Username::new("admin").unwrap(), Password::new("AdminPass123").unwrap())
+        .create(
+            Username::new("admin").unwrap(),
+            Password::new("AdminPass123").unwrap(),
+        )
         .await
         .unwrap();
 
@@ -328,11 +347,11 @@ async fn e2e_user_crud_with_auth() {
     let bearer: MetadataValue<_> = format!("Bearer {token}").parse().unwrap();
 
     // Create an intercepted user client
-    let mut users = UserServiceClient::with_interceptor(channel.clone(), move |mut req: tonic::Request<()>| {
-        req.metadata_mut()
-            .insert("authorization", bearer.clone());
-        Ok(req)
-    });
+    let mut users =
+        UserServiceClient::with_interceptor(channel.clone(), move |mut req: tonic::Request<()>| {
+            req.metadata_mut().insert("authorization", bearer.clone());
+            Ok(req)
+        });
 
     // 1. Create user
     let create_resp = users
@@ -349,7 +368,9 @@ async fn e2e_user_crud_with_auth() {
 
     // 2. Get user
     let get_resp = users
-        .get_user(GetUserRequest { user_id: user_id.clone() })
+        .get_user(GetUserRequest {
+            user_id: user_id.clone(),
+        })
         .await
         .unwrap()
         .into_inner();
@@ -376,7 +397,9 @@ async fn e2e_user_crud_with_auth() {
 
     // 5. Delete user
     users
-        .delete_user(DeleteUserRequest { user_id: user_id.clone() })
+        .delete_user(DeleteUserRequest {
+            user_id: user_id.clone(),
+        })
         .await
         .unwrap();
 

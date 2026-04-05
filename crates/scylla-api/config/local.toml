@@ -2,9 +2,11 @@
 address = "127.0.0.1:50051"
 
 [database]
-url = "rocksdb://./data/scylla.db"
+url = "ws://127.0.0.1:8000"
 namespace = "scylla"
 database = "core"
+username = "root"
+password = "root"
 
 [cors]
 allow_origins = ["localhost:5173"]
@@ -19,6 +21,9 @@ expose_headers = [
     "grpc-message",
     "grpc-status-details-bin"
 ]
+
+[broker]
+url = "http://127.0.0.1:50052"
 
 [bootstrap]
 username = "admin"

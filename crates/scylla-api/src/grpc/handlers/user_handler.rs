@@ -135,16 +135,16 @@ impl<
 mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
+    use async_trait::async_trait;
     use protocol::services::user::user_service_server::UserService;
     use scylla_core::application::UserUseCases;
-    use scylla_core::application::ports::{HashService, UserRepository};
     use scylla_core::application::ports::services::permission_service::PermissionService;
+    use scylla_core::application::ports::{HashService, UserRepository};
     use scylla_core::domain::entities::{EntityId, User};
     use scylla_core::domain::errors::{DomainError, DomainResult};
-    use scylla_core::domain::value_objects::user::{Password, PasswordHash, Username};
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
+    use scylla_core::domain::value_objects::user::{Password, PasswordHash, Username};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
-    use async_trait::async_trait;
     use std::sync::Arc;
 
     // ── Stub UserRepo ───────────────────────────────────────────
@@ -161,12 +161,25 @@ mod tests {
 
     #[async_trait]
     impl UserRepository for StubUserRepo {
-        async fn create(&self, u: &User) -> DomainResult<User> { (self.create_fn.as_ref().unwrap())(u) }
-        async fn find_by_id(&self, id: &UserId) -> DomainResult<User> { (self.find_by_id_fn.as_ref().unwrap())(id) }
-        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> { unimplemented!() }
-        async fn update(&self, u: &User) -> DomainResult<User> { (self.update_fn.as_ref().unwrap())(u) }
-        async fn delete(&self, id: &UserId) -> DomainResult<()> { (self.delete_fn.as_ref().unwrap())(id) }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> {
+        async fn create(&self, u: &User) -> DomainResult<User> {
+            (self.create_fn.as_ref().unwrap())(u)
+        }
+        async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
+            (self.find_by_id_fn.as_ref().unwrap())(id)
+        }
+        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn update(&self, u: &User) -> DomainResult<User> {
+            (self.update_fn.as_ref().unwrap())(u)
+        }
+        async fn delete(&self, id: &UserId) -> DomainResult<()> {
+            (self.delete_fn.as_ref().unwrap())(id)
+        }
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<User>> {
             (self.list_all_fn.as_ref().unwrap())()
         }
         async fn username_exists(&self, u: &Username) -> DomainResult<bool> {
@@ -183,7 +196,9 @@ mod tests {
         async fn hash(&self, _p: &Password) -> DomainResult<PasswordHash> {
             Ok(PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap())
         }
-        async fn verify(&self, _p: &Password, _h: &PasswordHash) -> DomainResult<bool> { Ok(true) }
+        async fn verify(&self, _p: &Password, _h: &PasswordHash) -> DomainResult<bool> {
+            Ok(true)
+        }
     }
 
     // ── Stub PermissionService (always allows) ──────────────────
@@ -192,13 +207,38 @@ mod tests {
 
     #[async_trait]
     impl PermissionService for AllowAll {
-        async fn check(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
-        async fn add_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
-        async fn remove_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
-        async fn list_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, Policy)>> { Ok(vec![]) }
-        async fn add_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { Ok(true) }
-        async fn remove_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { Ok(true) }
-        async fn list_grouping_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> { Ok(vec![]) }
+        async fn check(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn add_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn remove_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn list_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, Policy)>> {
+            Ok(vec![])
+        }
+        async fn add_grouping_policy(
+            &self,
+            _s: impl EntityId,
+            _p: GroupingPolicy,
+        ) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn remove_grouping_policy(
+            &self,
+            _s: impl EntityId,
+            _p: GroupingPolicy,
+        ) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn list_grouping_policies(
+            &self,
+            _s: Option<&str>,
+        ) -> DomainResult<Vec<(String, GroupingPolicy)>> {
+            Ok(vec![])
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────
@@ -212,7 +252,8 @@ mod tests {
 
     fn authed_request<T>(body: T) -> Request<T> {
         let mut req = Request::new(body);
-        req.extensions_mut().insert(AuthContext::new(UserId::generate()));
+        req.extensions_mut()
+            .insert(AuthContext::new(UserId::generate()));
         req
     }
 
@@ -251,7 +292,9 @@ mod tests {
         repo.find_by_id_fn = Some(Box::new(move |_| Ok(u.clone())));
 
         let handler = make_handler(repo);
-        let req = authed_request(GetUserRequest { user_id: user_id_str });
+        let req = authed_request(GetUserRequest {
+            user_id: user_id_str,
+        });
 
         let resp = handler.get_user(req).await.unwrap();
         assert_eq!(resp.into_inner().username, "testuser");
@@ -265,7 +308,9 @@ mod tests {
         }));
 
         let handler = make_handler(repo);
-        let req = authed_request(GetUserRequest { user_id: "nonexistent".into() });
+        let req = authed_request(GetUserRequest {
+            user_id: "nonexistent".into(),
+        });
 
         let err = handler.get_user(req).await.unwrap_err();
         assert_eq!(err.code(), tonic::Code::NotFound);
@@ -282,7 +327,9 @@ mod tests {
         repo.delete_fn = Some(Box::new(|_| Ok(())));
 
         let handler = make_handler(repo);
-        let req = authed_request(DeleteUserRequest { user_id: user_id_str });
+        let req = authed_request(DeleteUserRequest {
+            user_id: user_id_str,
+        });
         assert!(handler.delete_user(req).await.is_ok());
     }
 

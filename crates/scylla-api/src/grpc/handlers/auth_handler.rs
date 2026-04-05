@@ -115,6 +115,8 @@ impl<U: UserRepository, S: SessionRepository, H: HashService> AuthHandler<U, S, 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
+    use chrono::Duration;
     use protocol::services::auth::auth_service_server::AuthService;
     use scylla_core::application::AuthUseCases;
     use scylla_core::application::ports::{HashService, SessionRepository, UserRepository};
@@ -122,8 +124,6 @@ mod tests {
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use scylla_core::domain::value_objects::user::{Password, PasswordHash, Username};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
-    use async_trait::async_trait;
-    use chrono::Duration;
     use std::sync::Arc;
 
     // ── Stubs ──��──────────────────────────────────────────────────
@@ -135,15 +135,30 @@ mod tests {
 
     #[async_trait]
     impl UserRepository for StubUserRepo {
-        async fn create(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
-        async fn find_by_id(&self, _id: &UserId) -> DomainResult<User> { unimplemented!() }
+        async fn create(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn find_by_id(&self, _id: &UserId) -> DomainResult<User> {
+            unimplemented!()
+        }
         async fn find_by_username(&self, u: &Username) -> DomainResult<User> {
             (self.find_by_username_fn.as_ref().unwrap())(u)
         }
-        async fn update(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
-        async fn delete(&self, _id: &UserId) -> DomainResult<()> { unimplemented!() }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> { unimplemented!() }
-        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> { unimplemented!() }
+        async fn update(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn delete(&self, _id: &UserId) -> DomainResult<()> {
+            unimplemented!()
+        }
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<User>> {
+            unimplemented!()
+        }
+        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> {
+            unimplemented!()
+        }
     }
 
     struct StubSessionRepo {
@@ -154,7 +169,11 @@ mod tests {
 
     impl Default for StubSessionRepo {
         fn default() -> Self {
-            Self { create_fn: None, find_by_token_fn: None, delete_by_token_fn: None }
+            Self {
+                create_fn: None,
+                find_by_token_fn: None,
+                delete_by_token_fn: None,
+            }
         }
     }
 
@@ -166,22 +185,31 @@ mod tests {
         async fn find_by_token(&self, t: &str) -> DomainResult<Session> {
             (self.find_by_token_fn.as_ref().unwrap())(t)
         }
-        async fn update(&self, _s: &Session) -> DomainResult<Session> { unimplemented!() }
+        async fn update(&self, _s: &Session) -> DomainResult<Session> {
+            unimplemented!()
+        }
         async fn delete_by_token(&self, t: &str) -> DomainResult<()> {
             (self.delete_by_token_fn.as_ref().unwrap())(t)
         }
-        async fn delete_expired(&self) -> DomainResult<u64> { unimplemented!() }
-        async fn list_for_user(&self, _uid: &UserId) -> DomainResult<Vec<Session>> { unimplemented!() }
+        async fn delete_expired(&self) -> DomainResult<u64> {
+            unimplemented!()
+        }
+        async fn list_for_user(&self, _uid: &UserId) -> DomainResult<Vec<Session>> {
+            unimplemented!()
+        }
     }
 
     #[derive(Default)]
     struct StubHash {
-        verify_fn: Option<Box<dyn Fn(&Password, &PasswordHash) -> DomainResult<bool> + Send + Sync>>,
+        verify_fn:
+            Option<Box<dyn Fn(&Password, &PasswordHash) -> DomainResult<bool> + Send + Sync>>,
     }
 
     #[async_trait]
     impl HashService for StubHash {
-        async fn hash(&self, _p: &Password) -> DomainResult<PasswordHash> { unimplemented!() }
+        async fn hash(&self, _p: &Password) -> DomainResult<PasswordHash> {
+            unimplemented!()
+        }
         async fn verify(&self, p: &Password, h: &PasswordHash) -> DomainResult<bool> {
             (self.verify_fn.as_ref().unwrap())(p, h)
         }
@@ -263,7 +291,9 @@ mod tests {
         session_repo.find_by_token_fn = Some(Box::new(move |_| Ok(s.clone())));
 
         let handler = make_handler(StubUserRepo::default(), session_repo, StubHash::default());
-        let req = Request::new(ValidateTokenRequest { token: "tok".into() });
+        let req = Request::new(ValidateTokenRequest {
+            token: "tok".into(),
+        });
 
         let resp = handler.validate_token(req).await.unwrap();
         assert_eq!(resp.into_inner().is_valid, Some(true));
@@ -276,7 +306,9 @@ mod tests {
             StubSessionRepo::default(),
             StubHash::default(),
         );
-        let req = Request::new(ValidateTokenRequest { token: String::new() });
+        let req = Request::new(ValidateTokenRequest {
+            token: String::new(),
+        });
 
         let resp = handler.validate_token(req).await.unwrap();
         assert_eq!(resp.into_inner().is_valid, Some(false));
@@ -288,7 +320,9 @@ mod tests {
         session_repo.delete_by_token_fn = Some(Box::new(|_| Ok(())));
 
         let handler = make_handler(StubUserRepo::default(), session_repo, StubHash::default());
-        let req = Request::new(RevokeTokenRequest { token: "tok".into() });
+        let req = Request::new(RevokeTokenRequest {
+            token: "tok".into(),
+        });
 
         assert!(handler.revoke_token(req).await.is_ok());
     }
@@ -300,7 +334,9 @@ mod tests {
             StubSessionRepo::default(),
             StubHash::default(),
         );
-        let req = Request::new(RevokeTokenRequest { token: String::new() });
+        let req = Request::new(RevokeTokenRequest {
+            token: String::new(),
+        });
 
         let err = handler.revoke_token(req).await.unwrap_err();
         assert_eq!(err.code(), tonic::Code::InvalidArgument);

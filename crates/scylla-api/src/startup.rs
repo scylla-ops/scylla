@@ -1,12 +1,13 @@
 use crate::config::CoreConfig;
 use anyhow::Result;
+use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
     AuthUseCases, JobUseCases, OrganizationUseCases, PermissionUseCases, PipelineUseCases,
     ProjectUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::{
-    Argon2HashService, CasbinPermissionService, SurrealJobRepository,
+    Argon2HashService, CasbinPermissionService, Db, SurrealJobRepository,
     SurrealOrganizationRepository, SurrealPipelineRepository, SurrealProjectRepository,
     SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
     SurrealUserRepository,
@@ -38,6 +39,7 @@ pub type SharedPermissionUc = Arc<PermissionUseCases<CasbinPermissionService>>;
 // ── Services container ─────────────────────────────────────────────────
 
 pub struct Services {
+    pub db: Db,
     pub auth_uc: SharedAuthUc,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
@@ -47,6 +49,7 @@ pub struct Services {
     pub permission_uc: SharedPermissionUc,
     pub permission_checker: Arc<CasbinPermissionService>,
     pub session_repo: Arc<SurrealSessionRepository>,
+    pub broker_publisher: Arc<Publisher>,
 }
 
 pub async fn init_services(config: &CoreConfig) -> Result<Services> {
@@ -83,9 +86,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         project_repo.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
-
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await;
+    surreal_casbin_adapter.create_table().await?;
     let mut casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await?;
 
     if let Some(cfg) = &config.bootstrap {
@@ -95,7 +97,13 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     let permission_checker = Arc::new(casbin_service);
     let permission_uc = Arc::new(PermissionUseCases::new(permission_checker.clone()));
 
+    // Connect to Hermes broker
+    let broker_channel = hermes_broker_client::connect(&config.broker.url, None).await?;
+    tracing::info!(url = %config.broker.url, "connected to hermes broker");
+    let broker_publisher = Arc::new(Publisher::new(broker_channel));
+
     Ok(Services {
+        db,
         auth_uc,
         user_uc,
         org_uc,
@@ -105,6 +113,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         permission_uc,
         permission_checker,
         session_repo,
+        broker_publisher,
     })
 }
 
@@ -211,7 +220,9 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
     );
     let pipeline_handler = PipelineHandler::new(
         services.pipeline_uc.clone(),
+        services.job_uc.clone(),
         services.permission_checker.clone(),
+        services.broker_publisher.clone(),
     );
     let job_handler = JobHandler::new(services.job_uc.clone(), services.permission_checker.clone());
     let permission_handler = PermissionHandler::new(
@@ -270,6 +281,10 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         .serve_with_shutdown(config.grpc.address, shutdown_signal())
         .await?;
 
+    // Explicitly invalidate the SurrealDB session before the runtime shuts down.
+    // On Windows, Ctrl+C tears down the runtime before Drop can send the
+    // websocket close frame, leaving zombie sessions that block the next startup.
+    scylla_core::infrastructure::close_db(&services.db).await;
+
     Ok(())
 }
-

@@ -2,6 +2,8 @@ mod ids;
 
 #[cfg(feature = "jobs")]
 mod job;
+#[cfg(feature = "jobs")]
+mod job_log;
 #[cfg(feature = "organizations")]
 mod organization;
 #[cfg(feature = "pipelines")]
@@ -21,6 +23,8 @@ pub use ids::*;
 
 #[cfg(feature = "jobs")]
 pub use job::*;
+#[cfg(feature = "jobs")]
+pub use job_log::*;
 #[cfg(feature = "organizations")]
 pub use organization::*;
 #[cfg(feature = "pipelines")]

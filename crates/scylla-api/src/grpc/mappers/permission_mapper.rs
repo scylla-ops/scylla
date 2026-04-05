@@ -23,6 +23,7 @@ pub fn domain_act_to_proto(act: &Act) -> ProtoAct {
         Act::Read => ProtoAct::Read,
         Act::Write => ProtoAct::Write,
         Act::Delete => ProtoAct::Delete,
+        Act::Execute => ProtoAct::All, // Execute maps to All in proto (no proto equivalent yet)
         Act::All => ProtoAct::All,
     }
 }

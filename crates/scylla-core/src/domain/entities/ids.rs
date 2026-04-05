@@ -123,6 +123,7 @@ define_id!(OrganizationId, "organizations");
 define_id!(ProjectId, "projects");
 define_id!(PipelineId, "pipelines");
 define_id!(JobId, "jobs");
+define_id!(JobLogId, "job_logs");
 define_id!(UserOrganizationId, "user_organization");
 define_id!(UserProjectId, "user_project");
 define_id!(SessionId, "sessions");

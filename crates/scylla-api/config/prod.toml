@@ -2,12 +2,17 @@
 address = "0.0.0.0:50051"
 
 [database]
-url = "rocksdb:///data/scylla.db"
+url = "ws://surrealdb:8000"
 namespace = "production"
 database = "core"
+username = "root"
+password = "root"
 
 [cors]
 allow_origins = ["https://your-domain.example.com"]
 allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 allow_headers = ["content-type", "authorization"]
 max_age_seconds = 3600
+
+[broker]
+url = "http://scylla-broker:50052"

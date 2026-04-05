@@ -1,8 +1,17 @@
 services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    container_name: scylla-surrealdb
+    command: start --user root --pass root file:/data/srdb.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - surrealdb_data:/data
+
   core:
     build:
       context: .
-      dockerfile: apps/core/Dockerfile
+      dockerfile: crates/scylla-api/Dockerfile
     container_name: scylla-core
     ports:
       - "50051:50051"
@@ -10,5 +19,9 @@ services:
       RUST_LOG: debug
     command: ["--config", "/app/config/docker.toml"]
     volumes:
-      - ./apps/core/config:/app/config
-      - core_data:/data
+      - ./crates/scylla-api/config:/app/config
+    depends_on:
+      - surrealdb
+
+volumes:
+  surrealdb_data:

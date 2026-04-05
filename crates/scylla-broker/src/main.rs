@@ -1,10 +1,6 @@
-use std::sync::Arc;
-
-use hermes_proto::broker_server::BrokerServer;
-use hermes_server::broker::BrokerEngine;
-use hermes_server::config::ServerConfig;
-use hermes_server::grpc::BrokerService;
-use hermes_store::{MessageStore, RedbMessageStore};
+use hermes_broker_core::router::{Router, RouterConfig};
+use hermes_broker_proto::broker_server::BrokerServer;
+use hermes_broker_server::grpc::BrokerService;
 use tonic::transport::Server;
 use tracing::info;
 
@@ -16,64 +12,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .init();
 
-    let config = ServerConfig::from_env();
+    let addr = "0.0.0.0:50052".parse()?;
 
-    let store: Option<Arc<dyn MessageStore>> = if let Some(ref path) = config.store_path {
-        let store = RedbMessageStore::open(path)?;
-        info!(?path, "durable store opened");
-        Some(Arc::new(store))
-    } else {
-        info!("running in fire-and-forget mode (no HERMES_STORE_PATH)");
-        None
-    };
+    let config = RouterConfig::default();
+    let (router, router_tx) = Router::new(config, 8192);
+    tokio::spawn(router.run());
 
-    let engine = if let Some(ref store) = store {
-        Arc::new(BrokerEngine::with_store(
-            config.subscriber_channel_capacity,
-            store.clone(),
-        ))
-    } else {
-        Arc::new(BrokerEngine::new(config.subscriber_channel_capacity))
-    };
-
-    // Token to cancel background loops on shutdown.
-    let cancel = tokio_util::sync::CancellationToken::new();
-
-    // Spawn redelivery + GC loops if durable mode is enabled.
-    if let Some(ref store) = store {
-        hermes_server::redelivery::spawn_redelivery_loop(
-            engine.clone(),
-            config.redelivery_interval_secs,
-            config.max_delivery_attempts,
-            config.redelivery_batch_size,
-            cancel.clone(),
-        );
-        hermes_server::redelivery::spawn_gc_loop(
-            store.clone(),
-            config.retention_secs,
-            config.gc_interval_secs,
-            cancel.clone(),
-        );
-        info!("redelivery and GC loops started");
-    }
-
-    let listen_addr = config.listen_addr;
-    let service = BrokerService::new(engine, config);
-
-    info!("hermes listening on {listen_addr}");
+    let service = BrokerService::new(router_tx);
 
     let reflection = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(hermes_proto::FILE_DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(hermes_broker_proto::FILE_DESCRIPTOR_SET)
         .build_v1()?;
 
+    info!(%addr, "scylla-broker listening");
+
     Server::builder()
+        .http2_keepalive_interval(Some(std::time::Duration::from_secs(10)))
+        .http2_keepalive_timeout(Some(std::time::Duration::from_secs(5)))
         .add_service(reflection)
         .add_service(BrokerServer::new(service))
-        .serve_with_shutdown(listen_addr, shutdown_signal())
+        .serve_with_shutdown(addr, shutdown_signal())
         .await?;
 
-    cancel.cancel();
-    info!("hermes shut down");
+    info!("scylla-broker shut down");
     Ok(())
 }
 

@@ -35,7 +35,10 @@ mod tests {
 
     #[test]
     fn proto_to_domain_with_valid_values() {
-        let proto = ProtoPaginationRequest { page: 2, page_size: 25 };
+        let proto = ProtoPaginationRequest {
+            page: 2,
+            page_size: 25,
+        };
         let result = proto_to_domain_pagination(Some(proto)).unwrap();
         assert_eq!(result.page(), 2);
         assert_eq!(result.page_size(), 25);
@@ -43,14 +46,20 @@ mod tests {
 
     #[test]
     fn proto_to_domain_zero_page_defaults_to_1() {
-        let proto = ProtoPaginationRequest { page: 0, page_size: 10 };
+        let proto = ProtoPaginationRequest {
+            page: 0,
+            page_size: 10,
+        };
         let result = proto_to_domain_pagination(Some(proto)).unwrap();
         assert_eq!(result.page(), 1);
     }
 
     #[test]
     fn proto_to_domain_zero_page_size_uses_default() {
-        let proto = ProtoPaginationRequest { page: 1, page_size: 0 };
+        let proto = ProtoPaginationRequest {
+            page: 1,
+            page_size: 0,
+        };
         let result = proto_to_domain_pagination(Some(proto)).unwrap();
         assert_eq!(result.page_size(), PaginationParams::DEFAULT_PAGE_SIZE);
     }

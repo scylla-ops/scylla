@@ -84,11 +84,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
+    use chrono::Duration;
     use scylla_core::application::ports::SessionRepository;
     use scylla_core::domain::entities::{Session, UserId};
     use scylla_core::domain::errors::{DomainError, DomainResult};
-    use async_trait::async_trait;
-    use chrono::Duration;
     use std::sync::Arc;
     use tonic_async_interceptor::AsyncInterceptor;
 
@@ -99,24 +99,40 @@ mod tests {
 
     #[async_trait]
     impl SessionRepository for StubSessionRepo {
-        async fn create(&self, _s: &Session) -> DomainResult<Session> { unimplemented!() }
+        async fn create(&self, _s: &Session) -> DomainResult<Session> {
+            unimplemented!()
+        }
         async fn find_by_token(&self, token: &str) -> DomainResult<Session> {
             (self.find_by_token_fn)(token)
         }
-        async fn update(&self, _s: &Session) -> DomainResult<Session> { unimplemented!() }
+        async fn update(&self, _s: &Session) -> DomainResult<Session> {
+            unimplemented!()
+        }
         async fn delete_by_token(&self, token: &str) -> DomainResult<()> {
             (self.delete_by_token_fn)(token)
         }
-        async fn delete_expired(&self) -> DomainResult<u64> { unimplemented!() }
-        async fn list_for_user(&self, _uid: &UserId) -> DomainResult<Vec<Session>> { unimplemented!() }
+        async fn delete_expired(&self) -> DomainResult<u64> {
+            unimplemented!()
+        }
+        async fn list_for_user(&self, _uid: &UserId) -> DomainResult<Vec<Session>> {
+            unimplemented!()
+        }
     }
 
     fn valid_session() -> Session {
-        Session::create(UserId::generate(), "valid-token".to_string(), Duration::hours(24))
+        Session::create(
+            UserId::generate(),
+            "valid-token".to_string(),
+            Duration::hours(24),
+        )
     }
 
     fn expired_session() -> Session {
-        Session::create(UserId::generate(), "expired-token".to_string(), Duration::hours(-1))
+        Session::create(
+            UserId::generate(),
+            "expired-token".to_string(),
+            Duration::hours(-1),
+        )
     }
 
     #[test]
@@ -130,7 +146,8 @@ mod tests {
     fn extract_auth_context_present() {
         let mut req = Request::new(());
         let user_id = UserId::generate();
-        req.extensions_mut().insert(AuthContext::new(user_id.clone()));
+        req.extensions_mut()
+            .insert(AuthContext::new(user_id.clone()));
 
         let ctx = extract_auth_context(&req).unwrap();
         assert_eq!(ctx.user_id, user_id);
@@ -149,10 +166,8 @@ mod tests {
 
         let mut interceptor = AuthInterceptor::new(repo);
         let mut req = Request::new(());
-        req.metadata_mut().insert(
-            "authorization",
-            "Bearer valid-token".parse().unwrap(),
-        );
+        req.metadata_mut()
+            .insert("authorization", "Bearer valid-token".parse().unwrap());
 
         let result = interceptor.call(req).await;
         assert!(result.is_ok());
@@ -187,10 +202,8 @@ mod tests {
 
         let mut interceptor = AuthInterceptor::new(repo);
         let mut req = Request::new(());
-        req.metadata_mut().insert(
-            "authorization",
-            "Bearer expired-token".parse().unwrap(),
-        );
+        req.metadata_mut()
+            .insert("authorization", "Bearer expired-token".parse().unwrap());
 
         let result = interceptor.call(req).await;
         assert!(result.is_err());
@@ -206,10 +219,8 @@ mod tests {
 
         let mut interceptor = AuthInterceptor::new(repo);
         let mut req = Request::new(());
-        req.metadata_mut().insert(
-            "authorization",
-            "Bearer unknown".parse().unwrap(),
-        );
+        req.metadata_mut()
+            .insert("authorization", "Bearer unknown".parse().unwrap());
 
         let result = interceptor.call(req).await;
         assert!(result.is_err());

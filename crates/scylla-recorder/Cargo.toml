@@ -1,0 +1,33 @@
+[package]
+name = "scylla-recorder"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# domain + persistence
+scylla-core = { workspace = true, features = ["surrealdb", "jobs"] }
+
+# broker
+hermes-broker-client = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/client" }
+
+# async
+tokio = { workspace = true }
+
+# grpc (Channel type used by hermes-broker-client)
+tonic = { workspace = true }
+
+# serialization
+serde_json = { workspace = true }
+
+# cli
+clap = { workspace = true }
+
+# error handling
+anyhow = { workspace = true }
+
+# logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# time
+chrono = { workspace = true }

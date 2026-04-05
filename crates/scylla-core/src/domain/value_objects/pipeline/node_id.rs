@@ -1,11 +1,12 @@
 use crate::domain::errors::{DomainError, DomainResult};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 #[cfg(feature = "surrealdb")]
 use surrealdb_types::SurrealValue;
 
 const MAX_NODE_ID_LENGTH: usize = 128;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct NodeId {
     inner: String,

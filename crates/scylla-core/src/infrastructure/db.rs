@@ -1,17 +1,33 @@
 use crate::domain::entities::{
-    JobId, OrganizationId, PipelineId, ProjectId, SessionId, UserId, UserOrganizationId,
+    JobId, JobLogId, OrganizationId, PipelineId, ProjectId, SessionId, UserId, UserOrganizationId,
     UserProjectId,
 };
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
+use surrealdb::opt::auth::Root;
+
+/// Type alias for the shared SurrealDB client.
+pub type Db = Surreal<Any>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DatabaseConfig {
     pub url: String,
     pub namespace: String,
     pub database: String,
+    #[serde(default = "default_username")]
+    pub username: String,
+    #[serde(default = "default_password")]
+    pub password: String,
+}
+
+fn default_username() -> String {
+    "root".to_string()
+}
+
+fn default_password() -> String {
+    "root".to_string()
 }
 
 impl Default for DatabaseConfig {
@@ -20,6 +36,8 @@ impl Default for DatabaseConfig {
             url: "memory".to_string(),
             namespace: "scylla".to_string(),
             database: "core".to_string(),
+            username: default_username(),
+            password: default_password(),
         }
     }
 }
@@ -28,6 +46,12 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
     let db = surrealdb::engine::any::connect(&config.url)
         .await
         .with_context(|| format!("Failed to connect to database at {}", config.url))?;
+
+    db.signin(Root {
+        username: config.username.clone(),
+        password: config.password.clone(),
+    })
+    .await?;
 
     db.use_ns(&config.namespace)
         .use_db(&config.database)
@@ -54,6 +78,8 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
     tables.push(PipelineId::table_name());
     #[cfg(feature = "jobs")]
     tables.push(JobId::table_name());
+    #[cfg(feature = "jobs")]
+    tables.push(JobLogId::table_name());
 
     let ddl = tables
         .iter()
@@ -81,4 +107,15 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
     }
 
     Ok(db)
+}
+
+/// Explicitly invalidate the SurrealDB session so the websocket close frame
+/// is sent before the tokio runtime shuts down. Without this, Windows Ctrl+C
+/// kills the runtime before the `Drop` impl can clean up, leaving SurrealDB
+/// with zombie sessions that block the next startup.
+pub async fn close_db(db: &Db) {
+    if let Err(e) = db.invalidate().await {
+        tracing::warn!(error = %e, "failed to invalidate SurrealDB session");
+    }
+    tracing::debug!("SurrealDB session invalidated");
 }

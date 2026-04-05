@@ -3,6 +3,7 @@ syntax = "proto3";
 package pipeline;
 
 import "common.proto";
+import "job.proto";
 
 service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (PipelineResponse);
@@ -12,6 +13,11 @@ service PipelineService {
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
   rpc ListProjectPipelines(ListProjectPipelinesRequest) returns (ListPipelinesResponse);
   rpc ListOrganizationPipelines(ListOrganizationPipelinesRequest) returns (ListPipelinesResponse);
+  rpc RunPipeline(RunPipelineRequest) returns (job.JobResponse);
+}
+
+message RunPipelineRequest {
+  string pipeline_id = 1;
 }
 
 message PipelineNode {

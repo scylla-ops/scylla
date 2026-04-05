@@ -2,6 +2,8 @@ pub mod repositories;
 pub mod services;
 
 #[cfg(feature = "jobs")]
+pub use repositories::job_log_repo::JobLogRepository;
+#[cfg(feature = "jobs")]
 pub use repositories::job_repo::JobRepository;
 #[cfg(feature = "organizations")]
 pub use repositories::organization_repo::OrganizationRepository;

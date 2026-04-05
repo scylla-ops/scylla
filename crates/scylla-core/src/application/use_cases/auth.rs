@@ -116,8 +116,7 @@ mod tests {
 
     #[derive(Default)]
     struct StubUserRepo {
-        find_by_username_fn:
-            Option<Box<dyn Fn(&Username) -> DomainResult<User> + Send + Sync>>,
+        find_by_username_fn: Option<Box<dyn Fn(&Username) -> DomainResult<User> + Send + Sync>>,
     }
 
     #[async_trait]
@@ -196,7 +195,8 @@ mod tests {
 
     #[derive(Default)]
     struct StubHash {
-        verify_fn: Option<Box<dyn Fn(&Password, &PasswordHash) -> DomainResult<bool> + Send + Sync>>,
+        verify_fn:
+            Option<Box<dyn Fn(&Password, &PasswordHash) -> DomainResult<bool> + Send + Sync>>,
     }
 
     #[async_trait]
@@ -369,7 +369,10 @@ mod tests {
         session_repo.find_by_token_fn = Some(Box::new(move |_| Ok(s.clone())));
 
         let uc = make_uc(StubUserRepo::default(), session_repo, StubHash::default());
-        assert_eq!(uc.get_user_id_from_token("test-token").await.unwrap(), user_id);
+        assert_eq!(
+            uc.get_user_id_from_token("test-token").await.unwrap(),
+            user_id
+        );
     }
 
     #[tokio::test]

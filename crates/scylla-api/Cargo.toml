@@ -29,11 +29,14 @@ chrono.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 derive_more.workspace = true
-uuid.workspace = true
-ulid.workspace = true
-surrealdb.workspace = true
 surreal-casbin-adapter.workspace = true
 log.workspace = true
+
+# broker
+hermes-broker-proto = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/proto" }
+hermes-broker-client = { path = "C:/Users/sebas/RustroverProjects/hermes-rs/crates/client" }
+tokio-stream = "0.1"
+serde_json.workspace = true
 
 # grpc-only (optional)
 tonic = { workspace = true, optional = true }
@@ -46,7 +49,6 @@ protocol = { workspace = true, optional = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
 protocol = { workspace = true }
-surrealdb = { workspace = true }
 tokio-stream = "0.1"
 tonic-async-interceptor = { workspace = true }
 surreal-casbin-adapter = { workspace = true }

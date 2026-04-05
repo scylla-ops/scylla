@@ -293,17 +293,19 @@ impl<
 mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
+    use async_trait::async_trait;
     use protocol::services::project::project_service_server::ProjectService;
     use scylla_core::application::ProjectUseCases;
-    use scylla_core::application::ports::{ProjectRepository, UserProjectRepository, UserRepository};
     use scylla_core::application::ports::services::permission_service::PermissionService;
+    use scylla_core::application::ports::{
+        ProjectRepository, UserProjectRepository, UserRepository,
+    };
     use scylla_core::domain::entities::{EntityId, Project, User};
     use scylla_core::domain::errors::DomainResult;
+    use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
     use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
     use scylla_core::domain::value_objects::user::Username;
-    use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
-    use async_trait::async_trait;
     use std::sync::Arc;
 
     // ── Stubs ──────────────────────────────────────────────────
@@ -319,28 +321,65 @@ mod tests {
 
     #[async_trait]
     impl ProjectRepository for StubProjectRepo {
-        async fn create(&self, p: &Project) -> DomainResult<Project> { (self.create_fn.as_ref().unwrap())(p) }
-        async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> { (self.find_by_id_fn.as_ref().unwrap())(id) }
-        async fn update(&self, p: &Project) -> DomainResult<Project> { (self.update_fn.as_ref().unwrap())(p) }
-        async fn delete(&self, id: &ProjectId) -> DomainResult<()> { (self.delete_fn.as_ref().unwrap())(id) }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> { (self.list_all_fn.as_ref().unwrap())() }
-        async fn list_active(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Project>> { unimplemented!() }
+        async fn create(&self, p: &Project) -> DomainResult<Project> {
+            (self.create_fn.as_ref().unwrap())(p)
+        }
+        async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> {
+            (self.find_by_id_fn.as_ref().unwrap())(id)
+        }
+        async fn update(&self, p: &Project) -> DomainResult<Project> {
+            (self.update_fn.as_ref().unwrap())(p)
+        }
+        async fn delete(&self, id: &ProjectId) -> DomainResult<()> {
+            (self.delete_fn.as_ref().unwrap())(id)
+        }
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
+            (self.list_all_fn.as_ref().unwrap())()
+        }
+        async fn list_active(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
+            unimplemented!()
+        }
     }
 
     #[derive(Default)]
     struct StubUserProjectRepo {
         add_member_fn: Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<()> + Send + Sync>>,
-        remove_member_fn: Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<()> + Send + Sync>>,
+        remove_member_fn:
+            Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<()> + Send + Sync>>,
         is_member_fn: Option<Box<dyn Fn(&UserId, &ProjectId) -> DomainResult<bool> + Send + Sync>>,
     }
 
     #[async_trait]
     impl UserProjectRepository for StubUserProjectRepo {
-        async fn add_member(&self, uid: &UserId, pid: &ProjectId) -> DomainResult<()> { (self.add_member_fn.as_ref().unwrap())(uid, pid) }
-        async fn remove_member(&self, uid: &UserId, pid: &ProjectId) -> DomainResult<()> { (self.remove_member_fn.as_ref().unwrap())(uid, pid) }
-        async fn is_member(&self, uid: &UserId, pid: &ProjectId) -> DomainResult<bool> { (self.is_member_fn.as_ref().unwrap())(uid, pid) }
-        async fn list_members(&self, _pid: &ProjectId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<UserId>> { unimplemented!() }
-        async fn list_user_projects(&self, _uid: &UserId, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<ProjectId>> { unimplemented!() }
+        async fn add_member(&self, uid: &UserId, pid: &ProjectId) -> DomainResult<()> {
+            (self.add_member_fn.as_ref().unwrap())(uid, pid)
+        }
+        async fn remove_member(&self, uid: &UserId, pid: &ProjectId) -> DomainResult<()> {
+            (self.remove_member_fn.as_ref().unwrap())(uid, pid)
+        }
+        async fn is_member(&self, uid: &UserId, pid: &ProjectId) -> DomainResult<bool> {
+            (self.is_member_fn.as_ref().unwrap())(uid, pid)
+        }
+        async fn list_members(
+            &self,
+            _pid: &ProjectId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<UserId>> {
+            unimplemented!()
+        }
+        async fn list_user_projects(
+            &self,
+            _uid: &UserId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<ProjectId>> {
+            unimplemented!()
+        }
     }
 
     #[derive(Default)]
@@ -348,26 +387,68 @@ mod tests {
 
     #[async_trait]
     impl UserRepository for StubUserRepo {
-        async fn create(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
-        async fn find_by_id(&self, _id: &UserId) -> DomainResult<User> { unimplemented!() }
-        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> { unimplemented!() }
-        async fn update(&self, _u: &User) -> DomainResult<User> { unimplemented!() }
-        async fn delete(&self, _id: &UserId) -> DomainResult<()> { unimplemented!() }
-        async fn list_all(&self, _p: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> { unimplemented!() }
-        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> { unimplemented!() }
+        async fn create(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn find_by_id(&self, _id: &UserId) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn find_by_username(&self, _u: &Username) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn update(&self, _u: &User) -> DomainResult<User> {
+            unimplemented!()
+        }
+        async fn delete(&self, _id: &UserId) -> DomainResult<()> {
+            unimplemented!()
+        }
+        async fn list_all(
+            &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<User>> {
+            unimplemented!()
+        }
+        async fn username_exists(&self, _u: &Username) -> DomainResult<bool> {
+            unimplemented!()
+        }
     }
 
     struct AllowAll;
 
     #[async_trait]
     impl PermissionService for AllowAll {
-        async fn check(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
-        async fn add_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
-        async fn remove_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> { Ok(true) }
-        async fn list_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, Policy)>> { Ok(vec![]) }
-        async fn add_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { Ok(true) }
-        async fn remove_grouping_policy(&self, _s: impl EntityId, _p: GroupingPolicy) -> DomainResult<bool> { Ok(true) }
-        async fn list_grouping_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, GroupingPolicy)>> { Ok(vec![]) }
+        async fn check(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn add_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn remove_policy(&self, _s: impl EntityId, _p: Policy) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn list_policies(&self, _s: Option<&str>) -> DomainResult<Vec<(String, Policy)>> {
+            Ok(vec![])
+        }
+        async fn add_grouping_policy(
+            &self,
+            _s: impl EntityId,
+            _p: GroupingPolicy,
+        ) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn remove_grouping_policy(
+            &self,
+            _s: impl EntityId,
+            _p: GroupingPolicy,
+        ) -> DomainResult<bool> {
+            Ok(true)
+        }
+        async fn list_grouping_policies(
+            &self,
+            _s: Option<&str>,
+        ) -> DomainResult<Vec<(String, GroupingPolicy)>> {
+            Ok(vec![])
+        }
     }
 
     // ── Helpers ─────────────────────────────────────────────────
@@ -377,12 +458,14 @@ mod tests {
             ProjectName::new("testproj").unwrap(),
             Some(ProjectDescription::new("desc").unwrap()),
             OrganizationId::generate(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     fn authed_request<T>(body: T) -> Request<T> {
         let mut req = Request::new(body);
-        req.extensions_mut().insert(AuthContext::new(UserId::generate()));
+        req.extensions_mut()
+            .insert(AuthContext::new(UserId::generate()));
         req
     }
 
@@ -427,7 +510,9 @@ mod tests {
         repo.find_by_id_fn = Some(Box::new(move |_| Ok(p.clone())));
 
         let handler = make_handler(repo, StubUserProjectRepo::default(), StubUserRepo);
-        let req = authed_request(GetProjectRequest { project_id: proj_id_str });
+        let req = authed_request(GetProjectRequest {
+            project_id: proj_id_str,
+        });
 
         let resp = handler.get_project(req).await.unwrap();
         assert_eq!(resp.into_inner().name, "testproj");
@@ -443,7 +528,9 @@ mod tests {
         repo.delete_fn = Some(Box::new(|_| Ok(())));
 
         let handler = make_handler(repo, StubUserProjectRepo::default(), StubUserRepo);
-        let req = authed_request(DeleteProjectRequest { project_id: proj_id_str });
+        let req = authed_request(DeleteProjectRequest {
+            project_id: proj_id_str,
+        });
         assert!(handler.delete_project(req).await.is_ok());
     }
 
@@ -485,7 +572,11 @@ mod tests {
 
     #[tokio::test]
     async fn create_project_without_auth_fails() {
-        let handler = make_handler(StubProjectRepo::default(), StubUserProjectRepo::default(), StubUserRepo);
+        let handler = make_handler(
+            StubProjectRepo::default(),
+            StubUserProjectRepo::default(),
+            StubUserRepo,
+        );
         let req = Request::new(CreateProjectRequest {
             name: "proj".into(),
             description: None,
