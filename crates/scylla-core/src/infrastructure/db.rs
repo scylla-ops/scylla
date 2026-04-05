@@ -16,18 +16,8 @@ pub struct DatabaseConfig {
     pub url: String,
     pub namespace: String,
     pub database: String,
-    #[serde(default = "default_username")]
-    pub username: String,
-    #[serde(default = "default_password")]
-    pub password: String,
-}
-
-fn default_username() -> String {
-    "root".to_string()
-}
-
-fn default_password() -> String {
-    "root".to_string()
+    pub username: Option<String>,
+    pub password: Option<String>,
 }
 
 impl Default for DatabaseConfig {
@@ -36,8 +26,8 @@ impl Default for DatabaseConfig {
             url: "memory".to_string(),
             namespace: "scylla".to_string(),
             database: "core".to_string(),
-            username: default_username(),
-            password: default_password(),
+            username: None,
+            password: None,
         }
     }
 }
@@ -47,11 +37,13 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
         .await
         .with_context(|| format!("Failed to connect to database at {}", config.url))?;
 
-    db.signin(Root {
-        username: config.username.clone(),
-        password: config.password.clone(),
-    })
-    .await?;
+    if let (Some(username), Some(password)) = (&config.username, &config.password) {
+        db.signin(Root {
+            username: username.clone(),
+            password: password.clone(),
+        })
+        .await?;
+    }
 
     db.use_ns(&config.namespace)
         .use_db(&config.database)

@@ -39,8 +39,8 @@ impl RecorderConfig {
             url: self.db_url.clone(),
             namespace: self.db_namespace.clone(),
             database: self.db_database.clone(),
-            username: self.db_username.clone(),
-            password: self.db_password.clone(),
+            username: Some(self.db_username.clone()),
+            password: Some(self.db_password.clone()),
         }
     }
 }
