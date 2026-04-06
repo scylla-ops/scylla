@@ -77,8 +77,13 @@ push svc: deps (_build-push svc)
 
 # Build & push all services
 [group('registry')]
-[confirm("Push all images as {{DOCKER_USER}}/*:{{VERSION}} ({{platform}})?")]
-push-all: deps (_build-push "scylla-api") (_build-push "scylla-broker") (_build-push "scylla-agent") (_build-push "scylla-recorder")
+[no-exit-message]
+push-all: (_info) deps (_build-push "scylla-api") (_build-push "scylla-broker") (_build-push "scylla-agent") (_build-push "scylla-recorder")
+
+[private]
+[no-exit-message]
+_info:
+    @echo "══ user={{DOCKER_USER}} version={{VERSION}} platform={{platform}} ══"
 
 [private]
 [no-exit-message]
