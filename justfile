@@ -1,5 +1,7 @@
 set dotenv-load
 
+DOCKER_USER := env_var("DOCKER_USER")
+VERSION := env_var("VERSION")
 platform := env("PLATFORM", "linux/amd64")
 cache_repo := DOCKER_USER + "/scylla-cache"
 services := "scylla-api scylla-broker scylla-agent scylla-recorder"
