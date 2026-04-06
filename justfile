@@ -1,39 +1,58 @@
 set dotenv-load
-set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 DOCKER_USER := env_var("DOCKER_USER")
-VERSION := env_var("VERSION")
-platform := env("PLATFORM", "linux/amd64")
-cache_repo := DOCKER_USER + "/scylla-cache"
+VERSION     := env_var("VERSION")
+platform    := env("PLATFORM", "linux/amd64")
+cache_repo  := DOCKER_USER + "/scylla-cache"
 
-services := "scylla-api scylla-broker scylla-agent scylla-recorder"
+# Show available commands
+default:
+    @just --list
 
-# Build for local dev (native arch, no push)
+# Build deps + services for local dev (native arch)
+[group('dev')]
 local:
     docker build -f Dockerfile.deps -t scylla-deps:latest .
     docker compose build
 
-# Build & push deps image with registry cache
-deps:
-    docker buildx build -f Dockerfile.deps --platform {{platform}} --cache-from type=registry,ref={{cache_repo}}:deps --cache-to type=registry,ref={{cache_repo}}:deps,mode=max -t {{DOCKER_USER}}/scylla-deps:{{VERSION}} --push .
+# Start all services
+[group('dev')]
+up:
+    docker compose up
 
-# Build & push a single service (e.g. just push-service scylla-api)
-push-service svc: deps
-    docker buildx build --platform {{platform}} --build-arg DEPS_IMAGE={{DOCKER_USER}}/scylla-deps:{{VERSION}} --build-arg PACKAGE={{svc}} --cache-from type=registry,ref={{cache_repo}}:{{svc}} --cache-to type=registry,ref={{cache_repo}}:{{svc}},mode=max -t {{DOCKER_USER}}/{{svc}}:{{VERSION}} -t {{DOCKER_USER}}/{{svc}}:latest --push .
+# Stop all services
+[group('dev')]
+down:
+    docker compose down
+
+# Build & push deps image with registry cache
+[group('registry')]
+deps:
+    docker buildx build \
+        -f Dockerfile.deps \
+        --platform {{platform}} \
+        --cache-from type=registry,ref={{cache_repo}}:deps \
+        --cache-to type=registry,ref={{cache_repo}}:deps,mode=max \
+        -t {{DOCKER_USER}}/scylla-deps:{{VERSION}} \
+        --push .
+
+# Build & push a single service (e.g. just push scylla-api)
+[group('registry')]
+push svc: deps (_build-push svc)
 
 # Build & push all services
-push: deps
-    #!/usr/bin/env bash
-    for svc in {{services}}; do
-        echo ""
-        echo "══ Building $svc ══"
-        docker buildx build \
-            --platform {{platform}} \
-            --build-arg DEPS_IMAGE={{DOCKER_USER}}/scylla-deps:{{VERSION}} \
-            --build-arg PACKAGE=$svc \
-            --cache-from type=registry,ref={{cache_repo}}:$svc \
-            --cache-to type=registry,ref={{cache_repo}}:$svc,mode=max \
-            -t {{DOCKER_USER}}/$svc:{{VERSION}} \
-            -t {{DOCKER_USER}}/$svc:latest \
-            --push .
-    done
+[group('registry')]
+push-all: deps (_build-push "scylla-api") (_build-push "scylla-broker") (_build-push "scylla-agent") (_build-push "scylla-recorder")
+
+[private]
+_build-push svc:
+    @echo "══ Building {{svc}} ══"
+    docker buildx build \
+        --platform {{platform}} \
+        --build-arg DEPS_IMAGE={{DOCKER_USER}}/scylla-deps:{{VERSION}} \
+        --build-arg PACKAGE={{svc}} \
+        --cache-from type=registry,ref={{cache_repo}}:{{svc}} \
+        --cache-to type=registry,ref={{cache_repo}}:{{svc}},mode=max \
+        -t {{DOCKER_USER}}/{{svc}}:{{VERSION}} \
+        -t {{DOCKER_USER}}/{{svc}}:latest \
+        --push .
