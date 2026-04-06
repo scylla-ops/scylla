@@ -2,13 +2,11 @@ set dotenv-load
 set quiet
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
-DOCKER_USER := env_var("DOCKER_USER")
-VERSION     := env_var("VERSION")
+DOCKER_USER := env("DOCKER_USER", "godlyjaaaaj")
+VERSION     := env("VERSION", "latest")
 cache_repo  := DOCKER_USER + "/scylla-cache"
 
-# Auto-detect native platform (arm64 Mac → linux/arm64, else amd64)
-native_platform := if arch() == "aarch64" { "linux/arm64" } else { "linux/amd64" }
-platform        := env("PLATFORM", native_platform)
+platform := env("PLATFORM", "linux/amd64")
 
 # ── Aliases ──
 alias u := up
