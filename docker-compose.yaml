@@ -1,14 +1,24 @@
 services:
+  surrealdb-init:
+    image: busybox
+    container_name: scylla-surrealdb-init
+    command: ["sh", "-c", "chown -R 65532:65532 /data"]
+    volumes:
+      - surrealdb_data:/data
+
   surrealdb:
     image: surrealdb/surrealdb:v3
     container_name: scylla-surrealdb
-    command: start --user root --pass root file:/data/srdb.db
+    command: start --user root --pass root rocksdb:/data/srdb.db
     ports:
       - "8000:8000"
     volumes:
       - surrealdb_data:/data
+    depends_on:
+      surrealdb-init:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "/surreal", "isready"]
       interval: 5s
       timeout: 3s
       retries: 10
