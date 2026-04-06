@@ -9,11 +9,11 @@ hermes-broker-proto = { workspace = true }
 hermes-broker-client = { workspace = true }
 
 # domain types (shared broker messages, no surrealdb)
-scylla-core = { path = "../scylla-core", default-features = false, features = ["jobs"] }
+scylla-core = { workspace = true, default-features = false, features = ["jobs"] }
 
 # async
 tokio = { workspace = true }
-tokio-stream = "0.1"
+tokio-stream = { workspace = true }
 
 # grpc
 tonic = { workspace = true }

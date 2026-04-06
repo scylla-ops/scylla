@@ -15,7 +15,7 @@ grpc = [
 
 [dependencies]
 # shared
-scylla-core = { workspace = true, features = ["surrealdb", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "hash", "permission"] }
 tokio.workspace = true
 async-trait.workspace = true
 tower.workspace = true
@@ -35,7 +35,7 @@ log.workspace = true
 # broker
 hermes-broker-proto = { workspace = true }
 hermes-broker-client = { workspace = true }
-tokio-stream = "0.1"
+tokio-stream = { workspace = true }
 serde_json.workspace = true
 
 # grpc-only (optional)
@@ -49,7 +49,7 @@ protocol = { workspace = true, optional = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
 protocol = { workspace = true }
-tokio-stream = "0.1"
+tokio-stream = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 surreal-casbin-adapter = { workspace = true }
-scylla-core = { workspace = true, features = ["surrealdb", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "hash", "permission"] }
