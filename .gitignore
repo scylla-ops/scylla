@@ -3,7 +3,6 @@ target/
 .DS_Store
 .env
 .data/*.log
-.DS_Store
 /data/
 db
 .claude
