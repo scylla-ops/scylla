@@ -5,7 +5,7 @@ import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/C
 import { Building2 } from 'lucide-react';
 
 interface OrganizationListProps {
-  Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void }>;
+  Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
 }
 
 export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
@@ -18,6 +18,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
     <>
       {organizations.map(organisation => (
         <Wrapper
+          className={'group hover:bg-slate-50 transition-colors'}
           key={organisation.organizationId}
           onSelect={() => {
             setOrganization(organisation.organizationId, organisation.name);

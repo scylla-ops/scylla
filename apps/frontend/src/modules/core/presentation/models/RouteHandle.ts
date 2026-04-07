@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
+export interface BreadcrumbParams {
+  pipelineId?: string;
+  projectId?: string;
+}
 
-export type RouteHandle = {
-  topbar?: ReactNode;
-  tabsDefaultValue?: string;
-};
+export interface RouteHandle {
+  breadcrumb?: string | ((params: BreadcrumbParams) => string);
+}

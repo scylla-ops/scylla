@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.985 0 89.876);
+  --background: oklch(0.994 0 89.876);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 89.876);
   --card-foreground: oklch(0.145 0 0);
@@ -35,13 +35,13 @@
   --warning: oklch(0.700 0.199 78.736);
   --warning-foreground: oklch(0.145 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: oklch(0.973 0 89.876);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-accent: oklch(0.922 0 89.876);
+  --sidebar-accent-foreground: oklch(0.187 0 89.876);
+  --sidebar-border: oklch(0.61 0 89.876 / 0.25);
   --sidebar-ring: oklch(0.708 0 0);
     --code-editor-line-bg: oklch(0.862 0.149 173.922 / 0.27);
 }
@@ -133,4 +133,15 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@keyframes smooth-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scaleY(1.05);
+    }
 }

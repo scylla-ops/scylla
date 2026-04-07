@@ -1,42 +1,62 @@
-import { StatusCard } from './StatusCard.tsx';
 import { usePipelines } from '../hooks/usePipelines.ts';
-import { usePipelineDashboardStore } from '@/modules/features/pipeline-dashboard/presentation/stores/usePipelineDashboardStore.ts';
+import { PipelineTable } from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTable.tsx';
+import PipelineTableSkeleton from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTableSkeleton.tsx';
+import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
+import { useDelayedLoading } from '@/modules/shared/presentation/hooks/useDelayedLoading.ts';
+import { PipelineDashboardHeader } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx';
 
 export const DashboardPipelinePage = () => {
   const { isLoading, pipelines, isError, errorMessage } = usePipelines();
-  const selectPipeline = usePipelineDashboardStore(state => state.selectPipeline);
-  const selectedPipelineIds = usePipelineDashboardStore(state => state.selectedPipelineIds);
+  const showSkeleton = useDelayedLoading(400);
 
-  if (isLoading || !pipelines) {
-    return <div className='flex items-center justify-center h-screen'>Loading pipelines...</div>;
+  if (isLoading && !showSkeleton) {
+    return <></>;
+  }
+
+  if ((isLoading && showSkeleton) || !pipelines) {
+    return (
+      <div className='flex flex-col gap-4 w-full h-full p-2'>
+        <div className='flex items-baseline gap-2'>
+          <Skeleton className='h-9 w-56' />
+          <Skeleton className='h-5 w-16' />
+        </div>
+        <div className='h-full flex flex-col gap-2'>
+          <PipelineTableSkeleton />
+        </div>
+      </div>
+    );
   }
 
   if (isError) {
     return (
-      <div className='flex items-center justify-center h-screen text-red-500'>
-        Error: {String(errorMessage)}
+      <div className='flex items-center justify-center h-full'>
+        <div className='text-center space-y-2'>
+          <p className='text-destructive text-lg font-semibold'>Erreur</p>
+          <p className='text-muted-foreground text-sm'>
+            {String(errorMessage) || 'Impossible de charger les pipelines'}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-4 w-full'>
+    <div className='flex flex-col gap-4 w-full h-full p-2'>
+      <PipelineDashboardHeader numberOfPipelines={pipelines.length} />
+      <div className='h-full flex flex-col gap-2'>
         {pipelines.length > 0 ? (
-          pipelines.map((pipeline, index) => (
-            <StatusCard
-              key={index}
-              selected={selectedPipelineIds.includes(pipeline.pipelineId)}
-              onClick={() => {
-                selectPipeline(pipeline.pipelineId);
-              }}
-              pipeline={pipeline}
-            />
-          ))
+          <PipelineTable pipelines={pipelines} />
         ) : (
-          <div className='text-gray-500'>No pipelines found</div>
+          <div className='flex items-center justify-center h-full'>
+            <div className='text-center space-y-2'>
+              <p className='text-muted-foreground'>No pipeline found</p>
+              <p className='text-sm text-muted-foreground'>
+                Create your first pipeline to get started
+              </p>
+            </div>
+          </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
