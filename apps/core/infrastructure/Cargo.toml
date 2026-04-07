@@ -1,0 +1,23 @@
+[package]
+name = "infrastructure"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+domain = { path = "../domain", features = ["surrealdb"] }
+surreal-casbin-adapter.workspace = true
+surrealdb.workspace = true
+tokio.workspace = true
+serde.workspace = true
+chrono.workspace = true
+argon2.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+surrealdb-types.workspace = true
+casbin.workspace = true
+log.workspace = true
+protocol.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+surrealdb = { workspace = true, features = ["kv-mem", "kv-rocksdb"] }
