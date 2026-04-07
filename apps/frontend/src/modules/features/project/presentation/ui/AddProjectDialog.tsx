@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
-import { Input } from '@/modules/shared/presentation/ui/shadcn/input.tsx';
-import { Label } from '@/modules/shared/presentation/ui/shadcn/label.tsx';
+import { Button } from '@shadcn/button.tsx';
+import { Input } from '@shadcn/input.tsx';
+import { Label } from '@shadcn/label.tsx';
 import {
   Dialog,
   DialogContent,
@@ -9,43 +9,35 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/modules/shared/presentation/ui/shadcn/dialog.tsx';
+} from '@shadcn/dialog.tsx';
 import { useEffect } from 'react';
 import { useCreateProject } from '@/modules/features/project/presentation/hooks/useCreateProject.ts';
-import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { useContextStore } from '@shared/presentation/stores/useContext.ts';
 
-interface AddProjectDialogProps {
+interface AddOrganizationDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
 }
 
-export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
+export function AddProjectDialog({ open, setOpen }: AddOrganizationDialogProps) {
   const [projectName, setProjectName] = React.useState('');
-  const [description, setDescription] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const createProject = useCreateProject();
-
   const organizationId = useContextStore(state => state.organization.id);
-
-  useEffect(() => {
-    setProjectName('');
-    setDescription('');
-    setError(null);
-  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!projectName.trim()) return;
+
+    const canCreate = projectName.trim() && organizationId;
+
+    if (!canCreate) {
+      setError('Project name is required and you must select to an organization.');
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
-
-    if (!organizationId) {
-      setError('Organization ID is required');
-      setIsLoading(false);
-      return;
-    }
 
     createProject.mutate(
       { name: projectName, organizationId: organizationId },
@@ -56,11 +48,16 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
         },
         onError: err => {
           setIsLoading(false);
-          setError(err.message || 'Failed to create organization. Please try again.');
+          setError(err.message || 'Failed to create project. Please try again.');
         },
       },
     );
   };
+
+  useEffect(() => {
+    setProjectName('');
+    setError(null);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -77,23 +74,13 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
             <div className='rounded-md bg-destructive/10 p-3 text-sm text-destructive'>{error}</div>
           )}
           <div className='space-y-2'>
-            <Label htmlFor='organization-name'>Project name</Label>
+            <Label htmlFor='project-name'>Project name</Label>
             <Input
-              id='organization-name'
-              placeholder='e.g., My Organization'
+              id='project-name'
+              placeholder='e.g., My project'
               value={projectName}
               onChange={e => setProjectName(e.target.value)}
               autoFocus
-              disabled={isLoading}
-            />
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='organization-description'>Description</Label>
-            <Input
-              id='organization-description'
-              placeholder="e.g., Our company's main organization"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
               disabled={isLoading}
             />
           </div>
@@ -103,7 +90,6 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
               variant='outline'
               onClick={() => {
                 setProjectName('');
-                setDescription('');
                 setError(null);
                 setOpen(false);
               }}
@@ -120,5 +106,3 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
     </Dialog>
   );
 }
-
-export default AddProjectDialog;

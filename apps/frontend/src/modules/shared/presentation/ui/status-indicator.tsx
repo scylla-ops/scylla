@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@core/presentation/utils';
+import { cn } from '@shared/presentation/utils';
 
 interface StatusIndicatorProps {
   state: 'success' | 'failure' | 'running' | 'idle';
