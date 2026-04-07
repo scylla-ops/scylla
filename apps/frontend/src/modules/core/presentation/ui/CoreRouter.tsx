@@ -11,6 +11,7 @@ import { PipelineCreationTopbar } from '@/modules/features/pipeline-creation/pre
 import { DashboardPipelinePage } from '@/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
 import { PipelineDashboardTopBar } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardTopBar.tsx';
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
+import { ProjectTopBar } from '@/modules/features/project/presentation/ui/ProjectTopBar.tsx';
 
 export const CoreRouter = createBrowserRouter([
   {
@@ -53,6 +54,9 @@ export const CoreRouter = createBrowserRouter([
           {
             path: '/projects',
             element: <ProjectPage />,
+            handle: {
+              topbar: <ProjectTopBar />,
+            },
           },
         ],
       },

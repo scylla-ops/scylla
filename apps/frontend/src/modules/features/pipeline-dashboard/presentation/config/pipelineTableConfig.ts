@@ -33,7 +33,7 @@ export const PIPELINE_COLUMNS: PipelineColumnConfig[] = [
   },
   {
     id: 'actions',
-    className: 'flex flex-1 justify-center items-center gap-1 shrink-0',
+    className: 'flex justify-center items-center gap-1 flex-1 min-w-[48px]',
     label: 'Actions',
     noSeparator: true,
   },

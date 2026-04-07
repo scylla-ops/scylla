@@ -20,7 +20,7 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
 
   const handleEdit = (e: SyntheticEvent) => {
     e.stopPropagation();
-    navigate(`/pipeline-creation/${pipeline.pipelineId}`);
+    navigate(`edit/${pipeline.pipelineId}`);
   };
 
   const handleRun = (e: SyntheticEvent) => {

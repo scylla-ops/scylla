@@ -1,14 +1,14 @@
 import { Button } from '@shadcn';
-import { useNavigate } from 'react-router-dom';
 import { Trash } from 'lucide-react';
 import { useDeletePipeline } from '@/modules/features/pipeline-dashboard/presentation/hooks/useDeletePipeline.ts';
 import { usePipelineDashboardStore } from '@/modules/features/pipeline-dashboard/presentation/stores/usePipelineDashboardStore.ts';
 import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
 
 //TODO: put the delete pipeline action in a separate component
 export const PipelineDashboardTopBar = () => {
-  const navigate = useNavigate();
+  const { goToSubRoute } = useScyllaNavigate();
   const deletePipeline = useDeletePipeline();
   const selectedPipelineIds = usePipelineDashboardStore(state => state.selectedPipelineIds);
   const clearSelection = usePipelineDashboardStore(state => state.clearSelection);
@@ -45,7 +45,7 @@ export const PipelineDashboardTopBar = () => {
           </Button>
         </>
       )}
-      <Button onClick={() => navigate(window.location.pathname + '/create')}>New pipeline</Button>{' '}
+      <Button onClick={() => goToSubRoute('create')}>New pipeline</Button>{' '}
       <ConfirmOperationAlertDialog
         onContinue={handleDelete}
         open={deleteDialogVisibility}

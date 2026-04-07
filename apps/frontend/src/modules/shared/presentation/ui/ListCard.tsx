@@ -25,7 +25,7 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
     <div
       onClick={onClick}
       className={cn(
-        'w-full  group flex items-center gap-4 px-4 py-3 mb-2 rounded-xl border transition-all duration-200',
+        'w-full group flex items-center gap-4 px-4 py-3 mb-2 rounded-xl border transition-all duration-200 overflow-hidden',
         onClick && 'cursor-pointer',
         !selected &&
           !className?.includes('hover:') && [
@@ -44,7 +44,7 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
         return (
           <React.Fragment key={index}>
             <div
-              className={cn(section.className)}
+              className={cn('min-w-0', section.className)}
               style={section.width ? { width: section.width } : undefined}
             >
               {section.content}
