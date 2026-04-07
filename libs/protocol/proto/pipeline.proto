@@ -3,6 +3,7 @@ syntax = "proto3";
 package pipeline;
 
 import "common.proto";
+import "job.proto";
 
 service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (PipelineResponse);
@@ -12,6 +13,11 @@ service PipelineService {
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
   rpc ListProjectPipelines(ListProjectPipelinesRequest) returns (ListPipelinesResponse);
   rpc ListOrganizationPipelines(ListOrganizationPipelinesRequest) returns (ListPipelinesResponse);
+  rpc RunPipeline(RunPipelineRequest) returns (job.JobResponse);
+}
+
+message RunPipelineRequest {
+  string pipeline_id = 1;
 }
 
 message PipelineNode {
@@ -46,6 +52,15 @@ message PipelineResponse {
   string updated_at = 6;
 }
 
+message PipelineSummary {
+  string pipeline_id = 1;
+  string project_id = 2;
+  string name = 3;
+  uint32 node_count = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
 message DeletePipelineRequest {
   string pipeline_id = 1;
 }
@@ -57,7 +72,7 @@ message ListPipelinesRequest {
 }
 
 message ListPipelinesResponse {
-  repeated PipelineResponse pipelines = 1;
+  repeated PipelineSummary pipelines = 1;
   common.PaginationMetadata pagination = 2;
 }
 

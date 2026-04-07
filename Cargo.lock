@@ -152,6 +152,8 @@ dependencies = [
  "chrono",
  "derive_more",
  "domain",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -2254,12 +2256,14 @@ dependencies = [
  "chrono",
  "domain",
  "log",
+ "protocol",
  "serde",
  "surreal-casbin-adapter",
  "surrealdb",
  "surrealdb-types",
  "thiserror 2.0.18",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

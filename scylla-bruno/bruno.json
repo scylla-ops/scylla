@@ -30,6 +30,14 @@
       {
         "path": "../libs/protocol/proto/project.proto",
         "type": "file"
+      },
+      {
+        "path": "../libs/protocol/proto/pipeline.proto",
+        "type": "file"
+      },
+      {
+        "path": "../libs/protocol/proto/job.proto",
+        "type": "file"
       }
     ]
   }
