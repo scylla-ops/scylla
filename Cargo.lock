@@ -4594,13 +4594,14 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "surreal-casbin-adapter"
-version = "3.0.1"
+version = "3.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5c3f0f112658cfcf68c34661be84bb6d5a065d0c009ba1eee8f762a8a87458e"
 dependencies = [
  "async-trait",
  "casbin",
  "surrealdb",
  "surrealdb-types",
- "tokio",
 ]
 
 [[package]]

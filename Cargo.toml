@@ -5,7 +5,6 @@ members = [
     "crates/scylla-api",
     "crates/scylla-broker",
     "libs/protocol",
-    "libs/surreal-casbin-adapter",
     "crates/scylla-agent",
     "crates/scylla-recorder",
 ]
@@ -52,7 +51,7 @@ uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
 argon2 = "0.6.0-rc.8"
 casbin = "2.20.0"
-surreal-casbin-adapter = { path = "libs/surreal-casbin-adapter" }
+surreal-casbin-adapter = "3.0.5"
 
 # web / tracing
 tower = { version = "0.5.3" }
