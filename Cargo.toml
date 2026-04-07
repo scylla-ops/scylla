@@ -1,17 +1,25 @@
 [workspace]
 resolver = "3"
 members = [
-    "apps/core",
-    # "apps/server",
-    # "apps/agent",
+    "crates/scylla-core",
+    "crates/scylla-api",
+    "crates/scylla-broker",
     "libs/protocol",
-    "libs/surreal-casbin-adapter",
+    "crates/scylla-agent",
+    "crates/scylla-recorder",
 ]
 
 [workspace.dependencies]
 # async
-tokio = { version = "1.50.0", features = ["full"] }
+tokio = { version = "1.5", features = ["full"] }
+tokio-stream = "0.1"
 async-trait = "0.1.89"
+
+# broker
+hermes-broker-core = "0.6.0"
+hermes-broker-proto = "0.6.0"
+hermes-broker-client = "0.6.0"
+hermes-broker-server = "0.6.0"
 
 # grpc / proto
 tonic = { version = "0.14.5", features = ["server"] }
@@ -25,32 +33,37 @@ tonic-async-interceptor = "0.14.1"
 
 # serialization
 serde = { version = "1", features = ["derive"] }
-toml = "1.0.3"
+toml = "1"
 
 # database
-surrealdb = { version = "3.0.2" }
-surrealdb-types = "3.0.2"
+surrealdb = { version = "3.0.5" }
+surrealdb-types = "3.0.5"
+
+# workspace crates
+scylla-core = { path = "crates/scylla-core", default-features = false }
 
 # domain / utilities
 thiserror = "2.0.18"
 anyhow = "1.0.102"
 chrono = "0.4.44"
 ulid = "1.2.1"
-uuid = { version = "1.21.0", features = ["v4"] }
+uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
-argon2 = "0.6.0-rc.7"
+argon2 = "0.6.0-rc.8"
 casbin = "2.20.0"
-surreal-casbin-adapter = { path = "libs/surreal-casbin-adapter" }
+surreal-casbin-adapter = "3.0.5"
 
 # web / tracing
 tower = { version = "0.5.3" }
 tower-http = { version = "0.6.8", features = ["cors", "trace"] }
 http = "1.4.0"
+serde_json = "1"
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 
 # cli
-clap = { version = "4.5.60", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 
 # logging
 log = "0.4.29"
