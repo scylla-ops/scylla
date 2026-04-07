@@ -3,7 +3,7 @@ import { usePipelineDashboardStore } from '@/modules/features/pipeline-dashboard
 import { ListCard, type ListCardSection } from '@shared/presentation/ui';
 import { PIPELINE_COLUMNS } from '@/modules/features/pipeline-dashboard/presentation/config/pipelineTableConfig.ts';
 import { PipelineRow } from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineRow.tsx';
-import { cn } from '@core/presentation/utils';
+import { cn } from '@shared/presentation/utils';
 
 type PipelineTableProps = {
   pipelines: PipelineResponse[];

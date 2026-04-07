@@ -1,4 +1,4 @@
-import { cn } from '@core/presentation/utils';
+import { cn } from '@shared/presentation/utils';
 import React, { type ReactNode } from 'react';
 import { SeparatorVertical } from 'lucide-react';
 

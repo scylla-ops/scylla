@@ -12,6 +12,7 @@ import { DashboardPipelinePage } from '@/modules/features/pipeline-dashboard/pre
 import { PipelineDashboardTopBar } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardTopBar.tsx';
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
 import { ProjectTopBar } from '@/modules/features/project/presentation/ui/ProjectTopBar.tsx';
+import type { BreadcrumbParams } from '@core/presentation/models/RouteHandle.ts';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -32,16 +33,20 @@ export const CoreRouter = createBrowserRouter([
           },
           {
             path: '/projects/:projectId/',
+            handle: { breadcrumb: (params: BreadcrumbParams) => `Project #${params.projectId}` },
             children: [
               {
                 index: true,
                 element: <DashboardPipelinePage />,
-                handle: { topbar: <PipelineDashboardTopBar /> },
+                handle: {
+                  topbar: <PipelineDashboardTopBar />,
+                },
               },
               {
                 path: 'create',
                 element: <PipelineCreationPage />,
                 handle: {
+                  breadcrumb: (_: BreadcrumbParams) => `Create`,
                   topbar: <PipelineCreationTopbar />,
                   tabsDefaultValue: 'scripting',
                 },
