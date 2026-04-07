@@ -1,8 +1,8 @@
-.gitignore
-*.yaml
+target
+.git
 .github
-./scylla-bruno
-./target
-./tests
-./.venv
+.venv
+scylla-bruno
+tests
 **/node_modules
+*.yaml
