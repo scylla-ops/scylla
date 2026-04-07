@@ -1,11 +1,12 @@
 import ReactCodeMirror, { EditorView } from '@uiw/react-codemirror';
 import { StreamLanguage } from '@codemirror/language';
-import { TabsContent } from '@/modules/shared/presentation/ui/shadcn/tabs.tsx';
+import { Tabs, TabsContent } from '@/modules/shared/presentation/ui/shadcn/tabs.tsx';
 import { Card } from '@/modules/shared/presentation/ui/shadcn';
 import { useScriptStore } from '@/modules/features/pipeline-creation/presentation/stores/useScript.ts';
 import { json } from '@codemirror/legacy-modes/mode/javascript';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { PipelineCreationTopbar } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
 
 const codeMirrorTheme = EditorView.theme({
   '&': {
@@ -73,7 +74,8 @@ export const PipelineCreationPage = () => {
   if (!projectId) return <p>Select a project first</p>;
 
   return (
-    <div className={'h-full'}>
+    <Tabs key={'scripting'} defaultValue={'scripting'} className={'h-full flex flex-col gap-4'}>
+      <PipelineCreationTopbar />
       <TabsContent value='scripting' className={'h-full'}>
         <Card className={'h-full p-0'}>
           <ReactCodeMirror
@@ -88,6 +90,6 @@ export const PipelineCreationPage = () => {
       <TabsContent value='blueprint'>
         <p>Canvas reactflow ici</p>
       </TabsContent>
-    </div>
+    </Tabs>
   );
 };

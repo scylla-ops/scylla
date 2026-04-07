@@ -25,7 +25,7 @@ const data = {
   },
   navMain: [
     {
-      title: 'Pipelines',
+      title: 'Projects',
       url: '/projects',
       icon: WorkflowIcon,
     },

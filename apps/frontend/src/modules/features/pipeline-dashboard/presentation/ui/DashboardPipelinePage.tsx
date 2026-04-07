@@ -3,6 +3,7 @@ import { PipelineTable } from '@/modules/features/pipeline-dashboard/presentatio
 import PipelineTableSkeleton from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTableSkeleton.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { useDelayedLoading } from '@/modules/shared/presentation/hooks/useDelayedLoading.ts';
+import { PipelineDashboardHeader } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx';
 
 export const DashboardPipelinePage = () => {
   const { isLoading, pipelines, isError, errorMessage } = usePipelines();
@@ -41,16 +42,7 @@ export const DashboardPipelinePage = () => {
 
   return (
     <div className='flex flex-col gap-4 w-full h-full p-2'>
-      <div className='flex items-baseline gap-2'>
-        <h1 className='text-3xl font-bold tracking-tight'>
-          <span className='text-primary'>{pipelines.length}</span>{' '}
-          <span className='text-foreground'>
-            Pipeline
-            {pipelines.length > 1 ? 's' : ''}
-          </span>
-        </h1>
-        <span className='text-sm text-muted-foreground font-medium'>in total</span>
-      </div>
+      <PipelineDashboardHeader numberOfPipelines={pipelines.length} />
       <div className='h-full flex flex-col gap-2'>
         {pipelines.length > 0 ? (
           <PipelineTable pipelines={pipelines} />
