@@ -19,10 +19,9 @@ default:
 
 # ── Dev ──────────────────────────────────────
 
-# Build deps + services for local dev (native arch)
+# Build all services for local dev (native arch)
 [group('dev')]
 local:
-    docker build -f Dockerfile.deps -t scylla-deps:latest .
     docker compose build
 
 # Start all services
@@ -57,28 +56,15 @@ clean:
 
 # ── Registry ─────────────────────────────────
 
-# Build & push deps image with registry cache
-[group('registry')]
-[no-exit-message]
-deps:
-    @echo "══ Building deps ({{platform}}) ══"
-    docker buildx build \
-        -f Dockerfile.deps \
-        --platform {{platform}} \
-        --cache-from type=registry,ref={{cache_repo}}:deps \
-        --cache-to type=registry,ref={{cache_repo}}:deps,mode=max \
-        -t {{DOCKER_USER}}/scylla-deps:{{VERSION}} \
-        --push .
-
 # Build & push a single service (e.g. just push scylla-api)
 [group('registry')]
 [no-exit-message]
-push svc: deps (_build-push svc)
+push svc: (_build-push svc)
 
 # Build & push all services
 [group('registry')]
 [no-exit-message]
-push-all: (_info) deps (_build-push "scylla-api") (_build-push "scylla-broker") (_build-push "scylla-agent") (_build-push "scylla-recorder")
+push-all: (_info) (_build-push "scylla-api") (_build-push "scylla-broker") (_build-push "scylla-agent") (_build-push "scylla-recorder")
 
 [private]
 [no-exit-message]
@@ -91,7 +77,6 @@ _build-push svc:
     @echo "══ Building {{svc}} ══"
     docker buildx build \
         --platform {{platform}} \
-        --build-arg DEPS_IMAGE={{DOCKER_USER}}/scylla-deps:{{VERSION}} \
         --build-arg PACKAGE={{svc}} \
         --cache-from type=registry,ref={{cache_repo}}:{{svc}} \
         --cache-to type=registry,ref={{cache_repo}}:{{svc}},mode=max \

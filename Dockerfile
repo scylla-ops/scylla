@@ -1,15 +1,23 @@
 # syntax=docker/dockerfile:1
 
-# === Build: compile a single service from pre-cooked deps ===
-ARG DEPS_IMAGE=scylla-deps:latest
+# === Builder ===
+FROM rust:1-bookworm AS builder
 
-FROM ${DEPS_IMAGE} AS build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    protobuf-compiler libclang-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY . .
-ARG PACKAGE
-RUN cargo build --release -p ${PACKAGE}
 
-# === Runtime: minimal Debian image ===
+ARG PACKAGE
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,target=/app/target,sharing=locked \
+    cargo build --release -p ${PACKAGE} && \
+    cp target/release/${PACKAGE} /app/service
+
+# === Runtime ===
 FROM debian:bookworm-slim AS runtime
 
 LABEL org.opencontainers.image.source="https://github.com/scylla-ops/scylla"
@@ -24,6 +32,5 @@ RUN groupadd --gid 10001 appuser && \
 WORKDIR /app
 USER appuser
 
-ARG PACKAGE
-COPY --from=build --chown=appuser:appuser /app/target/release/${PACKAGE} ./service
+COPY --from=builder --chown=appuser:appuser /app/service ./service
 ENTRYPOINT ["./service"]
