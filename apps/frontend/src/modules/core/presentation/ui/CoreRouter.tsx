@@ -13,6 +13,7 @@ import { PipelineDashboardTopBar } from '@/modules/features/pipeline-dashboard/p
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
 import { ProjectTopBar } from '@/modules/features/project/presentation/ui/ProjectTopBar.tsx';
 
+//TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
   {
     path: '/login',
@@ -26,23 +27,34 @@ export const CoreRouter = createBrowserRouter([
         element: <Layout />,
         children: [
           {
-            path: '/projects/:projectId/create',
-            element: <PipelineCreationPage />,
-            handle: {
-              topbar: <PipelineCreationTopbar />,
-              tabsDefaultValue: 'scripting',
-            },
-          },
-          {
             path: '/user-settings',
             element: <UserSettingsPage />,
           },
           {
-            path: '/projects/:id',
-            element: <DashboardPipelinePage />,
-            handle: {
-              topbar: <PipelineDashboardTopBar />,
-            },
+            path: '/projects/:projectId/',
+            children: [
+              {
+                index: true,
+                element: <DashboardPipelinePage />,
+                handle: { topbar: <PipelineDashboardTopBar /> },
+              },
+              {
+                path: 'create',
+                element: <PipelineCreationPage />,
+                handle: {
+                  topbar: <PipelineCreationTopbar />,
+                  tabsDefaultValue: 'scripting',
+                },
+              },
+              {
+                path: 'edit/:pipelineId',
+                element: <PipelineCreationPage />,
+                handle: {
+                  topbar: <PipelineCreationTopbar />,
+                  tabsDefaultValue: 'scripting',
+                },
+              },
+            ],
           },
           {
             path: '/marketplace',
