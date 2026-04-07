@@ -4126,7 +4126,6 @@ dependencies = [
  "clap",
  "derive_more",
  "hermes-broker-client",
- "hermes-broker-proto",
  "http",
  "log",
  "protocol",
