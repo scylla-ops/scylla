@@ -1,5 +1,5 @@
+use domain::entities::Pipeline;
 use protocol::services::pipeline::{PipelineNode, PipelineResponse, PipelineSummary};
-use scylla_core::domain::entities::Pipeline;
 
 pub fn pipeline_to_proto(pipeline: &Pipeline) -> PipelineResponse {
     PipelineResponse {
@@ -27,7 +27,7 @@ pub fn pipeline_to_proto_summary(pipeline: &Pipeline) -> PipelineSummary {
     }
 }
 
-pub fn pipeline_node_to_proto(node: &scylla_core::domain::entities::PipelineNode) -> PipelineNode {
+pub fn pipeline_node_to_proto(node: &domain::entities::PipelineNode) -> PipelineNode {
     PipelineNode {
         node_id: node.id().to_string(),
         deps: node.deps().iter().map(|d| d.to_string()).collect(),

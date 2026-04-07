@@ -1,0 +1,33 @@
+export enum FormItemType {
+  Input = 'input',
+  Select = 'select',
+}
+
+export type FormInput = {
+  type: FormItemType.Input;
+  inputType: 'text' | 'password' | 'email' | 'tel';
+};
+
+export type SelectOption = {
+  label: string;
+  value: string;
+};
+
+export type FormSelect = {
+  type: FormItemType.Select;
+  options: SelectOption[];
+};
+
+export type FormItemBase = {
+  label: string;
+  placeholder?: string;
+  id: string;
+  className?: string;
+};
+
+export type FormItem = FormItemBase & (FormInput | FormSelect);
+
+export type FormChange = {
+  id: string;
+  value: string;
+};
