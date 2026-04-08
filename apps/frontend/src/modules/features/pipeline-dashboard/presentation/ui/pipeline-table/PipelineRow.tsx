@@ -1,4 +1,4 @@
-import type { PipelineResponse } from '@/generated/pipeline.ts';
+import type { PipelineSummary } from '@/generated/pipeline.ts';
 import { PipelineChart } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineChart.tsx';
 import { ListCard, type ListCardSection } from '@shared/presentation/ui/ListCard.tsx';
 import type { SyntheticEvent } from 'react';
@@ -7,7 +7,7 @@ import { PipelineStatus, PipelineMetadata, PipelineActions } from './.';
 import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
 
 export type StatusCardProps = {
-  pipeline: PipelineResponse;
+  pipeline: PipelineSummary;
   onClick?: () => void;
   selected?: boolean;
 };

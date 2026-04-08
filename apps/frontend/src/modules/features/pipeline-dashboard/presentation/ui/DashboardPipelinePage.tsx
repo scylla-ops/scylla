@@ -1,12 +1,17 @@
+import { useParams } from 'react-router-dom';
 import { usePipelines } from '../hooks/usePipelines.ts';
 import { PipelineTable } from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTable.tsx';
 import PipelineTableSkeleton from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTableSkeleton.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { useDelayedLoading } from '@/modules/shared/presentation/hooks/useDelayedLoading.ts';
 import { PipelineDashboardHeader } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx';
+import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
 
 export const DashboardPipelinePage = () => {
-  const { isLoading, pipelines, isError, errorMessage } = usePipelines();
+  const { projectId } = useParams();
+  const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage } = usePipelines(
+    projectId!,
+  );
   const showSkeleton = useDelayedLoading(400);
 
   if (isLoading && !showSkeleton) {
@@ -41,9 +46,9 @@ export const DashboardPipelinePage = () => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full p-2'>
-      <PipelineDashboardHeader numberOfPipelines={pipelines.length} />
-      <div className='h-full flex flex-col gap-2'>
+    <div className='flex flex-col gap-4 w-full min-h-full p-2'>
+      <PipelineDashboardHeader numberOfPipelines={paginationInfo?.totalCount ?? pipelines.length} />
+      <div className='flex-1 flex flex-col gap-2'>
         {pipelines.length > 0 ? (
           <PipelineTable pipelines={pipelines} />
         ) : (
@@ -57,6 +62,9 @@ export const DashboardPipelinePage = () => {
           </div>
         )}
       </div>
+      {paginationInfo && paginationInfo.totalPages > 1 && (
+        <Pagination paginationInfo={paginationInfo} onPageChange={setPage} className='pb-2' />
+      )}
     </div>
   );
 };

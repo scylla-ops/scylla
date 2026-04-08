@@ -1,8 +1,8 @@
 import StatusIndicator from '@/modules/shared/presentation/ui/status-indicator';
-import type { PipelineResponse } from '@/generated/pipeline';
+import type { PipelineSummary } from '@/generated/pipeline.ts';
 
 type PipelineStatusProps = {
-  pipeline: PipelineResponse;
+  pipeline: PipelineSummary;
 };
 
 /**

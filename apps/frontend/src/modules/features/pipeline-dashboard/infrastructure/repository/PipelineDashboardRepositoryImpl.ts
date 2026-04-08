@@ -2,12 +2,16 @@ import type { PipelineDashboardRepository } from '@/modules/features/pipeline-da
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 import type { PipelineDashboardRemoteDataSource } from '@/modules/features/pipeline-dashboard/infrastructure/repository/data-sources/PipelineDashboardRemoteDataSource.ts';
 import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
+import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
 
 export class PipelineDashboardRepositoryImpl implements PipelineDashboardRepository {
   constructor(private readonly remoteDataSource: PipelineDashboardRemoteDataSource) {}
 
-  public async getAll(): Promise<ScyllaResult<ListPipelinesResponse>> {
-    return this.remoteDataSource.getAll();
+  public async getByProjectId(
+    projectId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<ListPipelinesResponse>> {
+    return this.remoteDataSource.getByProjectId(projectId, pagination);
   }
 
   public async deleteById(id: string): Promise<ScyllaResult<void>> {
