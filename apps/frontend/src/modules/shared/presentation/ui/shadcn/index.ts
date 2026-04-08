@@ -14,3 +14,4 @@ export * from './dropdown-menu.tsx';
 export * from './table.tsx';
 export * from './select.tsx';
 export * from './separator.tsx';
+export * from './toaster.tsx';

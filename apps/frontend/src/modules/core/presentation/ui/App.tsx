@@ -8,6 +8,8 @@ import { DependenciesProvider } from '@core/presentation/providers/DependenciesP
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
 import { messages as userSettingsMessages } from '@/modules/features/user_settings/locales/en/messages.ts';
 import { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
+import { toast } from '@shared/presentation/utils/toast.ts';
+import { Toaster } from '@shadcn/toaster.tsx';
 
 i18n.load('en', {
   ...loginMessages,
@@ -21,16 +23,22 @@ const queryClient = new QueryClient({
       const scyllaError = error as ScyllaError;
       const code = scyllaError.getCode();
 
-      //TODO: move this
       if (code === 'UNAUTHENTICATED') {
         localStorage.removeItem('token');
+        return;
       }
+
       scyllaError.log();
+      toast.error(scyllaError.message || 'An unexpected error occurred');
     },
   }),
+  // Global mutation error handler — shows toast for all mutations.
+  // Individual hooks should NOT add their own onError toast to avoid double-toasting.
   mutationCache: new MutationCache({
     onError: error => {
-      (error as ScyllaError).log();
+      const scyllaError = error as ScyllaError;
+      scyllaError.log();
+      toast.error(scyllaError.message || 'Operation failed');
     },
   }),
 });
@@ -42,6 +50,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <DependenciesProvider>
             <RouterProvider router={CoreRouter} />
+            <Toaster />
           </DependenciesProvider>
         </QueryClientProvider>
       </I18nProvider>
