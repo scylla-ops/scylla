@@ -9,7 +9,7 @@ export const Layout = () => {
       <AppSidebar />
       <SidebarInset className={'flex flex-col border border-sidebar-border bg-background gap-2'}>
         <TopBar />
-        <div className={'h-full w-full p-2'}>
+        <div className={'min-h-0 flex-1 w-full overflow-auto p-2'}>
           <AnimatedOutlet />
         </div>
       </SidebarInset>
