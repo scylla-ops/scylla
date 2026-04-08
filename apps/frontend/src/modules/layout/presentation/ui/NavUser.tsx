@@ -18,7 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
-import { useNavigate } from 'react-router-dom';
+import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
 
 export function NavUser({
   user,
@@ -30,7 +30,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const navigate = useNavigate();
+  const goToUserSettings = useScyllaNavigate().goToUserSettings;
 
   return (
     <SidebarMenu>
@@ -58,10 +58,7 @@ export function NavUser({
             align='end'
             sideOffset={4}
           >
-            <DropdownMenuItem
-              onSelect={() => navigate('/user-settings')}
-              className='p-0 font-normal'
-            >
+            <DropdownMenuItem onSelect={() => goToUserSettings()} className='p-0 font-normal'>
               <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                 <Avatar className='h-8 w-8 rounded-lg'>
                   <AvatarImage src={user.avatar} alt={user.name} />

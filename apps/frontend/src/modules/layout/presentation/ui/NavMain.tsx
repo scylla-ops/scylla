@@ -1,5 +1,4 @@
 import { type LucideIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -7,6 +6,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
+import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
 
 export function NavMain({
   items,
@@ -18,7 +18,7 @@ export function NavMain({
     isActive?: boolean;
   }[];
 }) {
-  const navigate = useNavigate();
+  const navigate = useScyllaNavigate().navigate;
 
   return (
     <SidebarGroup>

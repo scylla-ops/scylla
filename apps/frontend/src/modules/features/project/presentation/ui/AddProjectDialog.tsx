@@ -98,7 +98,7 @@ export function AddProjectDialog({ open, setOpen }: AddOrganizationDialogProps) 
               Cancel
             </Button>
             <Button type='submit' disabled={!projectName.trim() || isLoading}>
-              {isLoading ? 'Creating...' : 'Create Organization'}
+              {isLoading ? 'Creating...' : 'Create Project'}
             </Button>
           </DialogFooter>
         </form>

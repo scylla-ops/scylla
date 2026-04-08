@@ -30,7 +30,7 @@ const data = {
       icon: WorkflowIcon,
     },
     {
-      title: 'Marketplace',
+      title: 'Marketeplace',
       url: '/marketplace',
       icon: ShoppingCartIcon,
     },

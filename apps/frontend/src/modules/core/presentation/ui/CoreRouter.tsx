@@ -4,11 +4,12 @@ import LoginPage from '@/modules/features/login/presentation/ui/LoginPage';
 import UserSettingsPage from '@/modules/features/user_settings/presentation/ui/UserSettingsPage';
 import MarketplacePage from '@/modules/features/marketplace/presentation/ui/MarketplacePage';
 import { Layout } from '@/modules/layout/presentation/ui/Layout.tsx';
-import { RequireAuth } from '@core/presentation/ui/RequireAuth.tsx';
+import { RequireAuth } from '@/modules/core/presentation/ui/middlewares/RequireAuth';
 import { PipelineCreationPage } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationPage.tsx';
 import { DashboardPipelinePage } from '@/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage';
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
 import type { BreadcrumbParams } from '@core/presentation/models/RouteHandle.ts';
+import { ContextCleaner } from './middlewares/ContextCleaner';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -38,9 +39,11 @@ export const CoreRouter = createBrowserRouter([
                 element: <ProjectPage />,
               },
               {
+                element: <ContextCleaner />,
+                //TODO: here add loader: <ContextLoader/> used to fetch the project and pipeline names from ids for the breadcrumbs
                 path: ':projectId',
                 handle: {
-                  breadcrumb: (params: BreadcrumbParams) => `Project #${params.projectId}`,
+                  breadcrumb: (params: BreadcrumbParams) => `Project #${params.projectName}`,
                 },
                 children: [
                   {
@@ -58,7 +61,8 @@ export const CoreRouter = createBrowserRouter([
                     path: 'edit/:pipelineId',
                     element: <PipelineCreationPage />,
                     handle: {
-                      breadcrumb: ({ pipelineId }: BreadcrumbParams) => `Pipeline #${pipelineId}`,
+                      breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
+                        `Pipeline #${pipelineName}`,
                     },
                   },
                 ],
@@ -73,7 +77,6 @@ export const CoreRouter = createBrowserRouter([
       },
     ],
   },
-
   {
     path: '*',
     element: <Navigate to='/user-settings' replace />,

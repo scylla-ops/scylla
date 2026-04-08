@@ -26,7 +26,6 @@ export const PipelineActions = ({ onRun, onEdit, onMore }: PipelineActionsProps)
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
       for (const entry of entries) {
-        // Si la largeur est inférieure à 140px, passer en mode compact
         setIsCompact(entry.contentRect.width < 70);
       }
     });

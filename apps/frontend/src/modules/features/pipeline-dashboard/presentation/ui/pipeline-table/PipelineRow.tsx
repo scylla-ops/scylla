@@ -1,4 +1,4 @@
-import type { PipelineResponse } from '@/generated/pipeline.ts';
+import type { PipelineResponse, PipelineSummary } from '@/generated/pipeline.ts';
 import { PipelineChart } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineChart.tsx';
 import { ListCard, type ListCardSection } from '@shared/presentation/ui/ListCard.tsx';
 import type { SyntheticEvent } from 'react';
@@ -7,7 +7,7 @@ import { PipelineStatus, PipelineMetadata, PipelineActions } from './.';
 import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
 
 export type StatusCardProps = {
-  pipeline: PipelineResponse;
+  pipeline: PipelineSummary;
   onClick?: () => void;
   selected?: boolean;
 };
@@ -16,11 +16,11 @@ export type StatusCardProps = {
  * Component representing a single row in the pipeline dashboard, displaying the pipeline's status, history, metadata, and available actions.
  */
 export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) => {
-  const { goToSubRoute } = useScyllaNavigate();
+  const { goToEditPipeline } = useScyllaNavigate();
 
   const handleEdit = (e: SyntheticEvent) => {
     e.stopPropagation();
-    goToSubRoute(`edit/${pipeline.pipelineId}`);
+    goToEditPipeline(pipeline);
   };
 
   const handleRun = (e: SyntheticEvent) => {

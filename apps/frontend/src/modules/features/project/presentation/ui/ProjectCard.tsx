@@ -10,9 +10,14 @@ type ProjectCardProps = {
 export const ProjectCard = ({ project }: ProjectCardProps) => {
   const navigate = useNavigate();
 
+  //TODO: set the selected project in store for name breadcrumb
+  const handleClick = () => {
+    navigate(`/projects/${project.projectId}`);
+  };
+
   return (
     <Card
-      onClick={() => navigate(`/projects/${project.projectId}`)}
+      onClick={handleClick}
       className='group cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/50 active:scale-[0.98] h-full'
     >
       <CardHeader className='space-y-0 pb-3'>

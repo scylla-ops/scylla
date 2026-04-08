@@ -11,7 +11,7 @@ interface PipelineDashboardHeaderProps {
 }
 //TODO: put the delete pipeline action in a separate component
 export const PipelineDashboardHeader = ({ numberOfPipelines }: PipelineDashboardHeaderProps) => {
-  const { goToSubRoute } = useScyllaNavigate();
+  const { goToCreatePipeline } = useScyllaNavigate();
   const deletePipeline = useDeletePipeline();
   const selectedPipelineIds = usePipelineDashboardStore(state => state.selectedPipelineIds);
   const clearSelection = usePipelineDashboardStore(state => state.clearSelection);
@@ -59,7 +59,7 @@ export const PipelineDashboardHeader = ({ numberOfPipelines }: PipelineDashboard
             </Button>
           </>
         )}
-        <Button onClick={() => goToSubRoute('create')}>New pipeline</Button>{' '}
+        <Button onClick={() => goToCreatePipeline()}>New pipeline</Button>{' '}
         <ConfirmOperationAlertDialog
           onContinue={handleDelete}
           open={deleteDialogVisibility}

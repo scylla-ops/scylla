@@ -14,6 +14,7 @@ export const PipelineStatus = ({ pipeline }: PipelineStatusProps) => {
   return (
     <>
       <StatusIndicator state='running' />
+
       <div className='flex flex-col overflow-hidden'>
         <span className='font-semibold text-slate-900 truncate'>{pipeline.name}</span>
         <span className='text-xs font-mono text-slate-600 uppercase truncate'>main • a7f2e1</span>
