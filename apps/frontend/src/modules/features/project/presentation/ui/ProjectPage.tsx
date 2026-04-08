@@ -4,10 +4,26 @@ import ProjectCardSkeleton from '@/modules/features/project/presentation/ui/Proj
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { useDelayedLoading } from '@/modules/shared/presentation/hooks/useDelayedLoading.ts';
 import { ProjectHeader } from '@/modules/features/project/presentation/ui/ProjectHeader.tsx';
+import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
 
 export const ProjectPage = () => {
-  const { projects, isLoading, isError } = useProjects();
+  const organizationId = useContextStore(state => state.organization.id);
+  const { projects, isLoading, isError, paginationInfo, setPage } = useProjects(organizationId);
   const showSkeleton = useDelayedLoading(400);
+
+  if (!organizationId) {
+    return (
+      <div className='flex items-center justify-center h-full'>
+        <div className='text-center space-y-2'>
+          <p className='text-muted-foreground text-lg font-semibold'>No organization selected</p>
+          <p className='text-sm text-muted-foreground'>
+            Select an organization from the sidebar to view its projects
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading && !showSkeleton) {
     return <></>;
@@ -41,12 +57,16 @@ export const ProjectPage = () => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full p-2'>
-      <ProjectHeader numberOfProjects={projects.length} />
+    <div className='flex flex-col gap-4 w-full min-h-full p-2'>
+      <ProjectHeader numberOfProjects={paginationInfo?.totalCount ?? projects.length} />
       <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-        {projects &&
-          projects.map(project => <ProjectCard key={project.projectId} project={project} />)}
+        {projects.map(project => (
+          <ProjectCard key={project.projectId} project={project} />
+        ))}
       </div>
+      {paginationInfo && paginationInfo.totalPages > 1 && (
+        <Pagination paginationInfo={paginationInfo} onPageChange={setPage} className='pb-2' />
+      )}
     </div>
   );
 };
