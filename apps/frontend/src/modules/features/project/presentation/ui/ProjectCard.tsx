@@ -1,23 +1,18 @@
 import type { ProjectResponse } from '@/generated/project.ts';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
-import { useNavigate } from 'react-router-dom';
 import { Folder } from 'lucide-react';
+import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
 
 type ProjectCardProps = {
   project: ProjectResponse;
 };
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
-  const navigate = useNavigate();
-
-  //TODO: set the selected project in store for name breadcrumb
-  const handleClick = () => {
-    navigate(`/projects/${project.projectId}`);
-  };
+  const navigate = useScyllaNavigate();
 
   return (
     <Card
-      onClick={handleClick}
+      onClick={() => navigate.goToProject(project)}
       className='group cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/50 active:scale-[0.98] h-full'
     >
       <CardHeader className='space-y-0 pb-3'>
