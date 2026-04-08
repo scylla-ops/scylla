@@ -11,7 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@shadcn'; // Correction du path si tu as déplacé shadcn dans shared
+} from '@shadcn';
+import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 
 import {
   useAddUserToOrganization,
@@ -67,16 +68,6 @@ export const Organization = () => {
       </CardHeader>
 
       <CardContent className='space-y-4'>
-        {/* Affichage des erreurs de mutations (Optionnel: tu peux utiliser un Toast global) */}
-        {[addUserMutation, removeUserMutation, updateRoleMutation].map(
-          (m, i) =>
-            m.error && (
-              <div key={i} className='bg-red-50 p-3 rounded text-red-800 text-sm'>
-                {m.error.message}
-              </div>
-            ),
-        )}
-
         {!selectedOrgId ? (
           <div className='text-center py-8 text-gray-500'>
             <Trans>Please select an organization first.</Trans>
@@ -91,11 +82,47 @@ export const Organization = () => {
             </div>
 
             {usersQuery.isLoading ? (
-              <div className='flex justify-center py-8'>
-                <Trans>Loading members...</Trans>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <Trans>Username</Trans>
+                    </TableHead>
+                    <TableHead>
+                      <Trans>Role</Trans>
+                    </TableHead>
+                    <TableHead>
+                      <Trans>Joined</Trans>
+                    </TableHead>
+                    <TableHead className='text-right'>
+                      <Trans>Actions</Trans>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className='h-4 w-28' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className='h-6 w-16 rounded-full' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className='h-4 w-20' />
+                      </TableCell>
+                      <TableCell className='text-right'>
+                        <div className='flex justify-end gap-2'>
+                          <Skeleton className='h-8 w-16 rounded-md' />
+                          <Skeleton className='h-8 w-16 rounded-md' />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             ) : usersQuery.isError ? (
-              <div className='text-red-600'>
+              <div className='text-destructive'>
                 <Trans>Error loading members</Trans>
               </div>
             ) : users.length === 0 ? (
