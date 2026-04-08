@@ -52,7 +52,9 @@ export const ScyllaBreadcrumbs = () => {
                 {isLast ? (
                   <BreadcrumbPage className='text-slate-900 font-semibold text-sm px-2 py-1 rounded-md bg-slate-50 flex gap-1'>
                     {words.map((word, i) => {
-                      const isLastWord = i === words.length - 1;
+                      const lastIndex = words.length - 1;
+                      const isLastWord = words.length > 1 && i === lastIndex;
+
                       return (
                         <span key={i} className={isLastWord ? 'text-primary' : 'whitespace-nowrap'}>
                           {word}
