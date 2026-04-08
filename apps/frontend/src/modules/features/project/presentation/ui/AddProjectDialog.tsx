@@ -10,54 +10,45 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@shadcn/dialog.tsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn/select.tsx';
 import { useEffect } from 'react';
 import { useCreateProject } from '@/modules/features/project/presentation/hooks/useCreateProject.ts';
+import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { useContextStore } from '@shared/presentation/stores/useContext.ts';
+import { toast } from '@shared/presentation/utils/toast.ts';
 
-interface AddOrganizationDialogProps {
+interface AddProjectDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
 }
 
-export function AddProjectDialog({ open, setOpen }: AddOrganizationDialogProps) {
+export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const [projectName, setProjectName] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
   const createProject = useCreateProject();
-  const organizationId = useContextStore(state => state.organization.id);
+  const contextOrg = useContextStore(state => state.organization);
+  const { organizations } = useOrganizations();
+  const [selectedOrgId, setSelectedOrgId] = React.useState<string | null>(contextOrg.id);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const canCreate = projectName.trim() && organizationId;
-
-    if (!canCreate) {
-      setError('Project name is required and you must select to an organization.');
+    if (!projectName.trim() || !selectedOrgId) {
+      toast.error('Project name is required and you must select an organization.');
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-
     createProject.mutate(
-      { name: projectName, organizationId: organizationId },
+      { name: projectName, organizationId: selectedOrgId },
       {
-        onSuccess: () => {
-          setIsLoading(false);
-          setOpen(false);
-        },
-        onError: err => {
-          setIsLoading(false);
-          setError(err.message || 'Failed to create project. Please try again.');
-        },
+        onSuccess: () => setOpen(false),
       },
     );
   };
 
   useEffect(() => {
     setProjectName('');
-    setError(null);
-  }, [open]);
+    setSelectedOrgId(contextOrg.id);
+  }, [open, contextOrg.id]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -65,14 +56,29 @@ export function AddProjectDialog({ open, setOpen }: AddOrganizationDialogProps) 
         <DialogHeader>
           <DialogTitle>Create a new project</DialogTitle>
           <DialogDescription>
-            Enter a name and description for your new project. You can change these later in
-            settings.
+            Enter a name for your new project and select the organization it belongs to.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-4'>
-          {error && (
-            <div className='rounded-md bg-destructive/10 p-3 text-sm text-destructive'>{error}</div>
-          )}
+          <div className='space-y-2'>
+            <Label htmlFor='project-org'>Organization</Label>
+            <Select
+              value={selectedOrgId ?? undefined}
+              onValueChange={setSelectedOrgId}
+              disabled={createProject.isPending}
+            >
+              <SelectTrigger id='project-org' className='w-full'>
+                <SelectValue placeholder='Select an organization' />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations?.map(org => (
+                  <SelectItem key={org.organizationId} value={org.organizationId}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className='space-y-2'>
             <Label htmlFor='project-name'>Project name</Label>
             <Input
@@ -81,7 +87,7 @@ export function AddProjectDialog({ open, setOpen }: AddOrganizationDialogProps) 
               value={projectName}
               onChange={e => setProjectName(e.target.value)}
               autoFocus
-              disabled={isLoading}
+              disabled={createProject.isPending}
             />
           </div>
           <DialogFooter>
@@ -90,15 +96,17 @@ export function AddProjectDialog({ open, setOpen }: AddOrganizationDialogProps) 
               variant='outline'
               onClick={() => {
                 setProjectName('');
-                setError(null);
                 setOpen(false);
               }}
-              disabled={isLoading}
+              disabled={createProject.isPending}
             >
               Cancel
             </Button>
-            <Button type='submit' disabled={!projectName.trim() || isLoading}>
-              {isLoading ? 'Creating...' : 'Create Organization'}
+            <Button
+              type='submit'
+              disabled={!projectName.trim() || !selectedOrgId || createProject.isPending}
+            >
+              {createProject.isPending ? 'Creating...' : 'Create Project'}
             </Button>
           </DialogFooter>
         </form>

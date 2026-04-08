@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
-import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
+import { toast } from '@shared/presentation/utils/toast.ts';
 
 export const useCreateProject = () => {
   const queryClient = useQueryClient();
@@ -10,12 +10,8 @@ export const useCreateProject = () => {
     mutationFn: async ({ name, organizationId }: { name: string; organizationId: string }) =>
       (await createProject.execute(name, organizationId)).unwrap(),
     onSuccess: () => {
-      // Opt: return org and update cache
-      /* queryClient.setQueryData(['organizations'], (old: any) => {
-        return old ? { ...old, organizations: [...old.organizations, newOrg] } : old;
-      });*/
+      toast.success('Project created');
       return queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
-    onError: (err: ScyllaError) => err.log(),
   });
 };

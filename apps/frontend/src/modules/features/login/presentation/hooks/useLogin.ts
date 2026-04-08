@@ -15,8 +15,5 @@ export const useLogin = () => {
     onSuccess: () => {
       navigate('/user-settings');
     },
-    onError: err => {
-      err.log();
-    },
   });
 };
