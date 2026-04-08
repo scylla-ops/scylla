@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface ContextStore {
   organization: {
@@ -12,24 +13,24 @@ interface ContextStore {
     name: string | null;
   };
   setProject: (id: string, name: string) => void;
+
+  reset: () => void;
 }
 
-export const useContextStore = create<ContextStore>(set => ({
-  organization: {
-    id: null,
-    name: null,
-  },
-  setOrganization: (id, name) =>
-    set({
-      organization: { id, name },
-    }),
+const initialState = {
+  organization: { id: null, name: null } as { id: string | null; name: string | null },
+  project: { id: null, name: null } as { id: string | null; name: string | null },
+};
 
-  project: {
-    id: null,
-    name: null,
-  },
-  setProject: (id, name) =>
-    set({
-      project: { id, name },
+export const useContextStore = create<ContextStore>()(
+  persist(
+    set => ({
+      ...initialState,
+      setOrganization: (id, name) =>
+        set({ organization: { id, name }, project: { id: null, name: null } }),
+      setProject: (id, name) => set({ project: { id, name } }),
+      reset: () => set(initialState),
     }),
-}));
+    { name: 'scylla-context' },
+  ),
+);

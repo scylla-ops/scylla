@@ -19,6 +19,7 @@ import {
   useSidebar,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { useNavigate } from 'react-router-dom';
+import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 
 export function NavUser({
   user,
@@ -31,6 +32,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
+  const resetContext = useContextStore(state => state.reset);
 
   return (
     <SidebarMenu>
@@ -77,6 +79,7 @@ export function NavUser({
             <DropdownMenuItem
               onSelect={() => {
                 localStorage.removeItem('token');
+                resetContext();
                 window.location.href = '/';
               }}
             >
