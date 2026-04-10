@@ -13,4 +13,8 @@ export class PipelineDashboardRepositoryImpl implements PipelineDashboardReposit
   public async deleteById(id: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.deleteById(id);
   }
+
+  public async run(id: string): Promise<ScyllaResult<void>> {
+    return this.remoteDataSource.run(id);
+  }
 }

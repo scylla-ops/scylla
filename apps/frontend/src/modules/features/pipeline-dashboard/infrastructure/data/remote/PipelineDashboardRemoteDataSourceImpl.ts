@@ -28,4 +28,10 @@ export class PipelineDashboardRemoteDataSourceImpl implements PipelineDashboardR
       'Error getting pipelines',
     );
   }
+
+  public async run(id: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync<void>(async () => {
+      await this._pipelineClient.runPipeline({ pipelineId: id });
+    }, 'Error running pipeline');
+  }
 }

@@ -5,6 +5,7 @@ import type { SyntheticEvent } from 'react';
 import { getColumnConfig } from '@/modules/features/pipeline-dashboard/presentation/config/pipelineTableConfig.ts';
 import { PipelineStatus, PipelineMetadata, PipelineActions } from './.';
 import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
+import { useRunPipeline } from '../../hooks/useRunPipeline';
 
 export type StatusCardProps = {
   pipeline: PipelineSummary;
@@ -17,6 +18,7 @@ export type StatusCardProps = {
  */
 export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) => {
   const { goToEditPipeline } = useScyllaNavigate();
+  const runPipeline = useRunPipeline();
 
   const handleEdit = (e: SyntheticEvent) => {
     e.stopPropagation();
@@ -25,7 +27,7 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
 
   const handleRun = (e: SyntheticEvent) => {
     e.stopPropagation();
-    // TODO
+    runPipeline.mutateAsync(pipeline.pipelineId);
   };
 
   const handleMore = (e: SyntheticEvent) => {

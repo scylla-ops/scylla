@@ -4,4 +4,5 @@ import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 export interface PipelineDashboardRepository {
   getAll(): Promise<ScyllaResult<ListPipelinesResponse>>;
   deleteById(id: string): Promise<ScyllaResult<void>>;
+  run(id: string): Promise<ScyllaResult<void>>;
 }
