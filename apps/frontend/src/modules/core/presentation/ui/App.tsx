@@ -9,7 +9,7 @@ import { messages as loginMessages } from '@/modules/features/login/locales/en/m
 import { messages as userSettingsMessages } from '@/modules/features/user_settings/locales/en/messages.ts';
 import { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import { Toaster } from '@shadcn/toaster.tsx';
+import { Toaster } from '@shadcn/sonner.tsx';
 
 i18n.load('en', {
   ...loginMessages,

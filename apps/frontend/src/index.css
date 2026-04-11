@@ -141,33 +141,6 @@
   }
 }
 
-@keyframes toast-slide-in {
-  from {
-    transform: translateX(calc(100% + 1rem));
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes toast-slide-out {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(calc(100% + 1rem));
-  }
-}
-
-@theme inline {
-  --animate-toast-slide-in: toast-slide-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
-  --animate-toast-slide-out: toast-slide-out 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
 @keyframes smooth-pulse {
     0%, 100% {
         opacity: 1;
