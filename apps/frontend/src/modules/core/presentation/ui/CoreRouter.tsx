@@ -10,6 +10,7 @@ import { DashboardPipelinePage } from '@/modules/features/pipeline-dashboard/pre
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
 import type { BreadcrumbParams } from '@core/presentation/models/RouteHandle.ts';
 import { ContextCleaner } from './middlewares/ContextCleaner';
+import { JobsPage } from '@/modules/features/jobs/presentation/ui/JobsPage.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -63,6 +64,14 @@ export const CoreRouter = createBrowserRouter([
                     handle: {
                       breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
                         `Pipeline #${pipelineName}`,
+                    },
+                  },
+                  {
+                    path: 'pipelines/:pipelineId/jobs',
+                    element: <JobsPage />,
+                    handle: {
+                      breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
+                        `${pipelineName ? `#${pipelineName}` : 'Pipeline'} - Jobs`,
                     },
                   },
                 ],

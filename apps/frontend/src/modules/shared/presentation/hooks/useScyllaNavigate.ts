@@ -30,6 +30,11 @@ export const useScyllaNavigate = () => {
     setPipeline(pipeline.pipelineId, pipeline.name);
   };
 
+  const goToJobs = (pipelineId: string) => {
+    const projectId = useContextStore.getState().project.id;
+    navigate(`/projects/${projectId}/pipelines/${pipelineId}/jobs`);
+  };
+
   const goToUserSettings = () => {
     navigate('/user-settings');
   };
@@ -40,6 +45,7 @@ export const useScyllaNavigate = () => {
     goToUserSettings,
     goToSubRoute,
     goToCreatePipeline,
+    goToJobs,
     goBack: () => navigate(-1),
     goToProject,
   };

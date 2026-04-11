@@ -1,4 +1,4 @@
-import type { PipelineResponse, PipelineSummary } from '@/generated/pipeline.ts';
+import type { PipelineSummary } from '@/generated/pipeline.ts';
 import { PipelineChart } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineChart.tsx';
 import { ListCard, type ListCardSection } from '@shared/presentation/ui/ListCard.tsx';
 import type { SyntheticEvent } from 'react';
@@ -17,7 +17,7 @@ export type StatusCardProps = {
  * Component representing a single row in the pipeline dashboard, displaying the pipeline's status, history, metadata, and available actions.
  */
 export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) => {
-  const { goToEditPipeline } = useScyllaNavigate();
+  const { goToEditPipeline, goToJobs } = useScyllaNavigate();
   const runPipeline = useRunPipeline();
 
   const handleEdit = (e: SyntheticEvent) => {
@@ -30,9 +30,9 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
     runPipeline.mutateAsync(pipeline.pipelineId);
   };
 
-  const handleMore = (e: SyntheticEvent) => {
+  const handleViewJobs = (e: SyntheticEvent) => {
     e.stopPropagation();
-    // TODO
+    goToJobs(pipeline.pipelineId);
   };
 
   const statusConfig = getColumnConfig('status');
@@ -68,7 +68,9 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
       width: actionsConfig.width,
       className: actionsConfig.className,
       noSeparator: actionsConfig.noSeparator,
-      content: <PipelineActions onRun={handleRun} onEdit={handleEdit} onMore={handleMore} />,
+      content: (
+        <PipelineActions onRun={handleRun} onEdit={handleEdit} onViewJobs={handleViewJobs} />
+      ),
     },
   ];
 

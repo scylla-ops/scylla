@@ -1,13 +1,13 @@
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 import { OrganizationServiceClient } from '@/generated/organization.client.ts';
 import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/OrganizationRemoteDataSource.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListOrganizationsResponse } from '@/generated/organization.ts';
+import type { GrpcTransport } from '@core/infrastructure/grpc/GrpcTransport.ts';
 
 export default class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
   private readonly _organizationClient: OrganizationServiceClient;
 
-  constructor(transport: CoreGrpcTransport) {
+  constructor(transport: GrpcTransport) {
     this._organizationClient = new OrganizationServiceClient(transport.getTransport());
   }
 
