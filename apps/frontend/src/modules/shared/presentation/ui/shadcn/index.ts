@@ -15,3 +15,4 @@ export * from './table.tsx';
 export * from './select.tsx';
 export * from './separator.tsx';
 export * from './sonner.tsx';
+export * from './pagination.tsx';

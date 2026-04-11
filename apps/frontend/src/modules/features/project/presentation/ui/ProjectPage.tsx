@@ -3,6 +3,7 @@ import ProjectCard from '@/modules/features/project/presentation/ui/ProjectCard.
 import { ProjectHeader } from '@/modules/features/project/presentation/ui/ProjectHeader.tsx';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
+import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
 
 export const ProjectPage = () => {
   const organizationId = useContextStore(state => state.organization.id);
@@ -26,14 +27,7 @@ export const ProjectPage = () => {
   }
 
   if (isError || !projects) {
-    return (
-      <div className='flex items-center justify-center h-full'>
-        <div className='text-center space-y-2'>
-          <p className='text-destructive text-lg font-semibold'>Erreur</p>
-          <p className='text-muted-foreground text-sm'>Impossible de charger les projets</p>
-        </div>
-      </div>
-    );
+    return <ErrorState message='Impossible de charger les projets' />;
   }
 
   return (

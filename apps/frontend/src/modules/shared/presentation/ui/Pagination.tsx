@@ -1,6 +1,13 @@
-import { Button } from '@shadcn';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { PaginationInfo } from '@/modules/shared/domain/types/Pagination.ts';
+import {
+  Pagination as PaginationRoot,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@shared/presentation/ui/shadcn/pagination.tsx';
 
 interface PaginationProps {
   paginationInfo: PaginationInfo;
@@ -35,55 +42,41 @@ export const Pagination = ({ paginationInfo, onPageChange, className }: Paginati
 
   return (
     <div className={`flex flex-col items-center gap-2 ${className ?? ''}`}>
-      <nav aria-label="Pagination" className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="icon"
-          className="min-h-11 min-w-11"
-          disabled={!hasPrevious}
-          onClick={() => onPageChange(page - 1)}
-          aria-label="Previous page"
-        >
-          <ChevronLeft className="size-4" />
-        </Button>
+      <PaginationRoot>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => hasPrevious && onPageChange(page - 1)}
+              className={hasPrevious ? 'cursor-pointer' : 'pointer-events-none opacity-50'}
+            />
+          </PaginationItem>
 
-        {pageItems.map((item, index) =>
-          item === 'ellipsis' ? (
-            <span
-              key={`ellipsis-${index}`}
-              className="flex min-h-11 min-w-11 items-center justify-center text-muted-foreground"
-              aria-hidden
-            >
-              ...
-            </span>
-          ) : (
-            <Button
-              key={item}
-              variant={item === page ? 'default' : 'outline'}
-              size="icon"
-              className="min-h-11 min-w-11"
-              onClick={() => onPageChange(item)}
-              aria-label={`Page ${item}`}
-              aria-current={item === page ? 'page' : undefined}
-            >
-              {item}
-            </Button>
-          ),
-        )}
+          {pageItems.map((item, index) => (
+            <PaginationItem key={item === 'ellipsis' ? `ellipsis-${index}` : item}>
+              {item === 'ellipsis' ? (
+                <PaginationEllipsis />
+              ) : (
+                <PaginationLink
+                  isActive={item === page}
+                  onClick={() => onPageChange(item)}
+                  className='cursor-pointer'
+                >
+                  {item}
+                </PaginationLink>
+              )}
+            </PaginationItem>
+          ))}
 
-        <Button
-          variant="outline"
-          size="icon"
-          className="min-h-11 min-w-11"
-          disabled={!hasNext}
-          onClick={() => onPageChange(page + 1)}
-          aria-label="Next page"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-      </nav>
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => hasNext && onPageChange(page + 1)}
+              className={hasNext ? 'cursor-pointer' : 'pointer-events-none opacity-50'}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </PaginationRoot>
 
-      <p className="text-sm text-muted-foreground">
+      <p className='text-sm text-muted-foreground'>
         Showing {start}-{end} of {totalCount}
       </p>
     </div>

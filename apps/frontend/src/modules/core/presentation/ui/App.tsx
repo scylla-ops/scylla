@@ -29,7 +29,10 @@ const queryClient = new QueryClient({
       }
 
       scyllaError.log();
-      toast.error(scyllaError.message || 'An unexpected error occurred');
+      const message = scyllaError.isNetworkError()
+        ? 'Server unreachable'
+        : scyllaError.message || 'An unexpected error occurred';
+      toast.error(message);
     },
   }),
   // Global mutation error handler — shows toast for all mutations.
@@ -38,7 +41,10 @@ const queryClient = new QueryClient({
     onError: error => {
       const scyllaError = error as ScyllaError;
       scyllaError.log();
-      toast.error(scyllaError.message || 'Operation failed');
+      const message = scyllaError.isNetworkError()
+        ? 'Server unreachable'
+        : scyllaError.message || 'Operation failed';
+      toast.error(message);
     },
   }),
 });
