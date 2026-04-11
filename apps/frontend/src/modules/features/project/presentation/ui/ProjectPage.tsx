@@ -1,8 +1,5 @@
 import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts';
 import ProjectCard from '@/modules/features/project/presentation/ui/ProjectCard.tsx';
-import ProjectCardSkeleton from '@/modules/features/project/presentation/ui/ProjectCardSkeleton.tsx';
-import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
-import { useDelayedLoading } from '@/modules/shared/presentation/hooks/useDelayedLoading.ts';
 import { ProjectHeader } from '@/modules/features/project/presentation/ui/ProjectHeader.tsx';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
@@ -10,7 +7,6 @@ import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
 export const ProjectPage = () => {
   const organizationId = useContextStore(state => state.organization.id);
   const { projects, isLoading, isError, paginationInfo, setPage } = useProjects(organizationId);
-  const showSkeleton = useDelayedLoading(400);
 
   if (!organizationId) {
     return (
@@ -25,24 +21,8 @@ export const ProjectPage = () => {
     );
   }
 
-  if (isLoading && !showSkeleton) {
+  if (isLoading) {
     return <></>;
-  }
-
-  if (isLoading && showSkeleton) {
-    return (
-      <div className='flex flex-col gap-4 w-full h-full p-2'>
-        <div className='flex items-baseline gap-2'>
-          <Skeleton className='h-9 w-48' />
-          <Skeleton className='h-5 w-16' />
-        </div>
-        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <ProjectCardSkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    );
   }
 
   if (isError || !projects) {

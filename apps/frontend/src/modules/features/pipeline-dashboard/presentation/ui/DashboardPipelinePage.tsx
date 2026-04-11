@@ -1,9 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { usePipelines } from '../hooks/usePipelines.ts';
 import { PipelineTable } from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTable.tsx';
-import PipelineTableSkeleton from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTableSkeleton.tsx';
-import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
-import { useDelayedLoading } from '@/modules/shared/presentation/hooks/useDelayedLoading.ts';
 import { PipelineDashboardHeader } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx';
 import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
 
@@ -12,24 +9,9 @@ export const DashboardPipelinePage = () => {
   const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage } = usePipelines(
     projectId!,
   );
-  const showSkeleton = useDelayedLoading(400);
 
-  if (isLoading && !showSkeleton) {
+  if (isLoading || !pipelines) {
     return <></>;
-  }
-
-  if ((isLoading && showSkeleton) || !pipelines) {
-    return (
-      <div className='flex flex-col gap-4 w-full h-full p-2'>
-        <div className='flex items-baseline gap-2'>
-          <Skeleton className='h-9 w-56' />
-          <Skeleton className='h-5 w-16' />
-        </div>
-        <div className='h-full flex flex-col gap-2'>
-          <PipelineTableSkeleton />
-        </div>
-      </div>
-    );
   }
 
   if (isError) {
