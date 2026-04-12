@@ -17,6 +17,12 @@ export class ScyllaError extends Error {
     return this.hasCode(this.cause) ? this.cause.code : 'UNKNOWN_ERROR';
   }
 
+  public isNetworkError(): boolean {
+    const code = this.getCode();
+    if (code === 'UNAVAILABLE') return true;
+    return this.cause instanceof Error && this.cause.message.includes('fetch');
+  }
+
   public log(): void {
     console.error(`>[${this.constructor.name}]:`, this.message);
     if (this.cause) {

@@ -15,22 +15,32 @@ interface ContextStore {
 
   pipeline: ContextItem;
   setPipeline: (id: string | null, name: string | null) => void;
+
+  reset: () => void;
 }
+
+const initialState = {
+  organization: { id: null, name: null } as ContextItem,
+  project: { id: null, name: null } as ContextItem,
+  pipeline: { id: null, name: null } as ContextItem,
+};
 
 export const useContextStore = create<ContextStore>()(
   persist(
     set => ({
-      organization: { id: null, name: null },
-      setOrganization: (id, name) => set({ organization: { id, name } }),
-
-      project: { id: null, name: null },
+      ...initialState,
+      setOrganization: (id, name) =>
+        set({
+          organization: { id, name },
+          project: { id: null, name: null },
+          pipeline: { id: null, name: null },
+        }),
       setProject: (id, name) => set({ project: { id, name } }),
-
-      pipeline: { id: null, name: null },
       setPipeline: (id, name) => set({ pipeline: { id, name } }),
+      reset: () => set(initialState),
     }),
     {
-      name: 'scylla-context-storage',
+      name: 'scylla-context',
       storage: createJSONStorage(() => localStorage),
     },
   ),

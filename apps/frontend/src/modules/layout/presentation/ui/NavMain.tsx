@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import { type LucideIcon } from 'lucide-react';
 import {
   SidebarGroup,
@@ -22,7 +23,7 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Main</SidebarGroupLabel>
+      <SidebarGroupLabel><Trans>Main</Trans></SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item, index) => (
           <SidebarMenuItem className={'transition-all duration-200 hover:scale-105'} key={index}>

@@ -11,6 +11,7 @@ import {
 
 import { type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
 import { ScyllaForm } from '@shared/presentation/ui/ScyllaForm.tsx';
+import { Trans } from '@lingui/react/macro';
 
 const FormItems: FormItem[] = [
   {
@@ -70,8 +71,8 @@ export const UserInformation = () => {
   return (
     <Card className='w-full bg-white'>
       <CardHeader>
-        <CardTitle>User information</CardTitle>
-        <CardDescription>Manage your account details.</CardDescription>
+        <CardTitle><Trans>User information</Trans></CardTitle>
+        <CardDescription><Trans>Manage your account details.</Trans></CardDescription>
       </CardHeader>
 
       <CardContent className='space-y-4'>

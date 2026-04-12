@@ -4,12 +4,12 @@ import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { PaginationRequest } from '@/generated/common.ts';
 import { ScyllaResult as Result } from '@/modules/shared/utils/ScyllaResult.ts';
 import { JobServiceClient } from '@/generated/job.client.ts';
-import type { GrpcTransport } from '@/modules/core/infrastructure/grpc/GrpcTransport.ts';
+import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 
 export class JobsRemoteDataSourceImpl implements JobsRemoteDataSource {
   private readonly _jobClient: JobServiceClient;
 
-  constructor(grpcTransport: GrpcTransport) {
+  constructor(grpcTransport: CoreGrpcTransport) {
     this._jobClient = new JobServiceClient(grpcTransport.getTransport());
   }
 
@@ -31,12 +31,8 @@ export class JobsRemoteDataSourceImpl implements JobsRemoteDataSource {
   }
 
   public async deleteById(jobId: string): Promise<ScyllaResult<void>> {
-    return Result.tryAsync<void>(
-      async () => {
-        await this._jobClient.deleteJob({ jobId });
-      },
-      'Error deleting job',
-    );
+    return Result.tryAsync<void>(async () => {
+      await this._jobClient.deleteJob({ jobId });
+    }, 'Error deleting job');
   }
 }
-

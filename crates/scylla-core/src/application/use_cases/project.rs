@@ -72,6 +72,17 @@ impl<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> Project
         self.project_repo.list_all(pagination).await
     }
 
+    #[instrument(skip(self), fields(organization_id = %organization_id))]
+    pub async fn list_by_organization(
+        &self,
+        organization_id: &OrganizationId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Project>> {
+        self.project_repo
+            .list_by_organization(organization_id, pagination)
+            .await
+    }
+
     #[instrument(skip(self), fields(project_id = %project_id))]
     pub async fn list_users(
         &self,
@@ -177,6 +188,13 @@ mod tests {
         }
         async fn list_active(
             &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
+            unimplemented!()
+        }
+        async fn list_by_organization(
+            &self,
+            _org_id: &OrganizationId,
             _p: Option<&PaginationParams>,
         ) -> DomainResult<PaginatedResult<Project>> {
             unimplemented!()

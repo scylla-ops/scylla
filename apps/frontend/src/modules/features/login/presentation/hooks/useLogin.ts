@@ -15,8 +15,5 @@ export const useLogin = () => {
     onSuccess: () => {
       goToUserSettings();
     },
-    onError: err => {
-      err.log();
-    },
   });
 };

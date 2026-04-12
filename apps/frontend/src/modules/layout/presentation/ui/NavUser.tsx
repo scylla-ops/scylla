@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import { ChevronsUpDown, LogOut } from 'lucide-react';
 
 import {
@@ -19,6 +20,7 @@ import {
   useSidebar,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
+import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 
 export function NavUser({
   user,
@@ -31,6 +33,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const goToUserSettings = useScyllaNavigate().goToUserSettings;
+  const resetContext = useContextStore(state => state.reset);
 
   return (
     <SidebarMenu>
@@ -74,11 +77,12 @@ export function NavUser({
             <DropdownMenuItem
               onSelect={() => {
                 localStorage.removeItem('token');
+                resetContext();
                 window.location.href = '/';
               }}
             >
               <LogOut />
-              Log out
+              <Trans>Log out</Trans>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -5,11 +5,11 @@ use crate::grpc::mappers::{
 use derive_more::Constructor;
 use protocol::services::project::{
     AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
-    DeleteProjectResponse, GetProjectRequest, ListProjectUsersRequest, ListProjectUsersResponse,
-    ListProjectsRequest, ListProjectsResponse, ListUserProjectsRequest, ProjectResponse,
-    ProjectUserInfoResponse, RemoveUserFromProjectRequest, RemoveUserFromProjectResponse,
-    ToggleProjectActiveRequest, ToggleProjectActiveResponse, UpdateProjectRequest,
-    project_service_server::ProjectService,
+    DeleteProjectResponse, GetProjectRequest, ListOrganizationProjectsRequest,
+    ListProjectUsersRequest, ListProjectUsersResponse, ListProjectsRequest, ListProjectsResponse,
+    ListUserProjectsRequest, ProjectResponse, ProjectUserInfoResponse,
+    RemoveUserFromProjectRequest, RemoveUserFromProjectResponse, ToggleProjectActiveRequest,
+    ToggleProjectActiveResponse, UpdateProjectRequest, project_service_server::ProjectService,
 };
 use scylla_core::application::ProjectUseCases;
 use scylla_core::application::ports::{
@@ -166,6 +166,36 @@ impl<
         let result = self
             .use_cases
             .list(pagination.as_ref())
+            .await
+            .map_err(domain_error_to_status)?;
+
+        let (projects, metadata) = result.into_parts();
+        let projects: Vec<ProjectResponse> = projects.iter().map(project_to_proto).collect();
+
+        Ok(Response::new(ListProjectsResponse {
+            projects,
+            pagination: Some(domain_to_proto_metadata(&metadata)),
+        }))
+    }
+
+    async fn list_organization_projects(
+        &self,
+        request: Request<ListOrganizationProjectsRequest>,
+    ) -> Result<Response<ListProjectsResponse>, Status> {
+        let target_org_id = OrganizationId::new(&request.get_ref().organization_id);
+        require_permission!(
+            self,
+            request,
+            policy::project::list_by_organization(target_org_id)
+        );
+
+        let req = request.into_inner();
+        let organization_id = OrganizationId::new(&req.organization_id);
+        let pagination = proto_to_domain_pagination(req.pagination);
+
+        let result = self
+            .use_cases
+            .list_by_organization(&organization_id, pagination.as_ref())
             .await
             .map_err(domain_error_to_status)?;
 
@@ -341,6 +371,13 @@ mod tests {
         }
         async fn list_active(
             &self,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
+            unimplemented!()
+        }
+        async fn list_by_organization(
+            &self,
+            _org_id: &OrganizationId,
             _p: Option<&PaginationParams>,
         ) -> DomainResult<PaginatedResult<Project>> {
             unimplemented!()

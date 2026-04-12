@@ -8,6 +8,7 @@ import {
 import { EditIcon, PlayIcon, MoreHorizontal, ListChecks } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
+import { Trans } from '@lingui/react/macro';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
@@ -57,11 +58,11 @@ export const PipelineActions = ({ onRun, onEdit, onViewJobs, onMore }: PipelineA
           <DropdownMenuContent align='end' className='w-40'>
             <DropdownMenuItem onClick={onRun}>
               <PlayIcon className='w-4 h-4 mr-2' />
-              Run
+              <Trans>Run</Trans>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onEdit}>
               <EditIcon className='w-4 h-4 mr-2' />
-              Edit
+              <Trans>Edit</Trans>
             </DropdownMenuItem>
             {onViewJobs && (
               <DropdownMenuItem onClick={onViewJobs}>
@@ -72,7 +73,7 @@ export const PipelineActions = ({ onRun, onEdit, onViewJobs, onMore }: PipelineA
             {onMore && (
               <DropdownMenuItem onClick={onMore}>
                 <MoreHorizontal className='w-4 h-4 mr-2' />
-                More options
+                <Trans>More options</Trans>
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
