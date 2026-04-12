@@ -11,7 +11,6 @@ import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.
 import type { BreadcrumbParams } from '@core/presentation/models/RouteHandle.ts';
 import { ContextCleaner } from './middlewares/ContextCleaner';
 import { JobsPage } from '@/modules/features/jobs/presentation/ui/JobsPage.tsx';
-
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
   {

@@ -7,7 +7,7 @@
 export const calculateDuration = (createdAt: string, updatedAt: string): number => {
   const start = new Date(createdAt).getTime();
   const end = new Date(updatedAt).getTime();
-  return Math.floor((end - start) / 1000); // in seconds
+  return Math.floor((end - start) / 1000);
 };
 
 /**
@@ -45,4 +45,3 @@ export const getRelativeTime = (dateString: string): string => {
   if (diffSeconds > 0) return `${diffSeconds}s ago`;
   return 'just now';
 };
-
