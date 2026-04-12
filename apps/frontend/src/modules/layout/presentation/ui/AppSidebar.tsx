@@ -15,6 +15,7 @@ import { OrganizationList } from '@/modules/features/organization/presentation/u
 import { AddOrganizationDialog } from '@/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx';
 import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-selector/CurrentContextDisplay.tsx';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { useLingui } from '@lingui/react/macro';
 
 // This is sample data.
 const data = {
@@ -30,7 +31,7 @@ const data = {
       icon: WorkflowIcon,
     },
     {
-      title: 'Marketplace',
+      title: 'Marketeplace',
       url: '/marketplace',
       icon: ShoppingCartIcon,
     },
@@ -38,17 +39,18 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { t } = useLingui();
   const organization = useContextStore(state => state.organization);
 
   return (
     <Sidebar variant={'inset'} collapsible='icon' {...props}>
       <SidebarHeader>
         <ContextSelector
-          label={'Organization'}
+          label={t`Organization`}
           display={
             <CurrentContextDisplay
-              name={organization.name || 'Select Organization'}
-              description={'Organization'}
+              name={organization.name || t`Select Organization`}
+              description={t`Organization`}
               icon={Building2}
             />
           }

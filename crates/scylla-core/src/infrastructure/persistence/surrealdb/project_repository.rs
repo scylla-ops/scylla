@@ -1,11 +1,12 @@
 use crate::application::ports::ProjectRepository;
-use crate::domain::entities::{Project, ProjectId};
+use crate::domain::entities::{OrganizationId, Project, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use surrealdb_types::SurrealValue;
 use tracing::instrument;
 
 pub struct SurrealProjectRepository {
@@ -134,6 +135,44 @@ impl ProjectRepository for SurrealProjectRepository {
                 .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?
                 .take(0)
                 .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?;
+
+        Ok(PaginatedResult::new(projects, &params, total_count))
+    }
+
+    #[instrument(skip(self), fields(organization_id = %organization_id))]
+    async fn list_by_organization(
+        &self,
+        organization_id: &OrganizationId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Project>> {
+        let db = self.db.clone();
+        let params = pagination.copied().unwrap_or_default();
+        let table = ProjectId::table_name().to_string();
+        let organization_id = organization_id.clone();
+
+        let count_result: Vec<i64> = db
+            .query(
+                "SELECT count() FROM type::table($table) WHERE organization_id = $org_id GROUP ALL",
+            )
+            .bind(("table", table.clone()))
+            .bind(("org_id", organization_id.clone().into_value()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?
+            .take("count")
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?;
+
+        let total_count = count_result.first().copied().unwrap_or(0).cast_unsigned();
+
+        let projects: Vec<Project> = db
+            .query("SELECT * FROM type::table($table) WHERE organization_id = $org_id ORDER BY created_at DESC LIMIT $limit START $start")
+            .bind(("table", table))
+            .bind(("org_id", organization_id.into_value()))
+            .bind(("limit", params.limit()))
+            .bind(("start", params.offset()))
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?
+            .take(0)
+            .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?;
 
         Ok(PaginatedResult::new(projects, &params, total_count))
     }
@@ -347,5 +386,76 @@ mod tests {
         }
         // The active project should be in the results
         assert!(result.items().iter().any(|p| p.id() == project_active.id()));
+    }
+
+    #[tokio::test]
+    async fn test_list_by_organization() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let org_a = test_org_id();
+        let org_b = test_org_id();
+
+        let project_a1 = Project::create(
+            ProjectName::new("Org A Project 1").unwrap(),
+            None,
+            org_a.clone(),
+        )
+        .unwrap();
+        repo.create(&project_a1).await.expect("Failed to create");
+
+        let project_a2 = Project::create(
+            ProjectName::new("Org A Project 2").unwrap(),
+            None,
+            org_a.clone(),
+        )
+        .unwrap();
+        repo.create(&project_a2).await.expect("Failed to create");
+
+        let project_b = Project::create(
+            ProjectName::new("Org B Project").unwrap(),
+            None,
+            org_b.clone(),
+        )
+        .unwrap();
+        repo.create(&project_b).await.expect("Failed to create");
+
+        let pagination = PaginationParams::new(1, 20).unwrap();
+
+        // Org A should have 2 projects
+        let result_a = repo
+            .list_by_organization(&org_a, Some(&pagination))
+            .await
+            .expect("Failed to list by org A");
+        assert_eq!(result_a.items().len(), 2);
+        assert_eq!(result_a.metadata().total_count(), 2);
+        for p in result_a.items() {
+            assert_eq!(p.organization_id(), &org_a);
+        }
+
+        // Org B should have 1 project
+        let result_b = repo
+            .list_by_organization(&org_b, Some(&pagination))
+            .await
+            .expect("Failed to list by org B");
+        assert_eq!(result_b.items().len(), 1);
+        assert_eq!(result_b.metadata().total_count(), 1);
+        assert_eq!(result_b.items()[0].organization_id(), &org_b);
+    }
+
+    #[tokio::test]
+    async fn test_list_by_organization_empty() {
+        let db = setup().await;
+        let repo = SurrealProjectRepository::new(db);
+
+        let org_id = test_org_id();
+        let pagination = PaginationParams::new(1, 20).unwrap();
+
+        let result = repo
+            .list_by_organization(&org_id, Some(&pagination))
+            .await
+            .unwrap();
+        assert_eq!(result.items().len(), 0);
+        assert_eq!(result.metadata().total_count(), 0);
     }
 }

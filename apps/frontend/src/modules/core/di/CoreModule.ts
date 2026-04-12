@@ -1,6 +1,6 @@
-import { GrpcTransport } from '@core/infrastructure/grpc/GrpcTransport.ts';
+import { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 
-const grpcTransport: GrpcTransport = new GrpcTransport();
+const grpcTransport: CoreGrpcTransport = new CoreGrpcTransport();
 
 export const CoreModule = {
   data: { grpcTransport: grpcTransport },

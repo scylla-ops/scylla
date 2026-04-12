@@ -4,12 +4,54 @@ msgstr ""
 "POT-Creation-Date: 2023-11-08\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language: \n"
+"Language-Team: \n"
 
-msgid "Pipeline Dashboard"
-msgstr "Tableau de bord des pipelines"
+#: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:51
+msgid "Clear"
+msgstr "Effacer"
 
-msgid "Pipeline Status"
-msgstr "État de la pipeline"
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:34
+msgid "Create your first pipeline to get started"
+msgstr "Créez votre premier pipeline pour commencer"
 
-msgid "Failed to fetch pipeline stats"
-msgstr "Échec de la récupération des statistiques de la pipeline"
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineStatus.tsx:23
+msgid "Creation:"
+msgstr "Création :"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:65
+msgid "Edit"
+msgstr "Modifier"
+
+#~ msgid "Failed to fetch pipeline stats"
+#~ msgstr "Échec de la récupération des statistiques de la pipeline"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:44
+msgid "in total"
+msgstr "au total"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:76
+msgid "More options"
+msgstr "Plus d'options"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:66
+msgid "New pipeline"
+msgstr "Nouveau pipeline"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:32
+msgid "No pipeline found"
+msgstr "Aucun pipeline trouvé"
+
+#~ msgid "Pipeline Dashboard"
+#~ msgstr "Tableau de bord des pipelines"
+
+#~ msgid "Pipeline Status"
+#~ msgstr "État de la pipeline"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:61
+msgid "Run"
+msgstr "Exécuter"

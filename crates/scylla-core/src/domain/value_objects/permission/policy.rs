@@ -114,6 +114,15 @@ pub mod project {
     }
 
     #[must_use]
+    pub fn list_by_organization(organization_id: OrganizationId) -> Policy {
+        Policy::new(
+            Scope::Org(organization_id),
+            Resource::Project(Target::All),
+            Act::Read,
+        )
+    }
+
+    #[must_use]
     pub fn list_users(project_id: ProjectId) -> Policy {
         Policy::new(
             Scope::Project(project_id),

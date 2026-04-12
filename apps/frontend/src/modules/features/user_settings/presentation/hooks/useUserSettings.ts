@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import { toast } from '@shared/presentation/utils/toast.ts';
 
 export const useOrganizationUsers = (organizationId: string) => {
   const { getOrganizationUsers } = useDependencies().userSettings;
@@ -27,15 +28,11 @@ export const useAddUserToOrganization = () => {
       const result = await addUserToOrganization.execute(userId, organizationId, role);
       return result.unwrap();
     },
-
     onSuccess: (_, variables) => {
+      toast.success('User added to organization');
       queryClient.invalidateQueries({
         queryKey: ['organization-users', variables.organizationId],
       });
-    },
-
-    onError: error => {
-      console.error("Erreur lors de l'ajout de l'utilisateur:", error.message);
     },
   });
 };
@@ -46,6 +43,9 @@ export const useRemoveUserFromOrganization = () => {
   return useMutation({
     mutationFn: async ({ userId, organizationId }: { userId: string; organizationId: string }) =>
       (await removeUserFromOrganization.execute(userId, organizationId)).unwrap(),
+    onSuccess: () => {
+      toast.success('User removed from organization');
+    },
   });
 };
 
@@ -61,5 +61,8 @@ export const useUpdateUserRole = () => {
       organizationId: string;
       newRole: string;
     }) => (await updateUserRole.execute(userId, organizationId, newRole)).unwrap(),
+    onSuccess: () => {
+      toast.success('User role updated');
+    },
   });
 };

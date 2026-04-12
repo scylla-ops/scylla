@@ -177,6 +177,13 @@ mod tests {
         ) -> DomainResult<PaginatedResult<Project>> {
             unimplemented!()
         }
+        async fn list_by_organization(
+            &self,
+            _org_id: &OrganizationId,
+            _p: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Project>> {
+            unimplemented!()
+        }
     }
 
     fn test_project() -> Project {

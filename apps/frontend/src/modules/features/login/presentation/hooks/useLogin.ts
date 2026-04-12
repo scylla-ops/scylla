@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
-import { useNavigate } from 'react-router-dom';
 import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
+import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
 
 export const useLogin = () => {
   const deps = useDependencies();
-  const navigate = useNavigate();
+  const goToUserSettings = useScyllaNavigate().goToUserSettings;
 
   return useMutation<void, ScyllaError, { login: string; password: string }>({
     mutationFn: async ({ login, password }) => {
@@ -13,10 +13,7 @@ export const useLogin = () => {
       return result.unwrap();
     },
     onSuccess: () => {
-      navigate('/user-settings');
-    },
-    onError: err => {
-      err.log();
+      goToUserSettings();
     },
   });
 };

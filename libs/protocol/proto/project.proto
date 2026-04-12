@@ -24,6 +24,9 @@ service ProjectService {
   // List all projects
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
 
+  // List projects for an organization
+  rpc ListOrganizationProjects(ListOrganizationProjectsRequest) returns (ListProjectsResponse);
+
   // List users in a project
   rpc ListProjectUsers(ListProjectUsersRequest)
       returns (ListProjectUsersResponse);
@@ -74,6 +77,11 @@ message DeleteProjectResponse {}
 
 message ListProjectsRequest {
   optional common.PaginationRequest pagination = 1;
+}
+
+message ListOrganizationProjectsRequest {
+  string organization_id = 1;
+  optional common.PaginationRequest pagination = 2;
 }
 
 message ListProjectsResponse {

@@ -1,13 +1,14 @@
-import type { PipelineResponse } from '@/generated/pipeline.ts';
+import type { PipelineSummary } from '@/generated/pipeline.ts';
 import { PipelineChart } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineChart.tsx';
 import { ListCard, type ListCardSection } from '@shared/presentation/ui/ListCard.tsx';
 import type { SyntheticEvent } from 'react';
 import { getColumnConfig } from '@/modules/features/pipeline-dashboard/presentation/config/pipelineTableConfig.ts';
 import { PipelineStatus, PipelineMetadata, PipelineActions } from './.';
 import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
+import { useRunPipeline } from '../../hooks/useRunPipeline';
 
 export type StatusCardProps = {
-  pipeline: PipelineResponse;
+  pipeline: PipelineSummary;
   onClick?: () => void;
   selected?: boolean;
 };
@@ -16,21 +17,22 @@ export type StatusCardProps = {
  * Component representing a single row in the pipeline dashboard, displaying the pipeline's status, history, metadata, and available actions.
  */
 export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) => {
-  const { goToSubRoute } = useScyllaNavigate();
+  const { goToEditPipeline, goToJobs } = useScyllaNavigate();
+  const runPipeline = useRunPipeline();
 
   const handleEdit = (e: SyntheticEvent) => {
     e.stopPropagation();
-    goToSubRoute(`edit/${pipeline.pipelineId}`);
+    goToEditPipeline(pipeline);
   };
 
   const handleRun = (e: SyntheticEvent) => {
     e.stopPropagation();
-    // TODO
+    runPipeline.mutateAsync(pipeline.pipelineId);
   };
 
-  const handleMore = (e: SyntheticEvent) => {
+  const handleViewJobs = (e: SyntheticEvent) => {
     e.stopPropagation();
-    // TODO
+    goToJobs(pipeline.pipelineId);
   };
 
   const statusConfig = getColumnConfig('status');
@@ -51,7 +53,7 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
       className: historyConfig.className,
       content: (
         <div className='w-full'>
-          <PipelineChart />
+          <PipelineChart pipelineId={pipeline.pipelineId} />
         </div>
       ),
     },
@@ -59,14 +61,16 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
     {
       width: metadataConfig.width,
       className: metadataConfig.className,
-      content: <PipelineMetadata duration='1m 12s' lastRun='2m ago' />,
+      content: <PipelineMetadata pipelineId={pipeline.pipelineId} />,
     },
     // ACTIONS
     {
       width: actionsConfig.width,
       className: actionsConfig.className,
       noSeparator: actionsConfig.noSeparator,
-      content: <PipelineActions onRun={handleRun} onEdit={handleEdit} onMore={handleMore} />,
+      content: (
+        <PipelineActions onRun={handleRun} onEdit={handleEdit} onViewJobs={handleViewJobs} />
+      ),
     },
   ];
 

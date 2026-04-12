@@ -22,7 +22,10 @@ interface AddUserDialogProps {
   isLoading?: boolean;
 }
 
-export const AddUserDialog: React.FC<AddUserDialogProps> = ({ onAddUser, isLoading }) => {
+export const AddUserDialog: React.FC<AddUserDialogProps> = ({
+  onAddUser: _onAddUser,
+  isLoading,
+}) => {
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState('member');
 

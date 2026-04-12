@@ -1,4 +1,4 @@
-use crate::domain::entities::{Project, ProjectId};
+use crate::domain::entities::{OrganizationId, Project, ProjectId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
@@ -20,6 +20,12 @@ pub trait ProjectRepository {
 
     async fn list_active(
         &self,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Project>>;
+
+    async fn list_by_organization(
+        &self,
+        organization_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>>;
 }

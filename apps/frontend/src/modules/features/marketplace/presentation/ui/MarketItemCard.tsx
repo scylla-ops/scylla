@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/modules/shared/presentation/ui/shadcn';
 import LogoScylla from '@/assets/logo_scylla.png';
+import { Trans } from '@lingui/react/macro';
 
 export type MarketItemCardProps = {
   provider: string;
@@ -33,8 +34,8 @@ export const MarketItemCard = ({ provider, title, descrption, className }: Marke
       </CardContent>
 
       <CardFooter className={'flex justify-end gap-2'}>
-        <Button variant={'outline'}>Learn more</Button>
-        <Button>Download</Button>
+        <Button variant={'outline'}><Trans>Learn more</Trans></Button>
+        <Button><Trans>Download</Trans></Button>
       </CardFooter>
     </Card>
   );

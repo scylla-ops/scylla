@@ -1,4 +1,4 @@
-import type { PipelineResponse } from '@/generated/pipeline.ts';
+import type { PipelineSummary } from '@/generated/pipeline.ts';
 import { usePipelineDashboardStore } from '@/modules/features/pipeline-dashboard/presentation/stores/usePipelineDashboardStore.ts';
 import { ListCard, type ListCardSection } from '@shared/presentation/ui';
 import { PIPELINE_COLUMNS } from '@/modules/features/pipeline-dashboard/presentation/config/pipelineTableConfig.ts';
@@ -6,7 +6,7 @@ import { PipelineRow } from '@/modules/features/pipeline-dashboard/presentation/
 import { cn } from '@shared/presentation/utils';
 
 type PipelineTableProps = {
-  pipelines: PipelineResponse[];
+  pipelines: PipelineSummary[];
 };
 
 const headerSections: ListCardSection[] = PIPELINE_COLUMNS.map(column => ({

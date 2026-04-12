@@ -5,13 +5,14 @@ import { usePipelineDashboardStore } from '@/modules/features/pipeline-dashboard
 import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
+import { Trans } from '@lingui/react/macro';
 
 interface PipelineDashboardHeaderProps {
   numberOfPipelines: number;
 }
 //TODO: put the delete pipeline action in a separate component
 export const PipelineDashboardHeader = ({ numberOfPipelines }: PipelineDashboardHeaderProps) => {
-  const { goToSubRoute } = useScyllaNavigate();
+  const { goToCreatePipeline } = useScyllaNavigate();
   const deletePipeline = useDeletePipeline();
   const selectedPipelineIds = usePipelineDashboardStore(state => state.selectedPipelineIds);
   const clearSelection = usePipelineDashboardStore(state => state.clearSelection);
@@ -39,13 +40,15 @@ export const PipelineDashboardHeader = ({ numberOfPipelines }: PipelineDashboard
             {numberOfPipelines > 1 ? 's' : ''}
           </span>
         </h1>
-        <span className='text-sm text-muted-foreground font-medium'>in total</span>
+        <span className='text-sm text-muted-foreground font-medium'>
+          <Trans>in total</Trans>
+        </span>
       </div>
       <div className={'flex items-center justify-end gap-2'}>
         {selectedPipelineIds.length > 0 && (
           <>
             <Button variant={'outline'} onClick={clearSelection}>
-              Clear
+              <Trans>Clear</Trans>
             </Button>
             <Button
               size='icon'
@@ -59,7 +62,9 @@ export const PipelineDashboardHeader = ({ numberOfPipelines }: PipelineDashboard
             </Button>
           </>
         )}
-        <Button onClick={() => goToSubRoute('create')}>New pipeline</Button>{' '}
+        <Button onClick={() => goToCreatePipeline()}>
+          <Trans>New pipeline</Trans>
+        </Button>{' '}
         <ConfirmOperationAlertDialog
           onContinue={handleDelete}
           open={deleteDialogVisibility}
