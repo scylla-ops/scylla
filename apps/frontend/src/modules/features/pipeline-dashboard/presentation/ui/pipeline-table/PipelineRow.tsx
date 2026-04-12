@@ -53,7 +53,7 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
       className: historyConfig.className,
       content: (
         <div className='w-full'>
-          <PipelineChart />
+          <PipelineChart pipelineId={pipeline.pipelineId} />
         </div>
       ),
     },
@@ -61,7 +61,7 @@ export const PipelineRow = ({ pipeline, onClick, selected }: StatusCardProps) =>
     {
       width: metadataConfig.width,
       className: metadataConfig.className,
-      content: <PipelineMetadata duration='1m 12s' lastRun='2m ago' />,
+      content: <PipelineMetadata pipelineId={pipeline.pipelineId} />,
     },
     // ACTIONS
     {
