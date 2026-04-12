@@ -16,6 +16,7 @@ import { useCreateProject } from '@/modules/features/project/presentation/hooks/
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { useContextStore } from '@shared/presentation/stores/useContext.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
+import { Trans, useLingui } from '@lingui/react/macro';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ interface AddProjectDialogProps {
 }
 
 export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
+  const { t } = useLingui();
   const [projectName, setProjectName] = React.useState('');
   const createProject = useCreateProject();
   const contextOrg = useContextStore(state => state.organization);
@@ -33,7 +35,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
     e.preventDefault();
 
     if (!projectName.trim() || !selectedOrgId) {
-      toast.error('Project name is required and you must select an organization.');
+      toast.error(t`Project name is required and you must select an organization.`);
       return;
     }
 
@@ -54,21 +56,21 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create a new project</DialogTitle>
+          <DialogTitle><Trans>Create a new project</Trans></DialogTitle>
           <DialogDescription>
-            Enter a name for your new project and select the organization it belongs to.
+            <Trans>Enter a name for your new project and select the organization it belongs to.</Trans>
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-4'>
           <div className='space-y-2'>
-            <Label htmlFor='project-org'>Organization</Label>
+            <Label htmlFor='project-org'><Trans>Organization</Trans></Label>
             <Select
               value={selectedOrgId ?? undefined}
               onValueChange={setSelectedOrgId}
               disabled={createProject.isPending}
             >
               <SelectTrigger id='project-org' className='w-full'>
-                <SelectValue placeholder='Select an organization' />
+                <SelectValue placeholder={t`Select an organization`} />
               </SelectTrigger>
               <SelectContent>
                 {organizations?.map(org => (
@@ -80,10 +82,10 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
             </Select>
           </div>
           <div className='space-y-2'>
-            <Label htmlFor='project-name'>Project name</Label>
+            <Label htmlFor='project-name'><Trans>Project name</Trans></Label>
             <Input
               id='project-name'
-              placeholder='e.g., My project'
+              placeholder={t`e.g., My project`}
               value={projectName}
               onChange={e => setProjectName(e.target.value)}
               autoFocus
@@ -100,13 +102,13 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
               }}
               disabled={createProject.isPending}
             >
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button
               type='submit'
               disabled={!projectName.trim() || !selectedOrgId || createProject.isPending}
             >
-              {createProject.isPending ? 'Creating...' : 'Create Project'}
+              {createProject.isPending ? <Trans>Creating...</Trans> : <Trans>Create Project</Trans>}
             </Button>
           </DialogFooter>
         </form>

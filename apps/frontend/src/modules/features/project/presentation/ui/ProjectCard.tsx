@@ -2,6 +2,7 @@ import type { ProjectResponse } from '@/generated/project.ts';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { useNavigate } from 'react-router-dom';
 import { Folder } from 'lucide-react';
+import { Trans } from '@lingui/react/macro';
 
 type ProjectCardProps = {
   project: ProjectResponse;
@@ -30,13 +31,13 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
 
       <CardContent className='space-y-3'>
         <p className='text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]'>
-          {project.description || 'Aucune description'}
+          {project.description || <Trans>No description</Trans>}
         </p>
 
         <div className='pt-2 border-t border-border/50'>
           <div className='flex items-center justify-between text-xs text-muted-foreground'>
             <span className='flex items-center gap-1'>
-              <span className='font-medium text-foreground'>Projet</span>
+              <span className='font-medium text-foreground'><Trans>Project</Trans></span>
             </span>
           </div>
         </div>

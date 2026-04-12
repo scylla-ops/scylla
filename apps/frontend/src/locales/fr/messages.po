@@ -1,0 +1,66 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-04-12 02:12+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+
+#: src/modules/shared/presentation/ui/ErrorState.tsx:12
+msgid "An error occurred"
+msgstr "Une erreur est survenue"
+
+#: src/modules/core/presentation/ui/App.tsx:35
+msgid "An unexpected error occurred"
+msgstr "Une erreur inattendue est survenue"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:34
+msgid "Are you absolutely sure?"
+msgstr "En êtes-vous absolument sûr ?"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
+msgid "Cancel"
+msgstr "Annuler"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
+msgid "Continue"
+msgstr "Continuer"
+
+#: src/modules/shared/presentation/ui/ErrorState.tsx:11
+msgid "Error"
+msgstr "Erreur"
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:88
+msgid "Log out"
+msgstr "Se déconnecter"
+
+#: src/modules/layout/presentation/ui/NavMain.tsx:26
+msgid "Main"
+msgstr "Principal"
+
+#: src/modules/core/presentation/ui/App.tsx:47
+msgid "Operation failed"
+msgstr "L'opération a échoué"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:49
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:53
+msgid "Organization"
+msgstr "Organisation"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:52
+msgid "Select Organization"
+msgstr "Sélectionner une organisation"
+
+#: src/modules/core/presentation/ui/App.tsx:34
+#: src/modules/core/presentation/ui/App.tsx:46
+msgid "Server unreachable"
+msgstr "Serveur inaccessible"
+
+#: src/modules/shared/presentation/ui/Pagination.tsx:81
+msgid "Showing {start}-{end} of {totalCount}"
+msgstr "Affichage de {start}-{end} sur {totalCount}"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
+msgid "This action cannot be undone."
+msgstr "Cette action est irréversible."

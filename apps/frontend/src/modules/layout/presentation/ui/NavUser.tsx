@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import { ChevronsUpDown, LogOut } from 'lucide-react';
 
 import {
@@ -84,7 +85,7 @@ export function NavUser({
               }}
             >
               <LogOut />
-              Log out
+              <Trans>Log out</Trans>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

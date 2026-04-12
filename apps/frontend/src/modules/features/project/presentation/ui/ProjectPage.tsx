@@ -4,6 +4,7 @@ import { ProjectHeader } from '@/modules/features/project/presentation/ui/Projec
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
 import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { Trans } from '@lingui/react/macro';
 
 export const ProjectPage = () => {
   const organizationId = useContextStore(state => state.organization.id);
@@ -13,9 +14,9 @@ export const ProjectPage = () => {
     return (
       <div className='flex items-center justify-center h-full'>
         <div className='text-center space-y-2'>
-          <p className='text-muted-foreground text-lg font-semibold'>No organization selected</p>
+          <p className='text-muted-foreground text-lg font-semibold'><Trans>No organization selected</Trans></p>
           <p className='text-sm text-muted-foreground'>
-            Select an organization from the sidebar to view its projects
+            <Trans>Select an organization from the sidebar to view its projects</Trans>
           </p>
         </div>
       </div>
@@ -27,7 +28,7 @@ export const ProjectPage = () => {
   }
 
   if (isError || !projects) {
-    return <ErrorState message='Impossible de charger les projets' />;
+    return <ErrorState message='Unable to load projects' />;
   }
 
   return (

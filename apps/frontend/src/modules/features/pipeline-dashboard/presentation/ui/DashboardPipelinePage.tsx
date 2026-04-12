@@ -4,6 +4,7 @@ import { PipelineTable } from '@/modules/features/pipeline-dashboard/presentatio
 import { PipelineDashboardHeader } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx';
 import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
 import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { Trans } from '@lingui/react/macro';
 
 export const DashboardPipelinePage = () => {
   const { projectId } = useParams();
@@ -16,7 +17,7 @@ export const DashboardPipelinePage = () => {
   }
 
   if (isError) {
-    return <ErrorState message={String(errorMessage) || 'Impossible de charger les pipelines'} />;
+    return <ErrorState message={String(errorMessage) || 'Unable to load pipelines'} />;
   }
 
   return (
@@ -28,9 +29,9 @@ export const DashboardPipelinePage = () => {
         ) : (
           <div className='flex items-center justify-center h-full'>
             <div className='text-center space-y-2'>
-              <p className='text-muted-foreground'>No pipeline found</p>
+              <p className='text-muted-foreground'><Trans>No pipeline found</Trans></p>
               <p className='text-sm text-muted-foreground'>
-                Create your first pipeline to get started
+                <Trans>Create your first pipeline to get started</Trans>
               </p>
             </div>
           </div>

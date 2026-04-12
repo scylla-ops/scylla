@@ -1,0 +1,32 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-04-12 02:12+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+
+#: src/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx:16
+msgid "Blueprint"
+msgstr "Blueprint"
+
+#: src/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx:28
+msgid "Create"
+msgstr "Créer"
+
+#: src/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx:22
+msgid "Pipeline created successfully"
+msgstr "Pipeline créé avec succès"
+
+#: src/modules/features/pipeline-creation/presentation/ui/PipelineCreationPage.tsx:92
+msgid "Reactflow canvas here"
+msgstr "Canvas Reactflow ici"
+
+#: src/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx:15
+msgid "Scripting"
+msgstr "Scripting"
+
+#: src/modules/features/pipeline-creation/presentation/ui/PipelineCreationPage.tsx:75
+msgid "Select a project first"
+msgstr "Sélectionnez d'abord un projet"

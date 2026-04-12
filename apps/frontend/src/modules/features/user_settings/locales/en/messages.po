@@ -61,6 +61,10 @@ msgstr "Joined"
 #~ msgid "Loading members..."
 #~ msgstr "Loading members..."
 
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:75
+msgid "Manage your account details."
+msgstr "Manage your account details."
+
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:66
 msgid "Manage your organization and their members."
 msgstr "Manage your organization and their members."
@@ -122,6 +126,10 @@ msgstr "Update the role for {0}"
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:52
 msgid "Update User Role"
 msgstr "Update User Role"
+
+#: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:74
+msgid "User information"
+msgstr "User information"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:89
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:137

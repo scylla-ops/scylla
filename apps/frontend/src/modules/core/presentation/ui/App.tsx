@@ -3,10 +3,17 @@ import { CoreRouter } from '@core/presentation/ui/CoreRouter.tsx';
 import { StrictMode } from 'react';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
+import { t } from '@lingui/core/macro';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@core/presentation/providers/DependenciesProvider.tsx';
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
 import { messages as userSettingsMessages } from '@/modules/features/user_settings/locales/en/messages.ts';
+import { messages as projectMessages } from '@/modules/features/project/locales/en/messages.ts';
+import { messages as pipelineDashboardMessages } from '@/modules/features/pipeline-dashboard/locales/en/messages.ts';
+import { messages as pipelineCreationMessages } from '@/modules/features/pipeline-creation/locales/en/messages.ts';
+import { messages as marketplaceMessages } from '@/modules/features/marketplace/locales/en/messages.ts';
+import { messages as organizationMessages } from '@/modules/features/organization/locales/en/messages.ts';
+import { messages as sharedMessages } from '@/locales/en/messages.ts';
 import { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Toaster } from '@shadcn/sonner.tsx';
@@ -14,6 +21,12 @@ import { Toaster } from '@shadcn/sonner.tsx';
 i18n.load('en', {
   ...loginMessages,
   ...userSettingsMessages,
+  ...projectMessages,
+  ...pipelineDashboardMessages,
+  ...pipelineCreationMessages,
+  ...marketplaceMessages,
+  ...organizationMessages,
+  ...sharedMessages,
 });
 i18n.activate('en');
 
@@ -30,8 +43,8 @@ const queryClient = new QueryClient({
 
       scyllaError.log();
       const message = scyllaError.isNetworkError()
-        ? 'Server unreachable'
-        : scyllaError.message || 'An unexpected error occurred';
+        ? t`Server unreachable`
+        : scyllaError.message || t`An unexpected error occurred`;
       toast.error(message);
     },
   }),
@@ -42,8 +55,8 @@ const queryClient = new QueryClient({
       const scyllaError = error as ScyllaError;
       scyllaError.log();
       const message = scyllaError.isNetworkError()
-        ? 'Server unreachable'
-        : scyllaError.message || 'Operation failed';
+        ? t`Server unreachable`
+        : scyllaError.message || t`Operation failed`;
       toast.error(message);
     },
   }),

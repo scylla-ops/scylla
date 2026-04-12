@@ -1,6 +1,7 @@
 import { Button } from '@shadcn';
 import { AddProjectDialog } from '@/modules/features/project/presentation/ui/AddProjectDialog.tsx';
 import { useState } from 'react';
+import { Trans } from '@lingui/react/macro';
 
 interface ProjectHeaderProps {
   numberOfProjects: number;
@@ -19,10 +20,10 @@ export const ProjectHeader = ({ numberOfProjects }: ProjectHeaderProps) => {
             {numberOfProjects > 1 ? 's' : ''}
           </span>
         </h1>
-        <span className='text-sm text-muted-foreground font-medium'>in total</span>
+        <span className='text-sm text-muted-foreground font-medium'><Trans>in total</Trans></span>
       </div>
       <Button onClick={() => setOpen(true)} variant={'default'} className={'ml-auto'}>
-        New project
+        <Trans>New project</Trans>
       </Button>
       <AddProjectDialog open={open} setOpen={setOpen} />
     </div>
