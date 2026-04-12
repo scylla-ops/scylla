@@ -4,12 +4,54 @@ msgstr ""
 "POT-Creation-Date: 2023-11-08\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language: \n"
+"Language-Team: \n"
 
-msgid "Pipeline Dashboard"
-msgstr "Pipeline Dashboard"
+#: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:51
+msgid "Clear"
+msgstr "Clear"
 
-msgid "Pipeline Status"
-msgstr "Pipeline Status"
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:34
+msgid "Create your first pipeline to get started"
+msgstr "Create your first pipeline to get started"
 
-msgid "Failed to fetch pipeline stats"
-msgstr "Failed to fetch pipeline stats"
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineStatus.tsx:23
+msgid "Creation:"
+msgstr "Creation:"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:65
+msgid "Edit"
+msgstr "Edit"
+
+#~ msgid "Failed to fetch pipeline stats"
+#~ msgstr "Failed to fetch pipeline stats"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:44
+msgid "in total"
+msgstr "in total"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:76
+msgid "More options"
+msgstr "More options"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:66
+msgid "New pipeline"
+msgstr "New pipeline"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:32
+msgid "No pipeline found"
+msgstr "No pipeline found"
+
+#~ msgid "Pipeline Dashboard"
+#~ msgstr "Pipeline Dashboard"
+
+#~ msgid "Pipeline Status"
+#~ msgstr "Pipeline Status"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:61
+msgid "Run"
+msgstr "Run"

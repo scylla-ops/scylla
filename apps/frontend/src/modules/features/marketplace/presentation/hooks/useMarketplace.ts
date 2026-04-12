@@ -8,12 +8,7 @@ export const useMarketplace = () => {
     queryKey: ['marketplace'],
     queryFn: async () => {
       const result = await deps.marketplace.getMarketplaceUseCase.execute();
-
-      if (!result.ok) {
-        throw new Error(result.error.message);
-      }
-
-      return result.value;
+      return result.unwrap();
     },
     staleTime: 1000 * 60,
     retry: 1,

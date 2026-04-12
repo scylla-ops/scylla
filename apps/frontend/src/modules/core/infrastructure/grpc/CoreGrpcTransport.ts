@@ -1,7 +1,7 @@
 import { GrpcWebFetchTransport } from '@protobuf-ts/grpcweb-transport';
 import type { RpcInterceptor, RpcOptions } from '@protobuf-ts/runtime-rpc';
 
-export class GrpcTransport {
+export class CoreGrpcTransport {
   private readonly _transport: GrpcWebFetchTransport;
 
   constructor() {

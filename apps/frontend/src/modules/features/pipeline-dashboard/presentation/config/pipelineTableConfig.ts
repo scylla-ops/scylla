@@ -27,7 +27,7 @@ export const PIPELINE_COLUMNS: PipelineColumnConfig[] = [
   },
   {
     id: 'metadata',
-    width: '20%',
+    width: '15%',
     className: 'flex justify-center items-center gap-4 shrink-0 text-slate-500 text-sm',
     label: 'Last execution',
   },

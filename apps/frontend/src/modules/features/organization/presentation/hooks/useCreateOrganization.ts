@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
-import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
+import { toast } from '@shared/presentation/utils/toast.ts';
+import { useContextStore } from '@shared/presentation/stores/useContext.ts';
 
 export const useCreateOrganization = () => {
   const queryClient = useQueryClient();
@@ -8,13 +9,10 @@ export const useCreateOrganization = () => {
 
   return useMutation({
     mutationFn: async (name: string) => (await createOrganization.execute(name)).unwrap(),
-    onSuccess: () => {
-      // Opt: return org and update cache
-      /* queryClient.setQueryData(['organizations'], (old: any) => {
-        return old ? { ...old, organizations: [...old.organizations, newOrg] } : old;
-      });*/
+    onSuccess: data => {
+      useContextStore.getState().setOrganization(data.organizationId, data.name);
+      toast.success('Organization created');
       return queryClient.invalidateQueries({ queryKey: ['organizations'] });
     },
-    onError: (err: ScyllaError) => err.log(),
   });
 };

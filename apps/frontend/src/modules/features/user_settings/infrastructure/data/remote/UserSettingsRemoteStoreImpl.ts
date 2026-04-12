@@ -2,12 +2,12 @@ import type { UserSettingsRemoteStore } from '@/modules/features/user_settings/i
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { OrganizationUser } from '@/modules/features/user_settings/domain/models/OrganizationUser.ts';
 import { OrganizationServiceClient } from '@/generated/organization.client.ts';
-import type { GrpcTransport } from '@core/infrastructure/grpc/GrpcTransport.ts';
+import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 
 export class UserSettingsRemoteStoreImpl implements UserSettingsRemoteStore {
   private readonly _organizationClient: OrganizationServiceClient;
 
-  constructor(transport: GrpcTransport) {
+  constructor(transport: CoreGrpcTransport) {
     this._organizationClient = new OrganizationServiceClient(transport.getTransport());
   }
 

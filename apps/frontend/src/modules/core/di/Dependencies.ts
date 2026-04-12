@@ -5,6 +5,7 @@ import { PipelineCreationModule } from '@/modules/features/pipeline-creation/di/
 import { OrganizationModule } from '@/modules/features/organization/di/OrganizationModule.ts';
 import { ProjectModule } from '@/modules/features/project/di/ProjectModule.ts';
 import { UserSettingsModule } from '@/modules/features/user_settings/di/UserSettingsModule.ts';
+import { JobsModule } from '@/modules/features/jobs/di/JobsModule.ts';
 
 export const dependencies = {
   login: LoginModule.domain,
@@ -14,6 +15,7 @@ export const dependencies = {
   organization: OrganizationModule.domain,
   project: ProjectModule.domain,
   userSettings: UserSettingsModule.domain,
+  jobs: JobsModule.domain,
 };
 
 export type Dependencies = typeof dependencies;

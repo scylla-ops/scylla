@@ -1,8 +1,8 @@
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 import { OrganizationServiceClient } from '@/generated/organization.client.ts';
 import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/OrganizationRemoteDataSource.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
-import type { ListOrganizationsResponse } from '@/generated/organization.ts';
+import type { ListOrganizationsResponse, OrganizationResponse } from '@/generated/organization.ts';
+import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 
 export default class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
   private readonly _organizationClient: OrganizationServiceClient;
@@ -18,9 +18,10 @@ export default class OrganizationRemoteDataSourceImpl implements OrganizationRem
     }, 'Failed to fetch organizations.');
   }
 
-  public create(name: string): Promise<ScyllaResult<void>> {
+  public create(name: string): Promise<ScyllaResult<OrganizationResponse>> {
     return ScyllaResult.tryAsync(async () => {
-      await this._organizationClient.createOrganization({ name });
+      const { response } = await this._organizationClient.createOrganization({ name });
+      return response;
     }, 'Failed to create organization.');
   }
 }

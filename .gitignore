@@ -6,3 +6,4 @@ target/
 /data/
 db
 .claude
+node_modules
