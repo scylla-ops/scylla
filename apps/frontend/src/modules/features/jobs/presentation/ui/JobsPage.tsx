@@ -27,14 +27,14 @@ export const JobsPage = () => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full p-4'>
+    <div className='flex flex-col gap-4 w-full h-full p-2'>
       <JobsHeader
         numberOfJobs={jobs.length}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
         onBack={handleBack}
       />
-      <div className='flex-1 min-h-0 overflow-auto'>
+      <div className='flex flex-1 min-h-0 overflow-hidden'>
         {jobs.length > 0 ? (
           <JobsTable jobs={jobs} pipelineId={pipelineId} />
         ) : (
