@@ -68,4 +68,3 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
     </>
   );
 };
-

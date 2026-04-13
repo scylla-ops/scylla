@@ -19,7 +19,7 @@ msgstr ""
 msgid "Clear"
 msgstr "Effacer"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:34
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:36
 msgid "Create your first pipeline to get started"
 msgstr "Créez votre premier pipeline pour commencer"
 
@@ -46,6 +46,10 @@ msgstr "au total"
 msgid "Last Run"
 msgstr ""
 
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:33
+#~ msgid "Loading..."
+#~ msgstr ""
+
 #: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:76
 msgid "More options"
 msgstr "Plus d'options"
@@ -54,7 +58,7 @@ msgstr "Plus d'options"
 msgid "New pipeline"
 msgstr "Nouveau pipeline"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:32
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:33
 msgid "No pipeline found"
 msgstr "Aucun pipeline trouvé"
 

@@ -27,18 +27,18 @@ export const JobsPage = () => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full p-2'>
+    <div className='flex flex-col gap-4 w-full h-full p-4'>
       <JobsHeader
         numberOfJobs={jobs.length}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
         onBack={handleBack}
       />
-      <div className='h-full flex flex-col gap-2'>
+      <div className='flex-1 min-h-0 overflow-auto'>
         {jobs.length > 0 ? (
           <JobsTable jobs={jobs} pipelineId={pipelineId} />
         ) : (
-          <div className='flex items-center justify-center h-full'>
+          <div className='flex items-center justify-center h-full min-h-[400px]'>
             <div className='text-center space-y-2'>
               <p className='text-muted-foreground'>
                 <Trans>No jobs found</Trans>

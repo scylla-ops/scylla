@@ -27,7 +27,8 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
         </span>
       ),
       cell: ({ row }) => <JobStatus job={row.original} />,
-      size: 180,
+      size: 160,
+      minSize: 140,
     },
     {
       accessorKey: 'jobId',
@@ -37,7 +38,8 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
         </span>
       ),
       cell: ({ row }) => <JobIdCell job={row.original} />,
-      size: 200,
+      size: 180,
+      minSize: 150,
     },
     {
       id: 'timeline',
@@ -47,7 +49,8 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
         </span>
       ),
       cell: ({ row }) => <JobTimeline nodeExecutions={row.original.nodeExecutions} />,
-      size: 300,
+      size: undefined, // Prend l'espace restant
+      minSize: 200,
     },
     {
       id: 'duration',
@@ -58,9 +61,10 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
       ),
       cell: ({ row }) => {
         const duration = calculateDuration(row.original.createdAt, row.original.updatedAt);
-        return <span className='text-sm font-medium'>{formatDuration(duration)}</span>;
+        return <span className='text-sm font-medium whitespace-nowrap'>{formatDuration(duration)}</span>;
       },
-      size: 120,
+      size: 100,
+      minSize: 80,
     },
     {
       accessorKey: 'createdAt',
@@ -69,8 +73,9 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
           <Trans>Created</Trans>
         </span>
       ),
-      cell: ({ row }) => <span className='text-sm'>{getRelativeTime(row.original.createdAt)}</span>,
-      size: 120,
+      cell: ({ row }) => <span className='text-sm whitespace-nowrap'>{getRelativeTime(row.original.createdAt)}</span>,
+      size: 100,
+      minSize: 80,
     },
     {
       id: 'actions',
@@ -91,7 +96,8 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
           }}
         />
       ),
-      size: 120,
+      size: 100,
+      minSize: 80,
     },
   ];
 }
