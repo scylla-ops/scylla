@@ -50,7 +50,6 @@ async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await.unwrap();
     let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
         .await
         .unwrap();
@@ -166,7 +165,6 @@ async fn e2e_auth_full_flow_with_bootstrap() {
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await.unwrap();
     let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
         .await
         .unwrap();
@@ -282,7 +280,6 @@ async fn e2e_user_crud_with_auth() {
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await.unwrap();
     let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
         .await
         .unwrap();
