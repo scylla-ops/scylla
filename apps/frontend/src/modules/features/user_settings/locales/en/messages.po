@@ -15,47 +15,47 @@ msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:98
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:146
-msgid "Actions"
-msgstr "Actions"
+#~ msgid "Actions"
+#~ msgstr "Actions"
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:36
-msgid "Add User"
-msgstr "Add User"
+#~ msgid "Add User"
+#~ msgstr "Add User"
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:42
-msgid "Add User to Organization"
-msgstr "Add User to Organization"
+#~ msgid "Add User to Organization"
+#~ msgstr "Add User to Organization"
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:62
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:72
-msgid "Admin"
-msgstr "Admin"
+#~ msgid "Admin"
+#~ msgstr "Admin"
 
 #: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:46
-msgid "Are you sure you want to remove {username} from the organization?"
-msgstr "Are you sure you want to remove {username} from the organization?"
+#~ msgid "Are you sure you want to remove {username} from the organization?"
+#~ msgstr "Are you sure you want to remove {username} from the organization?"
 
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:83
 #: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:51
-msgid "Cancel"
-msgstr "Cancel"
+#~ msgid "Cancel"
+#~ msgstr "Cancel"
 
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:46
-msgid "Edit Role"
-msgstr "Edit Role"
+#~ msgid "Edit Role"
+#~ msgstr "Edit Role"
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:45
-msgid "Enter the user ID and select their role"
-msgstr "Enter the user ID and select their role"
+#~ msgid "Enter the user ID and select their role"
+#~ msgstr "Enter the user ID and select their role"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:126
-msgid "Error loading members"
-msgstr "Error loading members"
+#~ msgid "Error loading members"
+#~ msgstr "Error loading members"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:95
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:143
-msgid "Joined"
-msgstr "Joined"
+#~ msgid "Joined"
+#~ msgstr "Joined"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:85
 #~ msgid "Loading members..."
@@ -66,66 +66,65 @@ msgid "Manage your account details."
 msgstr "Manage your account details."
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:66
-msgid "Manage your organization and their members."
-msgstr "Manage your organization and their members."
+#~ msgid "Manage your organization and their members."
+#~ msgstr "Manage your organization and their members."
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:59
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:69
-msgid "Member"
-msgstr "Member"
+#~ msgid "Member"
+#~ msgstr "Member"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:79
-msgid "Members"
-msgstr "Members"
+#~ msgid "Members"
+#~ msgstr "Members"
 
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:61
-msgid "New Role"
-msgstr "New Role"
+#~ msgid "New Role"
+#~ msgstr "New Role"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:130
-msgid "No members in this organization yet"
-msgstr "No members in this organization yet"
+#~ msgid "No members in this organization yet"
+#~ msgstr "No members in this organization yet"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:63
-msgid "Organization"
-msgstr "Organization"
+#~ msgid "Organization"
+#~ msgstr "Organization"
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:65
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:75
-msgid "Owner"
-msgstr "Owner"
+#~ msgid "Owner"
+#~ msgstr "Owner"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:73
-msgid "Please select an organization first."
-msgstr "Please select an organization first."
+#~ msgid "Please select an organization first."
+#~ msgstr "Please select an organization first."
 
 #: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:37
 #: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:54
-msgid "Remove"
-msgstr "Remove"
+#~ msgid "Remove"
+#~ msgstr "Remove"
 
 #: src/modules/features/user_settings/presentation/ui/RemoveUserDialog.tsx:43
-msgid "Remove User"
-msgstr "Remove User"
+#~ msgid "Remove User"
+#~ msgstr "Remove User"
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:51
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:92
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:140
-msgid "Role"
-msgstr "Role"
+#~ msgid "Role"
+#~ msgstr "Role"
 
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:86
-msgid "Update Role"
-msgstr "Update Role"
+#~ msgid "Update Role"
+#~ msgstr "Update Role"
 
-#. placeholder {0}: user.username
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:55
-msgid "Update the role for {0}"
-msgstr "Update the role for {0}"
+#~ msgid "Update the role for {0}"
+#~ msgstr "Update the role for {0}"
 
 #: src/modules/features/user_settings/presentation/ui/EditRoleDialog.tsx:52
-msgid "Update User Role"
-msgstr "Update User Role"
+#~ msgid "Update User Role"
+#~ msgstr "Update User Role"
 
 #: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:74
 msgid "User information"
@@ -133,5 +132,5 @@ msgstr "User information"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:89
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:137
-msgid "Username"
-msgstr "Username"
+#~ msgid "Username"
+#~ msgstr "Username"

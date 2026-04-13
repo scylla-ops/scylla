@@ -11,6 +11,10 @@ msgstr ""
 "Language: \n"
 "Language-Team: \n"
 
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:58
+msgid "Actions"
+msgstr ""
+
 #: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:51
 msgid "Clear"
 msgstr "Effacer"
@@ -30,9 +34,17 @@ msgstr "Modifier"
 #~ msgid "Failed to fetch pipeline stats"
 #~ msgstr "Échec de la récupération des statistiques de la pipeline"
 
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:30
+msgid "History"
+msgstr ""
+
 #: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:44
 msgid "in total"
 msgstr "au total"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:44
+msgid "Last Run"
+msgstr ""
 
 #: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:76
 msgid "More options"
@@ -55,3 +67,7 @@ msgstr "Aucun pipeline trouvé"
 #: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:61
 msgid "Run"
 msgstr "Exécuter"
+
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:20
+msgid "Status"
+msgstr ""
