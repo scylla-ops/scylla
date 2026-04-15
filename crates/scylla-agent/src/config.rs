@@ -24,8 +24,8 @@ pub struct AgentConfig {
     #[arg(long, env = "SCYLLA_AGENT_HOSTNAME")]
     pub hostname: Option<String>,
 
-    /// Heartbeat publish interval in seconds.
-    #[arg(long, default_value_t = 5)]
+    /// Heartbeat publish interval in seconds (must be >= 1).
+    #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..))]
     pub heartbeat_interval_secs: u64,
 }
 

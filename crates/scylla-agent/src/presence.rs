@@ -57,9 +57,12 @@ impl PresencePublisher {
     }
 
     /// Spawn a background ticker emitting heartbeats at the given interval.
+    /// The first tick fires after `interval`; callers should publish an
+    /// initial heartbeat synchronously before spawning if needed.
     pub fn spawn_heartbeat_ticker(self: Arc<Self>, interval: Duration) {
         tokio::spawn(async move {
-            let mut ticker = tokio::time::interval(interval);
+            let start = tokio::time::Instant::now() + interval;
+            let mut ticker = tokio::time::interval_at(start, interval);
             loop {
                 ticker.tick().await;
                 self.publish_heartbeat().await;

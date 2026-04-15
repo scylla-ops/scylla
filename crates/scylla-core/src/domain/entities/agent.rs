@@ -61,11 +61,10 @@ impl Agent {
         if self.shutdown_at.is_some() {
             return false;
         }
-        let threshold = Duration::seconds(
-            i64::try_from(self.heartbeat_interval_secs)
-                .unwrap_or(i64::MAX)
-                .saturating_mul(MISSED_HEARTBEAT_GRACE),
-        );
+        let secs = i64::try_from(self.heartbeat_interval_secs)
+            .unwrap_or(i64::MAX)
+            .saturating_mul(MISSED_HEARTBEAT_GRACE);
+        let threshold = Duration::try_seconds(secs).unwrap_or(Duration::MAX);
         Utc::now().signed_duration_since(self.last_seen_at) <= threshold
     }
 
@@ -102,5 +101,66 @@ impl Agent {
     #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_agent(interval_secs: u64) -> Agent {
+        Agent::create(
+            AgentId::new("agent-1"),
+            Hostname::new("host-1").unwrap(),
+            interval_secs,
+        )
+    }
+
+    #[test]
+    fn fresh_agent_is_connected() {
+        let a = make_agent(5);
+        assert!(a.is_connected());
+        assert!(a.shutdown_at().is_none());
+    }
+
+    #[test]
+    fn shutdown_forces_disconnect() {
+        let mut a = make_agent(5);
+        a.record_shutdown();
+        assert!(!a.is_connected());
+        assert!(a.shutdown_at().is_some());
+    }
+
+    #[test]
+    fn heartbeat_clears_shutdown() {
+        let mut a = make_agent(5);
+        a.record_shutdown();
+        a.record_heartbeat(Hostname::new("host-2").unwrap(), 10);
+        assert!(a.shutdown_at().is_none());
+        assert!(a.is_connected());
+        assert_eq!(a.hostname().as_str(), "host-2");
+        assert_eq!(a.heartbeat_interval_secs(), 10);
+    }
+
+    #[test]
+    fn disconnected_when_last_seen_outside_grace() {
+        let mut a = make_agent(5);
+        // Push last_seen_at well beyond grace window (5 * 3 = 15s).
+        a.last_seen_at = Utc::now() - Duration::seconds(60);
+        assert!(!a.is_connected());
+    }
+
+    #[test]
+    fn connected_when_last_seen_inside_grace() {
+        let mut a = make_agent(5);
+        a.last_seen_at = Utc::now() - Duration::seconds(10);
+        assert!(a.is_connected());
+    }
+
+    #[test]
+    fn overflow_interval_does_not_panic() {
+        let mut a = make_agent(u64::MAX);
+        a.last_seen_at = Utc::now() - Duration::seconds(1);
+        assert!(a.is_connected());
     }
 }
