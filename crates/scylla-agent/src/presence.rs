@@ -13,15 +13,22 @@ pub struct PresencePublisher {
     publisher: Publisher,
     agent_id: String,
     hostname: String,
+    heartbeat_interval_secs: u64,
 }
 
 impl PresencePublisher {
     #[must_use]
-    pub fn new(channel: Channel, agent_id: String, hostname: String) -> Self {
+    pub fn new(
+        channel: Channel,
+        agent_id: String,
+        hostname: String,
+        heartbeat_interval_secs: u64,
+    ) -> Self {
         Self {
             publisher: Publisher::new(channel),
             agent_id,
             hostname,
+            heartbeat_interval_secs,
         }
     }
 
@@ -29,6 +36,7 @@ impl PresencePublisher {
         let beat = AgentHeartbeat {
             agent_id: self.agent_id.clone(),
             hostname: self.hostname.clone(),
+            heartbeat_interval_secs: self.heartbeat_interval_secs,
         };
         let payload = serde_json::to_vec(&beat).expect("serialization cannot fail");
         let subject = format!("{HEARTBEAT_SUBJECT_PREFIX}.{}", self.agent_id);

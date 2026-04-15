@@ -15,7 +15,8 @@ async fn main() -> anyhow::Result<()> {
     let config = AgentConfig::parse();
     let agent_id = config.resolved_agent_id();
     let hostname = config.resolved_hostname();
-    let heartbeat_interval = Duration::from_secs(config.heartbeat_interval_secs);
+    let heartbeat_interval_secs = config.heartbeat_interval_secs;
+    let heartbeat_interval = Duration::from_secs(heartbeat_interval_secs);
 
     info!(
         broker_url = %config.broker_url,
@@ -30,6 +31,7 @@ async fn main() -> anyhow::Result<()> {
         agent.channel(),
         agent_id.clone(),
         hostname.clone(),
+        heartbeat_interval_secs,
     ));
 
     presence.publish_heartbeat().await;

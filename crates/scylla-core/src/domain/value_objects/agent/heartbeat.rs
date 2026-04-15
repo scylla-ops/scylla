@@ -1,10 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 /// Heartbeat published by the agent on `scylla.agents.heartbeat.{agent_id}`.
+///
+/// `heartbeat_interval_secs` carries the agent's own publish cadence so consumers
+/// can derive a liveness threshold without a shared hardcoded constant.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentHeartbeat {
     pub agent_id: String,
     pub hostname: String,
+    pub heartbeat_interval_secs: u64,
 }
 
 /// Graceful shutdown signal published by the agent on

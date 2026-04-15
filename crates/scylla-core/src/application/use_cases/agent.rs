@@ -33,20 +33,21 @@ impl<A: AgentRepository> AgentUseCases<A> {
     }
 
     /// Record a heartbeat. Creates the row on first sight, otherwise refreshes
-    /// `last_seen_at` + `hostname`.
+    /// `last_seen_at` + `hostname` + `heartbeat_interval_secs`.
     #[instrument(skip(self), fields(agent_id = %id))]
     pub async fn record_heartbeat(
         &self,
         id: &AgentId,
         hostname: Hostname,
+        heartbeat_interval_secs: u64,
     ) -> DomainResult<Agent> {
         match self.agent_repo.find_by_id(id).await {
             Ok(mut agent) => {
-                agent.record_heartbeat(hostname);
+                agent.record_heartbeat(hostname, heartbeat_interval_secs);
                 self.agent_repo.update(&agent).await
             }
             Err(_) => {
-                let agent = Agent::create(id.clone(), hostname);
+                let agent = Agent::create(id.clone(), hostname, heartbeat_interval_secs);
                 self.agent_repo.create(&agent).await
             }
         }

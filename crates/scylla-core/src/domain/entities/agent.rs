@@ -11,30 +11,38 @@ pub struct Agent {
     hostname: Hostname,
     last_seen_at: DateTime<Utc>,
     shutdown_at: Option<DateTime<Utc>>,
+    heartbeat_interval_secs: u64,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
 
+/// Number of missed heartbeats tolerated before an agent is considered stale.
+/// Threshold = `heartbeat_interval_secs * MISSED_HEARTBEAT_GRACE`.
+const MISSED_HEARTBEAT_GRACE: i64 = 3;
+
 impl Agent {
     #[must_use]
-    pub fn create(id: AgentId, hostname: Hostname) -> Self {
+    pub fn create(id: AgentId, hostname: Hostname, heartbeat_interval_secs: u64) -> Self {
         let now = Utc::now();
         Self {
             id,
             hostname,
             last_seen_at: now,
             shutdown_at: None,
+            heartbeat_interval_secs,
             created_at: now,
             updated_at: now,
         }
     }
 
-    /// Refresh presence on heartbeat. Clears any prior graceful-shutdown marker.
-    pub fn record_heartbeat(&mut self, hostname: Hostname) {
+    /// Refresh presence on heartbeat. Clears any prior graceful-shutdown marker
+    /// and refreshes the agent's self-reported heartbeat interval.
+    pub fn record_heartbeat(&mut self, hostname: Hostname, heartbeat_interval_secs: u64) {
         let now = Utc::now();
         self.hostname = hostname;
         self.last_seen_at = now;
         self.shutdown_at = None;
+        self.heartbeat_interval_secs = heartbeat_interval_secs;
         self.updated_at = now;
     }
 
@@ -46,11 +54,16 @@ impl Agent {
         self.updated_at = now;
     }
 
+    /// Liveness check using the agent's self-reported heartbeat interval.
+    /// Considered connected if `now - last_seen_at <= interval * grace`.
     #[must_use]
-    pub fn is_connected(&self, threshold: Duration) -> bool {
+    pub fn is_connected(&self) -> bool {
         if self.shutdown_at.is_some() {
             return false;
         }
+        let threshold = Duration::seconds(
+            i64::try_from(self.heartbeat_interval_secs).unwrap_or(i64::MAX) * MISSED_HEARTBEAT_GRACE,
+        );
         Utc::now().signed_duration_since(self.last_seen_at) <= threshold
     }
 
@@ -72,6 +85,11 @@ impl Agent {
     #[must_use]
     pub fn shutdown_at(&self) -> Option<DateTime<Utc>> {
         self.shutdown_at
+    }
+
+    #[must_use]
+    pub fn heartbeat_interval_secs(&self) -> u64 {
+        self.heartbeat_interval_secs
     }
 
     #[must_use]

@@ -1,13 +1,8 @@
-use chrono::Duration;
 use protocol::services::agent::AgentResponse;
 use scylla_core::domain::entities::Agent;
 
-/// Threshold beyond which an agent's last heartbeat makes it disconnected.
-const STALE_AFTER_SECS: i64 = 15;
-
 pub fn agent_to_proto(agent: &Agent) -> AgentResponse {
-    let threshold = Duration::seconds(STALE_AFTER_SECS);
-    let status = if agent.is_connected(threshold) {
+    let status = if agent.is_connected() {
         "connected"
     } else {
         "disconnected"

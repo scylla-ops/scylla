@@ -50,7 +50,10 @@ async fn heartbeat_once(
             }
         };
         let agent_id = AgentId::new(&beat.agent_id);
-        if let Err(e) = agent_uc.record_heartbeat(&agent_id, hostname).await {
+        if let Err(e) = agent_uc
+            .record_heartbeat(&agent_id, hostname, beat.heartbeat_interval_secs)
+            .await
+        {
             error!(agent_id = %beat.agent_id, error = %e, "record_heartbeat failed");
         }
     }
