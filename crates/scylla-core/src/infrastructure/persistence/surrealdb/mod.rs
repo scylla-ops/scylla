@@ -1,3 +1,5 @@
+#[cfg(feature = "agents")]
+pub mod agent_repository;
 #[cfg(feature = "jobs")]
 pub mod job_log_repository;
 #[cfg(feature = "jobs")]
@@ -17,6 +19,8 @@ pub mod user_project_repository;
 #[cfg(feature = "users")]
 pub mod user_repository;
 
+#[cfg(feature = "agents")]
+pub use agent_repository::SurrealAgentRepository;
 #[cfg(feature = "jobs")]
 pub use job_log_repository::SurrealJobLogRepository;
 #[cfg(feature = "jobs")]

@@ -3,11 +3,11 @@ use anyhow::Result;
 use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AuthUseCases, JobUseCases, OrganizationUseCases, PermissionUseCases, PipelineUseCases,
-    ProjectUseCases, UserUseCases,
+    AgentUseCases, AuthUseCases, JobUseCases, OrganizationUseCases, PermissionUseCases,
+    PipelineUseCases, ProjectUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::{
-    Argon2HashService, CasbinPermissionService, Db, SurrealJobRepository,
+    Argon2HashService, CasbinPermissionService, Db, SurrealAgentRepository, SurrealJobRepository,
     SurrealOrganizationRepository, SurrealPipelineRepository, SurrealProjectRepository,
     SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
     SurrealUserRepository,
@@ -34,6 +34,7 @@ pub type SharedProjectUc = Arc<
 pub type SharedPipelineUc =
     Arc<PipelineUseCases<SurrealPipelineRepository, SurrealProjectRepository>>;
 pub type SharedJobUc = Arc<JobUseCases<SurrealJobRepository>>;
+pub type SharedAgentUc = Arc<AgentUseCases<SurrealAgentRepository>>;
 pub type SharedPermissionUc = Arc<PermissionUseCases<CasbinPermissionService>>;
 
 // ── Services container ─────────────────────────────────────────────────
@@ -46,6 +47,7 @@ pub struct Services {
     pub project_uc: SharedProjectUc,
     pub pipeline_uc: SharedPipelineUc,
     pub job_uc: SharedJobUc,
+    pub agent_uc: SharedAgentUc,
     pub permission_uc: SharedPermissionUc,
     pub permission_checker: Arc<CasbinPermissionService>,
     pub session_repo: Arc<SurrealSessionRepository>,
@@ -61,6 +63,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     let project_repo = Arc::new(SurrealProjectRepository::new(db.clone()));
     let pipeline_repo = Arc::new(SurrealPipelineRepository::new(db.clone()));
     let job_repo = Arc::new(SurrealJobRepository::new(db.clone()));
+    let agent_repo = Arc::new(SurrealAgentRepository::new(db.clone()));
     let user_org_repo = Arc::new(SurrealUserOrganizationRepository::new(db.clone()));
     let user_project_repo = Arc::new(SurrealUserProjectRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
@@ -86,6 +89,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         project_repo.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
+    let agent_uc = Arc::new(AgentUseCases::new(agent_repo.clone()));
     // `casbin_rule` is already defined by `init_db` in a single atomic DDL batch.
     // A second standalone `DEFINE TABLE` here used to soft-lock intermittently on
     // SurrealDB's schema write lock when a previous run left a zombie session.
@@ -112,6 +116,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         project_uc,
         pipeline_uc,
         job_uc,
+        agent_uc,
         permission_uc,
         permission_checker,
         session_repo,
@@ -192,6 +197,7 @@ pub async fn shutdown_signal() {
 #[cfg(feature = "grpc")]
 pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> {
     use protocol::services::{
+        agent::agent_service_server::AgentServiceServer,
         auth::auth_service_server::AuthServiceServer, job::job_service_server::JobServiceServer,
         organization::organization_service_server::OrganizationServiceServer,
         permission::permission_service_server::PermissionServiceServer,
@@ -200,8 +206,8 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         user::user_service_server::UserServiceServer,
     };
     use scylla_api::{
-        AuthHandler, JobHandler, OrganizationHandler, PermissionHandler, PipelineHandler,
-        ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        AgentHandler, AuthHandler, JobHandler, OrganizationHandler, PermissionHandler,
+        PipelineHandler, ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
@@ -227,6 +233,10 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         services.broker_publisher.clone(),
     );
     let job_handler = JobHandler::new(services.job_uc.clone(), services.permission_checker.clone());
+    let agent_handler = AgentHandler::new(
+        services.agent_uc.clone(),
+        services.permission_checker.clone(),
+    );
     let permission_handler = PermissionHandler::new(
         services.permission_uc.clone(),
         services.permission_checker.clone(),
@@ -263,6 +273,10 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         .layer(auth_interceptor.clone())
         .service(JobServiceServer::new(job_handler));
 
+    let agent_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(AgentServiceServer::new(agent_handler));
+
     let permission_service = ServiceBuilder::new()
         .layer(auth_interceptor)
         .service(PermissionServiceServer::new(permission_handler));
@@ -279,6 +293,7 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         .add_service(project_service)
         .add_service(pipeline_service)
         .add_service(job_service)
+        .add_service(agent_service)
         .add_service(permission_service)
         .serve_with_shutdown(config.grpc.address, shutdown_signal())
         .await?;

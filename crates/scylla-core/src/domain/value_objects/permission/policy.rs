@@ -374,6 +374,34 @@ pub mod organization {
     }
 }
 
+pub mod agent {
+    use super::{Act, Policy, Resource, Scope, Target};
+    use crate::domain::entities::AgentId;
+
+    #[must_use]
+    pub fn get(agent_id: AgentId) -> Policy {
+        Policy::new(
+            Scope::System,
+            Resource::Agent(Target::Single(agent_id)),
+            Act::Read,
+        )
+    }
+
+    #[must_use]
+    pub fn list() -> Policy {
+        Policy::new(Scope::System, Resource::Agent(Target::All), Act::Read)
+    }
+
+    #[must_use]
+    pub fn delete(agent_id: AgentId) -> Policy {
+        Policy::new(
+            Scope::System,
+            Resource::Agent(Target::Single(agent_id)),
+            Act::Delete,
+        )
+    }
+}
+
 pub mod permission {
     use super::{Act, Policy, Resource, Scope};
 

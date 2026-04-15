@@ -1,7 +1,9 @@
 use protocol::services::permission::{
     Act as ProtoAct, Resource as ProtoResource, ResourceType, Scope as ProtoScope, ScopeType,
 };
-use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use scylla_core::domain::entities::{
+    AgentId, JobId, OrganizationId, PipelineId, ProjectId, UserId,
+};
 use scylla_core::domain::errors::{DomainError, DomainResult};
 use scylla_core::domain::value_objects::permission::{Act, Resource, Scope, Target};
 
@@ -111,6 +113,10 @@ pub fn proto_resource_to_domain(proto: ProtoResource) -> DomainResult<Resource> 
         (ResourceType::ResourceAll, _) => Ok(Resource::All),
         (ResourceType::ResourceJob, None) => Ok(Resource::Job(Target::All)),
         (ResourceType::ResourceJob, Some(id)) => Ok(Resource::Job(Target::Single(JobId::new(id)))),
+        (ResourceType::ResourceAgent, None) => Ok(Resource::Agent(Target::All)),
+        (ResourceType::ResourceAgent, Some(id)) => {
+            Ok(Resource::Agent(Target::Single(AgentId::new(id))))
+        }
     }
 }
 
@@ -158,6 +164,14 @@ pub fn domain_resource_to_proto(resource: &Resource) -> ProtoResource {
         },
         Resource::Job(Target::Single(id)) => ProtoResource {
             r#type: ResourceType::ResourceJob.into(),
+            id: Some(id.to_string()),
+        },
+        Resource::Agent(Target::All) => ProtoResource {
+            r#type: ResourceType::ResourceAgent.into(),
+            id: None,
+        },
+        Resource::Agent(Target::Single(id)) => ProtoResource {
+            r#type: ResourceType::ResourceAgent.into(),
             id: Some(id.to_string()),
         },
     }

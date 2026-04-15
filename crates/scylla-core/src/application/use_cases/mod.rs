@@ -1,3 +1,5 @@
+#[cfg(feature = "agents")]
+pub mod agent;
 #[cfg(feature = "auth")]
 pub mod auth;
 #[cfg(feature = "jobs")]
@@ -15,6 +17,8 @@ pub mod project;
 #[cfg(feature = "users")]
 pub mod user;
 
+#[cfg(feature = "agents")]
+pub use agent::AgentUseCases;
 #[cfg(feature = "auth")]
 pub use auth::AuthUseCases;
 #[cfg(feature = "jobs")]

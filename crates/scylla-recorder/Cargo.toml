@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 # domain + persistence
-scylla-core = { workspace = true, features = ["surrealdb", "jobs"] }
+scylla-core = { workspace = true, features = ["surrealdb", "jobs", "agents"] }
 
 # broker
 hermes-broker-client = { workspace = true }
