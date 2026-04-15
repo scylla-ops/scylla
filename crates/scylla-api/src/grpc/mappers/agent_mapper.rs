@@ -3,7 +3,6 @@ use protocol::services::agent::AgentResponse;
 use scylla_core::domain::entities::Agent;
 
 /// Threshold beyond which an agent's last heartbeat makes it disconnected.
-/// Should match the recorder's `--agent-stale-after-secs`.
 const STALE_AFTER_SECS: i64 = 15;
 
 pub fn agent_to_proto(agent: &Agent) -> AgentResponse {
