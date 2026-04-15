@@ -48,3 +48,52 @@ impl AsRef<str> for Hostname {
         &self.inner
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_empty() {
+        assert!(matches!(
+            Hostname::new(""),
+            Err(DomainError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn rejects_whitespace_only() {
+        assert!(matches!(
+            Hostname::new("   \t\n"),
+            Err(DomainError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn trims_whitespace() {
+        let h = Hostname::new("  host-1  ").unwrap();
+        assert_eq!(h.as_str(), "host-1");
+    }
+
+    #[test]
+    fn accepts_max_length() {
+        let s = "a".repeat(MAX_HOSTNAME_LENGTH);
+        let h = Hostname::new(&s).unwrap();
+        assert_eq!(h.as_str().len(), MAX_HOSTNAME_LENGTH);
+    }
+
+    #[test]
+    fn rejects_over_max_length() {
+        let s = "a".repeat(MAX_HOSTNAME_LENGTH + 1);
+        assert!(matches!(
+            Hostname::new(s),
+            Err(DomainError::Validation(_))
+        ));
+    }
+
+    #[test]
+    fn display_matches_inner() {
+        let h = Hostname::new("box").unwrap();
+        assert_eq!(format!("{h}"), "box");
+    }
+}
