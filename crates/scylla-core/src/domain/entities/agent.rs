@@ -62,7 +62,9 @@ impl Agent {
             return false;
         }
         let threshold = Duration::seconds(
-            i64::try_from(self.heartbeat_interval_secs).unwrap_or(i64::MAX) * MISSED_HEARTBEAT_GRACE,
+            i64::try_from(self.heartbeat_interval_secs)
+                .unwrap_or(i64::MAX)
+                .saturating_mul(MISSED_HEARTBEAT_GRACE),
         );
         Utc::now().signed_duration_since(self.last_seen_at) <= threshold
     }
