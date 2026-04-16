@@ -1,3 +1,5 @@
+#[cfg(feature = "agents")]
+pub mod agent_repo;
 #[cfg(feature = "jobs")]
 pub mod job_log_repo;
 #[cfg(feature = "jobs")]

@@ -28,6 +28,18 @@ impl Agent {
         Ok(Self { config, channel })
     }
 
+    /// Cloned broker channel for sharing with auxiliary publishers (presence, etc.).
+    #[must_use]
+    pub fn channel(&self) -> Channel {
+        self.channel.clone()
+    }
+
+    /// Borrow the underlying agent configuration.
+    #[must_use]
+    pub fn config(&self) -> &AgentConfig {
+        &self.config
+    }
+
     /// Main loop: subscribe to dispatch subject, receive jobs, execute them.
     pub async fn run(&self) -> Result<(), AgentError> {
         // Create subscriber for receiving job dispatches

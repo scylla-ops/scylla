@@ -10,6 +10,8 @@ use crate::domain::entities::{ProjectId, UserProjectId};
 use crate::domain::entities::PipelineId;
 #[cfg(feature = "jobs")]
 use crate::domain::entities::{JobId, JobLogId};
+#[cfg(feature = "agents")]
+use crate::domain::entities::AgentId;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
@@ -80,6 +82,8 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
     tables.push(JobId::table_name());
     #[cfg(feature = "jobs")]
     tables.push(JobLogId::table_name());
+    #[cfg(feature = "agents")]
+    tables.push(AgentId::table_name());
     #[cfg(feature = "permission")]
     tables.push(surreal_casbin_adapter::TABLE);
 
