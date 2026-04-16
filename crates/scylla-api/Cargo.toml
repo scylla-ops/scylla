@@ -15,7 +15,7 @@ grpc = [
 
 [dependencies]
 # shared
-scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }
 tokio.workspace = true
 async-trait.workspace = true
 tower.workspace = true
@@ -51,4 +51,4 @@ protocol = { workspace = true }
 tokio-stream = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 surreal-casbin-adapter = { workspace = true }
-scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }

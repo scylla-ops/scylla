@@ -1924,6 +1924,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "hostname"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "617aaa3557aef3810a6369d0a99fac8a080891b68bd9f9812a1eeda0c0730cbd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "windows-link 0.2.1",
+]
+
+[[package]]
 name = "html5ever"
 version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4105,6 +4116,7 @@ dependencies = [
  "clap",
  "hermes-broker-client",
  "hermes-broker-proto",
+ "hostname",
  "scylla-core",
  "serde",
  "serde_json",
@@ -4114,6 +4126,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber",
+ "ulid",
 ]
 
 [[package]]

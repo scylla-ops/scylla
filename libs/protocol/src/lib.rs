@@ -23,6 +23,9 @@ pub mod services {
     pub mod permission {
         tonic::include_proto!("permission");
     }
+    pub mod agent {
+        tonic::include_proto!("agent");
+    }
 
     pub const FILE_DESCRIPTOR_SET: &[u8] =
         tonic::include_file_descriptor_set!("services_descriptor");

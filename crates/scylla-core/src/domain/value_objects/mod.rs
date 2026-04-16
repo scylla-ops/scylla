@@ -1,3 +1,5 @@
+#[cfg(feature = "agents")]
+pub mod agent;
 #[cfg(feature = "jobs")]
 pub mod job;
 #[cfg(feature = "organizations")]

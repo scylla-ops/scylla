@@ -1,11 +1,14 @@
+mod agent_listener;
 mod config;
 mod log_listener;
 mod status_listener;
 
 use clap::Parser;
 use config::RecorderConfig;
-use scylla_core::application::{JobLogUseCases, JobUseCases};
-use scylla_core::infrastructure::{SurrealJobLogRepository, SurrealJobRepository};
+use scylla_core::application::{AgentUseCases, JobLogUseCases, JobUseCases};
+use scylla_core::infrastructure::{
+    SurrealAgentRepository, SurrealJobLogRepository, SurrealJobRepository,
+};
 use std::sync::Arc;
 use tracing::info;
 
@@ -28,6 +31,9 @@ async fn main() -> anyhow::Result<()> {
         db.clone(),
     ))));
     let job_log_uc = Arc::new(JobLogUseCases::new(Arc::new(SurrealJobLogRepository::new(
+        db.clone(),
+    ))));
+    let agent_uc = Arc::new(AgentUseCases::new(Arc::new(SurrealAgentRepository::new(
         db,
     ))));
 
@@ -37,7 +43,12 @@ async fn main() -> anyhow::Result<()> {
 
     // Spawn listeners independently
     tokio::spawn(status_listener::run(broker_channel.clone(), job_uc));
-    tokio::spawn(log_listener::run(broker_channel, job_log_uc));
+    tokio::spawn(log_listener::run(broker_channel.clone(), job_log_uc));
+    tokio::spawn(agent_listener::run_heartbeat(
+        broker_channel.clone(),
+        agent_uc.clone(),
+    ));
+    tokio::spawn(agent_listener::run_shutdown(broker_channel, agent_uc));
 
     info!("scylla-recorder running — press Ctrl+C to stop");
 

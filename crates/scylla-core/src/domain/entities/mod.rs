@@ -1,5 +1,7 @@
 mod ids;
 
+#[cfg(feature = "agents")]
+mod agent;
 #[cfg(feature = "jobs")]
 mod job;
 #[cfg(feature = "jobs")]
@@ -21,6 +23,8 @@ mod user_project;
 
 pub use ids::*;
 
+#[cfg(feature = "agents")]
+pub use agent::*;
 #[cfg(feature = "jobs")]
 pub use job::*;
 #[cfg(feature = "jobs")]

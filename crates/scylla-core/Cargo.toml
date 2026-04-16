@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "hash", "permission"]
+default = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"]
 
 # database backends
 surrealdb = ["dep:surrealdb-types", "dep:surrealdb"]
@@ -16,6 +16,7 @@ organizations = ["users"]
 projects = ["users"]
 pipelines = ["projects"]
 jobs = ["pipelines"]
+agents = []
 
 # infrastructure services
 hash = ["dep:argon2", "users"]

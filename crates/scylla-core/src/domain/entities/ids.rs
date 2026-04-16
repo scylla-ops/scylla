@@ -127,3 +127,4 @@ define_id!(JobLogId, "job_logs");
 define_id!(UserOrganizationId, "user_organization");
 define_id!(UserProjectId, "user_project");
 define_id!(SessionId, "sessions");
+define_id!(AgentId, "agents");

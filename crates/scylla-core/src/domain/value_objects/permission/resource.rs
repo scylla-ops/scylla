@@ -1,4 +1,6 @@
-use crate::domain::entities::{EntityId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::entities::{
+    AgentId, EntityId, JobId, OrganizationId, PipelineId, ProjectId, UserId,
+};
 
 #[derive(Debug)]
 pub enum Resource {
@@ -7,6 +9,7 @@ pub enum Resource {
     Job(Target<JobId>),
     Project(Target<ProjectId>),
     Organization(Target<OrganizationId>),
+    Agent(Target<AgentId>),
     All,
 }
 
@@ -31,6 +34,8 @@ impl Resource {
             Resource::Project(Target::Single(id)) => format!("project/{id}"),
             Resource::Organization(Target::All) => "organization/*".to_string(),
             Resource::Organization(Target::Single(id)) => format!("organization/{id}"),
+            Resource::Agent(Target::All) => "agent/*".to_string(),
+            Resource::Agent(Target::Single(id)) => format!("agent/{id}"),
         }
     }
 }
@@ -53,6 +58,10 @@ impl std::str::FromStr for Resource {
             ))),
             Some(("pipeline", "*")) => Ok(Resource::Pipeline(Target::All)),
             Some(("pipeline", id)) => Ok(Resource::Pipeline(Target::Single(PipelineId::new(
+                id.to_string(),
+            )))),
+            Some(("agent", "*")) => Ok(Resource::Agent(Target::All)),
+            Some(("agent", id)) => Ok(Resource::Agent(Target::Single(AgentId::new(
                 id.to_string(),
             )))),
             _ => Err(()),

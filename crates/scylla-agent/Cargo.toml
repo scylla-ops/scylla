@@ -9,7 +9,7 @@ hermes-broker-proto = { workspace = true }
 hermes-broker-client = { workspace = true }
 
 # domain types (shared broker messages, no surrealdb)
-scylla-core = { workspace = true, default-features = false, features = ["jobs"] }
+scylla-core = { workspace = true, default-features = false, features = ["jobs", "agents"] }
 
 # async
 tokio = { workspace = true }
@@ -23,7 +23,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 # cli
-clap = { workspace = true }
+clap = { workspace = true, features = ["env"] }
 
 # error handling
 thiserror = { workspace = true }
@@ -35,3 +35,7 @@ tracing-subscriber = { workspace = true }
 
 # time
 chrono = { workspace = true }
+
+# identity
+ulid = { workspace = true }
+hostname = "0.4"
