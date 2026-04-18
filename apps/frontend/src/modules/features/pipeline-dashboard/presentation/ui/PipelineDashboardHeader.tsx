@@ -10,6 +10,7 @@ import { Trans } from '@lingui/react/macro';
 interface PipelineDashboardHeaderProps {
   numberOfPipelines: number;
 }
+
 //TODO: put the delete pipeline action in a separate component
 export const PipelineDashboardHeader = ({ numberOfPipelines }: PipelineDashboardHeaderProps) => {
   const { goToCreatePipeline } = useScyllaNavigate();

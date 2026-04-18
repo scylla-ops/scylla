@@ -2,35 +2,34 @@ import { useQuery } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
 import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListJobsResponse } from '@/generated/job.ts';
+import { usePagination } from '@/modules/shared/presentation/hooks/usePagination.ts';
+import type { PaginationInfo } from '@/modules/shared/domain/types/Pagination.ts';
+import { useEffect } from 'react';
 
 export const usePipelineJobs = (pipelineId: string) => {
   const { getPipelineJobs } = useDependencies().jobs;
+  const { paginationParams, paginationInfo, updatePaginationInfo, setPage } = usePagination();
 
-  const {
-    data,
-    isLoading,
-    error,
-    isError,
-    refetch,
-  } = useQuery<ListJobsResponse, ScyllaError>({
-    queryKey: ['jobs', 'pipeline', pipelineId],
-    queryFn: async () => (await getPipelineJobs.execute(pipelineId)).unwrap(),
+  const { data, isLoading, error, isError, refetch } = useQuery<ListJobsResponse, ScyllaError>({
+    queryKey: ['jobs', 'pipeline', pipelineId, paginationParams],
+    queryFn: async () => (await getPipelineJobs.execute(pipelineId, paginationParams)).unwrap(),
     enabled: !!pipelineId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchInterval: (query) => {
-      // Auto-refresh every 5 seconds if there are running/pending jobs
+    staleTime: 0, //TODO: check if need cache
+    refetchInterval: query => {
       const jobs = query.state.data?.jobs || [];
-      const hasActiveJobs = jobs.some(
-        job => job.status === 'running' || job.status === 'pending',
-      );
+      const hasActiveJobs = jobs.some(job => job.status === 'running' || job.status === 'pending');
       return hasActiveJobs ? 5000 : false;
     },
   });
 
+  useEffect(() => {
+    updatePaginationInfo(data?.pagination as PaginationInfo | undefined);
+  }, [data, updatePaginationInfo]);
+
   return {
     jobs: data?.jobs,
-    pagination: data?.pagination,
+    paginationInfo,
+    setPage,
     isLoading,
     isError,
     error,
@@ -38,4 +37,3 @@ export const usePipelineJobs = (pipelineId: string) => {
     refetch,
   };
 };
-
