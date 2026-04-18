@@ -13,7 +13,7 @@ export const PipelineStatus = ({ pipeline }: PipelineStatusProps) => {
   const creationDate = new Date(pipeline.createdAt);
 
   return (
-    <>
+    <div className={'flex items-center justify-center gap-2 flex-row'}>
       <StatusIndicator state='running' />
 
       <div className='flex flex-col overflow-hidden'>
@@ -23,6 +23,6 @@ export const PipelineStatus = ({ pipeline }: PipelineStatusProps) => {
           <Trans>Creation:</Trans> {creationDate.toDateString()}
         </span>
       </div>
-    </>
+    </div>
   );
 };

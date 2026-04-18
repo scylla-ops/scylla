@@ -5,11 +5,11 @@ import { AnimatedOutlet } from '@/modules/shared/presentation/ui/AnimatedOutlet.
 
 export const Layout = () => {
   return (
-    <SidebarProvider className={'h-screen w-screen'}>
+    <SidebarProvider className='w-screen h-screen overflow-hidden'>
       <AppSidebar />
-      <SidebarInset className={'flex flex-col border border-sidebar-border bg-background gap-2'}>
+      <SidebarInset className='flex flex-col flex-1 min-w-0 border border-sidebar-border bg-background overflow-hidden'>
         <TopBar />
-        <div className={'h-full w-full p-2'}>
+        <div className='flex-1 min-h-0 overflow-hidden'>
           <AnimatedOutlet />
         </div>
       </SidebarInset>

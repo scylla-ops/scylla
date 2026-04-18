@@ -1,6 +1,10 @@
 import { Clock } from 'lucide-react';
 import { usePipelineJobs } from '@/modules/shared/presentation/hooks/usePipelineJobs';
-import { calculateDuration, formatDuration, getRelativeTime } from '@/modules/shared/utils/dateUtils';
+import {
+  calculateDuration,
+  formatDuration,
+  getRelativeTime,
+} from '@/modules/shared/utils/dateUtils';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton';
 
 type PipelineMetadataProps = {
@@ -41,12 +45,12 @@ export const PipelineMetadata = ({ pipelineId }: PipelineMetadataProps) => {
   const lastRun = getRelativeTime(lastJob.updatedAt);
 
   return (
-    <>
-      <div className='flex items-center gap-1.5'>
+    <div className={'flex flex-col w-full items-center justify-center gap-1'}>
+      <div className='flex flex-row w-full items-center justify-center gap-1.5'>
         <Clock className='w-3.5 h-3.5' />
         <span>{formatDuration(duration)}</span>
       </div>
       <span className='text-xs italic truncate'>{lastRun}</span>
-    </>
+    </div>
   );
 };
