@@ -1,17 +1,17 @@
-#[cfg(feature = "users")]
-use crate::domain::entities::UserId;
+#[cfg(feature = "agents")]
+use crate::domain::entities::AgentId;
+#[cfg(feature = "pipelines")]
+use crate::domain::entities::PipelineId;
 #[cfg(feature = "auth")]
 use crate::domain::entities::SessionId;
+#[cfg(feature = "users")]
+use crate::domain::entities::UserId;
+#[cfg(feature = "jobs")]
+use crate::domain::entities::{JobId, JobLogId};
 #[cfg(feature = "organizations")]
 use crate::domain::entities::{OrganizationId, UserOrganizationId};
 #[cfg(feature = "projects")]
 use crate::domain::entities::{ProjectId, UserProjectId};
-#[cfg(feature = "pipelines")]
-use crate::domain::entities::PipelineId;
-#[cfg(feature = "jobs")]
-use crate::domain::entities::{JobId, JobLogId};
-#[cfg(feature = "agents")]
-use crate::domain::entities::AgentId;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;

@@ -31,8 +31,7 @@ impl AgentRepository for SurrealAgentRepository {
             .await
             .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?;
 
-        created
-            .ok_or_else(|| DomainError::infrastructure("Create returned no record".to_string()))
+        created.ok_or_else(|| DomainError::infrastructure("Create returned no record".to_string()))
     }
 
     #[instrument(skip(self), fields(agent_id = %id))]

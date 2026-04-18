@@ -8,7 +8,7 @@ cache_repo  := DOCKER_USER + "/scylla-cache"
 
 platform := env("PLATFORM", "linux/amd64")
 
-# ── Aliases ──
+# -- Aliases --
 alias u := up
 alias d := down
 alias l := logs
@@ -17,7 +17,7 @@ alias l := logs
 default:
     @just --list
 
-# ── Dev ──────────────────────────────────────
+# -- Dev --
 
 # Build all services for local dev (native arch)
 [group('dev')]
@@ -54,7 +54,7 @@ status:
 clean:
     docker system prune -f
 
-# ── Registry ─────────────────────────────────
+# -- Registry --
 
 # Build & push a single service (e.g. just push scylla-api)
 [group('registry')]

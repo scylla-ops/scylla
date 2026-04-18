@@ -3,15 +3,15 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_to_proto, proto_to_domain_pagination,
 };
 use derive_more::Constructor;
-use protocol::services::job::{
-    DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobResponse, ListJobsRequest,
-    ListJobsResponse, ListOrganizationJobsRequest, ListPipelineJobsRequest, ListProjectJobsRequest,
-    job_service_server::JobService,
-};
 use scylla_core::application::JobUseCases;
 use scylla_core::application::ports::{JobRepository, PermissionService};
 use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId};
 use scylla_core::domain::value_objects::permission::policy;
+use scylla_protocol::services::job::{
+    DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobResponse, ListJobsRequest,
+    ListJobsResponse, ListOrganizationJobsRequest, ListPipelineJobsRequest, ListProjectJobsRequest,
+    job_service_server::JobService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -177,7 +177,6 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use protocol::services::job::job_service_server::JobService;
     use scylla_core::application::JobUseCases;
     use scylla_core::application::ports::JobRepository;
     use scylla_core::application::ports::services::permission_service::PermissionService;
@@ -187,6 +186,7 @@ mod tests {
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
     use scylla_core::domain::value_objects::pipeline::{NodeId, PipelineName};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
+    use scylla_protocol::services::job::job_service_server::JobService;
     use std::sync::Arc;
 
     // ── Stubs ──────────────────────────────────────────────────

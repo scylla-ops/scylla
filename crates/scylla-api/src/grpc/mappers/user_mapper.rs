@@ -1,5 +1,5 @@
-use protocol::services::user::UserResponse;
 use scylla_core::domain::entities::User;
+use scylla_protocol::services::user::UserResponse;
 
 pub fn user_to_proto(user: &User) -> UserResponse {
     UserResponse {

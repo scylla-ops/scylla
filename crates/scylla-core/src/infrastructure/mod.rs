@@ -8,7 +8,7 @@ pub mod services;
 pub(crate) mod test_utils;
 
 #[cfg(feature = "surrealdb")]
-pub use db::{Db, DatabaseConfig, close_db, init_db};
+pub use db::{DatabaseConfig, Db, close_db, init_db};
 
 #[cfg(all(feature = "surrealdb", feature = "agents"))]
 pub use persistence::surrealdb::SurrealAgentRepository;

@@ -3,14 +3,14 @@ use crate::grpc::mappers::{
     agent_to_proto, domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination,
 };
 use derive_more::Constructor;
-use protocol::services::agent::{
-    AgentResponse, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest, ListAgentsRequest,
-    ListAgentsResponse, agent_service_server::AgentService,
-};
 use scylla_core::application::AgentUseCases;
 use scylla_core::application::ports::{AgentRepository, PermissionService};
 use scylla_core::domain::entities::AgentId;
 use scylla_core::domain::value_objects::permission::policy;
+use scylla_protocol::services::agent::{
+    AgentResponse, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest, ListAgentsRequest,
+    ListAgentsResponse, agent_service_server::AgentService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 

@@ -1,5 +1,5 @@
-use protocol::services::job::{JobNodeResponse, JobResponse};
 use scylla_core::domain::entities::{Job, JobNode};
+use scylla_protocol::services::job::{JobNodeResponse, JobResponse};
 
 pub fn job_to_proto(job: &Job) -> JobResponse {
     JobResponse {

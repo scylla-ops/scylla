@@ -4,13 +4,6 @@ use crate::grpc::mappers::{
     pipeline_to_proto_summary, proto_to_domain_pagination,
 };
 use hermes_broker_client::Publisher;
-use protocol::services::job::JobResponse;
-use protocol::services::pipeline::{
-    CreatePipelineRequest, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest,
-    ListOrganizationPipelinesRequest, ListPipelinesRequest, ListPipelinesResponse,
-    ListProjectPipelinesRequest, PipelineResponse, PipelineSummary, RunPipelineRequest,
-    UpdatePipelineRequest, pipeline_service_server::PipelineService,
-};
 use scylla_core::application::ports::{
     JobRepository, PermissionService, PipelineRepository, ProjectRepository,
 };
@@ -19,6 +12,13 @@ use scylla_core::domain::entities::{Job, OrganizationId, PipelineId, PipelineNod
 use scylla_core::domain::value_objects::permission::policy;
 use scylla_core::domain::value_objects::pipeline::JobDispatch;
 use scylla_core::domain::value_objects::pipeline::{NodeId, PipelineName};
+use scylla_protocol::services::job::JobResponse;
+use scylla_protocol::services::pipeline::{
+    CreatePipelineRequest, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest,
+    ListOrganizationPipelinesRequest, ListPipelinesRequest, ListPipelinesResponse,
+    ListProjectPipelinesRequest, PipelineResponse, PipelineSummary, RunPipelineRequest,
+    UpdatePipelineRequest, pipeline_service_server::PipelineService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -318,7 +318,6 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use protocol::services::pipeline::pipeline_service_server::PipelineService;
     use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::application::ports::{JobRepository, PipelineRepository, ProjectRepository};
     use scylla_core::application::{JobUseCases, PipelineUseCases};
@@ -329,6 +328,7 @@ mod tests {
     use scylla_core::domain::value_objects::pipeline::PipelineName;
     use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
+    use scylla_protocol::services::pipeline::pipeline_service_server::PipelineService;
     use std::sync::Arc;
 
     // ── Stubs ──────────────────────────────────────────────────
@@ -566,7 +566,7 @@ mod tests {
         let req = authed_request(CreatePipelineRequest {
             name: "newpipe".into(),
             project_id: proj_id.to_string(),
-            nodes: vec![protocol::services::pipeline::PipelineNode {
+            nodes: vec![scylla_protocol::services::pipeline::PipelineNode {
                 node_id: "step1".into(),
                 deps: vec![],
                 command: "echo".into(),

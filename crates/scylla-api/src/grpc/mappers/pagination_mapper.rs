@@ -1,7 +1,7 @@
-use protocol::services::common::{
+use scylla_core::domain::value_objects::{PaginationMetadata, PaginationParams};
+use scylla_protocol::services::common::{
     PaginationMetadata as ProtoPaginationMetadata, PaginationRequest as ProtoPaginationRequest,
 };
-use scylla_core::domain::value_objects::{PaginationMetadata, PaginationParams};
 
 pub fn proto_to_domain_pagination(
     proto: Option<ProtoPaginationRequest>,

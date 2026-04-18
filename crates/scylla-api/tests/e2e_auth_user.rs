@@ -3,7 +3,7 @@
 //! Starts a real gRPC server with in-memory SurrealDB and exercises the full
 //! request path: client → gRPC transport → interceptor → handler → use case → repo.
 
-use protocol::services::{
+use scylla_protocol::services::{
     auth::{
         LoginRequest, RevokeTokenRequest, ValidateTokenRequest,
         auth_service_client::AuthServiceClient,
@@ -20,13 +20,13 @@ use tonic::transport::Channel;
 
 /// Spin up an in-memory server and return the address + join handle.
 async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
-    use protocol::services::{
-        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
-    };
     use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use scylla_core::application::{AuthUseCases, UserUseCases};
     use scylla_core::infrastructure::{
         Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
+    };
+    use scylla_protocol::services::{
+        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
     };
     use surreal_casbin_adapter::SurrealAdapter;
     use tonic::transport::Server;
@@ -133,14 +133,14 @@ async fn e2e_auth_login_validate_revoke() {
 
 #[tokio::test]
 async fn e2e_auth_full_flow_with_bootstrap() {
-    use protocol::services::{
-        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
-    };
     use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use scylla_core::application::{AuthUseCases, UserUseCases};
     use scylla_core::domain::value_objects::user::{Password, Username};
     use scylla_core::infrastructure::{
         Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
+    };
+    use scylla_protocol::services::{
+        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
     };
     use surreal_casbin_adapter::SurrealAdapter;
     use tonic::transport::Server;
@@ -245,9 +245,6 @@ async fn e2e_auth_full_flow_with_bootstrap() {
 
 #[tokio::test]
 async fn e2e_user_crud_with_auth() {
-    use protocol::services::{
-        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
-    };
     use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::application::{AuthUseCases, UserUseCases};
@@ -256,6 +253,9 @@ async fn e2e_user_crud_with_auth() {
     use scylla_core::domain::value_objects::user::{Password, Username};
     use scylla_core::infrastructure::{
         Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
+    };
+    use scylla_protocol::services::{
+        auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
     };
     use surreal_casbin_adapter::SurrealAdapter;
     use tonic::transport::Server;

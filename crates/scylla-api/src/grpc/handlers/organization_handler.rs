@@ -4,7 +4,15 @@ use crate::grpc::mappers::{
     proto_to_domain_pagination,
 };
 use derive_more::Constructor;
-use protocol::services::organization::{
+use scylla_core::application::OrganizationUseCases;
+use scylla_core::application::ports::services::permission_service::PermissionService;
+use scylla_core::application::ports::{
+    OrganizationRepository, UserOrganizationRepository, UserRepository,
+};
+use scylla_core::domain::entities::{OrganizationId, UserId};
+use scylla_core::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
+use scylla_core::domain::value_objects::permission::policy;
+use scylla_protocol::services::organization::{
     AddUserToOrganizationRequest, AddUserToOrganizationResponse, CreateOrganizationRequest,
     DeleteOrganizationRequest, DeleteOrganizationResponse, GetOrganizationRequest,
     ListOrganizationUsersRequest, ListOrganizationUsersResponse, ListOrganizationsRequest,
@@ -14,14 +22,6 @@ use protocol::services::organization::{
     ToggleOrganizationActiveResponse, UpdateOrganizationRequest,
     organization_service_server::OrganizationService,
 };
-use scylla_core::application::OrganizationUseCases;
-use scylla_core::application::ports::services::permission_service::PermissionService;
-use scylla_core::application::ports::{
-    OrganizationRepository, UserOrganizationRepository, UserRepository,
-};
-use scylla_core::domain::entities::{OrganizationId, UserId};
-use scylla_core::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
-use scylla_core::domain::value_objects::permission::policy;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -280,7 +280,6 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use protocol::services::organization::organization_service_server::OrganizationService;
     use scylla_core::application::OrganizationUseCases;
     use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::application::ports::{
@@ -294,6 +293,7 @@ mod tests {
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
     use scylla_core::domain::value_objects::user::{PasswordHash, Username};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
+    use scylla_protocol::services::organization::organization_service_server::OrganizationService;
     use std::sync::Arc;
 
     // ── Stubs ──────────────────────────────────────────────────

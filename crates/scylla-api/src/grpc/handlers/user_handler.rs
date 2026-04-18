@@ -3,17 +3,17 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
 };
 use derive_more::Constructor;
-use protocol::services::user::{
-    ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest,
-    DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse,
-    UpdateUserRequest, UserResponse, user_service_server::UserService,
-};
 use scylla_core::application::UserUseCases;
 use scylla_core::application::ports::services::permission_service::PermissionService;
 use scylla_core::application::ports::{HashService, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::permission::policy;
 use scylla_core::domain::value_objects::user::{Password, Username};
+use scylla_protocol::services::user::{
+    ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest,
+    DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse,
+    UpdateUserRequest, UserResponse, user_service_server::UserService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -136,7 +136,6 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use protocol::services::user::user_service_server::UserService;
     use scylla_core::application::UserUseCases;
     use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::application::ports::{HashService, UserRepository};
@@ -145,6 +144,7 @@ mod tests {
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
     use scylla_core::domain::value_objects::user::{Password, PasswordHash, Username};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
+    use scylla_protocol::services::user::user_service_server::UserService;
     use std::sync::Arc;
 
     // ── Stub UserRepo ───────────────────────────────────────────

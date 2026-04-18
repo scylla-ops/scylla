@@ -5,18 +5,18 @@ use crate::grpc::mappers::permission_mapper::{
     proto_resource_to_domain, proto_scope_to_domain,
 };
 use derive_more::Constructor;
-use protocol::services::permission::{
+use scylla_core::application::PermissionUseCases;
+use scylla_core::application::ports::services::permission_service::PermissionService;
+use scylla_core::domain::entities::UserId;
+use scylla_core::domain::value_objects::permission::policy::{self, GroupingPolicy, Policy};
+use scylla_core::domain::value_objects::role::name::RoleName;
+use scylla_protocol::services::permission::{
     Act as ProtoAct, AddGroupingPolicyRequest, AddGroupingPolicyResponse, AddPolicyRequest,
     AddPolicyResponse, GroupingPolicyEntry, ListGroupingPoliciesRequest,
     ListGroupingPoliciesResponse, ListPoliciesRequest, ListPoliciesResponse, PolicyEntry,
     RemoveGroupingPolicyRequest, RemoveGroupingPolicyResponse, RemovePolicyRequest,
     RemovePolicyResponse, permission_service_server::PermissionService as PermissionServiceTrait,
 };
-use scylla_core::application::PermissionUseCases;
-use scylla_core::application::ports::services::permission_service::PermissionService;
-use scylla_core::domain::entities::UserId;
-use scylla_core::domain::value_objects::permission::policy::{self, GroupingPolicy, Policy};
-use scylla_core::domain::value_objects::role::name::RoleName;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -28,8 +28,8 @@ pub struct PermissionHandler<PS: PermissionService> {
 
 /// Build a domain `Policy` from strongly-typed proto values.
 fn proto_to_policy(
-    scope: protocol::services::permission::Scope,
-    resource: protocol::services::permission::Resource,
+    scope: scylla_protocol::services::permission::Scope,
+    resource: scylla_protocol::services::permission::Resource,
     act_i32: i32,
 ) -> Result<Policy, Status> {
     let act = proto_act_to_domain(
@@ -210,13 +210,13 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use protocol::services::permission::permission_service_server::PermissionService as PermissionServiceTrait;
-    use protocol::services::permission::{Resource, ResourceType, Scope, ScopeType};
     use scylla_core::application::PermissionUseCases;
     use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::domain::entities::EntityId;
     use scylla_core::domain::errors::DomainResult;
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
+    use scylla_protocol::services::permission::permission_service_server::PermissionService as PermissionServiceTrait;
+    use scylla_protocol::services::permission::{Resource, ResourceType, Scope, ScopeType};
     use std::sync::Arc;
 
     // ── Stubs ──────────────────────────────────────────────────

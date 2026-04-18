@@ -115,9 +115,11 @@ mod tests {
             if let Some(err) = self.find_err.lock().unwrap().take() {
                 return Err(err);
             }
-            self.state.lock().unwrap().clone().ok_or_else(|| {
-                DomainError::not_found("Agent", id.as_str())
-            })
+            self.state
+                .lock()
+                .unwrap()
+                .clone()
+                .ok_or_else(|| DomainError::not_found("Agent", id.as_str()))
         }
 
         async fn update(&self, agent: &Agent) -> DomainResult<Agent> {

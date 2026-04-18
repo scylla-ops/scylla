@@ -1,5 +1,5 @@
-use protocol::services::organization::OrganizationResponse;
 use scylla_core::domain::entities::Organization;
+use scylla_protocol::services::organization::OrganizationResponse;
 
 pub fn organization_to_proto(org: &Organization) -> OrganizationResponse {
     OrganizationResponse {
