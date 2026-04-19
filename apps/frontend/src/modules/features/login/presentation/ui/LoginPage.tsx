@@ -10,16 +10,23 @@ import LogoScylla from '@/assets/logo_scylla.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/features/login/presentation/hooks/useLogin.ts';
 import { type FormEvent } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export const LoginPage = () => {
-  const { mutate: login, error, isPending, isSuccess } = useLogin();
+  const { mutate: login, isPending, isSuccess } = useLogin();
 
   const handleSubmit = (e: FormEvent, loginValue: string, passwordValue: string) => {
     e.preventDefault();
     login({ login: loginValue, password: passwordValue });
   };
 
-  if (isPending || isSuccess) return <p>Loading... (todo change that)</p>;
+  if (isPending || isSuccess)
+    return (
+      <div className='flex flex-col items-center justify-center h-screen gap-4'>
+        <img src={LogoScylla} alt='logo' className='w-20 h-20 object-contain' />
+        <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+      </div>
+    );
 
   return (
     <div className={'flex items-center flex-col'}>
@@ -38,7 +45,6 @@ export const LoginPage = () => {
         </CardHeader>
         <CardContent>
           <LoginForm handleSubmit={handleSubmit} />
-          {error ? <div>{error.message}</div> : <></>}
         </CardContent>
       </Card>
     </div>

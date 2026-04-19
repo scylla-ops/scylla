@@ -1,6 +1,7 @@
 export interface BreadcrumbParams {
-  pipelineId?: string;
-  projectId?: string;
+  projectName?: string;
+  organizationName?: string;
+  pipelineName?: string;
 }
 
 export interface RouteHandle {

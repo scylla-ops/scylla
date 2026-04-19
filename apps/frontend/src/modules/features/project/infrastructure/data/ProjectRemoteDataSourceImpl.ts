@@ -3,6 +3,8 @@ import { ProjectServiceClient } from '@/generated/project.client.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/ProjectRemoteDataSource.ts';
+import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
+import { DEFAULT_PAGE_SIZE } from '@/modules/shared/domain/types/Pagination.ts';
 
 export class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
   private readonly _projectClient: ProjectServiceClient;
@@ -11,10 +13,14 @@ export class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
     this._projectClient = new ProjectServiceClient(_transport.getTransport());
   }
 
-  public getAll(): Promise<ScyllaResult<ListProjectsResponse>> {
+  public getByOrganizationId(
+    organizationId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<ListProjectsResponse>> {
     return ScyllaResult.tryAsync(async () => {
-      const { response } = await this._projectClient.listProjects({
-        pagination: { page: 1, pageSize: 10 },
+      const { response } = await this._projectClient.listOrganizationProjects({
+        organizationId,
+        pagination: pagination ?? { page: 1, pageSize: DEFAULT_PAGE_SIZE },
       });
       return response;
     }, 'Failed to fetch projects.');

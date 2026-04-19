@@ -80,6 +80,8 @@ pub async fn init_db(config: &DatabaseConfig) -> Result<Surreal<Any>> {
     tables.push(JobId::table_name());
     #[cfg(feature = "jobs")]
     tables.push(JobLogId::table_name());
+    #[cfg(feature = "permission")]
+    tables.push(surreal_casbin_adapter::TABLE);
 
     let ddl = tables
         .iter()

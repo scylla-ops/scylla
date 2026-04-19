@@ -7,6 +7,7 @@ import { json } from '@codemirror/legacy-modes/mode/javascript';
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { PipelineCreationTopbar } from '@/modules/features/pipeline-creation/presentation/ui/PipelineCreationTopbar.tsx';
+import { Trans } from '@lingui/react/macro';
 
 const codeMirrorTheme = EditorView.theme({
   '&': {
@@ -71,7 +72,7 @@ export const PipelineCreationPage = () => {
     }
   }, [projectId, setScript]);
 
-  if (!projectId) return <p>Select a project first</p>;
+  if (!projectId) return <p><Trans>Select a project first</Trans></p>;
 
   return (
     <Tabs key={'scripting'} defaultValue={'scripting'} className={'h-full flex flex-col gap-4'}>
@@ -88,7 +89,7 @@ export const PipelineCreationPage = () => {
         </Card>
       </TabsContent>
       <TabsContent value='blueprint'>
-        <p>Canvas reactflow ici</p>
+        <p><Trans>Reactflow canvas here</Trans></p>
       </TabsContent>
     </Tabs>
   );

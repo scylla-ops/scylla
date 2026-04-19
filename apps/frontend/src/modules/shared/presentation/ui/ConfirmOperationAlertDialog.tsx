@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,23 +23,23 @@ export function ConfirmOperationAlertDialog({
   open,
   onOpenChange,
   onContinue,
-  title = 'Are you absolutely sure?',
-  description = 'This action cannot be undone.',
+  title,
+  description,
   isLoading,
 }: ConfirmOperationAlertDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogTitle>{title ?? <Trans>Are you absolutely sure?</Trans>}</AlertDialogTitle>
+          <AlertDialogDescription>{description ?? <Trans>This action cannot be undone.</Trans>}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Cancel
+            <Trans>Cancel</Trans>
           </AlertDialogCancel>
           <AlertDialogAction onClick={onContinue} disabled={isLoading}>
-            Continue
+            <Trans>Continue</Trans>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

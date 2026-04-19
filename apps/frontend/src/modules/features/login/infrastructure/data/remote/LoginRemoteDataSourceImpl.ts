@@ -1,7 +1,7 @@
 import type { LoginRemoteDataSource } from '@/modules/features/login/infrastructure/repository/data-sources/LoginRemoteDataSource.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import { AuthServiceClient } from '@/generated/auth.client.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
+import type { CoreGrpcTransport} from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
 
 export class LoginRemoteDataSourceImpl implements LoginRemoteDataSource {
   private readonly _authClient: AuthServiceClient;

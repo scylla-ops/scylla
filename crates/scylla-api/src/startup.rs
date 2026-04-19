@@ -86,8 +86,10 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         project_repo.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
+    // `casbin_rule` is already defined by `init_db` in a single atomic DDL batch.
+    // A second standalone `DEFINE TABLE` here used to soft-lock intermittently on
+    // SurrealDB's schema write lock when a previous run left a zombie session.
     let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    surreal_casbin_adapter.create_table().await?;
     let mut casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await?;
 
     if let Some(cfg) = &config.bootstrap {

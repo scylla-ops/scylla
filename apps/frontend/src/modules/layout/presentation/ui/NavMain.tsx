@@ -1,5 +1,5 @@
+import { Trans } from '@lingui/react/macro';
 import { type LucideIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -7,6 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
+import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
 
 export function NavMain({
   items,
@@ -18,11 +19,11 @@ export function NavMain({
     isActive?: boolean;
   }[];
 }) {
-  const navigate = useNavigate();
+  const navigate = useScyllaNavigate().navigate;
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Main</SidebarGroupLabel>
+      <SidebarGroupLabel><Trans>Main</Trans></SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item, index) => (
           <SidebarMenuItem className={'transition-all duration-200 hover:scale-105'} key={index}>

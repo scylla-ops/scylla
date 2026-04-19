@@ -1,7 +1,12 @@
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
+import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
 
 export interface PipelineDashboardRemoteDataSource {
-  getAll(): Promise<ScyllaResult<ListPipelinesResponse>>;
+  getByProjectId(
+    projectId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<ListPipelinesResponse>>;
   deleteById(id: string): Promise<ScyllaResult<void>>;
+  run(id: string): Promise<ScyllaResult<void>>;
 }

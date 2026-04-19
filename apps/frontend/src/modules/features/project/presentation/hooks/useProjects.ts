@@ -1,27 +1,33 @@
-// modules/organisation/presentation/hooks/useOrganizations.ts
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import { usePagination } from '@/modules/shared/presentation/hooks/usePagination.ts';
+import type { PaginationInfo } from '@/modules/shared/domain/types/Pagination.ts';
 
-export const useProjects = () => {
+export const useProjects = (organizationId: string | null) => {
   const { getProjects } = useDependencies().project;
+  const { page, setPage, paginationParams } = usePagination();
 
-  //TODO: currently refetch every time: change to cache
-
-  //TODO: by organization id
   const {
-    data: projects,
+    data,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => (await getProjects.execute()).unwrap(),
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
+    queryKey: ['projects', organizationId, paginationParams],
+    queryFn: async () => (await getProjects.execute(organizationId!, paginationParams)).unwrap(),
+    enabled: !!organizationId,
+    placeholderData: keepPreviousData,
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [organizationId, setPage]);
+
   return {
-    projects: projects?.projects,
+    projects: data?.projects,
+    paginationInfo: data?.pagination as PaginationInfo | undefined,
+    page,
+    setPage,
     isLoading,
     isError: !!error,
   };
