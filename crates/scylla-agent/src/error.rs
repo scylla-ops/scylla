@@ -21,6 +21,12 @@ pub enum ExecutionError {
     #[error("node {node_id} was killed by signal")]
     NodeKilled { node_id: String },
 
+    #[error("node {node_id} cancelled by executor")]
+    Cancelled { node_id: String },
+
+    #[error("dangling dependencies — not all nodes could be scheduled (possible cycle)")]
+    DanglingDeps,
+
     #[error("failed to spawn command: {0}")]
     Spawn(#[source] std::io::Error),
 

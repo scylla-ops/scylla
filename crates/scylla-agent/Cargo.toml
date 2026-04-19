@@ -14,6 +14,7 @@ scylla-core = { workspace = true, default-features = false, features = ["jobs", 
 # async
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
+tokio-util = { workspace = true }
 
 # grpc
 tonic = { workspace = true }

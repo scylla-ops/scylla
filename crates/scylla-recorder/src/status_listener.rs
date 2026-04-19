@@ -59,6 +59,10 @@ pub async fn run(channel: Channel, job_uc: Arc<JobUseCases<SurrealJobRepository>
                     }
                     Err(e) => Err(e),
                 },
+                JobEvent::NodeSkipped { ref node_id } => match NodeId::new(node_id) {
+                    Ok(nid) => job.apply_node_skipped(&nid, chrono::Utc::now()),
+                    Err(e) => Err(e),
+                },
                 JobEvent::JobCompleted => job.complete(),
                 JobEvent::JobFailed { .. } => job.fail(),
             };
