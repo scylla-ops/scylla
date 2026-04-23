@@ -1,10 +1,6 @@
 # Scylla
 
-Distributed CI/CD platform. Backend in Rust (gRPC) + SurrealDB. Frontend in React + Vite.
-
-This guide walks closed beta users through running Scylla locally.
-
-New to the vocabulary? See the **[Glossary](GLOSSARY.md)** for every Scylla-specific term (pipeline, node, agent, broker, DAG, heartbeat, ...).
+Distributed CI/CD platform.
 
 ## Architecture
 
