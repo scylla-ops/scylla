@@ -89,10 +89,10 @@ just clean
 
 **Agent not picking up jobs.** Check `docker compose logs -f scylla-agent` and confirm the broker URL resolves. Restart with `docker compose restart scylla-agent`.
 
->>> Still stuck? Reach us by openning a post in the `help` Discord channel with:
-- steps to reproduce
-- `docker compose logs` output for the affected service
-- `docker compose ps` snapshot
+> Still stuck? Reach us by openning a post in the `help` Discord channel with:
+  >- steps to reproduce
+  >- `docker compose logs` output for the affected service
+  >- `docker compose ps` snapshot
 
 ## Further reading
 
