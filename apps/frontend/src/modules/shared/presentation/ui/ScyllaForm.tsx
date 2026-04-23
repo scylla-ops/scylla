@@ -45,6 +45,7 @@ export const ScyllaForm = ({ items, className, buttonLabel, onSubmit }: ScyllaFo
 
             {item.type === FormItemType.Input && (
               <Input
+                disabled={item.disabled}
                 placeholder={item.placeholder}
                 className={item.className}
                 id={item.id}

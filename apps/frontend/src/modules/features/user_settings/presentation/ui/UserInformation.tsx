@@ -85,6 +85,7 @@ export const UserInformation = () => {
       id: 'username',
       type: FormItemType.Input,
       inputType: 'text',
+      disabled: true,
     },
     {
       label: 'User ID',
