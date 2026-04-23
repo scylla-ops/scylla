@@ -48,11 +48,11 @@ logs *svc:
 status:
     docker compose ps
 
-# Remove dangling images and stopped containers
+# Remove this project's containers, networks, volumes, and locally-built images
 [group('dev')]
-[confirm("Remove unused Docker resources?")]
+[confirm("Remove Scylla containers, networks, volumes, and local images?")]
 clean:
-    docker system prune -f
+    docker compose down --rmi local --volumes --remove-orphans
 
 # -- Registry --
 
