@@ -23,6 +23,7 @@ export type FormItemBase = {
   placeholder?: string;
   id: string;
   className?: string;
+  disabled?: boolean;
 };
 
 export type FormItem = FormItemBase & (FormInput | FormSelect);
