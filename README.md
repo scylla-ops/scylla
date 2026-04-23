@@ -48,20 +48,12 @@ docker compose up -d
 just up
 ```
 
-Check everything is healthy:
+Check everything is healthy (optional):
 
 ```sh
 docker compose ps
 # or
 just status
-```
-
-Tail logs:
-
-```sh
-docker compose logs -f scylla-api
-# or
-just logs scylla-api
 ```
 
 First boot creates the `admin` user automatically.
@@ -79,7 +71,7 @@ docker compose down
 just down
 ```
 
-To also wipe the SurrealDB volume:
+To also wipe the database volume:
 
 ```sh
 docker compose down -v
@@ -97,8 +89,7 @@ just clean
 
 **Agent not picking up jobs.** Check `docker compose logs -f scylla-agent` and confirm the broker URL resolves. Restart with `docker compose restart scylla-agent`.
 
-Still stuck? Reach us by openning a post in the `help` Discord channel with:
-
+>>> Still stuck? Reach us by openning a post in the `help` Discord channel with:
 - steps to reproduce
 - `docker compose logs` output for the affected service
 - `docker compose ps` snapshot
