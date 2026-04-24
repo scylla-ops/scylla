@@ -29,6 +29,7 @@ const data = {
       title: 'Marketeplace',
       url: '/marketplace',
       icon: ShoppingCartIcon,
+      disabled: true,
     },
   ],
 };

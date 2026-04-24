@@ -17,17 +17,35 @@ export function NavMain({
     url: string;
     icon?: LucideIcon;
     isActive?: boolean;
+    disabled?: boolean;
   }[];
 }) {
   const navigate = useScyllaNavigate().navigate;
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel><Trans>Main</Trans></SidebarGroupLabel>
+      <SidebarGroupLabel>
+        <Trans>Main</Trans>
+      </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item, index) => (
-          <SidebarMenuItem className={'transition-all duration-200 hover:scale-105'} key={index}>
-            <SidebarMenuButton tooltip={item.title} onClick={() => navigate(item.url)}>
+          <SidebarMenuItem
+            className={
+              item.disabled
+                ? 'pointer-events-none opacity-50'
+                : 'transition-all duration-200 hover:scale-105'
+            }
+            key={index}
+          >
+            <SidebarMenuButton
+              tooltip={item.title}
+              disabled={item.disabled}
+              aria-disabled={item.disabled}
+              onClick={() => {
+                if (item.disabled) return;
+                navigate(item.url);
+              }}
+            >
               {item.icon && <item.icon />}
               <span>{item.title}</span>
             </SidebarMenuButton>
