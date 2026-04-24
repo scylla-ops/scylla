@@ -10,7 +10,7 @@ grpc = [
     "dep:tonic-web",
     "dep:tonic-reflection",
     "dep:tonic-async-interceptor",
-    "dep:protocol",
+    "dep:scylla-protocol",
 ]
 
 [dependencies]
@@ -42,12 +42,12 @@ tonic = { workspace = true, optional = true }
 tonic-web = { workspace = true, optional = true }
 tonic-reflection = { workspace = true, optional = true }
 tonic-async-interceptor = { workspace = true, optional = true }
-protocol = { workspace = true, optional = true }
+scylla-protocol = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
 tonic = { workspace = true }
-protocol = { workspace = true }
+scylla-protocol = { workspace = true }
 tokio-stream = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 surreal-casbin-adapter = { workspace = true }

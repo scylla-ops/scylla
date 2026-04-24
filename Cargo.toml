@@ -4,7 +4,7 @@ members = [
     "crates/scylla-core",
     "crates/scylla-api",
     "crates/scylla-broker",
-    "libs/protocol",
+    "crates/scylla-protocol",
     "crates/scylla-agent",
     "crates/scylla-recorder",
 ]
@@ -16,10 +16,10 @@ tokio-stream = "0.1"
 async-trait = "0.1.89"
 
 # broker
-hermes-broker-core = "0.6.0"
-hermes-broker-proto = "0.6.0"
-hermes-broker-client = "0.6.0"
-hermes-broker-server = "0.6.0"
+hermes-broker-core = "0.7.0"
+hermes-broker-proto = "0.7.0"
+hermes-broker-client = "0.7.0"
+hermes-broker-server = "0.7.0"
 
 # grpc / proto
 tonic = { version = "0.14.5", features = ["server"] }
@@ -28,7 +28,7 @@ tonic-prost = "0.14.5"
 tonic-reflection = "0.14.5"
 prost = "0.14.3"
 tonic-prost-build = "0.14.5"
-protocol = { path = "libs/protocol" }
+scylla-protocol = { path = "crates/scylla-protocol" }
 tonic-async-interceptor = "0.14.1"
 
 # serialization

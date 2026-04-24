@@ -55,10 +55,7 @@ mod tests {
 
     #[test]
     fn rejects_empty() {
-        assert!(matches!(
-            Hostname::new(""),
-            Err(DomainError::Validation(_))
-        ));
+        assert!(matches!(Hostname::new(""), Err(DomainError::Validation(_))));
     }
 
     #[test]
@@ -85,10 +82,7 @@ mod tests {
     #[test]
     fn rejects_over_max_length() {
         let s = "a".repeat(MAX_HOSTNAME_LENGTH + 1);
-        assert!(matches!(
-            Hostname::new(s),
-            Err(DomainError::Validation(_))
-        ));
+        assert!(matches!(Hostname::new(s), Err(DomainError::Validation(_))));
     }
 
     #[test]

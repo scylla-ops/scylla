@@ -196,7 +196,11 @@ pub async fn shutdown_signal() {
 
 #[cfg(feature = "grpc")]
 pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> {
-    use protocol::services::{
+    use scylla_api::{
+        AgentHandler, AuthHandler, JobHandler, OrganizationHandler, PermissionHandler,
+        PipelineHandler, ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
+    };
+    use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
         auth::auth_service_server::AuthServiceServer, job::job_service_server::JobServiceServer,
         organization::organization_service_server::OrganizationServiceServer,
@@ -204,10 +208,6 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         user::user_service_server::UserServiceServer,
-    };
-    use scylla_api::{
-        AgentHandler, AuthHandler, JobHandler, OrganizationHandler, PermissionHandler,
-        PipelineHandler, ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
@@ -248,7 +248,7 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
     tracing::info!("gRPC server listening on {}", config.grpc.address);
 
     let reflection = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(protocol::services::FILE_DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
         .build_v1alpha()?;
 
     let auth_service = AuthServiceServer::new(auth_handler);

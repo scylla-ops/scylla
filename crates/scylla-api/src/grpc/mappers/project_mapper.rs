@@ -1,5 +1,5 @@
-use protocol::services::project::ProjectResponse;
 use scylla_core::domain::entities::Project;
+use scylla_protocol::services::project::ProjectResponse;
 
 pub fn project_to_proto(project: &Project) -> ProjectResponse {
     ProjectResponse {

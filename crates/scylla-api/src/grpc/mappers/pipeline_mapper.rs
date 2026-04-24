@@ -1,6 +1,6 @@
-use protocol::services::pipeline::{PipelineNode, PipelineResponse, PipelineSummary};
 use scylla_core::domain::entities::{Pipeline, PipelineNode as DomainPipelineNode};
 use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_protocol::services::pipeline::{PipelineNode, PipelineResponse, PipelineSummary};
 
 pub fn pipeline_to_proto(pipeline: &Pipeline) -> PipelineResponse {
     PipelineResponse {
@@ -29,7 +29,6 @@ pub fn pipeline_to_proto_summary(pipeline: &Pipeline) -> PipelineSummary {
 }
 
 pub fn pipeline_node_to_proto(node: &DomainPipelineNode) -> PipelineNode {
-
     PipelineNode {
         node_id: node.id().to_string(),
         deps: node.deps().iter().map(|d: &NodeId| d.to_string()).collect(),

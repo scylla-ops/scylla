@@ -1,5 +1,5 @@
-use protocol::services::agent::AgentResponse;
 use scylla_core::domain::entities::Agent;
+use scylla_protocol::services::agent::AgentResponse;
 
 pub fn agent_to_proto(agent: &Agent) -> AgentResponse {
     let status = if agent.is_connected() {

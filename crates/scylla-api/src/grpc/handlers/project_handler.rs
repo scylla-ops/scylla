@@ -3,14 +3,6 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
 };
 use derive_more::Constructor;
-use protocol::services::project::{
-    AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
-    DeleteProjectResponse, GetProjectRequest, ListOrganizationProjectsRequest,
-    ListProjectUsersRequest, ListProjectUsersResponse, ListProjectsRequest, ListProjectsResponse,
-    ListUserProjectsRequest, ProjectResponse, ProjectUserInfoResponse,
-    RemoveUserFromProjectRequest, RemoveUserFromProjectResponse, ToggleProjectActiveRequest,
-    ToggleProjectActiveResponse, UpdateProjectRequest, project_service_server::ProjectService,
-};
 use scylla_core::application::ProjectUseCases;
 use scylla_core::application::ports::{
     PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
@@ -18,6 +10,14 @@ use scylla_core::application::ports::{
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::permission::policy;
 use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
+use scylla_protocol::services::project::{
+    AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
+    DeleteProjectResponse, GetProjectRequest, ListOrganizationProjectsRequest,
+    ListProjectUsersRequest, ListProjectUsersResponse, ListProjectsRequest, ListProjectsResponse,
+    ListUserProjectsRequest, ProjectResponse, ProjectUserInfoResponse,
+    RemoveUserFromProjectRequest, RemoveUserFromProjectResponse, ToggleProjectActiveRequest,
+    ToggleProjectActiveResponse, UpdateProjectRequest, project_service_server::ProjectService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -324,7 +324,6 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use protocol::services::project::project_service_server::ProjectService;
     use scylla_core::application::ProjectUseCases;
     use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::application::ports::{
@@ -336,6 +335,7 @@ mod tests {
     use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
     use scylla_core::domain::value_objects::user::Username;
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
+    use scylla_protocol::services::project::project_service_server::ProjectService;
     use std::sync::Arc;
 
     // ── Stubs ──────────────────────────────────────────────────

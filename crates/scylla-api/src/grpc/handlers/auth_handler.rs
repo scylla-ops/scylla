@@ -1,13 +1,13 @@
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use protocol::services::auth::{
-    LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
-    ValidateTokenResponse, auth_service_server::AuthService,
-};
 use scylla_core::application::AuthUseCases;
 use scylla_core::application::ports::{HashService, SessionRepository, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::user::{Password, Username};
+use scylla_protocol::services::auth::{
+    LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
+    ValidateTokenResponse, auth_service_server::AuthService,
+};
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -117,13 +117,13 @@ mod tests {
     use super::*;
     use async_trait::async_trait;
     use chrono::Duration;
-    use protocol::services::auth::auth_service_server::AuthService;
     use scylla_core::application::AuthUseCases;
     use scylla_core::application::ports::{HashService, SessionRepository, UserRepository};
     use scylla_core::domain::entities::{Session, User};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use scylla_core::domain::value_objects::user::{Password, PasswordHash, Username};
     use scylla_core::domain::value_objects::{PaginatedResult, PaginationParams};
+    use scylla_protocol::services::auth::auth_service_server::AuthService;
     use std::sync::Arc;
 
     // ── Stubs ──��──────────────────────────────────────────────────

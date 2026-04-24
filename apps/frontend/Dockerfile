@@ -9,7 +9,7 @@ ENV PATH="/app/node_modules/.bin:$PATH"
 COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile
 
-COPY libs/protocol/proto/ ../../libs/protocol/proto/
+COPY crates/scylla-protocol/proto/ ../../crates/scylla-protocol/proto/
 COPY apps/frontend/ .
 
 ARG VITE_API_URL=""

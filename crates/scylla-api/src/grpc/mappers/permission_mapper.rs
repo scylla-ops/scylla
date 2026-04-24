@@ -1,11 +1,11 @@
-use protocol::services::permission::{
-    Act as ProtoAct, Resource as ProtoResource, ResourceType, Scope as ProtoScope, ScopeType,
-};
 use scylla_core::domain::entities::{
     AgentId, JobId, OrganizationId, PipelineId, ProjectId, UserId,
 };
 use scylla_core::domain::errors::{DomainError, DomainResult};
 use scylla_core::domain::value_objects::permission::{Act, Resource, Scope, Target};
+use scylla_protocol::services::permission::{
+    Act as ProtoAct, Resource as ProtoResource, ResourceType, Scope as ProtoScope, ScopeType,
+};
 
 // ── Act ───────────────────────────────────────────────────────────────────────
 

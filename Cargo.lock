@@ -1840,9 +1840,9 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hermes-broker-client"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60e56c0a4ad551ea9344c615341376678bb6641a2226b6a4d2564388f1e4be41"
+checksum = "ec23ca2be94428fef3e43a4fe904e70d647e6b354419933000685e67cc643770"
 dependencies = [
  "bytes",
  "hermes-broker-proto",
@@ -1855,11 +1855,13 @@ dependencies = [
 
 [[package]]
 name = "hermes-broker-core"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbcd6b1ac05b97dfd1b8b1e4899a6a1c85f55fca5c049b71f67b65286df777cf"
+checksum = "3fa4d0454b2055b4e15bac6580815d022d4671e0c96faeec8eaafb61f0d27639"
 dependencies = [
  "bytes",
+ "kanal",
+ "rustc-hash",
  "smallvec 2.0.0-alpha.12",
  "tokio",
  "tracing",
@@ -1867,9 +1869,9 @@ dependencies = [
 
 [[package]]
 name = "hermes-broker-proto"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51f5d18a9cf074047c02acee9f1bf6a48cfd070a0997d3d1fb358fd24641758a"
+checksum = "36f64f123e82b4c54a8d3d7d6d95a8e8913620dbc661f4f17dc2e5d38ef22ee6"
 dependencies = [
  "prost",
  "tonic",
@@ -1879,12 +1881,14 @@ dependencies = [
 
 [[package]]
 name = "hermes-broker-server"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f6801c7abdbe4476af0b20d2040cf558911bae2b09e81012ad7d2d25543f6c9"
+checksum = "baf4e1a50494137cd31963da7f4330cdb25e35e58d4dc743990176c4d3209322"
 dependencies = [
+ "clap",
  "hermes-broker-core",
  "hermes-broker-proto",
+ "kanal",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -2395,6 +2399,16 @@ dependencies = [
  "sha2",
  "signature",
  "simple_asn1",
+]
+
+[[package]]
+name = "kanal"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e3953adf0cd667798b396c2fa13552d6d9b3269d7dd1154c4c416442d1ff574"
+dependencies = [
+ "futures-core",
+ "lock_api",
 ]
 
 [[package]]
@@ -3329,16 +3343,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "protocol"
-version = "0.1.0"
-dependencies = [
- "prost",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
-]
-
-[[package]]
 name = "psl-types"
 version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4141,8 +4145,8 @@ dependencies = [
  "hermes-broker-client",
  "http",
  "log",
- "protocol",
  "scylla-core",
+ "scylla-protocol",
  "serde",
  "serde_json",
  "surreal-casbin-adapter",
@@ -4192,6 +4196,16 @@ dependencies = [
  "tracing",
  "ulid",
  "uuid",
+]
+
+[[package]]
+name = "scylla-protocol"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
 ]
 
 [[package]]
