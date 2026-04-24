@@ -11,6 +11,7 @@ import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.
 import type { BreadcrumbParams } from '@core/presentation/models/RouteHandle.ts';
 import { ContextCleaner } from './middlewares/ContextCleaner';
 import { JobsPage } from '@/modules/features/jobs/presentation/ui/JobsPage.tsx';
+import { UsersAdminPage } from '@/modules/features/users_admin/presentation/UsersAdminPage.tsx';
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
   {
@@ -80,6 +81,10 @@ export const CoreRouter = createBrowserRouter([
           {
             path: '/marketplace',
             element: <MarketplacePage />,
+          },
+          {
+            path: '/users-admin',
+            element: <UsersAdminPage />,
           },
         ],
       },

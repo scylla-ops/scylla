@@ -37,7 +37,7 @@ msgstr "Continuer"
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:86
+#: src/modules/layout/presentation/ui/NavUser.tsx:87
 msgid "Log out"
 msgstr "Se déconnecter"
 
@@ -49,12 +49,12 @@ msgstr "Principal"
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:44
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:48
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:49
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:53
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:47
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:52
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
