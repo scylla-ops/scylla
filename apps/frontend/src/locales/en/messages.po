@@ -37,7 +37,7 @@ msgstr "Continue"
 msgid "Error"
 msgstr "Error"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:86
+#: src/modules/layout/presentation/ui/NavUser.tsx:87
 msgid "Log out"
 msgstr "Log out"
 

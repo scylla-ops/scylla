@@ -55,6 +55,25 @@ services:
       scylla-broker:
         condition: service_started
 
+  scylla-frontend:
+    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-frontend:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:50051}
+    container_name: scylla-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      scylla-api:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   scylla-recorder:
     image: ${DOCKER_USER:-godlyjaaaaj}/scylla-recorder:${VERSION:-latest}
     build:
