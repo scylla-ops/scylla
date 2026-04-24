@@ -13,6 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: section.title
+#: src/modules/layout/presentation/ui/NavMain.tsx:24
+msgid "{0}"
+msgstr ""
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:12
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
@@ -42,19 +47,19 @@ msgid "Log out"
 msgstr "Se déconnecter"
 
 #: src/modules/layout/presentation/ui/NavMain.tsx:26
-msgid "Main"
-msgstr "Principal"
+#~ msgid "Main"
+#~ msgstr "Principal"
 
 #: src/modules/core/presentation/ui/App.tsx:59
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:49
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:53
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:57
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:52
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:60
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 

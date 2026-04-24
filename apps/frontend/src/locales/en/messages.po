@@ -13,6 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: section.title
+#: src/modules/layout/presentation/ui/NavMain.tsx:24
+msgid "{0}"
+msgstr "{0}"
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:12
 msgid "An error occurred"
 msgstr "An error occurred"
@@ -42,19 +47,19 @@ msgid "Log out"
 msgstr "Log out"
 
 #: src/modules/layout/presentation/ui/NavMain.tsx:26
-msgid "Main"
-msgstr "Main"
+#~ msgid "Main"
+#~ msgstr "Main"
 
 #: src/modules/core/presentation/ui/App.tsx:59
 msgid "Operation failed"
 msgstr "Operation failed"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:49
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:53
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:57
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
 msgid "Organization"
 msgstr "Organization"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:52
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:60
 msgid "Select Organization"
 msgstr "Select Organization"
 

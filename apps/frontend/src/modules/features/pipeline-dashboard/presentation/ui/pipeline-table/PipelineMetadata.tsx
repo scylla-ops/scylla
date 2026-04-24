@@ -30,13 +30,13 @@ export const PipelineMetadata = ({ pipelineId }: PipelineMetadataProps) => {
   // Error or empty state
   if (isError || jobs.length === 0) {
     return (
-      <>
-        <div className='flex items-center gap-1.5'>
+      <div className={'flex flex-col w-full items-center justify-center gap-1'}>
+        <div className='flex items-center justify-center gap-1.5'>
           <Clock className='w-3.5 h-3.5' />
           <span>-</span>
         </div>
         <span className='text-xs italic truncate'>No jobs yet</span>
-      </>
+      </div>
     );
   }
 

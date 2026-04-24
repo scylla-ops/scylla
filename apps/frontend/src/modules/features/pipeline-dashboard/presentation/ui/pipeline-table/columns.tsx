@@ -40,12 +40,12 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
   {
     id: 'metadata',
     header: () => (
-      <div className='text-center w-full text-xs font-semibold uppercase tracking-wider'>
+      <div className='w-full text-center text-xs font-semibold uppercase tracking-wider'>
         <Trans>Last Run</Trans>
       </div>
     ),
     cell: ({ row }) => (
-      <div className='flex flex-col gap-1'>
+      <div className='flex w-full flex-col gap-1'>
         <PipelineMetadata pipelineId={row.original.pipelineId} />
       </div>
     ),
