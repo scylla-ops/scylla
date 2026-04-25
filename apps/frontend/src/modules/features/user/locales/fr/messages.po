@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:42
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:49
 msgid "Actions"
 msgstr ""
 
@@ -29,7 +29,7 @@ msgstr ""
 msgid "Create User"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:29
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:36
 msgid "Created at"
 msgstr ""
 
@@ -68,6 +68,10 @@ msgstr ""
 msgid "Password"
 msgstr ""
 
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:17
+msgid "User"
+msgstr ""
+
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:29
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:49
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:69
@@ -80,7 +84,6 @@ msgid "User information not available"
 msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:23
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
 msgid "Username"
 msgstr ""
 

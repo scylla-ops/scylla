@@ -11,7 +11,7 @@ msgstr ""
 "Language: \n"
 "Language-Team: \n"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:58
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:81
 msgid "Actions"
 msgstr "Actions"
 
@@ -19,7 +19,7 @@ msgstr "Actions"
 #~ msgid "Clear"
 #~ msgstr "Clear"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:37
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:46
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
@@ -27,14 +27,14 @@ msgstr "Create your first pipeline to get started"
 msgid "Creation:"
 msgstr "Creation:"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:65
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:72
 msgid "Edit"
 msgstr "Edit"
 
 #~ msgid "Failed to fetch pipeline stats"
 #~ msgstr "Failed to fetch pipeline stats"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:30
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:42
 msgid "History"
 msgstr "History"
 
@@ -42,7 +42,7 @@ msgstr "History"
 #~ msgid "in total"
 #~ msgstr "in total"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:44
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:64
 msgid "Last Run"
 msgstr "Last Run"
 
@@ -50,7 +50,7 @@ msgstr "Last Run"
 #~ msgid "Loading..."
 #~ msgstr "Loading..."
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:76
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:83
 msgid "More options"
 msgstr "More options"
 
@@ -58,7 +58,7 @@ msgstr "More options"
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:34
+#: src/modules/features/pipeline-dashboard/presentation/ui/DashboardPipelinePage.tsx:43
 msgid "No pipeline found"
 msgstr "No pipeline found"
 
@@ -68,10 +68,10 @@ msgstr "No pipeline found"
 #~ msgid "Pipeline Status"
 #~ msgstr "Pipeline Status"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:61
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineActions.tsx:68
 msgid "Run"
 msgstr "Run"
 
-#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:20
+#: src/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/columns.tsx:27
 msgid "Status"
 msgstr "Status"
