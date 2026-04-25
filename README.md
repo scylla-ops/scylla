@@ -48,20 +48,14 @@ docker compose up -d
 just up
 ```
 
-Check everything is healthy (optional):
-
-```sh
-docker compose ps
-# or
-just status
-```
-
 First boot creates the `admin` user automatically.
 
 **Default credentials:**
 
 - username: `admin`
 - password: `admin123`
+
+Your app is now ready at: http://localhost:8080/
 
 ## 4. Stop everything
 
