@@ -34,6 +34,10 @@ msgstr "En êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:53
+msgid "Clear"
+msgstr ""
+
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
 msgid "Continue"
 msgstr "Continuer"
@@ -42,6 +46,10 @@ msgstr "Continuer"
 msgid "Error"
 msgstr "Erreur"
 
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:47
+msgid "in total"
+msgstr ""
+
 #: src/modules/layout/presentation/ui/NavUser.tsx:87
 msgid "Log out"
 msgstr "Se déconnecter"
@@ -49,6 +57,10 @@ msgstr "Se déconnecter"
 #: src/modules/layout/presentation/ui/NavMain.tsx:26
 #~ msgid "Main"
 #~ msgstr "Principal"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:69
+msgid "New {label}"
+msgstr ""
 
 #: src/modules/core/presentation/ui/App.tsx:59
 msgid "Operation failed"

@@ -38,10 +38,10 @@ msgid "Enter a name for your new project and select the organization it belongs 
 msgstr "Entrez un nom pour votre nouveau projet et sélectionnez l'organisation à laquelle il appartient."
 
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:23
-msgid "in total"
-msgstr "au total"
+#~ msgid "in total"
+#~ msgstr "au total"
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:26
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:19
 msgid "New project"
 msgstr "Nouveau projet"
 

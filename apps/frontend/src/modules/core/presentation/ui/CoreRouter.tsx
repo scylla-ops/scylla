@@ -1,7 +1,6 @@
 // CoreRouter.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LoginPage from '@/modules/features/login/presentation/ui/LoginPage';
-import UserSettingsPage from '@/modules/features/user_settings/presentation/ui/UserSettingsPage';
 import MarketplacePage from '@/modules/features/marketplace/presentation/ui/MarketplacePage';
 import { Layout } from '@/modules/layout/presentation/ui/Layout.tsx';
 import { RequireAuth } from '@/modules/core/presentation/ui/middlewares/RequireAuth';
@@ -11,7 +10,9 @@ import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.
 import type { BreadcrumbParams } from '@core/presentation/models/RouteHandle.ts';
 import { ContextCleaner } from './middlewares/ContextCleaner';
 import { JobsPage } from '@/modules/features/jobs/presentation/ui/JobsPage.tsx';
-import { UsersAdminPage } from '@/modules/features/users_admin/presentation/UsersAdminPage.tsx';
+import { UserAdminPage } from '@/modules/features/user/presentation/ui/admin/UserAdminPage.tsx';
+import UserSettingsPage from '@/modules/features/user/presentation/ui/settings/UserSettingsPage.tsx';
+
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
   {
@@ -25,10 +26,6 @@ export const CoreRouter = createBrowserRouter([
       {
         element: <Layout />,
         children: [
-          {
-            path: '/user-settings',
-            element: <UserSettingsPage />,
-          },
           {
             path: '/projects',
             handle: {
@@ -84,7 +81,11 @@ export const CoreRouter = createBrowserRouter([
           },
           {
             path: '/users-admin',
-            element: <UsersAdminPage />,
+            element: <UserAdminPage />,
+          },
+          {
+            path: '/user-settings',
+            element: <UserSettingsPage />,
           },
         ],
       },

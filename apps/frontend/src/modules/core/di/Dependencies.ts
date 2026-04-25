@@ -4,8 +4,8 @@ import { PipelineDashboardModule } from '@/modules/features/pipeline-dashboard/d
 import { PipelineCreationModule } from '@/modules/features/pipeline-creation/di/PipelineCreationModule.ts';
 import { OrganizationModule } from '@/modules/features/organization/di/OrganizationModule.ts';
 import { ProjectModule } from '@/modules/features/project/di/ProjectModule.ts';
-import { UserSettingsModule } from '@/modules/features/user_settings/di/UserSettingsModule.ts';
 import { JobsModule } from '@/modules/features/jobs/di/JobsModule.ts';
+import { UserModule } from '@/modules/features/user/di/user.module.ts';
 
 export const dependencies = {
   login: LoginModule.domain,
@@ -14,7 +14,7 @@ export const dependencies = {
   pipelineCreation: PipelineCreationModule.domain,
   organization: OrganizationModule.domain,
   project: ProjectModule.domain,
-  userSettings: UserSettingsModule.domain,
+  user: UserModule.domain,
   jobs: JobsModule.domain,
 };
 

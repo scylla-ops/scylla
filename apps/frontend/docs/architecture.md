@@ -216,7 +216,7 @@ export const LoginModule = {
 
 ### 4.2 Exemple concret (Login)
 
-1. **User clique sur "Login"** → `LoginForm.tsx`
+1. **UserModel clique sur "Login"** → `LoginForm.tsx`
 2. **Formulaire appelle** → `useLogin()` hook
 3. **Hook déclenche mutation** → `deps.login.loginUseCase.execute()`
 4. **Use case appelle** → `loginRepository.login()`
