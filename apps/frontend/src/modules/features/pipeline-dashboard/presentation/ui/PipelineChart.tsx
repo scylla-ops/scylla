@@ -5,20 +5,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/modules/shared/presentation/ui/shadcn/tooltip';
-import { usePipelineJobs } from '@/modules/shared/presentation/hooks/usePipelineJobs';
-import { mapJobStatusToChartStatus, type ChartDataPoint } from '@/modules/shared/utils/jobStatusMapper';
-import { calculateDuration, formatDuration, getRelativeTime } from '@/modules/shared/utils/dateUtils';
+import {
+  mapJobStatusToChartStatus,
+  type ChartDataPoint,
+} from '@/modules/shared/utils/jobStatusMapper';
+import {
+  calculateDuration,
+  formatDuration,
+  getRelativeTime,
+} from '@/modules/shared/utils/dateUtils';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton';
+import type { JobResponse } from '@/generated/job.ts';
 
 type PipelineChartProps = {
-  pipelineId: string;
   maxJobs?: number;
+  jobs: JobResponse[];
+  isLoading?: boolean;
+  isError?: boolean;
 };
 
-export const PipelineChart = ({ pipelineId, maxJobs = 16 }: PipelineChartProps) => {
-  const { jobs, isLoading, isError } = usePipelineJobs(pipelineId, { limit: maxJobs });
-
+export const PipelineChart = ({ jobs, isLoading, isError, maxJobs }: PipelineChartProps) => {
   // Transform jobs to chart data points
+
   const chartData: ChartDataPoint[] = jobs
     .slice(0, maxJobs)
     .map((job, index) => ({
@@ -63,7 +71,7 @@ export const PipelineChart = ({ pipelineId, maxJobs = 16 }: PipelineChartProps) 
   return (
     <TooltipProvider delayDuration={100}>
       <div className='w-full flex items-center gap-2 h-10 py-1 overflow-hidden rounded-md px-1'>
-        {chartData.map((dataPoint) => {
+        {chartData.map(dataPoint => {
           const statusLabel =
             dataPoint.status === 1 ? 'Success' : dataPoint.status === 0 ? 'Failed' : 'Running...';
 

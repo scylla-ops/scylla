@@ -1,4 +1,5 @@
 import type { PipelineSummary } from '@/generated/pipeline.ts';
+import type { JobResponse } from '@/generated/job.ts';
 import { DataTable } from '@/modules/shared/presentation/ui/DataTable';
 import { createPipelineColumns } from './columns';
 import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
@@ -8,9 +9,10 @@ import { useState } from 'react';
 
 type PipelineTableProps = {
   pipelines: PipelineSummary[];
+  jobsByPipelineId: Map<string, JobResponse[]>;
 };
 
-export const PipelineTable = ({ pipelines }: PipelineTableProps) => {
+export const PipelineTable = ({ pipelines, jobsByPipelineId }: PipelineTableProps) => {
   const { selectedIds, select } = useSelection('pipelines');
   const { goToEditPipeline, goToJobs } = useScyllaNavigate();
   const { mutateAsync } = useRunPipeline();
@@ -34,6 +36,7 @@ export const PipelineTable = ({ pipelines }: PipelineTableProps) => {
       goToJobs(pipelineId);
     },
     runningPipelines: runningPipelines,
+    jobsByPipelineId,
   });
 
   return (
