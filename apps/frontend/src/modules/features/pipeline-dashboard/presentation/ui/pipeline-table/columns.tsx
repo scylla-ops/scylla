@@ -10,6 +10,7 @@ type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineSummary) => void;
   onViewJobs: (pipelineId: string) => void;
+  runningPipelines: Set<string>;
 };
 
 export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<PipelineSummary>[] => [
@@ -72,6 +73,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
           e.stopPropagation();
           meta.onViewJobs(row.original.pipelineId);
         }}
+        isRunning={meta.runningPipelines.has(row.original.pipelineId)}
       />
     ),
     size: 140,

@@ -1,5 +1,6 @@
 import { useDependencies } from '@/modules/core/presentation/hooks/useDependencies';
 import { useMutation } from '@tanstack/react-query';
+import { toast } from '@shared/presentation/utils/toast.ts';
 
 export const useRunPipeline = () => {
   const { runPipeline } = useDependencies().pipelineDashboard;
@@ -7,8 +8,7 @@ export const useRunPipeline = () => {
   return useMutation({
     mutationFn: async (pipelineId: string) => (await runPipeline.execute(pipelineId)).unwrap(),
     onSuccess: () => {
-      console.log('Pipeline run successfully');
-      //todo: toast
+      toast.success(`Pipeline successfully run`);
     },
   });
 };
