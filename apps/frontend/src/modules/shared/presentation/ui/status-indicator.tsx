@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@shared/presentation/utils';
 
 interface StatusIndicatorProps {
-  state: 'success' | 'failure' | 'running' | 'idle';
+  state: 'success' | 'failed' | 'running' | 'idle';
   label?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -18,7 +18,7 @@ const getStateColors = (state: StatusIndicatorProps['state']) => {
         container: 'border-green-200 text-green-800 dark:border-green-800 dark:text-green-300',
         gradient: 'from-green-400 to-green-500',
       };
-    case 'failure':
+    case 'failed':
       return {
         dot: 'bg-red-500',
         ping: 'bg-red-300',
@@ -74,22 +74,12 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   size = 'md',
   labelClassName,
 }) => {
-  const shouldAnimate = state === 'success' || state === 'running' || state === 'failure';
+  const shouldAnimate = state === 'success' || state === 'running' || state === 'failed';
   const colors = getStateColors(state);
   const sizeClasses = getSizeClasses(size);
 
   return (
-    <div className='relative inline-flex rounded-full p-[2px] overflow-hidden bg-gradient-to-r from-transparent via-transparent to-transparent'>
-      {/* Gradient TODO */
-      /*{state === 'running' && (
-        <span
-          className={cn(
-            'absolute inset-0 rounded-full animate-spin pointer-events-none opacity-75',
-            `bg-gradient-to-r ${colors.gradient}`,
-          )}
-        />
-      )} */}
-
+    <div className='relative inline-flex rounded-full overflow-hiddenfrom-transparent via-transparent to-transparent'>
       <div
         className={cn(
           'relative inline-flex items-center gap-2 rounded-full bg-white dark:bg-slate-900 transition-all duration-300',

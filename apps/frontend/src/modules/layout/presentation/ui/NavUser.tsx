@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { ChevronsUpDown, LogOut } from 'lucide-react';
+import { ChevronsUpDown, LogOut, SettingsIcon } from 'lucide-react';
 
 import {
   Avatar,
@@ -21,23 +21,42 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
-}) {
+export function NavUser() {
   const { isMobile } = useSidebar();
   const goToUserSettings = useScyllaNavigate().goToUserSettings;
   const resetContext = useContextStore(state => state.reset);
+  //todo: use context store
+  const userId = localStorage.getItem('userId');
+
+  //fixme: dependency to user module here (if we are in layout)
+  //todo: handle error properly here
+  const { user, isLoading } = useUser(userId || undefined);
+
+  //todo: better loading (skeleton if loading too slow ?)
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <SidebarMenu>
-      <SidebarMenuItem>
+      <SidebarMenuItem
+        className='
+                  bg-white dark:bg-slate-900
+                  border border-slate-200 dark:border-slate-700
+                  rounded-lg
+                  hover:scale-105
+                  hover:bg-slate-50 dark:hover:bg-slate-800
+                  hover:border-slate-300 dark:hover:border-slate-600
+                  data-[state=open]:bg-slate-50 dark:data-[state=open]:bg-slate-800
+                  data-[state=open]:scale-105
+                  data-[state=open]:border-primary dark:data-[state=open]:border-primary-border
+                  transition-all duration-200
+                  shadow-sm hover:shadow-md
+                  focus:ring-0 focus:outline-none focus-visible:ring-0
+                '
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
@@ -45,12 +64,14 @@ export function NavUser({
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
               <Avatar className='h-8 w-8 rounded-lg'>
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className='rounded-lg'>CN</AvatarFallback>
+                <AvatarImage />
+                <AvatarFallback className='rounded-lg'>
+                  {user?.username.at(0)?.toUpperCase()}
+                </AvatarFallback>
               </Avatar>
+
               <div className='grid flex-1 text-left text-sm leading-tight'>
-                <span className='truncate font-medium'>{user.name}</span>
-                <span className='truncate text-xs'>{user.email}</span>
+                <span className='truncate font-medium'>{user?.username}</span>
               </div>
               <ChevronsUpDown className='ml-auto size-4' />
             </SidebarMenuButton>
@@ -62,15 +83,9 @@ export function NavUser({
             sideOffset={4}
           >
             <DropdownMenuItem onSelect={() => goToUserSettings()} className='p-0 font-normal'>
-              <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
-                <Avatar className='h-8 w-8 rounded-lg'>
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className='rounded-lg'>CN</AvatarFallback>
-                </Avatar>
-                <div className='grid flex-1 text-left text-sm leading-tight'>
-                  <span className='truncate font-medium'>{user.name}</span>
-                  <span className='truncate text-xs'>{user.email}</span>
-                </div>
+              <div className='w-full flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
+                <SettingsIcon className='size-4' />
+                <span>Settings</span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

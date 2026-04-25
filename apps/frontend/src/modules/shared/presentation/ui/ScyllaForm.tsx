@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   Button,
   Input,
@@ -15,14 +16,11 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/modules/shared/presentation/ui/shadcn/field.tsx';
 import { useState } from 'react';
 
-export type ScyllaFormProps = {
-  items: FormItem[];
-  className?: string;
-  onSubmit: (values: FormChange[]) => void;
-  buttonLabel: string;
-};
+// --- Form state hook ---
 
-export const ScyllaForm = ({ items, className, buttonLabel, onSubmit }: ScyllaFormProps) => {
+//todo: move this into a separate file?
+// eslint-disable-next-line react-refresh/only-export-components
+export const useFormState = (items: FormItem[]) => {
   const [values, setValues] = useState<FormChange[]>(
     items.map(item => ({ id: item.id, value: '' })),
   );
@@ -31,24 +29,54 @@ export const ScyllaForm = ({ items, className, buttonLabel, onSubmit }: ScyllaFo
     setValues(prev => prev.map(field => (field.id === id ? { ...field, value } : field)));
   };
 
+  const reset = () => setValues(items.map(item => ({ id: item.id, value: '' })));
+
+  const isValid = values.every(v => v.value.trim().length > 0);
+
+  return { values, handleChange, reset, isValid };
+};
+
+// --- ScyllaForm ---
+
+export type ScyllaFormProps = {
+  items: FormItem[];
+  className?: string;
+  onSubmit: (values: FormChange[]) => void;
+  isPending?: boolean;
+  footer?: (props: { isValid: boolean; isPending: boolean }) => ReactNode;
+  buttonLabel?: ReactNode;
+};
+
+export const ScyllaForm = ({
+  items,
+  className,
+  buttonLabel,
+  onSubmit,
+  isPending = false,
+  footer,
+}: ScyllaFormProps) => {
+  const { values, handleChange, isValid } = useFormState(items);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(values);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className='space-y-4'>
       <FieldGroup className={className}>
-        {items.map(item => (
+        {items.map((item, index) => (
           <Field key={item.id} className='gap-1'>
             <FieldLabel htmlFor={item.id}>{item.label}</FieldLabel>
 
             {item.type === FormItemType.Input && (
               <Input
+                disabled={isPending || item.disabled}
                 placeholder={item.placeholder}
                 className={item.className}
                 id={item.id}
                 type={item.inputType}
+                autoFocus={index === 0}
                 value={values.find(v => v.id === item.id)?.value}
                 onChange={e => handleChange(item.id, e.target.value)}
               />
@@ -58,6 +86,7 @@ export const ScyllaForm = ({ items, className, buttonLabel, onSubmit }: ScyllaFo
               <Select
                 value={values.find(v => v.id === item.id)?.value}
                 onValueChange={val => handleChange(item.id, val)}
+                disabled={isPending || item.disabled}
               >
                 <SelectTrigger className={item.className || 'w-full'} id={item.id}>
                   <SelectValue placeholder={item.placeholder} />
@@ -75,9 +104,15 @@ export const ScyllaForm = ({ items, className, buttonLabel, onSubmit }: ScyllaFo
         ))}
       </FieldGroup>
 
-      <div className='flex justify-end mt-8'>
-        <Button type='submit'>{buttonLabel}</Button>
-      </div>
+      {footer ? (
+        footer({ isValid, isPending })
+      ) : (
+        <div className='flex justify-end mt-8'>
+          <Button type='submit' disabled={!isValid || isPending}>
+            {buttonLabel}
+          </Button>
+        </div>
+      )}
     </form>
   );
 };

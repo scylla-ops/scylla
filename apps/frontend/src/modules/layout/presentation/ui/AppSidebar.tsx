@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Building2, ShoppingCartIcon, WorkflowIcon } from 'lucide-react';
+import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {
@@ -16,27 +16,35 @@ import { AddOrganizationDialog } from '@/modules/features/organization/presentat
 import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-selector/CurrentContextDisplay.tsx';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
 import { useLingui } from '@lingui/react/macro';
+import type { NavSection } from '@/modules/layout/presentation/models/NavSection.ts';
 
-// This is sample data.
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
+const navSections: NavSection[] = [
+  {
+    title: 'Main',
+    items: [
+      {
+        title: 'Projects',
+        url: '/projects',
+        icon: WorkflowIcon,
+      },
+      {
+        title: 'Marketeplace',
+        url: '/marketplace',
+        icon: ShoppingCartIcon,
+      },
+    ],
   },
-  navMain: [
-    {
-      title: 'Projects',
-      url: '/projects',
-      icon: WorkflowIcon,
-    },
-    {
-      title: 'Marketeplace',
-      url: '/marketplace',
-      icon: ShoppingCartIcon,
-    },
-  ],
-};
+  {
+    title: 'Admin',
+    items: [
+      {
+        title: 'Users',
+        url: '/users-admin',
+        icon: UsersIcon,
+      },
+    ],
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useLingui();
@@ -59,10 +67,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain sections={navSections} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

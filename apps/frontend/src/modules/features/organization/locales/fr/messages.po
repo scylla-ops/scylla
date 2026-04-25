@@ -14,37 +14,37 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:85
-msgid "Cancel"
-msgstr "Annuler"
+#~ msgid "Cancel"
+#~ msgstr "Annuler"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:46
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:45
 msgid "Create a new organization"
 msgstr "Créer une nouvelle organisation"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:91
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:54
 msgid "Create Organization"
 msgstr "Créer l'organisation"
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:91
-msgid "Creating..."
-msgstr "Création en cours..."
+#~ msgid "Creating..."
+#~ msgstr "Création en cours..."
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:65
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:25
 msgid "Description"
 msgstr "Description"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:57
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:19
 msgid "e.g., My Organization"
 msgstr "ex. Mon organisation"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:68
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:26
 msgid "e.g., Our company's main organization"
 msgstr "ex. L'organisation principale de notre entreprise"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:48
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:47
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Entrez un nom et une description pour votre nouvelle organisation. Vous pourrez les modifier plus tard dans les paramètres."
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:54
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:18
 msgid "Organization name"
 msgstr "Nom de l'organisation"

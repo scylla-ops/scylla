@@ -1,50 +1,70 @@
 import type { JobResponse } from '@/generated/job.ts';
 import { useJobsStore } from '@/modules/features/jobs/presentation/stores/useJobsStore.ts';
-import { ListCard, type ListCardSection } from '@shared/presentation/ui';
-import { JOB_COLUMNS } from '@/modules/features/jobs/presentation/config/jobsTableConfig.ts';
-import { JobRow } from '@/modules/features/jobs/presentation/ui/jobs-table/JobRow.tsx';
-import { cn } from '@shared/presentation/utils';
+import { DataTable } from '@/modules/shared/presentation/ui/DataTable';
+import { createJobColumns } from './columns';
+import { useState } from 'react';
+import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { useDeleteJob } from '@/modules/features/jobs/presentation/hooks/useDeleteJob';
+import { JobNodesList } from './JobNodesList';
 
 type JobsTableProps = {
   jobs: JobResponse[];
   pipelineId: string;
 };
 
-const headerSections: ListCardSection[] = JOB_COLUMNS.map(column => ({
-  width: column.width,
-  className: cn(
-    'h-full flex justify-center items-center gap-4 shrink-0 text-slate-500 text-sm',
-    column.id === 'actions' && 'flex-1',
-  ),
-  noSeparator: column.noSeparator,
-  content: (
-    <span className='w-full h-full rounded-2xl hover:bg-primary-foreground hover:shadow flex items-center justify-center transition-transform hover:scale-110 text-xs font-semibold uppercase tracking-wider'>
-      {column.label}
-    </span>
-  ),
-}));
-
 export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
   const selectJob = useJobsStore(state => state.selectJob);
   const selectedJobIds = useJobsStore(state => state.selectedJobIds);
+  const expandedJobId = useJobsStore(state => state.expandedJobId);
+  const toggleExpand = useJobsStore(state => state.toggleExpand);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+
+  const deleteJob = useDeleteJob(pipelineId);
+
+  const handleDelete = async () => {
+    if (!jobToDelete) return;
+    try {
+      await deleteJob.mutateAsync(jobToDelete);
+      setDeleteDialogOpen(false);
+      setJobToDelete(null);
+    } catch (error) {
+      console.error('Error deleting job:', error);
+    }
+  };
+
+  const columns = createJobColumns({
+    pipelineId,
+    onDelete: jobId => {
+      setJobToDelete(jobId);
+      setDeleteDialogOpen(true);
+    },
+    onView: jobId => {
+      toggleExpand(expandedJobId === jobId ? null : jobId);
+    },
+  });
 
   return (
-    <div className={'flex flex-col h-full gap-3'}>
-      <ListCard sections={headerSections} className='hover:bg-transparent px-4 py-2 mb-4' />
-      <div className='h-full flex flex-col gap-2'>
-        {jobs.map((job, index) => (
-          <JobRow
-            key={index}
-            selected={selectedJobIds.includes(job.jobId)}
-            onClick={() => {
-              selectJob(job.jobId);
-            }}
-            job={job}
-            pipelineId={pipelineId}
-          />
-        ))}
-      </div>
-    </div>
+    <>
+      <DataTable
+        columns={columns}
+        data={jobs}
+        onRowClick={row => selectJob(row.original.jobId)}
+        getRowId={(row, index) => row.jobId || index.toString()}
+        isRowSelected={row => selectedJobIds.includes(row.jobId)}
+        isRowExpanded={row => expandedJobId === row.jobId}
+        expandedContent={row => (
+          <JobNodesList nodeExecutions={row.original.nodeExecutions} isExpanded={true} />
+        )}
+      />
+      <ConfirmOperationAlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onContinue={handleDelete}
+        title='Delete Job'
+        description={`Are you sure you want to delete job ${jobToDelete?.slice(0, 12)}...? This action cannot be undone.`}
+      />
+    </>
   );
 };
-

@@ -1,7 +1,7 @@
 import type { JobsRepository } from '@/modules/features/jobs/domain/repository/JobsRepository.ts';
 import type { ListJobsResponse, JobResponse } from '@/generated/job.ts';
 import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
-import type { PaginationRequest } from '@/generated/common.ts';
+import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
 import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/repository/data-sources/JobsRemoteDataSource.ts';
 
 export class JobsRepositoryImpl implements JobsRepository {
@@ -9,7 +9,7 @@ export class JobsRepositoryImpl implements JobsRepository {
 
   public async getByPipelineId(
     pipelineId: string,
-    pagination?: PaginationRequest,
+    pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListJobsResponse>> {
     return this.remoteDataSource.getByPipelineId(pipelineId, pagination);
   }

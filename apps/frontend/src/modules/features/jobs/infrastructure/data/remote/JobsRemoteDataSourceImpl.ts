@@ -1,7 +1,7 @@
 import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/repository/data-sources/JobsRemoteDataSource.ts';
 import type { ListJobsResponse, JobResponse } from '@/generated/job.ts';
 import type { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
-import type { PaginationRequest } from '@/generated/common.ts';
+import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
 import { ScyllaResult as Result } from '@/modules/shared/utils/ScyllaResult.ts';
 import { JobServiceClient } from '@/generated/job.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
@@ -15,7 +15,7 @@ export class JobsRemoteDataSourceImpl implements JobsRemoteDataSource {
 
   public async getByPipelineId(
     pipelineId: string,
-    pagination?: PaginationRequest,
+    pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListJobsResponse>> {
     return Result.tryAsync<ListJobsResponse>(
       async () => (await this._jobClient.listPipelineJobs({ pipelineId, pagination })).response,

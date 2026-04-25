@@ -14,37 +14,37 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:85
-msgid "Cancel"
-msgstr "Cancel"
+#~ msgid "Cancel"
+#~ msgstr "Cancel"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:46
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:45
 msgid "Create a new organization"
 msgstr "Create a new organization"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:91
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:54
 msgid "Create Organization"
 msgstr "Create Organization"
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:91
-msgid "Creating..."
-msgstr "Creating..."
+#~ msgid "Creating..."
+#~ msgstr "Creating..."
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:65
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:25
 msgid "Description"
 msgstr "Description"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:57
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:19
 msgid "e.g., My Organization"
 msgstr "e.g., My Organization"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:68
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:26
 msgid "e.g., Our company's main organization"
 msgstr "e.g., Our company's main organization"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:48
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:47
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Enter a name and description for your new organization. You can change these later in settings."
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:54
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:18
 msgid "Organization name"
 msgstr "Organization name"
