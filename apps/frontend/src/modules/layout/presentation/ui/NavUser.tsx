@@ -32,7 +32,7 @@ export function NavUser() {
 
   //fixme: dependency to user module here (if we are in layout)
   //todo: handle error properly here
-  const { user, isLoading, isError } = useUser(userId || undefined);
+  const { user, isLoading } = useUser(userId || undefined);
 
   //todo: better loading (skeleton if loading too slow ?)
   if (isLoading) {

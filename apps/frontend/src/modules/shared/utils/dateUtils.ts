@@ -1,3 +1,14 @@
+//TODO: make this in function of the choosen language
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+  hour12: true,
+});
+
 /**
  * Calculate duration between two dates in seconds
  * @param createdAt - Start date string (ISO format)
@@ -44,4 +55,14 @@ export const getRelativeTime = (dateString: string): string => {
   if (diffMinutes > 0) return `${diffMinutes}m ago`;
   if (diffSeconds > 0) return `${diffSeconds}s ago`;
   return 'just now';
+};
+
+export const formatDate = (dateString: string | Date): string => {
+  if (!dateString) return '-';
+
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+
+  if (isNaN(date.getTime())) return 'Date invalide';
+
+  return dateFormatter.format(date);
 };

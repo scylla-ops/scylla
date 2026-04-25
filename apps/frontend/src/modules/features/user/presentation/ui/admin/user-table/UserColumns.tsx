@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { User } from '@/modules/features/user/domain/models/user.model.ts';
 import { Eye } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { formatDate } from '@shared/utils/dateUtils.ts';
 
 type PipelineColumnMeta = {
   onView: (userId: string) => void;
@@ -30,7 +31,7 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] =
     ),
     cell: ({ row }) => (
       <div className={'w-full text-center'}>
-        <span>{row.original.createdAt}</span>
+        <span>{formatDate(row.original.createdAt)}</span>
       </div>
     ),
   },
