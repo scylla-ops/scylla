@@ -26,7 +26,9 @@ export const usePipelinesJobs = (pipelineIds: string[]) => {
         return { pipelineId, jobs: result.unwrap().jobs };
       },
       staleTime: 0,
-      refetchInterval: (query: { state: { data?: { pipelineId: string; jobs: JobResponse[] } } }) => {
+      refetchInterval: (query: {
+        state: { data?: { pipelineId: string; jobs: JobResponse[] } };
+      }) => {
         const data = query.state.data;
         if (!data) return false;
         const hasActive = data.jobs.some(j => j.status === 'running' || j.status === 'pending');
@@ -48,5 +50,6 @@ export const usePipelinesJobs = (pipelineIds: string[]) => {
     return map;
   }, [queries]);
 
-  return { jobsByPipelineId, isLoading, isError };
+  //todo: error by pipeline id instead of global
+  return { jobsByPipelineId, isJobsLoading: isLoading, isJobsError: isError };
 };

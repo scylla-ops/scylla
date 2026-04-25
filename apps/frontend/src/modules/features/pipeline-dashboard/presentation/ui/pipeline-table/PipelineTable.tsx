@@ -10,9 +10,16 @@ import { useState } from 'react';
 type PipelineTableProps = {
   pipelines: PipelineSummary[];
   jobsByPipelineId: Map<string, JobResponse[]>;
+  isJobsLoading?: boolean;
+  isJobsError?: boolean;
 };
 
-export const PipelineTable = ({ pipelines, jobsByPipelineId }: PipelineTableProps) => {
+export const PipelineTable = ({
+  pipelines,
+  jobsByPipelineId,
+  isJobsLoading,
+  isJobsError,
+}: PipelineTableProps) => {
   const { selectedIds, select } = useSelection('pipelines');
   const { goToEditPipeline, goToJobs } = useScyllaNavigate();
   const { mutateAsync } = useRunPipeline();
@@ -37,6 +44,8 @@ export const PipelineTable = ({ pipelines, jobsByPipelineId }: PipelineTableProp
     },
     runningPipelines: runningPipelines,
     jobsByPipelineId,
+    isJobsLoading: isJobsLoading,
+    isJobsError: isJobsError,
   });
 
   return (

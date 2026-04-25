@@ -14,7 +14,7 @@ export const DashboardPipelinePage = () => {
   );
 
   const pipelineIds = (pipelines ?? []).map(p => p.pipelineId);
-  const { jobsByPipelineId } = usePipelinesJobs(pipelineIds);
+  const { jobsByPipelineId, isJobsError, isJobsLoading } = usePipelinesJobs(pipelineIds);
 
   if (isLoading || !pipelines) {
     return <></>;
@@ -30,7 +30,12 @@ export const DashboardPipelinePage = () => {
       <div className='flex-1 min-h-0 overflow-auto'>
         <div className='relative'>
           {pipelines.length > 0 ? (
-            <PipelineTable pipelines={pipelines} jobsByPipelineId={jobsByPipelineId} />
+            <PipelineTable
+              pipelines={pipelines}
+              jobsByPipelineId={jobsByPipelineId}
+              isJobsError={isJobsError}
+              isJobsLoading={isJobsLoading}
+            />
           ) : (
             <div className='flex items-center justify-center h-full min-h-100'>
               <div className='text-center space-y-2'>

@@ -11,8 +11,12 @@ type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineSummary) => void;
   onViewJobs: (pipelineId: string) => void;
+
   runningPipelines: Set<string>;
+
   jobsByPipelineId: Map<string, JobResponse[]>;
+  isJobsLoading?: boolean;
+  isJobsError?: boolean;
 };
 
 export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<PipelineSummary>[] => [
@@ -42,7 +46,12 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       const jobs = meta.jobsByPipelineId.get(row.original.pipelineId) ?? [];
       return (
         <div className='w-full'>
-          <PipelineChart jobs={jobs} maxJobs={10} />
+          <PipelineChart
+            jobs={jobs}
+            isLoading={meta.isJobsLoading}
+            isError={meta.isJobsError}
+            maxJobs={10}
+          />
         </div>
       );
     },
