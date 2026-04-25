@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { usePipelines } from '../hooks/usePipelines.ts';
+import { usePipelinesJobs } from '../hooks/usePipelinesJobs.ts';
 import { PipelineTable } from '@/modules/features/pipeline-dashboard/presentation/ui/pipeline-table/PipelineTable.tsx';
 import { PipelineDashboardHeader } from '@/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx';
 import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
@@ -11,6 +12,9 @@ export const DashboardPipelinePage = () => {
   const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage } = usePipelines(
     projectId!,
   );
+
+  const pipelineIds = (pipelines ?? []).map(p => p.pipelineId);
+  const { jobsByPipelineId, isJobsError, isJobsLoading } = usePipelinesJobs(pipelineIds);
 
   if (isLoading || !pipelines) {
     return <></>;
@@ -26,9 +30,14 @@ export const DashboardPipelinePage = () => {
       <div className='flex-1 min-h-0 overflow-auto'>
         <div className='relative'>
           {pipelines.length > 0 ? (
-            <PipelineTable pipelines={pipelines} />
+            <PipelineTable
+              pipelines={pipelines}
+              jobsByPipelineId={jobsByPipelineId}
+              isJobsError={isJobsError}
+              isJobsLoading={isJobsLoading}
+            />
           ) : (
-            <div className='flex items-center justify-center h-full min-h-[400px]'>
+            <div className='flex items-center justify-center h-full min-h-100'>
               <div className='text-center space-y-2'>
                 <p className='text-muted-foreground'>
                   <Trans>No pipeline found</Trans>

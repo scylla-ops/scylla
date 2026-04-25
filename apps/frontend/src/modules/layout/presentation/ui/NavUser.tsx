@@ -21,7 +21,7 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
 import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
-import { useUser } from '@/modules/features/user_settings/presentation/hooks/useUser.ts';
+import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
 
 export function NavUser() {
   const { isMobile } = useSidebar();
@@ -32,18 +32,31 @@ export function NavUser() {
 
   //fixme: dependency to user module here (if we are in layout)
   //todo: handle error properly here
-  const { user, isLoading, isError } = useUser(userId || undefined);
+  const { user, isLoading } = useUser(userId || undefined);
 
   //todo: better loading (skeleton if loading too slow ?)
   if (isLoading) {
     return <div>Loading...</div>;
   }
-  if (isError) {
-    return <div>Error loading user</div>;
-  }
+
   return (
     <SidebarMenu>
-      <SidebarMenuItem>
+      <SidebarMenuItem
+        className='
+                  bg-white dark:bg-slate-900
+                  border border-slate-200 dark:border-slate-700
+                  rounded-lg
+                  hover:scale-105
+                  hover:bg-slate-50 dark:hover:bg-slate-800
+                  hover:border-slate-300 dark:hover:border-slate-600
+                  data-[state=open]:bg-slate-50 dark:data-[state=open]:bg-slate-800
+                  data-[state=open]:scale-105
+                  data-[state=open]:border-primary dark:data-[state=open]:border-primary-border
+                  transition-all duration-200
+                  shadow-sm hover:shadow-md
+                  focus:ring-0 focus:outline-none focus-visible:ring-0
+                '
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton

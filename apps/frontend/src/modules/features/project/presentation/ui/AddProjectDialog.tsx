@@ -1,22 +1,9 @@
-import * as React from 'react';
-import { Button } from '@shadcn/button.tsx';
-import { Input } from '@shadcn/input.tsx';
-import { Label } from '@shadcn/label.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@shadcn/dialog.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn/select.tsx';
-import { useEffect } from 'react';
 import { useCreateProject } from '@/modules/features/project/presentation/hooks/useCreateProject.ts';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
-import { useContextStore } from '@shared/presentation/stores/useContext.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { FormDialog } from '@shared/presentation/ui';
+import { type FormChange, type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -25,102 +12,58 @@ interface AddProjectDialogProps {
 
 export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const { t } = useLingui();
-  const [projectName, setProjectName] = React.useState('');
   const createProject = useCreateProject();
-  const contextOrg = useContextStore(state => state.organization);
   const { organizations } = useOrganizations();
-  const [selectedOrgId, setSelectedOrgId] = React.useState<string | null>(contextOrg.id);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const items: FormItem[] = [
+    {
+      id: 'organizationId',
+      label: t`Organization`,
+      placeholder: t`Select an organization`,
+      type: FormItemType.Select,
+      options: (organizations ?? []).map(org => ({
+        label: org.name,
+        value: org.organizationId,
+      })),
+    },
+    {
+      id: 'name',
+      label: t`Project name`,
+      placeholder: t`e.g., My project`,
+      type: FormItemType.Input,
+      inputType: 'text',
+    },
+  ];
 
-    if (!projectName.trim() || !selectedOrgId) {
+  const handleSubmit = (values: FormChange[]) => {
+    const name = values.find(v => v.id === 'name')?.value;
+    const organizationId = values.find(v => v.id === 'organizationId')?.value;
+
+    if (!name?.trim() || !organizationId) {
       toast.error(t`Project name is required and you must select an organization.`);
       return;
     }
 
     createProject.mutate(
-      { name: projectName, organizationId: selectedOrgId },
-      {
-        onSuccess: () => setOpen(false),
-      },
+      { name, organizationId },
+      { onSuccess: () => setOpen(false) },
     );
   };
 
-  useEffect(() => {
-    setProjectName('');
-    setSelectedOrgId(contextOrg.id);
-  }, [open, contextOrg.id]);
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            <Trans>Create a new project</Trans>
-          </DialogTitle>
-          <DialogDescription>
-            <Trans>
-              Enter a name for your new project and select the organization it belongs to.
-            </Trans>
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='project-org'>
-              <Trans>Organization</Trans>
-            </Label>
-            <Select
-              value={selectedOrgId ?? undefined}
-              onValueChange={setSelectedOrgId}
-              disabled={createProject.isPending}
-            >
-              <SelectTrigger id='project-org' className='w-full'>
-                <SelectValue placeholder={t`Select an organization`} />
-              </SelectTrigger>
-              <SelectContent>
-                {organizations?.map(org => (
-                  <SelectItem key={org.organizationId} value={org.organizationId}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='project-name'>
-              <Trans>Project name</Trans>
-            </Label>
-            <Input
-              id='project-name'
-              placeholder={t`e.g., My project`}
-              value={projectName}
-              onChange={e => setProjectName(e.target.value)}
-              autoFocus
-              disabled={createProject.isPending}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => {
-                setProjectName('');
-                setOpen(false);
-              }}
-              disabled={createProject.isPending}
-            >
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              type='submit'
-              disabled={!projectName.trim() || !selectedOrgId || createProject.isPending}
-            >
-              {createProject.isPending ? <Trans>Creating...</Trans> : <Trans>Create Project</Trans>}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      open={open}
+      onOpenChange={setOpen}
+      title={<Trans>Create a new project</Trans>}
+      description={
+        <Trans>
+          Enter a name for your new project and select the organization it belongs to.
+        </Trans>
+      }
+      items={items}
+      isPending={createProject.isPending}
+      submitLabel={<Trans>Create Project</Trans>}
+      onSubmit={handleSubmit}
+    />
   );
 }

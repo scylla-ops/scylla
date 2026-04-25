@@ -35,8 +35,8 @@ export const useScyllaNavigate = () => {
     navigate(`/projects/${projectId}/pipelines/${pipelineId}/jobs`);
   };
 
-  const goToUserSettings = () => {
-    navigate('/user-settings');
+  const goToUserSettings = (userId?: string) => {
+    navigate('/users/' + (userId || 'me'));
   };
 
   return {

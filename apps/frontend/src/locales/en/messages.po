@@ -13,6 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: section.title
+#: src/modules/layout/presentation/ui/NavMain.tsx:24
+msgid "{0}"
+msgstr "{0}"
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:12
 msgid "An error occurred"
 msgstr "An error occurred"
@@ -26,35 +31,56 @@ msgid "Are you absolutely sure?"
 msgstr "Are you absolutely sure?"
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
+#: src/modules/shared/presentation/ui/FormDialog.tsx:57
 msgid "Cancel"
 msgstr "Cancel"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:53
+msgid "Clear"
+msgstr "Clear"
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
 msgid "Continue"
 msgstr "Continue"
 
+#: src/modules/shared/presentation/ui/FormDialog.tsx:62
+msgid "Create"
+msgstr "Create"
+
+#: src/modules/shared/presentation/ui/FormDialog.tsx:61
+msgid "Creating..."
+msgstr "Creating..."
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
 msgstr "Error"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:87
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:47
+msgid "in total"
+msgstr "in total"
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:100
 msgid "Log out"
 msgstr "Log out"
 
 #: src/modules/layout/presentation/ui/NavMain.tsx:26
-msgid "Main"
-msgstr "Main"
+#~ msgid "Main"
+#~ msgstr "Main"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:69
+msgid "New {label}"
+msgstr "New {label}"
 
 #: src/modules/core/presentation/ui/App.tsx:59
 msgid "Operation failed"
 msgstr "Operation failed"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:44
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:48
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:57
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
 msgid "Organization"
 msgstr "Organization"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:47
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:60
 msgid "Select Organization"
 msgstr "Select Organization"
 

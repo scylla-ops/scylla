@@ -3,8 +3,8 @@ import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
 import type { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListJobsResponse } from '@/generated/job.ts';
 import { usePagination } from '@/modules/shared/presentation/hooks/usePagination.ts';
-import type { PaginationInfo } from '@/modules/shared/domain/types/Pagination.ts';
 import { useEffect } from 'react';
+import type { PaginationInfo } from '@shared/domain/models/Pagination.ts';
 
 export const usePipelineJobs = (pipelineId: string) => {
   const { getPipelineJobs } = useDependencies().jobs;

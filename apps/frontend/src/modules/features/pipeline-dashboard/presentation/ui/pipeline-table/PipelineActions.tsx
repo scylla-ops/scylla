@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/modules/shared/presentation/ui/shadcn/dropdown-menu';
-import { EditIcon, PlayIcon, MoreHorizontal, ListChecks } from 'lucide-react';
+import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2 } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
@@ -15,13 +15,20 @@ type PipelineActionsProps = {
   onEdit: (e: SyntheticEvent) => void;
   onViewJobs?: (e: SyntheticEvent) => void;
   onMore?: (e: SyntheticEvent) => void;
+  isRunning?: boolean;
 };
 
 /**
  * Display actions for a pipeline in the status card, such as run, edit, and more options.
  * Automatically switches to dropdown mode when space is limited.
  */
-export const PipelineActions = ({ onRun, onEdit, onViewJobs, onMore }: PipelineActionsProps) => {
+export const PipelineActions = ({
+  onRun,
+  onEdit,
+  onViewJobs,
+  onMore,
+  isRunning,
+}: PipelineActionsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
 
@@ -86,7 +93,11 @@ export const PipelineActions = ({ onRun, onEdit, onViewJobs, onMore }: PipelineA
             className='h-8 w-8 shrink-0 text-slate-400 hover:text-primary hover:bg-primary-hover rounded-full'
             onClick={onRun}
           >
-            <PlayIcon className='w-4 h-4 fill-current' />
+            {isRunning ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <PlayIcon className='h-4 w-4 fill-current' />
+            )}
           </Button>
 
           <Button

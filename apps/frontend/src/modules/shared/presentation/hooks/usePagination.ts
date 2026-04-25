@@ -1,6 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
-import { DEFAULT_PAGE_SIZE } from '@/modules/shared/domain/types/Pagination.ts';
-import type { PaginationParams, PaginationInfo } from '@/modules/shared/domain/types/Pagination.ts';
+import {
+  DEFAULT_PAGE_SIZE,
+  type PaginationInfo,
+  type PaginationParams,
+} from '@shared/domain/models/Pagination.ts';
 
 interface UsePaginationOptions {
   initialPage?: number;
@@ -10,7 +13,9 @@ interface UsePaginationOptions {
 export const usePagination = (options?: UsePaginationOptions) => {
   const [page, setPageState] = useState(options?.initialPage ?? 1);
   const [pageSize, setPageSizeState] = useState(options?.initialPageSize ?? DEFAULT_PAGE_SIZE);
-  const [serverPaginationInfo, setServerPaginationInfo] = useState<PaginationInfo | undefined>(undefined);
+  const [serverPaginationInfo, setServerPaginationInfo] = useState<PaginationInfo | undefined>(
+    undefined,
+  );
 
   const setPage = useCallback((newPage: number) => {
     setPageState(Math.max(1, newPage));
@@ -39,5 +44,13 @@ export const usePagination = (options?: UsePaginationOptions) => {
     };
   }, [serverPaginationInfo, page, pageSize]);
 
-  return { page, pageSize, setPage, setPageSize, paginationParams, paginationInfo, updatePaginationInfo };
+  return {
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    paginationParams,
+    paginationInfo,
+    updatePaginationInfo,
+  };
 };

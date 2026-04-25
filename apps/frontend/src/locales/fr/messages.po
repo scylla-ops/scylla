@@ -13,6 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: section.title
+#: src/modules/layout/presentation/ui/NavMain.tsx:24
+msgid "{0}"
+msgstr ""
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:12
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
@@ -26,35 +31,56 @@ msgid "Are you absolutely sure?"
 msgstr "En êtes-vous absolument sûr ?"
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
+#: src/modules/shared/presentation/ui/FormDialog.tsx:57
 msgid "Cancel"
 msgstr "Annuler"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:53
+msgid "Clear"
+msgstr ""
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
 msgid "Continue"
 msgstr "Continuer"
 
+#: src/modules/shared/presentation/ui/FormDialog.tsx:62
+msgid "Create"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FormDialog.tsx:61
+msgid "Creating..."
+msgstr ""
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:87
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:47
+msgid "in total"
+msgstr ""
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:100
 msgid "Log out"
 msgstr "Se déconnecter"
 
 #: src/modules/layout/presentation/ui/NavMain.tsx:26
-msgid "Main"
-msgstr "Principal"
+#~ msgid "Main"
+#~ msgstr "Principal"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:69
+msgid "New {label}"
+msgstr ""
 
 #: src/modules/core/presentation/ui/App.tsx:59
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:44
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:48
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:57
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:47
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:60
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 

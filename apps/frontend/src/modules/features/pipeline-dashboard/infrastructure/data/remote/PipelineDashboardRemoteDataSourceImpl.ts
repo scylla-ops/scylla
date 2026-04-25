@@ -3,8 +3,7 @@ import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListPipelinesResponse } from '@/generated/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
-import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
-import { DEFAULT_PAGE_SIZE } from '@/modules/shared/domain/types/Pagination.ts';
+import { DEFAULT_PAGE_SIZE, type PaginationParams } from '@shared/domain/models/Pagination.ts';
 
 export class PipelineDashboardRemoteDataSourceImpl implements PipelineDashboardRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;

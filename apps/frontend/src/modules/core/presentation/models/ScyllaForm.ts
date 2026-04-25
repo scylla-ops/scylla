@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export enum FormItemType {
   Input = 'input',
   Select = 'select',
@@ -9,7 +11,7 @@ export type FormInput = {
 };
 
 export type SelectOption = {
-  label: string;
+  label: ReactNode;
   value: string;
 };
 
@@ -19,7 +21,7 @@ export type FormSelect = {
 };
 
 export type FormItemBase = {
-  label: string;
+  label: ReactNode;
   placeholder?: string;
   id: string;
   className?: string;

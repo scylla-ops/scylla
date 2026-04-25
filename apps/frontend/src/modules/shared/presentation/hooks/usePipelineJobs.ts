@@ -19,27 +19,18 @@ export const usePipelineJobs = (pipelineId: string, options?: UsePipelineJobsOpt
   const { getPipelineJobs } = useDependencies().jobs;
   const { limit, enabled = true } = options || {};
 
-  const {
-    data,
-    isLoading,
-    error,
-    isError,
-    refetch,
-  } = useQuery<ListJobsResponse, ScyllaError>({
+  const { data, isLoading, error, isError, refetch } = useQuery<ListJobsResponse, ScyllaError>({
     queryKey: ['jobs', 'pipeline', pipelineId, limit],
     queryFn: async () => {
       const pagination = limit ? { page: 1, pageSize: limit } : undefined;
       return (await getPipelineJobs.execute(pipelineId, pagination)).unwrap();
     },
     enabled: !!pipelineId && enabled,
-    staleTime: 0,
-    gcTime: 0,
-    refetchInterval: (query) => {
+    staleTime: 0, // Data is considered fresh for 5 seconds
+    refetchInterval: query => {
       // Auto-refresh every 5 seconds if there are running/pending jobs
       const jobs = query.state.data?.jobs || [];
-      const hasActiveJobs = jobs.some(
-        job => job.status === 'running' || job.status === 'pending',
-      );
+      const hasActiveJobs = jobs.some(job => job.status === 'running' || job.status === 'pending');
       return hasActiveJobs ? 5000 : false;
     },
   });
@@ -54,4 +45,3 @@ export const usePipelineJobs = (pipelineId: string, options?: UsePipelineJobsOpt
     refetch,
   };
 };
-

@@ -45,6 +45,14 @@ export class ScyllaResult<T> {
     }
   }
 
+  public map<U>(fn: (value: T) => U): ScyllaResult<U> {
+    if (this._value instanceof ScyllaError) {
+      return new ScyllaResult<U>(this._value);
+    } else {
+      return new ScyllaResult<U>(fn(this._value));
+    }
+  }
+
   public unwrap(): T {
     if (this._value instanceof ScyllaError) {
       throw this._value;

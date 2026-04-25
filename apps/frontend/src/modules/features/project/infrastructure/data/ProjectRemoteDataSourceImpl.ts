@@ -3,8 +3,7 @@ import { ProjectServiceClient } from '@/generated/project.client.ts';
 import { ScyllaResult } from '@/modules/shared/utils/ScyllaResult.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/ProjectRemoteDataSource.ts';
-import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
-import { DEFAULT_PAGE_SIZE } from '@/modules/shared/domain/types/Pagination.ts';
+import { DEFAULT_PAGE_SIZE, type PaginationParams } from '@shared/domain/models/Pagination.ts';
 
 export class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
   private readonly _projectClient: ProjectServiceClient;
