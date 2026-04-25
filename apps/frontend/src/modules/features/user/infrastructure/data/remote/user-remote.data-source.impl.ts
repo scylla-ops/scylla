@@ -31,4 +31,11 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       'Failed to create user.',
     );
   }
+
+  public async delete(userId: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync<void>(
+      async () => { await this._userClient.deleteUser({ userId }).response; },
+      'Failed to delete user.',
+    );
+  }
 }

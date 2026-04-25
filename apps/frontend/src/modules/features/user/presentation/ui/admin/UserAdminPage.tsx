@@ -1,5 +1,6 @@
 import { UserTable } from '@/modules/features/user/presentation/ui/admin/user-table/UserTable.tsx';
 import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
+import { useDeleteUser } from '@/modules/features/user/presentation/hooks/use-delete-user.ts';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useSelection } from '@shared/presentation/hooks/useSelection.ts';
 import { AddUserDialog } from '@/modules/features/user/presentation/ui/admin/AddUserDialog.tsx';
@@ -10,7 +11,14 @@ import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
   const { selectedIds, clearSelection } = useSelection('users');
+  const deleteUser = useDeleteUser();
   const [openDialog, setOpenDialog] = useState(false);
+
+  const handleDelete = async () => {
+    const promises = selectedIds.map(id => deleteUser.mutateAsync(id));
+    await Promise.all(promises);
+    clearSelection();
+  };
 
   //todo: handle properly
   if (isLoading) return <></>;
@@ -23,6 +31,7 @@ export const UserAdminPage = () => {
         label='User'
         selectedCount={selectedIds.length}
         onClearSelection={clearSelection}
+        onDeleteSelection={handleDelete}
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}
       />

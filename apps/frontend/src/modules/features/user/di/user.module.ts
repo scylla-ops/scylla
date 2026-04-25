@@ -4,6 +4,7 @@ import { UserRepositoryImpl } from '@/modules/features/user/infrastructure/repos
 import { GetUsersUseCase } from '@/modules/features/user/domain/use-cases/get-users.use-case.ts';
 import { GetUserUseCase } from '@/modules/features/user/domain/use-cases/get-user.use-case.ts';
 import { CreateUserUseCase } from '@/modules/features/user/domain/use-cases/create-user.use-case.ts';
+import { DeleteUserUseCase } from '@/modules/features/user/domain/use-cases/delete-user.use-case.ts';
 
 const dataSource = new UserRemoteDataSourceImpl(CoreModule.data.grpcTransport);
 const repository = new UserRepositoryImpl(dataSource);
@@ -11,7 +12,8 @@ const repository = new UserRepositoryImpl(dataSource);
 const getUsersUseCase = new GetUsersUseCase(repository);
 const getUserUseCase = new GetUserUseCase(repository);
 const createUserUseCase = new CreateUserUseCase(repository);
+const deleteUserUseCase = new DeleteUserUseCase(repository);
 
 export const UserModule = {
-  domain: { getUsers: getUsersUseCase, getUser: getUserUseCase, createUser: createUserUseCase },
+  domain: { getUsers: getUsersUseCase, getUser: getUserUseCase, createUser: createUserUseCase, deleteUser: deleteUserUseCase },
 };

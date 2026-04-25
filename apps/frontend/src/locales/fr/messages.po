@@ -31,6 +31,7 @@ msgid "Are you absolutely sure?"
 msgstr "En êtes-vous absolument sûr ?"
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
+#: src/modules/shared/presentation/ui/FormDialog.tsx:57
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -42,6 +43,14 @@ msgstr ""
 msgid "Continue"
 msgstr "Continuer"
 
+#: src/modules/shared/presentation/ui/FormDialog.tsx:62
+msgid "Create"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FormDialog.tsx:61
+msgid "Creating..."
+msgstr ""
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
 msgstr "Erreur"
@@ -50,7 +59,7 @@ msgstr "Erreur"
 msgid "in total"
 msgstr ""
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:87
+#: src/modules/layout/presentation/ui/NavUser.tsx:100
 msgid "Log out"
 msgstr "Se déconnecter"
 

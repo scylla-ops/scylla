@@ -17,6 +17,26 @@ msgstr ""
 msgid "Active account"
 msgstr ""
 
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:53
+msgid "Create a new user"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:57
+msgid "Create User"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
+msgid "e.g., john.doe"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:31
+msgid "Enter a password"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
+msgid "Enter a username and password for the new user."
+msgstr ""
+
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:74
 msgid "Error loading user information"
 msgstr ""
@@ -32,6 +52,14 @@ msgstr ""
 msgid "Manage your account details."
 msgstr ""
 
+#: src/modules/features/user/presentation/ui/admin/UserAdminPage.tsx:36
+msgid "New user"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:30
+msgid "Password"
+msgstr ""
+
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:26
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:46
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:66
@@ -41,4 +69,12 @@ msgstr ""
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:34
 msgid "User information not available"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:23
+msgid "Username"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
+msgid "Username and password are required."
 msgstr ""

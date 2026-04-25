@@ -18,4 +18,8 @@ export class UserRepositoryImpl implements UserRepository {
   public async create(username: string, password: string): Promise<ScyllaResult<User>> {
     return (await this._remoteDataSource.create(username, password)).map(user => GrpcUserMapper.toDomain(user));
   }
+
+  public async delete(userId: string): Promise<ScyllaResult<void>> {
+    return this._remoteDataSource.delete(userId);
+  }
 }
