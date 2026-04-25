@@ -84,8 +84,21 @@ export const CoreRouter = createBrowserRouter([
             element: <UserAdminPage />,
           },
           {
-            path: '/user-settings',
-            element: <UserSettingsPage />,
+            path: '/users',
+            children: [
+              {
+                index: true,
+                element: <UserAdminPage />,
+              },
+              {
+                path: ':userId',
+                element: <UserSettingsPage />,
+              },
+              {
+                path: 'me',
+                element: <UserSettingsPage />,
+              },
+            ],
           },
         ],
       },
@@ -93,6 +106,6 @@ export const CoreRouter = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to='/user-settings' replace />,
+    element: <Navigate to='/users/me' replace />,
   },
 ]);

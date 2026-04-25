@@ -2,14 +2,17 @@ import { OrganizationList } from '@/modules/features/organization/presentation/u
 import { div } from 'framer-motion/m';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { UserInformation } from '@/modules/features/user/presentation/ui/settings/UserInformation.tsx';
+import { useParams } from 'react-router-dom';
 
 //TODO: change and list only organization that the user is in
 // (pass it as a props from Organization module)
 export const UserSettingsPage = () => {
+  const { userId } = useParams();
+
   return (
     <div className='flex space-x-6 bg-background'>
       <div className='w-1/2'>
-        <UserInformation />
+        <UserInformation userId={userId ?? localStorage.getItem('userId') ?? undefined} />
       </div>
 
       <div className='w-1/2'>

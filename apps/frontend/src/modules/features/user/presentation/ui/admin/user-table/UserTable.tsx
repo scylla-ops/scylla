@@ -5,14 +5,15 @@ import { useSelection } from '@shared/presentation/hooks/useSelection.ts';
 
 interface UserTableProps {
   data?: User[];
+  onView: (userId: string) => void;
 }
 
-export const UserTable = ({ data }: UserTableProps) => {
+export const UserTable = ({ data, onView }: UserTableProps) => {
   const { selectedIds, select } = useSelection('users');
 
   return (
     <DataTable
-      columns={createUserColumns()}
+      columns={createUserColumns({ onView })}
       data={data ?? []}
       onRowClick={row => select(row.original.userId)}
       getRowId={(row, index) => row.userId || index.toString()}

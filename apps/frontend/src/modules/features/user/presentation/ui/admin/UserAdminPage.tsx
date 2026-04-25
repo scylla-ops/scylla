@@ -7,12 +7,15 @@ import { AddUserDialog } from '@/modules/features/user/presentation/ui/admin/Add
 import { useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { useScyllaNavigate } from '@shared/presentation/hooks/useScyllaNavigate.ts';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
   const { selectedIds, clearSelection } = useSelection('users');
   const deleteUser = useDeleteUser();
   const [openDialog, setOpenDialog] = useState(false);
+
+  const { goToUserSettings } = useScyllaNavigate();
 
   const handleDelete = async () => {
     const promises = selectedIds.map(id => deleteUser.mutateAsync(id));
@@ -35,7 +38,7 @@ export const UserAdminPage = () => {
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}
       />
-      <UserTable data={users?.users} />
+      <UserTable onView={goToUserSettings} data={users?.users} />
       <AddUserDialog open={openDialog} setOpen={setOpenDialog} />
     </div>
   );

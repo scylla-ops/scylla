@@ -14,11 +14,14 @@ import { ScyllaForm } from '@shared/presentation/ui/ScyllaForm.tsx';
 import { Trans } from '@lingui/react/macro';
 import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
 
-export const UserInformation = () => {
-  const userId = localStorage.getItem('userId');
+interface UserInformationProps {
+  userId?: string;
+}
+
+export const UserInformation = ({ userId }: UserInformationProps) => {
   const { user, isLoading, isError } = useUser(userId || undefined);
 
-  if (!userId) {
+  if (userId == undefined) {
     return (
       <Card className='w-full bg-white'>
         <CardHeader>
