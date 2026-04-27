@@ -9,6 +9,10 @@ export default defineConfig({
       include: ['src/modules/features/login/'],
     },
     {
+      path: '<rootDir>/src/modules/features/jobs/locales/{locale}/messages',
+      include: ['src/modules/features/jobs/'],
+    },
+    {
       path: '<rootDir>/src/modules/features/user/locales/{locale}/messages',
       include: ['src/modules/features/user/'],
     },

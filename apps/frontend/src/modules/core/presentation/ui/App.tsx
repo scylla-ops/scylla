@@ -14,6 +14,8 @@ import { messages as marketplaceMessages } from '@/modules/features/marketplace/
 import { messages as organizationMessages } from '@/modules/features/organization/locales/en/messages.ts';
 import { messages as userMessages } from '@/modules/features/user/locales/en/messages.ts';
 import { messages as sharedMessages } from '@/locales/en/messages.ts';
+import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
+
 import { ScyllaError } from '@/modules/shared/utils/ScyllaResult.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Toaster } from '@shadcn/sonner.tsx';
@@ -27,6 +29,7 @@ i18n.load('en', {
   ...marketplaceMessages,
   ...organizationMessages,
   ...sharedMessages,
+  ...jobMessages,
 });
 i18n.activate('en');
 
