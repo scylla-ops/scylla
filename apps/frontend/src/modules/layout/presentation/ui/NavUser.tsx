@@ -19,8 +19,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
-import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
-import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
 
 export function NavUser() {

@@ -1,6 +1,6 @@
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import type { ComponentType, ReactNode } from 'react';
-import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/ContextItem.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { Building2 } from 'lucide-react';

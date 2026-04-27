@@ -1,4 +1,4 @@
-import type { ScyllaResult } from '@shared/utils/ScyllaResult.ts';
+import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { User, UserList } from '@/modules/features/user/domain/models/user.model.ts';
 
 export interface UserRepository {

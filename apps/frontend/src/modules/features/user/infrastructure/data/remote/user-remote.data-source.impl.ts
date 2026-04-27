@@ -1,5 +1,5 @@
-import { CoreGrpcTransport } from '@core/infrastructure/grpc/CoreGrpcTransport.ts';
-import { ScyllaResult } from '@shared/utils/ScyllaResult.ts';
+import { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListUsersResponse, UserResponse } from '@/generated/user.ts';
 import { UserServiceClient } from '@/generated/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';

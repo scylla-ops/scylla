@@ -12,7 +12,7 @@ import {
   type FormChange,
   type FormItem,
   FormItemType,
-} from '@core/presentation/models/ScyllaForm.ts';
+} from '@shared/presentation/models/scylla-form.model.ts';
 import { Field, FieldGroup, FieldLabel } from '@/modules/shared/presentation/ui/shadcn/field.tsx';
 import { useState } from 'react';
 

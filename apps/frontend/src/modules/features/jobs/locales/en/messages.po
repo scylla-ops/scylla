@@ -17,30 +17,30 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:73
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:71
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:59
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:55
 msgid "Duration"
 msgstr "Duration"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:37
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:33
 msgid "Job ID"
 msgstr "Job ID"
 
-#: src/modules/features/jobs/presentation/ui/JobsPage.tsx:47
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "No jobs found"
 msgstr "No jobs found"
 
-#: src/modules/features/jobs/presentation/ui/JobsPage.tsx:50
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:50
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:26
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:22
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:48
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:44
 msgid "Timeline"
 msgstr "Timeline"

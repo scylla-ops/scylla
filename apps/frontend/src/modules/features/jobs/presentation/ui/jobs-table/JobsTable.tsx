@@ -1,10 +1,10 @@
 import type { JobResponse } from '@/generated/job.ts';
-import { useJobsStore } from '@/modules/features/jobs/presentation/stores/useJobsStore.ts';
+import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
 import { DataTable } from '@/modules/shared/presentation/ui/DataTable';
 import { createJobColumns } from './columns';
 import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
-import { useDeleteJob } from '@/modules/features/jobs/presentation/hooks/useDeleteJob';
+import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
 import { JobNodesList } from './JobNodesList';
 
 type JobsTableProps = {
@@ -21,7 +21,7 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
 
-  const deleteJob = useDeleteJob(pipelineId);
+  const deleteJob = useDeleteJobs(pipelineId);
 
   const handleDelete = async () => {
     if (!jobToDelete) return;

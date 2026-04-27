@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@shadcn';
 
-import { type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
+import { type FormItem, FormItemType } from '@shared/presentation/models/scylla-form.model.ts';
 import { ScyllaForm } from '@shared/presentation/ui/ScyllaForm.tsx';
 import { Trans } from '@lingui/react/macro';
 import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';

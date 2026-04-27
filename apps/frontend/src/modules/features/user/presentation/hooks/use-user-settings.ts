@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 
 export const useOrganizationUsers = (organizationId: string) => {

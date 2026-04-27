@@ -1,6 +1,6 @@
 import { Input } from '@/modules/shared/presentation/ui/shadcn/input.tsx';
 
-import { useFilterStore } from '@/modules/features/marketplace/presentation/stores/useFilter.ts';
+import { useFilterStore } from '@/modules/features/marketplace/presentation/stores/use-filter.store.ts';
 import { useLingui } from '@lingui/react/macro';
 
 //todo: data-sources filter in zustand data-sources

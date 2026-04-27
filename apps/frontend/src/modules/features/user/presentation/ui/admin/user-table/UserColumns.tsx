@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { User } from '@/modules/features/user/domain/models/user.model.ts';
 import { Eye } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { formatDate } from '@shared/utils/dateUtils.ts';
+import { formatDate } from '@shared/utils/date-utils.ts';
 import { Avatar, AvatarFallback, AvatarImage } from '@shadcn';
 
 type PipelineColumnMeta = {

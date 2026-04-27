@@ -4,11 +4,7 @@ import { JobStatus } from './JobStatus';
 import { JobTimeline } from './JobTimeline';
 import { JobActions } from './JobActions';
 import { JobIdCell } from './JobIdCell';
-import {
-  calculateDuration,
-  formatDuration,
-  getRelativeTime,
-} from '@/modules/shared/utils/dateUtils';
+import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { Trans } from '@lingui/react/macro';
 
 type JobColumnMeta = {
@@ -61,7 +57,9 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
       ),
       cell: ({ row }) => {
         const duration = calculateDuration(row.original.createdAt, row.original.updatedAt);
-        return <span className='text-sm font-medium whitespace-nowrap'>{formatDuration(duration)}</span>;
+        return (
+          <span className='text-sm font-medium whitespace-nowrap'>{formatDuration(duration)}</span>
+        );
       },
       size: 100,
       minSize: 80,
@@ -73,7 +71,9 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
           <Trans>Created</Trans>
         </span>
       ),
-      cell: ({ row }) => <span className='text-sm whitespace-nowrap'>{getRelativeTime(row.original.createdAt)}</span>,
+      cell: ({ row }) => (
+        <span className='text-sm whitespace-nowrap'>{getRelativeTime(row.original.createdAt)}</span>
+      ),
       size: 100,
       minSize: 80,
     },

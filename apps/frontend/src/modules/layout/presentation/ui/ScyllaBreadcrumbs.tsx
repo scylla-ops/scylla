@@ -1,5 +1,8 @@
 import { useMatches, Link } from 'react-router-dom';
-import type { BreadcrumbParams, RouteHandle } from '@core/presentation/models/RouteHandle.ts';
+import type {
+  BreadcrumbParams,
+  RouteHandleModel,
+} from '@core/presentation/models/route-handle.model.ts';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,7 +13,7 @@ import {
 } from '@shadcn/breadcrumb.tsx';
 import { ChevronRight } from 'lucide-react';
 import React from 'react';
-import { useContextStore } from '@/modules/shared/presentation/stores/useContext';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 
 export const ScyllaBreadcrumbs = () => {
   const matches = useMatches();
@@ -26,9 +29,9 @@ export const ScyllaBreadcrumbs = () => {
   };
 
   const crumbs = matches
-    .filter(match => (match.handle as RouteHandle | undefined)?.breadcrumb)
+    .filter(match => (match.handle as RouteHandleModel | undefined)?.breadcrumb)
     .map(match => {
-      const handle = match.handle as RouteHandle;
+      const handle = match.handle as RouteHandleModel;
       const label =
         typeof handle.breadcrumb === 'function' ? handle.breadcrumb(params) : handle.breadcrumb;
       return {
