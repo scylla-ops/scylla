@@ -1,4 +1,4 @@
-import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { useQuery } from '@tanstack/react-query';
 
 export const useUsers = () => {

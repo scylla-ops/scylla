@@ -47,7 +47,7 @@ L'application est organisée en **modules indépendants** dans `src/modules/`, c
 Infrastructure partagée et configuration globale :
 - `di/` : Injection de dépendances (CoreModule, Dependencies)
 - `infrastructure/` : Services d'infrastructure (GrpcTransport)
-- `presentation/` : Composants React de base (App, CoreRouter, RequireAuth)
+- `presentation/` : Composants React de base (App, CoreRouter, AuthGuard)
 
 #### **Modules Features** (`features/`)
 Fonctionnalités métier isolées :
@@ -87,7 +87,7 @@ Chaque module feature suit la même structure en couches :
 - `locales/` : Traductions i18n (optionnel)
 
 **Exemples** :
-- `useLogin.ts` : Hook pour l'authentification avec mutation TanStack Query
+- `use-login.ts` : Hook pour l'authentification avec mutation TanStack Query
 - `LoginForm.tsx` : Formulaire de connexion
 - `usePipelineDashboardStore.ts` : Store Zustand pour la sélection de pipelines
 
@@ -106,9 +106,9 @@ Chaque module feature suit la même structure en couches :
 - `models/` : Modèles métier (optionnel)
 
 **Exemples** :
-- `LoginUseCase.ts` : Cas d'usage pour la connexion
-- `GetPipelines.ts` : Cas d'usage pour récupérer les pipelines
-- `LoginRepository.ts` : Interface du repository de login
+- `login.use-case.ts` : Cas d'usage pour la connexion
+- `GetPipelinesUseCase.ts` : Cas d'usage pour récupérer les pipelines
+- `login.repository.ts` : Interface du repository de login
 
 **Règles** :
 - **Aucune dépendance** vers les couches externes (UI, API, gRPC)
@@ -128,9 +128,9 @@ Chaque module feature suit la même structure en couches :
   - `local/` : Stockage local si nécessaire (optionnel)
 
 **Exemples** :
-- `LoginRepositoryImpl.ts` : Implémentation du LoginRepository
-- `LoginRemoteDataSource.ts` : Interface de la source de données remote
-- `LoginRemoteDataSourceImpl.ts` : Implémentation avec appels gRPC
+- `default-login.repository.ts` : Implémentation du LoginRepository
+- `login-remote.data-source.ts` : Interface de la source de données remote
+- `grpc-login-remote.data-source.ts` : Implémentation avec appels gRPC
 
 **Règles** :
 - Les repositories implémentent les interfaces du domain
@@ -146,11 +146,11 @@ Chaque module feature suit la même structure en couches :
 
 **Exemple** :
 ```typescript
-// LoginModule.ts
-const loginRemoteDataSource = new LoginRemoteDataSourceImpl(
+// login.module.ts
+const loginRemoteDataSource = new GrpcLoginRemoteDataSource(
   CoreModule.data.grpcTransport
 );
-const loginRepository = new LoginRepositoryImpl(loginRemoteDataSource);
+const loginRepository = new DefaultLoginRepository(loginRemoteDataSource);
 const loginUseCase = new LoginUseCase(loginRepository);
 
 export const LoginModule = {
@@ -186,7 +186,7 @@ export const LoginModule = {
          ▼
 ┌─────────────────┐
 │   Use Case      │
-│ (GetProjects)   │  ← Logique métier pure
+│ (GetProjectsUseCase)   │  ← Logique métier pure
 └────────┬────────┘
          │
          │ appel repository
@@ -232,7 +232,7 @@ export const LoginModule = {
 L'application utilise un store Zustand partagé pour le contexte global :
 
 ```typescript
-// shared/presentation/stores/useContext.ts
+// shared/presentation/stores/use-context.store.ts
 useContextStore = {
   organization: { id, name },
   project: { id, name },
@@ -285,9 +285,9 @@ const result = await deps.login.loginUseCase.execute(login, password);
 
 ### 6.1 CoreRouter
 
-Configuration centralisée dans `CoreRouter.tsx` :
+Configuration centralisée dans `Core.router.tsx` :
 - Routes publiques (`/login`)
-- Routes protégées (wrappées par `RequireAuth`)
+- Routes protégées (wrappées par `AuthGuard`)
 - Routes avec layout (wrappées par `Layout`)
 - Configuration via `handle` (topbar, tabs)
 
@@ -329,7 +329,7 @@ Système générique pour sélectionner Organisation/Project :
 
 ### 7.2 Conventions de nommage
 
-- **Use Cases** : Verbe à l'infinitif (`GetProjects`, `CreatePipeline`)
+- **Use Cases** : Verbe à l'infinitif (`GetProjectsUseCase`, `CreatePipeline`)
 - **Repositories** : `{Feature}Repository` (interface) et `{Feature}RepositoryImpl`
 - **Data Sources** : `{Feature}RemoteDataSource` / `{Feature}RemoteDataSourceImpl`
 - **Hooks** : `use{Action}` (`useLogin`, `useProjects`, `useCreateProject`)
@@ -387,7 +387,7 @@ feature/
 ### 9.3 Gestion du contexte
 
 Le contexte Organisation/Project est géré de manière centralisée dans `shared/` :
-- Store global dans `useContext.ts`
+- Store global dans `use-context.store.ts`
 - Les features l'utilisent mais ne le possèdent pas
 ---
 

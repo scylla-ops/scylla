@@ -1,7 +1,7 @@
 import type { ProjectResponse } from '@/generated/project.ts';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Folder } from 'lucide-react';
-import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
+import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { Trans } from '@lingui/react/macro';
 
 type ProjectCardProps = {

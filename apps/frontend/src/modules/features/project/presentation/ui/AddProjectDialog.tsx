@@ -3,7 +3,11 @@ import { useOrganizations } from '@/modules/features/organization/presentation/h
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
-import { type FormChange, type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
+import {
+  type FormChange,
+  type FormItem,
+  FormItemType,
+} from '@shared/presentation/models/scylla-form.model.ts';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -44,10 +48,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       return;
     }
 
-    createProject.mutate(
-      { name, organizationId },
-      { onSuccess: () => setOpen(false) },
-    );
+    createProject.mutate({ name, organizationId }, { onSuccess: () => setOpen(false) });
   };
 
   return (
@@ -56,9 +57,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       onOpenChange={setOpen}
       title={<Trans>Create a new project</Trans>}
       description={
-        <Trans>
-          Enter a name for your new project and select the organization it belongs to.
-        </Trans>
+        <Trans>Enter a name for your new project and select the organization it belongs to.</Trans>
       }
       items={items}
       isPending={createProject.isPending}

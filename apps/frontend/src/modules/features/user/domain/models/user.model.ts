@@ -1,4 +1,4 @@
-import type { PaginationInfo } from '@shared/domain/models/Pagination.ts';
+import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
 
 export interface UserList {
   users: User[];

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import { useContextStore } from '@shared/presentation/stores/useContext.ts';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 
 export const useCreateOrganization = () => {
   const queryClient = useQueryClient();

@@ -21,12 +21,8 @@ export default defineConfig({
       include: ['src/modules/features/project/'],
     },
     {
-      path: '<rootDir>/src/modules/features/pipeline-dashboard/locales/{locale}/messages',
-      include: ['src/modules/features/pipeline-dashboard/'],
-    },
-    {
-      path: '<rootDir>/src/modules/features/pipeline-creation/locales/{locale}/messages',
-      include: ['src/modules/features/pipeline-creation/'],
+      path: '<rootDir>/src/modules/features/pipeline/locales/{locale}/messages',
+      include: ['src/modules/features/pipeline/'],
     },
     {
       path: '<rootDir>/src/modules/features/marketplace/locales/{locale}/messages',

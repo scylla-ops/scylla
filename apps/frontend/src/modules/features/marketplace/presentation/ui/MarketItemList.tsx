@@ -1,9 +1,9 @@
 //TODO: move that into domain
 import MarketItemCard from '@/modules/features/marketplace/presentation/ui/MarketItemCard.tsx';
-import type { MarketItem } from '@/modules/features/marketplace/domain/models/MarketItem.ts';
+import type { MarketItemModel } from '@/modules/features/marketplace/domain/models/market-item.model.ts';
 
 export type MarketItemListProps = {
-  items: MarketItem[] | undefined;
+  items: MarketItemModel[] | undefined;
   filter: string;
 };
 

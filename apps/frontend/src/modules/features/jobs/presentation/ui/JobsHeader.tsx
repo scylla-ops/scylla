@@ -1,7 +1,7 @@
 import { Button } from '@shadcn';
 import { Trash, RefreshCw, ArrowLeft } from 'lucide-react';
-import { useDeleteJob } from '@/modules/features/jobs/presentation/hooks/useDeleteJob.ts';
-import { useJobsStore } from '@/modules/features/jobs/presentation/stores/useJobsStore.ts';
+import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
+import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
 import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 
@@ -20,7 +20,7 @@ export const JobsHeader = ({
   onRefresh,
   onBack,
 }: JobsHeaderProps) => {
-  const deleteJob = useDeleteJob(pipelineId);
+  const deleteJob = useDeleteJobs(pipelineId);
   const selectedJobIds = useJobsStore(state => state.selectedJobIds);
   const clearSelection = useJobsStore(state => state.clearSelection);
   const [deleteDialogVisibility, setDeleteDialogVisibility] = useState(false);
@@ -95,4 +95,3 @@ export const JobsHeader = ({
     </div>
   );
 };
-
