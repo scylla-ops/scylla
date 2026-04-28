@@ -1,11 +1,11 @@
-import type { ProjectResponse } from '@/generated/project.ts';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Folder } from 'lucide-react';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { Trans } from '@lingui/react/macro';
+import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
 
 type ProjectCardProps = {
-  project: ProjectResponse;
+  project: Project;
 };
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
@@ -13,7 +13,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
 
   return (
     <Card
-      onClick={() => navigate.goToProject({ id: project.projectId, name: project.name })}
+      onClick={() => navigate.goToProject({ id: project.id, name: project.name })}
       className='group cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/50 active:scale-[0.98] h-full'
     >
       <CardHeader className='space-y-0 pb-3 overflow-hidden'>
@@ -31,7 +31,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
 
       <CardContent className='space-y-3'>
         <p className='text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]'>
-          {project.description || <Trans>No description</Trans>}
+          {<Trans>No description (coming soon)</Trans>}
         </p>
 
         <div className='pt-2 border-t border-border/50'>
