@@ -28,7 +28,7 @@ jobs:
   detect-changes:
     name: Detect changed services
     if: github.ref == 'refs/heads/back-end'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       services: ${{ steps.compose.outputs.list }}
     steps:
@@ -81,8 +81,8 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
         platform:
-          - { arch: amd64, runner: blacksmith-2vcpu-ubuntu-2404,       docker: linux/amd64 }
-          - { arch: arm64, runner: blacksmith-2vcpu-ubuntu-2404-arm64, docker: linux/arm64 }
+          - { arch: amd64, runner: blacksmith-4vcpu-ubuntu-2404,       docker: linux/amd64 }
+          - { arch: arm64, runner: blacksmith-4vcpu-ubuntu-2404-arm64, docker: linux/arm64 }
     steps:
       - uses: actions/checkout@v6
 
@@ -103,6 +103,7 @@ jobs:
           provenance: false
           build-args: |
             PACKAGE=${{ matrix.service }}
+            CARGO_BUILD_JOBS=2
           outputs: type=image,name=${{ env.IMAGE_PREFIX }}/${{ matrix.service }},push-by-digest=true,name-canonical=true
           cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }}
           cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }},mode=max,image-manifest=true,oci-mediatypes=true
@@ -124,7 +125,7 @@ jobs:
     name: Publish ${{ matrix.service }} manifest
     needs: [detect-changes, build]
     if: github.ref == 'refs/heads/back-end' && needs.detect-changes.outputs.services != '[]'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
@@ -161,7 +162,7 @@ jobs:
   promote-dev:
     name: Promote ${{ matrix.service }} to dev
     if: github.ref == 'refs/heads/dev'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
@@ -202,7 +203,7 @@ jobs:
   promote-main:
     name: Promote ${{ matrix.service }} to main
     if: github.ref == 'refs/heads/main'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
