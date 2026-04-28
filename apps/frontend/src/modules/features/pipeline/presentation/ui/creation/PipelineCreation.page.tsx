@@ -45,7 +45,9 @@ const codeMirrorTheme = EditorView.theme({
 export const PipelineCreationPage = () => {
   const { script, setScript } = useScriptStore(state => state);
 
-  const { projectId } = useParams();
+  const { projectId, pipelineId } = useParams();
+
+  const isEditing = pipelineId !== undefined;
 
   //TODO: change that
   useEffect(() => {
@@ -81,7 +83,7 @@ export const PipelineCreationPage = () => {
 
   return (
     <Tabs key={'scripting'} defaultValue={'scripting'} className={'h-full flex flex-col gap-4'}>
-      <PipelineCreationTopbar />
+      <PipelineCreationTopbar isEditing={isEditing} />
       <TabsContent value='scripting' className={'h-full'}>
         <Card className={'h-full p-0'}>
           <ReactCodeMirror

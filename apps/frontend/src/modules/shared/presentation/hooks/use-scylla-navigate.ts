@@ -1,7 +1,7 @@
-import type { ProjectResponse } from '@/generated/project';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useContextStore } from '../stores/use-context.store.ts';
 import type { PipelineSummary } from '@/generated/pipeline';
+import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
 
 export const useScyllaNavigate = () => {
   const setProject = useContextStore(state => state.setProject);
@@ -16,9 +16,9 @@ export const useScyllaNavigate = () => {
     navigate(`${base}/${cleanSubPath}`, options);
   };
 
-  const goToProject = (project: ProjectResponse) => {
-    navigate(`/projects/${project.projectId}`);
-    setProject(project.projectId, project.name);
+  const goToProject = (project: Project) => {
+    navigate(`/projects/${project.id}`);
+    setProject(project.id, project.name);
   };
 
   const goToCreatePipeline = () => {

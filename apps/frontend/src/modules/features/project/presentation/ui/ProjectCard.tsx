@@ -13,7 +13,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
 
   return (
     <Card
-      onClick={() => navigate.goToProject(project)}
+      onClick={() => navigate.goToProject({ id: project.projectId, name: project.name })}
       className='group cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/50 active:scale-[0.98] h-full'
     >
       <CardHeader className='space-y-0 pb-3 overflow-hidden'>
