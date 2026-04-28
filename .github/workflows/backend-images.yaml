@@ -23,6 +23,7 @@ on:
 env:
   IMAGE_PREFIX: godlyjaaaaj
   ALL_SERVICES: '["scylla-api","scylla-broker","scylla-agent","scylla-recorder"]'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   detect-changes:
@@ -32,7 +33,7 @@ jobs:
     outputs:
       services: ${{ steps.compose.outputs.list }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - id: filter
         uses: dorny/paths-filter@v3
@@ -84,7 +85,7 @@ jobs:
           - { arch: amd64, runner: blacksmith-2vcpu-ubuntu-2404,       docker: linux/amd64 }
           - { arch: arm64, runner: blacksmith-2vcpu-ubuntu-2404-arm64, docker: linux/arm64 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: docker/setup-buildx-action@v3
 
@@ -113,7 +114,7 @@ jobs:
           digest='${{ steps.build.outputs.digest }}'
           touch "/tmp/digests/${digest#sha256:}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: digests-${{ matrix.service }}-${{ matrix.platform.arch }}
           path: /tmp/digests/*
@@ -133,7 +134,7 @@ jobs:
       - id: sha
         run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: /tmp/digests
           pattern: digests-${{ matrix.service }}-*
@@ -167,7 +168,7 @@ jobs:
       matrix:
         service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -208,7 +209,7 @@ jobs:
       matrix:
         service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
