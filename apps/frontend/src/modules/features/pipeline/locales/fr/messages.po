@@ -15,7 +15,7 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:19
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:27
 msgid "Blueprint"
 msgstr ""
 
@@ -23,7 +23,7 @@ msgstr ""
 #~ msgid "Clear"
 #~ msgstr "Effacer"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:32
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:41
 msgid "Create"
 msgstr ""
 
@@ -70,7 +70,7 @@ msgstr "Nouveau pipeline"
 msgid "No pipeline found"
 msgstr "Aucun pipeline trouvé"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:26
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:35
 msgid "Pipeline created successfully"
 msgstr ""
 
@@ -88,7 +88,7 @@ msgstr ""
 msgid "Run"
 msgstr "Exécuter"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:16
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:24
 msgid "Scripting"
 msgstr ""
 
