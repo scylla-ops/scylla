@@ -1,7 +1,7 @@
-## Build & promote backend Docker images.
+## Build & promote backend Docker images on Blacksmith runners.
 ##
-## - push to `back-end`  -> build multi-arch (linux/amd64+arm64) images for changed services
-##                          and publish them as :back-end + :back-end-<sha7>.
+## - push to `back-end`  -> per-platform native build (amd64 + arm64) of changed services,
+##                          push by-digest, then merge-manifest publishes :back-end + :back-end-<sha7>.
 ## - push to `dev`       -> retag (no rebuild) the images from the merge source SHA as :dev + :dev-<sha7>.
 ## - push to `main`      -> retag (no rebuild) the dev images as :latest + :main-<sha7>.
 ##
@@ -28,7 +28,7 @@ jobs:
   detect-changes:
     name: Detect changed services
     if: github.ref == 'refs/heads/back-end'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       services: ${{ steps.compose.outputs.list }}
     steps:
@@ -72,21 +72,20 @@ jobs:
           fi
 
   build:
-    name: Build ${{ matrix.service }}
+    name: Build ${{ matrix.service }} (${{ matrix.platform.arch }})
     needs: detect-changes
     if: github.ref == 'refs/heads/back-end' && needs.detect-changes.outputs.services != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+        platform:
+          - { arch: amd64, runner: blacksmith-2vcpu-ubuntu-2404,       docker: linux/amd64 }
+          - { arch: arm64, runner: blacksmith-2vcpu-ubuntu-2404-arm64, docker: linux/arm64 }
     steps:
       - uses: actions/checkout@v4
 
-      - id: sha
-        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -94,29 +93,75 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
+      - id: build
+        uses: useblacksmith/build-push-action@v1
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform.docker }}
           push: true
           provenance: false
           build-args: |
             PACKAGE=${{ matrix.service }}
-          tags: |
-            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:back-end
-            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:back-end-${{ steps.sha.outputs.short }}
-          cache-from: |
-            type=gha,scope=${{ matrix.service }}
-            type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache
-          cache-to: |
-            type=gha,scope=${{ matrix.service }},mode=max
-            type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+          outputs: type=image,name=${{ env.IMAGE_PREFIX }}/${{ matrix.service }},push-by-digest=true,name-canonical=true
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }},mode=max,image-manifest=true,oci-mediatypes=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest='${{ steps.build.outputs.digest }}'
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.service }}-${{ matrix.platform.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Publish ${{ matrix.service }} manifest
+    needs: [detect-changes, build]
+    if: github.ref == 'refs/heads/back-end' && needs.detect-changes.outputs.services != '[]'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+    steps:
+      - id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-${{ matrix.service }}-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create manifest list
+        working-directory: /tmp/digests
+        run: |
+          refs=()
+          for f in *; do
+            refs+=("${{ env.IMAGE_PREFIX }}/${{ matrix.service }}@sha256:${f}")
+          done
+          docker buildx imagetools create \
+            -t ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:back-end \
+            -t ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:back-end-${{ steps.sha.outputs.short }} \
+            "${refs[@]}"
 
   promote-dev:
     name: Promote ${{ matrix.service }} to dev
     if: github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
@@ -157,7 +202,7 @@ jobs:
   promote-main:
     name: Promote ${{ matrix.service }} to main
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
