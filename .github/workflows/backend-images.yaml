@@ -32,10 +32,10 @@ jobs:
     outputs:
       services: ${{ steps.compose.outputs.list }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             shared:
@@ -84,17 +84,17 @@ jobs:
           - { arch: amd64, runner: blacksmith-2vcpu-ubuntu-2404,       docker: linux/amd64 }
           - { arch: arm64, runner: blacksmith-2vcpu-ubuntu-2404-arm64, docker: linux/arm64 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: useblacksmith/setup-docker-builder@v1
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - id: build
-        uses: useblacksmith/build-push-action@v1
+        uses: useblacksmith/build-push-action@v2
         with:
           context: .
           file: Dockerfile
@@ -113,7 +113,7 @@ jobs:
           digest='${{ steps.build.outputs.digest }}'
           touch "/tmp/digests/${digest#sha256:}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: digests-${{ matrix.service }}-${{ matrix.platform.arch }}
           path: /tmp/digests/*
@@ -133,15 +133,15 @@ jobs:
       - id: sha
         run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
           pattern: digests-${{ matrix.service }}-*
           merge-multiple: true
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -167,7 +167,7 @@ jobs:
       matrix:
         service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -180,9 +180,9 @@ jobs:
           echo "source=${SOURCE_FULL::7}" >> "$GITHUB_OUTPUT"
           echo "current=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -208,7 +208,7 @@ jobs:
       matrix:
         service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -221,9 +221,9 @@ jobs:
           echo "source=${SOURCE_FULL::7}" >> "$GITHUB_OUTPUT"
           echo "current=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
