@@ -82,7 +82,7 @@ jobs:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
         platform:
           - { arch: amd64, runner: blacksmith-4vcpu-ubuntu-2404,       docker: linux/amd64 }
-          - { arch: arm64, runner: blacksmith-4vcpu-ubuntu-2404-arm64, docker: linux/arm64 }
+          - { arch: arm64, runner: blacksmith-4vcpu-ubuntu-2404-arm, docker: linux/arm64 }
     steps:
       - uses: actions/checkout@v6
 
