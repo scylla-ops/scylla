@@ -10,7 +10,7 @@ import { Trans } from '@lingui/react/macro';
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineSummary) => void;
-  onViewJobs: (pipelineId: string) => void;
+  onViewJobs: (pipeline: PipelineSummary) => void;
 
   runningPipelines: Set<string>;
 
@@ -93,7 +93,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         }}
         onViewJobs={e => {
           e.stopPropagation();
-          meta.onViewJobs(row.original.pipelineId);
+          meta.onViewJobs(row.original);
         }}
         isRunning={meta.runningPipelines.has(row.original.pipelineId)}
       />

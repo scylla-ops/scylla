@@ -30,9 +30,10 @@ export const useScyllaNavigate = () => {
     setPipeline(pipeline.pipelineId, pipeline.name);
   };
 
-  const goToJobs = (pipelineId: string) => {
+  const goToJobs = (pipeline: PipelineSummary) => {
     const projectId = useContextStore.getState().project.id;
-    navigate(`/projects/${projectId}/pipelines/${pipelineId}/jobs`);
+    navigate(`/projects/${projectId}/pipelines/${pipeline.pipelineId}/jobs`);
+    setPipeline(pipeline.pipelineId, pipeline.name);
   };
 
   const goToUserSettings = (userId?: string) => {
