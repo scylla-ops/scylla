@@ -46,8 +46,12 @@ msgid "New project"
 msgstr "New project"
 
 #: src/modules/features/project/presentation/ui/ProjectCard.tsx:34
-msgid "No description"
-msgstr "No description"
+#~ msgid "No description"
+#~ msgstr "No description"
+
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:34
+msgid "No description (coming soon)"
+msgstr "No description (coming soon)"
 
 #: src/modules/features/project/presentation/ui/ProjectPage.tsx:18
 msgid "No organization selected"

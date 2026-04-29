@@ -1,12 +1,16 @@
-import type { PipelineRemoteDataSource } from '@/modules/features/pipeline-dashboard/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { CreatePipelineRequest, ListPipelinesResponse } from '@/generated/pipeline.ts';
+import type {
+  CreatePipelineRequest,
+  ListPipelinesResponse,
+  PipelineResponse,
+} from '@/generated/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import {
   DEFAULT_PAGE_SIZE,
   type PaginationParams,
 } from '@shared/domain/models/pagination.model.ts';
+import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
 
 export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
@@ -29,6 +33,7 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
     }, 'Failed to create pipeline.');
   }
 
+  /** Return list of summary of pipelines **/
   public async getByProjectId(
     projectId: string,
     pagination?: PaginationParams,
@@ -43,6 +48,12 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
         ).response,
       'Error getting pipelines',
     );
+  }
+
+  public async getById(id: string): Promise<ScyllaResult<PipelineResponse>> {
+    return ScyllaResult.tryAsync<PipelineResponse>(async () => {
+      return (await this._pipelineClient.getPipeline({ pipelineId: id })).response;
+    }, 'Error getting pipeline');
   }
 
   public async run(id: string): Promise<ScyllaResult<void>> {

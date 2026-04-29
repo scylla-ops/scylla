@@ -30,7 +30,7 @@ export const UserAdminPage = () => {
   return (
     <div className={'flex flex-col gap-4 w-full p-2'}>
       <FeatureHeader
-        count={users?.users?.length ?? 0}
+        count={users?.items?.length ?? 0}
         label='User'
         selectedCount={selectedIds.length}
         onClearSelection={clearSelection}
@@ -38,7 +38,7 @@ export const UserAdminPage = () => {
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}
       />
-      <UserTable onView={goToUserSettings} data={users?.users} />
+      <UserTable onView={goToUserSettings} data={users?.items} />
       <AddUserDialog open={openDialog} setOpen={setOpenDialog} />
     </div>
   );

@@ -11,11 +11,16 @@ msgstr ""
 "Language: \n"
 "Language-Team: \n"
 
+#. placeholder {0}: isEditing ? 'Edit' : 'Create'
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:58
+msgid "{0}"
+msgstr ""
+
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:81
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:19
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:46
 msgid "Blueprint"
 msgstr ""
 
@@ -24,10 +29,10 @@ msgstr ""
 #~ msgstr "Effacer"
 
 #: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:32
-msgid "Create"
-msgstr ""
+#~ msgid "Create"
+#~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:46
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:45
 msgid "Create your first pipeline to get started"
 msgstr "Créez votre premier pipeline pour commencer"
 
@@ -66,11 +71,11 @@ msgstr "Plus d'options"
 msgid "New pipeline"
 msgstr "Nouveau pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:43
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:42
 msgid "No pipeline found"
 msgstr "Aucun pipeline trouvé"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:26
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:27
 msgid "Pipeline created successfully"
 msgstr ""
 
@@ -80,7 +85,7 @@ msgstr ""
 #~ msgid "Pipeline Status"
 #~ msgstr "État de la pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:98
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:94
 msgid "Reactflow canvas here"
 msgstr ""
 
@@ -88,11 +93,11 @@ msgstr ""
 msgid "Run"
 msgstr "Exécuter"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:16
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:43
 msgid "Scripting"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:78
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:72
 msgid "Select a project first"
 msgstr ""
 

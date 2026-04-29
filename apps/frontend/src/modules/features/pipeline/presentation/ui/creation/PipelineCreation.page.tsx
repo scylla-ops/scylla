@@ -8,6 +8,8 @@ import { useParams } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 import { PipelineCreationTopbar } from '@/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx';
 import { useScriptStore } from '@/modules/features/pipeline/presentation/stores/use-script.store.ts';
+import { createDefaultScript } from '@/modules/features/pipeline/presentation/utils/create-default-script.ts';
+import { usePipeline } from '@/modules/features/pipeline/presentation/hooks/use-pipeline.ts';
 
 const codeMirrorTheme = EditorView.theme({
   '&': {
@@ -44,35 +46,35 @@ const codeMirrorTheme = EditorView.theme({
 
 export const PipelineCreationPage = () => {
   const { script, setScript } = useScriptStore(state => state);
-
   const { projectId, pipelineId } = useParams();
-
   const isEditing = pipelineId !== undefined;
 
-  //TODO: change that
+  const { pipeline, isError, isLoading, error } = usePipeline(pipelineId);
+
   useEffect(() => {
-    if (projectId) {
-      setScript(
-        `{\n"name": "my-pipeline",\n` +
-          `"projectId": "${projectId}",\n` +
-          `"nodes": [
-    {
-      "nodeId": "build",
-      "deps": [],
-      "command": "cargo",
-      "args": ["build", "--release"]
-    },
-    {
-      "nodeId": "test",
-      "deps": ["build"],
-      "command": "cargo",
-      "args": ["test"]
+    if (!projectId) return;
+
+    if (isEditing && pipeline) {
+      try {
+        const script = {
+          name: pipeline.info.name,
+          projectId: pipeline.info.projectId,
+          nodes: pipeline.steps,
+        };
+
+        const formattedScript = JSON.stringify(script, null, 2);
+        setScript(formattedScript);
+      } catch (e) {
+        console.error('Error parsing pipeline steps:', e);
+      }
+    } else {
+      setScript(createDefaultScript(projectId));
     }
-  ]\n` +
-          `}`,
-      );
+
+    if (isError) {
+      console.error(error);
     }
-  }, [projectId, setScript]);
+  }, [error, isEditing, isError, pipeline, projectId, setScript]);
 
   if (!projectId)
     return (
@@ -86,13 +88,17 @@ export const PipelineCreationPage = () => {
       <PipelineCreationTopbar isEditing={isEditing} />
       <TabsContent value='scripting' className={'h-full'}>
         <Card className={'h-full p-0'}>
-          <ReactCodeMirror
-            value={script}
-            onChange={value => setScript(value)}
-            className='h-full'
-            height='100%'
-            extensions={[StreamLanguage.define(json), codeMirrorTheme]}
-          />
+          {isLoading ? (
+            <>Loading...</>
+          ) : (
+            <ReactCodeMirror
+              value={script}
+              onChange={value => setScript(value)}
+              className='h-full'
+              height='100%'
+              extensions={[StreamLanguage.define(json), codeMirrorTheme]}
+            />
+          )}
         </Card>
       </TabsContent>
       <TabsContent value='blueprint'>

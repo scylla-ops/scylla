@@ -11,11 +11,16 @@ msgstr ""
 "Language: \n"
 "Language-Team: \n"
 
+#. placeholder {0}: isEditing ? 'Edit' : 'Create'
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:58
+msgid "{0}"
+msgstr "{0}"
+
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:81
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:19
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:46
 msgid "Blueprint"
 msgstr "Blueprint"
 
@@ -24,10 +29,10 @@ msgstr "Blueprint"
 #~ msgstr "Clear"
 
 #: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:32
-msgid "Create"
-msgstr "Create"
+#~ msgid "Create"
+#~ msgstr "Create"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:46
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:45
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
@@ -66,11 +71,11 @@ msgstr "More options"
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:43
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:42
 msgid "No pipeline found"
 msgstr "No pipeline found"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:26
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:27
 msgid "Pipeline created successfully"
 msgstr "Pipeline created successfully"
 
@@ -80,7 +85,7 @@ msgstr "Pipeline created successfully"
 #~ msgid "Pipeline Status"
 #~ msgstr "Pipeline Status"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:98
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:94
 msgid "Reactflow canvas here"
 msgstr "Reactflow canvas here"
 
@@ -88,11 +93,11 @@ msgstr "Reactflow canvas here"
 msgid "Run"
 msgstr "Run"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:16
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:43
 msgid "Scripting"
 msgstr "Scripting"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:78
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:72
 msgid "Select a project first"
 msgstr "Select a project first"
 
