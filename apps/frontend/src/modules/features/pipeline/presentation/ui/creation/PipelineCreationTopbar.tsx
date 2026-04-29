@@ -1,40 +1,39 @@
 import { Button } from '@shadcn';
 import { TabsList, TabsTrigger } from '@shadcn/tabs.tsx';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { useScriptStore } from '@/modules/features/pipeline/presentation/stores/use-script.store.ts';
-import { toast } from '@shared/presentation/utils/toast.ts';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Trans } from '@lingui/react/macro';
 import { useCallback } from 'react';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useCreatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-create-pipeline.ts';
+import { useEditPipeline } from '@/modules/features/pipeline/presentation/hooks/use-edit-pipeline.ts';
+import type { Pipeline } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 interface PipelineCreationTopbarProps {
   isEditing: boolean;
+  pipelineId?: string;
 }
 
-export const PipelineCreationTopbar = ({ isEditing }: PipelineCreationTopbarProps) => {
-  const { t } = useLingui();
-
+export const PipelineCreationTopbar = ({ isEditing, pipelineId }: PipelineCreationTopbarProps) => {
   const script = useScriptStore(state => state.script);
-  const createPipeline = useDependencies().pipeline.createPipeline;
-  const { goToProject } = useScyllaNavigate();
-  const currentProject = useContextStore(state => state.project);
+  const createPipeline = useCreatePipeline();
+  const editPipeline = useEditPipeline();
 
   const onCreatePipeline = useCallback(() => {
-    createPipeline.execute(script).then(res => {
-      res.fold({
-        onSuccess: () => {
-          toast.success(t`Pipeline created successfully`);
-          if (currentProject.name && currentProject.id) {
-            goToProject({ id: currentProject.id, name: currentProject.name });
-          }
-        },
-        onError: err => toast.error(err.message),
-      });
-    });
-  }, [createPipeline, script, t, currentProject, goToProject]);
+    createPipeline.mutate(script);
+  }, [createPipeline, script]);
 
-  const onEditPipeline = useCallback(() => {}, []);
+  const onEditPipeline = useCallback(() => {
+    if (!script || !pipelineId) return;
+
+    try {
+      const serializedScript: Pipeline = JSON.parse(script);
+      const nodes = serializedScript.nodes;
+      const pipelineName = serializedScript.name;
+
+      editPipeline.mutate({ id: pipelineId, nodes: nodes, name: pipelineName });
+    } catch (error) {
+      console.error('Error parsing script:', error);
+    }
+  }, [editPipeline, pipelineId, script]);
 
   return (
     <div className={'flex justify-between w-full'}>

@@ -4,6 +4,7 @@ import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts'
 import type {
   Pipeline,
   PipelineMetadata,
+  PipelineStep,
 } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 export interface PipelineRepository {
@@ -15,4 +16,5 @@ export interface PipelineRepository {
   run(id: string): Promise<ScyllaResult<void>>;
   create: (content: string) => Promise<ScyllaResult<void>>;
   getById(id: string): Promise<ScyllaResult<Pipeline>>;
+  edit(id: string, steps: PipelineStep[], name?: string): Promise<ScyllaResult<Pipeline>>;
 }

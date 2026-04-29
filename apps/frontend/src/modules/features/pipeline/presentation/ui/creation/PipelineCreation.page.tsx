@@ -49,7 +49,8 @@ export const PipelineCreationPage = () => {
   const { projectId, pipelineId } = useParams();
   const isEditing = pipelineId !== undefined;
 
-  const { pipeline, isError, isLoading, error } = usePipeline(pipelineId);
+  //fixme: avoid this by dividing this component into two: PipelineCreationPage and PipelineEditPage
+  const { pipeline, isError, isLoading, error } = usePipeline(pipelineId ?? '');
 
   useEffect(() => {
     if (!projectId) return;
@@ -57,15 +58,15 @@ export const PipelineCreationPage = () => {
     if (isEditing && pipeline) {
       try {
         const script = {
-          name: pipeline.info.name,
-          projectId: pipeline.info.projectId,
-          nodes: pipeline.steps,
+          name: pipeline.name,
+          projectId: pipeline.projectId,
+          nodes: pipeline.nodes,
         };
 
-        const formattedScript = JSON.stringify(script, null, 2);
-        setScript(formattedScript);
+        const stringScript = JSON.stringify(script, null, 2);
+        setScript(stringScript);
       } catch (e) {
-        console.error('Error parsing pipeline steps:', e);
+        console.error('Error stringify pipeline steps:', e);
       }
     } else {
       setScript(createDefaultScript(projectId));
@@ -85,7 +86,7 @@ export const PipelineCreationPage = () => {
 
   return (
     <Tabs key={'scripting'} defaultValue={'scripting'} className={'h-full flex flex-col gap-4'}>
-      <PipelineCreationTopbar isEditing={isEditing} />
+      <PipelineCreationTopbar isEditing={isEditing} pipelineId={pipelineId} />
       <TabsContent value='scripting' className={'h-full'}>
         <Card className={'h-full p-0'}>
           {isLoading ? (

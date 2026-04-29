@@ -22,17 +22,21 @@ export class GrpcPipelineMapper {
     };
   }
 
+  static nodeFromDomain(step: PipelineStep): PipelineNode {
+    return {
+      nodeId: step.id,
+      deps: step.deps,
+      command: step.command,
+      args: step.args,
+    };
+  }
+
   static toDomain(pipeline: PipelineResponse): Pipeline {
     return {
-      info: {
-        id: pipeline.pipelineId,
-        projectId: pipeline.projectId,
-        name: pipeline.name,
-        nodeCount: pipeline.nodes.length,
-        createdAt: pipeline.createdAt,
-        updatedAt: pipeline.updatedAt,
-      },
-      steps: pipeline.nodes.map(GrpcPipelineMapper.nodeToDomain),
+      id: pipeline.pipelineId,
+      projectId: pipeline.projectId,
+      name: pipeline.name,
+      nodes: pipeline.nodes.map(GrpcPipelineMapper.nodeToDomain),
     };
   }
 

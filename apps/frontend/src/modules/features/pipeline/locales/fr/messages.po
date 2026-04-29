@@ -12,15 +12,15 @@ msgstr ""
 "Language-Team: \n"
 
 #. placeholder {0}: isEditing ? 'Edit' : 'Create'
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:58
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:53
 msgid "{0}"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:81
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:80
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:46
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:41
 msgid "Blueprint"
 msgstr ""
 
@@ -32,7 +32,7 @@ msgstr ""
 #~ msgid "Create"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:45
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:47
 msgid "Create your first pipeline to get started"
 msgstr "Créez votre premier pipeline pour commencer"
 
@@ -47,7 +47,7 @@ msgstr "Modifier"
 #~ msgid "Failed to fetch pipeline stats"
 #~ msgstr "Échec de la récupération des statistiques de la pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:42
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:41
 msgid "History"
 msgstr ""
 
@@ -55,7 +55,7 @@ msgstr ""
 #~ msgid "in total"
 #~ msgstr "au total"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:64
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:63
 msgid "Last Run"
 msgstr ""
 
@@ -71,13 +71,13 @@ msgstr "Plus d'options"
 msgid "New pipeline"
 msgstr "Nouveau pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:42
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:44
 msgid "No pipeline found"
 msgstr "Aucun pipeline trouvé"
 
 #: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:27
-msgid "Pipeline created successfully"
-msgstr ""
+#~ msgid "Pipeline created successfully"
+#~ msgstr ""
 
 #~ msgid "Pipeline Dashboard"
 #~ msgstr "Tableau de bord des pipelines"
@@ -85,7 +85,7 @@ msgstr ""
 #~ msgid "Pipeline Status"
 #~ msgstr "État de la pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:94
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:106
 msgid "Reactflow canvas here"
 msgstr ""
 
@@ -93,14 +93,14 @@ msgstr ""
 msgid "Run"
 msgstr "Exécuter"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:43
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:38
 msgid "Scripting"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:72
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:82
 msgid "Select a project first"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:27
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:26
 msgid "Status"
 msgstr ""

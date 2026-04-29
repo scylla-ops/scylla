@@ -6,6 +6,7 @@ import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts'
 import type {
   Pipeline,
   PipelineMetadata,
+  PipelineStep,
 } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import { GrpcPipelineMapper } from '@/modules/features/pipeline/infrastructure/repository/mappers/grpc-pipeline.mapper.ts';
 
@@ -35,5 +36,11 @@ export class DefaultPipelineRepository implements PipelineRepository {
 
   public async getById(id: string): Promise<ScyllaResult<Pipeline>> {
     return (await this.remoteDataSource.getById(id)).map(GrpcPipelineMapper.toDomain);
+  }
+
+  public async edit(id: string, nodes: PipelineStep[], name?: string) {
+    return (
+      await this.remoteDataSource.edit(id, nodes.map(GrpcPipelineMapper.nodeFromDomain), name)
+    ).map(GrpcPipelineMapper.toDomain);
   }
 }

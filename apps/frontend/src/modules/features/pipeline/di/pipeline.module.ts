@@ -7,6 +7,7 @@ import { DeletePipelineUseCase } from '@/modules/features/pipeline/domain/usecas
 import { RunPipelineUseCase } from '@/modules/features/pipeline/domain/usecases/run-pipeline.use-case.ts';
 import { CreatePipelineUseCase } from '@/modules/features/pipeline/domain/usecases/create-pipeline.use-case.ts';
 import { GetPipelineUseCase } from '@/modules/features/pipeline/domain/usecases/get-pipeline.use-case.ts';
+import { EditPipelineUseCase } from '@/modules/features/pipeline/domain/usecases/edit-pipeline.use-case.ts';
 
 const pipelineRemoteDataSource: PipelineRemoteDataSource = new GrpcPipelineRemoteDataSource(
   CoreModule.data.grpcTransport,
@@ -18,6 +19,7 @@ const deletePipeline = new DeletePipelineUseCase(pipelineRepository);
 const runPipeline = new RunPipelineUseCase(pipelineRepository);
 const createPipeline = new CreatePipelineUseCase(pipelineRepository);
 const getPipeline = new GetPipelineUseCase(pipelineRepository);
+const editPipeline = new EditPipelineUseCase(pipelineRepository);
 
 export const PipelineModule = {
   domain: {
@@ -26,5 +28,6 @@ export const PipelineModule = {
     runPipeline,
     createPipeline,
     getPipeline,
+    editPipeline,
   },
 };

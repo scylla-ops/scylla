@@ -34,31 +34,41 @@ i18n.activate('en');
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: error => {
-      const scyllaError = error as ScyllaError;
-      const code = scyllaError.getCode();
+      if (error instanceof ScyllaError) {
+        const code = error.getCode();
 
-      if (code === 'UNAUTHENTICATED') {
-        localStorage.removeItem('token');
-        return;
+        if (code === 'UNAUTHENTICATED') {
+          localStorage.removeItem('token');
+          return;
+        }
+
+        error.log();
+
+        const message = error.isNetworkError()
+          ? t`Server unreachable`
+          : error.message || t`An unexpected error occurred`;
+
+        toast.error(message);
+      } else {
+        console.error('Non-Scylla Error:', error);
       }
-
-      scyllaError.log();
-      const message = scyllaError.isNetworkError()
-        ? t`Server unreachable`
-        : scyllaError.message || t`An unexpected error occurred`;
-      toast.error(message);
     },
   }),
   // Global mutation error handler — shows toast for all mutations.
   // Individual hooks should NOT add their own onError toast to avoid double-toasting.
   mutationCache: new MutationCache({
     onError: error => {
-      const scyllaError = error as ScyllaError;
-      scyllaError.log();
-      const message = scyllaError.isNetworkError()
-        ? t`Server unreachable`
-        : scyllaError.message || t`Operation failed`;
-      toast.error(message);
+      if (error instanceof ScyllaError) {
+        error.log();
+
+        const message = error.isNetworkError()
+          ? t`Server unreachable`
+          : error.message || t`Operation failed`;
+
+        toast.error(message);
+      } else {
+        console.error('Mutation Error (Non-Scylla):', error);
+      }
     },
   }),
 });

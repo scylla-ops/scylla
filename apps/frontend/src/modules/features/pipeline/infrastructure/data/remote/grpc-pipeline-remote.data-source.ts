@@ -2,6 +2,7 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   CreatePipelineRequest,
   ListPipelinesResponse,
+  PipelineNode,
   PipelineResponse,
 } from '@/generated/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/pipeline.client.ts';
@@ -60,5 +61,15 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
     return ScyllaResult.tryAsync<void>(async () => {
       await this._pipelineClient.runPipeline({ pipelineId: id });
     }, 'Error running pipeline');
+  }
+
+  public async edit(id: string, nodes: PipelineNode[], name?: string) {
+    return ScyllaResult.tryAsync<PipelineResponse>(async () => {
+      return await this._pipelineClient.updatePipeline({
+        pipelineId: id,
+        nodes: nodes,
+        name: name,
+      }).response;
+    }, 'Failed to edit pipeline.');
   }
 }

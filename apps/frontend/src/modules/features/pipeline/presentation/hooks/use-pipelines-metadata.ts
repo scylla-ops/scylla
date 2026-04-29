@@ -17,7 +17,7 @@ export const usePipelinesMetadata = (projectId: string) => {
   >({
     queryKey: ['pipelines', projectId, paginationParams],
     queryFn: async () => (await getPipelinesMetadata.execute(projectId, paginationParams)).unwrap(),
-    staleTime: 5 * 1000, // 5 seconds
+    staleTime: 5 * 1000, // 5 seconds //todo: more long and refresh button?
   });
 
   useEffect(() => {

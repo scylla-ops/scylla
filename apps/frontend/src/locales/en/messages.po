@@ -22,7 +22,7 @@ msgstr "{0}"
 msgid "An error occurred"
 msgstr "An error occurred"
 
-#: src/modules/core/presentation/ui/App.tsx:48
+#: src/modules/core/presentation/ui/App.tsx:49
 msgid "An unexpected error occurred"
 msgstr "An unexpected error occurred"
 
@@ -71,7 +71,7 @@ msgstr "Log out"
 msgid "New {label}"
 msgstr "New {label}"
 
-#: src/modules/core/presentation/ui/App.tsx:60
+#: src/modules/core/presentation/ui/App.tsx:66
 msgid "Operation failed"
 msgstr "Operation failed"
 
@@ -84,8 +84,8 @@ msgstr "Organization"
 msgid "Select Organization"
 msgstr "Select Organization"
 
-#: src/modules/core/presentation/ui/App.tsx:47
-#: src/modules/core/presentation/ui/App.tsx:59
+#: src/modules/core/presentation/ui/App.tsx:48
+#: src/modules/core/presentation/ui/App.tsx:65
 msgid "Server unreachable"
 msgstr "Server unreachable"
 
