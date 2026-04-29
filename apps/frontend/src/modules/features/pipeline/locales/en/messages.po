@@ -80,9 +80,9 @@ msgstr "Pipeline created successfully"
 #~ msgid "Pipeline Status"
 #~ msgstr "Pipeline Status"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:98
-msgid "Reactflow canvas here"
-msgstr "Reactflow canvas here"
+#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:99
+msgid "This feature will be available soon"
+msgstr "This feature will be available soon"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:68
 msgid "Run"
