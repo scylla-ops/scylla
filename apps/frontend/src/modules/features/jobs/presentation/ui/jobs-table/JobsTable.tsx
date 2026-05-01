@@ -63,7 +63,7 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
         onOpenChange={setDeleteDialogOpen}
         onContinue={handleDelete}
         title='Delete Job'
-        description={`Are you sure you want to delete job ${jobToDelete?.slice(0, 12)}...? This action cannot be undone.`}
+        description={`Are you sure you want to delete job ${jobToDelete}? This action cannot be undone.`}
       />
     </>
   );
