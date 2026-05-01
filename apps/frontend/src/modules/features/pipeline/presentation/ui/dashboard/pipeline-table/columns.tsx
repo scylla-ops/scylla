@@ -1,15 +1,14 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { PipelineSummary } from '@/generated/pipeline.ts';
 import type { JobResponse } from '@/generated/job.ts';
 import { PipelineStatus } from './PipelineStatus.tsx';
-import { PipelineMetadata } from './PipelineMetadata.tsx';
+import { PipelineLastJob } from './PipelineLastJob.tsx';
 import { PipelineActions } from './PipelineActions.tsx';
 import { PipelineChart } from '../PipelineChart.tsx';
 import { Trans } from '@lingui/react/macro';
-
+import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
-  onEdit: (pipeline: PipelineSummary) => void;
+  onEdit: (pipeline: PipelineMetadata) => void;
   onViewJobs: (pipelineId: string) => void;
 
   runningPipelines: Set<string>;
@@ -19,7 +18,7 @@ type PipelineColumnMeta = {
   isJobsError?: boolean;
 };
 
-export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<PipelineSummary>[] => [
+export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<PipelineMetadata>[] => [
   {
     id: 'status',
     header: () => (
@@ -28,7 +27,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       </div>
     ),
     cell: ({ row }) => {
-      const lastJob = meta.jobsByPipelineId.get(row.original.pipelineId)?.[0];
+      const lastJob = meta.jobsByPipelineId.get(row.original.id)?.[0];
       console.log(lastJob?.status);
       const status = lastJob?.status as 'idle' | 'running' | 'success' | 'failed' | undefined;
       return <PipelineStatus status={status} pipeline={row.original} />;
@@ -43,7 +42,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       </div>
     ),
     cell: ({ row }) => {
-      const jobs = meta.jobsByPipelineId.get(row.original.pipelineId) ?? [];
+      const jobs = meta.jobsByPipelineId.get(row.original.id) ?? [];
       return (
         <div className='w-full'>
           <PipelineChart
@@ -65,10 +64,10 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       </div>
     ),
     cell: ({ row }) => {
-      const jobs = meta.jobsByPipelineId.get(row.original.pipelineId) ?? [];
+      const jobs = meta.jobsByPipelineId.get(row.original.id) ?? [];
       return (
         <div className='flex w-full flex-col gap-1'>
-          <PipelineMetadata jobs={jobs} />
+          <PipelineLastJob jobs={jobs} />
         </div>
       );
     },
@@ -85,7 +84,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       <PipelineActions
         onRun={e => {
           e.stopPropagation();
-          meta.onRun(row.original.pipelineId);
+          meta.onRun(row.original.id);
         }}
         onEdit={e => {
           e.stopPropagation();
@@ -93,9 +92,9 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         }}
         onViewJobs={e => {
           e.stopPropagation();
-          meta.onViewJobs(row.original.pipelineId);
+          meta.onViewJobs(row.original.id);
         }}
-        isRunning={meta.runningPipelines.has(row.original.pipelineId)}
+        isRunning={meta.runningPipelines.has(row.original.id)}
       />
     ),
     size: 140,

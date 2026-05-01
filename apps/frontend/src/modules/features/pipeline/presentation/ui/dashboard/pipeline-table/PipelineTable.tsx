@@ -1,4 +1,3 @@
-import type { PipelineSummary } from '@/generated/pipeline.ts';
 import type { JobResponse } from '@/generated/job.ts';
 import { DataTable } from '@shared/presentation/ui/DataTable.tsx';
 import { createPipelineColumns } from './columns.tsx';
@@ -6,9 +5,10 @@ import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigat
 import { useRunPipeline } from '../../../hooks/use-run-pipeline.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useState } from 'react';
+import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 type PipelineTableProps = {
-  pipelines: PipelineSummary[];
+  pipelines: PipelineMetadata[];
   jobsByPipelineId: Map<string, JobResponse[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
@@ -37,7 +37,7 @@ export const PipelineTable = ({
       });
     },
     onEdit: pipeline => {
-      goToEditPipeline(pipeline);
+      goToEditPipeline(pipeline.id, pipeline.name);
     },
     onViewJobs: pipelineId => {
       goToJobs(pipelineId);
@@ -52,9 +52,9 @@ export const PipelineTable = ({
     <DataTable
       columns={columns}
       data={pipelines}
-      onRowClick={row => select(row.original.pipelineId)}
-      getRowId={(row, index) => row.pipelineId || index.toString()}
-      isRowSelected={row => selectedIds.includes(row.pipelineId)}
+      onRowClick={row => select(row.original.id)}
+      getRowId={(row, index) => row.id || index.toString()}
+      isRowSelected={row => selectedIds.includes(row.id)}
     />
   );
 };

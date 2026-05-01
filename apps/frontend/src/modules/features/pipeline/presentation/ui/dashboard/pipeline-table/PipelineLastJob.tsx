@@ -9,7 +9,7 @@ type PipelineMetadataProps = {
 /**
  * Displays the metadata of the last job for a pipeline
  */
-export const PipelineMetadata = ({ jobs }: PipelineMetadataProps) => {
+export const PipelineLastJob = ({ jobs }: PipelineMetadataProps) => {
   if (jobs.length === 0) {
     return (
       <div className={'flex flex-col w-full items-center justify-center gap-1'}>

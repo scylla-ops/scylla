@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { usePipelines } from '../../hooks/use-pipelines.ts';
+import { usePipelinesMetadata } from '../../hooks/use-pipelines-metadata.ts';
 import { usePipelineJobs } from '../../hooks/use-pipeline-jobs.ts';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
@@ -9,11 +9,10 @@ import { PipelineTable } from '@/modules/features/pipeline/presentation/ui/dashb
 
 export const DashboardPipelinePage = () => {
   const { projectId } = useParams();
-  const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage } = usePipelines(
-    projectId!,
-  );
+  const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage } =
+    usePipelinesMetadata(projectId!);
 
-  const pipelineIds = (pipelines ?? []).map(p => p.pipelineId);
+  const pipelineIds = (pipelines?.items ?? []).map(p => p.id);
   const { jobsByPipelineId, isJobsError, isJobsLoading } = usePipelineJobs(pipelineIds);
 
   if (isLoading || !pipelines) {
@@ -26,12 +25,14 @@ export const DashboardPipelinePage = () => {
 
   return (
     <div className='flex flex-col gap-4 w-full h-full p-4'>
-      <PipelineDashboardHeader numberOfPipelines={paginationInfo?.totalCount ?? pipelines.length} />
+      <PipelineDashboardHeader
+        numberOfPipelines={paginationInfo?.totalCount ?? pipelines.items.length}
+      />
       <div className='flex-1 min-h-0 overflow-auto'>
         <div className='relative'>
-          {pipelines.length > 0 ? (
+          {pipelines.items.length > 0 ? (
             <PipelineTable
-              pipelines={pipelines}
+              pipelines={pipelines.items}
               jobsByPipelineId={jobsByPipelineId}
               isJobsError={isJobsError}
               isJobsLoading={isJobsLoading}

@@ -4,7 +4,7 @@ import type { User } from '@/modules/features/user/domain/models/user.model.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 
 interface UserTableProps {
-  data?: User[];
+  readonly data?: User[];
   onView: (userId: string) => void;
 }
 

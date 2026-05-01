@@ -11,9 +11,11 @@ import { JobsPage } from '@/modules/features/jobs/presentation/ui/Jobs.page.tsx'
 import { UserAdminPage } from '@/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx';
 import UserSettingsPage from '@/modules/features/user/presentation/ui/settings/UserSettings.page.tsx';
 import { DashboardPipelinePage } from '@/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx';
-import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx';
+import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx';
+import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
 import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.page.tsx';
 import { WorkerDetailsPage } from '../../../../features/workers/presentation/ui/WorkerDetails.page.tsx';
+
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -59,7 +61,7 @@ export const CoreRouter = createBrowserRouter([
                   },
                   {
                     path: 'edit/:pipelineId',
-                    element: <PipelineCreationPage />,
+                    element: <PipelineUpdatePage />,
                     handle: {
                       breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
                         `Pipeline #${pipelineName}`,
