@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon } from 'lucide-react';
+import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon, HardDriveIcon } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {
@@ -31,6 +31,11 @@ const navSections: NavSectionModel[] = [
         title: 'Marketeplace',
         url: '/marketplace',
         icon: ShoppingCartIcon,
+      },
+      {
+        title: 'Workers',
+        url: '/workers',
+        icon: HardDriveIcon,
       },
     ],
   },

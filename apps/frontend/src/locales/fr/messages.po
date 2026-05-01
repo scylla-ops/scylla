@@ -75,12 +75,12 @@ msgstr ""
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:57
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:62
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:66
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:60
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:65
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 

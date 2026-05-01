@@ -38,6 +38,10 @@ export const useScyllaNavigate = () => {
     navigate('/users/' + (userId || 'me'));
   };
 
+  const goToWorkerDetails = (workerId: string) => {
+    navigate(`/workers/${workerId}`);
+  };
+
   return {
     navigate,
     goToEditPipeline,
@@ -45,6 +49,7 @@ export const useScyllaNavigate = () => {
     goToSubRoute,
     goToCreatePipeline,
     goToJobs,
+    goToWorkerDetails,
     goBack: () => navigate(-1),
     goToProject,
   };
