@@ -11,8 +11,8 @@ interface EditPipelineParams {
   name?: string;
 }
 
-export const useEditPipeline = () => {
-  const { editPipeline } = useDependencies().pipeline;
+export const useUpdatePipeline = () => {
+  const { updatePipeline } = useDependencies().pipeline;
   const queryClient = useQueryClient();
   const { goToProject } = useScyllaNavigate();
 
@@ -20,7 +20,7 @@ export const useEditPipeline = () => {
 
   return useMutation({
     mutationFn: async ({ id, nodes, name }: EditPipelineParams) =>
-      (await editPipeline.execute(id, nodes, name)).unwrap(),
+      (await updatePipeline.execute(id, nodes, name)).unwrap(),
     onSuccess: data => {
       queryClient.invalidateQueries({
         queryKey: ['pipelines', data.projectId],

@@ -5,7 +5,7 @@ import type {
 } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 
-export class EditPipelineUseCase {
+export class UpdatePipelineUseCase {
   constructor(private readonly repository: PipelineRepository) {}
 
   public async execute(

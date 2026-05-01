@@ -63,7 +63,7 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
     }, 'Error running pipeline');
   }
 
-  public async edit(id: string, nodes: PipelineNode[], name?: string) {
+  public async update(id: string, nodes: PipelineNode[], name?: string) {
     return ScyllaResult.tryAsync<PipelineResponse>(async () => {
       return await this._pipelineClient.updatePipeline({
         pipelineId: id,

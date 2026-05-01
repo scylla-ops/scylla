@@ -40,7 +40,7 @@ export class DefaultPipelineRepository implements PipelineRepository {
 
   public async edit(id: string, nodes: PipelineStep[], name?: string) {
     return (
-      await this.remoteDataSource.edit(id, nodes.map(GrpcPipelineMapper.nodeFromDomain), name)
+      await this.remoteDataSource.update(id, nodes.map(GrpcPipelineMapper.nodeFromDomain), name)
     ).map(GrpcPipelineMapper.toDomain);
   }
 }

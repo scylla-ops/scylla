@@ -11,4 +11,6 @@ export interface ProjectRepository {
     pagination?: PaginationParams,
   ) => Promise<ScyllaResult<ProjectList>>;
   create: (name: string, organizationId: string) => Promise<ScyllaResult<Project>>;
+  update: (projectId: string, name?: string, description?: string) => Promise<ScyllaResult<Project>>;
+  delete: (projectId: string) => Promise<ScyllaResult<void>>;
 }

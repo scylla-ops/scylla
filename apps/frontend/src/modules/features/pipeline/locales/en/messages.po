@@ -11,16 +11,19 @@ msgstr ""
 "Language: \n"
 "Language-Team: \n"
 
-#. placeholder {0}: isEditing ? 'Edit' : 'Create'
 #: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:53
-msgid "{0}"
-msgstr "{0}"
+#~ msgid "{0}"
+#~ msgstr "{0}"
+
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:22
+msgid "{submitLabel}"
+msgstr "{submitLabel}"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:80
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:41
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:18
 msgid "Blueprint"
 msgstr "Blueprint"
 
@@ -85,7 +88,8 @@ msgstr "No pipeline found"
 #~ msgid "Pipeline Status"
 #~ msgstr "Pipeline Status"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:106
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:69
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:67
 msgid "Reactflow canvas here"
 msgstr "Reactflow canvas here"
 
@@ -93,11 +97,11 @@ msgstr "Reactflow canvas here"
 msgid "Run"
 msgstr "Run"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreationTopbar.tsx:38
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:15
 msgid "Scripting"
 msgstr "Scripting"
 
-#: src/modules/features/pipeline/presentation/ui/creation/PipelineCreation.page.tsx:82
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:45
 msgid "Select a project first"
 msgstr "Select a project first"
 

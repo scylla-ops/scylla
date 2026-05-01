@@ -19,4 +19,14 @@ export class DefaultProjectRepository implements ProjectRepository {
       GrpcProjectMapper.toDomain,
     );
   }
+
+  async update(projectId: string, name?: string, description?: string): Promise<ScyllaResult<Project>> {
+    return (await this._remoteDataSource.update(projectId, name, description)).map(
+      GrpcProjectMapper.toDomain,
+    );
+  }
+
+  async delete(projectId: string): Promise<ScyllaResult<void>> {
+    return this._remoteDataSource.delete(projectId);
+  }
 }

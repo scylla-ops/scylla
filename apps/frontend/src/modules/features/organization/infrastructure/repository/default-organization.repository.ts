@@ -13,4 +13,12 @@ export default class DefaultOrganizationRepository implements OrganizationReposi
   public create(name: string): Promise<ScyllaResult<OrganizationResponse>> {
     return this.remoteDataSource.create(name);
   }
+
+  public update(organizationId: string, name?: string, description?: string): Promise<ScyllaResult<OrganizationResponse>> {
+    return this.remoteDataSource.update(organizationId, name, description);
+  }
+
+  public delete(organizationId: string): Promise<ScyllaResult<void>> {
+    return this.remoteDataSource.delete(organizationId);
+  }
 }

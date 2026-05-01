@@ -15,5 +15,5 @@ export interface PipelineRemoteDataSource {
   run(id: string): Promise<ScyllaResult<void>>;
   create: (content: string) => Promise<ScyllaResult<void>>;
   getById(id: string): Promise<ScyllaResult<PipelineResponse>>;
-  edit(id: string, nodes: PipelineNode[], name?: string): Promise<ScyllaResult<PipelineResponse>>;
+  update(id: string, nodes: PipelineNode[], name?: string): Promise<ScyllaResult<PipelineResponse>>;
 }
