@@ -64,10 +64,12 @@ export const PipelineCreationPage = () => {
           />
         </Card>
       </TabsContent>
-      <TabsContent value='blueprint'>
-        <p>
-          <Trans>Reactflow canvas here</Trans>
-        </p>
+      <TabsContent value='blueprint' className='h-full flex items-center justify-center'>
+        <Card className='p-8 text-center'>
+          <p className='text-lg text-muted-foreground'>
+            <Trans>This feature will be available soon</Trans>
+          </p>
+        </Card>
       </TabsContent>
     </Tabs>
   );

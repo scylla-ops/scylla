@@ -88,11 +88,6 @@ msgstr "Aucun pipeline trouvé"
 #~ msgid "Pipeline Status"
 #~ msgstr "État de la pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:69
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:67
-msgid "Reactflow canvas here"
-msgstr ""
-
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:68
 msgid "Run"
 msgstr "Exécuter"
@@ -108,3 +103,8 @@ msgstr ""
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:26
 msgid "Status"
 msgstr ""
+
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:70
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:68
+msgid "This feature will be available soon"
+msgstr "Cette fonctionnalité sera bientôt disponible"

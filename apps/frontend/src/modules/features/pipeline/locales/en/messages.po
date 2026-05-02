@@ -88,11 +88,6 @@ msgstr "No pipeline found"
 #~ msgid "Pipeline Status"
 #~ msgstr "Pipeline Status"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:69
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:67
-msgid "Reactflow canvas here"
-msgstr "Reactflow canvas here"
-
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:68
 msgid "Run"
 msgstr "Run"
@@ -108,3 +103,8 @@ msgstr "Select a project first"
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:26
 msgid "Status"
 msgstr "Status"
+
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:70
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:68
+msgid "This feature will be available soon"
+msgstr "This feature will be available soon"

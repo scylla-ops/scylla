@@ -17,11 +17,11 @@ msgstr ""
 #~ msgid "Cancel"
 #~ msgstr "Cancel"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:58
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:75
 msgid "Create a new project"
 msgstr "Create a new project"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:64
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:81
 msgid "Create Project"
 msgstr "Create Project"
 
@@ -29,7 +29,7 @@ msgstr "Create Project"
 #~ msgid "Creating..."
 #~ msgstr "Creating..."
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:36
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:40
 msgid "e.g., My project"
 msgstr "e.g., My project"
 
@@ -37,7 +37,7 @@ msgstr "e.g., My project"
 msgid "Edit project"
 msgstr "Edit project"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:60
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:77
 msgid "Enter a name for your new project and select the organization it belongs to."
 msgstr "Enter a name for your new project and select the organization it belongs to."
 
@@ -54,27 +54,27 @@ msgstr "New project"
 #~ msgstr "No description"
 
 #: src/modules/features/project/presentation/ui/ProjectCard.tsx:66
-msgid "No description (coming soon)"
-msgstr "No description (coming soon)"
+#~ msgid "No description (coming soon)"
+#~ msgstr "No description (coming soon)"
 
 #: src/modules/features/project/presentation/ui/ProjectPage.tsx:18
 msgid "No organization selected"
 msgstr "No organization selected"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:25
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:29
 msgid "Organization"
 msgstr "Organization"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:73
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:69
 msgid "Project"
 msgstr "Project"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:35
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:39
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:20
 msgid "Project name"
 msgstr "Project name"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:47
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:51
 msgid "Project name is required and you must select an organization."
 msgstr "Project name is required and you must select an organization."
 
@@ -86,7 +86,7 @@ msgstr "Save"
 msgid "Saving..."
 msgstr "Saving..."
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:26
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:30
 msgid "Select an organization"
 msgstr "Select an organization"
 
