@@ -38,6 +38,10 @@ tokio-stream = { workspace = true }
 futures-util.workspace = true
 serde_json.workspace = true
 
+# database (for live queries in handlers)
+surrealdb.workspace = true
+surrealdb-types.workspace = true
+
 # grpc-only (optional)
 tonic = { workspace = true, optional = true }
 tonic-web = { workspace = true, optional = true }

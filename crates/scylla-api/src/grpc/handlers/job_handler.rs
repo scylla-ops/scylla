@@ -238,41 +238,53 @@ impl<
             None
         };
 
-        info!(job_id = %job_id, node_id = ?node_id, "tail_job_logs: opening watch stream");
-        let mut log_stream = self
-            .log_use_cases
-            .watch(&job_id, node_id.as_ref())
-            .await
-            .map_err(domain_error_to_status)?;
-        info!("tail_job_logs: watch stream opened, spawning forwarder");
-
+        info!(job_id = %job_id, node_id = ?node_id, "tail_job_logs: spawning forwarder");
         let (tx, rx) = mpsc::channel::<Result<JobLogEvent, Status>>(256);
+        let log_use_cases = self.log_use_cases.clone();
 
+        // Open and poll the live stream from the SAME spawned task. The
+        // SurrealDB SDK live() routing requires `.live().await` and stream
+        // polling to share a task. tokio::select! drives the stream while
+        // also reacting to client disconnect via tx.closed().
         tokio::spawn(async move {
-            let mut forwarded = 0u64;
-            while let Some(item) = log_stream.next().await {
-                if tx.is_closed() {
-                    info!(forwarded, "tail_job_logs: client disconnected, stopping");
-                    break;
+            let mut stream = match log_use_cases.watch(&job_id, node_id.as_ref()).await {
+                Ok(s) => s,
+                Err(e) => {
+                    warn!("tail_job_logs: watch open error: {e}");
+                    let _ = tx
+                        .send(Err(Status::internal(format!("Live query error: {e}"))))
+                        .await;
+                    return;
                 }
-                let msg = match item {
-                    Ok(log) => Ok(JobLogEvent {
-                        log: Some(job_log_to_proto(&log)),
-                    }),
-                    Err(e) => Err(Status::internal(format!("Live query error: {e}"))),
-                };
-                if let Err(e) = tx.try_send(msg) {
-                    match e {
-                        mpsc::error::TrySendError::Full(_) => {
-                            warn!("tail_job_logs back-pressure: dropping log line");
+            };
+            info!("tail_job_logs: stream opened, forwarding");
+
+            let mut forwarded = 0u64;
+            loop {
+                tokio::select! {
+                    item = stream.next() => match item {
+                        Some(Ok(log)) => {
+                            let evt = JobLogEvent { log: Some(job_log_to_proto(&log)) };
+                            match tx.try_send(Ok(evt)) {
+                                Ok(()) => forwarded += 1,
+                                Err(mpsc::error::TrySendError::Full(_)) => {
+                                    warn!("tail_job_logs back-pressure: dropping line");
+                                }
+                                Err(mpsc::error::TrySendError::Closed(_)) => break,
+                            }
                         }
-                        mpsc::error::TrySendError::Closed(_) => {
-                            info!(forwarded, "tail_job_logs: tx closed, exiting forwarder");
+                        Some(Err(e)) => {
+                            let _ = tx.send(Err(Status::internal(format!("{e}")))).await;
+                        }
+                        None => {
+                            info!("tail_job_logs: upstream stream ended");
                             break;
                         }
+                    },
+                    () = tx.closed() => {
+                        info!(forwarded, "tail_job_logs: client disconnected");
+                        break;
                     }
-                } else {
-                    forwarded += 1;
                 }
             }
             info!(forwarded, "tail_job_logs: forwarder task ended");
