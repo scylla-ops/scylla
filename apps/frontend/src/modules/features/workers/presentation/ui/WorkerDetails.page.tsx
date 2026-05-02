@@ -3,8 +3,7 @@ import { useWorker } from '@/modules/features/workers/presentation/hooks/use-wor
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { formatDate } from '@shared/utils/date-utils.ts';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-import { Button } from '@shadcn';
-import { ArrowLeft } from 'lucide-react';
+import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
 import { Trans } from '@lingui/react/macro';
 
 export const WorkerDetailsPage = () => {
@@ -27,10 +26,7 @@ export const WorkerDetailsPage = () => {
               <Trans>Information about the selected worker.</Trans>
             </p>
           </div>
-          <Button variant='outline' onClick={() => goBack()}>
-            <ArrowLeft className='mr-2 h-4 w-4' />
-            <Trans>Back</Trans>
-          </Button>
+          <BackButton variant='outline' onClick={() => goBack()} label={<Trans>Back</Trans>} />
         </div>
 
         <div className='grid gap-4 sm:grid-cols-2'>

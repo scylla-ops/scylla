@@ -35,7 +35,7 @@ msgstr "Blueprint"
 #~ msgid "Create"
 #~ msgstr "Create"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:47
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:51
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
@@ -70,11 +70,11 @@ msgstr "Last Run"
 msgid "More options"
 msgstr "More options"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:30
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:36
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:44
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:48
 msgid "No pipeline found"
 msgstr "No pipeline found"
 

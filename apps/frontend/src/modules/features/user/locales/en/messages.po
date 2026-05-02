@@ -21,6 +21,10 @@ msgstr "Actions"
 msgid "Active account"
 msgstr "Active account"
 
+#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
+#~ msgid "Back"
+#~ msgstr "Back"
+
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:53
 msgid "Create a new user"
 msgstr "Create a new user"
@@ -82,6 +86,10 @@ msgstr "User information"
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:37
 msgid "User information not available"
 msgstr "User information not available"
+
+#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
+msgid "User settings"
+msgstr "User settings"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:23
 msgid "Username"

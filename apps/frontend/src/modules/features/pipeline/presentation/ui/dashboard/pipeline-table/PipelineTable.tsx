@@ -39,8 +39,8 @@ export const PipelineTable = ({
     onEdit: pipeline => {
       goToEditPipeline(pipeline.id, pipeline.name);
     },
-    onViewJobs: pipelineId => {
-      goToJobs(pipelineId);
+    onViewJobs: pipeline => {
+      goToJobs(pipeline);
     },
     runningPipelines: runningPipelines,
     jobsByPipelineId,
