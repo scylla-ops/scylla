@@ -1,5 +1,6 @@
 import { Button } from '@shadcn';
-import { Trash, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Trash, RefreshCw } from 'lucide-react';
+import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
 import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
 import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
 import { useState } from 'react';
@@ -39,9 +40,7 @@ export const JobsHeader = ({
   return (
     <div className={'flex flex-col gap-3'}>
       <div className='flex items-center gap-2'>
-        <Button variant='ghost' size='icon' onClick={onBack} className='h-8 w-8'>
-          <ArrowLeft className='size-4' />
-        </Button>
+        <BackButton iconOnly onClick={onBack} />
         <div>
           <h1 className='text-3xl font-bold tracking-tight'>
             <span className='text-primary'>{numberOfJobs}</span>{' '}
