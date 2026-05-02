@@ -1,18 +1,13 @@
 import { useEffect } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
-import { usePagination } from '@/modules/shared/presentation/hooks/usePagination.ts';
-import type { PaginationInfo } from '@/modules/shared/domain/types/Pagination.ts';
+import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { usePagination } from '@shared/presentation/hooks/use-pagination.ts';
 
 export const useProjects = (organizationId: string | null) => {
   const { getProjects } = useDependencies().project;
   const { page, setPage, paginationParams } = usePagination();
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['projects', organizationId, paginationParams],
     queryFn: async () => (await getProjects.execute(organizationId!, paginationParams)).unwrap(),
     enabled: !!organizationId,
@@ -25,7 +20,7 @@ export const useProjects = (organizationId: string | null) => {
 
   return {
     projects: data?.projects,
-    paginationInfo: data?.pagination as PaginationInfo | undefined,
+    paginationInfo: data?.pagination,
     page,
     setPage,
     isLoading,

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 
 export const useUser = (userId?: string) => {
   const { getUser } = useDependencies().user;

@@ -1,7 +1,8 @@
 import type { ListUsersResponse, UserResponse } from '@/generated/user.ts';
 
-import type { PaginationInfo } from '@shared/domain/models/Pagination.ts';
-import type { User, UserList } from '@/modules/features/user/domain/models/user.model.ts';
+import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
+import type { User } from '@/modules/features/user/domain/models/user.model.ts';
+import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 
 export class GrpcUserMapper {
   static toDomain(user: UserResponse): User {
@@ -12,9 +13,9 @@ export class GrpcUserMapper {
     };
   }
 
-  static toDomainList(list: ListUsersResponse): UserList {
+  static toDomainList(list: ListUsersResponse): PaginatedList<User> {
     return {
-      users: list.users.map(GrpcUserMapper.toDomain),
+      items: list.users.map(GrpcUserMapper.toDomain),
       pagination: list.pagination as PaginationInfo,
     };
   }

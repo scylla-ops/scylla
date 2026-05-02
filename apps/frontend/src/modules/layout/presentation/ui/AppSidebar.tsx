@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon } from 'lucide-react';
+import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon, HardDriveIcon } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {
@@ -14,11 +14,11 @@ import { ContextSelector } from '@/modules/layout/presentation/ui/context-select
 import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
 import { AddOrganizationDialog } from '@/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx';
 import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-selector/CurrentContextDisplay.tsx';
-import { useContextStore } from '@/modules/shared/presentation/stores/useContext.ts';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useLingui } from '@lingui/react/macro';
-import type { NavSection } from '@/modules/layout/presentation/models/NavSection.ts';
+import type { NavSectionModel } from '@/modules/layout/presentation/models/nav-section.model.ts';
 
-const navSections: NavSection[] = [
+const navSections: NavSectionModel[] = [
   {
     title: 'Main',
     items: [
@@ -31,6 +31,11 @@ const navSections: NavSection[] = [
         title: 'Marketeplace',
         url: '/marketplace',
         icon: ShoppingCartIcon,
+      },
+      {
+        title: 'Workers',
+        url: '/workers',
+        icon: HardDriveIcon,
       },
     ],
   },

@@ -1,0 +1,137 @@
+import { Button } from '@shadcn';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@shadcn/dropdown-menu.tsx';
+import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2 } from 'lucide-react';
+import type { SyntheticEvent } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { Trans } from '@lingui/react/macro';
+
+type PipelineActionsProps = {
+  onRun: (e: SyntheticEvent) => void;
+  onEdit: (e: SyntheticEvent) => void;
+  onViewJobs?: (e: SyntheticEvent) => void;
+  onMore?: (e: SyntheticEvent) => void;
+  isRunning?: boolean;
+};
+
+/**
+ * Display actions for a pipeline in the status card, such as run, edit, and more options.
+ * Automatically switches to dropdown mode when space is limited.
+ */
+export const PipelineActions = ({
+  onRun,
+  onEdit,
+  onViewJobs,
+  onMore,
+  isRunning,
+}: PipelineActionsProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setIsCompact(entry.contentRect.width < 70);
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className='flex w-full items-center justify-center gap-2 shrink-0'>
+      {isCompact ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type={'button'}
+              size='icon'
+              variant='ghost'
+              className='h-8 w-8 shrink-0 text-slate-400 hover:text-slate-900 rounded-full'
+            >
+              <MoreHorizontal className='w-4 h-4' />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end' className='w-40'>
+            <DropdownMenuItem onClick={onRun}>
+              <PlayIcon className='w-4 h-4 mr-2' />
+              <Trans>Run</Trans>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onEdit}>
+              <EditIcon className='w-4 h-4 mr-2' />
+              <Trans>Edit</Trans>
+            </DropdownMenuItem>
+            {onViewJobs && (
+              <DropdownMenuItem onClick={onViewJobs}>
+                <ListChecks className='w-4 h-4 mr-2' />
+                View Jobs
+              </DropdownMenuItem>
+            )}
+            {onMore && (
+              <DropdownMenuItem onClick={onMore}>
+                <MoreHorizontal className='w-4 h-4 mr-2' />
+                <Trans>More options</Trans>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <>
+          <Button
+            size='icon'
+            variant='ghost'
+            className='h-8 w-8 shrink-0 text-slate-400 hover:text-primary hover:bg-primary-hover rounded-full'
+            onClick={onRun}
+          >
+            {isRunning ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              <PlayIcon className='h-4 w-4 fill-current' />
+            )}
+          </Button>
+
+          <Button
+            size='icon'
+            variant='ghost'
+            className='h-8 w-8 shrink-0 text-slate-400 hover:text-slate-900 rounded-full'
+            onClick={onEdit}
+          >
+            <EditIcon className='w-4 h-4' />
+          </Button>
+
+          {onViewJobs && (
+            <Button
+              size='icon'
+              variant='ghost'
+              className='h-8 w-8 shrink-0 text-slate-400 hover:text-blue-600 rounded-full'
+              onClick={onViewJobs}
+            >
+              <ListChecks className='w-4 h-4' />
+            </Button>
+          )}
+
+          {onMore && (
+            <Button
+              size='icon'
+              variant='ghost'
+              className='h-8 w-8 shrink-0 text-slate-400 rounded-full'
+              onClick={onMore}
+            >
+              <MoreHorizontal className='w-4 h-4' />
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+};

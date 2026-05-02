@@ -4,7 +4,7 @@ import {
   type FormChange,
   type FormItem,
   FormItemType,
-} from '@core/presentation/models/ScyllaForm.ts';
+} from '@shared/presentation/models/scylla-form.model.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { FormDialog } from '@shared/presentation/ui';
 

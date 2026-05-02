@@ -1,6 +1,6 @@
 // modules/organisation/presentation/hooks/useOrganizations.ts
 import { useQuery } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/useDependencies.ts';
+import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 
 export const useOrganizations = () => {
   const { getOrganizations } = useDependencies().organization;

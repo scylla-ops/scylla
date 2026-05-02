@@ -1,0 +1,11 @@
+import type { OrganizationRepository } from '@/modules/features/organization/domain/repository/organization.repository.ts';
+import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
+import type { ListOrganizationsResponse } from '@/generated/organization.ts';
+
+export default class GetOrganizationsUseCase {
+  constructor(private readonly repository: OrganizationRepository) {}
+
+  public async execute(): Promise<ScyllaResult<ListOrganizationsResponse>> {
+    return this.repository.getAll();
+  }
+}

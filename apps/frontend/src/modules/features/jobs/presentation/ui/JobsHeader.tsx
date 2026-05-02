@@ -1,7 +1,8 @@
 import { Button } from '@shadcn';
-import { Trash, RefreshCw, ArrowLeft } from 'lucide-react';
-import { useDeleteJob } from '@/modules/features/jobs/presentation/hooks/useDeleteJob.ts';
-import { useJobsStore } from '@/modules/features/jobs/presentation/stores/useJobsStore.ts';
+import { Trash, RefreshCw } from 'lucide-react';
+import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
+import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
+import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
 import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 
@@ -20,7 +21,7 @@ export const JobsHeader = ({
   onRefresh,
   onBack,
 }: JobsHeaderProps) => {
-  const deleteJob = useDeleteJob(pipelineId);
+  const deleteJob = useDeleteJobs(pipelineId);
   const selectedJobIds = useJobsStore(state => state.selectedJobIds);
   const clearSelection = useJobsStore(state => state.clearSelection);
   const [deleteDialogVisibility, setDeleteDialogVisibility] = useState(false);
@@ -39,9 +40,7 @@ export const JobsHeader = ({
   return (
     <div className={'flex flex-col gap-3'}>
       <div className='flex items-center gap-2'>
-        <Button variant='ghost' size='icon' onClick={onBack} className='h-8 w-8'>
-          <ArrowLeft className='size-4' />
-        </Button>
+        <BackButton iconOnly onClick={onBack} />
         <div>
           <h1 className='text-3xl font-bold tracking-tight'>
             <span className='text-primary'>{numberOfJobs}</span>{' '}
@@ -58,7 +57,7 @@ export const JobsHeader = ({
       <div className={'flex items-center justify-between'}>
         <div className='flex items-baseline gap-2'>
           <span className='text-sm text-muted-foreground font-medium'>
-            Pipeline ID: {pipelineId.slice(0, 12)}...
+            Pipeline ID: {pipelineId}
           </span>
         </div>
         <div className={'flex items-center justify-end gap-2'}>
@@ -95,4 +94,3 @@ export const JobsHeader = ({
     </div>
   );
 };
-

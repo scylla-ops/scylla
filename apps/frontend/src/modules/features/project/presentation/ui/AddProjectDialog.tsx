@@ -3,7 +3,13 @@ import { useOrganizations } from '@/modules/features/organization/presentation/h
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
-import { type FormChange, type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
+import {
+  type FormChange,
+  type FormItem,
+  FormItemType,
+} from '@shared/presentation/models/scylla-form.model.ts';
+import { useNavigate } from 'react-router-dom';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -12,6 +18,8 @@ interface AddProjectDialogProps {
 
 export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const { t } = useLingui();
+  const navigate = useNavigate();
+  const setOrganization = useContextStore(state => state.setOrganization);
   const createProject = useCreateProject();
   const { organizations } = useOrganizations();
 
@@ -44,9 +52,19 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       return;
     }
 
+    const selectedOrganization = organizations?.find(org => org.organizationId === organizationId);
+
     createProject.mutate(
       { name, organizationId },
-      { onSuccess: () => setOpen(false) },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          if (selectedOrganization) {
+            setOrganization(organizationId, selectedOrganization.name);
+          }
+          navigate('/projects');
+        },
+      },
     );
   };
 
@@ -56,9 +74,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       onOpenChange={setOpen}
       title={<Trans>Create a new project</Trans>}
       description={
-        <Trans>
-          Enter a name for your new project and select the organization it belongs to.
-        </Trans>
+        <Trans>Enter a name for your new project and select the organization it belongs to.</Trans>
       }
       items={items}
       isPending={createProject.isPending}

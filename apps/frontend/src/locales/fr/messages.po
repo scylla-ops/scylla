@@ -22,7 +22,7 @@ msgstr ""
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:47
+#: src/modules/core/presentation/ui/App.tsx:49
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
@@ -71,21 +71,21 @@ msgstr "Se déconnecter"
 msgid "New {label}"
 msgstr ""
 
-#: src/modules/core/presentation/ui/App.tsx:59
+#: src/modules/core/presentation/ui/App.tsx:66
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:57
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:62
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:66
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:60
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:65
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:46
-#: src/modules/core/presentation/ui/App.tsx:58
+#: src/modules/core/presentation/ui/App.tsx:48
+#: src/modules/core/presentation/ui/App.tsx:65
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 

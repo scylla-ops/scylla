@@ -1,5 +1,5 @@
-import { useScyllaNavigate } from '@/modules/shared/presentation/hooks/useScyllaNavigate';
-import type { NavSection } from '@/modules/layout/presentation/models/NavSection.ts';
+import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import type { NavSectionModel } from '@/modules/layout/presentation/models/nav-section.model.ts';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -10,7 +10,7 @@ import {
 import { Trans } from '@lingui/react/macro';
 
 interface NavMainProps {
-  sections: NavSection[];
+  sections: NavSectionModel[];
 }
 
 export function NavMain({ sections }: NavMainProps) {

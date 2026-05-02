@@ -1,7 +1,11 @@
 import { useCreateOrganization } from '@/modules/features/organization/presentation/hooks/useCreateOrganization.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
-import { type FormChange, type FormItem, FormItemType } from '@core/presentation/models/ScyllaForm.ts';
+import {
+  type FormChange,
+  type FormItem,
+  FormItemType,
+} from '@shared/presentation/models/scylla-form.model.ts';
 
 interface AddOrganizationDialogProps {
   open: boolean;
