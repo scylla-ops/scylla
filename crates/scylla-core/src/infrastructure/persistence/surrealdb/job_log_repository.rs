@@ -138,19 +138,14 @@ impl JobLogRepository for SurrealJobLogRepository {
         let target_job_id = job_id.clone();
         let target_node_id = node_id.cloned();
 
-        info!(table = %table, "opening live select via raw query");
-        let mut response = db
-            .query(format!("LIVE SELECT * FROM {table}"))
+        info!(table = %table, "opening live select on job_log table");
+        let stream = db
+            .select(table.as_str())
+            .live()
             .await
             .map_err(|e| {
                 warn!("Live query open error: {e}");
                 DomainError::infrastructure(format!("Live query error: {e}"))
-            })?;
-        let stream = response
-            .stream::<surrealdb::Notification<JobLog>>(0)
-            .map_err(|e| {
-                warn!("Live query stream error: {e}");
-                DomainError::infrastructure(format!("Live query stream error: {e}"))
             })?;
         info!("live select opened, awaiting notifications");
 
