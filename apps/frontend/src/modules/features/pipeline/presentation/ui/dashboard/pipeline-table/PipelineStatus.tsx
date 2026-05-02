@@ -1,9 +1,9 @@
 import StatusIndicator from '@shared/presentation/ui/status-indicator.tsx';
-import type { PipelineSummary } from '@/generated/pipeline.ts';
 import { Trans } from '@lingui/react/macro';
+import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 type PipelineStatusProps = {
-  pipeline: PipelineSummary;
+  pipeline: PipelineMetadata;
   status?: 'idle' | 'running' | 'success' | 'failed';
 };
 

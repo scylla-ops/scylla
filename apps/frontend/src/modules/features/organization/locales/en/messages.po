@@ -41,10 +41,27 @@ msgstr "e.g., My Organization"
 msgid "e.g., Our company's main organization"
 msgstr "e.g., Our company's main organization"
 
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:40
+msgid "Edit organization"
+msgstr "Edit organization"
+
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:51
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Enter a name and description for your new organization. You can change these later in settings."
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:22
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:19
 msgid "Organization name"
 msgstr "Organization name"
+
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:44
+msgid "Save"
+msgstr "Save"
+
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:45
+msgid "Saving..."
+msgstr "Saving..."
+
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:41
+msgid "Update the organization name."
+msgstr "Update the organization name."

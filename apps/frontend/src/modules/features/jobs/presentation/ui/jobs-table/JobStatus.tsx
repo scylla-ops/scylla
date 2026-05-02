@@ -55,7 +55,7 @@ export const JobStatus = ({ job }: JobStatusProps) => {
         <Badge variant={config.variant} className='w-fit'>
           {config.label}
         </Badge>
-        <span className='text-xs text-slate-500 truncate'>{job.pipelineId.slice(0, 8)}...</span>
+        <span className='text-xs text-slate-500 truncate'>{job.pipelineId}</span>
       </div>
     </div>
   );

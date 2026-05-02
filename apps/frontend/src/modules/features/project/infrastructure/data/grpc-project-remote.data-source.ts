@@ -34,4 +34,17 @@ export class GrpcProjectRemoteDataSource implements GrpcProjectRemoteDataSource 
       return response;
     }, 'Failed to create project.');
   }
+
+  public update(projectId: string, name?: string, description?: string): Promise<ScyllaResult<ProjectResponse>> {
+    return ScyllaResult.tryAsync(async () => {
+      const { response } = await this._projectClient.updateProject({ projectId, name, description });
+      return response;
+    }, 'Failed to update project.');
+  }
+
+  public delete(projectId: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync(async () => {
+      await this._projectClient.deleteProject({ projectId });
+    }, 'Failed to delete project.');
+  }
 }

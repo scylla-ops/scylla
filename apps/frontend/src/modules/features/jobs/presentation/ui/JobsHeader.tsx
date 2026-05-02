@@ -58,7 +58,7 @@ export const JobsHeader = ({
       <div className={'flex items-center justify-between'}>
         <div className='flex items-baseline gap-2'>
           <span className='text-sm text-muted-foreground font-medium'>
-            Pipeline ID: {pipelineId.slice(0, 12)}...
+            Pipeline ID: {pipelineId}
           </span>
         </div>
         <div className={'flex items-center justify-end gap-2'}>

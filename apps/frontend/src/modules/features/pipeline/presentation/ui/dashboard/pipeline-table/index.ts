@@ -1,3 +1,3 @@
 export { PipelineStatus } from './PipelineStatus.tsx';
-export { PipelineMetadata } from './PipelineMetadata.tsx';
+export { PipelineLastJob } from './PipelineLastJob.tsx';
 export { PipelineActions } from './PipelineActions.tsx';

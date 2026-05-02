@@ -24,4 +24,17 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
       return response;
     }, 'Failed to create organization.');
   }
+
+  public update(organizationId: string, name?: string, description?: string): Promise<ScyllaResult<OrganizationResponse>> {
+    return ScyllaResult.tryAsync(async () => {
+      const { response } = await this._organizationClient.updateOrganization({ organizationId, name, description });
+      return response;
+    }, 'Failed to update organization.');
+  }
+
+  public delete(organizationId: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync(async () => {
+      await this._organizationClient.deleteOrganization({ organizationId });
+    }, 'Failed to delete organization.');
+  }
 }
