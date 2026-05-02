@@ -11,7 +11,7 @@ use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
 use surrealdb_types::Action;
 use surrealdb_types::SurrealValue;
-use tracing::{debug, info, instrument, warn};
+use tracing::{info, instrument, warn};
 
 pub struct SurrealJobLogRepository {
     db: Surreal<Any>,
@@ -155,31 +155,31 @@ impl JobLogRepository for SurrealJobLogRepository {
             async move {
                 match item {
                     Ok(notif) => {
-                        debug!(action = ?notif.action, "live notification received");
+                        info!(action = ?notif.action, "live notification received");
                         match notif.action {
                             Action::Create => {
                                 let log: JobLog = notif.data;
-                                debug!(
+                                info!(
                                     log_job_id = %log.job_id(),
                                     log_node_id = %log.node_id(),
                                     target_job_id = %target_job_id,
                                     "filtering log entry"
                                 );
                                 if log.job_id() != &target_job_id {
-                                    debug!("dropped: job_id mismatch");
+                                    info!("dropped: job_id mismatch");
                                     return None;
                                 }
                                 if let Some(ref nid) = target_node_id {
                                     if log.node_id() != nid {
-                                        debug!("dropped: node_id mismatch");
+                                        info!("dropped: node_id mismatch");
                                         return None;
                                     }
                                 }
-                                debug!("forwarding log");
+                                info!("forwarding log");
                                 Some(Ok(log))
                             }
                             other => {
-                                debug!(action = ?other, "ignoring non-create action");
+                                info!(action = ?other, "ignoring non-create action");
                                 None
                             }
                         }
