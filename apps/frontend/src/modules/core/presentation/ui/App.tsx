@@ -14,6 +14,7 @@ import { messages as organizationMessages } from '@/modules/features/organizatio
 import { messages as userMessages } from '@/modules/features/user/locales/en/messages.ts';
 import { messages as sharedMessages } from '@/locales/en/messages.ts';
 import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
+import { messages as workersMessages } from '@/modules/features/workers/locales/en/messages.ts';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
@@ -28,6 +29,7 @@ i18n.load('en', {
   ...organizationMessages,
   ...sharedMessages,
   ...jobMessages,
+  ...workersMessages,
 });
 i18n.activate('en');
 
