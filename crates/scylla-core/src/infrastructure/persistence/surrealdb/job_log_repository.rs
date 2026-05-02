@@ -138,50 +138,55 @@ impl JobLogRepository for SurrealJobLogRepository {
         let target_job_id = job_id.clone();
         let target_node_id = node_id.cloned();
 
-        info!(table = %table, "opening live select on job_log table via raw query");
-        let mut response = db
-            .query(format!("LIVE SELECT * FROM {table}"))
+        info!(table = %table, "opening live select via .select().live() — probing with Value");
+        // Probe stage: deserialize as raw surrealdb_types::Value to confirm we receive notifications at all.
+        let stream = db
+            .select::<Vec<surrealdb_types::Value>>(table.as_str())
+            .live()
             .await
             .map_err(|e| {
                 warn!("Live query open error: {e}");
                 DomainError::infrastructure(format!("Live query error: {e}"))
             })?;
-        let stream = response
-            .stream::<surrealdb::Notification<JobLog>>(0)
-            .map_err(|e| {
-                warn!("Live query stream error: {e}");
-                DomainError::infrastructure(format!("Live query stream error: {e}"))
-            })?;
-        info!("live select opened, awaiting notifications");
+        info!("live select opened, awaiting notifications (Value probe)");
 
-        let filtered = stream.filter_map(move |item: Result<surrealdb::Notification<JobLog>, surrealdb::Error>| {
+        let filtered = stream.filter_map(move |item: Result<surrealdb::Notification<surrealdb_types::Value>, surrealdb::Error>| {
             let target_job_id = target_job_id.clone();
             let target_node_id = target_node_id.clone();
+            let _ = (&target_job_id, &target_node_id);
             async move {
                 match item {
                     Ok(notif) => {
-                        info!(action = ?notif.action, "live notification received");
+                        info!(action = ?notif.action, data = ?notif.data, "live notification received (Value probe)");
+                        // Try deserialize the Value into JobLog
                         match notif.action {
                             Action::Create => {
-                                let log: JobLog = notif.data;
-                                info!(
-                                    log_job_id = %log.job_id(),
-                                    log_node_id = %log.node_id(),
-                                    target_job_id = %target_job_id,
-                                    "filtering log entry"
-                                );
-                                if log.job_id() != &target_job_id {
-                                    info!("dropped: job_id mismatch");
-                                    return None;
-                                }
-                                if let Some(ref nid) = target_node_id {
-                                    if log.node_id() != nid {
-                                        info!("dropped: node_id mismatch");
-                                        return None;
+                                match <JobLog as SurrealValue>::from_value(notif.data) {
+                                    Ok(log) => {
+                                        info!(
+                                            log_job_id = %log.job_id(),
+                                            log_node_id = %log.node_id(),
+                                            target_job_id = %target_job_id,
+                                            "filtering log entry"
+                                        );
+                                        if log.job_id() != &target_job_id {
+                                            info!("dropped: job_id mismatch");
+                                            return None;
+                                        }
+                                        if let Some(ref nid) = target_node_id {
+                                            if log.node_id() != nid {
+                                                info!("dropped: node_id mismatch");
+                                                return None;
+                                            }
+                                        }
+                                        info!("forwarding log");
+                                        Some(Ok(log))
+                                    }
+                                    Err(e) => {
+                                        warn!("JobLog::from_value error: {e}");
+                                        None
                                     }
                                 }
-                                info!("forwarding log");
-                                Some(Ok(log))
                             }
                             other => {
                                 info!(action = ?other, "ignoring non-create action");
