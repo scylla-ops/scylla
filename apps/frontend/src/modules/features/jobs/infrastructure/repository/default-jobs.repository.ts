@@ -2,11 +2,7 @@ import type {
   JobsRepository,
   JobLogsTailHandle,
 } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
-import type {
-  ListJobsResponse,
-  JobResponse,
-  ListJobLogsResponse,
-} from '@/generated/job.ts';
+import type { ListJobsResponse, JobResponse, ListJobLogsResponse } from '@/generated/job.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
 import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';

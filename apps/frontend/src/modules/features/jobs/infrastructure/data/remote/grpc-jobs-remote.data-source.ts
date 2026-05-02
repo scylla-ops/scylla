@@ -48,18 +48,14 @@ export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListJobLogsResponse>> {
     return Result.tryAsync<ListJobLogsResponse>(
-      async () =>
-        (await this._jobClient.listJobLogs({ jobId, nodeId, pagination })).response,
+      async () => (await this._jobClient.listJobLogs({ jobId, nodeId, pagination })).response,
       'Error fetching job logs',
     );
   }
 
   public tailLogs(jobId: string, nodeId?: string): JobLogsTailHandle {
     const abortController = new AbortController();
-    const call = this._jobClient.tailJobLogs(
-      { jobId, nodeId },
-      { abort: abortController.signal },
-    );
+    const call = this._jobClient.tailJobLogs({ jobId, nodeId }, { abort: abortController.signal });
     const responses: AsyncIterable<JobLogEntry> = {
       [Symbol.asyncIterator]: async function* () {
         for await (const evt of call.responses) {

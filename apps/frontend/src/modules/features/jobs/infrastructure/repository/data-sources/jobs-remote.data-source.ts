@@ -1,8 +1,4 @@
-import type {
-  ListJobsResponse,
-  JobResponse,
-  ListJobLogsResponse,
-} from '@/generated/job.ts';
+import type { ListJobsResponse, JobResponse, ListJobLogsResponse } from '@/generated/job.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
 import type { JobLogsTailHandle } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';

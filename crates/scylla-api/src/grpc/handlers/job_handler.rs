@@ -21,7 +21,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
-use tracing::warn;
+use tracing::{info, warn};
 
 #[derive(Constructor)]
 pub struct JobHandler<J: JobRepository, L: JobLogRepository, PS: PermissionService> {
@@ -37,10 +37,6 @@ impl<
     PS: PermissionService + Send + Sync + 'static,
 > JobService for JobHandler<J, L, PS>
 {
-    type TailJobLogsStream =
-        Pin<Box<dyn tokio_stream::Stream<Item = Result<JobLogEvent, Status>> + Send + 'static>>;
-
-
     async fn get_job(
         &self,
         request: Request<GetJobRequest>,
@@ -59,6 +55,7 @@ impl<
 
         Ok(Response::new(job_to_proto(&job)))
     }
+
 
     async fn delete_job(
         &self,
@@ -220,6 +217,9 @@ impl<
         }))
     }
 
+    type TailJobLogsStream =
+        Pin<Box<dyn tokio_stream::Stream<Item = Result<JobLogEvent, Status>> + Send + 'static>>;
+
     async fn tail_job_logs(
         &self,
         request: Request<TailJobLogsRequest>,
@@ -238,17 +238,21 @@ impl<
             None
         };
 
+        info!(job_id = %job_id, node_id = ?node_id, "tail_job_logs: opening watch stream");
         let mut log_stream = self
             .log_use_cases
             .watch(&job_id, node_id.as_ref())
             .await
             .map_err(domain_error_to_status)?;
+        info!("tail_job_logs: watch stream opened, spawning forwarder");
 
         let (tx, rx) = mpsc::channel::<Result<JobLogEvent, Status>>(256);
 
         tokio::spawn(async move {
+            let mut forwarded = 0u64;
             while let Some(item) = log_stream.next().await {
                 if tx.is_closed() {
+                    info!(forwarded, "tail_job_logs: client disconnected, stopping");
                     break;
                 }
                 let msg = match item {
@@ -262,10 +266,16 @@ impl<
                         mpsc::error::TrySendError::Full(_) => {
                             warn!("tail_job_logs back-pressure: dropping log line");
                         }
-                        mpsc::error::TrySendError::Closed(_) => break,
+                        mpsc::error::TrySendError::Closed(_) => {
+                            info!(forwarded, "tail_job_logs: tx closed, exiting forwarder");
+                            break;
+                        }
                     }
+                } else {
+                    forwarded += 1;
                 }
             }
+            info!(forwarded, "tail_job_logs: forwarder task ended");
         });
 
         let out: Self::TailJobLogsStream = Box::pin(ReceiverStream::new(rx));
