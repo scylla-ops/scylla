@@ -35,6 +35,8 @@ ulid.workspace = true
 uuid.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+futures-core.workspace = true
+futures-util.workspace = true
 
 # infrastructure (surrealdb feature-gated)
 surrealdb = { workspace = true, optional = true, features = ["kv-mem", "kv-rocksdb", "protocol-ws"] }

@@ -5,6 +5,8 @@ import { DefaultJobsRepository } from '@/modules/features/jobs/infrastructure/re
 import { GetPipelineJobsUseCase } from '@/modules/features/jobs/domain/usecases/get-pipeline-jobs.use-case.ts';
 import { GetJobUseCase } from '@/modules/features/jobs/domain/usecases/get-job.use-case.ts';
 import { DeleteJobsUseCase } from '@/modules/features/jobs/domain/usecases/delete-jobs.use-case.ts';
+import { ListJobLogsUseCase } from '@/modules/features/jobs/domain/usecases/list-job-logs.use-case.ts';
+import { TailJobLogsUseCase } from '@/modules/features/jobs/domain/usecases/tail-job-logs.use-case.ts';
 
 const jobsRemoteDataSource: JobsRemoteDataSource = new GrpcJobsRemoteDataSource(
   CoreModule.data.grpcTransport,
@@ -14,7 +16,9 @@ const jobsRepository = new DefaultJobsRepository(jobsRemoteDataSource);
 const getPipelineJobs = new GetPipelineJobsUseCase(jobsRepository);
 const getJobById = new GetJobUseCase(jobsRepository);
 const deleteJob = new DeleteJobsUseCase(jobsRepository);
+const listJobLogs = new ListJobLogsUseCase(jobsRepository);
+const tailJobLogs = new TailJobLogsUseCase(jobsRepository);
 
 export const JobsModule = {
-  domain: { getPipelineJobs, getJobById, deleteJob },
+  domain: { getPipelineJobs, getJobById, deleteJob, listJobLogs, tailJobLogs },
 };

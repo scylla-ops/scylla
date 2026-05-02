@@ -1,14 +1,17 @@
 use crate::application::ports::JobLogRepository;
+use crate::application::ports::repositories::job_log_repo::JobLogStream;
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
+use futures_util::StreamExt;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
+use surrealdb_types::Action;
 use surrealdb_types::SurrealValue;
-use tracing::instrument;
+use tracing::{instrument, warn};
 
 pub struct SurrealJobLogRepository {
     db: Surreal<Any>,
@@ -122,5 +125,55 @@ impl JobLogRepository for SurrealJobLogRepository {
             .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?;
 
         Ok(PaginatedResult::new(logs, &params, total_count))
+    }
+
+    #[instrument(skip(self), fields(job_id = %job_id, node_id = ?node_id))]
+    async fn watch(
+        &self,
+        job_id: &JobId,
+        node_id: Option<&NodeId>,
+    ) -> DomainResult<JobLogStream> {
+        let db = self.db.clone();
+        let table = JobLogId::table_name().to_string();
+        let target_job_id = job_id.clone();
+        let target_node_id = node_id.cloned();
+
+        let stream = db
+            .select::<Vec<JobLog>>(table)
+            .live()
+            .await
+            .map_err(|e| DomainError::infrastructure(format!("Live query error: {e}")))?;
+
+        let filtered = stream.filter_map(move |item| {
+            let target_job_id = target_job_id.clone();
+            let target_node_id = target_node_id.clone();
+            async move {
+                match item {
+                    Ok(notif) => match notif.action {
+                        Action::Create => {
+                            let log = notif.data;
+                            if log.job_id() != &target_job_id {
+                                return None;
+                            }
+                            if let Some(ref nid) = target_node_id {
+                                if log.node_id() != nid {
+                                    return None;
+                                }
+                            }
+                            Some(Ok(log))
+                        }
+                        _ => None,
+                    },
+                    Err(e) => {
+                        warn!("Live query notification error: {e}");
+                        Some(Err(DomainError::infrastructure(format!(
+                            "Live query notification error: {e}"
+                        ))))
+                    }
+                }
+            }
+        });
+
+        Ok(Box::pin(filtered))
     }
 }

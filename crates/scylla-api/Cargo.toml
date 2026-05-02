@@ -35,6 +35,7 @@ log.workspace = true
 # broker
 hermes-broker-client = { workspace = true }
 tokio-stream = { workspace = true }
+futures-util.workspace = true
 serde_json.workspace = true
 
 # grpc-only (optional)
