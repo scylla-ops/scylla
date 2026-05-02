@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useContextStore } from '../stores/use-context.store.ts';
 import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
+import type { PipelineIdentity } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 export const useScyllaNavigate = () => {
   const setProject = useContextStore(state => state.setProject);
@@ -29,9 +30,10 @@ export const useScyllaNavigate = () => {
     setPipeline(id, name);
   };
 
-  const goToJobs = (pipelineId: string) => {
+  const goToJobs = (pipeline: PipelineIdentity) => {
     const projectId = useContextStore.getState().project.id;
-    navigate(`/projects/${projectId}/pipelines/${pipelineId}/jobs`);
+    navigate(`/projects/${projectId}/pipelines/${pipeline.id}/jobs`);
+    setPipeline(pipeline.id, pipeline.name);
   };
 
   const goToUserSettings = (userId?: string) => {

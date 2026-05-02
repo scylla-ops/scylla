@@ -9,7 +9,7 @@ import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineMetadata) => void;
-  onViewJobs: (pipelineId: string) => void;
+  onViewJobs: (pipeline: PipelineMetadata) => void;
 
   runningPipelines: Set<string>;
 
@@ -92,7 +92,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         }}
         onViewJobs={e => {
           e.stopPropagation();
-          meta.onViewJobs(row.original.id);
+          meta.onViewJobs(row.original);
         }}
         isRunning={meta.runningPipelines.has(row.original.id)}
       />

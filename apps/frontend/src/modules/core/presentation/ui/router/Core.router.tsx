@@ -64,7 +64,7 @@ export const CoreRouter = createBrowserRouter([
                     element: <PipelineUpdatePage />,
                     handle: {
                       breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
-                        `Pipeline #${pipelineName}`,
+                        `Pipeline #${pipelineName} - Edit`,
                     },
                   },
                   {
@@ -72,7 +72,7 @@ export const CoreRouter = createBrowserRouter([
                     element: <JobsPage />,
                     handle: {
                       breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
-                        `${pipelineName ? `#${pipelineName}` : 'Pipeline'} - Jobs`,
+                        `Pipeline #${pipelineName} - Jobs`,
                     },
                   },
                 ],

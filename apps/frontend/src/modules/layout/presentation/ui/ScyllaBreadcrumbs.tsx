@@ -47,23 +47,40 @@ export const ScyllaBreadcrumbs = () => {
       <BreadcrumbList className='gap-2'>
         {crumbs.map((crumb, index) => {
           const isLast = index === crumbs.length - 1;
-          const words = crumb.label.split(' ');
+
+          const firstHashIndex = crumb.label.indexOf('#');
+          let beforeId = crumb.label;
+          let id = '';
+          let afterId = '';
+
+          if (firstHashIndex !== -1) {
+            beforeId = crumb.label.substring(0, firstHashIndex);
+
+            const afterHash = crumb.label.substring(firstHashIndex);
+            const separatorIndex = afterHash.indexOf(' - ');
+
+            if (separatorIndex !== -1) {
+              id = afterHash.substring(0, separatorIndex);
+              afterId = afterHash.substring(separatorIndex);
+            } else {
+              id = afterHash;
+            }
+          }
 
           return (
             <React.Fragment key={crumb.path}>
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage className='text-slate-900 font-semibold text-sm px-2 py-1 rounded-md bg-slate-50 flex gap-1'>
-                    {words.map((word, i) => {
-                      const lastIndex = words.length - 1;
-                      const isLastWord = words.length > 1 && i === lastIndex;
-
-                      return (
-                        <span key={i} className={isLastWord ? 'text-primary' : 'whitespace-nowrap'}>
-                          {word}
-                        </span>
-                      );
-                    })}
+                  <BreadcrumbPage className='text-slate-900 font-semibold text-sm px-2 py-1 rounded-md bg-slate-50 flex gap-1 items-center'>
+                    {id ? (
+                      <>
+                        <span className='whitespace-nowrap'>{beforeId}</span>
+                        <span className='text-primary'>{id}</span>
+                        <span className='whitespace-nowrap'>{afterId}</span>
+                      </>
+                    ) : (
+                      <span>{crumb.label}</span>
+                    )}
                   </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink
