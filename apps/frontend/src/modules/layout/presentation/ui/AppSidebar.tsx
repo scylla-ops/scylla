@@ -28,7 +28,7 @@ const navSections: NavSectionModel[] = [
         icon: WorkflowIcon,
       },
       {
-        title: 'Marketeplace',
+        title: 'Marketplace',
         url: '/marketplace',
         icon: ShoppingCartIcon,
       },

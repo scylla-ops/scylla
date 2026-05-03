@@ -2,6 +2,7 @@ import { MarketItemList } from '@/modules/features/marketplace/presentation/ui/M
 import { useMarketplace } from '@/modules/features/marketplace/presentation/hooks/use-marketplace.ts';
 import { useFilterStore } from '@/modules/features/marketplace/presentation/stores/use-filter.store.ts';
 import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { Trans } from '@lingui/react';
 
 export const MarketplacePage = () => {
   const { data, isLoading, isError, error } = useMarketplace();
@@ -14,7 +15,10 @@ export const MarketplacePage = () => {
   return (
     <div className='flex flex-col bg-background'>
       <div className='flex flex-col gap-4 w-full h-full p-2'>
-        <MarketItemList items={data} filter={filter} />
+        {/* <MarketItemList items={data} filter={filter} /> */}
+          <p className='text-lg text-muted-foreground'>
+            <Trans>This feature will be available soon</Trans>
+          </p>
       </div>
     </div>
   );
