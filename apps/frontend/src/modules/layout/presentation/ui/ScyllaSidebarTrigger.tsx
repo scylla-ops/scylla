@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button } from '@shadcn';
 import { cn } from '@shared/presentation/utils';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeftToLine } from 'lucide-react';
 import { useSidebar } from '@shadcn/sidebar.tsx';
 
 //Custom from shadcn for scylla
@@ -25,7 +25,7 @@ export function ScyllaSidebarTrigger({
       }}
       {...props}
     >
-      <ArrowLeft
+      <ArrowLeftToLine
         className={cn('size-4 transition-transform duration-300', !open && 'rotate-180')}
       />
       <span className='sr-only'>Toggle Sidebar</span>
