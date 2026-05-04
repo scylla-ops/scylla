@@ -2,13 +2,14 @@ import { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport
 import { ProjectServiceClient } from '@/generated/project.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
-import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
+
 import {
   DEFAULT_PAGE_SIZE,
   type PaginationParams,
 } from '@shared/domain/models/pagination.model.ts';
+import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
 
-export class GrpcProjectRemoteDataSource implements GrpcProjectRemoteDataSource {
+export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   private readonly _projectClient: ProjectServiceClient;
 
   constructor(_transport: CoreGrpcTransport) {
@@ -35,9 +36,17 @@ export class GrpcProjectRemoteDataSource implements GrpcProjectRemoteDataSource 
     }, 'Failed to create project.');
   }
 
-  public update(projectId: string, name?: string, description?: string): Promise<ScyllaResult<ProjectResponse>> {
+  public update(
+    projectId: string,
+    name?: string,
+    description?: string,
+  ): Promise<ScyllaResult<ProjectResponse>> {
     return ScyllaResult.tryAsync(async () => {
-      const { response } = await this._projectClient.updateProject({ projectId, name, description });
+      const { response } = await this._projectClient.updateProject({
+        projectId,
+        name,
+        description,
+      });
       return response;
     }, 'Failed to update project.');
   }

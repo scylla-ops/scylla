@@ -1,5 +1,4 @@
 import { OrganizationServiceClient } from '@/generated/organization.client.ts';
-import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/organization-remote.data-source.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListOrganizationsResponse, OrganizationResponse } from '@/generated/organization.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
@@ -25,9 +24,17 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
     }, 'Failed to create organization.');
   }
 
-  public update(organizationId: string, name?: string, description?: string): Promise<ScyllaResult<OrganizationResponse>> {
+  public update(
+    organizationId: string,
+    name?: string,
+    description?: string,
+  ): Promise<ScyllaResult<OrganizationResponse>> {
     return ScyllaResult.tryAsync(async () => {
-      const { response } = await this._organizationClient.updateOrganization({ organizationId, name, description });
+      const { response } = await this._organizationClient.updateOrganization({
+        organizationId,
+        name,
+        description,
+      });
       return response;
     }, 'Failed to update organization.');
   }
