@@ -1,10 +1,10 @@
-import StatusIndicator from '@shared/presentation/ui/status-indicator.tsx';
+import StatusIndicator, { type StatusState } from '@shared/presentation/ui/status-indicator.tsx';
 import { Trans } from '@lingui/react/macro';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 type PipelineStatusProps = {
   pipeline: PipelineMetadata;
-  status?: 'idle' | 'running' | 'success' | 'failed';
+  status: StatusState;
 };
 
 /**
@@ -13,9 +13,10 @@ type PipelineStatusProps = {
 export const PipelineStatus = ({ pipeline, status }: PipelineStatusProps) => {
   const creationDate = new Date(pipeline.createdAt);
 
+  console.log(status);
   return (
     <div className={'flex items-center justify-center gap-2 flex-row'}>
-      <StatusIndicator state={status || 'idle'} />
+      <StatusIndicator state={status} />
 
       <div className='flex flex-col overflow-hidden'>
         <span className='font-semibold text-slate-900 truncate'>{pipeline.name}</span>

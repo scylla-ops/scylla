@@ -12,13 +12,9 @@ type PipelineColumnMeta = {
 export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] => [
   {
     id: 'username',
-    header: () => (
-      <div className={'flex w-full text-xs font-semibold uppercase tracking-wider'}>
-        <Trans>User</Trans>
-      </div>
-    ),
+    header: () => <Trans>User</Trans>,
     cell: ({ row }) => (
-      <div className={'flex flexrow w-full h-full items-center gap-2'}>
+      <div className='flex flex-row items-center gap-2'>
         <Avatar className='h-8 w-8 rounded-lg'>
           <AvatarImage />
           <AvatarFallback className='rounded-lg'>
@@ -31,34 +27,20 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] =
   },
   {
     id: 'creationDate',
-    header: () => (
-      <div className={'w-full text-center text-xs font-semibold uppercase tracking-wider'}>
-        <Trans>Created at</Trans>
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className={'w-full text-center'}>
-        <span>{formatDate(row.original.createdAt)}</span>
-      </div>
-    ),
+    header: () => <Trans>Created at</Trans>,
+    cell: ({ row }) => <span>{formatDate(row.original.createdAt)}</span>,
   },
   {
     id: 'actions',
-    header: () => (
-      <div className={'w-full text-center text-xs font-semibold uppercase tracking-wider'}>
-        <Trans>Actions</Trans>
-      </div>
-    ),
+    header: () => <Trans>Actions</Trans>,
     cell: ({ row }) => (
-      <div
+      <Eye
+        className='h-4 w-4 hover:scale-125 hover:text-primary transition-all cursor-pointer'
         onClick={e => {
           e.stopPropagation();
           meta.onView(row.original.userId);
         }}
-        className={'flex items-center justify-center gap-2'}
-      >
-        <Eye className='h-4 w-4 hover:scale-125 hover:text-primary transition-all cursor-pointer' />
-      </div>
+      />
     ),
   },
 ];

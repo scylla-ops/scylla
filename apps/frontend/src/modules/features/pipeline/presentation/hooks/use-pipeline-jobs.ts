@@ -32,7 +32,7 @@ export const usePipelineJobs = (pipelineIds: string[]) => {
         const data = query.state.data;
         if (!data) return false;
         const hasActive = data.jobs.some(j => j.status === 'running' || j.status === 'pending');
-        return hasActive ? 5000 : false;
+        return hasActive ? 200 : false;
       },
     })),
   });

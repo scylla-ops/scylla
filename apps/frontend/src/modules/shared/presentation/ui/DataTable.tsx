@@ -15,6 +15,27 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/table';
 import { cn } from '@shared/presentation/utils';
 
+type ColumnAlign = 'left' | 'center' | 'right';
+
+declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData, TValue> {
+    align?: ColumnAlign;
+  }
+}
+
+const alignClass: Record<ColumnAlign, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+};
+
+const cellAlignClass: Record<ColumnAlign, string> = {
+  left: '',
+  center: 'flex items-center justify-center',
+  right: 'flex items-center justify-end',
+};
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -23,6 +44,7 @@ interface DataTableProps<TData, TValue> {
   isRowSelected?: (row: TData) => boolean;
   expandedContent?: (row: Row<TData>) => React.ReactNode;
   isRowExpanded?: (row: TData) => boolean;
+  alignCenter?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -33,6 +55,7 @@ export function DataTable<TData, TValue>({
   isRowSelected,
   expandedContent,
   isRowExpanded,
+  alignCenter = false,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -50,22 +73,28 @@ export function DataTable<TData, TValue>({
               key={headerGroup.id}
               className='hover:bg-transparent border-b border-slate-200'
             >
-              {headerGroup.headers.map(header => (
-                <TableHead
-                  key={header.id}
-                  style={{
-                    width: header.getSize() !== 150 ? `${header.getSize()}px` : 'auto',
-                    minWidth: header.column.columnDef.minSize
-                      ? `${header.column.columnDef.minSize}px`
-                      : undefined,
-                  }}
-                  className='h-12 px-4 text-slate-600 font-semibold bg-slate-50'
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
+              {headerGroup.headers.map(header => {
+                const align = (header.column.columnDef.meta?.align ?? (alignCenter ? 'center' : 'left')) as ColumnAlign;
+                return (
+                  <TableHead
+                    key={header.id}
+                    style={{
+                      width: header.getSize() !== 150 ? `${header.getSize()}px` : 'auto',
+                      minWidth: header.column.columnDef.minSize
+                        ? `${header.column.columnDef.minSize}px`
+                        : undefined,
+                    }}
+                    className={cn(
+                      'h-12 px-4 text-slate-600 font-semibold bg-slate-50 text-xs uppercase tracking-wider',
+                      alignClass[align],
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                );
+              })}
             </TableRow>
           ))}
         </TableHeader>
@@ -89,6 +118,7 @@ export function DataTable<TData, TValue>({
                   >
                     {row.getVisibleCells().map((cell, index) => {
                       const header = table.getHeaderGroups()[0].headers[index];
+                      const align = (cell.column.columnDef.meta?.align ?? (alignCenter ? 'center' : 'left')) as ColumnAlign;
                       return (
                         <TableCell
                           key={cell.id}
@@ -98,9 +128,11 @@ export function DataTable<TData, TValue>({
                               ? `${header.column.columnDef.minSize}px`
                               : undefined,
                           }}
-                          className='px-4 py-4'
+                          className={cn('px-4 py-4', alignClass[align])}
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          <div className={cn(cellAlignClass[align])}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </div>
                         </TableCell>
                       );
                     })}

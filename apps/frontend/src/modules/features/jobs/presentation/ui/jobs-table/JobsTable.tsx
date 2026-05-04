@@ -50,6 +50,7 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
       <DataTable
         columns={columns}
         data={jobs}
+        alignCenter
         onRowClick={row => selectJob(row.original.jobId)}
         getRowId={(row, index) => row.jobId || index.toString()}
         isRowSelected={row => selectedJobIds.includes(row.jobId)}
