@@ -123,7 +123,6 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
       <CardContent className='space-y-4'>
         <div className='flex items-center space-x-4'>
           <Avatar>
-            <AvatarImage src={`https://github.com/${user.username}.png`} />
             <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
           </Avatar>
           <div>

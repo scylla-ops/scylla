@@ -17,7 +17,7 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:132
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:131
 msgid "Active account"
 msgstr "Active account"
 
