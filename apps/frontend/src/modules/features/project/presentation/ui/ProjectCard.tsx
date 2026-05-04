@@ -8,6 +8,8 @@ import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { EditProjectDialog } from '@/modules/features/project/presentation/ui/EditProjectDialog.tsx';
 import { useState } from 'react';
 import { cn } from '@shared/presentation/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { Checkbox } from '@shadcn/checkbox.tsx';
 
 type ProjectCardProps = {
   project: Project;
@@ -38,24 +40,32 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
                 {project.name}
               </CardTitle>
             </div>
-            <div className='flex gap-1'>
-              <Button
-                size='icon'
-                variant='ghost'
-                className='h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity'
-                onClick={e => {
-                  e.stopPropagation();
-                  setEditOpen(true);
-                }}
-              >
-                <Pencil className='h-4 w-4' />
-              </Button>
-              <input
-                type='checkbox'
+            <div className='flex flex-row items-center gap-1 mr-2'>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size='icon'
+                    variant='ghost'
+                    className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full opacity-0 group-hover:opacity-100'
+                    onClick={e => {
+                      e.stopPropagation();
+                      setEditOpen(true);
+                    }}
+                  >
+                    <Pencil className='h-4 w-4' />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    <Trans>Edit</Trans>
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              <Checkbox
                 checked={isSelected}
-                className='accent-primary h-4 w-4 mt-1 cursor-pointer'
+                className='transition-all cursor-pointer hover:scale-125 hover:border-primary'
                 onClick={e => e.stopPropagation()}
-                onChange={() => select(project.id)}
+                onCheckedChange={() => select(project.id)}
               />
             </div>
           </div>
