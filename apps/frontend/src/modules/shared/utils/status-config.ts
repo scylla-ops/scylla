@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, DiamondMinusIcon, Loader2, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export type StatusKey = 'pending' | 'running' | 'completed' | 'failed';
@@ -29,8 +29,8 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   pending: {
     label: 'Pending',
     variant: 'secondary',
-    icon: Loader2,
-    iconClassName: 'text-gray-400 animate-spin',
+    icon: DiamondMinusIcon,
+    iconClassName: 'text-gray-400',
     barClassName: 'bg-gray-400/80',
     barHoverClassName: 'hover:bg-gray-500 hover:scale-y-110',
     dotClassName: 'bg-gray-500',
