@@ -10,6 +10,8 @@ import { Button } from '@shadcn';
 import { EditOrganizationDialog } from '@/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx';
 import { useDeleteOrganization } from '@/modules/features/organization/presentation/hooks/use-delete-organization.ts';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { Trans } from '@lingui/react/macro';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
@@ -67,28 +69,46 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
               <ContextItem name={organisation.name} icon={Building2} />
             </div>
             <div className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
-              <Button
-                size='icon'
-                variant='ghost'
-                className='h-7 w-7'
-                onClick={e => {
-                  e.stopPropagation();
-                  setEditOrg({ id: organisation.organizationId, name: organisation.name });
-                }}
-              >
-                <Pencil className='h-3.5 w-3.5' />
-              </Button>
-              <Button
-                size='icon'
-                variant='ghost'
-                className='h-7 w-7 text-destructive hover:text-destructive'
-                onClick={e => {
-                  e.stopPropagation();
-                  setDeleteOrgId(organisation.organizationId);
-                }}
-              >
-                <Trash className='h-3.5 w-3.5' />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size='icon'
+                    variant='ghost'
+                    className='h-7 w-7 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+                    onClick={e => {
+                      e.stopPropagation();
+                      setEditOrg({ id: organisation.organizationId, name: organisation.name });
+                    }}
+                  >
+                    <Pencil className='h-3.5 w-3.5 hover:text-primary' />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    <Trans>Edit</Trans>
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size='icon'
+                    variant='ghost'
+                    className='h-7 w-7 cursor-pointer transition-all hover:scale-125 hover:text-destructive hover:bg-destructive/10 rounded-full'
+                    onClick={e => {
+                      e.stopPropagation();
+                      setDeleteOrgId(organisation.organizationId);
+                    }}
+                  >
+                    <Trash className='h-3.5 w-3.5' />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    <Trans>Delete</Trans>
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </Wrapper>

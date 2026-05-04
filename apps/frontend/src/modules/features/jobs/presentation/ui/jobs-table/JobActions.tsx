@@ -8,6 +8,8 @@ import {
 import { Eye, Trash, MoreHorizontal } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { Trans } from '@lingui/react/macro';
 
 type JobActionsProps = {
   onView?: (e: SyntheticEvent) => void;
@@ -68,27 +70,40 @@ export const JobActions = ({ onView, onDelete }: JobActionsProps) => {
       ) : (
         <>
           {onView && (
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-8 w-8 shrink-0 text-slate-400 hover:text-primary hover:bg-primary-hover rounded-full'
-              onClick={onView}
-            >
-              <Eye className='w-4 h-4' />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+                  onClick={onView}
+                >
+                  <Eye className='w-4 h-4' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p><Trans>View</Trans></p>
+              </TooltipContent>
+            </Tooltip>
           )}
 
-          <Button
-            size='icon'
-            variant='ghost'
-            className='h-8 w-8 shrink-0 text-slate-400 hover:text-destructive rounded-full'
-            onClick={onDelete}
-          >
-            <Trash className='w-4 h-4' />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size='icon'
+                variant='ghost'
+                className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-destructive hover:bg-destructive/10 rounded-full'
+                onClick={onDelete}
+              >
+                <Trash className='w-4 h-4' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p><Trans>Delete</Trans></p>
+            </TooltipContent>
+          </Tooltip>
         </>
       )}
     </div>
   );
 };
-

@@ -9,6 +9,7 @@ import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2 } from 'lucide-
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
@@ -87,48 +88,76 @@ export const PipelineActions = ({
         </DropdownMenu>
       ) : (
         <>
-          <Button
-            size='icon'
-            variant='ghost'
-            className='h-8 w-8 shrink-0 text-slate-400 hover:text-primary hover:bg-primary-hover rounded-full'
-            onClick={onRun}
-          >
-            {isRunning ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <PlayIcon className='h-4 w-4 fill-current' />
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size='icon'
+                variant='ghost'
+                className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+                onClick={onRun}
+              >
+                {isRunning ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  <PlayIcon className='h-4 w-4 fill-current' />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p><Trans>Run</Trans></p>
+            </TooltipContent>
+          </Tooltip>
 
-          <Button
-            size='icon'
-            variant='ghost'
-            className='h-8 w-8 shrink-0 text-slate-400 hover:text-slate-900 rounded-full'
-            onClick={onEdit}
-          >
-            <EditIcon className='w-4 h-4' />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size='icon'
+                variant='ghost'
+                className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+                onClick={onEdit}
+              >
+                <EditIcon className='w-4 h-4' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Edit pipeline</p>
+            </TooltipContent>
+          </Tooltip>
 
           {onViewJobs && (
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-8 w-8 shrink-0 text-slate-400 hover:text-blue-600 rounded-full'
-              onClick={onViewJobs}
-            >
-              <ListChecks className='w-4 h-4' />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+                  onClick={onViewJobs}
+                >
+                  <ListChecks className='w-4 h-4' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p><Trans>View Jobs</Trans></p>
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {onMore && (
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-8 w-8 shrink-0 text-slate-400 rounded-full'
-              onClick={onMore}
-            >
-              <MoreHorizontal className='w-4 h-4' />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+                  onClick={onMore}
+                >
+                  <MoreHorizontal className='w-4 h-4' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p><Trans>More options</Trans></p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </>
       )}

@@ -3,7 +3,8 @@ import type { User } from '@/modules/features/user/domain/models/user.model.ts';
 import { Eye } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { formatDate } from '@shared/utils/date-utils.ts';
-import { Avatar, AvatarFallback, AvatarImage } from '@shadcn';
+import { Avatar, AvatarFallback, AvatarImage, Button } from '@shadcn';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 
 type PipelineColumnMeta = {
   onView: (userId: string) => void;
@@ -34,13 +35,28 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] =
     id: 'actions',
     header: () => <Trans>Actions</Trans>,
     cell: ({ row }) => (
-      <Eye
-        className='h-4 w-4 hover:scale-125 hover:text-primary transition-all cursor-pointer'
-        onClick={e => {
-          e.stopPropagation();
-          meta.onView(row.original.userId);
-        }}
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size={'icon'}
+            className={
+              'h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+            }
+            variant='ghost'
+            onSelect={e => {
+              e.preventDefault();
+              meta.onView(row.original.userId);
+            }}
+          >
+            <Eye />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>
+            <Trans>View</Trans>
+          </p>
+        </TooltipContent>
+      </Tooltip>
     ),
   },
 ];
