@@ -24,7 +24,7 @@ const EDGE_COLOR = 'oklch(65.752% 0.25 180)';
 
 const DEFAULT_EDGE_STYLE = {
   animated: true,
-  type: 'smoothstep' as const,
+  type: 'deletable' as const,
   markerEnd: { type: 'arrowclosed' as MarkerType, color: EDGE_COLOR },
   style: { stroke: EDGE_COLOR, strokeWidth: 2 },
 };
@@ -158,7 +158,6 @@ export function stepsToFlow(
     source: START_NODE_ID,
     target: root.id,
     ...DEFAULT_EDGE_STYLE,
-    deletable: false,
   }));
 
   return {

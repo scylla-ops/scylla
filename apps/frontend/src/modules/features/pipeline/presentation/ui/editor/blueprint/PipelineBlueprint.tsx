@@ -20,6 +20,7 @@ import { StartNode } from './StartNode.tsx';
 import { AddNodeDialog } from './AddNodeDialog.tsx';
 import { EditNodeDialog } from './EditNodeDialog.tsx';
 import { EditStartNodeDialog } from './EditStartNodeDialog.tsx';
+import { DeletableEdge } from './DeletableEdge.tsx';
 import {
   flowToSteps,
   type PipelineNodeData,
@@ -49,6 +50,10 @@ interface PipelineBlueprintProps {
 const nodeTypes = {
   pipelineStep: PipelineStepNode,
   startNode: StartNode,
+};
+
+const edgeTypes = {
+  deletable: DeletableEdge,
 };
 
 export const PipelineBlueprint = ({
@@ -101,7 +106,7 @@ export const PipelineBlueprint = ({
           {
             ...connection,
             animated: true,
-            type: 'smoothstep',
+            type: 'deletable',
             markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLOR },
             style: { stroke: EDGE_COLOR, strokeWidth: 2 },
           },
@@ -247,6 +252,7 @@ export const PipelineBlueprint = ({
         onNodesDelete={onNodesDelete}
         onNodeDoubleClick={onNodeDoubleClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         deleteKeyCode={['Backspace', 'Delete']}
@@ -254,7 +260,7 @@ export const PipelineBlueprint = ({
         edgesUpdatable
         className='rounded-lg'
         defaultEdgeOptions={{
-          type: 'smoothstep',
+          type: 'deletable',
           animated: true,
           style: { stroke: EDGE_COLOR, strokeWidth: 2 },
           markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLOR },

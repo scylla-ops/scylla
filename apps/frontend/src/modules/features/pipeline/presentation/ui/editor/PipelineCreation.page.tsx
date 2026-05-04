@@ -114,7 +114,7 @@ export const PipelineCreationPage = () => {
           />
         </Card>
       </TabsContent>
-      <TabsContent value='blueprint' className='h-full' forceMount>
+      <TabsContent value='blueprint' className='h-full'>
         <Card className='h-full p-0'>
           <PipelineBlueprint
             steps={currentSteps}
