@@ -1,5 +1,5 @@
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
-import type { ComponentType, ReactNode } from 'react';
+import { type ComponentType, type ReactNode, useCallback } from 'react';
 import { useState } from 'react';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/ContextItem.tsx';
@@ -18,11 +18,24 @@ interface OrganizationListProps {
 export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
   const { organizations } = useOrganizations();
   const setOrganization = useContextStore(state => state.setOrganization);
+  const currentOrganizationId = useContextStore(state => state.organization.id);
   const navigate = useNavigate();
   const deleteOrganization = useDeleteOrganization();
 
   const [editOrg, setEditOrg] = useState<{ id: string; name: string } | null>(null);
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
+
+  const onDeleteOrganization = useCallback(async () => {
+    if (!deleteOrgId) return;
+
+    await deleteOrganization.mutateAsync(deleteOrgId);
+    setDeleteOrgId(null);
+
+    if (deleteOrgId !== currentOrganizationId) return;
+
+    const otherOrganization = organizations?.find(org => org.organizationId !== deleteOrgId);
+    setOrganization(otherOrganization?.organizationId ?? null, otherOrganization?.name ?? null);
+  }, [deleteOrgId, deleteOrganization, currentOrganizationId, organizations, setOrganization]);
 
   if (!organizations)
     return (
@@ -84,20 +97,19 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
       {editOrg && (
         <EditOrganizationDialog
           open={!!editOrg}
-          setOpen={open => { if (!open) setEditOrg(null); }}
+          setOpen={open => {
+            if (!open) setEditOrg(null);
+          }}
           organization={editOrg}
         />
       )}
 
       <ConfirmOperationAlertDialog
         open={!!deleteOrgId}
-        onOpenChange={open => { if (!open) setDeleteOrgId(null); }}
-        onContinue={async () => {
-          if (deleteOrgId) {
-            await deleteOrganization.mutateAsync(deleteOrgId);
-            setDeleteOrgId(null);
-          }
+        onOpenChange={open => {
+          if (!open) setDeleteOrgId(null);
         }}
+        onContinue={onDeleteOrganization}
       />
     </>
   );
