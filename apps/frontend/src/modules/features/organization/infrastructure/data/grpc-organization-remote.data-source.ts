@@ -17,9 +17,9 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
     }, 'Failed to fetch organizations.');
   }
 
-  public create(name: string): Promise<ScyllaResult<OrganizationResponse>> {
+  public create(name: string, description?: string): Promise<ScyllaResult<OrganizationResponse>> {
     return ScyllaResult.tryAsync(async () => {
-      const { response } = await this._organizationClient.createOrganization({ name });
+      const { response } = await this._organizationClient.createOrganization({ name, description });
       return response;
     }, 'Failed to create organization.');
   }

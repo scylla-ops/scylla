@@ -7,7 +7,7 @@ export interface ProjectRemoteDataSource {
     organizationId: string,
     pagination?: PaginationParams,
   ) => Promise<ScyllaResult<ListProjectsResponse>>;
-  create: (name: string, organizationId: string) => Promise<ScyllaResult<ProjectResponse>>;
+  create: (name: string, organizationId: string, description?: string) => Promise<ScyllaResult<ProjectResponse>>;
   update: (
     projectId: string,
     name?: string,

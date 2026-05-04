@@ -29,9 +29,9 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
     }, 'Failed to fetch projects.');
   }
 
-  public create(name: string, organizationId: string): Promise<ScyllaResult<ProjectResponse>> {
+  public create(name: string, organizationId: string, description?: string): Promise<ScyllaResult<ProjectResponse>> {
     return ScyllaResult.tryAsync(async () => {
-      const { response } = await this._projectClient.createProject({ name, organizationId });
+      const { response } = await this._projectClient.createProject({ name, organizationId, description });
       return response;
     }, 'Failed to create project.');
   }

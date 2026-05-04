@@ -24,7 +24,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
   const navigate = useNavigate();
   const deleteOrganization = useDeleteOrganization();
 
-  const [editOrg, setEditOrg] = useState<{ id: string; name: string } | null>(null);
+  const [editOrg, setEditOrg] = useState<{ id: string; name: string; description?: string } | null>(null);
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
 
   const onDeleteOrganization = useCallback(async () => {
@@ -66,7 +66,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
         >
           <div className='flex items-center w-full'>
             <div className='flex-1 min-w-0'>
-              <ContextItem name={organisation.name} icon={Building2} />
+              <ContextItem name={organisation.name} description={organisation.description} icon={Building2} />
             </div>
             <div className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
               <Tooltip>
@@ -77,7 +77,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
                     className='h-7 w-7 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
                     onClick={e => {
                       e.stopPropagation();
-                      setEditOrg({ id: organisation.organizationId, name: organisation.name });
+                      setEditOrg({ id: organisation.organizationId, name: organisation.name, description: organisation.description });
                     }}
                   >
                     <Pencil className='h-3.5 w-3.5 hover:text-primary' />

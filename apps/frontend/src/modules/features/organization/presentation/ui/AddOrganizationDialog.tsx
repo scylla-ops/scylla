@@ -35,9 +35,10 @@ export function AddOrganizationDialog({ open, setOpen }: AddOrganizationDialogPr
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
+    const description = values.find(v => v.id === 'description')?.value;
     if (!name?.trim()) return;
 
-    createOrganization.mutate(name, {
+    createOrganization.mutate({ name, description: description?.trim() || undefined }, {
       onSuccess: () => setOpen(false),
     });
   };

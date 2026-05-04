@@ -14,8 +14,8 @@ export class DefaultProjectRepository implements ProjectRepository {
     );
   }
 
-  async create(name: string, organizationId: string): Promise<ScyllaResult<Project>> {
-    return (await this._remoteDataSource.create(name, organizationId)).map(
+  async create(name: string, organizationId: string, description?: string): Promise<ScyllaResult<Project>> {
+    return (await this._remoteDataSource.create(name, organizationId, description)).map(
       GrpcProjectMapper.toDomain,
     );
   }
