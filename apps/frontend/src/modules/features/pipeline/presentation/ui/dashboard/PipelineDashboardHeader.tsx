@@ -19,7 +19,7 @@ export const PipelineDashboardHeader = ({
 
   const handleDelete = async () => {
     const promises = selectedIds.map(id => deletePipeline.mutateAsync(id));
-    await Promise.all(promises);
+    await Promise.allSettled(promises);
     clearSelection();
   };
 

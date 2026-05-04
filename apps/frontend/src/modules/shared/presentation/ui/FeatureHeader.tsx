@@ -32,8 +32,11 @@ export const FeatureHeader = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleDelete = async () => {
-    await onDeleteSelection?.();
-    setDeleteDialogOpen(false);
+    try {
+      await onDeleteSelection?.();
+    } finally {
+      setDeleteDialogOpen(false);
+    }
   };
 
   return (

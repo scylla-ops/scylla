@@ -27,10 +27,9 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
     if (!jobToDelete) return;
     try {
       await deleteJob.mutateAsync(jobToDelete);
+    } finally {
       setDeleteDialogOpen(false);
       setJobToDelete(null);
-    } catch (error) {
-      console.error('Error deleting job:', error);
     }
   };
 

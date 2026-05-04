@@ -27,14 +27,10 @@ export const JobsHeader = ({
   const [deleteDialogVisibility, setDeleteDialogVisibility] = useState(false);
 
   const handleDelete = async () => {
-    try {
-      const promises = selectedJobIds.map(id => deleteJob.mutateAsync(id));
-      await Promise.all(promises);
-      setDeleteDialogVisibility(false);
-      clearSelection();
-    } catch (error) {
-      console.error('Error deleting jobs:', error);
-    }
+    const promises = selectedJobIds.map(id => deleteJob.mutateAsync(id));
+    await Promise.allSettled(promises);
+    setDeleteDialogVisibility(false);
+    clearSelection();
   };
 
   return (
