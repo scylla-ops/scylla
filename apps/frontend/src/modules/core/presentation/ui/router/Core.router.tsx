@@ -1,7 +1,7 @@
 // CoreRouter.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LoginPage from '@/modules/features/login/presentation/ui/Login.page.tsx';
-import MarketplacePage from '@/modules/features/marketplace/presentation/ui/Marketplace.page.tsx';
+import { MarketplacePage } from '@/modules/features/marketplace/presentation/ui/Marketplace.page.tsx';
 import { Layout } from '@/modules/layout/presentation/ui/Layout.tsx';
 import { AuthGuard } from '@core/presentation/ui/router/Auth.guard.tsx';
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
@@ -15,7 +15,6 @@ import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/u
 import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
 import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.page.tsx';
 import { WorkerDetailsPage } from '../../../../features/workers/presentation/ui/WorkerDetails.page.tsx';
-
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([

@@ -24,3 +24,7 @@ msgstr "Learn more"
 #: src/modules/features/marketplace/presentation/ui/MarketplaceTopBar.tsx:16
 msgid "Search"
 msgstr "Search"
+
+#: src/modules/features/marketplace/presentation/ui/Marketplace.page.tsx:9
+msgid "This feature will be available soon"
+msgstr "This feature will be available soon"
