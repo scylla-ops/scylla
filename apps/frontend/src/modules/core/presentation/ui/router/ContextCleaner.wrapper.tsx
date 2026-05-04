@@ -21,7 +21,6 @@ export const ContextCleanerWrapper = () => {
       !location.pathname.includes('/edit/') &&
       !location.pathname.includes('/pipelines/')
     ) {
-      console.log('Suppression du pipeline car on a quitté la page édit');
       setPipeline(null, null);
     }
   }, [location.pathname, setPipeline, setProject]);

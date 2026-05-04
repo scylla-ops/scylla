@@ -13,7 +13,6 @@ type PipelineStatusProps = {
 export const PipelineStatus = ({ pipeline, status }: PipelineStatusProps) => {
   const creationDate = new Date(pipeline.createdAt);
 
-  console.log(status);
   return (
     <div className={'flex items-center justify-center gap-2 flex-row'}>
       <StatusIndicator state={status} />
