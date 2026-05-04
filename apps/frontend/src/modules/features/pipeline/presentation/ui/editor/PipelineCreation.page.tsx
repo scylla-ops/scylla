@@ -1,4 +1,4 @@
-import ReactCodeMirror, { EditorView } from '@uiw/react-codemirror';
+import ReactCodeMirror from '@uiw/react-codemirror';
 import { StreamLanguage } from '@codemirror/language';
 import { Tabs, TabsContent } from '@shadcn/tabs.tsx';
 import { Card } from '@shadcn';
@@ -10,23 +10,7 @@ import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/u
 import { useScriptStore } from '@/modules/features/pipeline/presentation/stores/use-script.store.ts';
 import { createDefaultScript } from '@/modules/features/pipeline/presentation/utils/create-default-script.ts';
 import { useCreatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-create-pipeline.ts';
-
-const codeMirrorTheme = EditorView.theme({
-  '&': { borderRadius: '0.75rem', overflow: 'hidden' },
-  '.cm-scroller': { overflow: 'auto' },
-  '.cm-content': { padding: '0.5rem' },
-  '.cm-activeLineGutter': { backgroundColor: 'var(--code-editor-line-bg)' },
-  '.cm-activeLine': { backgroundColor: 'var(--code-editor-line-bg)' },
-  'cm-gutters': { backgroundColor: 'transparent', border: 'none' },
-  '&.cm-focused': {
-    outline: 'none',
-    boxShadow: `-2px 0 0px 0px var(--primary), 0 1px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)`,
-    borderRadius: '0.75rem',
-    transition: 'box-shadow 0.1s ease-in-out',
-  },
-});
-
-export { codeMirrorTheme };
+import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
 
 export const PipelineCreationPage = () => {
   const { script, setScript } = useScriptStore(state => state);

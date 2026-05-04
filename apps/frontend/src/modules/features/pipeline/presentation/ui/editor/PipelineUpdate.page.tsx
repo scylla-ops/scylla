@@ -10,9 +10,9 @@ import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/u
 import { useScriptStore } from '@/modules/features/pipeline/presentation/stores/use-script.store.ts';
 import { usePipeline } from '@/modules/features/pipeline/presentation/hooks/use-pipeline.ts';
 import { useUpdatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-update-pipeline.ts';
-import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import type { Pipeline } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
 
 export const PipelineUpdatePage = () => {
   const { script, setScript } = useScriptStore(state => state);
