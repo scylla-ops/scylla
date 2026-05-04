@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export type StatusKey = 'pending' | 'running' | 'completed' | 'failed';
@@ -15,16 +15,6 @@ export interface StatusConfig {
 }
 
 export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
-  pending: {
-    label: 'Pending',
-    variant: 'secondary',
-    icon: Clock,
-    iconClassName: 'text-slate-500',
-    barClassName: 'bg-slate-300',
-    barHoverClassName: 'hover:bg-slate-400 hover:scale-y-110',
-    dotClassName: 'bg-slate-400',
-    textClassName: 'text-slate-600',
-  },
   running: {
     label: 'Running',
     variant: 'default',
@@ -34,6 +24,17 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     barHoverClassName: 'ring-4 ring-blue-400/30 ring-inset hover:scale-y-110',
     dotClassName: 'bg-blue-500 animate-pulse',
     textClassName: 'text-blue-600',
+  },
+
+  pending: {
+    label: 'Pending',
+    variant: 'secondary',
+    icon: Loader2,
+    iconClassName: 'text-gray-400 animate-spin',
+    barClassName: 'bg-gray-400/80',
+    barHoverClassName: 'hover:bg-gray-500 hover:scale-y-110',
+    dotClassName: 'bg-gray-500',
+    textClassName: 'text-gray-600',
   },
   completed: {
     label: 'Success',

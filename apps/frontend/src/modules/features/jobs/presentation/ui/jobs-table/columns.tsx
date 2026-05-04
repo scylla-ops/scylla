@@ -17,72 +17,32 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
   return [
     {
       accessorKey: 'status',
-      header: () => (
-        <div className={'flex items-center justify-center'}>
-          <span className='text-xs font-semibold uppercase tracking-wider'>
-            <Trans>Status</Trans>
-          </span>
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={'flex items-center justify-center'}>
-          <JobStatus job={row.original} />{' '}
-        </div>
-      ),
+      header: () => <Trans>Status</Trans>,
+      cell: ({ row }) => <JobStatus job={row.original} />,
       size: 160,
       minSize: 140,
     },
     {
       accessorKey: 'jobId',
-      header: () => (
-        <div className={'flex items-center justify-center'}>
-          <span className='text-xs font-semibold uppercase tracking-wider'>
-            <Trans>Job ID</Trans>
-          </span>
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={'flex items-center justify-center'}>
-          <JobIdCell job={row.original} />
-        </div>
-      ),
+      header: () => <Trans>Job ID</Trans>,
+      cell: ({ row }) => <JobIdCell job={row.original} />,
       size: 180,
       minSize: 150,
     },
     {
       id: 'timeline',
-      header: () => (
-        <div className={'flex items-center justify-center'}>
-          <span className='text-xs font-semibold uppercase tracking-wider'>
-            <Trans>Timeline</Trans>
-          </span>
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className={'flex items-center justify-center'}>
-          <JobTimeline nodeExecutions={row.original.nodeExecutions} />
-        </div>
-      ),
-      size: undefined, // Prend l'espace restant
+      header: () => <Trans>Timeline</Trans>,
+      cell: ({ row }) => <JobTimeline nodeExecutions={row.original.nodeExecutions} />,
+      size: undefined,
       minSize: 200,
     },
     {
       id: 'duration',
-      header: () => (
-        <div className={'flex items-center justify-center'}>
-          <span className='text-xs font-semibold uppercase tracking-wider'>
-            <Trans>Duration</Trans>
-          </span>
-        </div>
-      ),
+      header: () => <Trans>Duration</Trans>,
       cell: ({ row }) => {
         const duration = calculateDuration(row.original.createdAt, row.original.updatedAt);
         return (
-          <div className={'flex items-center justify-center'}>
-            <span className='text-sm font-medium whitespace-nowrap'>
-              {formatDuration(duration)}
-            </span>
-          </div>
+          <span className='text-sm font-medium whitespace-nowrap'>{formatDuration(duration)}</span>
         );
       },
       size: 100,
@@ -90,45 +50,27 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
     },
     {
       accessorKey: 'createdAt',
-      header: () => (
-        <div className={'flex items-center justify-center'}>
-          <span className='text-xs font-semibold uppercase tracking-wider'>
-            <Trans>Created</Trans>
-          </span>
-        </div>
-      ),
+      header: () => <Trans>Created</Trans>,
       cell: ({ row }) => (
-        <div className={'flex items-center justify-center'}>
-          <span className='text-sm whitespace-nowrap'>
-            {getRelativeTime(row.original.createdAt)}
-          </span>
-        </div>
+        <span className='text-sm whitespace-nowrap'>{getRelativeTime(row.original.createdAt)}</span>
       ),
       size: 100,
       minSize: 80,
     },
     {
       id: 'actions',
-      header: () => (
-        <div className={'flex items-center justify-center'}>
-          <span className='text-xs font-semibold uppercase tracking-wider'>
-            <Trans>Actions</Trans>
-          </span>
-        </div>
-      ),
+      header: () => <Trans>Actions</Trans>,
       cell: ({ row }) => (
-        <div className={'flex items-center justify-center gap-2'}>
-          <JobActions
-            onView={e => {
-              e.stopPropagation();
-              meta.onView(row.original.jobId);
-            }}
-            onDelete={e => {
-              e.stopPropagation();
-              meta.onDelete(row.original.jobId);
-            }}
-          />
-        </div>
+        <JobActions
+          onView={e => {
+            e.stopPropagation();
+            meta.onView(row.original.jobId);
+          }}
+          onDelete={e => {
+            e.stopPropagation();
+            meta.onDelete(row.original.jobId);
+          }}
+        />
       ),
       size: 100,
       minSize: 80,
