@@ -5,19 +5,27 @@ import { FeatureHeader } from '@shared/presentation/ui';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { AddUserDialog } from '@/modules/features/user/presentation/ui/admin/AddUserDialog.tsx';
 import { useState } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { toast } from '@shared/presentation/utils/toast.ts';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
   const { selectedIds, clearSelection } = useSelection('users');
   const deleteUser = useDeleteUser();
   const [openDialog, setOpenDialog] = useState(false);
+  const { t } = useLingui();
 
   const { goToUserSettings } = useScyllaNavigate();
 
   const handleDelete = async () => {
+    const currentUserId = localStorage.getItem('userId');
+    if (currentUserId && selectedIds.includes(currentUserId)) {
+      toast.error(t`You cannot delete your own account.`);
+      return;
+    }
+
     const promises = selectedIds.map(id => deleteUser.mutateAsync(id));
     await Promise.all(promises);
     clearSelection();
