@@ -35,10 +35,11 @@ export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onE
     },
     {
       id: 'args',
-      label: t`Arguments (space-separated)`,
+      label: t`Arguments (optional, space-separated)`,
       placeholder: t`e.g., build --release`,
       type: FormItemType.Input,
       inputType: 'text',
+      optional: true,
       defaultValue: editingNode?.args.join(' ') ?? '',
     },
   ];

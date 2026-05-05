@@ -31,7 +31,8 @@ export const useFormState = (items: FormItem[]) => {
 
   const reset = () => setValues(items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })));
 
-  const isValid = values.every(v => v.value.trim().length > 0);
+  const optionalIds = new Set(items.filter(item => item.optional).map(item => item.id));
+  const isValid = values.every(v => optionalIds.has(v.id) || v.value.trim().length > 0);
 
   return { values, handleChange, reset, isValid };
 };
