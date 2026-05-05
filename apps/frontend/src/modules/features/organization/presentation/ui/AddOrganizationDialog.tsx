@@ -10,9 +10,14 @@ import {
 interface AddOrganizationDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
+  hideCancel?: boolean;
 }
 
-export function AddOrganizationDialog({ open, setOpen }: AddOrganizationDialogProps) {
+export function AddOrganizationDialog({
+  open,
+  setOpen,
+  hideCancel = false,
+}: AddOrganizationDialogProps) {
   const { t } = useLingui();
   const createOrganization = useCreateOrganization();
 
@@ -38,9 +43,12 @@ export function AddOrganizationDialog({ open, setOpen }: AddOrganizationDialogPr
     const description = values.find(v => v.id === 'description')?.value;
     if (!name?.trim()) return;
 
-    createOrganization.mutate({ name, description: description?.trim() || undefined }, {
-      onSuccess: () => setOpen(false),
-    });
+    createOrganization.mutate(
+      { name, description: description?.trim() || undefined },
+      {
+        onSuccess: () => setOpen(false),
+      },
+    );
   };
 
   return (
@@ -58,6 +66,7 @@ export function AddOrganizationDialog({ open, setOpen }: AddOrganizationDialogPr
       isPending={createOrganization.isPending}
       submitLabel={<Trans>Create Organization</Trans>}
       onSubmit={handleSubmit}
+      hideCancel={hideCancel}
     />
   );
 }
