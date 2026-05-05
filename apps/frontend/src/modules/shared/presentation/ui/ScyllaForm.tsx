@@ -22,14 +22,14 @@ import { useState } from 'react';
 // eslint-disable-next-line react-refresh/only-export-components
 export const useFormState = (items: FormItem[]) => {
   const [values, setValues] = useState<FormChange[]>(
-    items.map(item => ({ id: item.id, value: '' })),
+    items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })),
   );
 
   const handleChange = (id: string, value: string) => {
     setValues(prev => prev.map(field => (field.id === id ? { ...field, value } : field)));
   };
 
-  const reset = () => setValues(items.map(item => ({ id: item.id, value: '' })));
+  const reset = () => setValues(items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })));
 
   const isValid = values.every(v => v.value.trim().length > 0);
 

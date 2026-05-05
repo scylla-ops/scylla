@@ -35,7 +35,7 @@ msgstr "En êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:53
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:57
 msgid "Clear"
 msgstr ""
 
@@ -51,11 +51,15 @@ msgstr ""
 msgid "Creating..."
 msgstr ""
 
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:73
+msgid "Delete"
+msgstr ""
+
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:47
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:51
 msgid "in total"
 msgstr ""
 
@@ -67,7 +71,7 @@ msgstr "Se déconnecter"
 #~ msgid "Main"
 #~ msgstr "Principal"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:69
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:80
 msgid "New {label}"
 msgstr ""
 

@@ -13,19 +13,32 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:84
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:62
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:71
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
+msgid "Copied!"
+msgstr "Copied!"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
+msgid "Copy ID"
+msgstr "Copy ID"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:53
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:55
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:102
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:92
+msgid "Delete"
+msgstr "Delete"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:41
 msgid "Duration"
 msgstr "Duration"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:33
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:27
 msgid "Job ID"
 msgstr "Job ID"
 
@@ -33,14 +46,22 @@ msgstr "Job ID"
 msgid "No jobs found"
 msgstr "No jobs found"
 
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:69
+msgid "Refresh"
+msgstr "Refresh"
+
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:50
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:22
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:20
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:44
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:34
 msgid "Timeline"
 msgstr "Timeline"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
+msgid "View"
+msgstr "View"
