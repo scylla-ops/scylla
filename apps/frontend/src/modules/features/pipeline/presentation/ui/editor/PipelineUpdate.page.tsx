@@ -9,11 +9,9 @@ import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/u
 import { usePipeline } from '@/modules/features/pipeline/presentation/hooks/use-pipeline.ts';
 import { useUpdatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-update-pipeline.ts';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
-import type { Pipeline } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
 import { PipelineBlueprint } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/PipelineBlueprint.tsx';
 import { usePipelineScript } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-script.ts';
-import { NODE_ID_FIELD_UPDATE } from '@/modules/features/pipeline/presentation/utils/node-id-field.ts';
 
 export const PipelineUpdatePage = () => {
   const { pipelineId } = useParams();
@@ -24,7 +22,7 @@ export const PipelineUpdatePage = () => {
     script, setScript,
     pipelineName, steps,
     handleStepsChange, handleNameChange,
-  } = usePipelineScript({ nodeIdField: NODE_ID_FIELD_UPDATE });
+  } = usePipelineScript();
 
   useEffect(() => {
     if (pipeline) {
@@ -38,14 +36,9 @@ export const PipelineUpdatePage = () => {
   }, [pipeline, setScript]);
 
   const handleUpdate = useCallback(() => {
-    if (!script || !pipelineId) return;
-    try {
-      const parsed: Pipeline = JSON.parse(script);
-      updatePipeline.mutate({ id: pipelineId, nodes: parsed.nodes, name: parsed.name });
-    } catch {
-      /* ignore parse errors */
-    }
-  }, [script, pipelineId, updatePipeline]);
+    if (!pipelineId) return;
+    updatePipeline.mutate({ id: pipelineId, nodes: steps, name: pipelineName });
+  }, [pipelineId, steps, pipelineName, updatePipeline]);
 
   if (isLoading) return <>Loading...</>;
   if (isError) return <ErrorState message='Failed to load pipeline' />;

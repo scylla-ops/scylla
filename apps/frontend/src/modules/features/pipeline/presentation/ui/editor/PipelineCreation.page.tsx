@@ -12,7 +12,6 @@ import { useCreatePipeline } from '@/modules/features/pipeline/presentation/hook
 import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
 import { PipelineBlueprint } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/PipelineBlueprint.tsx';
 import { usePipelineScript } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-script.ts';
-import { NODE_ID_FIELD_CREATE } from '@/modules/features/pipeline/presentation/utils/node-id-field.ts';
 
 export const PipelineCreationPage = () => {
   const { projectId } = useParams();
@@ -22,7 +21,7 @@ export const PipelineCreationPage = () => {
     script, setScript,
     pipelineName, steps,
     handleStepsChange, handleNameChange,
-  } = usePipelineScript({ nodeIdField: NODE_ID_FIELD_CREATE, projectId });
+  } = usePipelineScript({ projectId });
 
   useEffect(() => {
     if (projectId) {
@@ -31,7 +30,8 @@ export const PipelineCreationPage = () => {
   }, [projectId, setScript]);
 
   const handleCreate = () => {
-    createPipeline.mutate(script);
+    if (!projectId) return;
+    createPipeline.mutate({ name: pipelineName, projectId, nodes: steps });
   };
 
   if (!projectId)

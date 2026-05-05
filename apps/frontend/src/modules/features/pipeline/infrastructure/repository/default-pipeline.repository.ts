@@ -30,8 +30,12 @@ export class DefaultPipelineRepository implements PipelineRepository {
     return this.remoteDataSource.run(id);
   }
 
-  public async create(content: string): Promise<ScyllaResult<void>> {
-    return this.remoteDataSource.create(content);
+  public async create(pipeline: Omit<Pipeline, 'id'>): Promise<ScyllaResult<void>> {
+    return this.remoteDataSource.create({
+      name: pipeline.name,
+      projectId: pipeline.projectId,
+      nodes: pipeline.nodes.map(GrpcPipelineMapper.nodeFromDomain),
+    });
   }
 
   public async getById(id: string): Promise<ScyllaResult<Pipeline>> {

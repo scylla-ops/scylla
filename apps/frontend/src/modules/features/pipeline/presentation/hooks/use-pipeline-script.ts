@@ -3,13 +3,11 @@ import { useScriptStore } from '@/modules/features/pipeline/presentation/stores/
 import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 interface UsePipelineScriptParams {
-  /** The JSON field name used for node ID ("nodeId" for create, "id" for update) */
-  nodeIdField: string;
   /** Project ID used as fallback when the script is unparseable */
   projectId?: string;
 }
 
-export function usePipelineScript({ nodeIdField, projectId = '' }: UsePipelineScriptParams) {
+export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = {}) {
   const { script, setScript } = useScriptStore(state => state);
 
   const pipelineName: string = useMemo(() => {
@@ -24,7 +22,7 @@ export function usePipelineScript({ nodeIdField, projectId = '' }: UsePipelineSc
     try {
       const parsed = JSON.parse(script);
       return (parsed.nodes ?? []).map((n: Record<string, unknown>) => ({
-        id: (n.nodeId as string) ?? (n.id as string) ?? '',
+        id: (n.id as string) ?? '',
         deps: (n.deps as string[]) ?? [],
         command: (n.command as string) ?? '',
         args: (n.args as string[]) ?? [],
@@ -37,7 +35,7 @@ export function usePipelineScript({ nodeIdField, projectId = '' }: UsePipelineSc
   const handleStepsChange = useCallback(
     (newSteps: PipelineStep[]) => {
       const nodes = newSteps.map(s => ({
-        [nodeIdField]: s.id,
+        id: s.id,
         deps: s.deps,
         command: s.command,
         args: s.args,
@@ -52,7 +50,7 @@ export function usePipelineScript({ nodeIdField, projectId = '' }: UsePipelineSc
         setScript(JSON.stringify(obj, null, 2));
       }
     },
-    [script, setScript, nodeIdField, projectId],
+    [script, setScript, projectId],
   );
 
   const handleNameChange = useCallback(
