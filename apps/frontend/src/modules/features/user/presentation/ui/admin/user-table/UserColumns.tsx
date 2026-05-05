@@ -40,10 +40,10 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] =
           <Button
             size={'icon'}
             className={
-              'h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+              'w-8 h-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
             }
             variant='ghost'
-            onSelect={e => {
+            onClick={e => {
               e.preventDefault();
               meta.onView(row.original.userId);
             }}

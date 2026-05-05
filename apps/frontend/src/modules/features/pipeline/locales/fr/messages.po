@@ -23,18 +23,22 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:66
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:67
 msgid "Add a new node"
 msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/BlueprintToolbar.tsx:14
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:74
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:75
 msgid "Add Node"
 msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:38
-msgid "Arguments (space-separated)"
+msgid "Arguments (optional, space-separated)"
 msgstr ""
+
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:38
+#~ msgid "Arguments (space-separated)"
+#~ msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:18
 msgid "Blueprint"
@@ -65,7 +69,7 @@ msgstr "Créez votre premier pipeline pour commencer"
 msgid "Creation:"
 msgstr "Création :"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:70
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:71
 msgid "Define a new pipeline step. You can connect it to other nodes by dragging edges."
 msgstr ""
 
@@ -89,7 +93,7 @@ msgstr ""
 msgid "Edit"
 msgstr "Modifier"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:66
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:67
 msgid "Edit node"
 msgstr ""
 
@@ -112,7 +116,7 @@ msgstr ""
 #~ msgid "Loading..."
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:69
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:70
 msgid "Modify the node properties."
 msgstr ""
 
@@ -161,7 +165,7 @@ msgid "Run"
 msgstr "Exécuter"
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:41
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:74
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:75
 msgid "Save"
 msgstr ""
 
@@ -169,7 +173,7 @@ msgstr ""
 msgid "Scripting"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:40
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:37
 msgid "Select a project first"
 msgstr ""
 
