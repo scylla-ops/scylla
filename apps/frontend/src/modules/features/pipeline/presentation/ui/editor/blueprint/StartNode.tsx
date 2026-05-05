@@ -3,16 +3,9 @@ import type { NodeProps } from 'reactflow';
 import { Card } from '@shadcn';
 import { Play } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import type { StartNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 
-interface StartNodeData {
-  name: string;
-}
-
-interface StartNodeProps extends NodeProps<StartNodeData> {
-  onNameChange?: (name: string) => void;
-}
-
-export const StartNode = ({ data }: StartNodeProps) => {
+export const StartNode = ({ data }: NodeProps<StartNodeData>) => {
   return (
     <Card className='w-55 p-0 overflow-hidden border-primary/30 cursor-pointer transition-all duration-200 hover:scale-105 hover:border-primary hover:shadow-lg shadow-md'>
       <div className='bg-primary px-3 py-2 flex items-center gap-2'>

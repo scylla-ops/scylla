@@ -6,8 +6,7 @@ import {
   type EdgeProps,
 } from 'reactflow';
 import { Trash2 } from 'lucide-react';
-
-const EDGE_COLOR = 'oklch(65.752% 0.25 180)';
+import { EDGE_COLOR } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 const SELECTED_COLOR = 'oklch(70% 0.3 30)';
 
 export function DeletableEdge({
@@ -63,7 +62,6 @@ export function DeletableEdge({
               onClick={e => {
                 e.stopPropagation();
                 e.preventDefault();
-                console.log('Delete edge:', id);
                 deleteElements({ edges: [{ id }] });
               }}
               onMouseDown={e => {

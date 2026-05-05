@@ -13,6 +13,7 @@ export interface StartNodeData {
 }
 
 export const START_NODE_ID = '__start__';
+export const EDGE_COLOR = 'oklch(65.752% 0.25 180)';
 
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 120;
@@ -20,9 +21,7 @@ const HORIZONTAL_GAP = 100;
 const VERTICAL_GAP = 60;
 const START_NODE_OFFSET = NODE_WIDTH + HORIZONTAL_GAP;
 
-const EDGE_COLOR = 'oklch(65.752% 0.25 180)';
-
-const DEFAULT_EDGE_STYLE = {
+export const DEFAULT_EDGE_STYLE = {
   animated: true,
   type: 'deletable' as const,
   markerEnd: { type: 'arrowclosed' as MarkerType, color: EDGE_COLOR },
@@ -182,4 +181,17 @@ export function flowToSteps(nodes: Node[], edges: Edge[]): PipelineStep[] {
         args: data.args,
       };
     });
+}
+
+/**
+ * Generate a unique node ID, avoiding collisions with existing IDs.
+ * Optionally exclude one ID (useful when renaming a node).
+ */
+export function generateUniqueNodeId(desired: string, existingIds: Set<string>, excludeId?: string): string {
+  const ids = new Set(existingIds);
+  if (excludeId) ids.delete(excludeId);
+  if (!ids.has(desired)) return desired;
+  let i = 1;
+  while (ids.has(`${desired}_${i}`)) i++;
+  return `${desired}_${i}`;
 }
