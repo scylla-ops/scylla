@@ -18,11 +18,8 @@ export const PipelineUpdatePage = () => {
   const { pipeline, isLoading, isError } = usePipeline(pipelineId ?? '');
   const updatePipeline = useUpdatePipeline();
 
-  const {
-    script, setScript,
-    pipelineName, steps,
-    handleStepsChange, handleNameChange,
-  } = usePipelineScript();
+  const { script, setScript, pipelineName, steps, handleStepsChange, handleNameChange } =
+    usePipelineScript();
 
   useEffect(() => {
     if (pipeline) {
@@ -44,7 +41,7 @@ export const PipelineUpdatePage = () => {
   if (isError) return <ErrorState message='Failed to load pipeline' />;
 
   return (
-    <Tabs key={'scripting'} defaultValue={'scripting'} className={'h-full flex flex-col gap-4'}>
+    <Tabs key={'editor'} defaultValue={'blueprint'} className={'h-full flex flex-col gap-4'}>
       <PipelineEditorHeader onSubmit={handleUpdate} submitLabel='Edit' />
       <TabsContent value='scripting' className={'h-full'} forceMount>
         <Card className={'h-full p-0'}>

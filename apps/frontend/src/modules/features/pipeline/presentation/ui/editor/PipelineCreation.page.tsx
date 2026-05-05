@@ -17,11 +17,8 @@ export const PipelineCreationPage = () => {
   const { projectId } = useParams();
   const createPipeline = useCreatePipeline();
 
-  const {
-    script, setScript,
-    pipelineName, steps,
-    handleStepsChange, handleNameChange,
-  } = usePipelineScript({ projectId });
+  const { script, setScript, pipelineName, steps, handleStepsChange, handleNameChange } =
+    usePipelineScript({ projectId });
 
   useEffect(() => {
     if (projectId) {
@@ -42,7 +39,7 @@ export const PipelineCreationPage = () => {
     );
 
   return (
-    <Tabs key={'scripting'} defaultValue={'scripting'} className={'h-full flex flex-col gap-4'}>
+    <Tabs key={'editor'} defaultValue={'blueprint'} className={'h-full flex flex-col gap-4'}>
       <PipelineEditorHeader onSubmit={handleCreate} submitLabel='Create' />
       <TabsContent value='scripting' className={'h-full'} forceMount>
         <Card className={'h-full p-0'}>
