@@ -31,7 +31,7 @@ msgid "Are you absolutely sure?"
 msgstr "Are you absolutely sure?"
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
-#: src/modules/shared/presentation/ui/FormDialog.tsx:57
+#: src/modules/shared/presentation/ui/FormDialog.tsx:60
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -43,17 +43,29 @@ msgstr "Clear"
 msgid "Continue"
 msgstr "Continue"
 
-#: src/modules/shared/presentation/ui/FormDialog.tsx:62
+#: src/modules/shared/presentation/ui/FormDialog.tsx:66
 msgid "Create"
 msgstr "Create"
 
-#: src/modules/shared/presentation/ui/FormDialog.tsx:61
+#: src/modules/shared/presentation/ui/FormDialog.tsx:65
 msgid "Creating..."
 msgstr "Creating..."
 
 #: src/modules/shared/presentation/ui/FeatureHeader.tsx:73
 msgid "Delete"
 msgstr "Delete"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:22
+msgid "Description"
+msgstr "Description"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:16
+msgid "e.g., My Organization"
+msgstr "e.g., My Organization"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:23
+msgid "e.g., Our company's main organization"
+msgstr "e.g., Our company's main organization"
 
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
@@ -84,6 +96,10 @@ msgstr "Operation failed"
 msgid "Organization"
 msgstr "Organization"
 
+#: src/modules/layout/presentation/ui/Layout.tsx:15
+msgid "Organization name"
+msgstr "Organization name"
+
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:65
 msgid "Select Organization"
 msgstr "Select Organization"
@@ -100,3 +116,11 @@ msgstr "Showing {start}-{end} of {totalCount}"
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
+
+#: src/modules/layout/presentation/ui/Layout.tsx:42
+msgid "To get started, please create your first organization."
+msgstr "To get started, please create your first organization."
+
+#: src/modules/layout/presentation/ui/Layout.tsx:39
+msgid "Welcome to Scylla!"
+msgstr "Welcome to Scylla!"

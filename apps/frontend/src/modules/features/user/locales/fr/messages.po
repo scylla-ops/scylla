@@ -64,7 +64,7 @@ msgstr ""
 msgid "Manage your account details."
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:39
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:47
 msgid "New user"
 msgstr ""
 
@@ -101,4 +101,8 @@ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:56
 msgid "View"
+msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
+msgid "You cannot delete your own account."
 msgstr ""

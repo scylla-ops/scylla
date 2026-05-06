@@ -31,7 +31,7 @@ msgid "Are you absolutely sure?"
 msgstr "En êtes-vous absolument sûr ?"
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
-#: src/modules/shared/presentation/ui/FormDialog.tsx:57
+#: src/modules/shared/presentation/ui/FormDialog.tsx:60
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -43,16 +43,28 @@ msgstr ""
 msgid "Continue"
 msgstr "Continuer"
 
-#: src/modules/shared/presentation/ui/FormDialog.tsx:62
+#: src/modules/shared/presentation/ui/FormDialog.tsx:66
 msgid "Create"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/FormDialog.tsx:61
+#: src/modules/shared/presentation/ui/FormDialog.tsx:65
 msgid "Creating..."
 msgstr ""
 
 #: src/modules/shared/presentation/ui/FeatureHeader.tsx:73
 msgid "Delete"
+msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:22
+msgid "Description"
+msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:16
+msgid "e.g., My Organization"
+msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:23
+msgid "e.g., Our company's main organization"
 msgstr ""
 
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
@@ -84,6 +96,10 @@ msgstr "L'opération a échoué"
 msgid "Organization"
 msgstr "Organisation"
 
+#: src/modules/layout/presentation/ui/Layout.tsx:15
+msgid "Organization name"
+msgstr ""
+
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:65
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
@@ -100,3 +116,11 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
+
+#: src/modules/layout/presentation/ui/Layout.tsx:42
+msgid "To get started, please create your first organization."
+msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:39
+msgid "Welcome to Scylla!"
+msgstr ""

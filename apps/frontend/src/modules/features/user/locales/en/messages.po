@@ -64,7 +64,7 @@ msgstr "Loading user information..."
 msgid "Manage your account details."
 msgstr "Manage your account details."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:39
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:47
 msgid "New user"
 msgstr "New user"
 
@@ -102,3 +102,7 @@ msgstr "Username and password are required."
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:56
 msgid "View"
 msgstr "View"
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
+msgid "You cannot delete your own account."
+msgstr "You cannot delete your own account."
