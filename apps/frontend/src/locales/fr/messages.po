@@ -22,7 +22,7 @@ msgstr ""
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:52
+#: src/modules/core/presentation/ui/App.tsx:56
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
@@ -87,7 +87,7 @@ msgstr "Se déconnecter"
 msgid "New {label}"
 msgstr ""
 
-#: src/modules/core/presentation/ui/App.tsx:82
+#: src/modules/core/presentation/ui/App.tsx:86
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
@@ -104,8 +104,8 @@ msgstr "Organisation"
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:51
-#: src/modules/core/presentation/ui/App.tsx:81
+#: src/modules/core/presentation/ui/App.tsx:55
+#: src/modules/core/presentation/ui/App.tsx:85
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 
@@ -117,10 +117,10 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:62
+#: src/modules/layout/presentation/ui/Layout.tsx:64
 msgid "To get started, please create your first organization."
 msgstr ""
 
-#: src/modules/layout/presentation/ui/Layout.tsx:59
+#: src/modules/layout/presentation/ui/Layout.tsx:61
 msgid "Welcome to Scylla!"
 msgstr ""

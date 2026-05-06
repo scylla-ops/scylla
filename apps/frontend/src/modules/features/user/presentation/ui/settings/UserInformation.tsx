@@ -8,10 +8,15 @@ import {
   CardTitle,
 } from '@shadcn';
 
-import { type FormItem, FormItemType } from '@shared/presentation/models/scylla-form.model.ts';
+import {
+  type FormItem,
+  FormItemType,
+  type FormChange,
+} from '@shared/presentation/models/scylla-form.model.ts';
 import { ScyllaForm } from '@shared/presentation/ui/ScyllaForm.tsx';
 import { Trans } from '@lingui/react/macro';
 import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
+import { useUpdateUser } from '@/modules/features/user/presentation/hooks/use-update-user.ts';
 
 interface UserInformationProps {
   userId?: string;
@@ -19,6 +24,17 @@ interface UserInformationProps {
 
 export const UserInformation = ({ userId }: UserInformationProps) => {
   const { user, isLoading, isError } = useUser(userId || undefined);
+  const updateUserMutation = useUpdateUser();
+
+  const handleSubmit = (values: FormChange[]) => {
+    if (userId) {
+      const formData = values.reduce((acc, { id, value }) => ({ ...acc, [id]: value }), {});
+      updateUserMutation.mutate({
+        userId,
+        username: formData.username,
+      });
+    }
+  };
 
   if (userId == undefined) {
     return (
@@ -87,7 +103,9 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
       id: 'username',
       type: FormItemType.Input,
       inputType: 'text',
-      disabled: true,
+      disabled: false,
+      required: true,
+      defaultValue: user.username,
     },
     {
       label: 'User ID',
@@ -96,6 +114,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
       type: FormItemType.Input,
       inputType: 'text',
       disabled: true,
+      defaultValue: user.userId,
     },
   ];
 
@@ -133,10 +152,11 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
         </div>
 
         <ScyllaForm
-          onSubmit={v => console.log(v)}
+          onSubmit={handleSubmit}
           items={FormItems}
           buttonLabel={'Save'}
           className={'gap-2'}
+          isPending={updateUserMutation.isPending}
         />
       </CardContent>
     </Card>

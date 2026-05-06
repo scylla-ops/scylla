@@ -1,6 +1,6 @@
 import { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { ListUsersResponse, UserResponse } from '@/generated/user.ts';
+import type { ListUsersResponse, UserResponse, UpdateUserRequest } from '@/generated/user.ts';
 import { UserServiceClient } from '@/generated/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
 import { PermissionServiceClient } from '@/generated/permission.client.ts';
@@ -43,6 +43,13 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
       return user;
     }, 'Failed to create user.');
+  }
+
+  public async update(request: UpdateUserRequest): Promise<ScyllaResult<UserResponse>> {
+    return ScyllaResult.tryAsync<UserResponse>(
+      async () => await this._userClient.updateUser(request).response,
+      'Failed to update user.',
+    );
   }
 
   public async delete(userId: string): Promise<ScyllaResult<void>> {
