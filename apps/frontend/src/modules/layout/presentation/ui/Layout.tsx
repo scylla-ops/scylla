@@ -16,10 +16,12 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/card.tsx';
 import scyllaLogo from '@/assets/logo_scylla.png';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 
 export const Layout = () => {
   const { organizations, isLoading } = useOrganizations();
   const createOrganization = useCreateOrganization();
+  const { goToUserSettings } = useScyllaNavigate();
 
   if (isLoading) {
     return (
@@ -70,6 +72,7 @@ export const Layout = () => {
                     const description = values.find(v => v.id === 'description')?.value;
                     if (name && description) {
                       createOrganization.mutate({ name, description });
+                      goToUserSettings('me');
                     }
                   }}
                   buttonLabel={'Create'}
