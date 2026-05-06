@@ -33,6 +33,10 @@ i18n.load('en', {
 });
 i18n.activate('en');
 
+//todo: maybe in production, console error only network or non scylla error ?
+//todo: domain errors should be only be toasted by module itself
+// for the beta its okay, because it allow us to be able to collect more easily the problems encountered by users
+
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: error => {
