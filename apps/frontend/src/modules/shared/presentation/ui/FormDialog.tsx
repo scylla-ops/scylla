@@ -22,6 +22,7 @@ interface FormDialogProps {
   submitLabel?: ReactNode;
   pendingLabel?: ReactNode;
   onSubmit: (values: FormChange[]) => void;
+  hideCancel?: boolean;
 }
 
 export function FormDialog({
@@ -34,10 +35,11 @@ export function FormDialog({
   submitLabel,
   pendingLabel,
   onSubmit,
+  hideCancel = false,
 }: FormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className={hideCancel ? '[&>button]:hidden' : ''}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
@@ -48,14 +50,16 @@ export function FormDialog({
           onSubmit={onSubmit}
           footer={({ isValid, isPending }) => (
             <DialogFooter>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={() => onOpenChange(false)}
-                disabled={isPending}
-              >
-                <Trans>Cancel</Trans>
-              </Button>
+              {!hideCancel && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => onOpenChange(false)}
+                  disabled={isPending}
+                >
+                  <Trans>Cancel</Trans>
+                </Button>
+              )}
               <Button type='submit' disabled={!isValid || isPending}>
                 {isPending
                   ? (pendingLabel ?? <Trans>Creating...</Trans>)
