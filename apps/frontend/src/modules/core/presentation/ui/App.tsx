@@ -41,6 +41,7 @@ const queryClient = new QueryClient({
 
         if (code === 'UNAUTHENTICATED') {
           localStorage.removeItem('token');
+          window.location.href = '/login';
           return;
         }
 
@@ -49,6 +50,11 @@ const queryClient = new QueryClient({
         const message = error.isNetworkError()
           ? t`Server unreachable`
           : error.message || t`An unexpected error occurred`;
+
+        if (error.isNetworkError()) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
 
         toast.error(message);
       } else {
@@ -61,6 +67,14 @@ const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: error => {
       if (error instanceof ScyllaError) {
+        const code = error.getCode();
+
+        if (code === 'UNAUTHENTICATED') {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+
         error.log();
 
         const message = error.isNetworkError()

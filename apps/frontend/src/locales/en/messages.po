@@ -22,7 +22,7 @@ msgstr "{0}"
 msgid "An error occurred"
 msgstr "An error occurred"
 
-#: src/modules/core/presentation/ui/App.tsx:51
+#: src/modules/core/presentation/ui/App.tsx:52
 msgid "An unexpected error occurred"
 msgstr "An unexpected error occurred"
 
@@ -56,16 +56,16 @@ msgid "Delete"
 msgstr "Delete"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:22
-msgid "Description"
-msgstr "Description"
+#~ msgid "Description"
+#~ msgstr "Description"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:16
-msgid "e.g., My Organization"
-msgstr "e.g., My Organization"
+#~ msgid "e.g., My Organization"
+#~ msgstr "e.g., My Organization"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:23
-msgid "e.g., Our company's main organization"
-msgstr "e.g., Our company's main organization"
+#~ msgid "e.g., Our company's main organization"
+#~ msgstr "e.g., Our company's main organization"
 
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
@@ -87,7 +87,7 @@ msgstr "Log out"
 msgid "New {label}"
 msgstr "New {label}"
 
-#: src/modules/core/presentation/ui/App.tsx:68
+#: src/modules/core/presentation/ui/App.tsx:82
 msgid "Operation failed"
 msgstr "Operation failed"
 
@@ -97,15 +97,15 @@ msgid "Organization"
 msgstr "Organization"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:15
-msgid "Organization name"
-msgstr "Organization name"
+#~ msgid "Organization name"
+#~ msgstr "Organization name"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:65
 msgid "Select Organization"
 msgstr "Select Organization"
 
-#: src/modules/core/presentation/ui/App.tsx:50
-#: src/modules/core/presentation/ui/App.tsx:67
+#: src/modules/core/presentation/ui/App.tsx:51
+#: src/modules/core/presentation/ui/App.tsx:81
 msgid "Server unreachable"
 msgstr "Server unreachable"
 
@@ -117,10 +117,10 @@ msgstr "Showing {start}-{end} of {totalCount}"
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:42
+#: src/modules/layout/presentation/ui/Layout.tsx:62
 msgid "To get started, please create your first organization."
 msgstr "To get started, please create your first organization."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:39
+#: src/modules/layout/presentation/ui/Layout.tsx:59
 msgid "Welcome to Scylla!"
 msgstr "Welcome to Scylla!"

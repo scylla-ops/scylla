@@ -22,7 +22,7 @@ msgstr ""
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:51
+#: src/modules/core/presentation/ui/App.tsx:52
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
@@ -56,16 +56,16 @@ msgid "Delete"
 msgstr ""
 
 #: src/modules/layout/presentation/ui/Layout.tsx:22
-msgid "Description"
-msgstr ""
+#~ msgid "Description"
+#~ msgstr ""
 
 #: src/modules/layout/presentation/ui/Layout.tsx:16
-msgid "e.g., My Organization"
-msgstr ""
+#~ msgid "e.g., My Organization"
+#~ msgstr ""
 
 #: src/modules/layout/presentation/ui/Layout.tsx:23
-msgid "e.g., Our company's main organization"
-msgstr ""
+#~ msgid "e.g., Our company's main organization"
+#~ msgstr ""
 
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
@@ -87,7 +87,7 @@ msgstr "Se déconnecter"
 msgid "New {label}"
 msgstr ""
 
-#: src/modules/core/presentation/ui/App.tsx:68
+#: src/modules/core/presentation/ui/App.tsx:82
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
@@ -97,15 +97,15 @@ msgid "Organization"
 msgstr "Organisation"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:15
-msgid "Organization name"
-msgstr ""
+#~ msgid "Organization name"
+#~ msgstr ""
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:65
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:50
-#: src/modules/core/presentation/ui/App.tsx:67
+#: src/modules/core/presentation/ui/App.tsx:51
+#: src/modules/core/presentation/ui/App.tsx:81
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 
@@ -117,10 +117,10 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:42
+#: src/modules/layout/presentation/ui/Layout.tsx:62
 msgid "To get started, please create your first organization."
 msgstr ""
 
-#: src/modules/layout/presentation/ui/Layout.tsx:39
+#: src/modules/layout/presentation/ui/Layout.tsx:59
 msgid "Welcome to Scylla!"
 msgstr ""
