@@ -32,7 +32,15 @@ export const useFormState = (items: FormItem[]) => {
   const reset = () => setValues(items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })));
 
   const optionalIds = new Set(items.filter(item => item.optional).map(item => item.id));
-  const isValid = values.every(v => optionalIds.has(v.id) || v.value.trim().length > 0);
+  const patternMap = new Map(
+    items.filter(item => item.type === FormItemType.Input && item.pattern).map(item => [item.id, new RegExp((item as { pattern: string }).pattern)]),
+  );
+  const isValid = values.every(v => {
+    if (optionalIds.has(v.id)) return true;
+    if (v.value.trim().length === 0) return false;
+    const pattern = patternMap.get(v.id);
+    return !pattern || pattern.test(v.value);
+  });
 
   return { values, handleChange, reset, isValid };
 };

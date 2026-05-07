@@ -20,6 +20,7 @@ export function StartNodeFormDialog({ open, onOpenChange, currentName, onSave }:
       type: FormItemType.Input,
       inputType: 'text',
       defaultValue: currentName,
+      pattern: '^\\S+$',
     },
   ];
 

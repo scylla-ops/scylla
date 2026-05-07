@@ -8,6 +8,7 @@ export enum FormItemType {
 export type FormInput = {
   type: FormItemType.Input;
   inputType: 'text' | 'password' | 'email' | 'tel';
+  pattern?: string;
 };
 
 export type SelectOption = {

@@ -24,6 +24,7 @@ export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onE
       type: FormItemType.Input,
       inputType: 'text',
       defaultValue: editingNode?.id ?? '',
+      pattern: '^\\S+$',
     },
     {
       id: 'command',
