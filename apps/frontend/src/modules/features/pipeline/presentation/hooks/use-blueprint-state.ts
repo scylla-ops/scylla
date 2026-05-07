@@ -28,35 +28,39 @@ export function useBlueprintState({ steps, pipelineName, onStepsChange }: UseBlu
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   // Guard to prevent infinite sync loop: steps → flow → steps
-  const lastEmittedStepsRef = useRef<string>('');
+  const lastEmittedRef = useRef<string>('');
+
+  const buildKey = useCallback(
+    (s: PipelineStep[], name: string) => JSON.stringify({ steps: s, name }),
+    [],
+  );
 
   const emitChange = useCallback(
     (updatedNodes: Node[], updatedEdges: Edge[]) => {
       const newSteps = flowToSteps(updatedNodes, updatedEdges);
-      const serialized = JSON.stringify(newSteps);
-      if (serialized !== lastEmittedStepsRef.current) {
-        lastEmittedStepsRef.current = serialized;
+      const key = buildKey(newSteps, pipelineName);
+      if (key !== lastEmittedRef.current) {
+        lastEmittedRef.current = key;
         onStepsChange(newSteps);
       }
     },
-    [onStepsChange],
+    [onStepsChange, pipelineName, buildKey],
   );
 
   // ── Sync: steps → flow (external source of truth → canvas) ──
   useEffect(() => {
-    const serialized = JSON.stringify(steps);
-    if (serialized === lastEmittedStepsRef.current) return;
+    const key = buildKey(steps, pipelineName);
+    if (key === lastEmittedRef.current) return;
 
     const { nodes: n, edges: e, sanitizedSteps } = stepsToFlow(steps, pipelineName);
     setNodes(n);
     setEdges(e);
 
-    const sanitizedSerialized = JSON.stringify(sanitizedSteps);
-    if (sanitizedSerialized !== serialized) {
-      lastEmittedStepsRef.current = sanitizedSerialized;
+    lastEmittedRef.current = buildKey(sanitizedSteps, pipelineName);
+    if (JSON.stringify(sanitizedSteps) !== JSON.stringify(steps)) {
       onStepsChange(sanitizedSteps);
     }
-  }, [steps, pipelineName, setNodes, setEdges, onStepsChange]);
+  }, [steps, pipelineName, setNodes, setEdges, onStepsChange, buildKey]);
 
   // ── Connection handler ──
   const handleConnect = useCallback(
