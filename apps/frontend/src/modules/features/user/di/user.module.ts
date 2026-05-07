@@ -5,6 +5,7 @@ import { GetUsersUseCase } from '@/modules/features/user/domain/use-cases/get-us
 import { GetUserUseCase } from '@/modules/features/user/domain/use-cases/get-user.use-case.ts';
 import { CreateUserUseCase } from '@/modules/features/user/domain/use-cases/create-user.use-case.ts';
 import { DeleteUserUseCase } from '@/modules/features/user/domain/use-cases/delete-user.use-case.ts';
+import { UpdateUserUseCase } from '@/modules/features/user/domain/use-cases/update-user.use-case.ts';
 
 const dataSource = new UserRemoteDataSourceImpl(CoreModule.data.grpcTransport);
 const repository = new DefaultUserRepository(dataSource);
@@ -12,6 +13,7 @@ const repository = new DefaultUserRepository(dataSource);
 const getUsersUseCase = new GetUsersUseCase(repository);
 const getUserUseCase = new GetUserUseCase(repository);
 const createUserUseCase = new CreateUserUseCase(repository);
+const updateUserUseCase = new UpdateUserUseCase(repository);
 const deleteUserUseCase = new DeleteUserUseCase(repository);
 
 export const UserModule = {
@@ -19,6 +21,7 @@ export const UserModule = {
     getUsers: getUsersUseCase,
     getUser: getUserUseCase,
     createUser: createUserUseCase,
+    updateUser: updateUserUseCase,
     deleteUser: deleteUserUseCase,
   },
 };
