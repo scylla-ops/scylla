@@ -65,7 +65,7 @@ msgstr "Command"
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineStatus.tsx:23
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineStatus.tsx:24
 msgid "Creation:"
 msgstr "Creation:"
 

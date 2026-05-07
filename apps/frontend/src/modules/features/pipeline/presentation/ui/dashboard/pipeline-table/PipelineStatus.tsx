@@ -22,6 +22,7 @@ export const PipelineStatus = ({ pipeline, status }: PipelineStatusProps) => {
         <span className='text-xs text-slate-500'>
           <Trans>Creation:</Trans> {creationDate.toDateString()}
         </span>
+        <span className={'text-xs text-slate-400'}>id: {pipeline.id}</span>
       </div>
     </div>
   );
