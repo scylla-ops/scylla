@@ -24,5 +24,7 @@ pub use repositories::user_repo::UserRepository;
 
 #[cfg(feature = "users")]
 pub use services::hash_service::HashService;
+#[cfg(feature = "jobs")]
+pub use services::job_log_stream::{JobLogLiveStream, JobLogStreamPort};
 #[cfg(feature = "permission")]
 pub use services::permission_service::PermissionService;

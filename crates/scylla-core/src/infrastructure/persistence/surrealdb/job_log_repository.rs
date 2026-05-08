@@ -123,4 +123,37 @@ impl JobLogRepository for SurrealJobLogRepository {
 
         Ok(PaginatedResult::new(logs, &params, total_count))
     }
+
+    #[instrument(skip(self), fields(job_id = %job_id, node_id = ?node_id))]
+    async fn list_all_by_job(
+        &self,
+        job_id: &JobId,
+        node_id: Option<&NodeId>,
+    ) -> DomainResult<Vec<JobLog>> {
+        let db = self.db.clone();
+        let table = JobLogId::table_name().to_string();
+        let job_id = job_id.clone();
+
+        let logs: Vec<JobLog> = if let Some(nid) = node_id {
+            let nid = nid.clone();
+            db.query("SELECT * FROM type::table($table) WHERE job_id = $job_id AND node_id = $node_id ORDER BY timestamp ASC")
+                .bind(("table", table))
+                .bind(("job_id", job_id.into_value()))
+                .bind(("node_id", nid.into_value()))
+                .await
+                .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?
+                .take(0)
+                .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?
+        } else {
+            db.query("SELECT * FROM type::table($table) WHERE job_id = $job_id ORDER BY timestamp ASC")
+                .bind(("table", table))
+                .bind(("job_id", job_id.into_value()))
+                .await
+                .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?
+                .take(0)
+                .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?
+        };
+
+        Ok(logs)
+    }
 }
