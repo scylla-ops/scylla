@@ -1,5 +1,4 @@
 use crate::application::ports::JobLogRepository;
-use crate::application::ports::repositories::job_log_repo::JobLogStream;
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::pipeline::NodeId;
@@ -43,14 +42,5 @@ impl<R: JobLogRepository> JobLogUseCases<R> {
         self.repo
             .list_by_job_and_node(job_id, node_id, pagination)
             .await
-    }
-
-    #[instrument(skip(self), fields(job_id = %job_id, node_id = ?node_id))]
-    pub async fn watch(
-        &self,
-        job_id: &JobId,
-        node_id: Option<&NodeId>,
-    ) -> DomainResult<JobLogStream> {
-        self.repo.watch(job_id, node_id).await
     }
 }

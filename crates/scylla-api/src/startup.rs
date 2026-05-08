@@ -3,11 +3,11 @@ use anyhow::Result;
 use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AgentUseCases, AuthUseCases, JobLogUseCases, JobUseCases, OrganizationUseCases,
-    PermissionUseCases, PipelineUseCases, ProjectUseCases, UserUseCases,
+    AgentUseCases, AuthUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases,
+    OrganizationUseCases, PermissionUseCases, PipelineUseCases, ProjectUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::{
-    Argon2HashService, CasbinPermissionService, Db, SurrealAgentRepository,
+    Argon2HashService, CasbinPermissionService, Db, HermesJobLogStream, SurrealAgentRepository,
     SurrealJobLogRepository, SurrealJobRepository, SurrealOrganizationRepository,
     SurrealPipelineRepository, SurrealProjectRepository, SurrealSessionRepository,
     SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
@@ -35,6 +35,8 @@ pub type SharedPipelineUc =
     Arc<PipelineUseCases<SurrealPipelineRepository, SurrealProjectRepository>>;
 pub type SharedJobUc = Arc<JobUseCases<SurrealJobRepository>>;
 pub type SharedJobLogUc = Arc<JobLogUseCases<SurrealJobLogRepository>>;
+pub type SharedJobLogStreamUc =
+    Arc<JobLogStreamUseCase<SurrealJobLogRepository, HermesJobLogStream>>;
 pub type SharedAgentUc = Arc<AgentUseCases<SurrealAgentRepository>>;
 pub type SharedPermissionUc = Arc<PermissionUseCases<CasbinPermissionService>>;
 
@@ -49,6 +51,7 @@ pub struct Services {
     pub pipeline_uc: SharedPipelineUc,
     pub job_uc: SharedJobUc,
     pub job_log_uc: SharedJobLogUc,
+    pub job_log_stream_uc: SharedJobLogStreamUc,
     pub agent_uc: SharedAgentUc,
     pub permission_uc: SharedPermissionUc,
     pub permission_checker: Arc<CasbinPermissionService>,
@@ -110,7 +113,12 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     // Connect to Hermes broker
     let broker_channel = hermes_broker_client::connect(&config.broker.url, None).await?;
     tracing::info!(url = %config.broker.url, "connected to hermes broker");
-    let broker_publisher = Arc::new(Publisher::new(broker_channel));
+    let broker_publisher = Arc::new(Publisher::new(broker_channel.clone()));
+    let job_log_stream_port = Arc::new(HermesJobLogStream::new(broker_channel));
+    let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
+        job_log_repo.clone(),
+        job_log_stream_port,
+    ));
 
     Ok(Services {
         db,
@@ -121,6 +129,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         pipeline_uc,
         job_uc,
         job_log_uc,
+        job_log_stream_uc,
         agent_uc,
         permission_uc,
         permission_checker,
@@ -240,6 +249,7 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
     let job_handler = JobHandler::new(
         services.job_uc.clone(),
         services.job_log_uc.clone(),
+        services.job_log_stream_uc.clone(),
         services.permission_checker.clone(),
     );
     let agent_handler = AgentHandler::new(

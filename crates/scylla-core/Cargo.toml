@@ -43,6 +43,11 @@ futures-util.workspace = true
 surrealdb = { workspace = true, optional = true, features = ["kv-mem", "kv-rocksdb", "protocol-ws"] }
 surrealdb-types = { workspace = true, optional = true }
 serde.workspace = true
+serde_json.workspace = true
+
+# messaging (used by infrastructure/messaging when feature "jobs" is enabled)
+hermes-broker-client.workspace = true
+tonic.workspace = true
 
 # infrastructure optional services
 argon2 = { workspace = true, optional = true }

@@ -1,5 +1,4 @@
 use crate::application::ports::JobLogRepository;
-use crate::application::ports::repositories::job_log_repo::JobLogStream;
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::pipeline::NodeId;
@@ -8,9 +7,8 @@ use async_trait::async_trait;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 use surrealdb::types::RecordId;
-use surrealdb_types::Action;
 use surrealdb_types::SurrealValue;
-use tracing::{info, instrument, warn};
+use tracing::instrument;
 
 pub struct SurrealJobLogRepository {
     db: Surreal<Any>,
@@ -127,85 +125,35 @@ impl JobLogRepository for SurrealJobLogRepository {
     }
 
     #[instrument(skip(self), fields(job_id = %job_id, node_id = ?node_id))]
-    async fn watch(
+    async fn list_all_by_job(
         &self,
         job_id: &JobId,
         node_id: Option<&NodeId>,
-    ) -> DomainResult<JobLogStream> {
-        use futures_util::stream::StreamExt as _;
-
+    ) -> DomainResult<Vec<JobLog>> {
         let db = self.db.clone();
         let table = JobLogId::table_name().to_string();
-        let target_job_id = job_id.clone();
-        let target_node_id = node_id.cloned();
+        let job_id = job_id.clone();
 
-        let (tx, rx) = tokio::sync::mpsc::channel::<DomainResult<JobLog>>(256);
-
-        // The SurrealDB SDK live() subscription's waker routing is tied to the
-        // task that awaits `.live()`. To keep `.live().await` and `.next().await`
-        // on the same task, we open and drive the stream from a dedicated
-        // tokio task and forward filtered results through an mpsc channel.
-        tokio::spawn(async move {
-            info!(table = %table, "live select: opening from spawned task");
-            let mut stream = match db
-                .select::<Vec<surrealdb_types::Value>>(table.as_str())
-                .live()
+        let logs: Vec<JobLog> = if let Some(nid) = node_id {
+            let nid = nid.clone();
+            db.query("SELECT * FROM type::table($table) WHERE job_id = $job_id AND node_id = $node_id ORDER BY timestamp ASC")
+                .bind(("table", table))
+                .bind(("job_id", job_id.into_value()))
+                .bind(("node_id", nid.into_value()))
                 .await
-            {
-                Ok(s) => s,
-                Err(e) => {
-                    warn!("Live query open error: {e}");
-                    let _ = tx
-                        .send(Err(DomainError::infrastructure(format!(
-                            "Live query error: {e}"
-                        ))))
-                        .await;
-                    return;
-                }
-            };
-            info!("live select opened, forwarding notifications");
+                .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?
+                .take(0)
+                .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?
+        } else {
+            db.query("SELECT * FROM type::table($table) WHERE job_id = $job_id ORDER BY timestamp ASC")
+                .bind(("table", table))
+                .bind(("job_id", job_id.into_value()))
+                .await
+                .map_err(|e| DomainError::infrastructure(format!("Database error: {e}")))?
+                .take(0)
+                .map_err(|e| DomainError::infrastructure(format!("Query error: {e}")))?
+        };
 
-            while let Some(item) = stream.next().await {
-                if tx.is_closed() {
-                    break;
-                }
-                match item {
-                    Ok(notif) => match notif.action {
-                        Action::Create => {
-                            match <JobLog as SurrealValue>::from_value(notif.data) {
-                                Ok(log) => {
-                                    if log.job_id() != &target_job_id {
-                                        continue;
-                                    }
-                                    if let Some(ref nid) = target_node_id {
-                                        if log.node_id() != nid {
-                                            continue;
-                                        }
-                                    }
-                                    if tx.send(Ok(log)).await.is_err() {
-                                        break;
-                                    }
-                                }
-                                Err(e) => {
-                                    warn!("JobLog::from_value error: {e}");
-                                }
-                            }
-                        }
-                        _ => {}
-                    },
-                    Err(e) => {
-                        warn!("Live query notification error: {e}");
-                        let _ = tx
-                            .send(Err(DomainError::infrastructure(format!(
-                                "Live query notification error: {e}"
-                            ))))
-                            .await;
-                    }
-                }
-            }
-            info!("live forwarder task ended");
-        });
-
-        Ok(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx)))
+        Ok(logs)
     }
 }

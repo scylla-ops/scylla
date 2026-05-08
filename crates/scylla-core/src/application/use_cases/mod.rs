@@ -6,6 +6,8 @@ pub mod auth;
 pub mod job;
 #[cfg(feature = "jobs")]
 pub mod job_log;
+#[cfg(feature = "jobs")]
+pub mod job_log_stream;
 #[cfg(feature = "organizations")]
 pub mod organization;
 #[cfg(feature = "permission")]
@@ -25,6 +27,8 @@ pub use auth::AuthUseCases;
 pub use job::JobUseCases;
 #[cfg(feature = "jobs")]
 pub use job_log::JobLogUseCases;
+#[cfg(feature = "jobs")]
+pub use job_log_stream::JobLogStreamUseCase;
 #[cfg(feature = "organizations")]
 pub use organization::OrganizationUseCases;
 #[cfg(feature = "permission")]

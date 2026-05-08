@@ -3,10 +3,6 @@ use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
-use futures_core::Stream;
-use std::pin::Pin;
-
-pub type JobLogStream = Pin<Box<dyn Stream<Item = DomainResult<JobLog>> + Send>>;
 
 #[async_trait]
 pub trait JobLogRepository {
@@ -27,9 +23,11 @@ pub trait JobLogRepository {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>>;
 
-    async fn watch(
+    /// Return every persisted log for `job_id` (optionally filtered by `node_id`),
+    /// ordered by timestamp ascending. Used as the historical snapshot for tailing.
+    async fn list_all_by_job(
         &self,
         job_id: &JobId,
         node_id: Option<&NodeId>,
-    ) -> DomainResult<JobLogStream>;
+    ) -> DomainResult<Vec<JobLog>>;
 }
