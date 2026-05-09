@@ -1,5 +1,6 @@
 #[cfg(feature = "surrealdb")]
 pub mod db;
+pub mod messaging;
 #[cfg(feature = "surrealdb")]
 pub mod persistence;
 pub mod services;
@@ -9,6 +10,9 @@ pub(crate) mod test_utils;
 
 #[cfg(feature = "surrealdb")]
 pub use db::{DatabaseConfig, Db, close_db, init_db};
+
+#[cfg(feature = "jobs")]
+pub use messaging::HermesJobLogStream;
 
 #[cfg(all(feature = "surrealdb", feature = "agents"))]
 pub use persistence::surrealdb::SurrealAgentRepository;

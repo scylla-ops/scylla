@@ -8,6 +8,8 @@ pub use use_cases::AgentUseCases;
 #[cfg(feature = "auth")]
 pub use use_cases::AuthUseCases;
 #[cfg(feature = "jobs")]
+pub use use_cases::JobLogStreamUseCase;
+#[cfg(feature = "jobs")]
 pub use use_cases::JobLogUseCases;
 #[cfg(feature = "jobs")]
 pub use use_cases::JobUseCases;

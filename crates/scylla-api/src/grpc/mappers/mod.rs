@@ -1,5 +1,6 @@
 pub mod agent_mapper;
 pub mod error_mapper;
+pub mod job_log_mapper;
 pub mod job_mapper;
 pub mod organization_mapper;
 pub mod pagination_mapper;
@@ -10,6 +11,7 @@ pub mod user_mapper;
 
 pub use agent_mapper::agent_to_proto;
 pub use error_mapper::domain_error_to_status;
+pub use job_log_mapper::job_log_to_proto;
 pub use job_mapper::job_to_proto;
 pub use organization_mapper::organization_to_proto;
 pub use pagination_mapper::{domain_to_proto_metadata, proto_to_domain_pagination};

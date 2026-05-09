@@ -281,6 +281,11 @@ pub mod job {
             Act::Read,
         )
     }
+
+    #[must_use]
+    pub fn read_logs(job_id: JobId) -> Policy {
+        Policy::new(Scope::All, Resource::Job(Target::Single(job_id)), Act::Read)
+    }
 }
 
 pub mod organization {
