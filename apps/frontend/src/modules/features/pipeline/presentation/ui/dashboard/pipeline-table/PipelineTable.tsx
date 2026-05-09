@@ -52,6 +52,7 @@ export const PipelineTable = ({
     <DataTable
       columns={columns}
       data={pipelines}
+      alignCenter
       onRowClick={row => select(row.original.id)}
       getRowId={(row, index) => row.id || index.toString()}
       isRowSelected={row => selectedIds.includes(row.id)}

@@ -1,12 +1,15 @@
 import React from 'react';
 import { cn } from '@shared/presentation/utils';
 
+export type StatusState = 'success' | 'failed' | 'running' | 'pending' | 'idle';
+
 interface StatusIndicatorProps {
-  state: 'success' | 'failed' | 'running' | 'idle';
+  state: StatusState;
   label?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   labelClassName?: string;
+  animateAllStates?: boolean;
 }
 
 const getStateColors = (state: StatusIndicatorProps['state']) => {
@@ -73,8 +76,9 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   className,
   size = 'md',
   labelClassName,
+  animateAllStates = false,
 }) => {
-  const shouldAnimate = state === 'success' || state === 'running' || state === 'failed';
+  const shouldAnimate = state === 'running' || state === 'pending' || animateAllStates;
   const colors = getStateColors(state);
   const sizeClasses = getSizeClasses(size);
 

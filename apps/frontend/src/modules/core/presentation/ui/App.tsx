@@ -33,6 +33,10 @@ i18n.load('en', {
 });
 i18n.activate('en');
 
+//todo: maybe in production, console error only network or non scylla error ?
+//todo: domain errors should be only be toasted by module itself
+// for the beta its okay, because it allow us to be able to collect more easily the problems encountered by users
+
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: error => {
@@ -41,6 +45,7 @@ const queryClient = new QueryClient({
 
         if (code === 'UNAUTHENTICATED') {
           localStorage.removeItem('token');
+          window.location.href = '/login';
           return;
         }
 
@@ -49,6 +54,11 @@ const queryClient = new QueryClient({
         const message = error.isNetworkError()
           ? t`Server unreachable`
           : error.message || t`An unexpected error occurred`;
+
+        if (error.isNetworkError()) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
 
         toast.error(message);
       } else {
@@ -61,6 +71,14 @@ const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: error => {
       if (error instanceof ScyllaError) {
+        const code = error.getCode();
+
+        if (code === 'UNAUTHENTICATED') {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+
         error.log();
 
         const message = error.isNetworkError()

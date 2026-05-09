@@ -7,8 +7,8 @@ export const useCreateProject = () => {
   const { createProject } = useDependencies().project;
 
   return useMutation({
-    mutationFn: async ({ name, organizationId }: { name: string; organizationId: string }) =>
-      (await createProject.execute(name, organizationId)).unwrap(),
+    mutationFn: async ({ name, organizationId, description }: { name: string; organizationId: string; description?: string }) =>
+      (await createProject.execute(name, organizationId, description)).unwrap(),
     onSuccess: () => {
       toast.success('Project created');
       return queryClient.invalidateQueries({ queryKey: ['projects'] });

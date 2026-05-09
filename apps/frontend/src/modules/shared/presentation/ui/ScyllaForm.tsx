@@ -22,16 +22,25 @@ import { useState } from 'react';
 // eslint-disable-next-line react-refresh/only-export-components
 export const useFormState = (items: FormItem[]) => {
   const [values, setValues] = useState<FormChange[]>(
-    items.map(item => ({ id: item.id, value: '' })),
+    items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })),
   );
 
   const handleChange = (id: string, value: string) => {
     setValues(prev => prev.map(field => (field.id === id ? { ...field, value } : field)));
   };
 
-  const reset = () => setValues(items.map(item => ({ id: item.id, value: '' })));
+  const reset = () => setValues(items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })));
 
-  const isValid = values.every(v => v.value.trim().length > 0);
+  const optionalIds = new Set(items.filter(item => item.optional).map(item => item.id));
+  const patternMap = new Map(
+    items.filter(item => item.type === FormItemType.Input && item.pattern).map(item => [item.id, new RegExp((item as { pattern: string }).pattern)]),
+  );
+  const isValid = values.every(v => {
+    if (optionalIds.has(v.id)) return true;
+    if (v.value.trim().length === 0) return false;
+    const pattern = patternMap.get(v.id);
+    return !pattern || pattern.test(v.value);
+  });
 
   return { values, handleChange, reset, isValid };
 };

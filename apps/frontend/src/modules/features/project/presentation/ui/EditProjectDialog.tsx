@@ -22,14 +22,21 @@ export function EditProjectDialog({ open, setOpen, project }: EditProjectDialogP
       type: FormItemType.Input,
       inputType: 'text',
     },
+    {
+      id: 'description',
+      label: t`Description`,
+      placeholder: project.description || t`Add a description...`,
+      type: FormItemType.Input,
+      inputType: 'text',
+    },
   ];
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
-    if (!name?.trim()) return;
+    const description = values.find(v => v.id === 'description')?.value;
 
     updateProject.mutate(
-      { projectId: project.id, name },
+      { projectId: project.id, name: name?.trim() || undefined, description: description?.trim() || undefined },
       { onSuccess: () => setOpen(false) },
     );
   };
@@ -39,7 +46,7 @@ export function EditProjectDialog({ open, setOpen, project }: EditProjectDialogP
       open={open}
       onOpenChange={setOpen}
       title={<Trans>Edit project</Trans>}
-      description={<Trans>Update the project name.</Trans>}
+      description={<Trans>Update the project name and description.</Trans>}
       items={items}
       isPending={updateProject.isPending}
       submitLabel={<Trans>Save</Trans>}

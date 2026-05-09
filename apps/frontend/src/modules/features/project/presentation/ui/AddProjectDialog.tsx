@@ -41,11 +41,19 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       type: FormItemType.Input,
       inputType: 'text',
     },
+    {
+      id: 'description',
+      label: t`Description`,
+      placeholder: t`e.g., A short description of the project`,
+      type: FormItemType.Input,
+      inputType: 'text',
+    },
   ];
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
     const organizationId = values.find(v => v.id === 'organizationId')?.value;
+    const description = values.find(v => v.id === 'description')?.value;
 
     if (!name?.trim() || !organizationId) {
       toast.error(t`Project name is required and you must select an organization.`);
@@ -55,7 +63,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
     const selectedOrganization = organizations?.find(org => org.organizationId === organizationId);
 
     createProject.mutate(
-      { name, organizationId },
+      { name, organizationId, description: description?.trim() || undefined },
       {
         onSuccess: () => {
           setOpen(false);

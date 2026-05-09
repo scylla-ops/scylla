@@ -14,7 +14,7 @@ export interface PipelineRepository {
   ): Promise<ScyllaResult<PaginatedList<PipelineMetadata>>>;
   deleteById(id: string): Promise<ScyllaResult<void>>;
   run(id: string): Promise<ScyllaResult<void>>;
-  create: (content: string) => Promise<ScyllaResult<void>>;
+  create(pipeline: Omit<Pipeline, 'id'>): Promise<ScyllaResult<void>>;
   getById(id: string): Promise<ScyllaResult<Pipeline>>;
   edit(id: string, steps: PipelineStep[], name?: string): Promise<ScyllaResult<Pipeline>>;
 }

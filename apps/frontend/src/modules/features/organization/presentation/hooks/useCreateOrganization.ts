@@ -8,7 +8,7 @@ export const useCreateOrganization = () => {
   const { createOrganization } = useDependencies().organization;
 
   return useMutation({
-    mutationFn: async (name: string) => (await createOrganization.execute(name)).unwrap(),
+    mutationFn: async ({ name, description }: { name: string; description?: string }) => (await createOrganization.execute(name, description)).unwrap(),
     onSuccess: data => {
       useContextStore.getState().setOrganization(data.organizationId, data.name);
       toast.success('Organization created');

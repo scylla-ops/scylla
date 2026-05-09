@@ -13,11 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:49
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:36
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:132
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:149
 msgid "Active account"
 msgstr "Active account"
 
@@ -33,7 +33,7 @@ msgstr "Create a new user"
 msgid "Create User"
 msgstr "Create User"
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:36
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:31
 msgid "Created at"
 msgstr "Created at"
 
@@ -49,22 +49,22 @@ msgstr "Enter a password"
 msgid "Enter a username and password for the new user."
 msgstr "Enter a username and password for the new user."
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:77
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:92
 msgid "Error loading user information"
 msgstr "Error loading user information"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:57
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:72
 msgid "Loading user information..."
 msgstr "Loading user information..."
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:32
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:52
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:72
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:119
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:87
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:137
 msgid "Manage your account details."
 msgstr "Manage your account details."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:39
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:47
 msgid "New user"
 msgstr "New user"
 
@@ -72,18 +72,18 @@ msgstr "New user"
 msgid "Password"
 msgstr "Password"
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:17
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
 msgid "User"
 msgstr "User"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:29
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:49
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:69
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:116
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:44
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:64
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:84
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:134
 msgid "User information"
 msgstr "User information"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:37
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:52
 msgid "User information not available"
 msgstr "User information not available"
 
@@ -98,3 +98,11 @@ msgstr "Username"
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
 msgid "Username and password are required."
 msgstr "Username and password are required."
+
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:56
+msgid "View"
+msgstr "View"
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
+msgid "You cannot delete your own account."
+msgstr "You cannot delete your own account."

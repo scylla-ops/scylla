@@ -10,6 +10,7 @@ export class GrpcProjectMapper {
     return {
       id: grpcProject.projectId,
       name: grpcProject.name,
+      description: grpcProject.description,
     };
   }
   static toDomainList(grpcProjects: ListProjectsResponse): ProjectList {

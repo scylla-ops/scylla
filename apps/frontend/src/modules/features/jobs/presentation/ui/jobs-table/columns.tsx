@@ -17,44 +17,28 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
   return [
     {
       accessorKey: 'status',
-      header: () => (
-        <span className='text-xs font-semibold uppercase tracking-wider'>
-          <Trans>Status</Trans>
-        </span>
-      ),
+      header: () => <Trans>Status</Trans>,
       cell: ({ row }) => <JobStatus job={row.original} />,
       size: 160,
       minSize: 140,
     },
     {
       accessorKey: 'jobId',
-      header: () => (
-        <span className='text-xs font-semibold uppercase tracking-wider'>
-          <Trans>Job ID</Trans>
-        </span>
-      ),
+      header: () => <Trans>Job ID</Trans>,
       cell: ({ row }) => <JobIdCell job={row.original} />,
       size: 180,
       minSize: 150,
     },
     {
       id: 'timeline',
-      header: () => (
-        <span className='text-xs font-semibold uppercase tracking-wider'>
-          <Trans>Timeline</Trans>
-        </span>
-      ),
+      header: () => <Trans>Timeline</Trans>,
       cell: ({ row }) => <JobTimeline nodeExecutions={row.original.nodeExecutions} />,
-      size: undefined, // Prend l'espace restant
+      size: undefined,
       minSize: 200,
     },
     {
       id: 'duration',
-      header: () => (
-        <span className='text-xs font-semibold uppercase tracking-wider'>
-          <Trans>Duration</Trans>
-        </span>
-      ),
+      header: () => <Trans>Duration</Trans>,
       cell: ({ row }) => {
         const duration = calculateDuration(row.original.createdAt, row.original.updatedAt);
         return (
@@ -66,11 +50,7 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
     },
     {
       accessorKey: 'createdAt',
-      header: () => (
-        <span className='text-xs font-semibold uppercase tracking-wider'>
-          <Trans>Created</Trans>
-        </span>
-      ),
+      header: () => <Trans>Created</Trans>,
       cell: ({ row }) => (
         <span className='text-sm whitespace-nowrap'>{getRelativeTime(row.original.createdAt)}</span>
       ),
@@ -79,11 +59,7 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
     },
     {
       id: 'actions',
-      header: () => (
-        <span className='text-xs font-semibold uppercase tracking-wider'>
-          <Trans>Actions</Trans>
-        </span>
-      ),
+      header: () => <Trans>Actions</Trans>,
       cell: ({ row }) => (
         <JobActions
           onView={e => {

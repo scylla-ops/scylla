@@ -1,18 +1,13 @@
 export const createDefaultScript = (projectId: string) =>
-  `{\n"name": "my-pipeline",\n` +
-  `"projectId": "${projectId}",\n` +
-  `"nodes": [
+  JSON.stringify(
     {
-      "nodeId": "build",
-      "deps": [],
-      "command": "cargo",
-      "args": ["build", "--release"]
+      name: 'my-pipeline',
+      projectId,
+      nodes: [
+        { id: 'build', deps: [], command: 'cargo', args: ['build', '--release'] },
+        { id: 'test', deps: ['build'], command: 'cargo', args: ['test'] },
+      ],
     },
-    {
-      "nodeId": "test",
-      "deps": ["build"],
-      "command": "cargo",
-      "args": ["test"]
-    }
-  ]\n` +
-  `}`;
+    null,
+    2,
+  );

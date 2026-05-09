@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { Button } from '@shadcn';
 import { Trash } from 'lucide-react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 
 interface FeatureHeaderProps {
   count: number;
@@ -32,8 +33,11 @@ export const FeatureHeader = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleDelete = async () => {
-    await onDeleteSelection?.();
-    setDeleteDialogOpen(false);
+    try {
+      await onDeleteSelection?.();
+    } finally {
+      setDeleteDialogOpen(false);
+    }
   };
 
   return (
@@ -54,14 +58,21 @@ export const FeatureHeader = ({
           </Button>
         )}
         {selectedCount > 0 && onDeleteSelection && (
-          <Button
-            size='icon'
-            variant='destructive'
-            onClick={() => setDeleteDialogOpen(true)}
-            className='h-9 w-9'
-          >
-            <Trash className='size-4' />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size='icon'
+                variant='destructive'
+                onClick={() => setDeleteDialogOpen(true)}
+                className='h-9 w-9 cursor-pointer transition-all hover:scale-110'
+              >
+                <Trash className='size-4' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p><Trans>Delete</Trans></p>
+            </TooltipContent>
+          </Tooltip>
         )}
         {extraActions}
         {onNew && (

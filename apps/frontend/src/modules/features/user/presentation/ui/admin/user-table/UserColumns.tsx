@@ -3,7 +3,8 @@ import type { User } from '@/modules/features/user/domain/models/user.model.ts';
 import { Eye } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { formatDate } from '@shared/utils/date-utils.ts';
-import { Avatar, AvatarFallback, AvatarImage } from '@shadcn';
+import { Avatar, AvatarFallback, AvatarImage, Button } from '@shadcn';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 
 type PipelineColumnMeta = {
   onView: (userId: string) => void;
@@ -12,13 +13,9 @@ type PipelineColumnMeta = {
 export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] => [
   {
     id: 'username',
-    header: () => (
-      <div className={'flex w-full text-xs font-semibold uppercase tracking-wider'}>
-        <Trans>User</Trans>
-      </div>
-    ),
+    header: () => <Trans>User</Trans>,
     cell: ({ row }) => (
-      <div className={'flex flexrow w-full h-full items-center gap-2'}>
+      <div className='flex flex-row items-center gap-2'>
         <Avatar className='h-8 w-8 rounded-lg'>
           <AvatarImage />
           <AvatarFallback className='rounded-lg'>
@@ -31,34 +28,35 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] =
   },
   {
     id: 'creationDate',
-    header: () => (
-      <div className={'w-full text-center text-xs font-semibold uppercase tracking-wider'}>
-        <Trans>Created at</Trans>
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className={'w-full text-center'}>
-        <span>{formatDate(row.original.createdAt)}</span>
-      </div>
-    ),
+    header: () => <Trans>Created at</Trans>,
+    cell: ({ row }) => <span>{formatDate(row.original.createdAt)}</span>,
   },
   {
     id: 'actions',
-    header: () => (
-      <div className={'w-full text-center text-xs font-semibold uppercase tracking-wider'}>
-        <Trans>Actions</Trans>
-      </div>
-    ),
+    header: () => <Trans>Actions</Trans>,
     cell: ({ row }) => (
-      <div
-        onClick={e => {
-          e.stopPropagation();
-          meta.onView(row.original.userId);
-        }}
-        className={'flex items-center justify-center gap-2'}
-      >
-        <Eye className='h-4 w-4 hover:scale-125 hover:text-primary transition-all cursor-pointer' />
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size={'icon'}
+            className={
+              'w-8 h-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+            }
+            variant='ghost'
+            onClick={e => {
+              e.preventDefault();
+              meta.onView(row.original.userId);
+            }}
+          >
+            <Eye />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>
+            <Trans>View</Trans>
+          </p>
+        </TooltipContent>
+      </Tooltip>
     ),
   },
 ];
