@@ -1,29 +1,50 @@
 use crate::extract_auth_context;
 use crate::grpc::mappers::{
-    domain_error_to_status, domain_to_proto_metadata, job_to_proto, proto_to_domain_pagination,
+    domain_error_to_status, domain_to_proto_metadata, job_log_to_proto, job_to_proto,
+    proto_to_domain_pagination,
 };
 use derive_more::Constructor;
-use scylla_core::application::JobUseCases;
-use scylla_core::application::ports::{JobRepository, PermissionService};
+use futures_util::StreamExt;
+use scylla_core::application::ports::{
+    JobLogRepository, JobLogStreamPort, JobRepository, PermissionService,
+};
+use scylla_core::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
 use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId};
 use scylla_core::domain::value_objects::permission::policy;
+use scylla_core::domain::value_objects::pipeline::NodeId;
 use scylla_protocol::services::job::{
-    DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobResponse, ListJobsRequest,
-    ListJobsResponse, ListOrganizationJobsRequest, ListPipelineJobsRequest, ListProjectJobsRequest,
-    job_service_server::JobService,
+    DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobLogEvent, JobResponse,
+    ListJobLogsRequest, ListJobLogsResponse, ListJobsRequest, ListJobsResponse,
+    ListOrganizationJobsRequest, ListPipelineJobsRequest, ListProjectJobsRequest,
+    TailJobLogsRequest, job_service_server::JobService,
 };
+use std::pin::Pin;
 use std::sync::Arc;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
+use tracing::{info, warn};
 
 #[derive(Constructor)]
-pub struct JobHandler<J: JobRepository, PS: PermissionService> {
+pub struct JobHandler<
+    J: JobRepository,
+    L: JobLogRepository,
+    S: JobLogStreamPort,
+    PS: PermissionService,
+> {
     use_cases: Arc<JobUseCases<J>>,
+    log_use_cases: Arc<JobLogUseCases<L>>,
+    log_stream_use_case: Arc<JobLogStreamUseCase<L, S>>,
     permission_checker: Arc<PS>,
 }
 
 #[async_trait::async_trait]
-impl<J: JobRepository + Send + Sync + 'static, PS: PermissionService + Send + Sync + 'static>
-    JobService for JobHandler<J, PS>
+impl<
+    J: JobRepository + Send + Sync + 'static,
+    L: JobLogRepository + Send + Sync + 'static,
+    S: JobLogStreamPort + 'static,
+    PS: PermissionService + Send + Sync + 'static,
+> JobService for JobHandler<J, L, S, PS>
 {
     async fn get_job(
         &self,
@@ -43,6 +64,7 @@ impl<J: JobRepository + Send + Sync + 'static, PS: PermissionService + Send + Sy
 
         Ok(Response::new(job_to_proto(&job)))
     }
+
 
     async fn delete_job(
         &self,
@@ -170,6 +192,112 @@ impl<J: JobRepository + Send + Sync + 'static, PS: PermissionService + Send + Sy
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
+
+    async fn list_job_logs(
+        &self,
+        request: Request<ListJobLogsRequest>,
+    ) -> Result<Response<ListJobLogsResponse>, Status> {
+        let target_job_id = JobId::new(&request.get_ref().job_id);
+        require_permission!(self, request, policy::job::read_logs(target_job_id));
+
+        let req = request.into_inner();
+        let job_id = JobId::new(&req.job_id);
+        let pagination = proto_to_domain_pagination(req.pagination);
+
+        let result = if let Some(node_id_str) = req.node_id.as_deref() {
+            let node_id = NodeId::new(node_id_str)
+                .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?;
+            self.log_use_cases
+                .list_by_job_and_node(&job_id, &node_id, pagination.as_ref())
+                .await
+        } else {
+            self.log_use_cases
+                .list_by_job(&job_id, pagination.as_ref())
+                .await
+        }
+        .map_err(domain_error_to_status)?;
+
+        let (logs, metadata) = result.into_parts();
+        let logs = logs.iter().map(job_log_to_proto).collect();
+
+        Ok(Response::new(ListJobLogsResponse {
+            logs,
+            pagination: Some(domain_to_proto_metadata(&metadata)),
+        }))
+    }
+
+    type TailJobLogsStream =
+        Pin<Box<dyn tokio_stream::Stream<Item = Result<JobLogEvent, Status>> + Send + 'static>>;
+
+    async fn tail_job_logs(
+        &self,
+        request: Request<TailJobLogsRequest>,
+    ) -> Result<Response<Self::TailJobLogsStream>, Status> {
+        let target_job_id = JobId::new(&request.get_ref().job_id);
+        require_permission!(self, request, policy::job::read_logs(target_job_id));
+
+        let req = request.into_inner();
+        let job_id = JobId::new(&req.job_id);
+        let node_id = if let Some(n) = req.node_id.as_deref() {
+            Some(
+                NodeId::new(n)
+                    .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?,
+            )
+        } else {
+            None
+        };
+
+        info!(job_id = %job_id, node_id = ?node_id, "tail_job_logs: spawning forwarder");
+        let (tx, rx) = mpsc::channel::<Result<JobLogEvent, Status>>(256);
+        let stream_uc = self.log_stream_use_case.clone();
+
+        tokio::spawn(async move {
+            let mut stream = match stream_uc.stream(&job_id, node_id.as_ref()).await {
+                Ok(s) => s,
+                Err(e) => {
+                    warn!("tail_job_logs: stream open error: {e}");
+                    let _ = tx
+                        .send(Err(Status::internal(format!("Stream open error: {e}"))))
+                        .await;
+                    return;
+                }
+            };
+            info!("tail_job_logs: stream opened, forwarding");
+
+            let mut forwarded = 0u64;
+            loop {
+                tokio::select! {
+                    item = stream.next() => match item {
+                        Some(Ok(log)) => {
+                            let evt = JobLogEvent { log: Some(job_log_to_proto(&log)) };
+                            match tx.try_send(Ok(evt)) {
+                                Ok(()) => forwarded += 1,
+                                Err(mpsc::error::TrySendError::Full(_)) => {
+                                    warn!("tail_job_logs back-pressure: dropping line");
+                                }
+                                Err(mpsc::error::TrySendError::Closed(_)) => break,
+                            }
+                        }
+                        Some(Err(e)) => {
+                            let _ = tx.send(Err(Status::internal(format!("{e}")))).await;
+                        }
+                        None => {
+                            info!("tail_job_logs: upstream stream ended");
+                            break;
+                        }
+                    },
+                    () = tx.closed() => {
+                        info!(forwarded, "tail_job_logs: client disconnected");
+                        break;
+                    }
+                }
+            }
+            info!(forwarded, "tail_job_logs: forwarder task ended");
+        });
+
+        let out: Self::TailJobLogsStream = Box::pin(ReceiverStream::new(rx));
+        Ok(Response::new(out))
+    }
 }
 
 #[cfg(test)]
@@ -177,11 +305,14 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use scylla_core::application::JobUseCases;
-    use scylla_core::application::ports::JobRepository;
+    use scylla_core::application::ports::services::job_log_stream::{
+        JobLogLiveStream, JobLogStreamPort,
+    };
     use scylla_core::application::ports::services::permission_service::PermissionService;
+    use scylla_core::application::ports::JobRepository;
+    use scylla_core::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
     use scylla_core::domain::entities::UserId;
-    use scylla_core::domain::entities::{EntityId, Job, Pipeline, PipelineNode};
+    use scylla_core::domain::entities::{EntityId, Job, JobLog, JobLogId, Pipeline, PipelineNode};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};
     use scylla_core::domain::value_objects::pipeline::{NodeId, PipelineName};
@@ -304,9 +435,64 @@ mod tests {
         req
     }
 
-    fn make_handler(job_repo: StubJobRepo) -> JobHandler<StubJobRepo, AllowAll> {
+    struct StubJobLogRepo;
+
+    #[async_trait]
+    impl scylla_core::application::ports::JobLogRepository for StubJobLogRepo {
+        async fn create(&self, _: &JobLog) -> DomainResult<JobLog> {
+            unimplemented!()
+        }
+        async fn find_by_id(&self, _: &JobLogId) -> DomainResult<JobLog> {
+            unimplemented!()
+        }
+        async fn list_by_job(
+            &self,
+            _: &JobId,
+            _: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<JobLog>> {
+            unimplemented!()
+        }
+        async fn list_by_job_and_node(
+            &self,
+            _: &JobId,
+            _: &NodeId,
+            _: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<JobLog>> {
+            unimplemented!()
+        }
+        async fn list_all_by_job(
+            &self,
+            _: &JobId,
+            _: Option<&NodeId>,
+        ) -> DomainResult<Vec<JobLog>> {
+            unimplemented!()
+        }
+    }
+
+    struct StubJobLogStream;
+
+    #[async_trait]
+    impl JobLogStreamPort for StubJobLogStream {
+        async fn subscribe(
+            &self,
+            _: &JobId,
+            _: Option<&NodeId>,
+        ) -> DomainResult<JobLogLiveStream> {
+            unimplemented!()
+        }
+    }
+
+    fn make_handler(
+        job_repo: StubJobRepo,
+    ) -> JobHandler<StubJobRepo, StubJobLogRepo, StubJobLogStream, AllowAll> {
+        let log_repo = Arc::new(StubJobLogRepo);
         let uc = Arc::new(JobUseCases::new(Arc::new(job_repo)));
-        JobHandler::new(uc, Arc::new(AllowAll))
+        let log_uc = Arc::new(JobLogUseCases::new(log_repo.clone()));
+        let log_stream_uc = Arc::new(JobLogStreamUseCase::new(
+            log_repo,
+            Arc::new(StubJobLogStream),
+        ));
+        JobHandler::new(uc, log_uc, log_stream_uc, Arc::new(AllowAll))
     }
 
     // ── Tests ───────────────────────────────────────────────────

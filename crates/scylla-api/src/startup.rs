@@ -3,14 +3,14 @@ use anyhow::Result;
 use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AgentUseCases, AuthUseCases, JobUseCases, OrganizationUseCases, PermissionUseCases,
-    PipelineUseCases, ProjectUseCases, UserUseCases,
+    AgentUseCases, AuthUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases,
+    OrganizationUseCases, PermissionUseCases, PipelineUseCases, ProjectUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::{
-    Argon2HashService, CasbinPermissionService, Db, SurrealAgentRepository, SurrealJobRepository,
-    SurrealOrganizationRepository, SurrealPipelineRepository, SurrealProjectRepository,
-    SurrealSessionRepository, SurrealUserOrganizationRepository, SurrealUserProjectRepository,
-    SurrealUserRepository,
+    Argon2HashService, CasbinPermissionService, Db, HermesJobLogStream, SurrealAgentRepository,
+    SurrealJobLogRepository, SurrealJobRepository, SurrealOrganizationRepository,
+    SurrealPipelineRepository, SurrealProjectRepository, SurrealSessionRepository,
+    SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
 };
 use std::sync::Arc;
 use surreal_casbin_adapter::SurrealAdapter;
@@ -34,6 +34,9 @@ pub type SharedProjectUc = Arc<
 pub type SharedPipelineUc =
     Arc<PipelineUseCases<SurrealPipelineRepository, SurrealProjectRepository>>;
 pub type SharedJobUc = Arc<JobUseCases<SurrealJobRepository>>;
+pub type SharedJobLogUc = Arc<JobLogUseCases<SurrealJobLogRepository>>;
+pub type SharedJobLogStreamUc =
+    Arc<JobLogStreamUseCase<SurrealJobLogRepository, HermesJobLogStream>>;
 pub type SharedAgentUc = Arc<AgentUseCases<SurrealAgentRepository>>;
 pub type SharedPermissionUc = Arc<PermissionUseCases<CasbinPermissionService>>;
 
@@ -47,6 +50,8 @@ pub struct Services {
     pub project_uc: SharedProjectUc,
     pub pipeline_uc: SharedPipelineUc,
     pub job_uc: SharedJobUc,
+    pub job_log_uc: SharedJobLogUc,
+    pub job_log_stream_uc: SharedJobLogStreamUc,
     pub agent_uc: SharedAgentUc,
     pub permission_uc: SharedPermissionUc,
     pub permission_checker: Arc<CasbinPermissionService>,
@@ -63,6 +68,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     let project_repo = Arc::new(SurrealProjectRepository::new(db.clone()));
     let pipeline_repo = Arc::new(SurrealPipelineRepository::new(db.clone()));
     let job_repo = Arc::new(SurrealJobRepository::new(db.clone()));
+    let job_log_repo = Arc::new(SurrealJobLogRepository::new(db.clone()));
     let agent_repo = Arc::new(SurrealAgentRepository::new(db.clone()));
     let user_org_repo = Arc::new(SurrealUserOrganizationRepository::new(db.clone()));
     let user_project_repo = Arc::new(SurrealUserProjectRepository::new(db.clone()));
@@ -89,6 +95,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         project_repo.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
+    let job_log_uc = Arc::new(JobLogUseCases::new(job_log_repo.clone()));
     let agent_uc = Arc::new(AgentUseCases::new(agent_repo.clone()));
     // `casbin_rule` is already defined by `init_db` in a single atomic DDL batch.
     // A second standalone `DEFINE TABLE` here used to soft-lock intermittently on
@@ -106,7 +113,12 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     // Connect to Hermes broker
     let broker_channel = hermes_broker_client::connect(&config.broker.url, None).await?;
     tracing::info!(url = %config.broker.url, "connected to hermes broker");
-    let broker_publisher = Arc::new(Publisher::new(broker_channel));
+    let broker_publisher = Arc::new(Publisher::new(broker_channel.clone()));
+    let job_log_stream_port = Arc::new(HermesJobLogStream::new(broker_channel));
+    let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
+        job_log_repo.clone(),
+        job_log_stream_port,
+    ));
 
     Ok(Services {
         db,
@@ -116,6 +128,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
         project_uc,
         pipeline_uc,
         job_uc,
+        job_log_uc,
+        job_log_stream_uc,
         agent_uc,
         permission_uc,
         permission_checker,
@@ -232,7 +246,12 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         services.permission_checker.clone(),
         services.broker_publisher.clone(),
     );
-    let job_handler = JobHandler::new(services.job_uc.clone(), services.permission_checker.clone());
+    let job_handler = JobHandler::new(
+        services.job_uc.clone(),
+        services.job_log_uc.clone(),
+        services.job_log_stream_uc.clone(),
+        services.permission_checker.clone(),
+    );
     let agent_handler = AgentHandler::new(
         services.agent_uc.clone(),
         services.permission_checker.clone(),

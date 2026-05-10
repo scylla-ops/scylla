@@ -14,6 +14,8 @@ members = [
 tokio = { version = "1.5", features = ["full"] }
 tokio-stream = "0.1"
 async-trait = "0.1.89"
+futures-core = "0.3"
+futures-util = "0.3"
 
 # broker
 hermes-broker-core = "0.7.0"
