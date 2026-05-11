@@ -15,6 +15,11 @@ export const useJob = (jobId: string) => {
     queryKey: ['jobs', jobId],
     queryFn: async () => (await getJobById.execute(jobId)).unwrap(),
     enabled: !!jobId,
+    refetchInterval: query => {
+      const status = query.state.data?.status;
+      if (!status || status === 'completed' || status === 'failed') return false;
+      return 3000;
+    },
   });
 
   return {
