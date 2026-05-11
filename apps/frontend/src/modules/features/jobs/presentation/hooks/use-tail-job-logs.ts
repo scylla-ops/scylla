@@ -12,11 +12,8 @@ export const useTailJobLogs = (jobId: string, nodeId?: string) => {
   const [error, setError] = useState<ScyllaError | null>(null);
   const streamRef = useRef<JobLogStream | null>(null);
   const activeJobIdRef = useRef<string | null>(null);
-  const mountCountRef = useRef(0);
 
   useEffect(() => {
-    mountCountRef.current += 1;
-
     if (!jobId) return;
 
     if (activeJobIdRef.current === jobId) return;
@@ -73,14 +70,11 @@ export const useTailJobLogs = (jobId: string, nodeId?: string) => {
 
   useEffect(() => {
     return () => {
-      const countAtCleanup = mountCountRef.current;
-      setTimeout(() => {
-        if (mountCountRef.current === countAtCleanup && streamRef.current) {
-          streamRef.current.cancel();
-          streamRef.current = null;
-          activeJobIdRef.current = null;
-        }
-      }, 100);
+      if (streamRef.current) {
+        streamRef.current.cancel();
+        streamRef.current = null;
+        activeJobIdRef.current = null;
+      }
     };
   }, []);
 

@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { useState } from 'react';
 import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx';
+import { IconButton } from '@shared/presentation/ui';
 
 type JobNodesListProps = {
   jobId: string;
   nodeExecutions: JobNodeExecution[];
   isExpanded: boolean;
+  onCollapse: () => void;
 };
 
 const calculateDuration = (startedAt?: string, finishedAt?: string): string => {
@@ -30,7 +32,7 @@ const calculateDuration = (startedAt?: string, finishedAt?: string): string => {
  * Display a detailed list of node executions when a job is expanded.
  * Each node can be expanded to show its logs inline (like GitHub Actions).
  */
-export const JobNodesList = ({ jobId, nodeExecutions, isExpanded }: JobNodesListProps) => {
+export const JobNodesList = ({ jobId, nodeExecutions, isExpanded, onCollapse }: JobNodesListProps) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const toggleNode = (nodeId: string) => {
@@ -54,7 +56,11 @@ export const JobNodesList = ({ jobId, nodeExecutions, isExpanded }: JobNodesList
         >
           <div className='mt-4 px-4 pb-4 border-t pt-4'>
             <h4 className='text-sm font-semibold mb-3 flex items-center gap-2'>
-              <ChevronDown className='w-4 h-4' />
+              <IconButton
+                icon={ChevronDown}
+                tooltip='Collapse'
+                onClick={onCollapse}
+              />
               Node Executions ({nodeExecutions.length})
             </h4>
             <div className='space-y-1'>
@@ -97,21 +103,18 @@ export const JobNodesList = ({ jobId, nodeExecutions, isExpanded }: JobNodesList
                       </div>
                     </Button>
 
-                    <AnimatePresence>
-                      {isNodeExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.15 }}
-                          className='overflow-hidden'
-                        >
-                          <div className='p-2'>
-                            <JobLogDisplay jobId={jobId} nodeId={nodeId} />
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {isNodeExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        transition={{ duration: 0.15 }}
+                        className='overflow-hidden'
+                      >
+                        <div className='p-2'>
+                          <JobLogDisplay jobId={jobId} nodeId={nodeId} />
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 );
               })}

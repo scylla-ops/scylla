@@ -66,6 +66,7 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
             jobId={row.original.id}
             nodeExecutions={row.original.nodeExecutions}
             isExpanded={true}
+            onCollapse={() => toggleExpand(null)}
           />
         )}
       />

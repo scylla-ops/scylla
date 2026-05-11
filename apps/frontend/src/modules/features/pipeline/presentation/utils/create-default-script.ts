@@ -4,8 +4,13 @@ export const createDefaultScript = (projectId: string) =>
       name: 'my-pipeline',
       projectId,
       nodes: [
-        { id: 'build', deps: [], command: 'cargo', args: ['build', '--release'] },
-        { id: 'test', deps: ['build'], command: 'cargo', args: ['test'] },
+        { id: 'welcome', deps: [], command: 'echo', args: ['Welcome to Scylla!'] },
+        {
+          id: 'example',
+          deps: ['welcome'],
+          command: 'echo',
+          args: ['This is an example pipeline.'],
+        },
       ],
     },
     null,

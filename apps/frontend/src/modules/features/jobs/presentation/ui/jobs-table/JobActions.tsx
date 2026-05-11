@@ -70,15 +70,11 @@ export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) 
         </DropdownMenu>
       ) : (
         <>
-          <IconButton
-            icon={Eye}
-            tooltip={<Trans>View</Trans>}
-            onClick={onView}
-          />
+          <IconButton icon={Eye} tooltip={<Trans>View</Trans>} onClick={onView} />
 
           <IconButton
             icon={TerminalSquare}
-            tooltip={<Trans>OpenJobLog</Trans>}
+            tooltip={<Trans>Open logs</Trans>}
             onClick={onOpenJobLog}
           />
 
