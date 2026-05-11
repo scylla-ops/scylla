@@ -42,7 +42,7 @@ msgstr "Duration"
 msgid "Job ID"
 msgstr "Job ID"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDialog.tsx:41
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:41
 msgid "Job Logs"
 msgstr "Job Logs"
 
@@ -66,7 +66,7 @@ msgstr "Run your pipeline to create the first job"
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDialog.tsx:56
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:56
 msgid "Streaming live output"
 msgstr "Streaming live output"
 

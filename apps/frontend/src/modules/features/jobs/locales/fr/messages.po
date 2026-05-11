@@ -42,7 +42,7 @@ msgstr ""
 msgid "Job ID"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDialog.tsx:41
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:41
 msgid "Job Logs"
 msgstr ""
 
@@ -66,7 +66,7 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDialog.tsx:56
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:56
 msgid "Streaming live output"
 msgstr ""
 

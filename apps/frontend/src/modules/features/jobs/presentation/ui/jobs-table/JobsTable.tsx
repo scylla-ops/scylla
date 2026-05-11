@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
 import { JobNodesList } from './JobNodesList';
-import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDialog.tsx';
+import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx';
 
 type JobsTableProps = {
   jobs: Job[];

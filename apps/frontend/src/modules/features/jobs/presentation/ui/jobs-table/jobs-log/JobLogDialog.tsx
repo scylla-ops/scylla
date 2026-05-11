@@ -9,7 +9,7 @@ import {
 import { Trans } from '@lingui/react/macro';
 import { Radio, Terminal } from 'lucide-react';
 
-import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDisplay.tsx';
+import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx';
 
 interface JobLogDialogProps {
   jobId?: string;
@@ -52,7 +52,7 @@ export const JobLogDialog = ({ jobId, nodeId, onClose }: JobLogDialogProps) => {
             </DialogTitle>
           </div>
           <DialogDescription className={'flex items-center gap-1.5 text-muted-foreground text-sm'}>
-            <Radio className={'size-3 animate-pulse text-green-500'} />
+            <Radio className={'size-4 animate-pulse text-green-500'} />
             <Trans>Streaming live output</Trans>
           </DialogDescription>
         </DialogHeader>
