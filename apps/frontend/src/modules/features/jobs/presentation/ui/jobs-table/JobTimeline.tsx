@@ -80,7 +80,7 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
               <TooltipTrigger asChild>
                 <div
                   className={cn(
-                    'h-full rounded-sm transition-all duration-150 relative flex items-center justify-center cursor-help',
+                    'h-full rounded-sm transition-all duration-150 relative flex items-center justify-center',
                     config.barClassName,
                     config.barHoverClassName,
                   )}
