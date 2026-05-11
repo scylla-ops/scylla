@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { JobResponse } from '@/generated/job.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 import { JobStatus } from './JobStatus';
 import { JobTimeline } from './JobTimeline';
 import { JobActions } from './JobActions';
@@ -11,9 +11,10 @@ type JobColumnMeta = {
   pipelineId: string;
   onDelete: (jobId: string) => void;
   onView: (jobId: string) => void;
+  onOpenJobLog: (jobId: string) => void;
 };
 
-export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] {
+export function createJobColumns(meta: JobColumnMeta): ColumnDef<Job>[] {
   return [
     {
       accessorKey: 'status',
@@ -23,7 +24,7 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
       minSize: 140,
     },
     {
-      accessorKey: 'jobId',
+      accessorKey: 'id',
       header: () => <Trans>Job ID</Trans>,
       cell: ({ row }) => <JobIdCell job={row.original} />,
       size: 180,
@@ -64,11 +65,15 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobResponse>[] 
         <JobActions
           onView={e => {
             e.stopPropagation();
-            meta.onView(row.original.jobId);
+            meta.onView(row.original.id);
           }}
           onDelete={e => {
             e.stopPropagation();
-            meta.onDelete(row.original.jobId);
+            meta.onDelete(row.original.id);
+          }}
+          onOpenJobLog={e => {
+            e.stopPropagation();
+            meta.onOpenJobLog(row.original.id);
           }}
         />
       ),

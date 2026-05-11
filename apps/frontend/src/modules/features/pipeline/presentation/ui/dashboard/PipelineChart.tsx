@@ -1,13 +1,13 @@
 import { cn } from '@shared/presentation/utils';
 import { Skeleton } from '@shadcn/skeleton.tsx';
-import type { JobResponse } from '@/generated/job.ts';
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/StatusBar.tsx';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 
 type PipelineChartProps = {
   maxJobs?: number;
-  jobs: JobResponse[];
+  jobs: Job[];
   isLoading?: boolean;
   isError?: boolean;
 };
@@ -39,15 +39,13 @@ export const PipelineChart = ({ jobs, isLoading, isError, maxJobs }: PipelineCha
       const runNumber = jobs.length - index;
 
       return {
-        id: job.jobId,
+        id: job.id,
         status: job.status,
         tooltip: (
           <div className='flex flex-col gap-1.5'>
             <div className='flex items-center justify-between gap-4'>
               <span className='font-bold text-slate-400'>Run #{runNumber}</span>
-              <span className='text-[10px] text-slate-400 font-mono'>
-                {job.jobId.slice(0, 8)}...
-              </span>
+              <span className='text-[10px] text-slate-400 font-mono'>{job.id.slice(0, 8)}...</span>
             </div>
             <div className='flex items-center gap-2'>
               <div className={cn('w-2 h-2 rounded-full', config.dotClassName)} />

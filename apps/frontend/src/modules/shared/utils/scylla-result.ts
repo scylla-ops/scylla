@@ -79,4 +79,12 @@ export class ScyllaResult<T> {
       return new ScyllaResult<T>(new ScyllaError(errorMessage, { cause: error }));
     }
   }
+
+  public static success<T>(value: T): ScyllaResult<T> {
+    return new ScyllaResult<T>(value);
+  }
+
+  public static error<T>(error: ScyllaError): ScyllaResult<T> {
+    return new ScyllaResult<T>(error);
+  }
 }

@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:62
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:63
 msgid "Actions"
 msgstr "Actions"
 
@@ -25,26 +25,30 @@ msgstr "Copied!"
 msgid "Copy ID"
 msgstr "Copy ID"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:53
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:102
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:87
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:92
 msgid "Delete"
 msgstr "Delete"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:41
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:42
 msgid "Duration"
 msgstr "Duration"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:27
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:28
 msgid "Job ID"
 msgstr "Job ID"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "No jobs found"
 msgstr "No jobs found"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:81
+msgid "OpenJobLog"
+msgstr "OpenJobLog"
 
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:69
 msgid "Refresh"
@@ -54,14 +58,14 @@ msgstr "Refresh"
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:20
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:21
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:34
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:35
 msgid "Timeline"
 msgstr "Timeline"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:75
 msgid "View"
 msgstr "View"

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Folder, Pencil } from 'lucide-react';
-import { Button } from '@shadcn';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { Trans } from '@lingui/react/macro';
 import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
@@ -8,8 +7,9 @@ import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { EditProjectDialog } from '@/modules/features/project/presentation/ui/EditProjectDialog.tsx';
 import { useState } from 'react';
 import { cn } from '@shared/presentation/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Checkbox } from '@shadcn/checkbox.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { IconButton } from '@shared/presentation/ui';
 
 type ProjectCardProps = {
   project: Project;
@@ -41,26 +41,16 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
               </CardTitle>
             </div>
             <div className='flex flex-row items-center gap-1 shrink-0'>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='h-7 w-7 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full opacity-0 group-hover:opacity-100'
+              <IconButton
+                    icon={Pencil}
+                    tooltip={<Trans>Edit</Trans>}
                     onClick={e => {
                       e.stopPropagation();
                       setEditOpen(true);
                     }}
-                  >
-                    <Pencil className='h-3.5 w-3.5' />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    <Trans>Edit</Trans>
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+                    className='h-7 w-7 opacity-0 group-hover:opacity-100'
+                    iconClassName='h-3.5 w-3.5'
+                  />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className={'mr-2'}>

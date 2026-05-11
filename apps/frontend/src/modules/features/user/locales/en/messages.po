@@ -99,7 +99,7 @@ msgstr "Username"
 msgid "Username and password are required."
 msgstr "Username and password are required."
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:56
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "View"
 msgstr "View"
 
