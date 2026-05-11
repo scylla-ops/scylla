@@ -42,6 +42,10 @@ msgstr ""
 msgid "Job ID"
 msgstr ""
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDialog.tsx:41
+msgid "Job Logs"
+msgstr ""
+
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "No jobs found"
 msgstr ""
@@ -60,6 +64,10 @@ msgstr ""
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:21
 msgid "Status"
+msgstr ""
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/logs/JobLogDialog.tsx:56
+msgid "Streaming live output"
 msgstr ""
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:35
