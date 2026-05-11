@@ -63,12 +63,9 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
         isRowExpanded={row => expandedJobId === row.id}
         expandedContent={row => (
           <JobNodesList
+            jobId={row.original.id}
             nodeExecutions={row.original.nodeExecutions}
             isExpanded={true}
-            onOpenLog={nodeId => {
-              setLogNodeId(nodeId);
-              setLogJobId(row.original.id);
-            }}
           />
         )}
       />
