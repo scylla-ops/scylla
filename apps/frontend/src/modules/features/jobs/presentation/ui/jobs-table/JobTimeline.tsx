@@ -41,9 +41,6 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
     }));
   }, [nodeExecutions, shouldCollapse]);
 
-  useEffect(() => {
-    console.log('nodeExecutions', nodeExecutions);
-  }, [nodeExecutions]);
   if (nodeExecutions.length === 0) {
     return <StatusBar items={[]} emptyLabel='No nodes' />;
   }
