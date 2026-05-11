@@ -36,7 +36,7 @@ export const StatusBar = ({ items, emptyLabel = 'No data', className, height = '
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className={cn('w-full flex items-center gap-1 py-1 overflow-hidden rounded-md', height, className)}>
+      <div className={cn('w-full flex items-center gap-[1px] py-1 overflow-hidden rounded-md', height, className)}>
         {items.map(item => {
           const config = getStatusConfig(item.status);
 
@@ -44,7 +44,7 @@ export const StatusBar = ({ items, emptyLabel = 'No data', className, height = '
             <div
               key={item.id}
               className={cn(
-                'flex-1 min-w-[4px] h-full rounded-sm transition-all duration-150',
+                'flex-1 min-w-[2px] max-w-full h-full rounded-sm transition-all duration-150 shrink',
                 config.barClassName,
                 config.barHoverClassName,
                 item.tooltip && 'cursor-help',
