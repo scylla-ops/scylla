@@ -14,6 +14,7 @@ export const useLogin = () => {
     },
     onSuccess: () => {
       goToUserSettings();
+      //reset navigation history
     },
   });
 };

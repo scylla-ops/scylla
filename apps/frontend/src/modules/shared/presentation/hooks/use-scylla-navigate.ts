@@ -37,7 +37,7 @@ export const useScyllaNavigate = () => {
   };
 
   const goToUserSettings = (userId?: string) => {
-    navigate('/users/' + (userId || 'me'));
+    navigate('/users/' + (userId || 'me'), { replace: true });
   };
 
   const goToWorkerDetails = (workerId: string) => {
