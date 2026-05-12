@@ -11,6 +11,7 @@ import { EditOrganizationDialog } from '@/modules/features/organization/presenta
 import { useDeleteOrganization } from '@/modules/features/organization/presentation/hooks/use-delete-organization.ts';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 import { Trans } from '@lingui/react/macro';
+import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
@@ -36,7 +37,10 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
 
     const otherOrganization = organizations?.find(org => org.organizationId !== deleteOrgId);
     setOrganization(otherOrganization?.organizationId ?? null, otherOrganization?.name ?? null);
-  }, [deleteOrgId, deleteOrganization, currentOrganizationId, organizations, setOrganization]);
+    if (otherOrganization) {
+      navigate(`/${slugifyOrgName(otherOrganization.name)}/projects`);
+    }
+  }, [deleteOrgId, deleteOrganization, currentOrganizationId, organizations, setOrganization, navigate]);
 
   if (!organizations)
     return (
@@ -60,7 +64,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
           key={organisation.organizationId}
           onSelect={() => {
             setOrganization(organisation.organizationId, organisation.name);
-            navigate('/projects');
+            navigate(`/${slugifyOrgName(organisation.name)}/projects`);
           }}
         >
           <div className='flex items-center w-full'>

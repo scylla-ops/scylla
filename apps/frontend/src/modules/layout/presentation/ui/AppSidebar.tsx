@@ -17,43 +17,50 @@ import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useLingui } from '@lingui/react/macro';
 import type { NavSectionModel } from '@/modules/layout/presentation/models/nav-section.model.ts';
+import { slugifyOrgName } from '@shared/utils/slug.ts';
 
-const navSections: NavSectionModel[] = [
-  {
-    title: 'Main',
-    items: [
-      {
-        title: 'Projects',
-        url: '/projects',
-        icon: WorkflowIcon,
-      },
-      {
-        title: 'Marketplace',
-        url: '/marketplace',
-        icon: ShoppingCartIcon,
-      },
-      {
-        title: 'Workers',
-        url: '/workers',
-        icon: HardDriveIcon,
-      },
-    ],
-  },
-  {
-    title: 'Admin',
-    items: [
-      {
-        title: 'Users',
-        url: '/users-admin',
-        icon: UsersIcon,
-      },
-    ],
-  },
-];
+const useNavSections = (): NavSectionModel[] => {
+  const orgName = useContextStore(state => state.organization.name);
+  const prefix = orgName ? `/${slugifyOrgName(orgName)}` : '';
+
+  return [
+    {
+      title: 'Main',
+      items: [
+        {
+          title: 'Projects',
+          url: `${prefix}/projects`,
+          icon: WorkflowIcon,
+        },
+        {
+          title: 'Marketplace',
+          url: `${prefix}/marketplace`,
+          icon: ShoppingCartIcon,
+        },
+        {
+          title: 'Workers',
+          url: `${prefix}/workers`,
+          icon: HardDriveIcon,
+        },
+      ],
+    },
+    {
+      title: 'Admin',
+      items: [
+        {
+          title: 'Users',
+          url: `${prefix}/users-admin`,
+          icon: UsersIcon,
+        },
+      ],
+    },
+  ];
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useLingui();
   const organization = useContextStore(state => state.organization);
+  const navSections = useNavSections();
 
   return (
     <Sidebar variant={'inset'} collapsible='icon' {...props}>
