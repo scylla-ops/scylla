@@ -42,8 +42,8 @@ msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:47
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:50
-msgid "Back"
-msgstr ""
+#~ msgid "Back"
+#~ msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:18
 msgid "Blueprint"

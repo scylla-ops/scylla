@@ -42,8 +42,8 @@ msgstr "Arguments (optional, space-separated)"
 
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:47
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:50
-msgid "Back"
-msgstr "Back"
+#~ msgid "Back"
+#~ msgstr "Back"
 
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:18
 msgid "Blueprint"
