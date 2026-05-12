@@ -16,7 +16,7 @@ import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/
 import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.page.tsx';
 import { WorkerDetailsPage } from '../../../../features/workers/presentation/ui/WorkerDetails.page.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
-import { OrganizationRedirect } from './OrganizationRedirect.tsx';
+import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -33,7 +33,7 @@ export const CoreRouter = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <OrganizationRedirect />,
+            element: <OrganizationRedirectWrapper />,
           },
           {
             path: '/:organizationSlug',

@@ -7,7 +7,7 @@ import { slugifyOrgName } from '@shared/utils/slug.ts';
  * Redirects the user to their current (or first) organization's projects page.
  * Used as the index route inside the authenticated layout.
  */
-export const OrganizationRedirect = () => {
+export const OrganizationRedirectWrapper = () => {
   const storedOrgName = useContextStore(state => state.organization.name);
   const { organizations, isLoading } = useOrganizations();
 
