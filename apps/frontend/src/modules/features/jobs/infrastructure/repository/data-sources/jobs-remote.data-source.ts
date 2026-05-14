@@ -1,7 +1,17 @@
-import type { ListJobsResponse, JobResponse, ListJobLogsResponse } from '@/generated/job.ts';
+import type {
+  ListJobsResponse,
+  JobResponse,
+  ListJobLogsResponse,
+  JobLogEntry,
+} from '@/generated/job.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
-import type { JobLogsTailHandle } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
+import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
+
+//tood: move this
+export interface JobLogsTailHandleRepo {
+  responses: AsyncIterable<ScyllaResult<JobLogEntry>>;
+  cancel: () => void;
+}
 
 export interface JobsRemoteDataSource {
   getByPipelineId(
@@ -15,5 +25,5 @@ export interface JobsRemoteDataSource {
     nodeId?: string,
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListJobLogsResponse>>;
-  tailLogs(jobId: string, nodeId?: string): JobLogsTailHandle;
+  tailLogs(jobId: string, nodeId?: string): ScyllaResult<JobLogsTailHandleRepo>;
 }

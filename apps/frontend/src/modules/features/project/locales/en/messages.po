@@ -46,7 +46,7 @@ msgstr "e.g., A short description of the project"
 msgid "e.g., My project"
 msgstr "e.g., My project"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:60
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:46
 msgid "Edit"
 msgstr "Edit"
 
@@ -66,7 +66,7 @@ msgstr "Enter a name for your new project and select the organization it belongs
 msgid "New project"
 msgstr "New project"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:89
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:79
 msgid "No description"
 msgstr "No description"
 
@@ -103,7 +103,7 @@ msgstr "Save"
 msgid "Saving..."
 msgstr "Saving..."
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:77
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:67
 msgid "Select"
 msgstr "Select"
 

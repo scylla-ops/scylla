@@ -1,12 +1,17 @@
-import { Badge } from '@/modules/shared/presentation/ui/shadcn';
-import type { JobNodeResponse } from '@/generated/job.ts';
-import { ChevronDown } from 'lucide-react';
+import { Badge, Button } from '@/modules/shared/presentation/ui/shadcn';
+import type { JobNodeExecution } from '@/modules/features/jobs/domain/models/job.model.ts';
+import { ChevronDown, ChevronRight, TerminalSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
+import { useState } from 'react';
+import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx';
+import { IconButton } from '@shared/presentation/ui';
 
 type JobNodesListProps = {
-  nodeExecutions: JobNodeResponse[];
+  jobId: string;
+  nodeExecutions: JobNodeExecution[];
   isExpanded: boolean;
+  onCollapse: () => void;
 };
 
 const calculateDuration = (startedAt?: string, finishedAt?: string): string => {
@@ -24,9 +29,21 @@ const calculateDuration = (startedAt?: string, finishedAt?: string): string => {
 };
 
 /**
- * Display a detailed list of node executions when a job is expanded
+ * Display a detailed list of node executions when a job is expanded.
+ * Each node can be expanded to show its logs inline (like GitHub Actions).
  */
-export const JobNodesList = ({ nodeExecutions, isExpanded }: JobNodesListProps) => {
+export const JobNodesList = ({ jobId, nodeExecutions, isExpanded, onCollapse }: JobNodesListProps) => {
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+
+  const toggleNode = (nodeId: string) => {
+    setExpandedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  };
+
   return (
     <AnimatePresence>
       {isExpanded && (
@@ -39,38 +56,65 @@ export const JobNodesList = ({ nodeExecutions, isExpanded }: JobNodesListProps) 
         >
           <div className='mt-4 px-4 pb-4 border-t pt-4'>
             <h4 className='text-sm font-semibold mb-3 flex items-center gap-2'>
-              <ChevronDown className='w-4 h-4' />
+              <IconButton
+                icon={ChevronDown}
+                tooltip='Collapse'
+                onClick={onCollapse}
+              />
               Node Executions ({nodeExecutions.length})
             </h4>
-            <div className='space-y-2'>
+            <div className='space-y-1'>
               {nodeExecutions.map((node, index) => {
                 const config = getStatusConfig(node.state);
                 const Icon = config.icon;
+                const nodeId = node.id || String(index);
+                const isNodeExpanded = expandedNodes.has(nodeId);
 
                 return (
-                  <div
-                    key={index}
-                    className='flex items-center justify-between p-3 bg-slate-50 rounded-lg'
-                  >
-                    <div className='flex items-center gap-3'>
-                      <Icon className={`w-5 h-5 ${config.iconClassName}`} />
-                      <div>
-                        <p className='font-medium text-sm'>{node.nodeId}</p>
-                        <Badge variant={config.variant} className='text-xs mt-1'>
+                  <div key={index} className='rounded-lg overflow-hidden border border-slate-100'>
+                    <Button
+                      variant='outline'
+                      type='button'
+                      onClick={e => {
+                        e.stopPropagation();
+                        toggleNode(nodeId);
+                      }}
+                      className='w-full flex items-center justify-between p-3 h-auto bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer rounded-none'
+                    >
+                      <div className='flex items-center gap-3'>
+                        {isNodeExpanded ? (
+                          <ChevronDown className='w-4 h-4 text-slate-500' />
+                        ) : (
+                          <ChevronRight className='w-4 h-4 text-slate-500' />
+                        )}
+                        <Icon className={`w-5 h-5 ${config.iconClassName}`} />
+                        <div className='text-left'>
+                          <p className='font-medium text-sm'>{node.id}</p>
+                        </div>
+                        <Badge variant={config.variant} className='text-xs'>
                           {config.label}
                         </Badge>
                       </div>
-                    </div>
-                    <div className='text-right text-sm text-slate-600'>
-                      <p className='font-medium'>
-                        {calculateDuration(node.startedAt, node.finishedAt)}
-                      </p>
-                      {node.startedAt && (
-                        <p className='text-xs text-slate-500'>
-                          Started: {new Date(node.startedAt).toLocaleTimeString()}
+                      <div className='flex items-center gap-3 text-right text-sm text-slate-600'>
+                        <p className='font-medium'>
+                          {calculateDuration(node.startedAt, node.finishedAt)}
                         </p>
-                      )}
-                    </div>
+                        <TerminalSquare className='w-4 h-4 text-slate-400' />
+                      </div>
+                    </Button>
+
+                    {isNodeExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        transition={{ duration: 0.15 }}
+                        className='overflow-hidden'
+                      >
+                        <div className='p-2'>
+                          <JobLogDisplay jobId={jobId} nodeId={nodeId} />
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 );
               })}

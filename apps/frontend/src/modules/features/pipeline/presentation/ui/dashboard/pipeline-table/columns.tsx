@@ -1,5 +1,4 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { JobResponse } from '@/generated/job.ts';
 import { PipelineStatus } from './PipelineStatus.tsx';
 import { PipelineLastJob } from './PipelineLastJob.tsx';
 import { PipelineActions } from './PipelineActions.tsx';
@@ -7,6 +6,7 @@ import { PipelineChart } from '../PipelineChart.tsx';
 import { Trans } from '@lingui/react/macro';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import { toStatusState } from '@shared/utils/job-status.utils.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineMetadata) => void;
@@ -14,7 +14,7 @@ type PipelineColumnMeta = {
 
   runningPipelines: Set<string>;
 
-  jobsByPipelineId: Map<string, JobResponse[]>;
+  jobsByPipelineId: Map<string, Job[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
 };

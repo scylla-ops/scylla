@@ -1,9 +1,9 @@
 import { Badge } from '@shadcn';
-import type { JobResponse } from '@/generated/job.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 
 type JobStatusProps = {
-  job: JobResponse;
+  job: Job;
 };
 
 /**

@@ -42,8 +42,8 @@ msgstr "Arguments (optional, space-separated)"
 
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:47
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:50
-msgid "Back"
-msgstr "Back"
+#~ msgid "Back"
+#~ msgstr "Back"
 
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:18
 msgid "Blueprint"
@@ -126,7 +126,7 @@ msgid "Modify the node properties."
 msgstr "Modify the node properties."
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:84
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:158
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:115
 msgid "More options"
 msgstr "More options"
 
@@ -165,7 +165,7 @@ msgstr "Pipeline name"
 #~ msgstr "Pipeline Status"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:69
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:107
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:93
 msgid "Run"
 msgstr "Run"
 
@@ -195,6 +195,6 @@ msgstr "Status"
 #~ msgid "This feature will be available soon"
 #~ msgstr "This feature will be available soon"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:140
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:107
 msgid "View Jobs"
 msgstr "View Jobs"

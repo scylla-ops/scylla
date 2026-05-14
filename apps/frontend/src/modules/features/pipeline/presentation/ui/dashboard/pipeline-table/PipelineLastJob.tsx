@@ -1,9 +1,9 @@
 import { Clock } from 'lucide-react';
-import type { JobResponse } from '@/generated/job.ts';
 import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 
 type PipelineMetadataProps = {
-  jobs: JobResponse[];
+  jobs: Job[];
 };
 
 /**
