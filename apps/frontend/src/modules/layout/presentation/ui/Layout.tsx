@@ -16,12 +16,15 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/card.tsx';
 import scyllaLogo from '@/assets/logo_scylla.png';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useNavigate } from 'react-router-dom';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 export const Layout = () => {
   const { organizations, isLoading } = useOrganizations();
   const createOrganization = useCreateOrganization();
-  const { goToUserSettings } = useScyllaNavigate();
+  const navigate = useNavigate();
+  const setOrganization = useContextStore(state => state.setOrganization);
 
   if (isLoading) {
     return (
@@ -70,9 +73,17 @@ export const Layout = () => {
                   onSubmit={values => {
                     const name = values.find(v => v.id === 'name')?.value;
                     const description = values.find(v => v.id === 'description')?.value;
-                    if (name && description) {
-                      createOrganization.mutate({ name, description });
-                      goToUserSettings('me');
+                    if (name) {
+                      createOrganization.mutate(
+                        { name, description: description || '' },
+                        {
+                          onSuccess: (data) => {
+                            const orgId = data?.organizationId ?? '';
+                            setOrganization(orgId, name);
+                            navigate(`/${slugifyOrgName(name)}/users/me`);
+                          },
+                        },
+                      );
                     }
                   }}
                   buttonLabel={'Create'}
