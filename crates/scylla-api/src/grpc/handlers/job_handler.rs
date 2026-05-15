@@ -12,6 +12,7 @@ use scylla_core::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases}
 use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId};
 use scylla_core::domain::value_objects::permission::policy;
 use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_core::domain::value_objects::PaginationMetadata;
 use scylla_protocol::services::job::{
     DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobLogEvent, JobResponse,
     ListJobLogsRequest, ListJobLogsResponse, ListJobsRequest, ListJobsResponse,
@@ -207,6 +208,25 @@ impl<
         let result = if let Some(node_id_str) = req.node_id.as_deref() {
             let node_id = NodeId::new(node_id_str)
                 .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?;
+
+            // Gate: log_listener and status_listener are independent broker
+            // subscribers, so log rows can be persisted before the matching
+            // status update reaches the recorder. Defer to the domain rule
+            // before hitting the log store.
+            let job = self
+                .use_cases
+                .get(&job_id)
+                .await
+                .map_err(domain_error_to_status)?;
+            if !job.logs_readable_for(&node_id) {
+                let params = pagination.unwrap_or_default();
+                let empty_meta = PaginationMetadata::new(&params, 0);
+                return Ok(Response::new(ListJobLogsResponse {
+                    logs: Vec::new(),
+                    pagination: Some(domain_to_proto_metadata(&empty_meta)),
+                }));
+            }
+
             self.log_use_cases
                 .list_by_job_and_node(&job_id, &node_id, pagination.as_ref())
                 .await
