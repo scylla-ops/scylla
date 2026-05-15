@@ -63,7 +63,9 @@ impl Agent {
 
         // Open a raw publish stream for status updates and logs.
         // We use the raw BrokerClient so we can set reply_to on messages if needed.
-        let (publish_tx, publish_rx) = mpsc::channel::<PublishRequest>(256);
+        let publish_buffer = usize::try_from(self.config.publish_buffer_size)
+            .expect("publish_buffer_size fits in usize (clap range starts at 1)");
+        let (publish_tx, publish_rx) = mpsc::channel::<PublishRequest>(publish_buffer);
         let mut publish_client = BrokerClient::new(self.channel.clone());
         tokio::spawn(async move {
             match publish_client
