@@ -57,6 +57,8 @@ pub struct Job {
     node_executions: Vec<JobNode>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    started_at: Option<DateTime<Utc>>,
+    finished_at: Option<DateTime<Utc>>,
 }
 
 impl Job {
@@ -77,6 +79,8 @@ impl Job {
             node_executions,
             created_at: now,
             updated_at: now,
+            started_at: None,
+            finished_at: None,
         }
     }
 
@@ -88,19 +92,26 @@ impl Job {
     }
 
     pub fn start(&mut self) -> DomainResult<()> {
-        self.update_status(JobStatus::Running)
+        self.update_status(JobStatus::Running)?;
+        self.started_at = Some(self.updated_at);
+        Ok(())
     }
 
     pub fn complete(&mut self) -> DomainResult<()> {
-        self.update_status(JobStatus::Completed)
+        self.update_status(JobStatus::Completed)?;
+        self.finished_at = Some(self.updated_at);
+        Ok(())
     }
 
     pub fn fail(&mut self) -> DomainResult<()> {
-        self.update_status(JobStatus::Failed)
+        self.update_status(JobStatus::Failed)?;
+        self.finished_at = Some(self.updated_at);
+        Ok(())
     }
 
     pub fn cancel(&mut self) -> DomainResult<()> {
         self.update_status(JobStatus::Cancelled)?;
+        self.finished_at = Some(self.updated_at);
         for execution in &mut self.node_executions {
             if execution.state == NodeState::Pending || execution.state == NodeState::Running {
                 execution.state = NodeState::Cancelled;
@@ -209,6 +220,16 @@ impl Job {
     #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
+    }
+
+    #[must_use]
+    pub fn started_at(&self) -> Option<DateTime<Utc>> {
+        self.started_at
+    }
+
+    #[must_use]
+    pub fn finished_at(&self) -> Option<DateTime<Utc>> {
+        self.finished_at
     }
 }
 
