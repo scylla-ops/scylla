@@ -1,9 +1,12 @@
 use crate::application::ports::{JobLogLiveStream, JobLogRepository, JobLogStreamPort};
 use crate::domain::entities::JobId;
 use crate::domain::errors::DomainResult;
+use crate::domain::value_objects::job::LogStream;
 use crate::domain::value_objects::pipeline::NodeId;
+use chrono::{DateTime, Utc};
 use derive_more::Constructor;
 use futures_util::stream::{self, StreamExt, TryStreamExt};
+use std::collections::HashSet;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -24,9 +27,12 @@ where
     /// 1. Subscribe to the live broker subject first so nothing published while
     ///    we read the snapshot is lost.
     /// 2. Read the historical snapshot from the repository (ordered ASC).
-    /// 3. Emit historical first, then forward live messages whose timestamp is
-    ///    strictly greater than the snapshot's max timestamp (dedup against
-    ///    rows the recorder already persisted).
+    /// 3. Emit historical first, then forward live messages, de-duplicating
+    ///    against the snapshot by `(timestamp, node_id, stream, line)` so that
+    ///    same-millisecond / equal-content duplicates aren't dropped or
+    ///    double-emitted. Live messages strictly newer than `cutoff` always
+    ///    pass; messages at-or-before `cutoff` only pass when their tuple is
+    ///    not already in the historical set.
     #[instrument(skip(self), fields(job_id = %job_id, node_id = ?node_id))]
     pub async fn stream(
         &self,
@@ -37,9 +43,34 @@ where
         let historical = self.repo.list_all_by_job(job_id, node_id).await?;
         let cutoff = historical.last().map(|log| log.timestamp());
 
+        // Dedup key for the boundary window: any live message whose tuple is
+        // already present in the snapshot is a duplicate, regardless of how
+        // its timestamp compares to the cutoff.
+        let seen: HashSet<(DateTime<Utc>, NodeId, LogStream, String)> = historical
+            .iter()
+            .map(|l| {
+                (
+                    l.timestamp(),
+                    l.node_id().clone(),
+                    *l.stream(),
+                    l.line().to_string(),
+                )
+            })
+            .collect();
+
         let historical_stream = stream::iter(historical.into_iter().map(Ok));
         let filtered_live = live.try_filter(move |log| {
-            let keep = cutoff.map_or(true, |c| log.timestamp() > c);
+            let strictly_newer = cutoff.map_or(true, |c| log.timestamp() > c);
+            let keep = if strictly_newer {
+                true
+            } else {
+                !seen.contains(&(
+                    log.timestamp(),
+                    log.node_id().clone(),
+                    *log.stream(),
+                    log.line().to_string(),
+                ))
+            };
             std::future::ready(keep)
         });
 
@@ -128,7 +159,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn stream_emits_historical_then_filtered_live() {
+    async fn stream_emits_historical_then_dedupes_live() {
+        // Live messages that are byte-identical to a snapshot entry (same
+        // ts/node/stream/line) must be dropped. Same-millisecond boundary
+        // entries with different content are kept (real new lines we'd
+        // otherwise lose). Anything strictly newer than cutoff always passes.
         let t0 = Utc::now();
         let historical = vec![
             log_at(t0, "h1"),
@@ -138,7 +173,9 @@ mod tests {
         let cutoff = t0 + Duration::milliseconds(20);
 
         let live = vec![
-            log_at(t0 + Duration::milliseconds(5), "stale"),
+            // Exact duplicate of h2 — must be filtered.
+            log_at(t0 + Duration::milliseconds(10), "h2"),
+            // Same timestamp as h3 but different content — must pass.
             log_at(cutoff, "boundary"),
             log_at(cutoff + Duration::milliseconds(1), "fresh1"),
             log_at(cutoff + Duration::milliseconds(2), "fresh2"),
@@ -161,7 +198,7 @@ mod tests {
         }
 
         let lines: Vec<&str> = collected.iter().map(|l| l.line()).collect();
-        assert_eq!(lines, vec!["h1", "h2", "h3", "fresh1", "fresh2"]);
+        assert_eq!(lines, vec!["h1", "h2", "h3", "boundary", "fresh1", "fresh2"]);
     }
 
     #[tokio::test]
