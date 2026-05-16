@@ -4,7 +4,7 @@ import type { JobLog } from '@/modules/features/jobs/domain/models/job.model.ts'
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 
-export const useJobLogs = (jobId: string) => {
+export const useJobLogs = (jobId: string, nodeId?: string) => {
   const { listJobLogs } = useDependencies().jobs;
 
   const {
@@ -13,7 +13,7 @@ export const useJobLogs = (jobId: string) => {
     isError,
   } = useQuery<PaginatedList<JobLog>, ScyllaError>({
     queryKey: ['job-logs'],
-    queryFn: async () => (await listJobLogs.execute(jobId)).unwrap(),
+    queryFn: async () => (await listJobLogs.execute(jobId, nodeId)).unwrap(),
     staleTime: 1000 * 3,
   });
 
