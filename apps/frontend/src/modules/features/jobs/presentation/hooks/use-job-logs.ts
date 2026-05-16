@@ -12,9 +12,9 @@ export const useJobLogs = (jobId: string, nodeId?: string) => {
     isLoading,
     isError,
   } = useQuery<PaginatedList<JobLog>, ScyllaError>({
-    queryKey: ['job-logs'],
+    queryKey: ['job-logs', jobId, nodeId],
     queryFn: async () => (await listJobLogs.execute(jobId, nodeId)).unwrap(),
-    staleTime: 1000 * 3,
+    staleTime: 1000 * 2,
   });
 
   return {
