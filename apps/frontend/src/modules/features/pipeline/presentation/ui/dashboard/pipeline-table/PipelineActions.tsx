@@ -9,7 +9,7 @@ import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2 } from 'lucide-
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { IconButton } from '@shared/presentation/ui';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
@@ -88,76 +88,33 @@ export const PipelineActions = ({
         </DropdownMenu>
       ) : (
         <>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size='icon'
-                variant='ghost'
-                className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
-                onClick={onRun}
-              >
-                {isRunning ? (
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                ) : (
-                  <PlayIcon className='h-4 w-4 fill-current' />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p><Trans>Run</Trans></p>
-            </TooltipContent>
-          </Tooltip>
+          <IconButton
+            icon={isRunning ? Loader2 : PlayIcon}
+            tooltip={<Trans>Run</Trans>}
+            onClick={onRun}
+            iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
+          />
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size='icon'
-                variant='ghost'
-                className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
-                onClick={onEdit}
-              >
-                <EditIcon className='w-4 h-4' />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Edit pipeline</p>
-            </TooltipContent>
-          </Tooltip>
+          <IconButton
+            icon={EditIcon}
+            tooltip={'Edit pipeline'}
+            onClick={onEdit}
+          />
 
           {onViewJobs && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size='icon'
-                  variant='ghost'
-                  className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
-                  onClick={onViewJobs}
-                >
-                  <ListChecks className='w-4 h-4' />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p><Trans>View Jobs</Trans></p>
-              </TooltipContent>
-            </Tooltip>
+            <IconButton
+              icon={ListChecks}
+              tooltip={<Trans>View Jobs</Trans>}
+              onClick={onViewJobs}
+            />
           )}
 
           {onMore && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size='icon'
-                  variant='ghost'
-                  className='h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
-                  onClick={onMore}
-                >
-                  <MoreHorizontal className='w-4 h-4' />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p><Trans>More options</Trans></p>
-              </TooltipContent>
-            </Tooltip>
+            <IconButton
+              icon={MoreHorizontal}
+              tooltip={<Trans>More options</Trans>}
+              onClick={onMore}
+            />
           )}
         </>
       )}

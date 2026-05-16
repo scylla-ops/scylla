@@ -5,7 +5,6 @@ import { Card } from '@shadcn';
 import { json } from '@codemirror/legacy-modes/mode/javascript';
 import { useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Trans } from '@lingui/react/macro';
 import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx';
 import { usePipeline } from '@/modules/features/pipeline/presentation/hooks/use-pipeline.ts';
 import { useUpdatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-update-pipeline.ts';

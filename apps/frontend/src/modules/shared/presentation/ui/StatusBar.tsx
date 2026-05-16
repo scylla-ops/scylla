@@ -1,10 +1,5 @@
 import { cn } from '@shared/presentation/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@shadcn/tooltip.tsx';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import type { ReactNode } from 'react';
 
@@ -25,7 +20,12 @@ interface StatusBarProps {
  * Generic bar chart showing colored segments per status.
  * Used for pipeline job history and job node timelines.
  */
-export const StatusBar = ({ items, emptyLabel = 'No data', className, height = 'h-6' }: StatusBarProps) => {
+export const StatusBar = ({
+  items,
+  emptyLabel = 'No data',
+  className,
+  height = 'h-6',
+}: StatusBarProps) => {
   if (items.length === 0) {
     return (
       <div className={cn('w-full flex items-center justify-center py-1', height)}>
@@ -36,7 +36,13 @@ export const StatusBar = ({ items, emptyLabel = 'No data', className, height = '
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className={cn('w-full flex items-center gap-1 py-1 overflow-hidden rounded-md', height, className)}>
+      <div
+        className={cn(
+          'w-full flex items-center gap-[1px] py-1 overflow-hidden rounded-md',
+          height,
+          className,
+        )}
+      >
         {items.map(item => {
           const config = getStatusConfig(item.status);
 
@@ -44,10 +50,10 @@ export const StatusBar = ({ items, emptyLabel = 'No data', className, height = '
             <div
               key={item.id}
               className={cn(
-                'flex-1 min-w-[4px] h-full rounded-sm transition-all duration-150',
+                'flex-1 min-w-[2px] max-w-full h-full rounded-sm transition-all duration-150 shrink',
                 config.barClassName,
                 config.barHoverClassName,
-                item.tooltip && 'cursor-help',
+                item.tooltip && 'cursor-pointer',
               )}
             />
           );
@@ -67,4 +73,3 @@ export const StatusBar = ({ items, emptyLabel = 'No data', className, height = '
     </TooltipProvider>
   );
 };
-

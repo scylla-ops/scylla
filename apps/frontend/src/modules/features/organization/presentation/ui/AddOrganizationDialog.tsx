@@ -3,6 +3,9 @@ import { Trans } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
 import { type FormChange } from '@shared/presentation/models/scylla-form.model.ts';
 import { createOrganizationItems } from '@/modules/features/organization/presentation/utils/create-organization-form-items.ts';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useNavigate } from 'react-router-dom';
+import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 interface AddOrganizationDialogProps {
   open: boolean;
@@ -16,6 +19,8 @@ export function AddOrganizationDialog({
   hideCancel = false,
 }: AddOrganizationDialogProps) {
   const createOrganization = useCreateOrganization();
+  const setOrganization = useContextStore(state => state.setOrganization);
+  const navigate = useNavigate();
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
@@ -25,7 +30,12 @@ export function AddOrganizationDialog({
     createOrganization.mutate(
       { name, description: description?.trim() || undefined },
       {
-        onSuccess: () => setOpen(false),
+        onSuccess: (data) => {
+          const orgId = data?.organizationId ?? createOrganization.data?.organizationId ?? '';
+          setOpen(false);
+          setOrganization(orgId, name);
+          navigate(`/${slugifyOrgName(name)}/projects`);
+        },
       },
     );
   };

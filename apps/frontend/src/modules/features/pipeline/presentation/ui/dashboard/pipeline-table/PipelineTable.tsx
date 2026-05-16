@@ -1,4 +1,3 @@
-import type { JobResponse } from '@/generated/job.ts';
 import { DataTable } from '@shared/presentation/ui/DataTable.tsx';
 import { createPipelineColumns } from './columns.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
@@ -6,10 +5,11 @@ import { useRunPipeline } from '../../../hooks/use-run-pipeline.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useState } from 'react';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 
 type PipelineTableProps = {
   pipelines: PipelineMetadata[];
-  jobsByPipelineId: Map<string, JobResponse[]>;
+  jobsByPipelineId: Map<string, Job[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
 };

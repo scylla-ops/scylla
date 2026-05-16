@@ -1,7 +1,8 @@
 import type { JobsRepository } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { ListJobLogsResponse } from '@/generated/job.ts';
-import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
+import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
+import type { JobLog } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
 
 export class ListJobLogsUseCase {
   constructor(private readonly repository: JobsRepository) {}
@@ -10,7 +11,7 @@ export class ListJobLogsUseCase {
     jobId: string,
     nodeId?: string,
     pagination?: PaginationParams,
-  ): Promise<ScyllaResult<ListJobLogsResponse>> {
+  ): Promise<ScyllaResult<PaginatedList<JobLog>>> {
     return this.repository.getLogs(jobId, nodeId, pagination);
   }
 }

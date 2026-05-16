@@ -6,12 +6,12 @@ import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/C
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { Building2, Pencil, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@shadcn';
+import { IconButton } from '@shared/presentation/ui';
 import { EditOrganizationDialog } from '@/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx';
 import { useDeleteOrganization } from '@/modules/features/organization/presentation/hooks/use-delete-organization.ts';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
+import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
@@ -37,7 +37,10 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
 
     const otherOrganization = organizations?.find(org => org.organizationId !== deleteOrgId);
     setOrganization(otherOrganization?.organizationId ?? null, otherOrganization?.name ?? null);
-  }, [deleteOrgId, deleteOrganization, currentOrganizationId, organizations, setOrganization]);
+    if (otherOrganization) {
+      navigate(`/${slugifyOrgName(otherOrganization.name)}/projects`);
+    }
+  }, [deleteOrgId, deleteOrganization, currentOrganizationId, organizations, setOrganization, navigate]);
 
   if (!organizations)
     return (
@@ -61,7 +64,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
           key={organisation.organizationId}
           onSelect={() => {
             setOrganization(organisation.organizationId, organisation.name);
-            navigate('/projects');
+            navigate(`/${slugifyOrgName(organisation.name)}/projects`);
           }}
         >
           <div className='flex items-center w-full'>
@@ -69,46 +72,26 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
               <ContextItem name={organisation.name} description={organisation.description} icon={Building2} />
             </div>
             <div className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='h-7 w-7 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
+              <IconButton
+                    icon={Pencil}
+                    tooltip={<Trans>Edit</Trans>}
                     onClick={e => {
                       e.stopPropagation();
                       setEditOrg({ id: organisation.organizationId, name: organisation.name, description: organisation.description });
                     }}
-                  >
-                    <Pencil className='h-3.5 w-3.5 hover:text-primary' />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    <Trans>Edit</Trans>
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='h-7 w-7 cursor-pointer transition-all hover:scale-125 hover:text-destructive hover:bg-destructive/10 rounded-full'
+                    className='h-7 w-7'
+                    iconClassName='h-3.5 w-3.5'
+                  />
+                  <IconButton
+                    icon={Trash}
+                    tooltip={<Trans>Delete</Trans>}
                     onClick={e => {
                       e.stopPropagation();
                       setDeleteOrgId(organisation.organizationId);
                     }}
-                  >
-                    <Trash className='h-3.5 w-3.5' />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    <Trans>Delete</Trans>
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+                    className='h-7 w-7 hover:text-destructive hover:bg-destructive/10'
+                    iconClassName='h-3.5 w-3.5'
+                  />
             </div>
           </div>
         </Wrapper>

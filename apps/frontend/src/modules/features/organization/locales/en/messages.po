@@ -33,7 +33,7 @@ msgstr "Create Organization"
 #~ msgid "Creating..."
 #~ msgstr "Creating..."
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:108
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:83
 msgid "Delete"
 msgstr "Delete"
 
@@ -50,7 +50,7 @@ msgstr "e.g., My Organization"
 msgid "e.g., Our company's main organization"
 msgstr "e.g., Our company's main organization"
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:88
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:73
 msgid "Edit"
 msgstr "Edit"
 
