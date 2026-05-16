@@ -57,6 +57,8 @@ pub struct Job {
     node_executions: Vec<JobNode>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    started_at: Option<DateTime<Utc>>,
+    finished_at: Option<DateTime<Utc>>,
 }
 
 impl Job {
@@ -77,6 +79,8 @@ impl Job {
             node_executions,
             created_at: now,
             updated_at: now,
+            started_at: None,
+            finished_at: None,
         }
     }
 
@@ -88,19 +92,26 @@ impl Job {
     }
 
     pub fn start(&mut self) -> DomainResult<()> {
-        self.update_status(JobStatus::Running)
+        self.update_status(JobStatus::Running)?;
+        self.started_at = Some(self.updated_at);
+        Ok(())
     }
 
     pub fn complete(&mut self) -> DomainResult<()> {
-        self.update_status(JobStatus::Completed)
+        self.update_status(JobStatus::Completed)?;
+        self.finished_at = Some(self.updated_at);
+        Ok(())
     }
 
     pub fn fail(&mut self) -> DomainResult<()> {
-        self.update_status(JobStatus::Failed)
+        self.update_status(JobStatus::Failed)?;
+        self.finished_at = Some(self.updated_at);
+        Ok(())
     }
 
     pub fn cancel(&mut self) -> DomainResult<()> {
         self.update_status(JobStatus::Cancelled)?;
+        self.finished_at = Some(self.updated_at);
         for execution in &mut self.node_executions {
             if execution.state == NodeState::Pending || execution.state == NodeState::Running {
                 execution.state = NodeState::Cancelled;
@@ -163,6 +174,18 @@ impl Job {
         matches!(self.status, JobStatus::Pending | JobStatus::Running)
     }
 
+    /// Whether logs for `node_id` should be surfaced to readers.
+    ///
+    /// A node still in `Pending` has no execution behind it, so any rows in
+    /// the log store that happen to be keyed to it are either stale (re-run)
+    /// or arrived ahead of the matching status update — neither case should
+    /// leak to the client.
+    #[must_use]
+    pub fn logs_readable_for(&self, node_id: &NodeId) -> bool {
+        self.find_execution(node_id)
+            .is_some_and(|n| n.state() != NodeState::Pending)
+    }
+
     #[must_use]
     pub fn is_terminal(&self) -> bool {
         self.status.is_terminal()
@@ -209,6 +232,16 @@ impl Job {
     #[must_use]
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
+    }
+
+    #[must_use]
+    pub fn started_at(&self) -> Option<DateTime<Utc>> {
+        self.started_at
+    }
+
+    #[must_use]
+    pub fn finished_at(&self) -> Option<DateTime<Utc>> {
+        self.finished_at
     }
 }
 
@@ -333,6 +366,31 @@ mod tests {
         let exec = job.find_execution(&node_id("a")).unwrap();
         assert_eq!(exec.state(), NodeState::Completed);
         assert!(exec.finished_at().is_some());
+    }
+
+    #[test]
+    fn logs_readable_for_gates_pending_nodes() {
+        let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        // Both nodes start Pending → no logs leak.
+        assert!(!job.logs_readable_for(&node_id("a")));
+        assert!(!job.logs_readable_for(&node_id("b")));
+
+        // Unknown node never readable.
+        assert!(!job.logs_readable_for(&node_id("ghost")));
+
+        // Running node → logs visible.
+        job.apply_node_started(&node_id("a"), Utc::now()).unwrap();
+        assert!(job.logs_readable_for(&node_id("a")));
+
+        // Completed node → still visible.
+        job.apply_node_finished(&node_id("a"), NodeState::Completed, Utc::now())
+            .unwrap();
+        assert!(job.logs_readable_for(&node_id("a")));
+
+        // Sibling still Pending → still gated.
+        assert!(!job.logs_readable_for(&node_id("b")));
     }
 
     #[test]

@@ -27,6 +27,14 @@ pub struct AgentConfig {
     /// Heartbeat publish interval in seconds (must be >= 1).
     #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..))]
     pub heartbeat_interval_secs: u64,
+
+    /// Buffer size of the in-process channel feeding the broker publish stream.
+    /// Each pipeline node emits ~3 messages (NodeStarted, log line, NodeCompleted),
+    /// so a fast 100-node sequential chain can queue up several hundred entries
+    /// before the gRPC stream drains. Too small ⇒ executor stalls on `send().await`;
+    /// too big ⇒ memory bloat for nothing.
+    #[arg(long, default_value_t = 8192, value_parser = clap::value_parser!(u64).range(1..))]
+    pub publish_buffer_size: u64,
 }
 
 impl AgentConfig {

@@ -29,6 +29,8 @@ message JobResponse {
   repeated JobNodeResponse node_executions = 4;
   string created_at = 5;
   string updated_at = 6;
+  optional string started_at = 7;
+  optional string finished_at = 8;
 }
 
 message GetJobRequest {

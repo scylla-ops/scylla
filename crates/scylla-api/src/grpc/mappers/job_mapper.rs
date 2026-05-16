@@ -13,6 +13,8 @@ pub fn job_to_proto(job: &Job) -> JobResponse {
             .collect(),
         created_at: job.created_at().to_rfc3339(),
         updated_at: job.updated_at().to_rfc3339(),
+        started_at: job.started_at().map(|t| t.to_rfc3339()),
+        finished_at: job.finished_at().map(|t| t.to_rfc3339()),
     }
 }
 
