@@ -29,7 +29,7 @@ msgstr "Copy ID"
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:87
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:83
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:92
 msgid "Delete"
 msgstr "Delete"
@@ -50,9 +50,13 @@ msgstr "Job Logs"
 msgid "No jobs found"
 msgstr "No jobs found"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:77
+msgid "Open logs"
+msgstr "Open logs"
+
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:81
-msgid "OpenJobLog"
-msgstr "OpenJobLog"
+#~ msgid "OpenJobLog"
+#~ msgstr "OpenJobLog"
 
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:69
 msgid "Refresh"
@@ -74,6 +78,6 @@ msgstr "Streaming live output"
 msgid "Timeline"
 msgstr "Timeline"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:75
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:73
 msgid "View"
 msgstr "View"
