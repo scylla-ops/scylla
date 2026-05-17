@@ -2,7 +2,7 @@
 
 FROM node:22-alpine AS build
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 
 ENV PNPM_HOME=/pnpm \
     PATH="/pnpm:/app/node_modules/.bin:$PATH"
