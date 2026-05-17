@@ -2,9 +2,15 @@
 ##
 ## - push to `back-end`  -> per-platform native build (amd64 + arm64) of changed services,
 ##                          push by-digest, then merge-manifest publishes :back-end + :back-end-<sha7>.
-## - push to `dev`       -> retag (no rebuild) the images from the merge source SHA as :dev + :dev-<sha7>.
-## - push to `main`      -> retag (no rebuild) the dev images as :latest + :main-<sha7>.
+## - push to `dev`       -> retag (no rebuild) the back-end image at the merge source SHA as
+##                          :dev + :dev-<sha7>. If no per-SHA image exists (e.g. a docs-only PR
+##                          merged into dev without going through back-end), fall back to the
+##                          floating :back-end tag — carrying the latest build forward.
+## - push to `main`      -> retag the dev image at the merge source SHA as :latest + :main-<sha7>,
+##                          with the same fallback to :dev when no per-SHA image exists.
 ##
+## The workflow runs on every push to back-end/dev/main; `build` is still gated by
+## `detect-changes`, so back-end pushes that don't touch crates/Dockerfile do nothing.
 ## Promotion expects PR merge commits (HEAD^2 = source branch tip).
 ## Required secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN.
 
@@ -13,12 +19,6 @@ name: Backend images
 on:
   push:
     branches: [back-end, dev, main]
-    paths:
-      - 'crates/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'Dockerfile'
-      - '.github/workflows/backend-images.yaml'
 
 env:
   IMAGE_PREFIX: godlyjaaaaj
@@ -190,9 +190,15 @@ jobs:
 
       - name: Retag back-end -> dev
         run: |
-          src="${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:back-end-${{ steps.refs.outputs.source }}"
-          if ! docker buildx imagetools inspect "$src" >/dev/null 2>&1; then
-            echo "::error::Source image $src not found. Push back-end first or merge a back-end commit that built successfully."
+          src_sha="${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:back-end-${{ steps.refs.outputs.source }}"
+          src_tip="${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:back-end"
+          if docker buildx imagetools inspect "$src_sha" >/dev/null 2>&1; then
+            src="$src_sha"
+          elif docker buildx imagetools inspect "$src_tip" >/dev/null 2>&1; then
+            echo "::notice::No image at $src_sha (non back-end merge?). Carrying forward $src_tip."
+            src="$src_tip"
+          else
+            echo "::error::Neither $src_sha nor $src_tip exists. Push back-end first so an image gets built."
             exit 1
           fi
           docker buildx imagetools create \
@@ -231,9 +237,15 @@ jobs:
 
       - name: Retag dev -> main
         run: |
-          src="${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:dev-${{ steps.refs.outputs.source }}"
-          if ! docker buildx imagetools inspect "$src" >/dev/null 2>&1; then
-            echo "::error::Source image $src not found. Promote to dev first."
+          src_sha="${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:dev-${{ steps.refs.outputs.source }}"
+          src_tip="${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:dev"
+          if docker buildx imagetools inspect "$src_sha" >/dev/null 2>&1; then
+            src="$src_sha"
+          elif docker buildx imagetools inspect "$src_tip" >/dev/null 2>&1; then
+            echo "::notice::No image at $src_sha. Carrying forward $src_tip."
+            src="$src_tip"
+          else
+            echo "::error::Neither $src_sha nor $src_tip exists. Promote to dev first."
             exit 1
           fi
           docker buildx imagetools create \
