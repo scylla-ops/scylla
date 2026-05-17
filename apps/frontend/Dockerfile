@@ -9,11 +9,11 @@ ENV PNPM_HOME=/pnpm \
 
 WORKDIR /app
 
-COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml ./
+COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml apps/frontend/pnpm-workspace.yaml ./
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm config set store-dir /pnpm/store && \
-    pnpm install --no-frozen-lockfile
+    pnpm install --frozen-lockfile
 
 COPY crates/scylla-protocol/proto/ ../../crates/scylla-protocol/proto/
 COPY apps/frontend/ .
