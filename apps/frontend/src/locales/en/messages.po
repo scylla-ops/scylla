@@ -1,0 +1,126 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-04-12 02:12+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: section.title
+#: src/modules/layout/presentation/ui/NavMain.tsx:24
+msgid "{0}"
+msgstr "{0}"
+
+#: src/modules/shared/presentation/ui/ErrorState.tsx:12
+msgid "An error occurred"
+msgstr "An error occurred"
+
+#: src/modules/core/presentation/ui/App.tsx:56
+msgid "An unexpected error occurred"
+msgstr "An unexpected error occurred"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:34
+msgid "Are you absolutely sure?"
+msgstr "Are you absolutely sure?"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
+#: src/modules/shared/presentation/ui/FormDialog.tsx:60
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:57
+msgid "Clear"
+msgstr "Clear"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
+msgid "Continue"
+msgstr "Continue"
+
+#: src/modules/shared/presentation/ui/FormDialog.tsx:66
+msgid "Create"
+msgstr "Create"
+
+#: src/modules/shared/presentation/ui/FormDialog.tsx:65
+msgid "Creating..."
+msgstr "Creating..."
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:73
+msgid "Delete"
+msgstr "Delete"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:22
+#~ msgid "Description"
+#~ msgstr "Description"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:16
+#~ msgid "e.g., My Organization"
+#~ msgstr "e.g., My Organization"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:23
+#~ msgid "e.g., Our company's main organization"
+#~ msgstr "e.g., Our company's main organization"
+
+#: src/modules/shared/presentation/ui/ErrorState.tsx:11
+msgid "Error"
+msgstr "Error"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:51
+msgid "in total"
+msgstr "in total"
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:100
+msgid "Log out"
+msgstr "Log out"
+
+#: src/modules/layout/presentation/ui/NavMain.tsx:26
+#~ msgid "Main"
+#~ msgstr "Main"
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:80
+msgid "New {label}"
+msgstr "New {label}"
+
+#: src/modules/core/presentation/ui/App.tsx:86
+msgid "Operation failed"
+msgstr "Operation failed"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:62
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:66
+msgid "Organization"
+msgstr "Organization"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:15
+#~ msgid "Organization name"
+#~ msgstr "Organization name"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:65
+msgid "Select Organization"
+msgstr "Select Organization"
+
+#: src/modules/core/presentation/ui/App.tsx:55
+#: src/modules/core/presentation/ui/App.tsx:85
+msgid "Server unreachable"
+msgstr "Server unreachable"
+
+#: src/modules/shared/presentation/ui/Pagination.tsx:81
+msgid "Showing {start}-{end} of {totalCount}"
+msgstr "Showing {start}-{end} of {totalCount}"
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
+msgid "This action cannot be undone."
+msgstr "This action cannot be undone."
+
+#: src/modules/layout/presentation/ui/Layout.tsx:64
+msgid "To get started, please create your first organization."
+msgstr "To get started, please create your first organization."
+
+#: src/modules/layout/presentation/ui/Layout.tsx:61
+msgid "Welcome to Scylla!"
+msgstr "Welcome to Scylla!"

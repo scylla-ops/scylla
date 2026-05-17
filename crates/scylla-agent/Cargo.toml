@@ -1,0 +1,41 @@
+[package]
+name = "scylla-agent"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# broker
+hermes-broker-proto = { workspace = true }
+hermes-broker-client = { workspace = true }
+
+# domain types (shared broker messages, no surrealdb)
+scylla-core = { workspace = true, default-features = false, features = ["jobs", "agents"] }
+
+# async
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+
+# grpc
+tonic = { workspace = true }
+
+# serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# cli
+clap = { workspace = true, features = ["env"] }
+
+# error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# time
+chrono = { workspace = true }
+
+# identity
+ulid = { workspace = true }
+hostname = "0.4"

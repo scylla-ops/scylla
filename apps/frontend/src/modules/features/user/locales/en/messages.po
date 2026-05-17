@@ -1,0 +1,108 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-04-25 15:32+0900\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:36
+msgid "Actions"
+msgstr "Actions"
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:149
+msgid "Active account"
+msgstr "Active account"
+
+#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
+#~ msgid "Back"
+#~ msgstr "Back"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:53
+msgid "Create a new user"
+msgstr "Create a new user"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:57
+msgid "Create User"
+msgstr "Create User"
+
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:31
+msgid "Created at"
+msgstr "Created at"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
+msgid "e.g., john.doe"
+msgstr "e.g., john.doe"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:31
+msgid "Enter a password"
+msgstr "Enter a password"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
+msgid "Enter a username and password for the new user."
+msgstr "Enter a username and password for the new user."
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:92
+msgid "Error loading user information"
+msgstr "Error loading user information"
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:72
+msgid "Loading user information..."
+msgstr "Loading user information..."
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:87
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:137
+msgid "Manage your account details."
+msgstr "Manage your account details."
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:47
+msgid "New user"
+msgstr "New user"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:30
+msgid "Password"
+msgstr "Password"
+
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
+msgid "User"
+msgstr "User"
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:44
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:64
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:84
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:134
+msgid "User information"
+msgstr "User information"
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:52
+msgid "User information not available"
+msgstr "User information not available"
+
+#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
+msgid "User settings"
+msgstr "User settings"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:23
+msgid "Username"
+msgstr "Username"
+
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
+msgid "Username and password are required."
+msgstr "Username and password are required."
+
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
+msgid "View"
+msgstr "View"
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
+msgid "You cannot delete your own account."
+msgstr "You cannot delete your own account."

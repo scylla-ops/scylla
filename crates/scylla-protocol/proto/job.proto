@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package job;
+
+import "common.proto";
+
+service JobService {
+  rpc GetJob(GetJobRequest) returns (JobResponse);
+  rpc DeleteJob(DeleteJobRequest) returns (DeleteJobResponse);
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
+  rpc ListPipelineJobs(ListPipelineJobsRequest) returns (ListJobsResponse);
+  rpc ListProjectJobs(ListProjectJobsRequest) returns (ListJobsResponse);
+  rpc ListOrganizationJobs(ListOrganizationJobsRequest) returns (ListJobsResponse);
+  rpc ListJobLogs(ListJobLogsRequest) returns (ListJobLogsResponse);
+  rpc TailJobLogs(TailJobLogsRequest) returns (stream JobLogEvent);
+}
+
+message JobNodeResponse {
+  string node_id = 1;
+  string state = 2;
+  optional string started_at = 3;
+  optional string finished_at = 4;
+}
+
+message JobResponse {
+  string job_id = 1;
+  string pipeline_id = 2;
+  string status = 3;
+  repeated JobNodeResponse node_executions = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  optional string started_at = 7;
+  optional string finished_at = 8;
+}
+
+message GetJobRequest {
+  string job_id = 1;
+}
+
+message DeleteJobRequest {
+  string job_id = 1;
+}
+
+message DeleteJobResponse {}
+
+message ListJobsRequest {
+  optional common.PaginationRequest pagination = 1;
+}
+
+message ListJobsResponse {
+  repeated JobResponse jobs = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ListPipelineJobsRequest {
+  string pipeline_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListProjectJobsRequest {
+  string project_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListOrganizationJobsRequest {
+  string organization_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message JobLogEntry {
+  string id = 1;
+  string job_id = 2;
+  string node_id = 3;
+  string stream = 4;
+  string line = 5;
+  string timestamp = 6;
+}
+
+message ListJobLogsRequest {
+  string job_id = 1;
+  optional string node_id = 2;
+  optional common.PaginationRequest pagination = 3;
+}
+
+message ListJobLogsResponse {
+  repeated JobLogEntry logs = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message TailJobLogsRequest {
+  string job_id = 1;
+  optional string node_id = 2;
+}
+
+message JobLogEvent {
+  JobLogEntry log = 1;
+}

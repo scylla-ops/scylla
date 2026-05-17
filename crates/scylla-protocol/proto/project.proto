@@ -1,0 +1,129 @@
+syntax = "proto3";
+
+package project;
+
+import "common.proto";
+
+service ProjectService {
+  // Create a project
+  rpc CreateProject(CreateProjectRequest) returns (ProjectResponse);
+
+  // Get a project by ID
+  rpc GetProject(GetProjectRequest) returns (ProjectResponse);
+
+  // Update a project
+  rpc UpdateProject(UpdateProjectRequest) returns (ProjectResponse);
+
+  // Toggle a project active state
+  rpc ToggleProjectActive(ToggleProjectActiveRequest)
+      returns (ToggleProjectActiveResponse);
+
+  // Delete a project
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
+
+  // List all projects
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+
+  // List projects for an organization
+  rpc ListOrganizationProjects(ListOrganizationProjectsRequest) returns (ListProjectsResponse);
+
+  // List users in a project
+  rpc ListProjectUsers(ListProjectUsersRequest)
+      returns (ListProjectUsersResponse);
+
+  // List projects for a user
+  rpc ListUserProjects(ListUserProjectsRequest) returns (ListProjectsResponse);
+
+  // Add a user to a project
+  rpc AddUserToProject(AddUserToProjectRequest)
+      returns (AddUserToProjectResponse);
+
+  // Remove a user from a project
+  rpc RemoveUserFromProject(RemoveUserFromProjectRequest)
+      returns (RemoveUserFromProjectResponse);
+}
+
+message CreateProjectRequest {
+  string name = 1;
+  optional string description = 2;
+  string organization_id = 3;
+}
+
+message GetProjectRequest { string project_id = 1; }
+
+message UpdateProjectRequest {
+  string project_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message ProjectResponse {
+  string project_id = 1;
+  string name = 2;
+  string description = 3;
+  string organization_id = 4;
+  bool is_active = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message ToggleProjectActiveRequest { string project_id = 1; }
+
+message ToggleProjectActiveResponse {}
+
+message DeleteProjectRequest { string project_id = 1; }
+
+message DeleteProjectResponse {}
+
+message ListProjectsRequest {
+  optional common.PaginationRequest pagination = 1;
+}
+
+message ListOrganizationProjectsRequest {
+  string organization_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListProjectsResponse {
+  repeated ProjectResponse projects = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ListProjectUsersRequest {
+  string project_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ProjectUserInfoResponse {
+  string user_id = 1;
+  string username = 2;
+}
+
+message ListProjectUsersResponse {
+  repeated ProjectUserInfoResponse users = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message ListUserProjectsRequest {
+  string user_id = 1;
+  optional common.PaginationRequest pagination = 2;
+}
+
+message ListUserProjectsResponse {
+  repeated ProjectResponse projects = 1;
+  common.PaginationMetadata pagination = 2;
+}
+
+message AddUserToProjectRequest {
+  string user_id = 1;
+  string project_id = 2;
+}
+
+message AddUserToProjectResponse {}
+
+message RemoveUserFromProjectRequest {
+  string user_id = 1;
+  string project_id = 2;
+}
+
+message RemoveUserFromProjectResponse {}

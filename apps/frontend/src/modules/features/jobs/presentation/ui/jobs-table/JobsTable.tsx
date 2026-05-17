@@ -1,0 +1,91 @@
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
+import { DataTable } from '@/modules/shared/presentation/ui/DataTable';
+import { createJobColumns } from './columns';
+import { useState } from 'react';
+import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
+import { JobNodesList } from './JobNodesList';
+import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx';
+
+type JobsTableProps = {
+  jobs: Job[];
+  pipelineId: string;
+};
+
+export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
+  const selectJob = useJobsStore(state => state.selectJob);
+  const selectedJobIds = useJobsStore(state => state.selectedJobIds);
+  const expandedJobId = useJobsStore(state => state.expandedJobId);
+  const toggleExpand = useJobsStore(state => state.toggleExpand);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+
+  const deleteJob = useDeleteJobs(pipelineId);
+
+  const [logJobId, setLogJobId] = useState<string | undefined>(undefined);
+  const [logNodeId, setLogNodeId] = useState<string | undefined>(undefined);
+
+  const handleDelete = async () => {
+    if (!jobToDelete) return;
+    try {
+      await deleteJob.mutateAsync(jobToDelete);
+    } finally {
+      setDeleteDialogOpen(false);
+      setJobToDelete(null);
+    }
+  };
+
+  const columns = createJobColumns({
+    pipelineId,
+    onDelete: jobId => {
+      setJobToDelete(jobId);
+      setDeleteDialogOpen(true);
+    },
+    onView: jobId => {
+      toggleExpand(expandedJobId === jobId ? null : jobId);
+    },
+    onOpenJobLog: jobId => {
+      setLogJobId(jobId);
+    },
+  });
+
+  return (
+    <>
+      <DataTable
+        columns={columns}
+        data={jobs}
+        alignCenter
+        onRowClick={row => selectJob(row.original.id)}
+        getRowId={(row, index) => row.id || index.toString()}
+        isRowSelected={row => selectedJobIds.includes(row.id)}
+        isRowExpanded={row => expandedJobId === row.id}
+        expandedContent={row => (
+          <JobNodesList
+            jobId={row.original.id}
+            nodeExecutions={row.original.nodeExecutions}
+            isExpanded={true}
+            onCollapse={() => toggleExpand(null)}
+          />
+        )}
+      />
+      <ConfirmOperationAlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onContinue={handleDelete}
+        title='Delete Job'
+        description={`Are you sure you want to delete job ${jobToDelete}? This action cannot be undone.`}
+      />
+
+      <JobLogDialog
+        jobId={logJobId}
+        nodeId={logNodeId}
+        onClose={() => {
+          setLogJobId(undefined);
+          setLogNodeId(undefined);
+        }}
+      />
+    </>
+  );
+};

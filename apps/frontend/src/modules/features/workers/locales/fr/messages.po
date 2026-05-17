@@ -1,0 +1,110 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-05-02 12:56+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: filteredWorkers.length
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:107
+msgid "{0} workers found"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/workers-table/WorkerColumns.tsx:73
+msgid "Actions"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/workers-table/WorkerColumns.tsx:35
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:197
+msgid "Agent ID"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:46
+msgid "Agent ID:"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:29
+msgid "Back"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:110
+msgid "Click a worker to view details."
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:214
+msgid "Created at"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:64
+msgid "Created at:"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/workers-table/WorkerColumns.tsx:26
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:179
+msgid "Hostname"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:40
+msgid "Hostname:"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:26
+msgid "Information about the selected worker."
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:203
+msgid "Last seen"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/workers-table/WorkerColumns.tsx:60
+msgid "Last Seen"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:58
+msgid "Last seen at:"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:145
+msgid "Last seen:"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:171
+msgid "No worker selected."
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:164
+msgid "Select a worker from the list to view its full information."
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/workers-table/WorkerColumns.tsx:49
+msgid "Status"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:52
+msgid "Status:"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:222
+msgid "Updated at"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:70
+msgid "Updated at:"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:35
+msgid "Worker"
+msgstr ""
+
+#: src/modules/features/workers/presentation/ui/WorkerDetails.page.tsx:23
+#: src/modules/features/workers/presentation/ui/Workers.page.tsx:161
+msgid "Worker details"
+msgstr ""

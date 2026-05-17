@@ -1,2 +1,10 @@
-./target/
-./.idea/
+target/
+.idea/
+.DS_Store
+.env
+.data/*.log
+/data/
+db
+.claude
+node_modules
+.vscode
