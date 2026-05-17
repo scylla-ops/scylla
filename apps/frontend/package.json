@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "packageManager": "pnpm@9.15.9",
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "dev": "pnpm run prebuild && vite",
     "build": "pnpm run prebuild && vite build",
@@ -83,12 +83,5 @@
     "typescript-eslint": "^8.39.1",
     "vite": "7.1.11",
     "vite-tsconfig-paths": "^5.1.4"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "esbuild",
-      "msw"
-    ]
   }
 }
