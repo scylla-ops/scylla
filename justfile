@@ -24,11 +24,25 @@ default:
 local:
     docker compose build
 
-# Start all services
+# Start all services (pulls latest images, runs detached)
 [group('dev')]
 [no-exit-message]
 up:
-    docker compose up
+    docker compose pull
+    docker compose up -d
+
+# Pull latest images without (re)starting containers
+[group('dev')]
+[no-exit-message]
+pull:
+    docker compose pull
+
+# Refresh a running stack: pull latest images and recreate containers
+[group('dev')]
+[no-exit-message]
+update:
+    docker compose pull
+    docker compose up -d
 
 # Stop all services
 [group('dev')]
