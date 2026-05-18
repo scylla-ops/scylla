@@ -57,7 +57,7 @@ fn row_to_policy_entry(subject: String, policy: Policy) -> PolicyEntry {
 fn row_to_grouping_entry(subject: String, policy: GroupingPolicy) -> GroupingPolicyEntry {
     GroupingPolicyEntry {
         subject,
-        role: policy.role.into_string(),
+        role: policy.role.into(),
         scope: Some(domain_scope_to_proto(&policy.scope)),
     }
 }

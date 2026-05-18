@@ -66,9 +66,3 @@ impl DomainError {
     }
 }
 
-// Conversion from anyhow::Error to DomainError for infrastructure layer
-impl From<anyhow::Error> for DomainError {
-    fn from(err: anyhow::Error) -> Self {
-        DomainError::Infrastructure(err.to_string())
-    }
-}

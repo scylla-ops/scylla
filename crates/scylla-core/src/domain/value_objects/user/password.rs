@@ -44,17 +44,13 @@ impl Password {
     pub fn as_str(&self) -> &str {
         &self.inner
     }
-
-    #[must_use]
-    pub fn into_string(self) -> String {
-        self.inner
-    }
 }
 
 impl fmt::Display for Password {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Never display the actual password, always show asterisks
-        write!(f, "{}", "*".repeat(self.inner.len()))
+        let masked = "*".repeat(self.inner.len());
+        f.write_str(&masked)
     }
 }
 
@@ -89,9 +85,9 @@ mod tests {
     #[test]
     fn test_password_display_hides_content() {
         let password = Password::new("SecurePass123!").unwrap();
-        let display = format!("{}", password);
+        let display = format!("{password}");
         assert!(!display.contains("SecurePass"));
-        assert!(display.contains("*"));
+        assert!(display.contains('*'));
     }
 
     #[test]

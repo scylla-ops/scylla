@@ -1,55 +1,34 @@
 use crate::domain::errors::{DomainError, DomainResult};
-use std::fmt;
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
+use nutype::nutype;
 
 const MAX_PIPELINE_NAME_LENGTH: usize = 255;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
-pub struct PipelineName {
-    inner: String,
+fn validate(s: &str) -> Result<(), DomainError> {
+    if s.is_empty() {
+        return Err(DomainError::validation("Pipeline name cannot be empty"));
+    }
+    if s.len() > MAX_PIPELINE_NAME_LENGTH {
+        return Err(DomainError::validation(format!(
+            "Pipeline name cannot exceed {MAX_PIPELINE_NAME_LENGTH} characters"
+        )));
+    }
+    Ok(())
 }
+
+#[nutype(
+    sanitize(trim),
+    validate(with = validate, error = DomainError),
+    derive(Debug, Clone, PartialEq, Eq, Hash, AsRef, Borrow, Display, Into),
+)]
+pub struct PipelineName(String);
 
 impl PipelineName {
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
-        let value = value.into();
-        let trimmed = value.trim();
-
-        if trimmed.is_empty() {
-            return Err(DomainError::validation("Pipeline name cannot be empty"));
-        }
-
-        if trimmed.len() > MAX_PIPELINE_NAME_LENGTH {
-            return Err(DomainError::validation(format!(
-                "Pipeline name cannot exceed {MAX_PIPELINE_NAME_LENGTH} characters"
-            )));
-        }
-
-        Ok(Self {
-            inner: trimmed.to_string(),
-        })
+        Self::try_new(value.into())
     }
 
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.inner
-    }
-
-    #[must_use]
-    pub fn into_string(self) -> String {
-        self.inner
-    }
-}
-
-impl fmt::Display for PipelineName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.inner)
-    }
-}
-
-impl AsRef<str> for PipelineName {
-    fn as_ref(&self) -> &str {
-        &self.inner
+        <Self as AsRef<str>>::as_ref(self)
     }
 }

@@ -1,51 +1,35 @@
 use crate::domain::errors::{DomainError, DomainResult};
-use std::fmt;
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
+use nutype::nutype;
 
 const MAX_HOSTNAME_LENGTH: usize = 255;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
-pub struct Hostname {
-    inner: String,
+fn validate(s: &str) -> Result<(), DomainError> {
+    if s.is_empty() {
+        return Err(DomainError::validation("Hostname cannot be empty"));
+    }
+    if s.len() > MAX_HOSTNAME_LENGTH {
+        return Err(DomainError::validation(format!(
+            "Hostname cannot exceed {MAX_HOSTNAME_LENGTH} characters"
+        )));
+    }
+    Ok(())
 }
+
+#[nutype(
+    sanitize(trim),
+    validate(with = validate, error = DomainError),
+    derive(Debug, Clone, PartialEq, Eq, Hash, AsRef, Borrow, Display, Into),
+)]
+pub struct Hostname(String);
 
 impl Hostname {
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
-        let value = value.into();
-        let trimmed = value.trim();
-
-        if trimmed.is_empty() {
-            return Err(DomainError::validation("Hostname cannot be empty"));
-        }
-
-        if trimmed.len() > MAX_HOSTNAME_LENGTH {
-            return Err(DomainError::validation(format!(
-                "Hostname cannot exceed {MAX_HOSTNAME_LENGTH} characters"
-            )));
-        }
-
-        Ok(Self {
-            inner: trimmed.to_string(),
-        })
+        Self::try_new(value.into())
     }
 
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.inner
-    }
-}
-
-impl fmt::Display for Hostname {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.inner)
-    }
-}
-
-impl AsRef<str> for Hostname {
-    fn as_ref(&self) -> &str {
-        &self.inner
+        <Self as AsRef<str>>::as_ref(self)
     }
 }
 
@@ -54,12 +38,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn rejects_empty() {
+    fn rejects_empty_and_whitespace() {
         assert!(matches!(Hostname::new(""), Err(DomainError::Validation(_))));
-    }
-
-    #[test]
-    fn rejects_whitespace_only() {
         assert!(matches!(
             Hostname::new("   \t\n"),
             Err(DomainError::Validation(_))
@@ -73,16 +53,12 @@ mod tests {
     }
 
     #[test]
-    fn accepts_max_length() {
-        let s = "a".repeat(MAX_HOSTNAME_LENGTH);
-        let h = Hostname::new(&s).unwrap();
-        assert_eq!(h.as_str().len(), MAX_HOSTNAME_LENGTH);
-    }
-
-    #[test]
-    fn rejects_over_max_length() {
-        let s = "a".repeat(MAX_HOSTNAME_LENGTH + 1);
-        assert!(matches!(Hostname::new(s), Err(DomainError::Validation(_))));
+    fn enforces_max_length() {
+        assert!(Hostname::new("a".repeat(MAX_HOSTNAME_LENGTH)).is_ok());
+        assert!(matches!(
+            Hostname::new("a".repeat(MAX_HOSTNAME_LENGTH + 1)),
+            Err(DomainError::Validation(_))
+        ));
     }
 
     #[test]

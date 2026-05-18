@@ -1,14 +1,11 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use std::fmt;
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// Value object representing a hashed password (PHC string format).
 ///
 /// Guarantees at the type level that the wrapped value is a hash,
 /// not a plaintext password. Display and Debug are masked.
 #[derive(Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct PasswordHash {
     inner: String,
 }
@@ -81,13 +78,13 @@ mod tests {
     #[test]
     fn test_display_masked() {
         let hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap();
-        assert_eq!(format!("{}", hash), "[HASH]");
+        assert_eq!(format!("{hash}"), "[HASH]");
     }
 
     #[test]
     fn test_debug_masked() {
         let hash = PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap();
-        let debug = format!("{:?}", hash);
+        let debug = format!("{hash:?}");
         assert!(!debug.contains("argon2"));
         assert!(debug.contains("[HASH]"));
     }

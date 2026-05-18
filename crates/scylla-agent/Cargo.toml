@@ -8,7 +8,7 @@ edition = "2024"
 hermes-broker-proto = { workspace = true }
 hermes-broker-client = { workspace = true }
 
-# domain types (shared broker messages, no surrealdb)
+# domain types (shared broker messages, no db backend)
 scylla-core = { workspace = true, default-features = false, features = ["jobs", "agents"] }
 
 # async
@@ -20,7 +20,6 @@ tokio-util = { workspace = true }
 tonic = { workspace = true }
 
 # serialization
-serde = { workspace = true }
 serde_json = { workspace = true }
 
 # cli
