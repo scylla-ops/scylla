@@ -1,3 +1,3 @@
-pub mod surrealdb;
+pub mod postgres;
 
-pub use surrealdb::*;
+pub use postgres::*;

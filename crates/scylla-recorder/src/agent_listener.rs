@@ -2,7 +2,7 @@ use hermes_broker_client::Subscriber;
 use scylla_core::application::AgentUseCases;
 use scylla_core::domain::entities::AgentId;
 use scylla_core::domain::value_objects::agent::{AgentHeartbeat, AgentShutdown, Hostname};
-use scylla_core::infrastructure::SurrealAgentRepository;
+use scylla_core::infrastructure::PgAgentRepository;
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 use tonic::transport::Channel;
@@ -12,7 +12,7 @@ const HEARTBEAT_SUBJECT: &str = "scylla.agents.heartbeat.>";
 const SHUTDOWN_SUBJECT: &str = "scylla.agents.shutdown.>";
 const RECONNECT_BACKOFF: StdDuration = StdDuration::from_secs(2);
 
-pub async fn run_heartbeat(channel: Channel, agent_uc: Arc<AgentUseCases<SurrealAgentRepository>>) {
+pub async fn run_heartbeat(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgentRepository>>) {
     loop {
         if let Err(e) = heartbeat_once(channel.clone(), &agent_uc).await {
             warn!(error = %e, "heartbeat listener exited; reconnecting");
@@ -23,7 +23,7 @@ pub async fn run_heartbeat(channel: Channel, agent_uc: Arc<AgentUseCases<Surreal
 
 async fn heartbeat_once(
     channel: Channel,
-    agent_uc: &AgentUseCases<SurrealAgentRepository>,
+    agent_uc: &AgentUseCases<PgAgentRepository>,
 ) -> anyhow::Result<()> {
     let mut subscriber = Subscriber::new(channel)
         .await
@@ -62,7 +62,7 @@ async fn heartbeat_once(
     Ok(())
 }
 
-pub async fn run_shutdown(channel: Channel, agent_uc: Arc<AgentUseCases<SurrealAgentRepository>>) {
+pub async fn run_shutdown(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgentRepository>>) {
     loop {
         if let Err(e) = shutdown_once(channel.clone(), &agent_uc).await {
             warn!(error = %e, "shutdown listener exited; reconnecting");
@@ -73,7 +73,7 @@ pub async fn run_shutdown(channel: Channel, agent_uc: Arc<AgentUseCases<SurrealA
 
 async fn shutdown_once(
     channel: Channel,
-    agent_uc: &AgentUseCases<SurrealAgentRepository>,
+    agent_uc: &AgentUseCases<PgAgentRepository>,
 ) -> anyhow::Result<()> {
     let mut subscriber = Subscriber::new(channel)
         .await

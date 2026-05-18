@@ -6,7 +6,7 @@ use crate::domain::value_objects::permission::{Act, Resource, Scope};
 use crate::domain::value_objects::role::name::RoleName;
 use casbin::Result as CasbinResult;
 use casbin::{CoreApi, DefaultModel, Enforcer, MgmtApi};
-use surreal_casbin_adapter::SurrealAdapter;
+use sqlx_adapter::SqlxAdapter;
 use tokio::sync::RwLock;
 use tracing::instrument;
 
@@ -17,7 +17,7 @@ pub struct CasbinPermissionService {
 const MODEL: &str = include_str!("../config/casbin/rbac_model.conf");
 
 impl CasbinPermissionService {
-    pub async fn new(adapter: SurrealAdapter) -> CasbinResult<Self> {
+    pub async fn new(adapter: SqlxAdapter) -> CasbinResult<Self> {
         let model = DefaultModel::from_str(MODEL).await?;
         let enforcer = Enforcer::new(model, adapter).await?;
         Ok(Self {

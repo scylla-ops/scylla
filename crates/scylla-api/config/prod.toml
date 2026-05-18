@@ -2,11 +2,12 @@
 address = "0.0.0.0:50051"
 
 [database]
-url = "ws://surrealdb:8000"
-namespace = "production"
-database = "core"
-username = "root"
-password = "root"
+# Override at deploy time, e.g. via DATABASE_URL env injected into the container.
+url = "postgres://scylla:scylla@postgres:5432/scylla"
+max_connections = 32
+min_connections = 4
+acquire_timeout = "30s"
+run_migrations = true
 
 [cors]
 allow_origins = ["https://your-domain.example.com"]

@@ -3,17 +3,31 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::job::{JobStatus, NodeState};
 use crate::domain::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobNode {
     node_id: NodeId,
     state: NodeState,
     started_at: Option<DateTime<Utc>>,
     finished_at: Option<DateTime<Utc>>,
+}
+
+impl JobNode {
+    #[must_use]
+    pub fn from_persistence(
+        node_id: NodeId,
+        state: NodeState,
+        started_at: Option<DateTime<Utc>>,
+        finished_at: Option<DateTime<Utc>>,
+    ) -> Self {
+        Self {
+            node_id,
+            state,
+            started_at,
+            finished_at,
+        }
+    }
 }
 
 impl JobNode {
@@ -49,7 +63,6 @@ impl JobNode {
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Job {
     id: JobId,
     pipeline_id: PipelineId,
@@ -62,6 +75,30 @@ pub struct Job {
 }
 
 impl Job {
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn from_persistence(
+        id: JobId,
+        pipeline_id: PipelineId,
+        status: JobStatus,
+        node_executions: Vec<JobNode>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+        started_at: Option<DateTime<Utc>>,
+        finished_at: Option<DateTime<Utc>>,
+    ) -> Self {
+        Self {
+            id,
+            pipeline_id,
+            status,
+            node_executions,
+            created_at,
+            updated_at,
+            started_at,
+            finished_at,
+        }
+    }
+
     #[must_use]
     pub fn create_from_pipeline(pipeline: &Pipeline) -> Self {
         let now = Utc::now();

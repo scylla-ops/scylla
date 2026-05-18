@@ -15,7 +15,7 @@ grpc = [
 
 [dependencies]
 # shared
-scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["postgres", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }
 tokio.workspace = true
 async-trait.workspace = true
 tower.workspace = true
@@ -29,7 +29,7 @@ chrono.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 derive_more.workspace = true
-surreal-casbin-adapter.workspace = true
+sqlx-adapter.workspace = true
 log.workspace = true
 
 # broker
@@ -38,9 +38,8 @@ tokio-stream = { workspace = true }
 futures-util.workspace = true
 serde_json.workspace = true
 
-# database (for live queries in handlers)
-surrealdb.workspace = true
-surrealdb-types.workspace = true
+# database
+sqlx.workspace = true
 
 # grpc-only (optional)
 tonic = { workspace = true, optional = true }
@@ -55,5 +54,5 @@ tonic = { workspace = true }
 scylla-protocol = { workspace = true }
 tokio-stream = { workspace = true }
 tonic-async-interceptor = { workspace = true }
-surreal-casbin-adapter = { workspace = true }
-scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }
+sqlx-adapter = { workspace = true }
+scylla-core = { workspace = true, features = ["postgres", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission", "test-utils"] }

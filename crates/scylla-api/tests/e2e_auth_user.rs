@@ -1,6 +1,6 @@
 //! E2E integration tests for auth and user flows.
 //!
-//! Starts a real gRPC server with in-memory SurrealDB and exercises the full
+//! Starts a real gRPC server with PostgreSQL via #[sqlx::test] and exercises the full
 //! request path: client → gRPC transport → interceptor → handler → use case → repo.
 
 use scylla_protocol::services::{
@@ -23,12 +23,12 @@ async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
     use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
     use scylla_core::application::{AuthUseCases, UserUseCases};
     use scylla_core::infrastructure::{
-        Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
+        Argon2HashService, CasbinPermissionService, PgSessionRepository, PgUserRepository,
     };
     use scylla_protocol::services::{
         auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
     };
-    use surreal_casbin_adapter::SurrealAdapter;
+    use sqlx_adapter::SqlxAdapter;
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tower::ServiceBuilder;
@@ -38,8 +38,8 @@ async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
         .await
         .unwrap();
 
-    let user_repo = std::sync::Arc::new(SurrealUserRepository::new(db.clone()));
-    let session_repo = std::sync::Arc::new(SurrealSessionRepository::new(db.clone()));
+    let user_repo = std::sync::Arc::new(PgUserRepository::new(db.clone()));
+    let session_repo = std::sync::Arc::new(PgSessionRepository::new(db.clone()));
     let hash_service = std::sync::Arc::new(Argon2HashService::new());
 
     let auth_uc = std::sync::Arc::new(AuthUseCases::new(
@@ -49,8 +49,8 @@ async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
     ));
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
-    let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await.expect("casbin adapter init");
+    let casbin_service = CasbinPermissionService::new(casbin_adapter)
         .await
         .unwrap();
     let permission_checker = std::sync::Arc::new(casbin_service);
@@ -137,12 +137,12 @@ async fn e2e_auth_full_flow_with_bootstrap() {
     use scylla_core::application::{AuthUseCases, UserUseCases};
     use scylla_core::domain::value_objects::user::{Password, Username};
     use scylla_core::infrastructure::{
-        Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
+        Argon2HashService, CasbinPermissionService, PgSessionRepository, PgUserRepository,
     };
     use scylla_protocol::services::{
         auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
     };
-    use surreal_casbin_adapter::SurrealAdapter;
+    use sqlx_adapter::SqlxAdapter;
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tower::ServiceBuilder;
@@ -153,8 +153,8 @@ async fn e2e_auth_full_flow_with_bootstrap() {
         .await
         .unwrap();
 
-    let user_repo = std::sync::Arc::new(SurrealUserRepository::new(db.clone()));
-    let session_repo = std::sync::Arc::new(SurrealSessionRepository::new(db.clone()));
+    let user_repo = std::sync::Arc::new(PgUserRepository::new(db.clone()));
+    let session_repo = std::sync::Arc::new(PgSessionRepository::new(db.clone()));
     let hash_service = std::sync::Arc::new(Argon2HashService::new());
 
     let auth_uc = std::sync::Arc::new(AuthUseCases::new(
@@ -164,8 +164,8 @@ async fn e2e_auth_full_flow_with_bootstrap() {
     ));
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
-    let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await.expect("casbin adapter init");
+    let casbin_service = CasbinPermissionService::new(casbin_adapter)
         .await
         .unwrap();
     let permission_checker = std::sync::Arc::new(casbin_service);
@@ -252,12 +252,12 @@ async fn e2e_user_crud_with_auth() {
     use scylla_core::domain::value_objects::permission::{Act, Resource, Scope};
     use scylla_core::domain::value_objects::user::{Password, Username};
     use scylla_core::infrastructure::{
-        Argon2HashService, CasbinPermissionService, SurrealSessionRepository, SurrealUserRepository,
+        Argon2HashService, CasbinPermissionService, PgSessionRepository, PgUserRepository,
     };
     use scylla_protocol::services::{
         auth::auth_service_server::AuthServiceServer, user::user_service_server::UserServiceServer,
     };
-    use surreal_casbin_adapter::SurrealAdapter;
+    use sqlx_adapter::SqlxAdapter;
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tower::ServiceBuilder;
@@ -268,8 +268,8 @@ async fn e2e_user_crud_with_auth() {
         .await
         .unwrap();
 
-    let user_repo = std::sync::Arc::new(SurrealUserRepository::new(db.clone()));
-    let session_repo = std::sync::Arc::new(SurrealSessionRepository::new(db.clone()));
+    let user_repo = std::sync::Arc::new(PgUserRepository::new(db.clone()));
+    let session_repo = std::sync::Arc::new(PgSessionRepository::new(db.clone()));
     let hash_service = std::sync::Arc::new(Argon2HashService::new());
 
     let auth_uc = std::sync::Arc::new(AuthUseCases::new(
@@ -279,8 +279,8 @@ async fn e2e_user_crud_with_auth() {
     ));
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
-    let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    let casbin_service = CasbinPermissionService::new(surreal_casbin_adapter)
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await.expect("casbin adapter init");
+    let casbin_service = CasbinPermissionService::new(casbin_adapter)
         .await
         .unwrap();
 

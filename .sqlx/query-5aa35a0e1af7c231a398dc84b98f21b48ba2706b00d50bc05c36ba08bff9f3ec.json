@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE agents\n            SET hostname = $2,\n                last_seen_at = $3,\n                shutdown_at = $4,\n                heartbeat_interval_secs = $5,\n                updated_at = $6\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Int8",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5aa35a0e1af7c231a398dc84b98f21b48ba2706b00d50bc05c36ba08bff9f3ec"
+}

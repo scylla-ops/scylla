@@ -6,9 +6,7 @@ mod status_listener;
 use clap::Parser;
 use config::RecorderConfig;
 use scylla_core::application::{AgentUseCases, JobLogUseCases, JobUseCases};
-use scylla_core::infrastructure::{
-    SurrealAgentRepository, SurrealJobLogRepository, SurrealJobRepository,
-};
+use scylla_core::infrastructure::{PgAgentRepository, PgJobLogRepository, PgJobRepository};
 use std::sync::Arc;
 use tracing::info;
 
@@ -27,15 +25,11 @@ async fn main() -> anyhow::Result<()> {
     let db = scylla_core::infrastructure::init_db(&config.database_config()).await?;
     info!("connected to database");
 
-    let job_uc = Arc::new(JobUseCases::new(Arc::new(SurrealJobRepository::new(
+    let job_uc = Arc::new(JobUseCases::new(Arc::new(PgJobRepository::new(db.clone()))));
+    let job_log_uc = Arc::new(JobLogUseCases::new(Arc::new(PgJobLogRepository::new(
         db.clone(),
     ))));
-    let job_log_uc = Arc::new(JobLogUseCases::new(Arc::new(SurrealJobLogRepository::new(
-        db.clone(),
-    ))));
-    let agent_uc = Arc::new(AgentUseCases::new(Arc::new(SurrealAgentRepository::new(
-        db,
-    ))));
+    let agent_uc = Arc::new(AgentUseCases::new(Arc::new(PgAgentRepository::new(db))));
 
     // Connect to broker
     let broker_channel = hermes_broker_client::connect(&config.broker_url, None).await?;

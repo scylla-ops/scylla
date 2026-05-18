@@ -2,12 +2,9 @@ use crate::domain::entities::ids::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use chrono::{DateTime, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// Organization domain entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Organization {
     id: OrganizationId,
     name: OrganizationName,
@@ -18,6 +15,25 @@ pub struct Organization {
 }
 
 impl Organization {
+    #[must_use]
+    pub fn from_persistence(
+        id: OrganizationId,
+        name: OrganizationName,
+        description: Option<OrganizationDescription>,
+        is_active: bool,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            description,
+            is_active,
+            created_at,
+            updated_at,
+        }
+    }
+
     pub fn create(
         name: OrganizationName,
         description: Option<OrganizationDescription>,

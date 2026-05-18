@@ -4,7 +4,7 @@ use scylla_core::domain::entities::JobId;
 use scylla_core::domain::value_objects::job::NodeState;
 use scylla_core::domain::value_objects::job::{JobEvent, JobStatusUpdate};
 use scylla_core::domain::value_objects::pipeline::NodeId;
-use scylla_core::infrastructure::SurrealJobRepository;
+use scylla_core::infrastructure::PgJobRepository;
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 use tonic::transport::Channel;
@@ -13,7 +13,7 @@ use tracing::{error, info, warn};
 const STATUS_SUBJECT: &str = "scylla.jobs.status.>";
 const RECONNECT_BACKOFF: StdDuration = StdDuration::from_secs(2);
 
-pub async fn run(channel: Channel, job_uc: Arc<JobUseCases<SurrealJobRepository>>) {
+pub async fn run(channel: Channel, job_uc: Arc<JobUseCases<PgJobRepository>>) {
     loop {
         if let Err(e) = status_once(channel.clone(), &job_uc).await {
             warn!(error = %e, "status listener exited; reconnecting");
@@ -24,7 +24,7 @@ pub async fn run(channel: Channel, job_uc: Arc<JobUseCases<SurrealJobRepository>
 
 async fn status_once(
     channel: Channel,
-    job_uc: &JobUseCases<SurrealJobRepository>,
+    job_uc: &JobUseCases<PgJobRepository>,
 ) -> anyhow::Result<()> {
     let mut subscriber = Subscriber::new(channel)
         .await

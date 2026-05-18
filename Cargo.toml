@@ -36,11 +36,19 @@ tonic-async-interceptor = "0.14.1"
 
 # serialization
 serde = { version = "1", features = ["derive"] }
+humantime-serde = "1"
 toml = "1"
 
 # database
-surrealdb = { version = "3.0.5" }
-surrealdb-types = "3.0.5"
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "macros",
+    "migrate",
+    "chrono",
+    "json",
+] }
 
 # workspace crates
 scylla-core = { path = "crates/scylla-core", default-features = false }
@@ -52,9 +60,11 @@ chrono = "0.4.44"
 ulid = "1.2.1"
 uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
+nutype = { version = "0.7", features = ["serde"] }
+bon = "3.9"
 argon2 = "0.6.0-rc.8"
 casbin = "2.20.0"
-surreal-casbin-adapter = "3.0.5"
+sqlx-adapter = { version = "1", default-features = false, features = ["postgres", "runtime-tokio-rustls"] }
 
 # web / tracing
 tower = { version = "0.5.3" }
@@ -66,7 +76,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 
 # cli
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "env"] }
 
 # logging
 log = "0.4.29"

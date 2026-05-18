@@ -3,11 +3,8 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::pipeline::{NodeId, PipelineName};
 use chrono::{DateTime, Utc};
 use std::collections::{BTreeSet, HashMap, HashSet};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct PipelineNode {
     id: NodeId,
     deps: Vec<NodeId>,
@@ -55,7 +52,6 @@ impl PipelineNode {
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Pipeline {
     id: PipelineId,
     project_id: ProjectId,
@@ -66,6 +62,28 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
+    /// Reconstitute a `Pipeline` from persistent storage without re-running
+    /// DAG validation. Bypassing validation is safe here because nodes were
+    /// validated at create/update time and JSONB is round-tripped verbatim.
+    #[must_use]
+    pub fn from_persistence(
+        id: PipelineId,
+        project_id: ProjectId,
+        name: PipelineName,
+        nodes: Vec<PipelineNode>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            project_id,
+            name,
+            nodes,
+            created_at,
+            updated_at,
+        }
+    }
+
     pub fn create(
         name: PipelineName,
         project_id: ProjectId,

@@ -3,7 +3,7 @@ use scylla_core::application::JobLogUseCases;
 use scylla_core::domain::entities::{JobId, JobLog};
 use scylla_core::domain::value_objects::job::JobLogLine;
 use scylla_core::domain::value_objects::pipeline::NodeId;
-use scylla_core::infrastructure::SurrealJobLogRepository;
+use scylla_core::infrastructure::PgJobLogRepository;
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 use tonic::transport::Channel;
@@ -12,7 +12,7 @@ use tracing::{error, info, warn};
 const LOG_SUBJECT: &str = "scylla.jobs.logs.>";
 const RECONNECT_BACKOFF: StdDuration = StdDuration::from_secs(2);
 
-pub async fn run(channel: Channel, job_log_uc: Arc<JobLogUseCases<SurrealJobLogRepository>>) {
+pub async fn run(channel: Channel, job_log_uc: Arc<JobLogUseCases<PgJobLogRepository>>) {
     loop {
         if let Err(e) = log_once(channel.clone(), &job_log_uc).await {
             warn!(error = %e, "log listener exited; reconnecting");
@@ -23,7 +23,7 @@ pub async fn run(channel: Channel, job_log_uc: Arc<JobLogUseCases<SurrealJobLogR
 
 async fn log_once(
     channel: Channel,
-    job_log_uc: &JobLogUseCases<SurrealJobLogRepository>,
+    job_log_uc: &JobLogUseCases<PgJobLogRepository>,
 ) -> anyhow::Result<()> {
     let mut subscriber = Subscriber::new(channel)
         .await

@@ -2,11 +2,11 @@
 address = "127.0.0.1:50051"
 
 [database]
-url = "ws://127.0.0.1:8000"
-namespace = "scylla"
-database = "core"
-username = "root"
-password = "root"
+url = "postgres://scylla:scylla@127.0.0.1:5432/scylla"
+max_connections = 8
+min_connections = 1
+acquire_timeout = "30s"
+run_migrations = true
 
 [cors]
 allow_origins = ["*"]

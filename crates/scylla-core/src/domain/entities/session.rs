@@ -1,11 +1,8 @@
 use crate::domain::entities::{SessionId, UserId};
 use chrono::{DateTime, Duration, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// Session domain entity for authentication
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Session {
     id: SessionId,
     token: String,
@@ -16,6 +13,25 @@ pub struct Session {
 }
 
 impl Session {
+    #[must_use]
+    pub fn from_persistence(
+        id: SessionId,
+        token: String,
+        user_id: UserId,
+        created_at: DateTime<Utc>,
+        expires_at: DateTime<Utc>,
+        last_active_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            token,
+            user_id,
+            created_at,
+            expires_at,
+            last_active_at,
+        }
+    }
+
     #[must_use]
     pub fn create(user_id: UserId, token: String, duration: Duration) -> Self {
         let now = Utc::now();

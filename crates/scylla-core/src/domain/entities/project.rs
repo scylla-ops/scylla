@@ -2,12 +2,9 @@ use crate::domain::entities::{OrganizationId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
 use chrono::{DateTime, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// Project domain entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Project {
     id: ProjectId,
     name: ProjectName,
@@ -19,6 +16,27 @@ pub struct Project {
 }
 
 impl Project {
+    #[must_use]
+    pub fn from_persistence(
+        id: ProjectId,
+        name: ProjectName,
+        description: Option<ProjectDescription>,
+        organization_id: OrganizationId,
+        is_active: bool,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            description,
+            organization_id,
+            is_active,
+            created_at,
+            updated_at,
+        }
+    }
+
     pub fn create(
         name: ProjectName,
         description: Option<ProjectDescription>,

@@ -1,5 +1,6 @@
 use clap::Parser;
 use scylla_core::infrastructure::DatabaseConfig;
+use std::time::Duration;
 
 #[derive(Debug, Clone, Parser)]
 #[command(
@@ -11,25 +12,21 @@ pub struct RecorderConfig {
     #[arg(long, default_value = "http://127.0.0.1:50052")]
     pub broker_url: String,
 
-    /// SurrealDB connection URL
-    #[arg(long, default_value = "ws://127.0.0.1:8000")]
+    /// PostgreSQL connection URL (e.g. `postgres://user:pass@host:5432/dbname`).
+    #[arg(
+        long,
+        env = "DATABASE_URL",
+        default_value = "postgres://scylla:scylla@localhost:5432/scylla"
+    )]
     pub db_url: String,
 
-    /// SurrealDB namespace
-    #[arg(long, default_value = "scylla")]
-    pub db_namespace: String,
+    /// Maximum number of pooled connections.
+    #[arg(long, default_value_t = 8)]
+    pub db_max_connections: u32,
 
-    /// SurrealDB database
-    #[arg(long, default_value = "core")]
-    pub db_database: String,
-
-    /// SurrealDB username
-    #[arg(long, default_value = "root")]
-    pub db_username: String,
-
-    /// SurrealDB password
-    #[arg(long, default_value = "root")]
-    pub db_password: String,
+    /// Apply migrations on startup. Set to false if a sibling service manages schema.
+    #[arg(long, default_value_t = false)]
+    pub db_run_migrations: bool,
 }
 
 impl RecorderConfig {
@@ -37,10 +34,10 @@ impl RecorderConfig {
     pub fn database_config(&self) -> DatabaseConfig {
         DatabaseConfig {
             url: self.db_url.clone(),
-            namespace: self.db_namespace.clone(),
-            database: self.db_database.clone(),
-            username: Some(self.db_username.clone()),
-            password: Some(self.db_password.clone()),
+            max_connections: self.db_max_connections,
+            min_connections: 1,
+            acquire_timeout: Duration::from_secs(30),
+            run_migrations: self.db_run_migrations,
         }
     }
 }

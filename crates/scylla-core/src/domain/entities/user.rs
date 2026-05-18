@@ -2,12 +2,9 @@ use crate::domain::entities::UserId;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::{PasswordHash, Username};
 use chrono::{DateTime, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// User domain entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct User {
     id: UserId,
     username: Username,
@@ -18,6 +15,27 @@ pub struct User {
 }
 
 impl User {
+    /// Reconstitute a `User` from persistent storage. Skips creation-time
+    /// invariants — the caller is the trusted repository layer.
+    #[must_use]
+    pub fn from_persistence(
+        id: UserId,
+        username: Username,
+        password_hash: PasswordHash,
+        is_active: bool,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            username,
+            password_hash,
+            is_active,
+            created_at,
+            updated_at,
+        }
+    }
+
     #[must_use]
     pub fn create(username: Username, password_hash: PasswordHash) -> Self {
         let now = Utc::now();

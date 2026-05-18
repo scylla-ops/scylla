@@ -71,8 +71,7 @@ impl JobLogStreamPort for HermesJobLogStream {
                 };
 
                 let timestamp = chrono::DateTime::parse_from_rfc3339(&log_line.timestamp)
-                    .map(|dt| dt.with_timezone(&chrono::Utc))
-                    .unwrap_or_else(|_| chrono::Utc::now());
+                    .map_or_else(|_| chrono::Utc::now(), |dt| dt.with_timezone(&chrono::Utc));
 
                 let log = JobLog::new(
                     job_id.clone(),

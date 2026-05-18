@@ -7,43 +7,37 @@ use scylla_core::application::{
     OrganizationUseCases, PermissionUseCases, PipelineUseCases, ProjectUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::{
-    Argon2HashService, CasbinPermissionService, Db, HermesJobLogStream, SurrealAgentRepository,
-    SurrealJobLogRepository, SurrealJobRepository, SurrealOrganizationRepository,
-    SurrealPipelineRepository, SurrealProjectRepository, SurrealSessionRepository,
-    SurrealUserOrganizationRepository, SurrealUserProjectRepository, SurrealUserRepository,
+    Argon2HashService, CasbinPermissionService, HermesJobLogStream, PgAgentRepository,
+    PgJobLogRepository, PgJobRepository, PgOrganizationRepository, PgPipelineRepository,
+    PgProjectRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
+    PgUserRepository,
 };
+use sqlx::PgPool;
+use sqlx_adapter::SqlxAdapter;
 use std::sync::Arc;
-use surreal_casbin_adapter::SurrealAdapter;
 use tower_http::cors::CorsLayer;
 
 // ── Concrete type aliases ──────────────────────────────────────────────
 
 pub type SharedAuthUc =
-    Arc<AuthUseCases<SurrealUserRepository, SurrealSessionRepository, Argon2HashService>>;
-pub type SharedUserUc = Arc<UserUseCases<SurrealUserRepository, Argon2HashService>>;
+    Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
+pub type SharedUserUc = Arc<UserUseCases<PgUserRepository, Argon2HashService>>;
 pub type SharedOrgUc = Arc<
-    OrganizationUseCases<
-        SurrealOrganizationRepository,
-        SurrealUserOrganizationRepository,
-        SurrealUserRepository,
-    >,
+    OrganizationUseCases<PgOrganizationRepository, PgUserOrganizationRepository, PgUserRepository>,
 >;
-pub type SharedProjectUc = Arc<
-    ProjectUseCases<SurrealProjectRepository, SurrealUserProjectRepository, SurrealUserRepository>,
->;
-pub type SharedPipelineUc =
-    Arc<PipelineUseCases<SurrealPipelineRepository, SurrealProjectRepository>>;
-pub type SharedJobUc = Arc<JobUseCases<SurrealJobRepository>>;
-pub type SharedJobLogUc = Arc<JobLogUseCases<SurrealJobLogRepository>>;
-pub type SharedJobLogStreamUc =
-    Arc<JobLogStreamUseCase<SurrealJobLogRepository, HermesJobLogStream>>;
-pub type SharedAgentUc = Arc<AgentUseCases<SurrealAgentRepository>>;
+pub type SharedProjectUc =
+    Arc<ProjectUseCases<PgProjectRepository, PgUserProjectRepository, PgUserRepository>>;
+pub type SharedPipelineUc = Arc<PipelineUseCases<PgPipelineRepository, PgProjectRepository>>;
+pub type SharedJobUc = Arc<JobUseCases<PgJobRepository>>;
+pub type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository>>;
+pub type SharedJobLogStreamUc = Arc<JobLogStreamUseCase<PgJobLogRepository, HermesJobLogStream>>;
+pub type SharedAgentUc = Arc<AgentUseCases<PgAgentRepository>>;
 pub type SharedPermissionUc = Arc<PermissionUseCases<CasbinPermissionService>>;
 
 // ── Services container ─────────────────────────────────────────────────
 
 pub struct Services {
-    pub db: Db,
+    pub db: PgPool,
     pub auth_uc: SharedAuthUc,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
@@ -55,23 +49,23 @@ pub struct Services {
     pub agent_uc: SharedAgentUc,
     pub permission_uc: SharedPermissionUc,
     pub permission_checker: Arc<CasbinPermissionService>,
-    pub session_repo: Arc<SurrealSessionRepository>,
+    pub session_repo: Arc<PgSessionRepository>,
     pub broker_publisher: Arc<Publisher>,
 }
 
 pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     let db = scylla_core::infrastructure::init_db(&config.database).await?;
 
-    let user_repo = Arc::new(SurrealUserRepository::new(db.clone()));
-    let session_repo = Arc::new(SurrealSessionRepository::new(db.clone()));
-    let org_repo = Arc::new(SurrealOrganizationRepository::new(db.clone()));
-    let project_repo = Arc::new(SurrealProjectRepository::new(db.clone()));
-    let pipeline_repo = Arc::new(SurrealPipelineRepository::new(db.clone()));
-    let job_repo = Arc::new(SurrealJobRepository::new(db.clone()));
-    let job_log_repo = Arc::new(SurrealJobLogRepository::new(db.clone()));
-    let agent_repo = Arc::new(SurrealAgentRepository::new(db.clone()));
-    let user_org_repo = Arc::new(SurrealUserOrganizationRepository::new(db.clone()));
-    let user_project_repo = Arc::new(SurrealUserProjectRepository::new(db.clone()));
+    let user_repo = Arc::new(PgUserRepository::new(db.clone()));
+    let session_repo = Arc::new(PgSessionRepository::new(db.clone()));
+    let org_repo = Arc::new(PgOrganizationRepository::new(db.clone()));
+    let project_repo = Arc::new(PgProjectRepository::new(db.clone()));
+    let pipeline_repo = Arc::new(PgPipelineRepository::new(db.clone()));
+    let job_repo = Arc::new(PgJobRepository::new(db.clone()));
+    let job_log_repo = Arc::new(PgJobLogRepository::new(db.clone()));
+    let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
+    let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
+    let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
 
     let auth_uc = Arc::new(AuthUseCases::new(
@@ -97,11 +91,9 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
     let job_log_uc = Arc::new(JobLogUseCases::new(job_log_repo.clone()));
     let agent_uc = Arc::new(AgentUseCases::new(agent_repo.clone()));
-    // `casbin_rule` is already defined by `init_db` in a single atomic DDL batch.
-    // A second standalone `DEFINE TABLE` here used to soft-lock intermittently on
-    // SurrealDB's schema write lock when a previous run left a zombie session.
-    let surreal_casbin_adapter = SurrealAdapter::new(db.clone());
-    let mut casbin_service = CasbinPermissionService::new(surreal_casbin_adapter).await?;
+    // The sqlx Casbin adapter creates its own `casbin_rule` table on first use.
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await?;
+    let mut casbin_service = CasbinPermissionService::new(casbin_adapter).await?;
 
     if let Some(cfg) = &config.bootstrap {
         crate::bootstrap::bootstrap_admin(&user_uc, &mut casbin_service, cfg).await?;
@@ -317,9 +309,7 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
         .serve_with_shutdown(config.grpc.address, shutdown_signal())
         .await?;
 
-    // Explicitly invalidate the SurrealDB session before the runtime shuts down.
-    // On Windows, Ctrl+C tears down the runtime before Drop can send the
-    // websocket close frame, leaving zombie sessions that block the next startup.
+    // Gracefully close the PostgreSQL pool so in-flight queries can complete.
     scylla_core::infrastructure::close_db(&services.db).await;
 
     Ok(())

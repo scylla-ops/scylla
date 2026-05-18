@@ -1,10 +1,9 @@
 use crate::domain::errors::{DomainError, DomainResult};
+use serde::{Deserialize, Serialize};
 use std::fmt;
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum NodeState {
     Pending,
     Running,

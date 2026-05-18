@@ -1,11 +1,8 @@
 use crate::domain::entities::AgentId;
 use crate::domain::value_objects::agent::Hostname;
 use chrono::{DateTime, Duration, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Agent {
     id: AgentId,
     hostname: Hostname,
@@ -21,6 +18,27 @@ pub struct Agent {
 const MISSED_HEARTBEAT_GRACE: i64 = 3;
 
 impl Agent {
+    #[must_use]
+    pub fn from_persistence(
+        id: AgentId,
+        hostname: Hostname,
+        last_seen_at: DateTime<Utc>,
+        shutdown_at: Option<DateTime<Utc>>,
+        heartbeat_interval_secs: u64,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            hostname,
+            last_seen_at,
+            shutdown_at,
+            heartbeat_interval_secs,
+            created_at,
+            updated_at,
+        }
+    }
+
     #[must_use]
     pub fn create(id: AgentId, hostname: Hostname, heartbeat_interval_secs: u64) -> Self {
         let now = Utc::now();
