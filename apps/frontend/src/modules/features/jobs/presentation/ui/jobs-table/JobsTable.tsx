@@ -1,4 +1,4 @@
-import type { JobResponse } from '@/generated/job.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
 import { DataTable } from '@/modules/shared/presentation/ui/DataTable';
 import { createJobColumns } from './columns';
@@ -6,9 +6,10 @@ import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
 import { JobNodesList } from './JobNodesList';
+import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx';
 
 type JobsTableProps = {
-  jobs: JobResponse[];
+  jobs: Job[];
   pipelineId: string;
 };
 
@@ -23,14 +24,16 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
 
   const deleteJob = useDeleteJobs(pipelineId);
 
+  const [logJobId, setLogJobId] = useState<string | undefined>(undefined);
+  const [logNodeId, setLogNodeId] = useState<string | undefined>(undefined);
+
   const handleDelete = async () => {
     if (!jobToDelete) return;
     try {
       await deleteJob.mutateAsync(jobToDelete);
+    } finally {
       setDeleteDialogOpen(false);
       setJobToDelete(null);
-    } catch (error) {
-      console.error('Error deleting job:', error);
     }
   };
 
@@ -43,6 +46,9 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
     onView: jobId => {
       toggleExpand(expandedJobId === jobId ? null : jobId);
     },
+    onOpenJobLog: jobId => {
+      setLogJobId(jobId);
+    },
   });
 
   return (
@@ -50,12 +56,18 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
       <DataTable
         columns={columns}
         data={jobs}
-        onRowClick={row => selectJob(row.original.jobId)}
-        getRowId={(row, index) => row.jobId || index.toString()}
-        isRowSelected={row => selectedJobIds.includes(row.jobId)}
-        isRowExpanded={row => expandedJobId === row.jobId}
+        alignCenter
+        onRowClick={row => selectJob(row.original.id)}
+        getRowId={(row, index) => row.id || index.toString()}
+        isRowSelected={row => selectedJobIds.includes(row.id)}
+        isRowExpanded={row => expandedJobId === row.id}
         expandedContent={row => (
-          <JobNodesList nodeExecutions={row.original.nodeExecutions} isExpanded={true} />
+          <JobNodesList
+            jobId={row.original.id}
+            nodeExecutions={row.original.nodeExecutions}
+            isExpanded={true}
+            onCollapse={() => toggleExpand(null)}
+          />
         )}
       />
       <ConfirmOperationAlertDialog
@@ -64,6 +76,15 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
         onContinue={handleDelete}
         title='Delete Job'
         description={`Are you sure you want to delete job ${jobToDelete}? This action cannot be undone.`}
+      />
+
+      <JobLogDialog
+        jobId={logJobId}
+        nodeId={logNodeId}
+        onClose={() => {
+          setLogJobId(undefined);
+          setLogNodeId(undefined);
+        }}
       />
     </>
   );

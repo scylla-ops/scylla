@@ -149,7 +149,7 @@ impl Job {
     ) -> DomainResult<()> {
         if !state.is_terminal() {
             return Err(DomainError::business_rule(
-                "Final state must be terminal (completed, failed, or cancelled)",
+                "Final state must be terminal (completed, failed, cancelled, or skipped)",
             ));
         }
 
@@ -164,6 +164,31 @@ impl Job {
         }
 
         exec.state = state;
+        exec.finished_at = Some(finished_at);
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// Mark a node as skipped from either Pending or Running.
+    ///
+    /// Used when an upstream failure invalidates this node's execution.
+    /// Unlike `apply_node_finished`, this accepts Pending nodes that never started.
+    pub fn apply_node_skipped(
+        &mut self,
+        node_id: &NodeId,
+        finished_at: DateTime<Utc>,
+    ) -> DomainResult<()> {
+        let exec = self
+            .find_execution_mut(node_id)
+            .ok_or_else(|| DomainError::validation(format!("Node not found: {node_id}")))?;
+
+        if exec.state.is_terminal() {
+            return Err(DomainError::business_rule(
+                "Cannot skip a node already in terminal state",
+            ));
+        }
+
+        exec.state = NodeState::Skipped;
         exec.finished_at = Some(finished_at);
         self.updated_at = Utc::now();
         Ok(())
@@ -410,6 +435,45 @@ mod tests {
         let mut job = Job::create_from_pipeline(&pipeline);
 
         assert!(job.apply_node_started(&node_id("z"), Utc::now()).is_err());
+    }
+
+    #[test]
+    fn apply_node_skipped_from_pending() {
+        let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        job.apply_node_skipped(&node_id("b"), Utc::now()).unwrap();
+
+        let exec = job.find_execution(&node_id("b")).unwrap();
+        assert_eq!(exec.state(), NodeState::Skipped);
+        assert!(exec.finished_at().is_some());
+    }
+
+    #[test]
+    fn apply_node_skipped_from_running() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        job.apply_node_started(&node_id("a"), Utc::now()).unwrap();
+        job.apply_node_skipped(&node_id("a"), Utc::now()).unwrap();
+
+        assert_eq!(
+            job.find_execution(&node_id("a")).unwrap().state(),
+            NodeState::Skipped
+        );
+    }
+
+    #[test]
+    fn cannot_skip_terminal_node() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        let now = Utc::now();
+        job.apply_node_started(&node_id("a"), now).unwrap();
+        job.apply_node_finished(&node_id("a"), NodeState::Completed, now)
+            .unwrap();
+
+        assert!(job.apply_node_skipped(&node_id("a"), now).is_err());
     }
 
     #[test]

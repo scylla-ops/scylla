@@ -1,45 +1,43 @@
 import { useCreateOrganization } from '@/modules/features/organization/presentation/hooks/useCreateOrganization.ts';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Trans } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
-import {
-  type FormChange,
-  type FormItem,
-  FormItemType,
-} from '@shared/presentation/models/scylla-form.model.ts';
+import { type FormChange } from '@shared/presentation/models/scylla-form.model.ts';
+import { createOrganizationItems } from '@/modules/features/organization/presentation/utils/create-organization-form-items.ts';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useNavigate } from 'react-router-dom';
+import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 interface AddOrganizationDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
+  hideCancel?: boolean;
 }
 
-export function AddOrganizationDialog({ open, setOpen }: AddOrganizationDialogProps) {
-  const { t } = useLingui();
+export function AddOrganizationDialog({
+  open,
+  setOpen,
+  hideCancel = false,
+}: AddOrganizationDialogProps) {
   const createOrganization = useCreateOrganization();
-
-  const items: FormItem[] = [
-    {
-      id: 'name',
-      label: t`Organization name`,
-      placeholder: t`e.g., My Organization`,
-      type: FormItemType.Input,
-      inputType: 'text',
-    },
-    {
-      id: 'description',
-      label: t`Description`,
-      placeholder: t`e.g., Our company's main organization`,
-      type: FormItemType.Input,
-      inputType: 'text',
-    },
-  ];
+  const setOrganization = useContextStore(state => state.setOrganization);
+  const navigate = useNavigate();
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
+    const description = values.find(v => v.id === 'description')?.value;
     if (!name?.trim()) return;
 
-    createOrganization.mutate(name, {
-      onSuccess: () => setOpen(false),
-    });
+    createOrganization.mutate(
+      { name, description: description?.trim() || undefined },
+      {
+        onSuccess: (data) => {
+          const orgId = data?.organizationId ?? createOrganization.data?.organizationId ?? '';
+          setOpen(false);
+          setOrganization(orgId, name);
+          navigate(`/${slugifyOrgName(name)}/projects`);
+        },
+      },
+    );
   };
 
   return (
@@ -53,10 +51,11 @@ export function AddOrganizationDialog({ open, setOpen }: AddOrganizationDialogPr
           settings.
         </Trans>
       }
-      items={items}
+      items={createOrganizationItems()}
       isPending={createOrganization.isPending}
       submitLabel={<Trans>Create Organization</Trans>}
       onSubmit={handleSubmit}
+      hideCancel={hideCancel}
     />
   );
 }

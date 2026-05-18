@@ -9,6 +9,7 @@ import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2 } from 'lucide-
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { IconButton } from '@shared/presentation/ui';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
@@ -87,48 +88,33 @@ export const PipelineActions = ({
         </DropdownMenu>
       ) : (
         <>
-          <Button
-            size='icon'
-            variant='ghost'
-            className='h-8 w-8 shrink-0 text-slate-400 hover:text-primary hover:bg-primary-hover rounded-full'
+          <IconButton
+            icon={isRunning ? Loader2 : PlayIcon}
+            tooltip={<Trans>Run</Trans>}
             onClick={onRun}
-          >
-            {isRunning ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <PlayIcon className='h-4 w-4 fill-current' />
-            )}
-          </Button>
+            iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
+          />
 
-          <Button
-            size='icon'
-            variant='ghost'
-            className='h-8 w-8 shrink-0 text-slate-400 hover:text-slate-900 rounded-full'
+          <IconButton
+            icon={EditIcon}
+            tooltip={'Edit pipeline'}
             onClick={onEdit}
-          >
-            <EditIcon className='w-4 h-4' />
-          </Button>
+          />
 
           {onViewJobs && (
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-8 w-8 shrink-0 text-slate-400 hover:text-blue-600 rounded-full'
+            <IconButton
+              icon={ListChecks}
+              tooltip={<Trans>View Jobs</Trans>}
               onClick={onViewJobs}
-            >
-              <ListChecks className='w-4 h-4' />
-            </Button>
+            />
           )}
 
           {onMore && (
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-8 w-8 shrink-0 text-slate-400 rounded-full'
+            <IconButton
+              icon={MoreHorizontal}
+              tooltip={<Trans>More options</Trans>}
               onClick={onMore}
-            >
-              <MoreHorizontal className='w-4 h-4' />
-            </Button>
+            />
           )}
         </>
       )}

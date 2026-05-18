@@ -14,6 +14,7 @@ import { messages as organizationMessages } from '@/modules/features/organizatio
 import { messages as userMessages } from '@/modules/features/user/locales/en/messages.ts';
 import { messages as sharedMessages } from '@/locales/en/messages.ts';
 import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
+import { messages as workersMessages } from '@/modules/features/workers/locales/en/messages.ts';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
@@ -28,8 +29,13 @@ i18n.load('en', {
   ...organizationMessages,
   ...sharedMessages,
   ...jobMessages,
+  ...workersMessages,
 });
 i18n.activate('en');
+
+//todo: maybe in production, console error only network or non scylla error ?
+//todo: domain errors should be only be toasted by module itself
+// for the beta its okay, because it allow us to be able to collect more easily the problems encountered by users
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -39,6 +45,7 @@ const queryClient = new QueryClient({
 
         if (code === 'UNAUTHENTICATED') {
           localStorage.removeItem('token');
+          window.location.href = '/login';
           return;
         }
 
@@ -47,6 +54,11 @@ const queryClient = new QueryClient({
         const message = error.isNetworkError()
           ? t`Server unreachable`
           : error.message || t`An unexpected error occurred`;
+
+        if (error.isNetworkError()) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
 
         toast.error(message);
       } else {
@@ -59,6 +71,14 @@ const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: error => {
       if (error instanceof ScyllaError) {
+        const code = error.getCode();
+
+        if (code === 'UNAUTHENTICATED') {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+
         error.log();
 
         const message = error.isNetworkError()

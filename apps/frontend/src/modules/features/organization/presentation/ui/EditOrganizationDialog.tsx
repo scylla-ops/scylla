@@ -6,7 +6,7 @@ import { useUpdateOrganization } from '@/modules/features/organization/presentat
 interface EditOrganizationDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  organization: { id: string; name: string };
+  organization: { id: string; name: string; description?: string };
 }
 
 export function EditOrganizationDialog({ open, setOpen, organization }: EditOrganizationDialogProps) {
@@ -21,14 +21,21 @@ export function EditOrganizationDialog({ open, setOpen, organization }: EditOrga
       type: FormItemType.Input,
       inputType: 'text',
     },
+    {
+      id: 'description',
+      label: t`Description`,
+      placeholder: organization.description || t`Add a description...`,
+      type: FormItemType.Input,
+      inputType: 'text',
+    },
   ];
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
-    if (!name?.trim()) return;
+    const description = values.find(v => v.id === 'description')?.value;
 
     updateOrganization.mutate(
-      { organizationId: organization.id, name },
+      { organizationId: organization.id, name: name?.trim() || undefined, description: description?.trim() || undefined },
       { onSuccess: () => setOpen(false) },
     );
   };
@@ -38,7 +45,7 @@ export function EditOrganizationDialog({ open, setOpen, organization }: EditOrga
       open={open}
       onOpenChange={setOpen}
       title={<Trans>Edit organization</Trans>}
-      description={<Trans>Update the organization name.</Trans>}
+      description={<Trans>Update the organization name and description.</Trans>}
       items={items}
       isPending={updateOrganization.isPending}
       submitLabel={<Trans>Save</Trans>}

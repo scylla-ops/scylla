@@ -1,16 +1,18 @@
-import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
+import type {
+  JobsRemoteDataSource,
+  JobLogsTailHandleRepo,
+} from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
 import type {
   ListJobsResponse,
   JobResponse,
   ListJobLogsResponse,
   JobLogEntry,
 } from '@/generated/job.ts';
-import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
-import type { JobLogsTailHandle } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
+import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { ScyllaResult as Result } from '@shared/utils/scylla-result.ts';
 import { JobServiceClient } from '@/generated/job.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
 
 export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
   private readonly _jobClient: JobServiceClient;
@@ -47,27 +49,40 @@ export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
     nodeId?: string,
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListJobLogsResponse>> {
-    return Result.tryAsync<ListJobLogsResponse>(
-      async () => (await this._jobClient.listJobLogs({ jobId, nodeId, pagination })).response,
-      'Error fetching job logs',
-    );
+    return Result.tryAsync<ListJobLogsResponse>(async () => {
+      const rep = (await this._jobClient.listJobLogs({ jobId, nodeId, pagination })).response;
+      console.log('[gRPC getLogs] Response:', rep);
+      return rep;
+    }, 'Error fetching job logs');
   }
 
-  public tailLogs(jobId: string, nodeId?: string): JobLogsTailHandle {
+  public tailLogs(jobId: string, nodeId?: string): ScyllaResult<JobLogsTailHandleRepo> {
     const abortController = new AbortController();
-    const call = this._jobClient.tailJobLogs({ jobId, nodeId }, { abort: abortController.signal });
-    const responses: AsyncIterable<JobLogEntry> = {
-      [Symbol.asyncIterator]: async function* () {
-        for await (const evt of call.responses) {
-          if (evt.log) {
-            yield evt.log;
+
+    return ScyllaResult.try<JobLogsTailHandleRepo>(() => {
+      const call = this._jobClient.tailJobLogs(
+        { jobId, nodeId },
+        { abort: abortController.signal },
+      );
+
+      const responses: AsyncIterable<ScyllaResult<JobLogEntry>> = {
+        [Symbol.asyncIterator]: async function* () {
+          try {
+            for await (const evt of call.responses) {
+              if (evt.log) {
+                yield ScyllaResult.success(evt.log);
+              }
+            }
+          } catch (err) {
+            yield ScyllaResult.error(new ScyllaError('Error tailing job logs', { cause: err }));
           }
-        }
-      },
-    };
-    return {
-      responses,
-      cancel: () => abortController.abort(),
-    };
+        },
+      };
+
+      return {
+        responses,
+        cancel: () => abortController.abort(),
+      };
+    }, 'Error tailing job logs');
   }
 }

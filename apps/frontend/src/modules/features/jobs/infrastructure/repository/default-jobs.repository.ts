@@ -1,11 +1,10 @@
-import type {
-  JobsRepository,
-  JobLogsTailHandle,
-} from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
-import type { ListJobsResponse, JobResponse, ListJobLogsResponse } from '@/generated/job.ts';
+import type { JobsRepository } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
+import type { Job, JobLog, JobLogStream } from '@/modules/features/jobs/domain/models/job.model.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { PaginationParams } from '@/modules/shared/domain/types/Pagination.ts';
 import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
+import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
+import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
+import { GrpcJobMapper } from '@/modules/features/jobs/infrastructure/repository/mappers/grpc-job.mapper.ts';
 
 export class DefaultJobsRepository implements JobsRepository {
   constructor(private readonly remoteDataSource: JobsRemoteDataSource) {}
@@ -13,12 +12,14 @@ export class DefaultJobsRepository implements JobsRepository {
   public async getByPipelineId(
     pipelineId: string,
     pagination?: PaginationParams,
-  ): Promise<ScyllaResult<ListJobsResponse>> {
-    return this.remoteDataSource.getByPipelineId(pipelineId, pagination);
+  ): Promise<ScyllaResult<PaginatedList<Job>>> {
+    return (await this.remoteDataSource.getByPipelineId(pipelineId, pagination)).map(
+      GrpcJobMapper.toDomainList,
+    );
   }
 
-  public async getById(jobId: string): Promise<ScyllaResult<JobResponse>> {
-    return this.remoteDataSource.getById(jobId);
+  public async getById(jobId: string): Promise<ScyllaResult<Job>> {
+    return (await this.remoteDataSource.getById(jobId)).map(GrpcJobMapper.toDomain);
   }
 
   public async deleteById(jobId: string): Promise<ScyllaResult<void>> {
@@ -29,11 +30,13 @@ export class DefaultJobsRepository implements JobsRepository {
     jobId: string,
     nodeId?: string,
     pagination?: PaginationParams,
-  ): Promise<ScyllaResult<ListJobLogsResponse>> {
-    return this.remoteDataSource.getLogs(jobId, nodeId, pagination);
+  ): Promise<ScyllaResult<PaginatedList<JobLog>>> {
+    return (await this.remoteDataSource.getLogs(jobId, nodeId, pagination)).map(
+      GrpcJobMapper.logsToDomainList,
+    );
   }
 
-  public tailLogs(jobId: string, nodeId?: string): JobLogsTailHandle {
-    return this.remoteDataSource.tailLogs(jobId, nodeId);
+  public tailLogs(jobId: string, nodeId?: string): ScyllaResult<JobLogStream> {
+    return this.remoteDataSource.tailLogs(jobId, nodeId).map(GrpcJobMapper.logStreamToDomain);
   }
 }

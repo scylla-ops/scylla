@@ -5,7 +5,7 @@ import type { OrganizationResponse } from '@/generated/organization.ts';
 export default class CreateOrganizationUseCase {
   constructor(private readonly organizationRepository: OrganizationRepository) {}
 
-  public execute(name: string): Promise<ScyllaResult<OrganizationResponse>> {
-    return this.organizationRepository.create(name);
+  public execute(name: string, description?: string): Promise<ScyllaResult<OrganizationResponse>> {
+    return this.organizationRepository.create(name, description);
   }
 }

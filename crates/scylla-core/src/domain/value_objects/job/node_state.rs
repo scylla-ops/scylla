@@ -11,6 +11,7 @@ pub enum NodeState {
     Completed,
     Failed,
     Cancelled,
+    Skipped,
 }
 
 impl NodeState {
@@ -24,6 +25,7 @@ impl NodeState {
             "completed" => Ok(Self::Completed),
             "failed" => Ok(Self::Failed),
             "cancelled" => Ok(Self::Cancelled),
+            "skipped" => Ok(Self::Skipped),
             _ => Err(DomainError::validation(format!(
                 "Invalid node execution state: {value}"
             ))),
@@ -38,12 +40,16 @@ impl NodeState {
             Self::Completed => "completed",
             Self::Failed => "failed",
             Self::Cancelled => "cancelled",
+            Self::Skipped => "skipped",
         }
     }
 
     #[must_use]
     pub fn is_terminal(&self) -> bool {
-        matches!(self, Self::Completed | Self::Failed | Self::Cancelled)
+        matches!(
+            self,
+            Self::Completed | Self::Failed | Self::Cancelled | Self::Skipped
+        )
     }
 }
 

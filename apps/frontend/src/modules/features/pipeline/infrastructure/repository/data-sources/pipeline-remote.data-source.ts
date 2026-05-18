@@ -1,4 +1,5 @@
 import type {
+  CreatePipelineRequest,
   ListPipelinesResponse,
   PipelineNode,
   PipelineResponse,
@@ -13,7 +14,7 @@ export interface PipelineRemoteDataSource {
   ): Promise<ScyllaResult<ListPipelinesResponse>>;
   deleteById(id: string): Promise<ScyllaResult<void>>;
   run(id: string): Promise<ScyllaResult<void>>;
-  create: (content: string) => Promise<ScyllaResult<void>>;
+  create(request: CreatePipelineRequest): Promise<ScyllaResult<void>>;
   getById(id: string): Promise<ScyllaResult<PipelineResponse>>;
   update(id: string, nodes: PipelineNode[], name?: string): Promise<ScyllaResult<PipelineResponse>>;
 }

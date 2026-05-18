@@ -26,9 +26,8 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
     }, 'Error deleting pipeline');
   }
 
-  public async create(content: string): Promise<ScyllaResult<void>> {
+  public async create(request: CreatePipelineRequest): Promise<ScyllaResult<void>> {
     return await ScyllaResult.tryAsync<void>(async () => {
-      const request: CreatePipelineRequest = JSON.parse(content);
 
       await this._pipelineClient.createPipeline(request);
     }, 'Failed to create pipeline.');

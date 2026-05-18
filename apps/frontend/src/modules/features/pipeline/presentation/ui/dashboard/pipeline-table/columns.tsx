@@ -1,11 +1,12 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { JobResponse } from '@/generated/job.ts';
 import { PipelineStatus } from './PipelineStatus.tsx';
 import { PipelineLastJob } from './PipelineLastJob.tsx';
 import { PipelineActions } from './PipelineActions.tsx';
 import { PipelineChart } from '../PipelineChart.tsx';
 import { Trans } from '@lingui/react/macro';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import { toStatusState } from '@shared/utils/job-status.utils.ts';
+import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineMetadata) => void;
@@ -13,7 +14,7 @@ type PipelineColumnMeta = {
 
   runningPipelines: Set<string>;
 
-  jobsByPipelineId: Map<string, JobResponse[]>;
+  jobsByPipelineId: Map<string, Job[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
 };
@@ -21,65 +22,41 @@ type PipelineColumnMeta = {
 export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<PipelineMetadata>[] => [
   {
     id: 'status',
-    header: () => (
-      <div className='w-full text-center text-xs font-semibold uppercase tracking-wider'>
-        <Trans>Status</Trans>
-      </div>
-    ),
+    header: () => <Trans>Status</Trans>,
     cell: ({ row }) => {
       const lastJob = meta.jobsByPipelineId.get(row.original.id)?.[0];
-      console.log(lastJob?.status);
-      const status = lastJob?.status as 'idle' | 'running' | 'success' | 'failed' | undefined;
-      return <PipelineStatus status={status} pipeline={row.original} />;
+      return <PipelineStatus status={toStatusState(lastJob?.status)} pipeline={row.original} />;
     },
     size: 240,
   },
   {
     id: 'history',
-    header: () => (
-      <div className='w-full text-center text-xs font-semibold uppercase tracking-wider'>
-        <Trans>History</Trans>
-      </div>
-    ),
+    header: () => <Trans>History</Trans>,
     cell: ({ row }) => {
       const jobs = meta.jobsByPipelineId.get(row.original.id) ?? [];
       return (
-        <div className='w-full'>
-          <PipelineChart
-            jobs={jobs}
-            isLoading={meta.isJobsLoading}
-            isError={meta.isJobsError}
-            maxJobs={10}
-          />
-        </div>
+        <PipelineChart
+          jobs={jobs}
+          isLoading={meta.isJobsLoading}
+          isError={meta.isJobsError}
+          maxJobs={10}
+        />
       );
     },
     size: 300,
   },
   {
     id: 'metadata',
-    header: () => (
-      <div className='w-full text-center text-xs font-semibold uppercase tracking-wider'>
-        <Trans>Last Run</Trans>
-      </div>
-    ),
+    header: () => <Trans>Last Run</Trans>,
     cell: ({ row }) => {
       const jobs = meta.jobsByPipelineId.get(row.original.id) ?? [];
-      return (
-        <div className='flex w-full flex-col gap-1'>
-          <PipelineLastJob jobs={jobs} />
-        </div>
-      );
+      return <PipelineLastJob jobs={jobs} />;
     },
     size: 140,
   },
   {
     id: 'actions',
-    header: () => (
-      <div className='text-center w-full text-xs font-semibold uppercase tracking-wider'>
-        <Trans>Actions</Trans>
-      </div>
-    ),
+    header: () => <Trans>Actions</Trans>,
     cell: ({ row }) => (
       <PipelineActions
         onRun={e => {

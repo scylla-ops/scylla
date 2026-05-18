@@ -1,12 +1,22 @@
 import React from 'react';
 import { cn } from '@shared/presentation/utils';
 
+export type StatusState =
+  | 'success'
+  | 'failed'
+  | 'running'
+  | 'pending'
+  | 'idle'
+  | 'skipped'
+  | 'cancelled';
+
 interface StatusIndicatorProps {
-  state: 'success' | 'failed' | 'running' | 'idle';
+  state: StatusState;
   label?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   labelClassName?: string;
+  animateAllStates?: boolean;
 }
 
 const getStateColors = (state: StatusIndicatorProps['state']) => {
@@ -31,6 +41,20 @@ const getStateColors = (state: StatusIndicatorProps['state']) => {
         ping: 'bg-blue-300',
         container: 'border-blue-200 text-blue-800 dark:border-blue-800 dark:text-blue-300',
         gradient: 'from-blue-400 to-blue-500',
+      };
+    case 'skipped':
+      return {
+        dot: 'bg-zinc-500',
+        ping: 'bg-zinc-300',
+        container: 'border-zinc-200 text-zinc-700 dark:border-zinc-700 dark:text-zinc-300',
+        gradient: 'from-zinc-400 to-zinc-500',
+      };
+    case 'cancelled':
+      return {
+        dot: 'bg-amber-500',
+        ping: 'bg-amber-300',
+        container: 'border-amber-200 text-amber-800 dark:border-amber-800 dark:text-amber-300',
+        gradient: 'from-amber-400 to-amber-500',
       };
     case 'idle':
     default:
@@ -73,8 +97,9 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   className,
   size = 'md',
   labelClassName,
+  animateAllStates = false,
 }) => {
-  const shouldAnimate = state === 'success' || state === 'running' || state === 'failed';
+  const shouldAnimate = state === 'running' || state === 'pending' || animateAllStates;
   const colors = getStateColors(state);
   const sizeClasses = getSizeClasses(size);
 

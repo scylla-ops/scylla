@@ -13,34 +13,71 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:84
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:63
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:71
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
+msgid "Copied!"
+msgstr "Copied!"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
+msgid "Copy ID"
+msgstr "Copy ID"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:55
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:83
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:92
+msgid "Delete"
+msgstr "Delete"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:42
 msgid "Duration"
 msgstr "Duration"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:33
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:28
 msgid "Job ID"
 msgstr "Job ID"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:41
+msgid "Job Logs"
+msgstr "Job Logs"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "No jobs found"
 msgstr "No jobs found"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:77
+msgid "Open logs"
+msgstr "Open logs"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:81
+#~ msgid "OpenJobLog"
+#~ msgstr "OpenJobLog"
+
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:69
+msgid "Refresh"
+msgstr "Refresh"
+
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:50
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:22
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:21
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:44
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:56
+msgid "Streaming live output"
+msgstr "Streaming live output"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:35
 msgid "Timeline"
 msgstr "Timeline"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:73
+msgid "View"
+msgstr "View"

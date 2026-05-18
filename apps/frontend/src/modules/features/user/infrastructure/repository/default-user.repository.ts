@@ -22,6 +22,12 @@ export class DefaultUserRepository implements UserRepository {
     );
   }
 
+  public async update(userId: string, username?: string): Promise<ScyllaResult<User>> {
+    return (await this._remoteDataSource.update({ userId, username })).map(user =>
+      GrpcUserMapper.toDomain(user),
+    );
+  }
+
   public async delete(userId: string): Promise<ScyllaResult<void>> {
     return this._remoteDataSource.delete(userId);
   }

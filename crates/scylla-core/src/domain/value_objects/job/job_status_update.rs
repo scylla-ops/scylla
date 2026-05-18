@@ -14,6 +14,7 @@ pub enum JobEvent {
     NodeStarted { node_id: String },
     NodeCompleted { node_id: String },
     NodeFailed { node_id: String, error: String },
+    NodeSkipped { node_id: String },
     JobCompleted,
     JobFailed { error: String },
 }

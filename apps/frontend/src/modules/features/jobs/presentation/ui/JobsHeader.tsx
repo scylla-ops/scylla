@@ -5,6 +5,8 @@ import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-de
 import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
 import { useState } from 'react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { Trans } from '@lingui/react/macro';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
@@ -27,14 +29,10 @@ export const JobsHeader = ({
   const [deleteDialogVisibility, setDeleteDialogVisibility] = useState(false);
 
   const handleDelete = async () => {
-    try {
-      const promises = selectedJobIds.map(id => deleteJob.mutateAsync(id));
-      await Promise.all(promises);
-      setDeleteDialogVisibility(false);
-      clearSelection();
-    } catch (error) {
-      console.error('Error deleting jobs:', error);
-    }
+    const promises = selectedJobIds.map(id => deleteJob.mutateAsync(id));
+    await Promise.allSettled(promises);
+    setDeleteDialogVisibility(false);
+    clearSelection();
   };
 
   return (
@@ -61,25 +59,39 @@ export const JobsHeader = ({
           </span>
         </div>
         <div className={'flex items-center justify-end gap-2'}>
-          <Button variant={'outline'} size='icon' onClick={onRefresh} className='h-9 w-9'>
-            <RefreshCw className='size-4' />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant={'outline'} size='icon' onClick={onRefresh} className='h-9 w-9 cursor-pointer transition-all hover:scale-110'>
+                <RefreshCw className='size-4' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p><Trans>Refresh</Trans></p>
+            </TooltipContent>
+          </Tooltip>
 
           {selectedJobIds.length > 0 && (
             <>
               <Button variant={'outline'} onClick={clearSelection}>
                 Clear
               </Button>
-              <Button
-                size='icon'
-                variant='destructive'
-                onClick={() => {
-                  setDeleteDialogVisibility(true);
-                }}
-                className='h-9 w-9'
-              >
-                <Trash className='size-4' />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size='icon'
+                    variant='destructive'
+                    onClick={() => {
+                      setDeleteDialogVisibility(true);
+                    }}
+                    className='h-9 w-9 cursor-pointer transition-all hover:scale-110'
+                  >
+                    <Trash className='size-4' />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p><Trans>Delete</Trans></p>
+                </TooltipContent>
+              </Tooltip>
             </>
           )}
         </div>

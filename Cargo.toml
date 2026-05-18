@@ -13,6 +13,7 @@ members = [
 # async
 tokio = { version = "1.5", features = ["full"] }
 tokio-stream = "0.1"
+tokio-util = { version = "0.7", features = ["rt"] }
 async-trait = "0.1.89"
 futures-core = "0.3"
 futures-util = "0.3"

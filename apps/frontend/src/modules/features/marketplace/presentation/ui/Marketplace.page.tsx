@@ -1,21 +1,14 @@
-import { MarketItemList } from '@/modules/features/marketplace/presentation/ui/MarketItemList.tsx';
-import { useMarketplace } from '@/modules/features/marketplace/presentation/hooks/use-marketplace.ts';
-import { useFilterStore } from '@/modules/features/marketplace/presentation/stores/use-filter.store.ts';
-import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { Trans } from '@lingui/react/macro';
+import { Card } from '@shadcn';
 
 export const MarketplacePage = () => {
-  const { data, isLoading, isError, error } = useMarketplace();
-  const filter = useFilterStore(state => state.filter);
-
-  if (isLoading) return <></>;
-
-  if (isError) return <ErrorState message={error.message} />;
-
   return (
-    <div className='flex flex-col bg-background'>
-      <div className='flex flex-col gap-4 w-full h-full p-2'>
-        <MarketItemList items={data} filter={filter} />
-      </div>
+    <div className='flex items-center justify-center w-full h-full bg-background'>
+      <Card className='p-8 text-center'>
+        <p className='text-lg text-muted-foreground'>
+          <Trans>This feature will be available soon</Trans>
+        </p>
+      </Card>
     </div>
   );
 };

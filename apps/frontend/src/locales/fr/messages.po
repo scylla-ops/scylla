@@ -22,7 +22,7 @@ msgstr ""
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:49
+#: src/modules/core/presentation/ui/App.tsx:56
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
@@ -31,11 +31,11 @@ msgid "Are you absolutely sure?"
 msgstr "En êtes-vous absolument sûr ?"
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
-#: src/modules/shared/presentation/ui/FormDialog.tsx:57
+#: src/modules/shared/presentation/ui/FormDialog.tsx:60
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:53
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:57
 msgid "Clear"
 msgstr ""
 
@@ -43,19 +43,35 @@ msgstr ""
 msgid "Continue"
 msgstr "Continuer"
 
-#: src/modules/shared/presentation/ui/FormDialog.tsx:62
+#: src/modules/shared/presentation/ui/FormDialog.tsx:66
 msgid "Create"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/FormDialog.tsx:61
+#: src/modules/shared/presentation/ui/FormDialog.tsx:65
 msgid "Creating..."
 msgstr ""
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:73
+msgid "Delete"
+msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:22
+#~ msgid "Description"
+#~ msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:16
+#~ msgid "e.g., My Organization"
+#~ msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:23
+#~ msgid "e.g., Our company's main organization"
+#~ msgstr ""
 
 #: src/modules/shared/presentation/ui/ErrorState.tsx:11
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:47
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:51
 msgid "in total"
 msgstr ""
 
@@ -67,25 +83,29 @@ msgstr "Se déconnecter"
 #~ msgid "Main"
 #~ msgstr "Principal"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:69
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:80
 msgid "New {label}"
 msgstr ""
 
-#: src/modules/core/presentation/ui/App.tsx:66
+#: src/modules/core/presentation/ui/App.tsx:86
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:62
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:66
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:69
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:73
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:65
+#: src/modules/layout/presentation/ui/Layout.tsx:15
+#~ msgid "Organization name"
+#~ msgstr ""
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:72
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:48
-#: src/modules/core/presentation/ui/App.tsx:65
+#: src/modules/core/presentation/ui/App.tsx:55
+#: src/modules/core/presentation/ui/App.tsx:85
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 
@@ -96,3 +116,11 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
+
+#: src/modules/layout/presentation/ui/Layout.tsx:67
+msgid "To get started, please create your first organization."
+msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:64
+msgid "Welcome to Scylla!"
+msgstr ""

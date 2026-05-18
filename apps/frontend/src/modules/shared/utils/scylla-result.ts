@@ -24,9 +24,9 @@ export class ScyllaError extends Error {
   }
 
   public log(): void {
-    console.error(`>[${this.constructor.name}]:`, this.message);
+    console.warn(`>[${this.constructor.name}]:`, this.message);
     if (this.cause) {
-      console.error('  Original cause:', this.cause);
+      console.warn('Original cause:', this.cause);
     }
   }
 }
@@ -78,5 +78,13 @@ export class ScyllaResult<T> {
     } catch (error) {
       return new ScyllaResult<T>(new ScyllaError(errorMessage, { cause: error }));
     }
+  }
+
+  public static success<T>(value: T): ScyllaResult<T> {
+    return new ScyllaResult<T>(value);
+  }
+
+  public static error<T>(error: ScyllaError): ScyllaResult<T> {
+    return new ScyllaResult<T>(error);
   }
 }

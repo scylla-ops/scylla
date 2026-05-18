@@ -5,20 +5,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/modules/shared/presentation/ui/shadcn/dropdown-menu';
-import { Eye, Trash, MoreHorizontal } from 'lucide-react';
+import { Eye, Trash, MoreHorizontal, TerminalSquare } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
+import { Trans } from '@lingui/react/macro';
+import { IconButton } from '@shared/presentation/ui';
 
 type JobActionsProps = {
-  onView?: (e: SyntheticEvent) => void;
+  onView: (e: SyntheticEvent) => void;
   onDelete: (e: SyntheticEvent) => void;
+  onOpenJobLog: (e: SyntheticEvent) => void;
 };
 
 /**
  * Display actions for a job: view details and delete
  * Automatically switches to dropdown mode when space is limited
  */
-export const JobActions = ({ onView, onDelete }: JobActionsProps) => {
+export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
 
@@ -67,28 +70,22 @@ export const JobActions = ({ onView, onDelete }: JobActionsProps) => {
         </DropdownMenu>
       ) : (
         <>
-          {onView && (
-            <Button
-              size='icon'
-              variant='ghost'
-              className='h-8 w-8 shrink-0 text-slate-400 hover:text-primary hover:bg-primary-hover rounded-full'
-              onClick={onView}
-            >
-              <Eye className='w-4 h-4' />
-            </Button>
-          )}
+          <IconButton icon={Eye} tooltip={<Trans>View</Trans>} onClick={onView} />
 
-          <Button
-            size='icon'
-            variant='ghost'
-            className='h-8 w-8 shrink-0 text-slate-400 hover:text-destructive rounded-full'
+          <IconButton
+            icon={TerminalSquare}
+            tooltip={<Trans>Open logs</Trans>}
+            onClick={onOpenJobLog}
+          />
+
+          <IconButton
+            icon={Trash}
+            tooltip={<Trans>Delete</Trans>}
             onClick={onDelete}
-          >
-            <Trash className='w-4 h-4' />
-          </Button>
+            className='hover:text-destructive hover:bg-destructive/10'
+          />
         </>
       )}
     </div>
   );
 };
-

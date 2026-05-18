@@ -8,6 +8,7 @@ export enum FormItemType {
 export type FormInput = {
   type: FormItemType.Input;
   inputType: 'text' | 'password' | 'email' | 'tel';
+  pattern?: string;
 };
 
 export type SelectOption = {
@@ -26,6 +27,8 @@ export type FormItemBase = {
   id: string;
   className?: string;
   disabled?: boolean;
+  optional?: boolean;
+  defaultValue?: string;
 };
 
 export type FormItem = FormItemBase & (FormInput | FormSelect);

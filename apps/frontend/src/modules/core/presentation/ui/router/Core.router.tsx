@@ -1,7 +1,7 @@
 // CoreRouter.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import LoginPage from '@/modules/features/login/presentation/ui/Login.page.tsx';
-import MarketplacePage from '@/modules/features/marketplace/presentation/ui/Marketplace.page.tsx';
+import { MarketplacePage } from '@/modules/features/marketplace/presentation/ui/Marketplace.page.tsx';
 import { Layout } from '@/modules/layout/presentation/ui/Layout.tsx';
 import { AuthGuard } from '@core/presentation/ui/router/Auth.guard.tsx';
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
@@ -15,7 +15,8 @@ import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/u
 import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
 import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.page.tsx';
 import { WorkerDetailsPage } from '../../../../features/workers/presentation/ui/WorkerDetails.page.tsx';
-
+import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
+import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -31,95 +32,105 @@ export const CoreRouter = createBrowserRouter([
         element: <Layout />,
         children: [
           {
-            path: '/projects',
-            handle: {
-              breadcrumb: () => 'Projects',
-            },
+            index: true,
+            element: <OrganizationRedirectWrapper />,
+          },
+          {
+            path: '/:organizationSlug',
+            element: <OrganizationSyncWrapper />,
             children: [
               {
-                index: true,
-                element: <ProjectPage />,
-              },
-              {
-                element: <ContextCleanerWrapper />,
-                //TODO: here add loader: <ContextLoader/> used to fetch the project and pipeline names from ids for the breadcrumbs
-                path: ':projectId',
+                path: 'projects',
                 handle: {
-                  breadcrumb: (params: BreadcrumbParams) => `Project #${params.projectName}`,
+                  breadcrumb: () => 'Projects',
                 },
                 children: [
                   {
                     index: true,
-                    element: <DashboardPipelinePage />,
+                    element: <ProjectPage />,
                   },
                   {
-                    path: 'create',
-                    element: <PipelineCreationPage />,
+                    element: <ContextCleanerWrapper />,
+                    //TODO: here add loader: <ContextLoader/> used to fetch the project and pipeline names from ids for the breadcrumbs
+                    path: ':projectId',
                     handle: {
-                      breadcrumb: () => `Create`,
+                      breadcrumb: (params: BreadcrumbParams) => `Project #${params.projectName}`,
+                    },
+                    children: [
+                      {
+                        index: true,
+                        element: <DashboardPipelinePage />,
+                      },
+                      {
+                        path: 'create',
+                        element: <PipelineCreationPage />,
+                        handle: {
+                          breadcrumb: () => `Create`,
+                        },
+                      },
+                      {
+                        path: 'edit/:pipelineId',
+                        element: <PipelineUpdatePage />,
+                        handle: {
+                          breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
+                            `Pipeline #${pipelineName} - Edit`,
+                        },
+                      },
+                      {
+                        path: 'pipelines/:pipelineId/jobs',
+                        element: <JobsPage />,
+                        handle: {
+                          breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
+                            `Pipeline #${pipelineName} - Jobs`,
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                path: 'marketplace',
+                element: <MarketplacePage />,
+              },
+              {
+                path: 'workers',
+                children: [
+                  {
+                    index: true,
+                    element: <WorkersPage />,
+                    handle: {
+                      breadcrumb: () => 'Workers',
                     },
                   },
                   {
-                    path: 'edit/:pipelineId',
-                    element: <PipelineUpdatePage />,
+                    path: ':workerId',
+                    element: <WorkerDetailsPage />,
                     handle: {
-                      breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
-                        `Pipeline #${pipelineName} - Edit`,
-                    },
-                  },
-                  {
-                    path: 'pipelines/:pipelineId/jobs',
-                    element: <JobsPage />,
-                    handle: {
-                      breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
-                        `Pipeline #${pipelineName} - Jobs`,
+                      breadcrumb: () => 'Worker details',
                     },
                   },
                 ],
               },
-            ],
-          },
-          {
-            path: '/marketplace',
-            element: <MarketplacePage />,
-          },
-          {
-            path: '/workers',
-            children: [
               {
-                index: true,
-                element: <WorkersPage />,
-                handle: {
-                  breadcrumb: () => 'Workers',
-                },
-              },
-              {
-                path: ':workerId',
-                element: <WorkerDetailsPage />,
-                handle: {
-                  breadcrumb: () => 'Worker details',
-                },
-              },
-            ],
-          },
-          {
-            path: '/users-admin',
-            element: <UserAdminPage />,
-          },
-          {
-            path: '/users',
-            children: [
-              {
-                index: true,
+                path: 'users-admin',
                 element: <UserAdminPage />,
               },
               {
-                path: ':userId',
-                element: <UserSettingsPage />,
-              },
-              {
-                path: 'me',
-                element: <UserSettingsPage />,
+                path: 'users',
+                children: [
+                  {
+                    index: true,
+                    element: <UserAdminPage />,
+                  },
+                  {
+                    path: ':userId',
+                    element: <UserSettingsPage />,
+                  },
+                  {
+                    path: 'me',
+                    element: <UserSettingsPage />,
+                  },
+                ],
               },
             ],
           },
@@ -129,6 +140,6 @@ export const CoreRouter = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to='/users/me' replace />,
+    element: <Navigate to='/login' replace />,
   },
 ]);

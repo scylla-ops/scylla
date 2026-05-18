@@ -28,9 +28,17 @@ export const usePagination = (options?: UsePaginationOptions) => {
 
   const paginationParams = useMemo<PaginationParams>(() => ({ page, pageSize }), [page, pageSize]);
 
-  const updatePaginationInfo = useCallback((info: PaginationInfo | undefined) => {
-    setServerPaginationInfo(info);
-  }, []);
+  const updatePaginationInfo = useCallback(
+    (info: PaginationInfo | undefined) => {
+      setServerPaginationInfo(info);
+      // If current page exceeds total pages (e.g. after deleting all items on last page),
+      // go back to the last available page.
+      if (info && info.totalPages > 0 && page > info.totalPages) {
+        setPageState(info.totalPages);
+      }
+    },
+    [page],
+  );
 
   const paginationInfo = useMemo<PaginationInfo | undefined>(() => {
     if (!serverPaginationInfo) return undefined;
