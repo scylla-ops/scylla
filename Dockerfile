@@ -31,6 +31,9 @@ COPY . .
 ARG PACKAGE
 ARG CARGO_BUILD_JOBS=2
 ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
+# Use the committed .sqlx/ offline cache so query!/query_as! macros expand
+# without needing a live Postgres at build time.
+ENV SQLX_OFFLINE=true
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     cargo build --release -p ${PACKAGE} && \

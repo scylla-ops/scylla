@@ -1,24 +1,19 @@
 services:
-  surrealdb-init:
-    image: busybox
-    container_name: scylla-surrealdb-init
-    command: ["sh", "-c", "chown -R 65532:65532 /data"]
-    volumes:
-      - surrealdb_data:/data
-
-  surrealdb:
-    image: surrealdb/surrealdb:v3
-    container_name: scylla-surrealdb
-    command: start --user root --pass root rocksdb:/data/srdb.db
+  postgres:
+    image: postgres:18-alpine
+    container_name: scylla-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scylla}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scylla}
+      POSTGRES_DB: ${POSTGRES_DB:-scylla}
     ports:
-      - "8000:8000"
+      - "5432:5432"
     volumes:
-      - surrealdb_data:/data
-    depends_on:
-      surrealdb-init:
-        condition: service_completed_successfully
+      # PG 18+ stores data under /var/lib/postgresql/<major>/ — mounting the
+      # parent dir keeps `pg_upgrade --link` viable when moving to PG 19+.
+      - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD", "/surreal", "isready"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scylla} -d ${POSTGRES_DB:-scylla}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -46,11 +41,13 @@ services:
       - "50051:50051"
     environment:
       RUST_LOG: info
+      # Override DatabaseConfig.url via the env so we don't ship a checked-in secret.
+      DATABASE_URL: postgres://${POSTGRES_USER:-scylla}:${POSTGRES_PASSWORD:-scylla}@postgres:5432/${POSTGRES_DB:-scylla}
     command: ["--config", "/app/config/docker.toml"]
     volumes:
       - ./crates/scylla-api/config:/app/config:ro
     depends_on:
-      surrealdb:
+      postgres:
         condition: service_healthy
       scylla-broker:
         condition: service_started
@@ -87,17 +84,9 @@ services:
       - "--broker-url"
       - "http://scylla-broker:50052"
       - "--db-url"
-      - "ws://surrealdb:8000"
-      - "--db-namespace"
-      - "scylla"
-      - "--db-database"
-      - "core"
-      - "--db-username"
-      - "root"
-      - "--db-password"
-      - "root"
+      - "postgres://${POSTGRES_USER:-scylla}:${POSTGRES_PASSWORD:-scylla}@postgres:5432/${POSTGRES_DB:-scylla}"
     depends_on:
-      surrealdb:
+      postgres:
         condition: service_healthy
       scylla-broker:
         condition: service_started
@@ -119,4 +108,4 @@ services:
         condition: service_started
 
 volumes:
-  surrealdb_data:
+  postgres_data:

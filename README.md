@@ -10,8 +10,8 @@ Distributed CI/CD platform.
 | `scylla-api`     | `50051` | gRPC API (auth, projects, pipelines, jobs)   |
 | `scylla-broker`  | `50052` | Broker for job dispatch and agent presence   |
 | `scylla-agent`   | —       | Worker that runs pipeline jobs               |
-| `scylla-recorder`| —       | Persists broker events into SurrealDB        |
-| `surrealdb`      | `8000`  | Primary datastore                            |
+| `scylla-recorder`| —       | Persists broker events into PostgreSQL       |
+| `postgres`       | `5432`  | Primary datastore (PostgreSQL 18)            |
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ docker compose version
 
 Prebuilt images are published for both `linux/amd64` and `linux/arm64` — Docker pulls the right one for your host automatically.
 
-One command pulls the prebuilt images and starts the full stack (API, broker, agent, recorder, SurrealDB, frontend):
+One command pulls the prebuilt images and starts the full stack (API, broker, agent, recorder, PostgreSQL, frontend):
 
 ```sh
 git clone https://github.com/scylla-ops/scylla.git
@@ -64,9 +64,9 @@ Run `just --list` to see every recipe.
 
 ## Troubleshooting
 
-**Port already in use.** Another process holds `8080`, `8000`, `50051`, or `50052`. Stop it or change the host port in `docker-compose.yaml`.
+**Port already in use.** Another process holds `8080`, `5432`, `50051`, or `50052`. Stop it or change the host port in `docker-compose.yaml`.
 
-**`scylla-api` fails to connect to SurrealDB.** Ensure `surrealdb` is `healthy` via `just status` (or `docker compose ps`). If it's stuck, run `just clean` to reset the volume and try again.
+**`scylla-api` fails to connect to PostgreSQL.** Ensure `postgres` is `healthy` via `just status` (or `docker compose ps`). If it's stuck, run `just clean` to reset the volume and try again.
 
 **Frontend shows gRPC errors.** Verify the UI on `http://localhost:8080` can reach `scylla-api` on `http://localhost:50051`. The browser must accept CORS — the default config already allows `http://localhost:8080`.
 

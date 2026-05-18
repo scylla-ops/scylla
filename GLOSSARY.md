@@ -14,7 +14,7 @@ Thin wrapper around the `hermes-broker` crates (`hermes-broker-core` router + `h
 Worker process that connects to the broker, subscribes to the job-dispatch subject as part of a queue group, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status events + stdout/stderr back to the broker. Also emits presence events (heartbeat/shutdown).
 
 ### `scylla-recorder`
-Side process that subscribes to broker events and writes them into SurrealDB. Runs four listeners in parallel: job status updates, job log lines, agent heartbeats, and agent shutdowns. Keeps the database eventually consistent with what actually happened on agents.
+Side process that subscribes to broker events and writes them into PostgreSQL via sqlx. Runs four listeners in parallel: job status updates, job log lines, agent heartbeats, and agent shutdowns. Keeps the database eventually consistent with what actually happened on agents.
 
 ### `scylla-core`
 Library crate containing the domain model (entities, value objects, use cases, ports). Not a service — it's imported by `scylla-api`.
@@ -22,8 +22,8 @@ Library crate containing the domain model (entities, value objects, use cases, p
 ### `scylla-protocol`
 Library crate holding shared `.proto` definitions and their generated Rust + TypeScript bindings. Both the backend and the frontend import these.
 
-### `surrealdb`
-Multi-model database used as Scylla's primary store. In the compose stack it runs as a SurrealDB server (v3) with the `rocksdb` storage backend, listening on port `8000`.
+### `postgres`
+Primary datastore. PostgreSQL 18 in the compose stack, listening on port `5432`. Schema is managed by versioned SQL files in `migrations/` applied via `sqlx::migrate!` at boot. The offline query cache lives in `.sqlx/` so Docker builds can compile without a live database.
 
 ## Domain entities
 
@@ -95,7 +95,7 @@ The verb: `Create`, `Read`, `Write`, `Delete`, `Execute`, or `All`. Serialized a
 Port (`application/ports/services/permission_service.rs`) used by every use case to check policies. The production adapter is Casbin-backed.
 
 ### Casbin
-External authorization engine used by the permission service. Policies are persisted in SurrealDB through `surreal-casbin-adapter`.
+External authorization engine used by the permission service. Policies are persisted in PostgreSQL through `sqlx-adapter` (the `casbin_rule` table is created by the dedicated migration).
 
 ### Absolute policy
 `Policy::absolute()` = `(Scope::All, Resource::All, Act::All)`. Granted to the bootstrap user so the first account can do anything.
@@ -171,7 +171,7 @@ Caller-supplied ID for each pipeline node. Must be unique within its pipeline. V
 ## Infra & dev
 
 ### `docker-compose.yaml`
-Defines the full backend stack (`surrealdb`, `scylla-broker`, `scylla-api`, `scylla-recorder`, `scylla-agent`). Frontend is run natively, not in compose.
+Defines the full backend stack (`postgres`, `scylla-broker`, `scylla-api`, `scylla-recorder`, `scylla-agent`). Frontend is run natively, not in compose.
 
 ### `justfile`
 Task runner recipes: `just up`, `just down`, `just logs`, `just push-all`, etc.
@@ -192,13 +192,13 @@ Scylla's layout inside `scylla-core`:
 - `src/domain/` — entities, value objects, errors (pure, no I/O).
 - `src/application/ports/` — trait definitions (`repositories/`, `services/`).
 - `src/application/use_cases/` — orchestrators that consume ports.
-- `src/infrastructure/` — concrete adapters (SurrealDB, Casbin, Argon2).
+- `src/infrastructure/` — concrete adapters (PostgreSQL via sqlx, Casbin, Argon2).
 
 ### Port
 A trait in `application/ports/` describing something the domain needs from the outside world (persistence, hashing, permission checks). Examples: `PipelineRepository`, `HashService`, `PermissionService`.
 
 ### Adapter
-A concrete implementation of a port. All current adapters live under `scylla-core/src/infrastructure/` — `persistence/surrealdb/*` for repos, `services/casbin_permission_service.rs`, `services/argon2_hash_service.rs`.
+A concrete implementation of a port. All current adapters live under `scylla-core/src/infrastructure/` — `persistence/postgres/*` for repos, `services/casbin_permission_service.rs`, `services/argon2_hash_service.rs`.
 
 ### Use case
 A struct in `application/use_cases/*.rs` grouping operations on one aggregate (e.g. `PipelineUseCases`, `JobUseCases`). Holds `Arc<dyn Port>` fields and exposes async methods. gRPC handlers in `scylla-api` call these.
@@ -210,7 +210,7 @@ A domain object with an identity and mutable state (e.g. `Pipeline`, `Job`, `Age
 An immutable, validated wrapper in `domain/value_objects/` (e.g. `PipelineName`, `Hostname`, `NodeId`, `JobStatus`). Built via a fallible constructor that enforces the invariant.
 
 ### Repository
-A port describing persistence for one aggregate (`PipelineRepository`, `JobRepository`, ...). Trait lives in `application/ports/repositories/`; the SurrealDB implementation lives in `infrastructure/persistence/surrealdb/`.
+A port describing persistence for one aggregate (`PipelineRepository`, `JobRepository`, ...). Trait lives in `application/ports/repositories/`; the PostgreSQL implementation lives in `infrastructure/persistence/postgres/` (one `Pg…Repository` per aggregate, queries via `sqlx::query!` / `query_as!`).
 
 ### Domain error
 `DomainError` from `domain/errors.rs` with variants like `validation`, `business_rule`, `not_found`. Returned as `DomainResult<T>` from core and mapped to gRPC statuses by handlers in `scylla-api`.

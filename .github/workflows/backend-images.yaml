@@ -25,6 +25,33 @@ env:
   ALL_SERVICES: '["scylla-api","scylla-broker","scylla-agent","scylla-recorder"]'
 
 jobs:
+  verify-sqlx-cache:
+    name: Verify .sqlx/ cache is up to date
+    if: github.ref == 'refs/heads/back-end'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: scylla
+          POSTGRES_PASSWORD: scylla
+          POSTGRES_DB: scylla
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scylla"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://scylla:scylla@localhost:5432/scylla
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres --locked
+      - name: Verify offline query cache
+        run: cargo sqlx prepare --check --workspace -- --tests
+
   detect-changes:
     name: Detect changed services
     if: github.ref == 'refs/heads/back-end'
@@ -42,6 +69,8 @@ jobs:
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'Dockerfile'
+              - 'migrations/**'
+              - '.sqlx/**'
               - 'crates/scylla-core/**'
               - 'crates/scylla-protocol/**'
             api:

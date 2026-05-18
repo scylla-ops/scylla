@@ -10,6 +10,7 @@ platform := env("PLATFORM", "linux/amd64")
 
 # -- Aliases --
 alias u := up
+alias s := start
 alias d := down
 alias l := logs
 
@@ -23,6 +24,54 @@ default:
 [group('dev')]
 local:
     docker compose build
+
+# Start the stack from already-present images (no pull, no rebuild)
+[group('dev')]
+[no-exit-message]
+start:
+    docker compose up -d
+
+# -- Database (sqlx) --
+
+DATABASE_URL := env("DATABASE_URL", "postgres://scylla:scylla@localhost:5432/scylla")
+
+# Start only the Postgres dev DB (for running migrations / tests locally)
+[group('db')]
+db-up:
+    docker compose up -d postgres
+
+# Tail Postgres logs
+[group('db')]
+db-logs:
+    docker compose logs -f postgres
+
+# Apply pending migrations against $DATABASE_URL (uses sqlx-cli)
+[group('db')]
+db-migrate:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate run --source migrations
+
+# Revert the most recent migration
+[group('db')]
+db-revert:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate revert --source migrations
+
+# Regenerate the offline query cache (commit the resulting .sqlx/ dir)
+[group('db')]
+db-prepare:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace -- --tests
+
+# Verify .sqlx/ is up-to-date (used in CI)
+[group('db')]
+db-prepare-check:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace --check -- --tests
+
+# Drop & recreate the local Postgres dev volume (DESTRUCTIVE)
+[group('db')]
+[confirm("Drop scylla-postgres data volume?")]
+db-reset:
+    docker compose rm -sfv postgres
+    docker volume rm scylla_postgres_data || true
+    docker compose up -d postgres
 
 # Start all services (pulls latest images, runs detached)
 [group('dev')]
