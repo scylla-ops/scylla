@@ -71,9 +71,41 @@ jobs:
             echo "list=[${svcs[*]}]" >> "$GITHUB_OUTPUT"
           fi
 
+  cook-deps:
+    name: Cook workspace deps (${{ matrix.platform.arch }})
+    needs: detect-changes
+    if: github.ref == 'refs/heads/back-end' && needs.detect-changes.outputs.services != '[]'
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { arch: amd64, runner: blacksmith-4vcpu-ubuntu-2404,       docker: linux/amd64 }
+          - { arch: arm64, runner: blacksmith-4vcpu-ubuntu-2404-arm, docker: linux/arm64 }
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: useblacksmith/setup-docker-builder@v1
+
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          target: deps
+          platforms: ${{ matrix.platform.docker }}
+          push: false
+          provenance: false
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/scylla-deps:buildcache-${{ matrix.platform.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/scylla-deps:buildcache-${{ matrix.platform.arch }},mode=max,image-manifest=true,oci-mediatypes=true
+
   build:
     name: Build ${{ matrix.service }} (${{ matrix.platform.arch }})
-    needs: detect-changes
+    needs: [detect-changes, cook-deps]
     if: github.ref == 'refs/heads/back-end' && needs.detect-changes.outputs.services != '[]'
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -105,7 +137,9 @@ jobs:
             PACKAGE=${{ matrix.service }}
             CARGO_BUILD_JOBS=2
           outputs: type=image,name=${{ env.IMAGE_PREFIX }}/${{ matrix.service }},push-by-digest=true,name-canonical=true
-          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE_PREFIX }}/scylla-deps:buildcache-${{ matrix.platform.arch }}
+            type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }}
           cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }},mode=max,image-manifest=true,oci-mediatypes=true
 
       - name: Export digest

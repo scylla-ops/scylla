@@ -13,13 +13,19 @@ FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-# === Builder: cook deps once, then build the chosen package ===
-FROM chef AS builder
+# === Deps: cook the entire workspace's dependencies ===
+# Independent of any service. CI builds this stage once per arch and
+# pushes its layer cache to a shared registry tag (`scylla-deps:buildcache-*`),
+# so the 4 service builds can pull pre-compiled deps instead of cooking them
+# 4 times.
+FROM chef AS deps
 COPY --from=planner /app/recipe.json recipe.json
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     cargo chef cook --release --recipe-path recipe.json
 
+# === Builder: build the chosen package on top of cooked deps ===
+FROM deps AS builder
 COPY . .
 
 ARG PACKAGE
