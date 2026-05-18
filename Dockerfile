@@ -1,13 +1,25 @@
 # syntax=docker/dockerfile:1
 
-# === Builder ===
-FROM rust:1-bookworm AS builder
-
+# === Chef base ===
+FROM rust:1-bookworm AS chef
 RUN apt-get update && apt-get install -y --no-install-recommends \
     protobuf-compiler libclang-dev && \
     rm -rf /var/lib/apt/lists/*
-
+RUN cargo install cargo-chef --locked
 WORKDIR /app
+
+# === Planner: extract dependency recipe from Cargo.toml/Cargo.lock ===
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+# === Builder: cook deps once, then build the chosen package ===
+FROM chef AS builder
+COPY --from=planner /app/recipe.json recipe.json
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    cargo chef cook --release --recipe-path recipe.json
+
 COPY . .
 
 ARG PACKAGE
@@ -15,7 +27,6 @@ ARG CARGO_BUILD_JOBS=2
 ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
-    --mount=type=cache,target=/app/target,sharing=locked \
     cargo build --release -p ${PACKAGE} && \
     cp target/release/${PACKAGE} /app/service
 
