@@ -200,15 +200,30 @@ async fn run_node(
     logs_subject: &str,
     cancel: CancellationToken,
 ) -> Result<(), ExecutionError> {
-    let mut child = Command::new(spec.command())
+    let log_subject = format!("{logs_subject}.{node_id}");
+    let mut child = match Command::new(spec.command())
         .args(spec.args())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true)
         .spawn()
-        .map_err(ExecutionError::Spawn)?;
-
-    let log_subject = format!("{logs_subject}.{node_id}");
+    {
+        Ok(c) => c,
+        Err(e) => {
+            // Surface spawn failure (e.g. command-not-found) on the stderr log
+            // stream so it shows up in the node logs view, not just in the
+            // NodeFailed status event.
+            publish_log_line(
+                publish_tx,
+                &log_subject,
+                node_id,
+                LogStream::Stderr,
+                format!("failed to spawn `{}`: {e}", spec.command()),
+            )
+            .await;
+            return Err(ExecutionError::Spawn(e));
+        }
+    };
     let stdout_handle = spawn_log_streamer(
         child.stdout.take().expect("stdout was piped"),
         LogStream::Stdout,
@@ -277,25 +292,41 @@ where
     tokio::spawn(async move {
         let mut lines = BufReader::new(reader).lines();
         while let Ok(Some(line)) = lines.next_line().await {
-            let payload = serde_json::to_vec(&JobLogLine {
-                node_id: node_id.clone(),
-                stream,
-                line,
-                timestamp: Utc::now().to_rfc3339(),
-            })
-            .expect("serialization cannot fail");
-            if publish_tx
-                .send(PublishRequest {
-                    subject: log_subject.clone(),
-                    payload,
-                    reply_to: String::new(),
-                })
-                .await
-                .is_err()
-            {
-                warn!("log publish channel closed");
+            if !publish_log_line(&publish_tx, &log_subject, &node_id, stream, line).await {
                 break;
             }
         }
     })
+}
+
+/// Publish a single log line on the given subject. Returns `false` if the
+/// publish channel is closed (caller should stop emitting).
+async fn publish_log_line(
+    publish_tx: &mpsc::Sender<PublishRequest>,
+    log_subject: &str,
+    node_id: &str,
+    stream: LogStream,
+    line: String,
+) -> bool {
+    let payload = serde_json::to_vec(&JobLogLine {
+        node_id: node_id.to_string(),
+        stream,
+        line,
+        timestamp: Utc::now().to_rfc3339(),
+    })
+    .expect("serialization cannot fail");
+
+    if publish_tx
+        .send(PublishRequest {
+            subject: log_subject.to_string(),
+            payload,
+            reply_to: String::new(),
+        })
+        .await
+        .is_err()
+    {
+        warn!("log publish channel closed");
+        return false;
+    }
+    true
 }
