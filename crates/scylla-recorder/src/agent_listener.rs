@@ -1,6 +1,7 @@
 use crate::error::ListenerError;
 use hermes_broker_client::Subscriber;
-use scylla_core::application::AgentUseCases;
+use scylla_core::application::caller::{CallerContext, ServiceIdentity};
+use scylla_core::application::{AgentUseCases, PermissionService};
 use scylla_core::domain::entities::AgentId;
 use scylla_core::domain::value_objects::agent::{AgentHeartbeat, AgentShutdown, Hostname};
 use scylla_core::infrastructure::PgAgentRepository;
@@ -13,7 +14,10 @@ const HEARTBEAT_SUBJECT: &str = "scylla.agents.heartbeat.>";
 const SHUTDOWN_SUBJECT: &str = "scylla.agents.shutdown.>";
 const RECONNECT_BACKOFF: StdDuration = StdDuration::from_secs(2);
 
-pub async fn run_heartbeat(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgentRepository>>) {
+pub async fn run_heartbeat<PS: PermissionService + 'static>(
+    channel: Channel,
+    agent_uc: Arc<AgentUseCases<PgAgentRepository, PS>>,
+) {
     loop {
         if let Err(e) = heartbeat_once(channel.clone(), &agent_uc).await {
             warn!(error = %e, "heartbeat listener exited; reconnecting");
@@ -22,10 +26,12 @@ pub async fn run_heartbeat(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgent
     }
 }
 
-async fn heartbeat_once(
+async fn heartbeat_once<PS: PermissionService + 'static>(
     channel: Channel,
-    agent_uc: &AgentUseCases<PgAgentRepository>,
+    agent_uc: &AgentUseCases<PgAgentRepository, PS>,
 ) -> Result<(), ListenerError> {
+    let caller = CallerContext::Service(ServiceIdentity::recorder());
+
     let mut subscriber = Subscriber::new(channel)
         .await
         .map_err(|e| ListenerError::SubscriberInit(e.to_string()))?;
@@ -55,7 +61,7 @@ async fn heartbeat_once(
         };
         let agent_id = AgentId::new(&beat.agent_id);
         if let Err(e) = agent_uc
-            .record_heartbeat(&agent_id, hostname, beat.heartbeat_interval_secs)
+            .record_heartbeat(&caller, &agent_id, hostname, beat.heartbeat_interval_secs)
             .await
         {
             error!(agent_id = %beat.agent_id, error = %e, "record_heartbeat failed");
@@ -66,7 +72,10 @@ async fn heartbeat_once(
     Ok(())
 }
 
-pub async fn run_shutdown(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgentRepository>>) {
+pub async fn run_shutdown<PS: PermissionService + 'static>(
+    channel: Channel,
+    agent_uc: Arc<AgentUseCases<PgAgentRepository, PS>>,
+) {
     loop {
         if let Err(e) = shutdown_once(channel.clone(), &agent_uc).await {
             warn!(error = %e, "shutdown listener exited; reconnecting");
@@ -75,10 +84,12 @@ pub async fn run_shutdown(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgentR
     }
 }
 
-async fn shutdown_once(
+async fn shutdown_once<PS: PermissionService + 'static>(
     channel: Channel,
-    agent_uc: &AgentUseCases<PgAgentRepository>,
+    agent_uc: &AgentUseCases<PgAgentRepository, PS>,
 ) -> Result<(), ListenerError> {
+    let caller = CallerContext::Service(ServiceIdentity::recorder());
+
     let mut subscriber = Subscriber::new(channel)
         .await
         .map_err(|e| ListenerError::SubscriberInit(e.to_string()))?;
@@ -100,7 +111,7 @@ async fn shutdown_once(
             }
         };
         let agent_id = AgentId::new(&shutdown.agent_id);
-        if let Err(e) = agent_uc.record_shutdown(&agent_id).await {
+        if let Err(e) = agent_uc.record_shutdown(&caller, &agent_id).await {
             warn!(agent_id = %shutdown.agent_id, error = %e, "record_shutdown failed");
         }
     }

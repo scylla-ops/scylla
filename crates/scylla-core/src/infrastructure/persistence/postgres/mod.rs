@@ -19,6 +19,7 @@ pub mod projects;
 pub mod sessions;
 pub mod user_organization;
 pub mod user_project;
+pub mod user_roles;
 pub mod users;
 
 // Flat re-exports so call sites can keep `scylla_core::infrastructure::PgUserRepository`
@@ -32,4 +33,5 @@ pub use projects::PgProjectRepository;
 pub use sessions::PgSessionRepository;
 pub use user_organization::PgUserOrganizationRepository;
 pub use user_project::PgUserProjectRepository;
+pub use user_roles::PgUserRoleRepository;
 pub use users::PgUserRepository;

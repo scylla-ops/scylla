@@ -6,7 +6,6 @@ use derive_more::Constructor;
 use scylla_core::application::AgentUseCases;
 use scylla_core::application::{AgentRepository, PermissionService};
 use scylla_core::domain::entities::AgentId;
-use scylla_core::domain::value_objects::permission::policy;
 use scylla_protocol::services::agent::{
     AgentResponse, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest, ListAgentsRequest,
     ListAgentsResponse, agent_service_server::AgentService,
@@ -16,8 +15,7 @@ use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
 pub struct AgentHandler<A: AgentRepository, PS: PermissionService> {
-    use_cases: Arc<AgentUseCases<A>>,
-    permission_checker: Arc<PS>,
+    use_cases: Arc<AgentUseCases<A, PS>>,
 }
 
 #[async_trait::async_trait]
@@ -28,14 +26,12 @@ impl<A: AgentRepository + Send + Sync + 'static, PS: PermissionService + Send + 
         &self,
         request: Request<GetAgentRequest>,
     ) -> Result<Response<AgentResponse>, Status> {
-        let target_id = AgentId::new(&request.get_ref().agent_id);
-        require_permission!(self, request, policy::agent::get(target_id));
-
+        let caller = caller!(request);
         let req = request.into_inner();
         let id = AgentId::new(&req.agent_id);
         let agent = self
             .use_cases
-            .get(&id)
+            .get(&caller, &id)
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(agent_to_proto(&agent)))
@@ -45,13 +41,11 @@ impl<A: AgentRepository + Send + Sync + 'static, PS: PermissionService + Send + 
         &self,
         request: Request<DeleteAgentRequest>,
     ) -> Result<Response<DeleteAgentResponse>, Status> {
-        let target_id = AgentId::new(&request.get_ref().agent_id);
-        require_permission!(self, request, policy::agent::delete(target_id));
-
+        let caller = caller!(request);
         let req = request.into_inner();
         let id = AgentId::new(&req.agent_id);
         self.use_cases
-            .delete(&id)
+            .delete(&caller, &id)
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(DeleteAgentResponse {}))
@@ -61,13 +55,12 @@ impl<A: AgentRepository + Send + Sync + 'static, PS: PermissionService + Send + 
         &self,
         request: Request<ListAgentsRequest>,
     ) -> Result<Response<ListAgentsResponse>, Status> {
-        require_permission!(self, request, policy::agent::list());
-
+        let caller = caller!(request);
         let req = request.into_inner();
         let pagination = proto_to_domain_pagination(req.pagination);
         let result = self
             .use_cases
-            .list(pagination.as_ref())
+            .list(&caller, pagination.as_ref())
             .await
             .map_err(domain_error_to_status)?;
 

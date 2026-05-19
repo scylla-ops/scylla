@@ -22,8 +22,14 @@ expose_headers = [
     "grpc-status-details-bin"
 ]
 
+# Broker client URL — recorder and API connect here. Same process, loopback.
 [broker]
-url = "http://scylla-broker:50052"
+url = "http://127.0.0.1:50052"
+
+# Broker server bind — the in-process hermes broker listens here.
+[broker_server]
+addr = "0.0.0.0:50052"
+channel_capacity = 8192
 
 [bootstrap]
 username = "admin"

@@ -30,9 +30,11 @@ pub use persistence::postgres::PgUserOrganizationRepository;
 pub use persistence::postgres::PgUserProjectRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgUserRoleRepository;
 
 #[cfg(feature = "hash")]
 pub use services::Argon2HashService;
 
 #[cfg(feature = "permission")]
-pub use services::CasbinPermissionService;
+pub use services::CedarPermissionService;

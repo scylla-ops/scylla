@@ -32,10 +32,8 @@ pub enum StartupError {
     Config(#[from] ConfigError),
     #[error("database initialization: {0}")]
     Database(#[from] DomainError),
-    #[error("casbin adapter init: {0}")]
-    CasbinAdapter(String),
-    #[error("casbin service init: {0}")]
-    CasbinService(String),
+    #[error("permission service init: {0}")]
+    Permission(String),
     #[error("broker connection to {url}: {message}")]
     BrokerConnect { url: String, message: String },
     #[error("bootstrap: {0}")]

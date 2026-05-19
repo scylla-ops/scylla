@@ -1,7 +1,9 @@
-use crate::application::{JobLogLiveStream, JobLogRepository, JobLogStreamPort};
+use crate::application::caller::CallerContext;
+use crate::application::{JobLogLiveStream, JobLogRepository, JobLogStreamPort, PermissionService};
 use crate::domain::entities::{JobId, JobLog};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::job::LogStream;
+use crate::domain::value_objects::permission::policy;
 use crate::domain::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
@@ -13,39 +15,37 @@ use tracing::instrument;
 /// Use case that combines a persisted snapshot of job logs with a live broker
 /// subscription, exposing them as a single ordered stream.
 #[derive(Constructor)]
-pub struct JobLogStreamUseCase<R: JobLogRepository, S: JobLogStreamPort> {
+pub struct JobLogStreamUseCase<
+    R: JobLogRepository,
+    S: JobLogStreamPort,
+    PS: PermissionService,
+> {
     repo: Arc<R>,
     stream_port: Arc<S>,
+    permission_service: Arc<PS>,
 }
 
-impl<R, S> JobLogStreamUseCase<R, S>
+impl<R, S, PS> JobLogStreamUseCase<R, S, PS>
 where
     R: JobLogRepository + Send + Sync + 'static,
     S: JobLogStreamPort + 'static,
+    PS: PermissionService + 'static,
 {
-    /// Stream every log of `job_id` (optionally filtered to one node):
-    /// 1. Subscribe to the live broker subject first so nothing published while
-    ///    we read the snapshot is lost.
-    /// 2. Read the historical snapshot from the repository (ordered ASC).
-    /// 3. Emit historical first, then forward live messages, de-duplicating
-    ///    against the snapshot by `(timestamp, node_id, stream, line)` so that
-    ///    same-millisecond / equal-content duplicates aren't dropped or
-    ///    double-emitted. Live messages strictly newer than `cutoff` always
-    ///    pass; messages at-or-before `cutoff` only pass when their tuple is
-    ///    not already in the historical set.
-    #[instrument(skip(self), fields(job_id = %job_id, node_id = ?node_id))]
+    #[instrument(skip(self, caller), fields(job_id = %job_id, node_id = ?node_id))]
     pub async fn stream(
         &self,
+        caller: &CallerContext,
         job_id: &JobId,
         node_id: Option<&NodeId>,
     ) -> DomainResult<JobLogLiveStream> {
+        self.permission_service
+            .check(caller, policy::job::read_logs(job_id.clone()))
+            .await?;
+
         let live = self.stream_port.subscribe(job_id, node_id).await?;
         let historical = self.repo.list_all_by_job(job_id, node_id).await?;
         let cutoff = historical.last().map(JobLog::timestamp);
 
-        // Dedup key for the boundary window: any live message whose tuple is
-        // already present in the snapshot is a duplicate, regardless of how
-        // its timestamp compares to the cutoff.
         let seen: HashSet<(DateTime<Utc>, NodeId, LogStream, String)> = historical
             .iter()
             .map(|l| {

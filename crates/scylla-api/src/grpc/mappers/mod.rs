@@ -4,7 +4,6 @@ pub mod job_log_mapper;
 pub mod job_mapper;
 pub mod organization_mapper;
 pub mod pagination_mapper;
-pub mod permission_mapper;
 pub mod pipeline_mapper;
 pub mod project_mapper;
 pub mod user_mapper;

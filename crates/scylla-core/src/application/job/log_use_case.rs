@@ -1,6 +1,8 @@
-use crate::application::JobLogRepository;
+use crate::application::caller::CallerContext;
+use crate::application::{JobLogRepository, PermissionService};
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::DomainResult;
+use crate::domain::value_objects::permission::policy;
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
@@ -8,37 +10,57 @@ use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Constructor)]
-pub struct JobLogUseCases<R: JobLogRepository> {
+pub struct JobLogUseCases<R: JobLogRepository, PS: PermissionService> {
     repo: Arc<R>,
+    permission_service: Arc<PS>,
 }
 
-impl<R: JobLogRepository> JobLogUseCases<R> {
-    #[instrument(skip(self, log))]
-    pub async fn create(&self, log: &JobLog) -> DomainResult<JobLog> {
+impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
+    #[instrument(skip(self, caller, log))]
+    pub async fn create(&self, caller: &CallerContext, log: &JobLog) -> DomainResult<JobLog> {
+        // Recorder-only path today; routed through the trait so tightening
+        // (per-service action allowlists) is contained to Cedar.
+        self.permission_service
+            .check(caller, policy::job::read_logs(log.job_id().clone()))
+            .await?;
         self.repo.create(log).await
     }
 
-    #[instrument(skip(self), fields(id = %id))]
-    pub async fn get(&self, id: &JobLogId) -> DomainResult<JobLog> {
-        self.repo.find_by_id(id).await
+    #[instrument(skip(self, caller), fields(id = %id))]
+    pub async fn get(&self, caller: &CallerContext, id: &JobLogId) -> DomainResult<JobLog> {
+        // Reading a single log line is gated by its job's read-logs grant; we
+        // load first because the id alone does not carry the job context.
+        let log = self.repo.find_by_id(id).await?;
+        self.permission_service
+            .check(caller, policy::job::read_logs(log.job_id().clone()))
+            .await?;
+        Ok(log)
     }
 
-    #[instrument(skip(self), fields(job_id = %job_id))]
+    #[instrument(skip(self, caller), fields(job_id = %job_id))]
     pub async fn list_by_job(
         &self,
+        caller: &CallerContext,
         job_id: &JobId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>> {
+        self.permission_service
+            .check(caller, policy::job::read_logs(job_id.clone()))
+            .await?;
         self.repo.list_by_job(job_id, pagination).await
     }
 
-    #[instrument(skip(self), fields(job_id = %job_id, node_id = %node_id))]
+    #[instrument(skip(self, caller), fields(job_id = %job_id, node_id = %node_id))]
     pub async fn list_by_job_and_node(
         &self,
+        caller: &CallerContext,
         job_id: &JobId,
         node_id: &NodeId,
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>> {
+        self.permission_service
+            .check(caller, policy::job::read_logs(job_id.clone()))
+            .await?;
         self.repo
             .list_by_job_and_node(job_id, node_id, pagination)
             .await

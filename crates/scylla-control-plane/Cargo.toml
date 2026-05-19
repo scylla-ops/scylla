@@ -1,0 +1,36 @@
+[package]
+name = "scylla-control-plane"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "scylla-control-plane"
+path = "src/main.rs"
+
+[dependencies]
+# workspace subsystems composed in-process
+scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
+scylla-api = { path = "../scylla-api" }
+scylla-broker = { path = "../scylla-broker" }
+scylla-recorder = { path = "../scylla-recorder" }
+
+# broker client (loopback connection to the in-process broker)
+hermes-broker-client = { workspace = true }
+
+# async runtime + cancellation
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+
+# config + cli + tracing
+serde = { workspace = true }
+toml = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# error
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

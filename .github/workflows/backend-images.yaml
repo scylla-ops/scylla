@@ -22,7 +22,7 @@ on:
 
 env:
   IMAGE_PREFIX: godlyjaaaaj
-  ALL_SERVICES: '["scylla-api","scylla-broker","scylla-agent","scylla-recorder"]'
+  ALL_SERVICES: '["scylla-control-plane","scylla-agent"]'
 
 jobs:
   verify-sqlx-cache:
@@ -73,14 +73,13 @@ jobs:
               - '.sqlx/**'
               - 'crates/scylla-core/**'
               - 'crates/scylla-protocol/**'
-            api:
+            control-plane:
               - 'crates/scylla-api/**'
-            broker:
               - 'crates/scylla-broker/**'
+              - 'crates/scylla-recorder/**'
+              - 'crates/scylla-control-plane/**'
             agent:
               - 'crates/scylla-agent/**'
-            recorder:
-              - 'crates/scylla-recorder/**'
 
       - id: compose
         run: |
@@ -89,10 +88,8 @@ jobs:
             exit 0
           fi
           svcs=()
-          [[ "${{ steps.filter.outputs.api }}"      == "true" ]] && svcs+=('"scylla-api"')
-          [[ "${{ steps.filter.outputs.broker }}"   == "true" ]] && svcs+=('"scylla-broker"')
-          [[ "${{ steps.filter.outputs.agent }}"    == "true" ]] && svcs+=('"scylla-agent"')
-          [[ "${{ steps.filter.outputs.recorder }}" == "true" ]] && svcs+=('"scylla-recorder"')
+          [[ "${{ steps.filter.outputs.control-plane }}" == "true" ]] && svcs+=('"scylla-control-plane"')
+          [[ "${{ steps.filter.outputs.agent }}"         == "true" ]] && svcs+=('"scylla-agent"')
           if [[ ${#svcs[@]} -eq 0 ]]; then
             echo 'list=[]' >> "$GITHUB_OUTPUT"
           else
@@ -229,7 +226,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
+        service: [scylla-control-plane, scylla-agent]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -276,7 +273,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
+        service: [scylla-control-plane, scylla-agent]
     steps:
       - uses: actions/checkout@v6
         with:

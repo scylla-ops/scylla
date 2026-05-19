@@ -1,6 +1,7 @@
 use crate::error::ListenerError;
 use hermes_broker_client::Subscriber;
-use scylla_core::application::JobLogUseCases;
+use scylla_core::application::caller::{CallerContext, ServiceIdentity};
+use scylla_core::application::{JobLogUseCases, PermissionService};
 use scylla_core::domain::entities::{JobId, JobLog};
 use scylla_core::domain::value_objects::job::JobLogLine;
 use scylla_core::domain::value_objects::pipeline::NodeId;
@@ -13,7 +14,10 @@ use tracing::{error, info, warn};
 const LOG_SUBJECT: &str = "scylla.jobs.logs.>";
 const RECONNECT_BACKOFF: StdDuration = StdDuration::from_secs(2);
 
-pub async fn run(channel: Channel, job_log_uc: Arc<JobLogUseCases<PgJobLogRepository>>) {
+pub async fn run<PS: PermissionService + 'static>(
+    channel: Channel,
+    job_log_uc: Arc<JobLogUseCases<PgJobLogRepository, PS>>,
+) {
     loop {
         if let Err(e) = log_once(channel.clone(), &job_log_uc).await {
             warn!(error = %e, "log listener exited; reconnecting");
@@ -22,10 +26,12 @@ pub async fn run(channel: Channel, job_log_uc: Arc<JobLogUseCases<PgJobLogReposi
     }
 }
 
-async fn log_once(
+async fn log_once<PS: PermissionService + 'static>(
     channel: Channel,
-    job_log_uc: &JobLogUseCases<PgJobLogRepository>,
+    job_log_uc: &JobLogUseCases<PgJobLogRepository, PS>,
 ) -> Result<(), ListenerError> {
+    let caller = CallerContext::Service(ServiceIdentity::recorder());
+
     let mut subscriber = Subscriber::new(channel)
         .await
         .map_err(|e| ListenerError::SubscriberInit(e.to_string()))?;
@@ -56,7 +62,6 @@ async fn log_once(
             }
         };
 
-        // Subject format: scylla.jobs.logs.{job_id}.{node_id}
         let Some(job_id_str) = parse_job_id_from_subject(&msg.subject) else {
             warn!(subject = %msg.subject, "unexpected log subject format, skipping");
             continue;
@@ -73,7 +78,7 @@ async fn log_once(
             timestamp,
         );
 
-        if let Err(e) = job_log_uc.create(&job_log).await {
+        if let Err(e) = job_log_uc.create(&caller, &job_log).await {
             error!(error = %e, "failed to persist job log");
         }
     }

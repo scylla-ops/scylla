@@ -19,16 +19,11 @@ tonic = { workspace = true }
 # serialization
 serde_json = { workspace = true }
 
-# cli
-clap = { workspace = true }
-
 # error handling
-anyhow = { workspace = true }
 thiserror = { workspace = true }
 
 # logging
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
 # time
 chrono = { workspace = true }

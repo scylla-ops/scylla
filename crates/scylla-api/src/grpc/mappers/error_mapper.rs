@@ -1,6 +1,6 @@
-use log::error;
 use scylla_core::domain::errors::DomainError;
 use tonic::Status;
+use tracing::error;
 
 /// Convert DomainError to tonic Status
 /// This is a standalone function instead of a From impl due to Rust's orphan rules

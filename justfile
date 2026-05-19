@@ -127,7 +127,7 @@ push svc: (_build-push svc)
 # Build & push all services
 [group('registry')]
 [no-exit-message]
-push-all: (_info) (_build-push "scylla-api") (_build-push "scylla-broker") (_build-push "scylla-agent") (_build-push "scylla-recorder")
+push-all: (_info) (_build-push "scylla-control-plane") (_build-push "scylla-agent")
 
 [private]
 [no-exit-message]

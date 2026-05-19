@@ -4,20 +4,23 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 
 ## Platform services
 
+### `scylla-control-plane`
+Single binary that boots the entire central brain in one process: API gRPC server on `50051`, hermes broker on `50052`, and the recorder's broker subscribers persisting to PostgreSQL. Composition root for `scylla-api`, `scylla-broker`, and `scylla-recorder`. Config lives in `crates/scylla-control-plane/config/*.toml`.
+
 ### `scylla-api`
-gRPC server exposing authentication, organizations, projects, pipelines, jobs, and agent management. Default port `50051`. Speaks gRPC and gRPC-Web (for the browser). Config lives in `crates/scylla-api/config/*.toml`.
+Library crate exposing the gRPC handlers (auth, organizations, projects, pipelines, jobs, agents, permissions) plus the `Services` composition struct and a `run_grpc` runner. Composed inside `scylla-control-plane`.
 
 ### `scylla-broker`
-Thin wrapper around the `hermes-broker` crates (`hermes-broker-core` router + `hermes-broker-server` gRPC service). Routes subject-based messages between publishers (API, agents) and subscribers (agents, recorder). Default port `50052`.
-
-### `scylla-agent`
-Worker process that connects to the broker, subscribes to the job-dispatch subject as part of a queue group, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status events + stdout/stderr back to the broker. Also emits presence events (heartbeat/shutdown).
+Library crate wrapping the `hermes-broker` crates (`hermes-broker-core` router + `hermes-broker-server` gRPC service). Exposes a `run(BrokerConfig, shutdown)` function spawned by `scylla-control-plane`.
 
 ### `scylla-recorder`
-Side process that subscribes to broker events and writes them into PostgreSQL via sqlx. Runs four listeners in parallel: job status updates, job log lines, agent heartbeats, and agent shutdowns. Keeps the database eventually consistent with what actually happened on agents.
+Library crate that subscribes to broker events and writes them into PostgreSQL via sqlx. Exposes `spawn_listeners(broker_channel, RecorderServices)` returning the 4 subscriber tasks (job status, job logs, agent heartbeats, agent shutdowns). Spawned by `scylla-control-plane`.
+
+### `scylla-agent`
+Worker binary deployed on each pipeline-executing machine. Connects to the control plane's broker port, subscribes to the job-dispatch subject as part of a queue group, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status events + stdout/stderr back to the broker. Also emits presence events (heartbeat/shutdown).
 
 ### `scylla-core`
-Library crate containing the domain model (entities, value objects, use cases, ports). Not a service — it's imported by `scylla-api`.
+Library crate containing the domain model (entities, value objects, use cases, ports). Not a service — it's imported by `scylla-api`, `scylla-recorder`, and `scylla-control-plane`.
 
 ### `scylla-protocol`
 Library crate holding shared `.proto` definitions and their generated Rust + TypeScript bindings. Both the backend and the frontend import these.
@@ -101,7 +104,10 @@ External authorization engine used by the permission service. Policies are persi
 `Policy::absolute()` = `(Scope::All, Resource::All, Act::All)`. Granted to the bootstrap user so the first account can do anything.
 
 ### Bootstrap user
-The initial `admin` account created on first API startup (configured under `[bootstrap]` in the API config). Default credentials in local dev: `admin` / `admin123`. Gets the absolute policy.
+The initial `admin` account created on first control-plane startup (configured under `[bootstrap]` in the control-plane config). Default credentials in local dev: `admin` / `admin123`. Gets the absolute policy.
+
+### `CallerContext`
+Identity-aware principal threaded through the permission layer. Variants: `User(UserId)`, `Service(ServiceIdentity)`, `Anonymous`. Shaped as a Cedar entity (`Scylla::User::"…"`, `Scylla::Service::"recorder"`) so the upcoming Casbin→Cedar migration is a `PermissionService` impl swap rather than a workspace-wide refactor.
 
 ## Pipeline execution concepts
 
@@ -143,7 +149,7 @@ An agent whose last heartbeat is older than the grace window. Not connected; job
 Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-protocol/proto/`.
 
 ### gRPC-Web
-Browser-compatible variant of gRPC spoken by the frontend via `@protobuf-ts/grpcweb-transport`. Served by `scylla-api` through `tonic-web`.
+Browser-compatible variant of gRPC spoken by the frontend via `@protobuf-ts/grpcweb-transport`. Served by the control plane through `tonic-web`.
 
 ### Tonic
 Rust gRPC server/client framework used by all backend services.
@@ -171,13 +177,13 @@ Caller-supplied ID for each pipeline node. Must be unique within its pipeline. V
 ## Infra & dev
 
 ### `docker-compose.yaml`
-Defines the full backend stack (`postgres`, `scylla-broker`, `scylla-api`, `scylla-recorder`, `scylla-agent`). Frontend is run natively, not in compose.
+Defines the full backend stack (`postgres`, `scylla-control-plane`, `scylla-agent`, `scylla-frontend`).
 
 ### `justfile`
 Task runner recipes: `just up`, `just down`, `just logs`, `just push-all`, etc.
 
 ### `config/*.toml`
-Per-environment config for `scylla-api`: `local.toml` (host-native dev), `docker.toml` (compose), `prod.toml` (production).
+Per-environment config for `scylla-control-plane` (under `crates/scylla-control-plane/config/`): `local.toml` (host-native dev), `docker.toml` (compose), `prod.toml` (production).
 
 ### `VITE_API_URL`
 Frontend env var pointing the gRPC-Web client at the API (default: same origin). Set in `apps/frontend/.env.local` to override.

@@ -1,14 +1,12 @@
-mod bootstrap;
 mod config;
-mod error;
-mod startup;
+mod runtime;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use config::CoreConfig;
+use config::ControlPlaneConfig;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Scylla API server")]
+#[command(author, version, about = "Scylla control-plane (API + broker + recorder)")]
 struct Args {
     /// Print an example configuration file and exit
     #[arg(short = 'e', long = "print-example-config")]
@@ -23,15 +21,16 @@ struct Args {
 async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "scylla_api=info,scylla_core=info,warn".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "scylla_control_plane=info,scylla_api=info,scylla_broker=info,scylla_recorder=info,scylla_core=info,warn".into()
+            }),
         )
         .init();
 
     let args = Args::parse();
 
     if args.print_example_config {
-        CoreConfig::print_example();
+        ControlPlaneConfig::print_example();
         return;
     }
 
@@ -44,20 +43,15 @@ async fn main() {
 async fn run(args: Args) -> Result<()> {
     let config = load_config(&args)?;
     tracing::debug!("Configuration: {:#?}", config);
-
-    let services = startup::init_services(&config).await?;
-
-    startup::start_grpc(&config, &services).await?;
-
-    Ok(())
+    runtime::run(config).await
 }
 
-fn load_config(args: &Args) -> Result<CoreConfig> {
+fn load_config(args: &Args) -> Result<ControlPlaneConfig> {
     if let Some(config_path) = &args.config {
-        CoreConfig::from_file(config_path)
+        ControlPlaneConfig::from_file(config_path)
             .with_context(|| format!("Failed to load configuration from {}", config_path))
     } else {
         tracing::info!("No configuration file provided, using defaults");
-        Ok(CoreConfig::default())
+        Ok(ControlPlaneConfig::default())
     }
 }

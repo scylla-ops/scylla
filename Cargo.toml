@@ -7,6 +7,7 @@ members = [
     "crates/scylla-protocol",
     "crates/scylla-agent",
     "crates/scylla-recorder",
+    "crates/scylla-control-plane",
 ]
 
 [workspace.dependencies]
@@ -63,8 +64,7 @@ derive_more = { version = "2.1.1", features = ["full"] }
 nutype = { version = "0.7", features = ["serde"] }
 bon = "3.9"
 argon2 = "0.6.0-rc.8"
-casbin = "2.20.0"
-sqlx-adapter = { version = "1", default-features = false, features = ["postgres", "runtime-tokio-rustls"] }
+cedar-policy = "4.6"
 
 # web / tracing
 tower = { version = "0.5.3" }
