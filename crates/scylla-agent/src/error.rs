@@ -1,5 +1,8 @@
 #[derive(Debug, thiserror::Error)]
 pub enum AgentError {
+    #[error("invalid broker URL `{url}`: {message}")]
+    InvalidBrokerUrl { url: String, message: String },
+
     #[error("failed to connect to broker: {0}")]
     Connection(#[from] tonic::transport::Error),
 
@@ -32,4 +35,7 @@ pub enum ExecutionError {
 
     #[error("failed to publish status: {0}")]
     Publish(String),
+
+    #[error("node task panicked: {message}")]
+    NodeTaskPanic { message: String },
 }

@@ -1,5 +1,5 @@
 use derive_more::Constructor;
-use scylla_core::application::ports::SessionRepository;
+use scylla_core::application::SessionRepository;
 use scylla_core::domain::entities::UserId;
 use std::sync::Arc;
 use tonic::{Request, Status};
@@ -86,7 +86,7 @@ mod tests {
     use super::*;
     use async_trait::async_trait;
     use chrono::Duration;
-    use scylla_core::application::ports::SessionRepository;
+    use scylla_core::application::SessionRepository;
     use scylla_core::domain::entities::{Session, UserId};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use std::sync::Arc;

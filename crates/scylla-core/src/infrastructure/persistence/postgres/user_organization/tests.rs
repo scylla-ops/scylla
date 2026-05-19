@@ -1,5 +1,5 @@
 use super::PgUserOrganizationRepository;
-use crate::application::ports::{UserOrganizationRepository, UserRepository};
+use crate::application::{UserOrganizationRepository, UserRepository};
 use crate::infrastructure::persistence::postgres::PgUserRepository;
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
@@ -14,7 +14,11 @@ async fn add_member_is_idempotent(pool: PgPool) {
     repo.add_member(user.id(), org.id()).await.unwrap(); // no error on dup
 
     assert_eq!(
-        repo.list_members(org.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_members(org.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         1,
     );
 }
@@ -54,7 +58,11 @@ async fn cascade_user_delete_removes_membership(pool: PgPool) {
     PgUserRepository::new(pool).delete(user.id()).await.unwrap();
 
     assert_eq!(
-        repo.list_members(org.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_members(org.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         0,
     );
 }

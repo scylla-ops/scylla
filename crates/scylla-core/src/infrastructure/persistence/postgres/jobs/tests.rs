@@ -1,5 +1,5 @@
 use super::PgJobRepository;
-use crate::application::ports::{JobRepository, PipelineRepository};
+use crate::application::{JobRepository, PipelineRepository};
 use crate::domain::errors::DomainError;
 use crate::domain::value_objects::job::JobStatus;
 use crate::infrastructure::persistence::postgres::PgPipelineRepository;
@@ -72,7 +72,11 @@ async fn list_by_pipeline_filters(pool: PgPool) {
     repo.create(&job(&pipeline_b)).await.unwrap();
 
     assert_eq!(
-        repo.list_by_pipeline(pipeline_a.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_by_pipeline(pipeline_a.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         2,
     );
 }
@@ -88,7 +92,11 @@ async fn list_by_organization_joins_through_pipeline_and_project(pool: PgPool) {
     repo.create(&job(&pipeline_other)).await.unwrap();
 
     assert_eq!(
-        repo.list_by_organization(org_target.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_by_organization(org_target.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         2,
     );
 }
@@ -100,7 +108,10 @@ async fn cascade_pipeline_delete_removes_jobs(pool: PgPool) {
     let job = job(&pipeline);
     repo.create(&job).await.unwrap();
 
-    PgPipelineRepository::new(pool).delete(pipeline.id()).await.unwrap();
+    PgPipelineRepository::new(pool)
+        .delete(pipeline.id())
+        .await
+        .unwrap();
 
     assert!(matches!(
         repo.find_by_id(job.id()).await,

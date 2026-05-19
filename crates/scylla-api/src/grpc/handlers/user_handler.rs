@@ -3,9 +3,9 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
 };
 use derive_more::Constructor;
+use scylla_core::application::PermissionService;
 use scylla_core::application::UserUseCases;
-use scylla_core::application::ports::services::permission_service::PermissionService;
-use scylla_core::application::ports::{HashService, UserRepository};
+use scylla_core::application::{HashService, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::permission::policy;
 use scylla_core::domain::value_objects::user::{Password, Username};
@@ -136,9 +136,9 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
+    use scylla_core::application::PermissionService;
     use scylla_core::application::UserUseCases;
-    use scylla_core::application::ports::services::permission_service::PermissionService;
-    use scylla_core::application::ports::{HashService, UserRepository};
+    use scylla_core::application::{HashService, UserRepository};
     use scylla_core::domain::entities::{EntityId, User};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};

@@ -1,4 +1,4 @@
-use crate::application::ports::{HashService, UserRepository};
+use crate::application::{HashService, UserRepository};
 use crate::domain::entities::{User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::{Password, Username};
@@ -60,4 +60,3 @@ impl<U: UserRepository, H: HashService> UserUseCases<U, H> {
         self.user_repo.list_all(pagination).await
     }
 }
-

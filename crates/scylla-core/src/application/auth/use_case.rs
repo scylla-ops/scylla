@@ -1,4 +1,4 @@
-use crate::application::ports::{HashService, SessionRepository, UserRepository};
+use crate::application::{HashService, SessionRepository, UserRepository};
 use crate::domain::entities::{Session, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::{Password, Username};
@@ -101,4 +101,3 @@ impl<U: UserRepository, S: SessionRepository, H: HashService> AuthUseCases<U, S,
         self.session_repo.delete_expired().await
     }
 }
-

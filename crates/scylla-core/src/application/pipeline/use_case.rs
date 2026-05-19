@@ -1,4 +1,4 @@
-use crate::application::ports::{PipelineRepository, ProjectRepository};
+use crate::application::{PipelineRepository, ProjectRepository};
 use crate::domain::entities::{OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::pipeline::PipelineName;
@@ -86,4 +86,3 @@ impl<P: PipelineRepository, PR: ProjectRepository> PipelineUseCases<P, PR> {
             .await
     }
 }
-

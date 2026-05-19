@@ -1,6 +1,7 @@
 mod handlers;
 pub mod mappers;
 pub mod middleware;
+pub mod streaming;
 
 pub use handlers::{
     AgentHandler, AuthHandler, JobHandler, OrganizationHandler, PermissionHandler, PipelineHandler,

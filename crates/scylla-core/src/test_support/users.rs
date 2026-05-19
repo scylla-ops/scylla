@@ -44,7 +44,7 @@ pub fn user(name: &str) -> User {
 
 #[cfg(feature = "postgres")]
 pub async fn seed_user(pool: &sqlx::PgPool, name: &str) -> User {
-    use crate::application::ports::UserRepository;
+    use crate::application::UserRepository;
     use crate::infrastructure::persistence::postgres::PgUserRepository;
     let user = user(name);
     PgUserRepository::new(pool.clone())

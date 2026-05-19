@@ -1,3 +1,5 @@
+#![allow(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+
 pub mod services {
     pub mod common {
         tonic::include_proto!("common");

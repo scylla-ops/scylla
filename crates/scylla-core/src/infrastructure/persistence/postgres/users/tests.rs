@@ -1,5 +1,5 @@
 use super::PgUserRepository;
-use crate::application::ports::UserRepository;
+use crate::application::UserRepository;
 use crate::domain::entities::UserId;
 use crate::domain::errors::DomainError;
 use crate::domain::value_objects::PaginationParams;
@@ -17,7 +17,10 @@ async fn create_then_find_round_trips(pool: PgPool) {
 
     assert_eq!(found.id(), user.id());
     assert_eq!(found.username(), user.username());
-    assert_eq!(found.password_hash().as_str(), user.password_hash().as_str());
+    assert_eq!(
+        found.password_hash().as_str(),
+        user.password_hash().as_str()
+    );
     assert_eq!(found.is_active(), user.is_active());
     // chrono normalizes through TIMESTAMPTZ; equality proves UTC preservation.
     assert_eq!(found.created_at(), user.created_at());
@@ -60,7 +63,10 @@ async fn update_modifies_fields_then_visible_on_read(pool: PgPool) {
     user.update_username(new_name.clone()).unwrap();
     repo.update(&user).await.expect("update");
 
-    assert_eq!(repo.find_by_id(user.id()).await.unwrap().username(), &new_name);
+    assert_eq!(
+        repo.find_by_id(user.id()).await.unwrap().username(),
+        &new_name
+    );
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -82,7 +88,10 @@ async fn unique_username_violation_maps_to_conflict(pool: PgPool) {
     repo.create(&user("frank")).await.expect("first");
 
     let dup = user("frank"); // same username, different generated ULID
-    assert!(matches!(repo.create(&dup).await, Err(DomainError::Conflict(_))));
+    assert!(matches!(
+        repo.create(&dup).await,
+        Err(DomainError::Conflict(_))
+    ));
 }
 
 #[sqlx::test(migrations = "../../migrations")]

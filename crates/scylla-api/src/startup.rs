@@ -1,5 +1,5 @@
 use crate::config::CoreConfig;
-use anyhow::Result;
+use crate::error::StartupError;
 use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
@@ -9,8 +9,8 @@ use scylla_core::application::{
 use scylla_core::infrastructure::{
     Argon2HashService, CasbinPermissionService, HermesJobLogStream, PgAgentRepository,
     PgJobLogRepository, PgJobRepository, PgOrganizationRepository, PgPipelineRepository,
-    PgProjectRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
-    PgUserRepository,
+    PgProjectRepository, PgSessionRepository, PgUserOrganizationRepository,
+    PgUserProjectRepository, PgUserRepository,
 };
 use sqlx::PgPool;
 use sqlx_adapter::SqlxAdapter;
@@ -19,8 +19,7 @@ use tower_http::cors::CorsLayer;
 
 // ── Concrete type aliases ──────────────────────────────────────────────
 
-pub type SharedAuthUc =
-    Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
+pub type SharedAuthUc = Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
 pub type SharedUserUc = Arc<UserUseCases<PgUserRepository, Argon2HashService>>;
 pub type SharedOrgUc = Arc<
     OrganizationUseCases<PgOrganizationRepository, PgUserOrganizationRepository, PgUserRepository>,
@@ -53,7 +52,7 @@ pub struct Services {
     pub broker_publisher: Arc<Publisher>,
 }
 
-pub async fn init_services(config: &CoreConfig) -> Result<Services> {
+pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError> {
     let db = scylla_core::infrastructure::init_db(&config.database).await?;
 
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
@@ -92,8 +91,12 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     let job_log_uc = Arc::new(JobLogUseCases::new(job_log_repo.clone()));
     let agent_uc = Arc::new(AgentUseCases::new(agent_repo.clone()));
     // The sqlx Casbin adapter creates its own `casbin_rule` table on first use.
-    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await?;
-    let mut casbin_service = CasbinPermissionService::new(casbin_adapter).await?;
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone())
+        .await
+        .map_err(|e| StartupError::CasbinAdapter(e.to_string()))?;
+    let mut casbin_service = CasbinPermissionService::new(casbin_adapter)
+        .await
+        .map_err(|e| StartupError::CasbinService(e.to_string()))?;
 
     if let Some(cfg) = &config.bootstrap {
         crate::bootstrap::bootstrap_admin(&user_uc, &mut casbin_service, cfg).await?;
@@ -103,7 +106,12 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services> {
     let permission_uc = Arc::new(PermissionUseCases::new(permission_checker.clone()));
 
     // Connect to Hermes broker
-    let broker_channel = hermes_broker_client::connect(&config.broker.url, None).await?;
+    let broker_channel = hermes_broker_client::connect(&config.broker.url, None)
+        .await
+        .map_err(|e| StartupError::BrokerConnect {
+            url: config.broker.url.clone(),
+            message: e.to_string(),
+        })?;
     tracing::info!(url = %config.broker.url, "connected to hermes broker");
     let broker_publisher = Arc::new(Publisher::new(broker_channel.clone()));
     let job_log_stream_port = Arc::new(HermesJobLogStream::new(broker_channel));
@@ -176,6 +184,7 @@ pub fn build_cors_layer(cors: &crate::config::CorsConfig) -> CorsLayer {
 
 pub async fn shutdown_signal() {
     let ctrl_c = async {
+        // INVARIANT: Ctrl+C handler installation cannot fail at startup on supported platforms.
         tokio::signal::ctrl_c()
             .await
             .expect("failed to install Ctrl+C handler");
@@ -183,6 +192,7 @@ pub async fn shutdown_signal() {
 
     #[cfg(unix)]
     let terminate = async {
+        // INVARIANT: SIGTERM handler installation cannot fail at startup on supported platforms.
         tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
             .expect("failed to install SIGTERM handler")
             .recv()
@@ -201,7 +211,7 @@ pub async fn shutdown_signal() {
 // ── gRPC server ────────────────────────────────────────────────────────
 
 #[cfg(feature = "grpc")]
-pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> {
+pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<(), StartupError> {
     use scylla_api::{
         AgentHandler, AuthHandler, JobHandler, OrganizationHandler, PermissionHandler,
         PipelineHandler, ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
@@ -260,7 +270,8 @@ pub async fn start_grpc(config: &CoreConfig, services: &Services) -> Result<()> 
 
     let reflection = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
-        .build_v1alpha()?;
+        .build_v1alpha()
+        .map_err(|e| StartupError::Reflection(e.to_string()))?;
 
     let auth_service = AuthServiceServer::new(auth_handler);
 

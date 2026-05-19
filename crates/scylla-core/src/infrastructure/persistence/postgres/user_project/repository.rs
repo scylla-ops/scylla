@@ -1,4 +1,4 @@
-use crate::application::ports::UserProjectRepository;
+use crate::application::UserProjectRepository;
 use crate::domain::entities::{ProjectId, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};

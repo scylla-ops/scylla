@@ -1,4 +1,4 @@
-use crate::application::ports::{JobLogLiveStream, JobLogStreamPort};
+use crate::application::{JobLogLiveStream, JobLogStreamPort};
 use crate::domain::entities::{JobId, JobLog};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::job::JobLogLine;

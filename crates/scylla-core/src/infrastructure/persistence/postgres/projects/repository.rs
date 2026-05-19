@@ -1,4 +1,4 @@
-use crate::application::ports::ProjectRepository;
+use crate::application::ProjectRepository;
 use crate::domain::entities::{OrganizationId, Project, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};

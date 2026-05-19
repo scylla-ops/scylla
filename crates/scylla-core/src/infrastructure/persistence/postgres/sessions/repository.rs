@@ -1,4 +1,4 @@
-use crate::application::ports::SessionRepository;
+use crate::application::SessionRepository;
 use crate::domain::entities::{Session, SessionId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use async_trait::async_trait;

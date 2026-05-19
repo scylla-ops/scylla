@@ -1,4 +1,4 @@
-use crate::application::ports::AgentRepository;
+use crate::application::AgentRepository;
 use crate::domain::entities::{Agent, AgentId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::agent::Hostname;

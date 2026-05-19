@@ -8,28 +8,27 @@ pub mod services;
 #[cfg(feature = "postgres")]
 pub use db::{DatabaseConfig, close_db, init_db};
 
-#[cfg(feature = "jobs")]
 pub use messaging::HermesJobLogStream;
 
-#[cfg(all(feature = "postgres", feature = "agents"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAgentRepository;
-#[cfg(all(feature = "postgres", feature = "jobs"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgJobLogRepository;
-#[cfg(all(feature = "postgres", feature = "jobs"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgJobRepository;
-#[cfg(all(feature = "postgres", feature = "organizations"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgOrganizationRepository;
-#[cfg(all(feature = "postgres", feature = "pipelines"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgPipelineRepository;
-#[cfg(all(feature = "postgres", feature = "projects"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgProjectRepository;
-#[cfg(all(feature = "postgres", feature = "auth"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgSessionRepository;
-#[cfg(all(feature = "postgres", feature = "organizations"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserOrganizationRepository;
-#[cfg(all(feature = "postgres", feature = "projects"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserProjectRepository;
-#[cfg(all(feature = "postgres", feature = "users"))]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserRepository;
 
 #[cfg(feature = "hash")]

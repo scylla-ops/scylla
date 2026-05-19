@@ -1,6 +1,4 @@
-use crate::application::ports::{
-    OrganizationRepository, UserOrganizationRepository, UserRepository,
-};
+use crate::application::{OrganizationRepository, UserOrganizationRepository, UserRepository};
 use crate::domain::entities::{Organization, OrganizationId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
@@ -141,4 +139,3 @@ impl<O: OrganizationRepository, UO: UserOrganizationRepository, U: UserRepositor
         self.user_org_repo.remove_member(user_id, org_id).await
     }
 }
-

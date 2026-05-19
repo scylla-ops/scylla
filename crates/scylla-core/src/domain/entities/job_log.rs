@@ -3,7 +3,6 @@ use crate::domain::value_objects::job::LogStream;
 use crate::domain::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
 
-
 #[derive(Debug, Clone)]
 pub struct JobLog {
     id: JobLogId,

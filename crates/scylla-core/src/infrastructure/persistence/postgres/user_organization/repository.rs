@@ -1,4 +1,4 @@
-use crate::application::ports::UserOrganizationRepository;
+use crate::application::UserOrganizationRepository;
 use crate::domain::entities::{OrganizationId, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};

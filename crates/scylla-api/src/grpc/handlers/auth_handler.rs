@@ -1,7 +1,7 @@
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::AuthUseCases;
-use scylla_core::application::ports::{HashService, SessionRepository, UserRepository};
+use scylla_core::application::{HashService, SessionRepository, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::user::{Password, Username};
 use scylla_protocol::services::auth::{
@@ -118,7 +118,7 @@ mod tests {
     use async_trait::async_trait;
     use chrono::Duration;
     use scylla_core::application::AuthUseCases;
-    use scylla_core::application::ports::{HashService, SessionRepository, UserRepository};
+    use scylla_core::application::{HashService, SessionRepository, UserRepository};
     use scylla_core::domain::entities::{Session, User};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use scylla_core::domain::value_objects::user::{Password, PasswordHash, Username};
@@ -161,20 +161,11 @@ mod tests {
         }
     }
 
+    #[derive(Default)]
     struct StubSessionRepo {
         create_fn: Option<Box<dyn Fn(&Session) -> DomainResult<Session> + Send + Sync>>,
         find_by_token_fn: Option<Box<dyn Fn(&str) -> DomainResult<Session> + Send + Sync>>,
         delete_by_token_fn: Option<Box<dyn Fn(&str) -> DomainResult<()> + Send + Sync>>,
-    }
-
-    impl Default for StubSessionRepo {
-        fn default() -> Self {
-            Self {
-                create_fn: None,
-                find_by_token_fn: None,
-                delete_by_token_fn: None,
-            }
-        }
     }
 
     #[async_trait]

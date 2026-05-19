@@ -69,7 +69,7 @@ pub fn job(pipeline: &Pipeline) -> Job {
 
 #[cfg(feature = "postgres")]
 pub async fn seed_job(pool: &sqlx::PgPool, pipeline: &Pipeline) -> Job {
-    use crate::application::ports::JobRepository;
+    use crate::application::JobRepository;
     use crate::infrastructure::persistence::postgres::PgJobRepository;
     let job = job(pipeline);
     PgJobRepository::new(pool.clone())

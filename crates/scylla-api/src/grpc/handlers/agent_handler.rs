@@ -4,7 +4,7 @@ use crate::grpc::mappers::{
 };
 use derive_more::Constructor;
 use scylla_core::application::AgentUseCases;
-use scylla_core::application::ports::{AgentRepository, PermissionService};
+use scylla_core::application::{AgentRepository, PermissionService};
 use scylla_core::domain::entities::AgentId;
 use scylla_core::domain::value_objects::permission::policy;
 use scylla_protocol::services::agent::{

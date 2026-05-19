@@ -1,5 +1,5 @@
 use super::PgJobLogRepository;
-use crate::application::ports::{JobLogRepository, JobRepository};
+use crate::application::{JobLogRepository, JobRepository};
 use crate::domain::entities::JobLog;
 use crate::infrastructure::persistence::postgres::PgJobRepository;
 use crate::test_support::prelude::*;
@@ -46,9 +46,15 @@ async fn list_by_job_and_node_filters_other_nodes(pool: PgPool) {
     let job = seed_job(&pool, &pipeline).await;
     let repo = PgJobLogRepository::new(pool);
 
-    repo.create(&job_log(job.id(), "a", "log-a-1")).await.unwrap();
-    repo.create(&job_log(job.id(), "a", "log-a-2")).await.unwrap();
-    repo.create(&job_log(job.id(), "b", "log-b-1")).await.unwrap();
+    repo.create(&job_log(job.id(), "a", "log-a-1"))
+        .await
+        .unwrap();
+    repo.create(&job_log(job.id(), "a", "log-a-2"))
+        .await
+        .unwrap();
+    repo.create(&job_log(job.id(), "b", "log-b-1"))
+        .await
+        .unwrap();
 
     let target = crate::domain::value_objects::pipeline::NodeId::new("a").unwrap();
     let scoped = repo.list_all_by_job(job.id(), Some(&target)).await.unwrap();
@@ -63,7 +69,9 @@ async fn list_all_by_job_returns_full_history(pool: PgPool) {
     let repo = PgJobLogRepository::new(pool);
 
     for i in 0..5 {
-        repo.create(&job_log(job.id(), "a", &format!("line-{i}"))).await.unwrap();
+        repo.create(&job_log(job.id(), "a", &format!("line-{i}")))
+            .await
+            .unwrap();
     }
 
     assert_eq!(repo.list_all_by_job(job.id(), None).await.unwrap().len(), 5);
@@ -74,9 +82,18 @@ async fn cascade_job_delete_removes_logs(pool: PgPool) {
     let (_, _, pipeline) = seed_org_project_pipeline(&pool, "c").await;
     let job = seed_job(&pool, &pipeline).await;
     let log_repo = PgJobLogRepository::new(pool.clone());
-    log_repo.create(&job_log(job.id(), "a", "doomed")).await.unwrap();
+    log_repo
+        .create(&job_log(job.id(), "a", "doomed"))
+        .await
+        .unwrap();
 
     PgJobRepository::new(pool).delete(job.id()).await.unwrap();
 
-    assert!(log_repo.list_all_by_job(job.id(), None).await.unwrap().is_empty());
+    assert!(
+        log_repo
+            .list_all_by_job(job.id(), None)
+            .await
+            .unwrap()
+            .is_empty()
+    );
 }

@@ -4,7 +4,7 @@ use crate::grpc::mappers::{
 };
 use derive_more::Constructor;
 use scylla_core::application::ProjectUseCases;
-use scylla_core::application::ports::{
+use scylla_core::application::{
     PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
 };
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
@@ -324,11 +324,9 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
+    use scylla_core::application::PermissionService;
     use scylla_core::application::ProjectUseCases;
-    use scylla_core::application::ports::services::permission_service::PermissionService;
-    use scylla_core::application::ports::{
-        ProjectRepository, UserProjectRepository, UserRepository,
-    };
+    use scylla_core::application::{ProjectRepository, UserProjectRepository, UserRepository};
     use scylla_core::domain::entities::{EntityId, Project, User};
     use scylla_core::domain::errors::DomainResult;
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};

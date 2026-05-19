@@ -66,7 +66,7 @@ pub fn project(org: &Organization, name: &str) -> Project {
 
 #[cfg(feature = "postgres")]
 pub async fn seed_project(pool: &sqlx::PgPool, org: &Organization, name: &str) -> Project {
-    use crate::application::ports::ProjectRepository;
+    use crate::application::ProjectRepository;
     use crate::infrastructure::persistence::postgres::PgProjectRepository;
     let project = project(org, name);
     PgProjectRepository::new(pool.clone())

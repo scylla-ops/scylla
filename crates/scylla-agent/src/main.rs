@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
 
     let run_result = tokio::select! {
         result = agent.run() => result.map_err(anyhow::Error::from),
-        _ = shutdown_signal() => {
+        () = shutdown_signal() => {
             info!("shutdown signal received");
             Ok(())
         }
@@ -58,6 +58,7 @@ async fn shutdown_signal() {
 
     #[cfg(unix)]
     let terminate = async {
+        // INVARIANT: SIGTERM handler installation cannot fail at startup on supported platforms.
         tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
             .expect("install SIGTERM handler")
             .recv()

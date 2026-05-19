@@ -1,4 +1,4 @@
-use crate::application::ports::JobRepository;
+use crate::application::JobRepository;
 use crate::domain::entities::{Job, JobId, JobNode, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::job::JobStatus;

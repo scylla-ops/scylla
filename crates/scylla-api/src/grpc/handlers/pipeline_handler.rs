@@ -4,7 +4,7 @@ use crate::grpc::mappers::{
     pipeline_to_proto_summary, proto_to_domain_pagination,
 };
 use hermes_broker_client::Publisher;
-use scylla_core::application::ports::{
+use scylla_core::application::{
     JobRepository, PermissionService, PipelineRepository, ProjectRepository,
 };
 use scylla_core::application::{JobUseCases, PipelineUseCases};
@@ -318,8 +318,8 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use scylla_core::application::ports::services::permission_service::PermissionService;
-    use scylla_core::application::ports::{JobRepository, PipelineRepository, ProjectRepository};
+    use scylla_core::application::PermissionService;
+    use scylla_core::application::{JobRepository, PipelineRepository, ProjectRepository};
     use scylla_core::application::{JobUseCases, PipelineUseCases};
     use scylla_core::domain::entities::UserId;
     use scylla_core::domain::entities::{EntityId, Job, JobId, Pipeline, Project};

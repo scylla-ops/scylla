@@ -1,4 +1,4 @@
-use crate::application::ports::HashService;
+use crate::application::HashService;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::{Password, PasswordHash};
 use argon2::{

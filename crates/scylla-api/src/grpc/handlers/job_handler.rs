@@ -3,16 +3,16 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_log_to_proto, job_to_proto,
     proto_to_domain_pagination,
 };
+use crate::grpc::streaming::spawn_log_forwarder;
 use derive_more::Constructor;
-use futures_util::StreamExt;
-use scylla_core::application::ports::{
+use scylla_core::application::{
     JobLogRepository, JobLogStreamPort, JobRepository, PermissionService,
 };
 use scylla_core::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
 use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId};
+use scylla_core::domain::value_objects::PaginationMetadata;
 use scylla_core::domain::value_objects::permission::policy;
 use scylla_core::domain::value_objects::pipeline::NodeId;
-use scylla_core::domain::value_objects::PaginationMetadata;
 use scylla_protocol::services::job::{
     DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobLogEvent, JobResponse,
     ListJobLogsRequest, ListJobLogsResponse, ListJobsRequest, ListJobsResponse,
@@ -21,10 +21,7 @@ use scylla_protocol::services::job::{
 };
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
-use tracing::{info, warn};
 
 #[derive(Constructor)]
 pub struct JobHandler<
@@ -65,7 +62,6 @@ impl<
 
         Ok(Response::new(job_to_proto(&job)))
     }
-
 
     async fn delete_job(
         &self,
@@ -258,65 +254,20 @@ impl<
 
         let req = request.into_inner();
         let job_id = JobId::new(&req.job_id);
-        let node_id = if let Some(n) = req.node_id.as_deref() {
-            Some(
-                NodeId::new(n)
-                    .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?,
-            )
-        } else {
-            None
-        };
+        let node_id = req
+            .node_id
+            .as_deref()
+            .map(NodeId::new)
+            .transpose()
+            .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?;
 
-        info!(job_id = %job_id, node_id = ?node_id, "tail_job_logs: spawning forwarder");
-        let (tx, rx) = mpsc::channel::<Result<JobLogEvent, Status>>(256);
-        let stream_uc = self.log_stream_use_case.clone();
+        let stream = self
+            .log_stream_use_case
+            .stream(&job_id, node_id.as_ref())
+            .await
+            .map_err(domain_error_to_status)?;
 
-        tokio::spawn(async move {
-            let mut stream = match stream_uc.stream(&job_id, node_id.as_ref()).await {
-                Ok(s) => s,
-                Err(e) => {
-                    warn!("tail_job_logs: stream open error: {e}");
-                    let _ = tx
-                        .send(Err(Status::internal(format!("Stream open error: {e}"))))
-                        .await;
-                    return;
-                }
-            };
-            info!("tail_job_logs: stream opened, forwarding");
-
-            let mut forwarded = 0u64;
-            loop {
-                tokio::select! {
-                    item = stream.next() => match item {
-                        Some(Ok(log)) => {
-                            let evt = JobLogEvent { log: Some(job_log_to_proto(&log)) };
-                            match tx.try_send(Ok(evt)) {
-                                Ok(()) => forwarded += 1,
-                                Err(mpsc::error::TrySendError::Full(_)) => {
-                                    warn!("tail_job_logs back-pressure: dropping line");
-                                }
-                                Err(mpsc::error::TrySendError::Closed(_)) => break,
-                            }
-                        }
-                        Some(Err(e)) => {
-                            let _ = tx.send(Err(Status::internal(format!("{e}")))).await;
-                        }
-                        None => {
-                            info!("tail_job_logs: upstream stream ended");
-                            break;
-                        }
-                    },
-                    () = tx.closed() => {
-                        info!(forwarded, "tail_job_logs: client disconnected");
-                        break;
-                    }
-                }
-            }
-            info!(forwarded, "tail_job_logs: forwarder task ended");
-        });
-
-        let out: Self::TailJobLogsStream = Box::pin(ReceiverStream::new(rx));
-        Ok(Response::new(out))
+        Ok(Response::new(Box::pin(spawn_log_forwarder(stream))))
     }
 }
 
@@ -325,11 +276,9 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
-    use scylla_core::application::ports::services::job_log_stream::{
-        JobLogLiveStream, JobLogStreamPort,
-    };
-    use scylla_core::application::ports::services::permission_service::PermissionService;
-    use scylla_core::application::ports::JobRepository;
+    use scylla_core::application::JobRepository;
+    use scylla_core::application::PermissionService;
+    use scylla_core::application::{JobLogLiveStream, JobLogStreamPort};
     use scylla_core::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
     use scylla_core::domain::entities::UserId;
     use scylla_core::domain::entities::{EntityId, Job, JobLog, JobLogId, Pipeline, PipelineNode};
@@ -458,7 +407,7 @@ mod tests {
     struct StubJobLogRepo;
 
     #[async_trait]
-    impl scylla_core::application::ports::JobLogRepository for StubJobLogRepo {
+    impl scylla_core::application::JobLogRepository for StubJobLogRepo {
         async fn create(&self, _: &JobLog) -> DomainResult<JobLog> {
             unimplemented!()
         }
@@ -493,11 +442,7 @@ mod tests {
 
     #[async_trait]
     impl JobLogStreamPort for StubJobLogStream {
-        async fn subscribe(
-            &self,
-            _: &JobId,
-            _: Option<&NodeId>,
-        ) -> DomainResult<JobLogLiveStream> {
+        async fn subscribe(&self, _: &JobId, _: Option<&NodeId>) -> DomainResult<JobLogLiveStream> {
             unimplemented!()
         }
     }

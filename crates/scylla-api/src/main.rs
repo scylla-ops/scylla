@@ -1,5 +1,6 @@
 mod bootstrap;
 mod config;
+mod error;
 mod startup;
 
 use anyhow::{Context, Result};

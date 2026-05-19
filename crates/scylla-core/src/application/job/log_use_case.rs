@@ -1,4 +1,4 @@
-use crate::application::ports::JobLogRepository;
+use crate::application::JobLogRepository;
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::pipeline::NodeId;

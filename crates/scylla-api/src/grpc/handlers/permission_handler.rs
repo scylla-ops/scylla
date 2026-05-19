@@ -5,8 +5,8 @@ use crate::grpc::mappers::permission_mapper::{
     proto_resource_to_domain, proto_scope_to_domain,
 };
 use derive_more::Constructor;
+use scylla_core::application::PermissionService;
 use scylla_core::application::PermissionUseCases;
-use scylla_core::application::ports::services::permission_service::PermissionService;
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::permission::policy::{self, GroupingPolicy, Policy};
 use scylla_core::domain::value_objects::role::name::RoleName;
@@ -44,7 +44,7 @@ fn proto_to_policy(
 }
 
 /// Convert a typed policy row to a proto `PolicyEntry`.
-fn row_to_policy_entry(subject: String, policy: Policy) -> PolicyEntry {
+fn row_to_policy_entry(subject: String, policy: &Policy) -> PolicyEntry {
     PolicyEntry {
         subject,
         scope: Some(domain_scope_to_proto(&policy.scope)),
@@ -129,7 +129,7 @@ impl<PS: PermissionService + Send + Sync + 'static> PermissionServiceTrait
 
         let policies = rows
             .into_iter()
-            .map(|(sub, policy)| row_to_policy_entry(sub, policy))
+            .map(|(sub, policy)| row_to_policy_entry(sub, &policy))
             .collect();
 
         Ok(Response::new(ListPoliciesResponse { policies }))
@@ -210,8 +210,8 @@ mod tests {
     use super::*;
     use crate::auth_interceptor::AuthContext;
     use async_trait::async_trait;
+    use scylla_core::application::PermissionService;
     use scylla_core::application::PermissionUseCases;
-    use scylla_core::application::ports::services::permission_service::PermissionService;
     use scylla_core::domain::entities::EntityId;
     use scylla_core::domain::errors::DomainResult;
     use scylla_core::domain::value_objects::permission::policy::{GroupingPolicy, Policy};

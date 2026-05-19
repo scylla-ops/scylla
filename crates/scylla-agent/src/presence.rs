@@ -38,6 +38,7 @@ impl PresencePublisher {
             hostname: self.hostname.clone(),
             heartbeat_interval_secs: self.heartbeat_interval_secs,
         };
+        // INVARIANT: AgentHeartbeat is a plain serde-derived struct, serialization is infallible.
         let payload = serde_json::to_vec(&beat).expect("serialization cannot fail");
         let subject = format!("{HEARTBEAT_SUBJECT_PREFIX}.{}", self.agent_id);
         if let Err(e) = self.publisher.publish(subject, payload).await {
@@ -49,6 +50,7 @@ impl PresencePublisher {
         let msg = AgentShutdown {
             agent_id: self.agent_id.clone(),
         };
+        // INVARIANT: AgentShutdown is a plain serde-derived struct, serialization is infallible.
         let payload = serde_json::to_vec(&msg).expect("serialization cannot fail");
         let subject = format!("{SHUTDOWN_SUBJECT_PREFIX}.{}", self.agent_id);
         if let Err(e) = self.publisher.publish(subject, payload).await {

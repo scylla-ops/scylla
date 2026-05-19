@@ -1,4 +1,4 @@
-use crate::application::ports::UserRepository;
+use crate::application::UserRepository;
 use crate::domain::entities::{User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::{PasswordHash, Username};
@@ -212,10 +212,7 @@ pub mod queries {
         Ok(u64::try_from(row.count).unwrap_or(0))
     }
 
-    pub async fn list_page<'e, E>(
-        executor: E,
-        params: &PaginationParams,
-    ) -> DomainResult<Vec<User>>
+    pub async fn list_page<'e, E>(executor: E, params: &PaginationParams) -> DomainResult<Vec<User>>
     where
         E: PgExecutor<'e>,
     {

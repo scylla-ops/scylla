@@ -65,4 +65,3 @@ impl DomainError {
         Self::Internal(message.into())
     }
 }
-

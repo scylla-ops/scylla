@@ -15,7 +15,7 @@ grpc = [
 
 [dependencies]
 # shared
-scylla-core = { workspace = true, features = ["postgres", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
 tokio.workspace = true
 async-trait.workspace = true
 tower.workspace = true
@@ -29,6 +29,7 @@ chrono.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 derive_more.workspace = true
+thiserror.workspace = true
 sqlx-adapter.workspace = true
 log.workspace = true
 
@@ -55,4 +56,7 @@ scylla-protocol = { workspace = true }
 tokio-stream = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 sqlx-adapter = { workspace = true }
-scylla-core = { workspace = true, features = ["postgres", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission", "test-utils"] }
+scylla-core = { workspace = true, features = ["postgres", "hash", "permission", "test-utils"] }
+
+[lints]
+workspace = true

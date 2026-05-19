@@ -1,5 +1,5 @@
 use super::PgAgentRepository;
-use crate::application::ports::AgentRepository;
+use crate::application::AgentRepository;
 use crate::domain::value_objects::agent::Hostname;
 use crate::test_support::prelude::*;
 use chrono::Utc;
@@ -16,7 +16,10 @@ async fn round_trip_with_no_shutdown(pool: PgPool) {
     assert_eq!(found.id(), agent.id());
     assert_eq!(found.hostname().as_str(), "worker-1");
     assert!(found.shutdown_at().is_none());
-    assert_eq!(found.heartbeat_interval_secs(), agent.heartbeat_interval_secs());
+    assert_eq!(
+        found.heartbeat_interval_secs(),
+        agent.heartbeat_interval_secs()
+    );
     assert_eq!(found.last_seen_at(), agent.last_seen_at());
 }
 

@@ -1,4 +1,4 @@
-use crate::application::ports::{ProjectRepository, UserProjectRepository, UserRepository};
+use crate::application::{ProjectRepository, UserProjectRepository, UserRepository};
 use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
@@ -147,4 +147,3 @@ impl<P: ProjectRepository, UP: UserProjectRepository, U: UserRepository> Project
             .await
     }
 }
-

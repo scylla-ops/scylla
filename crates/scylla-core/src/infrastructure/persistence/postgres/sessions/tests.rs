@@ -1,5 +1,5 @@
 use super::PgSessionRepository;
-use crate::application::ports::{SessionRepository, UserRepository};
+use crate::application::{SessionRepository, UserRepository};
 use crate::domain::errors::DomainError;
 use crate::infrastructure::persistence::postgres::PgUserRepository;
 use crate::test_support::prelude::*;

@@ -1,5 +1,5 @@
 use super::PgPipelineRepository;
-use crate::application::ports::{PipelineRepository, ProjectRepository};
+use crate::application::{PipelineRepository, ProjectRepository};
 use crate::domain::errors::DomainError;
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::infrastructure::persistence::postgres::PgProjectRepository;
@@ -62,7 +62,11 @@ async fn list_by_project_filters(pool: PgPool) {
     repo.create(&pipeline(&project_b)).await.unwrap();
 
     assert_eq!(
-        repo.list_by_project(project_a.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_by_project(project_a.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         1,
     );
 }
@@ -81,7 +85,11 @@ async fn list_by_organization_joins_through_projects(pool: PgPool) {
     }
 
     assert_eq!(
-        repo.list_by_organization(org_target.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_by_organization(org_target.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         2,
     );
 }
@@ -91,7 +99,10 @@ async fn cascade_project_delete_removes_pipelines(pool: PgPool) {
     let (_, project, pipeline) = seed_org_project_pipeline(&pool, "c").await;
     let repo = PgPipelineRepository::new(pool.clone());
 
-    PgProjectRepository::new(pool).delete(project.id()).await.unwrap();
+    PgProjectRepository::new(pool)
+        .delete(project.id())
+        .await
+        .unwrap();
 
     assert!(matches!(
         repo.find_by_id(pipeline.id()).await,

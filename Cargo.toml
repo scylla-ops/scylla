@@ -80,3 +80,32 @@ clap = { version = "4", features = ["derive", "env"] }
 
 # logging
 log = "0.4.29"
+
+[workspace.lints.rust]
+unsafe_code = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# doc-related: re-enable once we doc-pass the crates
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+doc_markdown = "allow"
+# naming / repetition: too noisy in this layered codebase
+module_name_repetitions = "allow"
+struct_field_names = "allow"
+similar_names = "allow"
+# preference / style: not load-bearing
+uninlined_format_args = "allow"
+must_use_candidate = "allow"
+# false-positive heavy in test stubs (Box<dyn Fn(...)> mocks)
+type_complexity = "allow"
+field_reassign_with_default = "allow"
+# trait-impl plumbing sometimes returns Result on infallible paths
+unnecessary_wraps = "allow"
+# Copy-by-ref is sometimes deliberate for symmetry with trait signatures
+trivially_copy_pass_by_ref = "allow"
+# function-length budget judged case-by-case
+too_many_lines = "allow"
+# Option<Option<T>> is occasionally semantically meaningful (absent vs null)
+option_option = "allow"

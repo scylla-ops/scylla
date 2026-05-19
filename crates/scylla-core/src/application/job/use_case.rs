@@ -1,4 +1,4 @@
-use crate::application::ports::JobRepository;
+use crate::application::JobRepository;
 use crate::domain::entities::{Job, JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
@@ -72,4 +72,3 @@ impl<J: JobRepository> JobUseCases<J> {
             .await
     }
 }
-

@@ -14,24 +14,15 @@
 //! let user = UserBuilder::new("alice").inactive().build();
 //! ```
 
-#[cfg(feature = "agents")]
 pub mod agents;
-#[cfg(feature = "jobs")]
 pub mod job_logs;
-#[cfg(feature = "jobs")]
 pub mod jobs;
-#[cfg(feature = "organizations")]
 pub mod organizations;
-#[cfg(feature = "pipelines")]
 pub mod pipelines;
-#[cfg(feature = "projects")]
 pub mod projects;
-#[cfg(feature = "auth")]
 pub mod sessions;
-#[cfg(feature = "users")]
 pub mod users;
 
-#[cfg(feature = "pipelines")]
 pub mod scenarios;
 
 pub mod prelude;

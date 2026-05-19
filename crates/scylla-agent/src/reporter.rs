@@ -41,6 +41,7 @@ impl StatusPublisher {
             job_id: self.job_id.clone(),
             event,
         };
+        // INVARIANT: JobStatusUpdate is a plain serde-derived struct, serialization is infallible.
         let payload = serde_json::to_vec(&update).expect("serialization cannot fail");
 
         self.publish_tx

@@ -47,7 +47,7 @@ pub async fn seed_job_log(
     node_id: &str,
     line: &str,
 ) -> JobLog {
-    use crate::application::ports::JobLogRepository;
+    use crate::application::JobLogRepository;
     use crate::infrastructure::persistence::postgres::PgJobLogRepository;
     let log = job_log(job_id, node_id, line);
     PgJobLogRepository::new(pool.clone())

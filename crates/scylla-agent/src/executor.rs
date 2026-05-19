@@ -87,7 +87,9 @@ impl Executor {
                 .await?;
 
             while let Some(joined) = running.join_next().await {
-                let (id, result) = joined.expect("node task panicked");
+                let (id, result) = joined.map_err(|e| ExecutionError::NodeTaskPanic {
+                    message: e.to_string(),
+                })?;
 
                 match result {
                     Ok(()) => {
@@ -161,7 +163,9 @@ async fn drain_cancelled(
     publisher: &StatusPublisher,
 ) -> Result<(), ExecutionError> {
     while let Some(joined) = running.join_next().await {
-        let (id, _result) = joined.expect("node task panicked during drain");
+        let (id, _result) = joined.map_err(|e| ExecutionError::NodeTaskPanic {
+            message: e.to_string(),
+        })?;
         publisher
             .emit(JobEvent::NodeSkipped {
                 node_id: id.clone(),
@@ -224,6 +228,7 @@ async fn run_node(
             return Err(ExecutionError::Spawn(e));
         }
     };
+    // INVARIANT: stdout/stderr were configured as Stdio::piped() on the Command above.
     let stdout_handle = spawn_log_streamer(
         child.stdout.take().expect("stdout was piped"),
         LogStream::Stdout,
@@ -308,6 +313,7 @@ async fn publish_log_line(
     stream: LogStream,
     line: String,
 ) -> bool {
+    // INVARIANT: JobLogLine is a plain serde-derived struct with no custom impl that can fail.
     let payload = serde_json::to_vec(&JobLogLine {
         node_id: node_id.to_string(),
         stream,

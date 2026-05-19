@@ -1,25 +1,22 @@
-pub mod ports;
-pub mod use_cases;
-
-pub use ports::*;
-
-#[cfg(feature = "agents")]
-pub use use_cases::AgentUseCases;
-#[cfg(feature = "auth")]
-pub use use_cases::AuthUseCases;
-#[cfg(feature = "jobs")]
-pub use use_cases::JobLogStreamUseCase;
-#[cfg(feature = "jobs")]
-pub use use_cases::JobLogUseCases;
-#[cfg(feature = "jobs")]
-pub use use_cases::JobUseCases;
-#[cfg(feature = "organizations")]
-pub use use_cases::OrganizationUseCases;
+pub mod agent;
+pub mod auth;
+pub mod job;
+pub mod organization;
 #[cfg(feature = "permission")]
-pub use use_cases::PermissionUseCases;
-#[cfg(feature = "pipelines")]
-pub use use_cases::PipelineUseCases;
-#[cfg(feature = "projects")]
-pub use use_cases::ProjectUseCases;
-#[cfg(feature = "users")]
-pub use use_cases::UserUseCases;
+pub mod permission;
+pub mod pipeline;
+pub mod project;
+pub mod user;
+
+pub use agent::{AgentRepository, AgentUseCases};
+pub use auth::{AuthUseCases, HashService, SessionRepository};
+pub use job::{
+    JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase, JobLogUseCases,
+    JobRepository, JobUseCases,
+};
+pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
+#[cfg(feature = "permission")]
+pub use permission::{PermissionService, PermissionUseCases};
+pub use pipeline::{PipelineRepository, PipelineUseCases};
+pub use project::{ProjectRepository, ProjectUseCases, UserProjectRepository};
+pub use user::{UserRepository, UserUseCases};

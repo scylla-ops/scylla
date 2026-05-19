@@ -1,3 +1,4 @@
+use crate::error::ListenerError;
 use hermes_broker_client::Subscriber;
 use scylla_core::application::AgentUseCases;
 use scylla_core::domain::entities::AgentId;
@@ -24,14 +25,17 @@ pub async fn run_heartbeat(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgent
 async fn heartbeat_once(
     channel: Channel,
     agent_uc: &AgentUseCases<PgAgentRepository>,
-) -> anyhow::Result<()> {
+) -> Result<(), ListenerError> {
     let mut subscriber = Subscriber::new(channel)
         .await
-        .map_err(|e| anyhow::anyhow!("subscriber: {e}"))?;
+        .map_err(|e| ListenerError::SubscriberInit(e.to_string()))?;
     subscriber
         .subscribe(HEARTBEAT_SUBJECT, None)
         .await
-        .map_err(|e| anyhow::anyhow!("subscribe: {e}"))?;
+        .map_err(|e| ListenerError::Subscribe {
+            subject: HEARTBEAT_SUBJECT.to_string(),
+            message: e.to_string(),
+        })?;
     info!(subject = HEARTBEAT_SUBJECT, "subscribed");
 
     while let Some(msg) = subscriber.recv().await {
@@ -74,14 +78,17 @@ pub async fn run_shutdown(channel: Channel, agent_uc: Arc<AgentUseCases<PgAgentR
 async fn shutdown_once(
     channel: Channel,
     agent_uc: &AgentUseCases<PgAgentRepository>,
-) -> anyhow::Result<()> {
+) -> Result<(), ListenerError> {
     let mut subscriber = Subscriber::new(channel)
         .await
-        .map_err(|e| anyhow::anyhow!("subscriber: {e}"))?;
+        .map_err(|e| ListenerError::SubscriberInit(e.to_string()))?;
     subscriber
         .subscribe(SHUTDOWN_SUBJECT, None)
         .await
-        .map_err(|e| anyhow::anyhow!("subscribe: {e}"))?;
+        .map_err(|e| ListenerError::Subscribe {
+            subject: SHUTDOWN_SUBJECT.to_string(),
+            message: e.to_string(),
+        })?;
     info!(subject = SHUTDOWN_SUBJECT, "subscribed");
 
     while let Some(msg) = subscriber.recv().await {

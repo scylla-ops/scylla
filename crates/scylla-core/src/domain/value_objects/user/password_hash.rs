@@ -1,37 +1,36 @@
 use crate::domain::errors::{DomainError, DomainResult};
+use nutype::nutype;
 use std::fmt;
 
-/// Value object representing a hashed password (PHC string format).
-///
-/// Guarantees at the type level that the wrapped value is a hash,
-/// not a plaintext password. Display and Debug are masked.
-#[derive(Clone, PartialEq, Eq)]
-pub struct PasswordHash {
-    inner: String,
+fn validate(s: &str) -> Result<(), DomainError> {
+    if s.is_empty() {
+        return Err(DomainError::validation("Password hash cannot be empty"));
+    }
+    if !s.starts_with('$') {
+        return Err(DomainError::validation(
+            "Password hash must be in PHC string format (starts with '$')",
+        ));
+    }
+    Ok(())
 }
 
+/// Value object representing a hashed password (PHC string format).
+/// Guarantees at the type level that the wrapped value is a hash, not plaintext.
+/// `Debug` and `Display` are masked.
+#[nutype(
+    validate(with = validate, error = DomainError),
+    derive(Clone, PartialEq, Eq, AsRef, Borrow, Into),
+)]
+pub struct PasswordHash(String);
+
 impl PasswordHash {
-    /// Create a new `PasswordHash`, validating that the value looks like
-    /// a PHC-format hash (starts with `$`).
-    pub fn new(hash: impl Into<String>) -> DomainResult<Self> {
-        let hash = hash.into();
-
-        if hash.is_empty() {
-            return Err(DomainError::validation("Password hash cannot be empty"));
-        }
-
-        if !hash.starts_with('$') {
-            return Err(DomainError::validation(
-                "Password hash must be in PHC string format (starts with '$')",
-            ));
-        }
-
-        Ok(Self { inner: hash })
+    pub fn new(value: impl Into<String>) -> DomainResult<Self> {
+        Self::try_new(value.into())
     }
 
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.inner
+        <Self as AsRef<str>>::as_ref(self)
     }
 }
 

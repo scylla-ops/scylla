@@ -1,4 +1,4 @@
-use crate::application::ports::OrganizationRepository;
+use crate::application::OrganizationRepository;
 use crate::domain::entities::{Organization, OrganizationId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
@@ -234,11 +234,10 @@ pub mod queries {
     where
         E: PgExecutor<'e>,
     {
-        let row =
-            sqlx::query!(r#"SELECT COUNT(*) AS "count!" FROM organizations WHERE is_active"#)
-                .fetch_one(executor)
-                .await
-                .to_domain()?;
+        let row = sqlx::query!(r#"SELECT COUNT(*) AS "count!" FROM organizations WHERE is_active"#)
+            .fetch_one(executor)
+            .await
+            .to_domain()?;
         Ok(u64::try_from(row.count).unwrap_or(0))
     }
 

@@ -1,3 +1,4 @@
+use crate::error::ListenerError;
 use hermes_broker_client::Subscriber;
 use scylla_core::application::JobUseCases;
 use scylla_core::domain::entities::JobId;
@@ -25,14 +26,17 @@ pub async fn run(channel: Channel, job_uc: Arc<JobUseCases<PgJobRepository>>) {
 async fn status_once(
     channel: Channel,
     job_uc: &JobUseCases<PgJobRepository>,
-) -> anyhow::Result<()> {
+) -> Result<(), ListenerError> {
     let mut subscriber = Subscriber::new(channel)
         .await
-        .map_err(|e| anyhow::anyhow!("subscriber: {e}"))?;
+        .map_err(|e| ListenerError::SubscriberInit(e.to_string()))?;
     subscriber
         .subscribe(STATUS_SUBJECT, None)
         .await
-        .map_err(|e| anyhow::anyhow!("subscribe: {e}"))?;
+        .map_err(|e| ListenerError::Subscribe {
+            subject: STATUS_SUBJECT.to_string(),
+            message: e.to_string(),
+        })?;
 
     info!(subject = STATUS_SUBJECT, "subscribed");
 
@@ -62,15 +66,11 @@ async fn status_once(
                 Err(e) => Err(e),
             },
             JobEvent::NodeCompleted { ref node_id } => match NodeId::new(node_id) {
-                Ok(nid) => {
-                    job.apply_node_finished(&nid, NodeState::Completed, chrono::Utc::now())
-                }
+                Ok(nid) => job.apply_node_finished(&nid, NodeState::Completed, chrono::Utc::now()),
                 Err(e) => Err(e),
             },
             JobEvent::NodeFailed { ref node_id, .. } => match NodeId::new(node_id) {
-                Ok(nid) => {
-                    job.apply_node_finished(&nid, NodeState::Failed, chrono::Utc::now())
-                }
+                Ok(nid) => job.apply_node_finished(&nid, NodeState::Failed, chrono::Utc::now()),
                 Err(e) => Err(e),
             },
             JobEvent::NodeSkipped { ref node_id } => match NodeId::new(node_id) {

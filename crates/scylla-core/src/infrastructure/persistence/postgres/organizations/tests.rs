@@ -1,5 +1,5 @@
 use super::PgOrganizationRepository;
-use crate::application::ports::OrganizationRepository;
+use crate::application::OrganizationRepository;
 use crate::domain::value_objects::organization::OrganizationDescription;
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
@@ -78,5 +78,11 @@ async fn update_changes_description_to_none(pool: PgPool) {
     org.update_description(None).unwrap();
     repo.update(&org).await.expect("update");
 
-    assert!(repo.find_by_id(org.id()).await.unwrap().description().is_none());
+    assert!(
+        repo.find_by_id(org.id())
+            .await
+            .unwrap()
+            .description()
+            .is_none()
+    );
 }

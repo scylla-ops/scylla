@@ -75,7 +75,7 @@ pub fn pipeline(project: &Project) -> Pipeline {
 
 #[cfg(feature = "postgres")]
 pub async fn seed_pipeline(pool: &sqlx::PgPool, project: &Project) -> Pipeline {
-    use crate::application::ports::PipelineRepository;
+    use crate::application::PipelineRepository;
     use crate::infrastructure::persistence::postgres::PgPipelineRepository;
     let pipeline = pipeline(project);
     PgPipelineRepository::new(pool.clone())

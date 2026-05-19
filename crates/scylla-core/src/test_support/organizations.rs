@@ -41,7 +41,7 @@ pub fn org(name: &str) -> Organization {
 
 #[cfg(feature = "postgres")]
 pub async fn seed_org(pool: &sqlx::PgPool, name: &str) -> Organization {
-    use crate::application::ports::OrganizationRepository;
+    use crate::application::OrganizationRepository;
     use crate::infrastructure::persistence::postgres::PgOrganizationRepository;
     let org = org(name);
     PgOrganizationRepository::new(pool.clone())

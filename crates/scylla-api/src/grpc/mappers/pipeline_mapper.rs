@@ -22,7 +22,7 @@ pub fn pipeline_to_proto_summary(pipeline: &Pipeline) -> PipelineSummary {
         pipeline_id: pipeline.id().to_string(),
         project_id: pipeline.project_id().to_string(),
         name: pipeline.name().to_string(),
-        node_count: pipeline.nodes().len() as u32,
+        node_count: u32::try_from(pipeline.nodes().len()).unwrap_or(u32::MAX),
         created_at: pipeline.created_at().to_rfc3339(),
         updated_at: pipeline.updated_at().to_rfc3339(),
     }

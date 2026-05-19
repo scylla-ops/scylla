@@ -1,4 +1,4 @@
-use crate::application::ports::PipelineRepository;
+use crate::application::PipelineRepository;
 use crate::domain::entities::{OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::pipeline::PipelineName;

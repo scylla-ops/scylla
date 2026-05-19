@@ -49,10 +49,10 @@ async fn spawn_test_server() -> (SocketAddr, JoinHandle<()>) {
     ));
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
-    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await.expect("casbin adapter init");
-    let casbin_service = CasbinPermissionService::new(casbin_adapter)
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone())
         .await
-        .unwrap();
+        .expect("casbin adapter init");
+    let casbin_service = CasbinPermissionService::new(casbin_adapter).await.unwrap();
     let permission_checker = std::sync::Arc::new(casbin_service);
 
     let auth_handler = AuthHandler::new(auth_uc);
@@ -164,10 +164,10 @@ async fn e2e_auth_full_flow_with_bootstrap() {
     ));
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
-    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await.expect("casbin adapter init");
-    let casbin_service = CasbinPermissionService::new(casbin_adapter)
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone())
         .await
-        .unwrap();
+        .expect("casbin adapter init");
+    let casbin_service = CasbinPermissionService::new(casbin_adapter).await.unwrap();
     let permission_checker = std::sync::Arc::new(casbin_service);
 
     // Bootstrap: create admin user directly via use case
@@ -246,7 +246,7 @@ async fn e2e_auth_full_flow_with_bootstrap() {
 #[tokio::test]
 async fn e2e_user_crud_with_auth() {
     use scylla_api::{AuthHandler, UserHandler, auth_interceptor::AuthInterceptor};
-    use scylla_core::application::ports::services::permission_service::PermissionService;
+    use scylla_core::application::PermissionService;
     use scylla_core::application::{AuthUseCases, UserUseCases};
     use scylla_core::domain::value_objects::permission::policy::Policy;
     use scylla_core::domain::value_objects::permission::{Act, Resource, Scope};
@@ -279,10 +279,10 @@ async fn e2e_user_crud_with_auth() {
     ));
     let user_uc = std::sync::Arc::new(UserUseCases::new(user_repo.clone(), hash_service.clone()));
 
-    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone()).await.expect("casbin adapter init");
-    let casbin_service = CasbinPermissionService::new(casbin_adapter)
+    let casbin_adapter = SqlxAdapter::new_with_pool(db.clone())
         .await
-        .unwrap();
+        .expect("casbin adapter init");
+    let casbin_service = CasbinPermissionService::new(casbin_adapter).await.unwrap();
 
     // Bootstrap admin user
     let admin = user_uc

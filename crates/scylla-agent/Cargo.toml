@@ -9,7 +9,7 @@ hermes-broker-proto = { workspace = true }
 hermes-broker-client = { workspace = true }
 
 # domain types (shared broker messages, no db backend)
-scylla-core = { workspace = true, default-features = false, features = ["jobs", "agents"] }
+scylla-core = { workspace = true, default-features = false }
 
 # async
 tokio = { workspace = true }
@@ -39,3 +39,6 @@ chrono = { workspace = true }
 # identity
 ulid = { workspace = true }
 hostname = "0.4"
+
+[lints]
+workspace = true

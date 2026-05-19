@@ -1,21 +1,22 @@
 use crate::config::BootstrapConfig;
-use anyhow::{Context, Result};
-use scylla_core::application::UserUseCases;
+use crate::error::BootstrapError;
+use scylla_core::application::{HashService, PermissionService, UserRepository, UserUseCases};
 use scylla_core::domain::errors::DomainError;
 use scylla_core::domain::value_objects::permission::policy::Policy;
 use scylla_core::domain::value_objects::user::{Password, Username};
 
-pub async fn bootstrap_admin<
-    U: scylla_core::application::ports::UserRepository,
-    H: scylla_core::application::ports::HashService,
-    P: scylla_core::application::ports::PermissionService,
->(
+pub async fn bootstrap_admin<U, H, P>(
     user_uc: &UserUseCases<U, H>,
     permission_service: &mut P,
     bootstrap: &BootstrapConfig,
-) -> Result<()> {
-    let username = Username::new(&bootstrap.username).context("Invalid bootstrap username")?;
-    let password = Password::new(&bootstrap.password).context("Invalid bootstrap password")?;
+) -> Result<(), BootstrapError>
+where
+    U: UserRepository,
+    H: HashService,
+    P: PermissionService,
+{
+    let username = Username::new(&bootstrap.username).map_err(BootstrapError::InvalidUsername)?;
+    let password = Password::new(&bootstrap.password).map_err(BootstrapError::InvalidPassword)?;
 
     match user_uc.create(username, password).await {
         Ok(user) => {
@@ -28,7 +29,7 @@ pub async fn bootstrap_admin<
             permission_service
                 .add_policy(user.id().clone(), Policy::absolute())
                 .await
-                .context("Failed to add admin permissions for bootstrap user")?;
+                .map_err(BootstrapError::GrantPermission)?;
 
             tracing::info!(
                 "Admin permissions granted to bootstrap user '{}'",
@@ -41,7 +42,7 @@ pub async fn bootstrap_admin<
                 bootstrap.username
             );
         }
-        Err(e) => return Err(e).context("Failed to bootstrap admin user"),
+        Err(e) => return Err(BootstrapError::CreateUser(e)),
     }
 
     Ok(())

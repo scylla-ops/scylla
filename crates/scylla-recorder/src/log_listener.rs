@@ -1,3 +1,4 @@
+use crate::error::ListenerError;
 use hermes_broker_client::Subscriber;
 use scylla_core::application::JobLogUseCases;
 use scylla_core::domain::entities::{JobId, JobLog};
@@ -24,14 +25,17 @@ pub async fn run(channel: Channel, job_log_uc: Arc<JobLogUseCases<PgJobLogReposi
 async fn log_once(
     channel: Channel,
     job_log_uc: &JobLogUseCases<PgJobLogRepository>,
-) -> anyhow::Result<()> {
+) -> Result<(), ListenerError> {
     let mut subscriber = Subscriber::new(channel)
         .await
-        .map_err(|e| anyhow::anyhow!("subscriber: {e}"))?;
+        .map_err(|e| ListenerError::SubscriberInit(e.to_string()))?;
     subscriber
         .subscribe(LOG_SUBJECT, None)
         .await
-        .map_err(|e| anyhow::anyhow!("subscribe: {e}"))?;
+        .map_err(|e| ListenerError::Subscribe {
+            subject: LOG_SUBJECT.to_string(),
+            message: e.to_string(),
+        })?;
 
     info!(subject = LOG_SUBJECT, "subscribed");
 
@@ -53,17 +57,13 @@ async fn log_once(
         };
 
         // Subject format: scylla.jobs.logs.{job_id}.{node_id}
-        let job_id_str = match parse_job_id_from_subject(&msg.subject) {
-            Some(id) => id,
-            None => {
-                warn!(subject = %msg.subject, "unexpected log subject format, skipping");
-                continue;
-            }
+        let Some(job_id_str) = parse_job_id_from_subject(&msg.subject) else {
+            warn!(subject = %msg.subject, "unexpected log subject format, skipping");
+            continue;
         };
 
         let timestamp = chrono::DateTime::parse_from_rfc3339(&log_line.timestamp)
-            .map(|dt| dt.with_timezone(&chrono::Utc))
-            .unwrap_or_else(|_| chrono::Utc::now());
+            .map_or_else(|_| chrono::Utc::now(), |dt| dt.with_timezone(&chrono::Utc));
 
         let job_log = JobLog::new(
             JobId::new(job_id_str),

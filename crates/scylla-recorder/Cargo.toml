@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 # domain + persistence
-scylla-core = { workspace = true, features = ["postgres", "jobs", "agents"] }
+scylla-core = { workspace = true, features = ["postgres"] }
 
 # broker
 hermes-broker-client = { workspace = true }
@@ -24,6 +24,7 @@ clap = { workspace = true }
 
 # error handling
 anyhow = { workspace = true }
+thiserror = { workspace = true }
 
 # logging
 tracing = { workspace = true }
@@ -31,3 +32,6 @@ tracing-subscriber = { workspace = true }
 
 # time
 chrono = { workspace = true }
+
+[lints]
+workspace = true

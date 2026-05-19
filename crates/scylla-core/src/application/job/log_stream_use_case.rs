@@ -1,4 +1,4 @@
-use crate::application::ports::{JobLogLiveStream, JobLogRepository, JobLogStreamPort};
+use crate::application::{JobLogLiveStream, JobLogRepository, JobLogStreamPort};
 use crate::domain::entities::{JobId, JobLog};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::job::LogStream;
@@ -77,4 +77,3 @@ where
         Ok(Box::pin(historical_stream.chain(filtered_live)))
     }
 }
-

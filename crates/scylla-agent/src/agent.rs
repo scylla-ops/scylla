@@ -20,7 +20,10 @@ impl Agent {
     /// Connect to the Hermes broker.
     pub async fn connect(config: AgentConfig) -> Result<Self, AgentError> {
         let channel = Channel::from_shared(config.broker_url.clone())
-            .expect("invalid broker URL")
+            .map_err(|e| AgentError::InvalidBrokerUrl {
+                url: config.broker_url.clone(),
+                message: e.to_string(),
+            })?
             .connect()
             .await?;
 
@@ -63,6 +66,7 @@ impl Agent {
 
         // Open a raw publish stream for status updates and logs.
         // We use the raw BrokerClient so we can set reply_to on messages if needed.
+        // INVARIANT: publish_buffer_size is a clap-validated u32 >= 1 and always fits in usize.
         let publish_buffer = usize::try_from(self.config.publish_buffer_size)
             .expect("publish_buffer_size fits in usize (clap range starts at 1)");
         let (publish_tx, publish_rx) = mpsc::channel::<PublishRequest>(publish_buffer);

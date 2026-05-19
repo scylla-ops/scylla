@@ -1,4 +1,4 @@
-use crate::application::ports::services::permission_service::PermissionService;
+use crate::application::PermissionService;
 use crate::domain::entities::EntityId;
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::permission::policy::{GroupingPolicy, Policy};

@@ -144,7 +144,7 @@ mod tests {
         plan.mark_completed("a");
 
         let mut batch = plan.drain_ready();
-        batch.sort();
+        batch.sort_unstable();
         assert_eq!(batch, vec!["b", "c"]);
     }
 
@@ -163,7 +163,7 @@ mod tests {
         plan.mark_completed("a");
 
         let mut batch = plan.drain_ready();
-        batch.sort();
+        batch.sort_unstable();
         assert_eq!(batch, vec!["b", "c"]);
         plan.mark_completed("b");
         assert!(plan.drain_ready().is_empty(), "d blocked by c");

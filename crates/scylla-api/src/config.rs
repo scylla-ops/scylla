@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use crate::error::ConfigError;
 use scylla_core::infrastructure::DatabaseConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -134,12 +134,13 @@ impl Default for CorsConfig {
 }
 
 impl CoreConfig {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let content = fs::read_to_string(&path)
-            .with_context(|| format!("Failed to read config file: {:?}", path.as_ref()))?;
-        let config: CoreConfig =
-            toml::from_str(&content).with_context(|| "Failed to parse TOML config")?;
-        Ok(config)
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
+        let path_ref = path.as_ref();
+        let content = fs::read_to_string(path_ref).map_err(|source| ConfigError::ReadFile {
+            path: path_ref.to_path_buf(),
+            source,
+        })?;
+        Ok(toml::from_str(&content)?)
     }
 
     pub fn print_example() {

@@ -49,7 +49,7 @@ pub fn agent(hostname: &str) -> Agent {
 
 #[cfg(feature = "postgres")]
 pub async fn seed_agent(pool: &sqlx::PgPool, hostname: &str) -> Agent {
-    use crate::application::ports::AgentRepository;
+    use crate::application::AgentRepository;
     use crate::infrastructure::persistence::postgres::PgAgentRepository;
     let agent = agent(hostname);
     PgAgentRepository::new(pool.clone())

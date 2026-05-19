@@ -39,6 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn shutdown_signal() {
+    // INVARIANT: Ctrl+C handler installation cannot fail at startup on supported platforms.
     tokio::signal::ctrl_c()
         .await
         .expect("failed to install CTRL+C handler");

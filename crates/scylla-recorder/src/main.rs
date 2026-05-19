@@ -1,5 +1,6 @@
 mod agent_listener;
 mod config;
+mod error;
 mod log_listener;
 mod status_listener;
 

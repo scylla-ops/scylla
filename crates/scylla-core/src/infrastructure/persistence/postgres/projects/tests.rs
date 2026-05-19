@@ -1,5 +1,5 @@
 use super::PgProjectRepository;
-use crate::application::ports::{OrganizationRepository, ProjectRepository};
+use crate::application::{OrganizationRepository, ProjectRepository};
 use crate::domain::errors::DomainError;
 use crate::infrastructure::persistence::postgres::PgOrganizationRepository;
 use crate::test_support::prelude::*;
@@ -42,11 +42,19 @@ async fn list_by_organization_filters_other_orgs(pool: PgPool) {
     repo.create(&project(&org_b, "b1")).await.unwrap();
 
     assert_eq!(
-        repo.list_by_organization(org_a.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_by_organization(org_a.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         2,
     );
     assert_eq!(
-        repo.list_by_organization(org_b.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_by_organization(org_b.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         1,
     );
 }
@@ -56,12 +64,20 @@ async fn list_active_filters_inactive(pool: PgPool) {
     let org = seed_org(&pool, "org").await;
     let repo = PgProjectRepository::new(pool);
     repo.create(&project(&org, "active")).await.unwrap();
-    repo.create(&ProjectBuilder::new(&org, "dormant").is_active(false).build())
-        .await
-        .unwrap();
+    repo.create(
+        &ProjectBuilder::new(&org, "dormant")
+            .is_active(false)
+            .build(),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(
-        repo.list_active(None).await.unwrap().metadata().total_count(),
+        repo.list_active(None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         1,
     );
 }
@@ -73,7 +89,10 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
     let project = project(&org, "child");
     project_repo.create(&project).await.unwrap();
 
-    PgOrganizationRepository::new(pool).delete(org.id()).await.unwrap();
+    PgOrganizationRepository::new(pool)
+        .delete(org.id())
+        .await
+        .unwrap();
 
     assert!(matches!(
         project_repo.find_by_id(project.id()).await,

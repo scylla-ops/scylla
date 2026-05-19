@@ -1,5 +1,5 @@
 use super::PgUserProjectRepository;
-use crate::application::ports::{ProjectRepository, UserProjectRepository};
+use crate::application::{ProjectRepository, UserProjectRepository};
 use crate::infrastructure::persistence::postgres::PgProjectRepository;
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
@@ -15,7 +15,11 @@ async fn add_member_is_idempotent(pool: PgPool) {
     repo.add_member(user.id(), project.id()).await.unwrap();
 
     assert_eq!(
-        repo.list_members(project.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_members(project.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         1,
     );
 }
@@ -53,10 +57,17 @@ async fn cascade_project_delete_removes_membership(pool: PgPool) {
     let repo = PgUserProjectRepository::new(pool.clone());
     repo.add_member(user.id(), project.id()).await.unwrap();
 
-    PgProjectRepository::new(pool).delete(project.id()).await.unwrap();
+    PgProjectRepository::new(pool)
+        .delete(project.id())
+        .await
+        .unwrap();
 
     assert_eq!(
-        repo.list_user_projects(user.id(), None).await.unwrap().metadata().total_count(),
+        repo.list_user_projects(user.id(), None)
+            .await
+            .unwrap()
+            .metadata()
+            .total_count(),
         0,
     );
 }
