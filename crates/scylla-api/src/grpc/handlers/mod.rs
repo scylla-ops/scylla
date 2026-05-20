@@ -8,6 +8,8 @@ pub mod grant_handler;
 #[cfg(feature = "invitations")]
 pub mod invitation_handler;
 pub mod job_handler;
+#[cfg(feature = "oauth-github")]
+pub mod oauth_handler;
 pub mod organization_handler;
 pub mod pipeline_handler;
 pub mod policy_handler;
@@ -24,6 +26,8 @@ pub use grant_handler::GrantHandler;
 #[cfg(feature = "invitations")]
 pub use invitation_handler::InvitationHandler;
 pub use job_handler::JobHandler;
+#[cfg(feature = "oauth-github")]
+pub use oauth_handler::OAuthHandler;
 pub use organization_handler::OrganizationHandler;
 pub use pipeline_handler::PipelineHandler;
 pub use policy_handler::PolicyHandler;

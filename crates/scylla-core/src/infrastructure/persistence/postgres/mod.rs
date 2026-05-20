@@ -19,6 +19,8 @@ pub mod grants;
 pub mod invitations;
 pub mod job_logs;
 pub mod jobs;
+#[cfg(feature = "oauth-github")]
+pub mod oauth_identities;
 pub mod organizations;
 pub mod pipelines;
 pub mod projects;
@@ -40,6 +42,8 @@ pub use grants::PgGrantRepository;
 pub use invitations::PgInvitationRepository;
 pub use job_logs::PgJobLogRepository;
 pub use jobs::PgJobRepository;
+#[cfg(feature = "oauth-github")]
+pub use oauth_identities::PgOAuthIdentityRepository;
 pub use organizations::PgOrganizationRepository;
 pub use pipelines::PgPipelineRepository;
 pub use projects::PgProjectRepository;

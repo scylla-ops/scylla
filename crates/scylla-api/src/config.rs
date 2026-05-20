@@ -29,6 +29,25 @@ pub struct CoreConfig {
     /// SMTP settings for the `mail` feature. When absent, a no-op mailer is used.
     #[serde(default)]
     pub mail: Option<MailConfig>,
+
+    /// OAuth providers for the `oauth-github` feature.
+    #[serde(default)]
+    pub oauth: OauthConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct OauthConfig {
+    /// GitHub OAuth app credentials. When absent, the OAuth service is not
+    /// registered even in an `oauth-github` build.
+    #[serde(default)]
+    pub github: Option<GitHubOauthConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GitHubOauthConfig {
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_uri: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

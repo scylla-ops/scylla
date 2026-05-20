@@ -71,6 +71,14 @@ lettre = { version = "0.11", default-features = false, features = [
     "builder",
     "hostname",
 ] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }
+oauth2 = { version = "5", default-features = false, features = [
+    "reqwest",
+    "rustls-tls",
+] }
 
 # web / tracing
 tower = { version = "0.5.3" }

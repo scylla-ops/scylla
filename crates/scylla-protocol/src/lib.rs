@@ -16,6 +16,9 @@ pub mod services {
     pub mod invitation {
         tonic::include_proto!("invitation");
     }
+    pub mod oauth {
+        tonic::include_proto!("oauth");
+    }
     pub mod user {
         tonic::include_proto!("user");
     }

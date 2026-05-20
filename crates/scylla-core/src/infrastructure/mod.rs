@@ -54,3 +54,8 @@ pub use services::LettreMailer;
 
 #[cfg(feature = "invitations")]
 pub use persistence::postgres::PgInvitationRepository;
+
+#[cfg(feature = "oauth-github")]
+pub use services::GitHubOAuthProvider;
+#[cfg(feature = "oauth-github")]
+pub use persistence::postgres::PgOAuthIdentityRepository;

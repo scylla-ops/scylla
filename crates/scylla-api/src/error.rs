@@ -38,6 +38,8 @@ pub enum StartupError {
     Permission(String),
     #[error("mail service init: {0}")]
     Mail(String),
+    #[error("oauth service init: {0}")]
+    OAuth(String),
     #[error("broker connection to {url}: {message}")]
     BrokerConnect { url: String, message: String },
     #[error("bootstrap: {0}")]

@@ -24,7 +24,7 @@ metering = []
 agent-org-scope = []
 mail = ["dep:lettre"]
 invitations = ["mail"]   # an invitation sends an email
-oauth-github = []        # `dep:oauth2`/`dep:reqwest` added when OAuth lands (P6)
+oauth-github = ["dep:oauth2", "dep:reqwest"]
 
 # Exposes `test_support` builders / seeders to downstream test crates. Off by
 # default; turned on via dev-dependencies in `scylla-api` etc.
@@ -62,6 +62,8 @@ tonic.workspace = true
 argon2 = { workspace = true, optional = true }
 cedar-policy = { workspace = true, optional = true }
 lettre = { workspace = true, optional = true }
+oauth2 = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
 
 [lints]
 workspace = true

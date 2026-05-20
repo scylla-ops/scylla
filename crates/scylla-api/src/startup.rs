@@ -17,6 +17,14 @@ use scylla_core::infrastructure::LettreMailer;
 use scylla_core::application::InvitationUseCases;
 #[cfg(feature = "invitations")]
 use scylla_core::infrastructure::PgInvitationRepository;
+#[cfg(feature = "oauth-github")]
+use scylla_core::application::OAuthUseCases;
+#[cfg(feature = "oauth-github")]
+use scylla_core::infrastructure::{GitHubOAuthProvider, PgOAuthIdentityRepository};
+// PgSignupRepository (core, always compiled) backs both signup and OAuth account
+// provisioning, so it's imported whenever either feature is on.
+#[cfg(all(not(feature = "signup"), feature = "oauth-github"))]
+use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, HermesJobLogStream, PgAgentRepository,
     PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
@@ -59,6 +67,18 @@ pub type SharedInvitationUc = Arc<
         PermissionChecker,
     >,
 >;
+#[cfg(feature = "oauth-github")]
+pub type SharedOAuthUc = Arc<
+    OAuthUseCases<
+        GitHubOAuthProvider,
+        PgOAuthIdentityRepository,
+        PgSignupRepository,
+        PgUserRepository,
+        PgSessionRepository,
+        Argon2HashService,
+        PermissionChecker,
+    >,
+>;
 pub type SharedUserUc = Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker>>;
 pub type SharedOrgUc = Arc<
     OrganizationUseCases<
@@ -94,6 +114,8 @@ pub struct Services {
     pub signup_uc: SharedSignupUc,
     #[cfg(feature = "invitations")]
     pub invitation_uc: SharedInvitationUc,
+    #[cfg(feature = "oauth-github")]
+    pub oauth_uc: Option<SharedOAuthUc>,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
     pub project_uc: SharedProjectUc,
@@ -125,7 +147,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let job_log_repo = Arc::new(PgJobLogRepository::new(db.clone()));
     let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
-    #[cfg(feature = "signup")]
+    #[cfg(any(feature = "signup", feature = "oauth-github"))]
     let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
     #[cfg(feature = "invitations")]
     let invite_repo = Arc::new(PgInvitationRepository::new(db.clone()));
@@ -246,6 +268,29 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
     ));
 
+    // GitHub OAuth: only wired when the app is configured with credentials.
+    #[cfg(feature = "oauth-github")]
+    let oauth_uc = match &config.oauth.github {
+        Some(gh) => {
+            let provider = GitHubOAuthProvider::new(
+                gh.client_id.clone(),
+                gh.client_secret.clone(),
+                gh.redirect_uri.clone(),
+            )
+            .map_err(|e| StartupError::OAuth(e.to_string()))?;
+            Some(Arc::new(OAuthUseCases::new(
+                Arc::new(provider),
+                Arc::new(PgOAuthIdentityRepository::new(db.clone())),
+                signup_repo.clone(),
+                user_repo.clone(),
+                session_repo.clone(),
+                hash_service.clone(),
+                permission_checker.clone(),
+            )))
+        }
+        None => None,
+    };
+
     // Connect to Hermes broker
     let broker_channel = hermes_broker_client::connect(&config.broker.url, None)
         .await
@@ -269,6 +314,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         signup_uc,
         #[cfg(feature = "invitations")]
         invitation_uc,
+        #[cfg(feature = "oauth-github")]
+        oauth_uc,
         user_uc,
         org_uc,
         project_uc,
@@ -377,6 +424,8 @@ where
     use crate::grpc::RegistrationHandler;
     #[cfg(feature = "invitations")]
     use crate::grpc::InvitationHandler;
+    #[cfg(feature = "oauth-github")]
+    use crate::grpc::OAuthHandler;
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
         auth::auth_service_server::AuthServiceServer,
@@ -397,6 +446,8 @@ where
         invitation_accept_service_server::InvitationAcceptServiceServer,
         invitation_service_server::InvitationServiceServer,
     };
+    #[cfg(feature = "oauth-github")]
+    use scylla_protocol::services::oauth::oauth_service_server::OauthServiceServer;
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tonic_web::GrpcWebLayer;
@@ -447,6 +498,13 @@ where
     #[cfg(feature = "invitations")]
     let invitation_accept_service =
         InvitationAcceptServiceServer::new(invitation_handler.clone());
+
+    // Public GitHub OAuth — present only when configured with credentials.
+    #[cfg(feature = "oauth-github")]
+    let oauth_service = services
+        .oauth_uc
+        .as_ref()
+        .map(|uc| OauthServiceServer::new(OAuthHandler::new(uc.clone())));
 
     let user_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -515,6 +573,11 @@ where
     let router = router
         .add_service(invitation_service)
         .add_service(invitation_accept_service);
+    #[cfg(feature = "oauth-github")]
+    let router = match oauth_service {
+        Some(svc) => router.add_service(svc),
+        None => router,
+    };
 
     router.serve_with_shutdown(config.grpc.address, shutdown).await?;
 

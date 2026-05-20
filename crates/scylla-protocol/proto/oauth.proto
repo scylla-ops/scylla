@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package oauth;
+
+// GitHub OAuth login. Both RPCs are public (no session exists yet): the
+// frontend gets the authorize URL, redirects the user to GitHub, then sends the
+// returned code here to obtain a session. Present only in `oauth-github` builds.
+service OauthService {
+  rpc GetAuthUrl(GetAuthUrlRequest) returns (GetAuthUrlResponse);
+  rpc Callback(OauthCallbackRequest) returns (OauthCallbackResponse);
+}
+
+message GetAuthUrlRequest {
+  string state = 1; // CSRF token, echoed back on callback by the client
+}
+
+message GetAuthUrlResponse {
+  string url = 1;
+}
+
+message OauthCallbackRequest {
+  string code = 1;
+}
+
+message OauthCallbackResponse {
+  string token = 1;
+  string user_id = 2;
+  optional string organization_id = 3; // set only when a new account was created
+}

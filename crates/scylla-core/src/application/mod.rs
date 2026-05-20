@@ -6,6 +6,8 @@ pub mod caller;
 pub mod invitation;
 pub mod job;
 pub mod mail;
+#[cfg(feature = "oauth-github")]
+pub mod oauth;
 pub mod organization;
 // The `PermissionService` trait carries no heavy deps (no cedar, no sqlx) and is
 // a hard dependency of every use case, so it must compile regardless of which
@@ -32,6 +34,10 @@ pub use invitation::{
     AcceptOutcome, Invitation, InvitationRepository, InvitationStatus, InvitationUseCases,
 };
 pub use mail::{Mailer, NoopMailer};
+#[cfg(feature = "oauth-github")]
+pub use oauth::{
+    OAuthIdentityRepository, OAuthOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo,
+};
 pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
 pub use permission::{
     AuthzEntityProvider, Grant, GrantRepository, GrantScope, GrantUseCases, PermissionService,
