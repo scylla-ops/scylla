@@ -3,14 +3,14 @@ use crate::error::StartupError;
 use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AgentUseCases, AuthUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases,
-    OrganizationUseCases, PipelineUseCases, ProjectUseCases, UserUseCases,
+    AgentUseCases, AuditLog, AuthUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases,
+    JobUseCases, OrganizationUseCases, PipelineUseCases, ProjectUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, HermesJobLogStream, PgAgentRepository,
-    PgJobLogRepository, PgJobRepository, PgOrganizationRepository, PgPipelineRepository,
-    PgProjectRepository, PgSessionRepository, PgUserOrganizationRepository,
-    PgUserProjectRepository, PgUserRepository, PgUserRoleRepository,
+    PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
+    PgOrganizationRepository, PgPipelineRepository, PgProjectRepository, PgSessionRepository,
+    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository, PgUserRoleRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
@@ -19,8 +19,9 @@ use tower_http::cors::CorsLayer;
 
 // ── Concrete type aliases ──────────────────────────────────────────────
 
-pub type PermissionChecker = CedarPermissionService<PgUserRoleRepository>;
+pub type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
 pub type SharedPermissionChecker = Arc<PermissionChecker>;
+pub type SharedGrantUc = Arc<GrantUseCases<PgGrantRepository, PermissionChecker>>;
 
 pub type SharedAuthUc =
     Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
@@ -63,6 +64,7 @@ pub struct Services {
     pub job_log_uc: SharedJobLogUc,
     pub job_log_stream_uc: SharedJobLogStreamUc,
     pub agent_uc: SharedAgentUc,
+    pub grant_uc: SharedGrantUc,
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub user_role_repo: Arc<PgUserRoleRepository>,
@@ -83,10 +85,16 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let user_role_repo = Arc::new(PgUserRoleRepository::new(db.clone()));
+    let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
+    let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
 
+    // Persistent audit trail; writes happen out-of-band on a background task.
+    let audit_log: Arc<dyn AuditLog> = Arc::new(PgAuditLog::new(db.clone()));
+
     let permission_checker = Arc::new(
-        CedarPermissionService::new(user_role_repo.clone())
+        CedarPermissionService::new(authz_provider, grant_repo.as_ref(), audit_log)
+            .await
             .map_err(|e| StartupError::Permission(e.to_string()))?,
     );
 
@@ -127,6 +135,10 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         agent_repo.clone(),
         permission_checker.clone(),
     ));
+    let grant_uc = Arc::new(GrantUseCases::new(
+        grant_repo.clone(),
+        permission_checker.clone(),
+    ));
 
     if let Some(cfg) = &config.bootstrap {
         crate::bootstrap::bootstrap_admin(&user_uc, user_role_repo.as_ref(), cfg).await?;
@@ -159,6 +171,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         job_log_uc,
         job_log_stream_uc,
         agent_uc,
+        grant_uc,
         permission_checker,
         session_repo,
         user_role_repo,

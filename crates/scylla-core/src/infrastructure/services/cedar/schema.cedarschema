@@ -1,0 +1,64 @@
+// scylla — Cedar schema (V1). Validated against policies at startup.
+//
+// Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization and
+// Job ∈ Pipeline. A User carries its role memberships (entity parents) plus
+// ABAC attributes listing the orgs/projects it belongs to. Actions are
+// fine-grained (one per use-case operation) so `appliesTo` pins the resource
+// type and policies stay readable.
+
+namespace Scylla {
+    entity Role;
+    entity Service;
+    entity System;
+
+    entity Organization;
+    entity Project in [Organization];
+    entity Pipeline in [Project];
+    entity Job in [Pipeline];
+    entity Agent;
+
+    entity User in [Role] {
+        "memberOrgs": Set<Organization>,
+        "memberProjects": Set<Project>,
+    };
+
+    // ── System-scoped (admin / service) ────────────────────────────────
+    action "createUser", "listUsers",
+           "createOrganization", "listOrganizations",
+           "listProjects", "listPipelines",
+           "createJob", "listJobs",
+           "listAgents", "manageGrants"
+        appliesTo { principal: [User, Service], resource: [System] };
+
+    // ── User-targeted ──────────────────────────────────────────────────
+    action "readUser", "updateUser", "deleteUser",
+           "listUserOrganizations", "listUserProjects"
+        appliesTo { principal: [User, Service], resource: [User] };
+
+    // ── Organization-targeted ──────────────────────────────────────────
+    action "readOrganization", "updateOrganization", "deleteOrganization",
+           "listOrganizationMembers", "addOrganizationMember", "removeOrganizationMember",
+           "createProject",
+           "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization"
+        appliesTo { principal: [User, Service], resource: [Organization] };
+
+    // ── Project-targeted ───────────────────────────────────────────────
+    action "readProject", "updateProject", "deleteProject",
+           "listProjectMembers", "addProjectMember", "removeProjectMember",
+           "createPipeline",
+           "listPipelinesByProject", "listJobsByProject"
+        appliesTo { principal: [User, Service], resource: [Project] };
+
+    // ── Pipeline-targeted ──────────────────────────────────────────────
+    action "readPipeline", "updatePipeline", "deletePipeline", "runPipeline",
+           "listJobsByPipeline"
+        appliesTo { principal: [User, Service], resource: [Pipeline] };
+
+    // ── Job-targeted ───────────────────────────────────────────────────
+    action "readJob", "writeJob", "deleteJob", "readJobLogs", "writeJobLogs"
+        appliesTo { principal: [User, Service], resource: [Job] };
+
+    // ── Agent-targeted ─────────────────────────────────────────────────
+    action "readAgent", "writeAgent", "deleteAgent"
+        appliesTo { principal: [User, Service], resource: [Agent] };
+}

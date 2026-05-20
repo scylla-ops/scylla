@@ -11,6 +11,9 @@
 mod error;
 
 pub mod agents;
+pub mod audit;
+pub mod authz;
+pub mod grants;
 pub mod job_logs;
 pub mod jobs;
 pub mod organizations;
@@ -25,6 +28,9 @@ pub mod users;
 // Flat re-exports so call sites can keep `scylla_core::infrastructure::PgUserRepository`
 // without leaking the internal sub-module layout.
 pub use agents::PgAgentRepository;
+pub use audit::PgAuditLog;
+pub use authz::PgAuthzEntityProvider;
+pub use grants::PgGrantRepository;
 pub use job_logs::PgJobLogRepository;
 pub use jobs::PgJobRepository;
 pub use organizations::PgOrganizationRepository;

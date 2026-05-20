@@ -1,29 +1,69 @@
-// scylla — Cedar authorization policies (V1).
-//
-// Defaults to deny: only the explicit `permit` statements below grant access.
-// Policies are static and compiled into the binary via `include_str!`.
+// scylla — Cedar authorization policies (V1). Default-deny; only the explicit
+// permits below grant access. Compiled into the binary via include_str! and
+// validated against schema.cedarschema at startup.
 
-// ── Admin role ────────────────────────────────────────────────────────
-// Any user member of Scylla::Role::"admin" has full access on every
-// (action, resource) pair. Membership is materialised at check time from
-// the `user_roles` table by the entity provider in CedarPermissionService.
+// ── Admin role ─────────────────────────────────────────────────────────
+// Any user in Scylla::Role::"admin" can do anything. Role membership is
+// materialised at check time from the user_roles table.
+@id("admin")
 permit (
     principal in Scylla::Role::"admin",
     action,
     resource
 );
 
-// ── Internal services ────────────────────────────────────────────────
-// In-process subsystems (recorder, etc.) bypass user-level RBAC. This is
-// the explicit, auditable replacement for the silent recorder bypass that
-// existed before zero-trust prep landed.
-//
-// Tighten later (per-service action allowlists, principal-id pinning) once
-// service-to-service mTLS / SPIFFE identities are in place.
+// ── Internal services ──────────────────────────────────────────────────
+// In-process subsystems (recorder, bootstrap) bypass user RBAC. Explicit,
+// auditable replacement for the old silent recorder bypass. Tighten later to
+// per-service action allowlists once service identities are on the wire.
+@id("service")
 permit (
     principal,
     action,
     resource
 ) when {
     principal is Scylla::Service
+};
+
+// ── Organization members (ABAC) ────────────────────────────────────────
+// A user may perform read/list operations on an organization it belongs to.
+// `principal is User` narrows the type so `principal.memberOrgs` typechecks.
+@id("org-member")
+permit (
+    principal,
+    action in [
+        Scylla::Action::"readOrganization",
+        Scylla::Action::"listOrganizationMembers",
+        Scylla::Action::"listProjectsByOrganization",
+        Scylla::Action::"listPipelinesByOrganization",
+        Scylla::Action::"listJobsByOrganization"
+    ],
+    resource
+) when {
+    principal is Scylla::User && resource in principal.memberOrgs
+};
+
+// ── Project members (ABAC) ─────────────────────────────────────────────
+// A user may operate within a project it belongs to. Resources below a member
+// project (pipelines, jobs) match via the entity hierarchy.
+@id("project-member")
+permit (
+    principal,
+    action in [
+        Scylla::Action::"readProject",
+        Scylla::Action::"listProjectMembers",
+        Scylla::Action::"createPipeline",
+        Scylla::Action::"readPipeline",
+        Scylla::Action::"updatePipeline",
+        Scylla::Action::"deletePipeline",
+        Scylla::Action::"runPipeline",
+        Scylla::Action::"listPipelinesByProject",
+        Scylla::Action::"readJob",
+        Scylla::Action::"listJobsByProject",
+        Scylla::Action::"listJobsByPipeline",
+        Scylla::Action::"readJobLogs"
+    ],
+    resource
+) when {
+    principal is Scylla::User && resource in principal.memberProjects
 };

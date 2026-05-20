@@ -20,7 +20,7 @@ pub use config::{BootstrapConfig, BrokerConfig, CoreConfig, CorsConfig};
 pub use config::GrpcConfig;
 pub use error::{BootstrapError, ConfigError, StartupError};
 pub use startup::{
-    SharedAgentUc, SharedAuthUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc, SharedOrgUc,
-    SharedPipelineUc, SharedProjectUc, SharedUserUc, Services, build_cors_layer, init_services,
-    run_grpc, shutdown_signal,
+    SharedAgentUc, SharedAuthUc, SharedGrantUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc,
+    SharedOrgUc, SharedPipelineUc, SharedProjectUc, SharedUserUc, Services, build_cors_layer,
+    init_services, run_grpc, shutdown_signal,
 };

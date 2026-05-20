@@ -3,7 +3,7 @@ use crate::application::{AgentRepository, PermissionService};
 use crate::domain::entities::{Agent, AgentId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::agent::Hostname;
-use crate::domain::value_objects::permission::policy;
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -19,7 +19,7 @@ impl<A: AgentRepository, PS: PermissionService> AgentUseCases<A, PS> {
     #[instrument(skip(self, caller), fields(agent_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &AgentId) -> DomainResult<Agent> {
         self.permission_service
-            .check(caller, policy::agent::get(id.clone()))
+            .check(caller, Permission::ReadAgent(id.clone()))
             .await?;
         self.agent_repo.find_by_id(id).await
     }
@@ -31,7 +31,7 @@ impl<A: AgentRepository, PS: PermissionService> AgentUseCases<A, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Agent>> {
         self.permission_service
-            .check(caller, policy::agent::list())
+            .check(caller, Permission::ListAgents)
             .await?;
         self.agent_repo.list_all(pagination).await
     }
@@ -39,7 +39,7 @@ impl<A: AgentRepository, PS: PermissionService> AgentUseCases<A, PS> {
     #[instrument(skip(self, caller), fields(agent_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &AgentId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, policy::agent::delete(id.clone()))
+            .check(caller, Permission::DeleteAgent(id.clone()))
             .await?;
         self.agent_repo.find_by_id(id).await?;
         self.agent_repo.delete(id).await
@@ -57,7 +57,7 @@ impl<A: AgentRepository, PS: PermissionService> AgentUseCases<A, PS> {
         heartbeat_interval_secs: u64,
     ) -> DomainResult<Agent> {
         self.permission_service
-            .check(caller, policy::agent::get(id.clone()))
+            .check(caller, Permission::WriteAgent(id.clone()))
             .await?;
 
         match self.agent_repo.find_by_id(id).await {
@@ -81,7 +81,7 @@ impl<A: AgentRepository, PS: PermissionService> AgentUseCases<A, PS> {
         id: &AgentId,
     ) -> DomainResult<Agent> {
         self.permission_service
-            .check(caller, policy::agent::get(id.clone()))
+            .check(caller, Permission::WriteAgent(id.clone()))
             .await?;
         let mut agent = self.agent_repo.find_by_id(id).await?;
         agent.record_shutdown();

@@ -54,3 +54,15 @@ impl CallerContext {
         }
     }
 }
+
+/// Compact, human-readable label for audit logs (e.g. `user:01h…`,
+/// `service:recorder`, `anonymous`).
+impl std::fmt::Display for CallerContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::User(id) => write!(f, "user:{}", id.as_str()),
+            Self::Service(svc) => write!(f, "service:{}", svc.as_str()),
+            Self::Anonymous => write!(f, "anonymous"),
+        }
+    }
+}

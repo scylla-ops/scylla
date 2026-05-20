@@ -4,7 +4,7 @@ use crate::application::{
 };
 use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::policy;
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
@@ -40,7 +40,7 @@ impl<
         organization_id: OrganizationId,
     ) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, policy::project::create(organization_id.clone()))
+            .check(caller, Permission::CreateProject(organization_id.clone()))
             .await?;
         let project = Project::create(name, description, organization_id)?;
         self.project_repo.create(&project).await
@@ -49,7 +49,7 @@ impl<
     #[instrument(skip(self, caller), fields(project_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, policy::project::get(id.clone()))
+            .check(caller, Permission::ReadProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await
     }
@@ -63,7 +63,7 @@ impl<
         description: Option<Option<ProjectDescription>>,
     ) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, policy::project::update(id.clone()))
+            .check(caller, Permission::UpdateProject(id.clone()))
             .await?;
 
         let mut project = self.project_repo.find_by_id(id).await?;
@@ -85,7 +85,7 @@ impl<
         id: &ProjectId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(caller, policy::project::toggle_active(id.clone()))
+            .check(caller, Permission::UpdateProject(id.clone()))
             .await?;
 
         let mut project = self.project_repo.find_by_id(id).await?;
@@ -97,7 +97,7 @@ impl<
     #[instrument(skip(self, caller), fields(project_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, policy::project::delete(id.clone()))
+            .check(caller, Permission::DeleteProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await?;
         self.project_repo.delete(id).await
@@ -110,7 +110,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
         self.permission_service
-            .check(caller, policy::project::list())
+            .check(caller, Permission::ListProjects)
             .await?;
         self.project_repo.list_all(pagination).await
     }
@@ -125,7 +125,7 @@ impl<
         self.permission_service
             .check(
                 caller,
-                policy::project::list_by_organization(organization_id.clone()),
+                Permission::ListProjectsByOrganization(organization_id.clone()),
             )
             .await?;
         self.project_repo
@@ -141,7 +141,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
         self.permission_service
-            .check(caller, policy::project::list_users(project_id.clone()))
+            .check(caller, Permission::ListProjectMembers(project_id.clone()))
             .await?;
 
         let paginated = self
@@ -167,7 +167,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<Project>, PaginationMetadata)> {
         self.permission_service
-            .check(caller, policy::project::list_user_projects(user_id.clone()))
+            .check(caller, Permission::ListUserProjects(user_id.clone()))
             .await?;
 
         let paginated = self
@@ -195,7 +195,7 @@ impl<
         self.permission_service
             .check(
                 caller,
-                policy::project::add_user_to_project(project_id.clone()),
+                Permission::AddProjectMember(project_id.clone()),
             )
             .await?;
 
@@ -222,7 +222,7 @@ impl<
         self.permission_service
             .check(
                 caller,
-                policy::project::remove_user_from_project(project_id.clone()),
+                Permission::RemoveProjectMember(project_id.clone()),
             )
             .await?;
         self.user_project_repo

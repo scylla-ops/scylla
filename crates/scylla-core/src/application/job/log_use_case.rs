@@ -2,7 +2,7 @@ use crate::application::caller::CallerContext;
 use crate::application::{JobLogRepository, PermissionService};
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::policy;
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
@@ -21,7 +21,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         // Recorder-only path today; routed through the trait so tightening
         // (per-service action allowlists) is contained to Cedar.
         self.permission_service
-            .check(caller, policy::job::read_logs(log.job_id().clone()))
+            .check(caller, Permission::WriteJobLogs(log.job_id().clone()))
             .await?;
         self.repo.create(log).await
     }
@@ -32,7 +32,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         // load first because the id alone does not carry the job context.
         let log = self.repo.find_by_id(id).await?;
         self.permission_service
-            .check(caller, policy::job::read_logs(log.job_id().clone()))
+            .check(caller, Permission::ReadJobLogs(log.job_id().clone()))
             .await?;
         Ok(log)
     }
@@ -45,7 +45,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>> {
         self.permission_service
-            .check(caller, policy::job::read_logs(job_id.clone()))
+            .check(caller, Permission::ReadJobLogs(job_id.clone()))
             .await?;
         self.repo.list_by_job(job_id, pagination).await
     }
@@ -59,7 +59,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>> {
         self.permission_service
-            .check(caller, policy::job::read_logs(job_id.clone()))
+            .check(caller, Permission::ReadJobLogs(job_id.clone()))
             .await?;
         self.repo
             .list_by_job_and_node(job_id, node_id, pagination)

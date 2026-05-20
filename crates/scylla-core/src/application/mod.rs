@@ -1,9 +1,13 @@
 pub mod agent;
+pub mod audit;
 pub mod auth;
 pub mod caller;
 pub mod job;
 pub mod organization;
-#[cfg(feature = "permission")]
+// The `PermissionService` trait carries no heavy deps (no cedar, no sqlx) and is
+// a hard dependency of every use case, so it must compile regardless of which
+// features a downstream crate (e.g. scylla-agent with default-features=false)
+// enables. Only the concrete Cedar adapter stays behind the `permission` feature.
 pub mod permission;
 pub mod pipeline;
 pub mod project;
@@ -11,6 +15,7 @@ pub mod user;
 pub mod user_role;
 
 pub use agent::{AgentRepository, AgentUseCases};
+pub use audit::{AuditDecision, AuditEntry, AuditLog, NoopAuditLog};
 pub use auth::{AuthUseCases, HashService, SessionRepository};
 pub use caller::{CallerContext, ServiceIdentity};
 pub use job::{
@@ -18,8 +23,10 @@ pub use job::{
     JobRepository, JobUseCases,
 };
 pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
-#[cfg(feature = "permission")]
-pub use permission::PermissionService;
+pub use permission::{
+    AuthzEntityProvider, Grant, GrantRepository, GrantScope, GrantUseCases, PermissionService,
+    PrincipalAuthz, ResourceAncestors,
+};
 pub use pipeline::{PipelineRepository, PipelineUseCases};
 pub use project::{ProjectRepository, ProjectUseCases, UserProjectRepository};
 pub use user::{UserRepository, UserUseCases};
