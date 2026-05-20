@@ -3,6 +3,7 @@
 use bon::bon;
 use chrono::{DateTime, Utc};
 
+use crate::domain::clock;
 use crate::domain::entities::{Job, JobId, JobNode, Pipeline};
 use crate::domain::value_objects::job::{JobStatus, NodeState};
 
@@ -36,19 +37,19 @@ impl JobBuilder {
             .collect();
 
         let (status, started_at, finished_at) = if let Some(terminal) = terminated {
-            let now = Utc::now();
+            let now = clock::now();
             (
                 terminal,
                 Some(now - chrono::Duration::seconds(1)),
                 Some(now),
             )
         } else if running {
-            (JobStatus::Running, Some(Utc::now()), finished_at)
+            (JobStatus::Running, Some(clock::now()), finished_at)
         } else {
             (status, started_at, finished_at)
         };
 
-        let now = created_at.unwrap_or_else(Utc::now);
+        let now = created_at.unwrap_or_else(clock::now);
         Job::from_persistence(
             id.unwrap_or_else(JobId::generate),
             pipeline_id,

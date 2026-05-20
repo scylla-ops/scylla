@@ -3,6 +3,7 @@
 use bon::bon;
 use chrono::{DateTime, Utc};
 
+use crate::domain::clock;
 use crate::domain::entities::{User, UserId};
 use crate::domain::value_objects::user::{PasswordHash, Username};
 
@@ -24,7 +25,7 @@ impl UserBuilder {
         created_at: Option<DateTime<Utc>>,
         updated_at: Option<DateTime<Utc>>,
     ) -> User {
-        let now = created_at.unwrap_or_else(Utc::now);
+        let now = created_at.unwrap_or_else(clock::now);
         User::from_persistence(
             id.unwrap_or_else(UserId::generate),
             Username::new(username).expect("test username invalid"),

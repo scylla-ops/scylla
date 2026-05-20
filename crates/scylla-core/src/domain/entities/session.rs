@@ -1,4 +1,5 @@
 use crate::domain::entities::{SessionId, UserId};
+use crate::domain::clock;
 use chrono::{DateTime, Duration, Utc};
 
 /// Session domain entity for authentication
@@ -34,7 +35,7 @@ impl Session {
 
     #[must_use]
     pub fn create(user_id: UserId, token: String, duration: Duration) -> Self {
-        let now = Utc::now();
+        let now = clock::now();
         Self {
             id: SessionId::generate(),
             token,
@@ -47,16 +48,16 @@ impl Session {
 
     #[must_use]
     pub fn is_expired(&self) -> bool {
-        Utc::now() > self.expires_at
+        clock::now() > self.expires_at
     }
 
     pub fn touch(&mut self) {
-        self.last_active_at = Utc::now();
+        self.last_active_at = clock::now();
     }
 
     pub fn extend(&mut self, duration: Duration) {
-        self.expires_at = Utc::now() + duration;
-        self.last_active_at = Utc::now();
+        self.expires_at = clock::now() + duration;
+        self.last_active_at = clock::now();
     }
 
     #[must_use]

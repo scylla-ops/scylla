@@ -4,6 +4,8 @@ use bon::bon;
 use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
 
+use crate::domain::clock;
+
 use crate::domain::entities::{Session, SessionId, UserId};
 
 pub struct SessionBuilder;
@@ -25,7 +27,7 @@ impl SessionBuilder {
         expired: bool,
     ) -> Session {
         let (created_at, expires_at, last_active_at) = if expired {
-            let now = Utc::now();
+            let now = clock::now();
             (
                 Some(now - Duration::hours(2)),
                 Some(now - Duration::hours(1)),
@@ -34,7 +36,7 @@ impl SessionBuilder {
         } else {
             (created_at, expires_at, last_active_at)
         };
-        let now = created_at.unwrap_or_else(Utc::now);
+        let now = created_at.unwrap_or_else(clock::now);
         Session::from_persistence(
             id.unwrap_or_else(SessionId::generate),
             token.unwrap_or_else(|| Uuid::new_v4().to_string()),

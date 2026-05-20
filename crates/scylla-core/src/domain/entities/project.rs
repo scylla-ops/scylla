@@ -1,6 +1,7 @@
 use crate::domain::entities::{OrganizationId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
+use crate::domain::clock;
 use chrono::{DateTime, Utc};
 
 /// Project domain entity
@@ -42,7 +43,7 @@ impl Project {
         description: Option<ProjectDescription>,
         organization_id: OrganizationId,
     ) -> DomainResult<Self> {
-        let now = Utc::now();
+        let now = clock::now();
         Ok(Self {
             id: ProjectId::generate(),
             name,
@@ -56,7 +57,7 @@ impl Project {
 
     pub fn update_name(&mut self, name: ProjectName) -> DomainResult<()> {
         self.name = name;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -65,13 +66,13 @@ impl Project {
         description: Option<ProjectDescription>,
     ) -> DomainResult<()> {
         self.description = description;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
     pub fn toggle_active(&mut self) -> DomainResult<()> {
         self.is_active = !self.is_active;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -80,7 +81,7 @@ impl Project {
             return Err(DomainError::business_rule("Project is already inactive"));
         }
         self.is_active = false;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -89,7 +90,7 @@ impl Project {
             return Err(DomainError::business_rule("Project is already active"));
         }
         self.is_active = true;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 

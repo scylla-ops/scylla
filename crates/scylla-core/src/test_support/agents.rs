@@ -3,6 +3,8 @@
 use bon::bon;
 use chrono::{DateTime, Utc};
 
+use crate::domain::clock;
+
 use crate::domain::entities::{Agent, AgentId};
 use crate::domain::value_objects::agent::Hostname;
 
@@ -24,9 +26,9 @@ impl AgentBuilder {
         #[builder(default = false)]
         shutdown: bool,
     ) -> Agent {
-        let now = created_at.unwrap_or_else(Utc::now);
+        let now = created_at.unwrap_or_else(clock::now);
         let shutdown_at = if shutdown {
-            Some(Utc::now())
+            Some(clock::now())
         } else {
             shutdown_at
         };

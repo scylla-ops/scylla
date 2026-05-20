@@ -3,6 +3,7 @@
 use bon::bon;
 use chrono::{DateTime, Utc};
 
+use crate::domain::clock;
 use crate::domain::entities::{Organization, OrganizationId};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 
@@ -20,7 +21,7 @@ impl OrgBuilder {
         created_at: Option<DateTime<Utc>>,
         updated_at: Option<DateTime<Utc>>,
     ) -> Organization {
-        let now = created_at.unwrap_or_else(Utc::now);
+        let now = created_at.unwrap_or_else(clock::now);
         let description =
             description.map(|s| OrganizationDescription::new(s).expect("test org desc invalid"));
         Organization::from_persistence(

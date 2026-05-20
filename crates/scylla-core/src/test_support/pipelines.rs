@@ -3,6 +3,7 @@
 use bon::bon;
 use chrono::{DateTime, Utc};
 
+use crate::domain::clock;
 use crate::domain::entities::{Pipeline, PipelineId, PipelineNode, Project, ProjectId};
 use crate::domain::value_objects::pipeline::{NodeId, PipelineName};
 
@@ -55,7 +56,7 @@ impl PipelineBuilder {
         created_at: Option<DateTime<Utc>>,
         updated_at: Option<DateTime<Utc>>,
     ) -> Pipeline {
-        let now = created_at.unwrap_or_else(Utc::now);
+        let now = created_at.unwrap_or_else(clock::now);
         let nodes = nodes.unwrap_or_else(|| vec![node("a", &[])]);
         Pipeline::from_persistence(
             id.unwrap_or_else(PipelineId::generate),

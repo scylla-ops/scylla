@@ -3,6 +3,7 @@
 use bon::bon;
 use chrono::{DateTime, Utc};
 
+use crate::domain::clock;
 use crate::domain::entities::{Organization, OrganizationId, Project, ProjectId};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
 
@@ -44,7 +45,7 @@ impl ProjectBuilder {
         created_at: Option<DateTime<Utc>>,
         updated_at: Option<DateTime<Utc>>,
     ) -> Project {
-        let now = created_at.unwrap_or_else(Utc::now);
+        let now = created_at.unwrap_or_else(clock::now);
         let description =
             description.map(|s| ProjectDescription::new(s).expect("test project desc invalid"));
         Project::from_persistence(

@@ -1,6 +1,7 @@
 use crate::domain::entities::UserId;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::{PasswordHash, Username};
+use crate::domain::clock;
 use chrono::{DateTime, Utc};
 
 /// User domain entity
@@ -38,7 +39,7 @@ impl User {
 
     #[must_use]
     pub fn create(username: Username, password_hash: PasswordHash) -> Self {
-        let now = Utc::now();
+        let now = clock::now();
         Self {
             id: UserId::generate(),
             username,
@@ -51,13 +52,13 @@ impl User {
 
     pub fn update_username(&mut self, username: Username) -> DomainResult<()> {
         self.username = username;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
     pub fn update_password_hash(&mut self, password_hash: PasswordHash) {
         self.password_hash = password_hash;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
     }
 
     pub fn deactivate(&mut self) -> DomainResult<()> {
@@ -65,7 +66,7 @@ impl User {
             return Err(DomainError::business_rule("User is already inactive"));
         }
         self.is_active = false;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -74,7 +75,7 @@ impl User {
             return Err(DomainError::business_rule("User is already active"));
         }
         self.is_active = true;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 

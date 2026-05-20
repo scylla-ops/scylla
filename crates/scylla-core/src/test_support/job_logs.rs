@@ -3,6 +3,7 @@
 use bon::bon;
 use chrono::{DateTime, Utc};
 
+use crate::domain::clock;
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::value_objects::job::LogStream;
 use crate::domain::value_objects::pipeline::NodeId;
@@ -22,7 +23,7 @@ impl JobLogBuilder {
         timestamp: Option<DateTime<Utc>>,
         created_at: Option<DateTime<Utc>>,
     ) -> JobLog {
-        let ts = timestamp.unwrap_or_else(Utc::now);
+        let ts = timestamp.unwrap_or_else(clock::now);
         JobLog::from_persistence(
             id.unwrap_or_else(JobLogId::generate),
             job_id.clone(),

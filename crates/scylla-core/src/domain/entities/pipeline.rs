@@ -1,6 +1,7 @@
 use crate::domain::entities::{PipelineId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::pipeline::{NodeId, PipelineName};
+use crate::domain::clock;
 use chrono::{DateTime, Utc};
 use std::collections::{BTreeSet, HashMap, HashSet};
 
@@ -91,7 +92,7 @@ impl Pipeline {
     ) -> DomainResult<Self> {
         Self::validate_nodes(&nodes)?;
 
-        let now = Utc::now();
+        let now = clock::now();
         Ok(Pipeline {
             id: PipelineId::generate(),
             project_id,
@@ -104,14 +105,14 @@ impl Pipeline {
 
     pub fn update_name(&mut self, name: PipelineName) -> DomainResult<()> {
         self.name = name;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
     pub fn update_nodes(&mut self, nodes: Vec<PipelineNode>) -> DomainResult<()> {
         Self::validate_nodes(&nodes)?;
         self.nodes = nodes;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
