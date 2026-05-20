@@ -27,7 +27,7 @@ namespace Scylla {
            "createOrganization", "listOrganizations",
            "listProjects", "listPipelines",
            "createJob", "listJobs",
-           "listAgents", "manageGrants"
+           "listAgents", "manageGrants", "managePolicies", "manageRoles"
         appliesTo { principal: [User, Service], resource: [System] };
 
     // ── User-targeted ──────────────────────────────────────────────────

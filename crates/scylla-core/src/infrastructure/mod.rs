@@ -19,6 +19,8 @@ pub use persistence::postgres::PgAuthzEntityProvider;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgGrantRepository;
 #[cfg(feature = "postgres")]
+pub use persistence::postgres::PgPolicyRepository;
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgJobLogRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgJobRepository;

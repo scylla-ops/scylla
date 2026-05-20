@@ -1,4 +1,5 @@
 use crate::application::caller::CallerContext;
+use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
 use crate::domain::entities::{OrganizationId, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
@@ -49,18 +50,17 @@ pub trait GrantRepository: Send + Sync {
 }
 
 /// Admin-only management of scoped grants. Every method is gated by
-/// `Permission::ManageGrants` (admin/service in practice).
-///
-/// NOTE (V1): the live Cedar `PolicySet` is built once at startup, so a created
-/// or revoked grant takes effect on the next control-plane boot. Live re-linking
-/// is a follow-up.
+/// `Permission::ManageGrants` (admin/service in practice). A created or revoked
+/// grant is applied live via [`PolicyControl::reload`], so it takes effect
+/// immediately without a control-plane restart.
 #[derive(Constructor)]
-pub struct GrantUseCases<G: GrantRepository, PS: PermissionService> {
+pub struct GrantUseCases<G: GrantRepository, PC: PolicyControl, PS: PermissionService> {
     grant_repo: Arc<G>,
+    policy_control: Arc<PC>,
     permission_service: Arc<PS>,
 }
 
-impl<G: GrantRepository, PS: PermissionService> GrantUseCases<G, PS> {
+impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases<G, PC, PS> {
     #[instrument(skip(self, caller))]
     pub async fn list(&self, caller: &CallerContext) -> DomainResult<Vec<Grant>> {
         self.permission_service
@@ -74,7 +74,8 @@ impl<G: GrantRepository, PS: PermissionService> GrantUseCases<G, PS> {
         self.permission_service
             .check(caller, Permission::ManageGrants)
             .await?;
-        self.grant_repo.create(grant).await
+        self.grant_repo.create(grant).await?;
+        self.policy_control.reload().await
     }
 
     #[instrument(skip(self, caller))]
@@ -82,6 +83,7 @@ impl<G: GrantRepository, PS: PermissionService> GrantUseCases<G, PS> {
         self.permission_service
             .check(caller, Permission::ManageGrants)
             .await?;
-        self.grant_repo.delete(id).await
+        self.grant_repo.delete(id).await?;
+        self.policy_control.reload().await
     }
 }

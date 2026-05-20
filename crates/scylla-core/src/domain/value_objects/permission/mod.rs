@@ -71,8 +71,10 @@ pub enum Permission {
     DeleteAgent(AgentId),
     ListAgents,
 
-    // ── grants (admin) ─────────────────────────────────────────────────
+    // ── grants / policies / roles (admin) ──────────────────────────────
     ManageGrants,
+    ManagePolicies,
+    ManageRoles,
 }
 
 impl Permission {
@@ -133,6 +135,8 @@ impl Permission {
             Self::ListAgents => "listAgents",
 
             Self::ManageGrants => "manageGrants",
+            Self::ManagePolicies => "managePolicies",
+            Self::ManageRoles => "manageRoles",
         }
     }
 
@@ -152,7 +156,9 @@ impl Permission {
             | Self::CreateJob
             | Self::ListJobs
             | Self::ListAgents
-            | Self::ManageGrants => ResourceRef::System,
+            | Self::ManageGrants
+            | Self::ManagePolicies
+            | Self::ManageRoles => ResourceRef::System,
 
             // User-targeted
             Self::ReadUser(id)

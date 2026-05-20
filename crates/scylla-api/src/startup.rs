@@ -4,13 +4,15 @@ use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
     AgentUseCases, AuditLog, AuthUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases,
-    JobUseCases, OrganizationUseCases, PipelineUseCases, ProjectUseCases, UserUseCases,
+    JobUseCases, OrganizationUseCases, PipelineUseCases, PolicyUseCases, ProjectUseCases,
+    UserRoleUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, HermesJobLogStream, PgAgentRepository,
     PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
-    PgOrganizationRepository, PgPipelineRepository, PgProjectRepository, PgSessionRepository,
-    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository, PgUserRoleRepository,
+    PgOrganizationRepository, PgPipelineRepository, PgPolicyRepository, PgProjectRepository,
+    PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
+    PgUserRoleRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
@@ -21,7 +23,11 @@ use tower_http::cors::CorsLayer;
 
 pub type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
 pub type SharedPermissionChecker = Arc<PermissionChecker>;
-pub type SharedGrantUc = Arc<GrantUseCases<PgGrantRepository, PermissionChecker>>;
+pub type SharedGrantUc =
+    Arc<GrantUseCases<PgGrantRepository, PermissionChecker, PermissionChecker>>;
+pub type SharedPolicyUc =
+    Arc<PolicyUseCases<PgPolicyRepository, PermissionChecker, PermissionChecker>>;
+pub type SharedRoleUc = Arc<UserRoleUseCases<PgUserRoleRepository, PermissionChecker>>;
 
 pub type SharedAuthUc =
     Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
@@ -65,6 +71,8 @@ pub struct Services {
     pub job_log_stream_uc: SharedJobLogStreamUc,
     pub agent_uc: SharedAgentUc,
     pub grant_uc: SharedGrantUc,
+    pub policy_uc: SharedPolicyUc,
+    pub role_uc: SharedRoleUc,
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub user_role_repo: Arc<PgUserRoleRepository>,
@@ -87,15 +95,21 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let user_role_repo = Arc::new(PgUserRoleRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
     let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
+    let policy_repo = Arc::new(PgPolicyRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
 
     // Persistent audit trail; writes happen out-of-band on a background task.
     let audit_log: Arc<dyn AuditLog> = Arc::new(PgAuditLog::new(db.clone()));
 
     let permission_checker = Arc::new(
-        CedarPermissionService::new(authz_provider, grant_repo.as_ref(), audit_log)
-            .await
-            .map_err(|e| StartupError::Permission(e.to_string()))?,
+        CedarPermissionService::new(
+            authz_provider,
+            grant_repo.clone(),
+            policy_repo.clone(),
+            audit_log,
+        )
+        .await
+        .map_err(|e| StartupError::Permission(e.to_string()))?,
     );
 
     let auth_uc = Arc::new(AuthUseCases::new(
@@ -138,6 +152,16 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let grant_uc = Arc::new(GrantUseCases::new(
         grant_repo.clone(),
         permission_checker.clone(),
+        permission_checker.clone(),
+    ));
+    let policy_uc = Arc::new(PolicyUseCases::new(
+        policy_repo.clone(),
+        permission_checker.clone(),
+        permission_checker.clone(),
+    ));
+    let role_uc = Arc::new(UserRoleUseCases::new(
+        user_role_repo.clone(),
+        permission_checker.clone(),
     ));
 
     if let Some(cfg) = &config.bootstrap {
@@ -172,6 +196,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         job_log_stream_uc,
         agent_uc,
         grant_uc,
+        policy_uc,
+        role_uc,
         permission_checker,
         session_repo,
         user_role_repo,
@@ -259,13 +285,16 @@ where
     F: Future<Output = ()> + Send + 'static,
 {
     use crate::grpc::{
-        AgentHandler, AuthHandler, JobHandler, OrganizationHandler, PipelineHandler,
-        ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        AgentHandler, AuthHandler, GrantHandler, JobHandler, OrganizationHandler, PipelineHandler,
+        PolicyHandler, ProjectHandler, RoleHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
         auth::auth_service_server::AuthServiceServer, job::job_service_server::JobServiceServer,
         organization::organization_service_server::OrganizationServiceServer,
+        permission::grant_service_server::GrantServiceServer,
+        permission::policy_service_server::PolicyServiceServer,
+        permission::role_service_server::RoleServiceServer,
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         user::user_service_server::UserServiceServer,
@@ -290,6 +319,9 @@ where
         services.job_log_stream_uc.clone(),
     );
     let agent_handler = AgentHandler::new(services.agent_uc.clone());
+    let policy_handler = PolicyHandler::new(services.policy_uc.clone());
+    let grant_handler = GrantHandler::new(services.grant_uc.clone());
+    let role_handler = RoleHandler::new(services.role_uc.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(services.session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);
@@ -324,8 +356,20 @@ where
         .service(JobServiceServer::new(job_handler));
 
     let agent_service = ServiceBuilder::new()
-        .layer(auth_interceptor)
+        .layer(auth_interceptor.clone())
         .service(AgentServiceServer::new(agent_handler));
+
+    let policy_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(PolicyServiceServer::new(policy_handler));
+
+    let grant_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(GrantServiceServer::new(grant_handler));
+
+    let role_service = ServiceBuilder::new()
+        .layer(auth_interceptor)
+        .service(RoleServiceServer::new(role_handler));
 
     Server::builder()
         .accept_http1(true)
@@ -340,6 +384,9 @@ where
         .add_service(pipeline_service)
         .add_service(job_service)
         .add_service(agent_service)
+        .add_service(policy_service)
+        .add_service(grant_service)
+        .add_service(role_service)
         .serve_with_shutdown(config.grpc.address, shutdown)
         .await?;
 

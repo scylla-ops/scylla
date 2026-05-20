@@ -25,9 +25,10 @@ pub use job::{
 pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
 pub use permission::{
     AuthzEntityProvider, Grant, GrantRepository, GrantScope, GrantUseCases, PermissionService,
-    PrincipalAuthz, ResourceAncestors,
+    PolicyControl, PolicyDefinition, PolicyRepository, PolicyUseCases, PrincipalAuthz,
+    ResourceAncestors,
 };
 pub use pipeline::{PipelineRepository, PipelineUseCases};
 pub use project::{ProjectRepository, ProjectUseCases, UserProjectRepository};
 pub use user::{UserRepository, UserUseCases};
-pub use user_role::UserRoleRepository;
+pub use user_role::{UserRoleRepository, UserRoleUseCases};

@@ -2,120 +2,145 @@ syntax = "proto3";
 
 package permission;
 
-// ── Shared typed enums ───────────────────────────────────────────────────────
-
-enum Act {
-  ACT_CREATE      = 0;
-  ACT_READ        = 1;
-  ACT_WRITE       = 2;
-  ACT_DELETE      = 3;
-  ACT_ALL         = 4;
+// Admin management of runtime Cedar authorization policies. Policies are stored
+// in the database, merged with the compiled-in static policy set, validated
+// against the schema on write, and applied to the live authorizer atomically
+// (hot-reload — no restart). All RPCs require the `managePolicies` permission.
+service PolicyService {
+  rpc CreatePolicy(CreatePolicyRequest) returns (PolicyResponse);
+  rpc UpdatePolicy(UpdatePolicyRequest) returns (PolicyResponse);
+  rpc SetPolicyEnabled(SetPolicyEnabledRequest) returns (PolicyResponse);
+  rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse);
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+  // Dry-run: parse + typecheck a candidate without persisting it.
+  rpc ValidatePolicy(ValidatePolicyRequest) returns (ValidatePolicyResponse);
 }
 
-enum ScopeType {
-  SCOPE_SYSTEM    = 0;
-  SCOPE_ORG       = 1; // id required
-  SCOPE_PROJECT   = 2; // id required
-  SCOPE_USER      = 3; // id required
-  SCOPE_ALL       = 4;
+message Policy {
+  string id          = 1;
+  string description = 2;
+  string text        = 3; // Cedar source
+  bool   enabled     = 4;
+  string created_by  = 5;
+  string created_at  = 6; // RFC 3339
+  string updated_at  = 7; // RFC 3339
 }
 
-// A scope is a type (system-wide, org, project, user) plus an optional id.
-message Scope {
-  ScopeType type    = 1;
-  optional string id = 2;
+message CreatePolicyRequest {
+  string description = 1;
+  string text        = 2;
 }
 
-enum ResourceType {
-  RESOURCE_USER         = 0;
-  RESOURCE_PROJECT      = 1;
-  RESOURCE_ORGANIZATION = 2;
-  RESOURCE_PIPELINE     = 3;
-  RESOURCE_ALL          = 4;
-  RESOURCE_JOB          = 5;
-  RESOURCE_AGENT        = 6;
+message UpdatePolicyRequest {
+  string          id          = 1;
+  optional string description = 2;
+  optional string text        = 3;
 }
 
-// A resource is a type plus an optional id.
-// Absence of id means Target::All (wildcard).
-message Resource {
-  ResourceType type  = 1;
-  optional string id = 2;
+message SetPolicyEnabledRequest {
+  string id      = 1;
+  bool   enabled = 2;
 }
 
-// ── Service ──────────────────────────────────────────────────────────────────
-
-service PermissionService {
-  rpc AddPolicy(AddPolicyRequest)                         returns (AddPolicyResponse);
-  rpc RemovePolicy(RemovePolicyRequest)                   returns (RemovePolicyResponse);
-  rpc ListPolicies(ListPoliciesRequest)                   returns (ListPoliciesResponse);
-
-  rpc AddGroupingPolicy(AddGroupingPolicyRequest)         returns (AddGroupingPolicyResponse);
-  rpc RemoveGroupingPolicy(RemoveGroupingPolicyRequest)   returns (RemoveGroupingPolicyResponse);
-  rpc ListGroupingPolicies(ListGroupingPoliciesRequest)   returns (ListGroupingPoliciesResponse);
+message DeletePolicyRequest {
+  string id = 1;
 }
 
-// ── Policy RPCs ──────────────────────────────────────────────────────────────
-
-message PolicyEntry {
-  string   subject  = 1;
-  Scope    scope    = 2;
-  Resource resource = 3;
-  Act      act      = 4;
+message DeletePolicyResponse {
+  bool deleted = 1;
 }
 
-message AddPolicyRequest {
-  string   subject  = 1;
-  Scope    scope    = 2;
-  Resource resource = 3;
-  Act      act      = 4;
+message ListPoliciesRequest {}
+
+message ListPoliciesResponse {
+  repeated Policy policies = 1;
 }
 
-message AddPolicyResponse { bool added = 1; }
-
-message RemovePolicyRequest {
-  string   subject  = 1;
-  Scope    scope    = 2;
-  Resource resource = 3;
-  Act      act      = 4;
+message PolicyResponse {
+  Policy policy = 1;
 }
 
-message RemovePolicyResponse { bool removed = 1; }
-
-message ListPoliciesRequest {
-  optional string subject = 1;
+message ValidatePolicyRequest {
+  string text = 1;
 }
 
-message ListPoliciesResponse { repeated PolicyEntry policies = 1; }
+message ValidatePolicyResponse {
+  bool            valid = 1;
+  optional string error = 2;
+}
 
-// ── Grouping policy RPCs ─────────────────────────────────────────────────────
+// ── Scoped grants ────────────────────────────────────────────────────────
+// An explicit "user holds role within scope" assignment, linked as a Cedar
+// template instance. Applied live (hot-reload). Requires `manageGrants`.
 
-message GroupingPolicyEntry {
-  string subject = 1;
+enum GrantScopeKind {
+  GRANT_SCOPE_ORGANIZATION = 0;
+  GRANT_SCOPE_PROJECT      = 1;
+}
+
+service GrantService {
+  rpc CreateGrant(CreateGrantRequest) returns (Grant);
+  rpc RevokeGrant(RevokeGrantRequest) returns (RevokeGrantResponse);
+  rpc ListGrants(ListGrantsRequest)   returns (ListGrantsResponse);
+}
+
+message Grant {
+  string         id         = 1;
+  string         user_id    = 2;
+  string         role       = 3;
+  GrantScopeKind scope_kind = 4;
+  string         scope_id   = 5;
+}
+
+message CreateGrantRequest {
+  string         user_id    = 1;
+  string         role       = 2;
+  GrantScopeKind scope_kind = 3;
+  string         scope_id   = 4;
+}
+
+message RevokeGrantRequest {
+  string id = 1;
+}
+
+message RevokeGrantResponse {
+  bool revoked = 1;
+}
+
+message ListGrantsRequest {}
+
+message ListGrantsResponse {
+  repeated Grant grants = 1;
+}
+
+// ── Global role assignment ───────────────────────────────────────────────
+// User ↔ role membership (the `user_roles` table). Read live on every check,
+// so changes take effect immediately. Requires `manageRoles`.
+
+service RoleService {
+  rpc AssignRole(AssignRoleRequest)       returns (AssignRoleResponse);
+  rpc RevokeRole(RevokeRoleRequest)       returns (RevokeRoleResponse);
+  rpc ListUserRoles(ListUserRolesRequest) returns (ListUserRolesResponse);
+}
+
+message AssignRoleRequest {
+  string user_id = 1;
   string role    = 2;
-  Scope  scope   = 3;
 }
 
-message AddGroupingPolicyRequest {
-  string subject = 1;
+message AssignRoleResponse {}
+
+message RevokeRoleRequest {
+  string user_id = 1;
   string role    = 2;
-  Scope  scope   = 3;
 }
 
-message AddGroupingPolicyResponse { bool added = 1; }
+message RevokeRoleResponse {}
 
-message RemoveGroupingPolicyRequest {
-  string subject = 1;
-  string role    = 2;
-  Scope  scope   = 3;
+message ListUserRolesRequest {
+  string user_id = 1;
 }
 
-message RemoveGroupingPolicyResponse { bool removed = 1; }
-
-message ListGroupingPoliciesRequest {
-  optional string subject = 1;
-}
-
-message ListGroupingPoliciesResponse {
-  repeated GroupingPolicyEntry grouping_policies = 1;
+message ListUserRolesResponse {
+  repeated string roles = 1;
 }
