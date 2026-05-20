@@ -11,7 +11,13 @@ const outDir = resolve(root, 'src', 'generated');
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
 
-const cmd = `protoc -I="${protoDir}" --ts_out="${outDir}" "${protoDir}"/*.proto`;
+// Use the project-local @protobuf-ts protoc wrapper (which auto-wires the
+// protoc-gen-ts plugin and emits the *.client.ts layout the source imports).
+// A bare `protoc` on PATH may resolve to a different plugin (e.g. a homebrew
+// protoc-gen-ts) and produce an incompatible single-file layout.
+const protoc = resolve(root, 'node_modules', '.bin', 'protoc');
+
+const cmd = `"${protoc}" -I="${protoDir}" --ts_out="${outDir}" "${protoDir}"/*.proto`;
 
 execSync(cmd, { stdio: 'inherit', shell: true, cwd: root });
 
