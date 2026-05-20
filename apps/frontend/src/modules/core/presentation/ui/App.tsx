@@ -6,6 +6,7 @@ import { i18n } from '@lingui/core';
 import { t } from '@lingui/core/macro';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
+import { CapabilitiesProvider } from '@core/presentation/providers/Capabilities.provider.tsx';
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
 import { messages as projectMessages } from '@/modules/features/project/locales/en/messages.ts';
 import { messages as pipelineMessages } from '@/modules/features/pipeline/locales/en/messages.ts';
@@ -98,10 +99,12 @@ function App() {
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <DependenciesProvider>
-            <RouterProvider router={CoreRouter} />
-            <Toaster />
-          </DependenciesProvider>
+          <CapabilitiesProvider>
+            <DependenciesProvider>
+              <RouterProvider router={CoreRouter} />
+              <Toaster />
+            </DependenciesProvider>
+          </CapabilitiesProvider>
         </QueryClientProvider>
       </I18nProvider>
     </StrictMode>

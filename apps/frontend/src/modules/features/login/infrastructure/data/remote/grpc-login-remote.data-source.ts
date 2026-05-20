@@ -10,9 +10,9 @@ export class GrpcLoginRemoteDataSource implements LoginRemoteDataSource {
     this._authClient = new AuthServiceClient(transport.getTransport());
   }
 
-  public async login(username: string, password: string): Promise<ScyllaResult<void>> {
+  public async login(identifier: string, password: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync<void>(async () => {
-      const { response } = await this._authClient.login({ username, password });
+      const { response } = await this._authClient.login({ identifier, password });
 
       //TODO: persist store zustand context ici
       localStorage.setItem('token', response.token);
