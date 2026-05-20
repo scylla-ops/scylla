@@ -51,3 +51,6 @@ pub use services::CedarPermissionService;
 
 #[cfg(feature = "mail")]
 pub use services::LettreMailer;
+
+#[cfg(feature = "invitations")]
+pub use persistence::postgres::PgInvitationRepository;

@@ -9,6 +9,8 @@ pub use handlers::{
 };
 #[cfg(feature = "signup")]
 pub use handlers::RegistrationHandler;
+#[cfg(feature = "invitations")]
+pub use handlers::InvitationHandler;
 pub use mappers::{
     agent_to_proto, domain_error_to_status, domain_to_proto_metadata, job_to_proto,
     organization_to_proto, pipeline_to_proto, project_to_proto, proto_to_domain_pagination,

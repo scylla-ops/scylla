@@ -2,6 +2,8 @@ pub mod agent;
 pub mod audit;
 pub mod auth;
 pub mod caller;
+#[cfg(feature = "invitations")]
+pub mod invitation;
 pub mod job;
 pub mod mail;
 pub mod organization;
@@ -24,6 +26,10 @@ pub use caller::{CallerContext, ServiceIdentity};
 pub use job::{
     JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase, JobLogUseCases,
     JobRepository, JobUseCases,
+};
+#[cfg(feature = "invitations")]
+pub use invitation::{
+    AcceptOutcome, Invitation, InvitationRepository, InvitationStatus, InvitationUseCases,
 };
 pub use mail::{Mailer, NoopMailer};
 pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};

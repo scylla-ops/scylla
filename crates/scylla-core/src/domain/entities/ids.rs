@@ -120,3 +120,4 @@ define_id!(UserProjectId);
 define_id!(SessionId);
 define_id!(AgentId);
 define_id!(CedarPolicyId);
+define_id!(InvitationId);

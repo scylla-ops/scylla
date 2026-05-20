@@ -5,6 +5,8 @@ pub mod agent_handler;
 pub mod auth_handler;
 pub mod config_handler;
 pub mod grant_handler;
+#[cfg(feature = "invitations")]
+pub mod invitation_handler;
 pub mod job_handler;
 pub mod organization_handler;
 pub mod pipeline_handler;
@@ -19,6 +21,8 @@ pub use agent_handler::AgentHandler;
 pub use auth_handler::AuthHandler;
 pub use config_handler::ConfigHandler;
 pub use grant_handler::GrantHandler;
+#[cfg(feature = "invitations")]
+pub use invitation_handler::InvitationHandler;
 pub use job_handler::JobHandler;
 pub use organization_handler::OrganizationHandler;
 pub use pipeline_handler::PipelineHandler;

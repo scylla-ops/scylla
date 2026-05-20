@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package invitation;
+
+// Authenticated management of org invitations (org-admins).
+service InvitationService {
+  rpc CreateInvite(CreateInviteRequest) returns (InvitationResponse);
+  rpc ListInvites(ListInvitesRequest) returns (ListInvitesResponse);
+  rpc RevokeInvite(RevokeInviteRequest) returns (RevokeInviteResponse);
+}
+
+// Public acceptance — the invite token is the credential, so this must NOT sit
+// behind the auth interceptor (the invitee has no session yet).
+service InvitationAcceptService {
+  rpc AcceptInvite(AcceptInviteRequest) returns (AcceptInviteResponse);
+}
+
+message CreateInviteRequest {
+  string organization_id = 1;
+  string email = 2;
+  optional string role = 3; // e.g. "organization-admin"; omitted = plain member
+}
+
+message InvitationResponse {
+  string id = 1;
+  string organization_id = 2;
+  string email = 3;
+  optional string role = 4;
+  string status = 5;
+  string expires_at = 6;
+}
+
+message ListInvitesRequest {
+  string organization_id = 1;
+}
+
+message ListInvitesResponse {
+  repeated InvitationResponse invitations = 1;
+}
+
+message RevokeInviteRequest {
+  string invitation_id = 1;
+}
+
+message RevokeInviteResponse {}
+
+message AcceptInviteRequest {
+  string token = 1;
+  string username = 2;
+  string password = 3;
+}
+
+message AcceptInviteResponse {
+  string token = 1;
+  string user_id = 2;
+  string organization_id = 3;
+}

@@ -11,6 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "user.proto",
         "auth.proto",
         "registration.proto",
+        "invitation.proto",
         "organization.proto",
         "project.proto",
         "permission.proto",

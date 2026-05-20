@@ -13,6 +13,9 @@ pub mod services {
     pub mod registration {
         tonic::include_proto!("registration");
     }
+    pub mod invitation {
+        tonic::include_proto!("invitation");
+    }
     pub mod user {
         tonic::include_proto!("user");
     }

@@ -13,6 +13,10 @@ use scylla_core::application::SignupUseCases;
 use scylla_core::application::{Mailer, NoopMailer};
 #[cfg(feature = "mail")]
 use scylla_core::infrastructure::LettreMailer;
+#[cfg(feature = "invitations")]
+use scylla_core::application::InvitationUseCases;
+#[cfg(feature = "invitations")]
+use scylla_core::infrastructure::PgInvitationRepository;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, HermesJobLogStream, PgAgentRepository,
     PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
@@ -42,6 +46,18 @@ pub type SharedAuthUc =
 #[cfg(feature = "signup")]
 pub type SharedSignupUc = Arc<
     SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
+>;
+#[cfg(feature = "invitations")]
+pub type SharedInvitationUc = Arc<
+    InvitationUseCases<
+        PgInvitationRepository,
+        PermissionChecker,
+        PgOrganizationRepository,
+        PgUserRepository,
+        Argon2HashService,
+        PgSessionRepository,
+        PermissionChecker,
+    >,
 >;
 pub type SharedUserUc = Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker>>;
 pub type SharedOrgUc = Arc<
@@ -76,6 +92,8 @@ pub struct Services {
     pub auth_uc: SharedAuthUc,
     #[cfg(feature = "signup")]
     pub signup_uc: SharedSignupUc,
+    #[cfg(feature = "invitations")]
+    pub invitation_uc: SharedInvitationUc,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
     pub project_uc: SharedProjectUc,
@@ -109,6 +127,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
     #[cfg(feature = "signup")]
     let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
+    #[cfg(feature = "invitations")]
+    let invite_repo = Arc::new(PgInvitationRepository::new(db.clone()));
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let user_role_repo = Arc::new(PgUserRoleRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
@@ -214,6 +234,18 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         None => Arc::new(NoopMailer),
     };
 
+    #[cfg(feature = "invitations")]
+    let invitation_uc = Arc::new(InvitationUseCases::new(
+        invite_repo.clone(),
+        permission_checker.clone(),
+        mailer.clone(),
+        org_repo.clone(),
+        user_repo.clone(),
+        hash_service.clone(),
+        session_repo.clone(),
+        permission_checker.clone(),
+    ));
+
     // Connect to Hermes broker
     let broker_channel = hermes_broker_client::connect(&config.broker.url, None)
         .await
@@ -235,6 +267,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         auth_uc,
         #[cfg(feature = "signup")]
         signup_uc,
+        #[cfg(feature = "invitations")]
+        invitation_uc,
         user_uc,
         org_uc,
         project_uc,
@@ -341,6 +375,8 @@ where
     };
     #[cfg(feature = "signup")]
     use crate::grpc::RegistrationHandler;
+    #[cfg(feature = "invitations")]
+    use crate::grpc::InvitationHandler;
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
         auth::auth_service_server::AuthServiceServer,
@@ -356,6 +392,11 @@ where
     };
     #[cfg(feature = "signup")]
     use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
+    #[cfg(feature = "invitations")]
+    use scylla_protocol::services::invitation::{
+        invitation_accept_service_server::InvitationAcceptServiceServer,
+        invitation_service_server::InvitationServiceServer,
+    };
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tonic_web::GrpcWebLayer;
@@ -379,6 +420,8 @@ where
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
+    #[cfg(feature = "invitations")]
+    let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(services.session_repo.clone()));
     let cors_layer = build_cors_layer(&config.cors);
@@ -399,6 +442,11 @@ where
     #[cfg(feature = "signup")]
     let registration_service =
         RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
+
+    // Public invitation acceptance — the token is the credential, so no interceptor.
+    #[cfg(feature = "invitations")]
+    let invitation_accept_service =
+        InvitationAcceptServiceServer::new(invitation_handler.clone());
 
     let user_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -432,6 +480,12 @@ where
         .layer(auth_interceptor.clone())
         .service(GrantServiceServer::new(grant_handler));
 
+    // Authenticated invitation management (org-admins).
+    #[cfg(feature = "invitations")]
+    let invitation_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(InvitationServiceServer::new(invitation_handler));
+
     let role_service = ServiceBuilder::new()
         .layer(auth_interceptor)
         .service(RoleServiceServer::new(role_handler));
@@ -457,6 +511,10 @@ where
     // SaaS-only services, registered behind their cargo feature.
     #[cfg(feature = "signup")]
     let router = router.add_service(registration_service);
+    #[cfg(feature = "invitations")]
+    let router = router
+        .add_service(invitation_service)
+        .add_service(invitation_accept_service);
 
     router.serve_with_shutdown(config.grpc.address, shutdown).await?;
 
