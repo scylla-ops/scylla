@@ -1,6 +1,7 @@
 mod ids;
 
 mod agent;
+mod invitation;
 mod job;
 mod job_log;
 mod organization;
@@ -14,6 +15,7 @@ mod user_project;
 pub use ids::*;
 
 pub use agent::*;
+pub use invitation::*;
 pub use job::*;
 pub use job_log::*;
 pub use organization::*;

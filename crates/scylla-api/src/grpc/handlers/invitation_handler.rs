@@ -1,13 +1,12 @@
 use crate::extract_auth_context;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::invitation::Invitation;
 use scylla_core::application::permission::policy::PolicyControl;
 use scylla_core::application::{
     HashService, InvitationRepository, InvitationUseCases, OrganizationRepository, PermissionService,
     SessionRepository, UserRepository,
 };
-use scylla_core::domain::entities::{InvitationId, OrganizationId};
+use scylla_core::domain::entities::{Invitation, InvitationId, OrganizationId};
 use scylla_core::domain::value_objects::role::name::RoleName;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
 use scylla_protocol::services::invitation::{
@@ -54,12 +53,12 @@ where
 
 fn to_proto(i: &Invitation) -> InvitationResponse {
     InvitationResponse {
-        id: i.id.to_string(),
-        organization_id: i.organization_id.to_string(),
-        email: i.email.as_str().to_string(),
-        role: i.role.as_ref().map(|r| r.as_str().to_string()),
-        status: i.status.as_str().to_string(),
-        expires_at: i.expires_at.to_rfc3339(),
+        id: i.id().to_string(),
+        organization_id: i.organization_id().to_string(),
+        email: i.email().as_str().to_string(),
+        role: i.role().map(|r| r.as_str().to_string()),
+        status: i.status().as_str().to_string(),
+        expires_at: i.expires_at().to_rfc3339(),
     }
 }
 

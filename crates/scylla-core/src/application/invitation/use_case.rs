@@ -1,118 +1,22 @@
 use crate::application::caller::CallerContext;
+use crate::application::invitation::repository::InvitationRepository;
 use crate::application::mail::Mailer;
 use crate::application::permission::grant::{Grant, GrantScope};
 use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
 use crate::application::{HashService, OrganizationRepository, SessionRepository, UserRepository};
-use crate::domain::clock;
-use crate::domain::entities::{InvitationId, OrganizationId, Session, User, UserId};
+use crate::domain::entities::{Invitation, InvitationId, OrganizationId, Session, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
-use async_trait::async_trait;
-use chrono::{DateTime, Duration, Utc};
+use chrono::Duration;
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;
 
-const INVITE_TTL_DAYS: i64 = 7;
 const SESSION_TTL_HOURS: i64 = 24;
-
-/// Lifecycle of an invitation. Stored as text in the DB.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InvitationStatus {
-    Pending,
-    Accepted,
-    Revoked,
-}
-
-impl InvitationStatus {
-    #[must_use]
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Pending => "pending",
-            Self::Accepted => "accepted",
-            Self::Revoked => "revoked",
-        }
-    }
-
-    pub fn parse(s: &str) -> DomainResult<Self> {
-        match s {
-            "pending" => Ok(Self::Pending),
-            "accepted" => Ok(Self::Accepted),
-            "revoked" => Ok(Self::Revoked),
-            other => Err(DomainError::infrastructure(format!(
-                "unknown invitation status '{other}'"
-            ))),
-        }
-    }
-}
-
-/// An email-based invitation to join an organization, optionally with a scoped
-/// role granted on acceptance.
-#[derive(Debug, Clone)]
-pub struct Invitation {
-    pub id: InvitationId,
-    pub organization_id: OrganizationId,
-    pub email: Email,
-    pub role: Option<RoleName>,
-    pub token: String,
-    pub status: InvitationStatus,
-    pub invited_by: UserId,
-    pub expires_at: DateTime<Utc>,
-    pub created_at: DateTime<Utc>,
-}
-
-impl Invitation {
-    #[must_use]
-    pub fn create(
-        organization_id: OrganizationId,
-        email: Email,
-        role: Option<RoleName>,
-        invited_by: UserId,
-    ) -> Self {
-        let now = clock::now();
-        Self {
-            id: InvitationId::generate(),
-            organization_id,
-            email,
-            role,
-            token: Uuid::new_v4().to_string(),
-            status: InvitationStatus::Pending,
-            invited_by,
-            expires_at: now + Duration::days(INVITE_TTL_DAYS),
-            created_at: now,
-        }
-    }
-
-    #[must_use]
-    pub fn is_acceptable(&self) -> bool {
-        self.status == InvitationStatus::Pending && clock::now() <= self.expires_at
-    }
-}
-
-/// Persistence for invitations. `accept_atomic` performs the join (optionally
-/// creating the user and a scoped grant) in a single transaction.
-#[async_trait]
-pub trait InvitationRepository: Send + Sync {
-    async fn create(&self, invite: &Invitation) -> DomainResult<()>;
-    async fn find_by_id(&self, id: &InvitationId) -> DomainResult<Invitation>;
-    async fn find_by_token(&self, token: &str) -> DomainResult<Invitation>;
-    async fn list_pending(&self, org_id: &OrganizationId) -> DomainResult<Vec<Invitation>>;
-    async fn revoke(&self, id: &InvitationId) -> DomainResult<()>;
-    /// Atomic accept: insert `new_user` if Some, add the member to the org,
-    /// insert `grant` if Some, and mark the invitation accepted — all or nothing.
-    async fn accept_atomic(
-        &self,
-        invite_id: &InvitationId,
-        new_user: Option<&User>,
-        member: &UserId,
-        organization_id: &OrganizationId,
-        grant: Option<&Grant>,
-    ) -> DomainResult<()>;
-}
 
 /// What accepting an invitation returns.
 pub struct AcceptOutcome {
@@ -124,6 +28,11 @@ pub struct AcceptOutcome {
 /// SaaS member invitations. Creating an invite is gated by the same permission
 /// as adding a member (`AddOrganizationMember`), so an org-admin can invite.
 /// Accepting is public (the token is the credential).
+///
+/// The mailer is held as `Arc<dyn Mailer>` rather than a generic parameter
+/// (unlike the other collaborators): the concrete transport — real SMTP via
+/// `LettreMailer` or the `NoopMailer` fallback — is selected at runtime from
+/// configuration, which requires dynamic dispatch.
 #[derive(Constructor)]
 #[allow(clippy::too_many_arguments)]
 pub struct InvitationUseCases<I, PS, O, U, H, S, PC>
@@ -180,16 +89,16 @@ where
             "<p>You've been invited to join <b>{}</b> on Scylla.</p>\
              <p>Use this token to accept: <code>{}</code></p>",
             org.name().as_str(),
-            invite.token
+            invite.token()
         );
         // Email delivery is best-effort: a transient SMTP failure must not lose
         // the persisted invitation (it can be re-sent).
         if let Err(e) = self
             .mailer
-            .send(&invite.email, "You've been invited to Scylla", &body)
+            .send(invite.email(), "You've been invited to Scylla", &body)
             .await
         {
-            tracing::warn!(error = %e, invite_id = %invite.id, "invite email send failed");
+            tracing::warn!(error = %e, invite_id = %invite.id(), "invite email send failed");
         }
 
         Ok(invite)
@@ -221,7 +130,7 @@ where
         self.permission_service
             .check(
                 caller,
-                Permission::AddOrganizationMember(invite.organization_id.clone()),
+                Permission::AddOrganizationMember(invite.organization_id().clone()),
             )
             .await?;
         self.invite_repo.revoke(invite_id).await
@@ -246,29 +155,29 @@ where
 
         // Existing account with this email joins directly; otherwise create one.
         let (new_user, user_id) =
-            if let Ok(existing) = self.user_repo.find_by_email(&invite.email).await {
+            if let Ok(existing) = self.user_repo.find_by_email(invite.email()).await {
                 (None, existing.id().clone())
             } else {
                 let password_hash = self.hash_service.hash(&password).await?;
-                let user = User::create(username, Some(invite.email.clone()), password_hash);
+                let user = User::create(username, Some(invite.email().clone()), password_hash);
                 let id = user.id().clone();
                 (Some(user), id)
             };
 
-        let grant = invite.role.as_ref().map(|role| {
+        let grant = invite.role().map(|role| {
             Grant::new(
                 user_id.clone(),
                 role.clone(),
-                GrantScope::Organization(invite.organization_id.clone()),
+                GrantScope::Organization(invite.organization_id().clone()),
             )
         });
 
         self.invite_repo
             .accept_atomic(
-                &invite.id,
+                invite.id(),
                 new_user.as_ref(),
                 &user_id,
-                &invite.organization_id,
+                invite.organization_id(),
                 grant.as_ref(),
             )
             .await?;
@@ -288,7 +197,7 @@ where
         Ok(AcceptOutcome {
             token: session_token,
             user_id,
-            organization_id: invite.organization_id,
+            organization_id: invite.organization_id().clone(),
         })
     }
 }

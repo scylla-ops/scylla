@@ -1,4 +1,5 @@
 pub mod agent;
+pub mod invitation;
 pub mod job;
 pub mod organization;
 pub mod pagination;

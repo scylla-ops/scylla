@@ -75,7 +75,7 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
 
     let outcome = uc
         .accept(
-            &invite.token,
+            invite.token(),
             Username::new("newbie").unwrap(),
             Password::new("SecurePass123!").unwrap(),
         )

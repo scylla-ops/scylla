@@ -30,9 +30,7 @@ pub use job::{
     JobRepository, JobUseCases,
 };
 #[cfg(feature = "invitations")]
-pub use invitation::{
-    AcceptOutcome, Invitation, InvitationRepository, InvitationStatus, InvitationUseCases,
-};
+pub use invitation::{AcceptOutcome, InvitationRepository, InvitationUseCases};
 pub use mail::{Mailer, NoopMailer};
 #[cfg(feature = "oauth-github")]
 pub use oauth::{
