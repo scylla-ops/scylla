@@ -1,6 +1,6 @@
 use crate::domain::entities::UserId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::user::{PasswordHash, Username};
+use crate::domain::value_objects::user::{Email, PasswordHash, Username};
 use crate::domain::clock;
 use chrono::{DateTime, Utc};
 
@@ -9,6 +9,9 @@ use chrono::{DateTime, Utc};
 pub struct User {
     id: UserId,
     username: Username,
+    /// Optional so legacy/username-only accounts remain valid; required at
+    /// signup and used for email login, mail and OAuth linking.
+    email: Option<Email>,
     password_hash: PasswordHash,
     is_active: bool,
     created_at: DateTime<Utc>,
@@ -22,6 +25,7 @@ impl User {
     pub fn from_persistence(
         id: UserId,
         username: Username,
+        email: Option<Email>,
         password_hash: PasswordHash,
         is_active: bool,
         created_at: DateTime<Utc>,
@@ -30,6 +34,7 @@ impl User {
         Self {
             id,
             username,
+            email,
             password_hash,
             is_active,
             created_at,
@@ -38,11 +43,12 @@ impl User {
     }
 
     #[must_use]
-    pub fn create(username: Username, password_hash: PasswordHash) -> Self {
+    pub fn create(username: Username, email: Option<Email>, password_hash: PasswordHash) -> Self {
         let now = clock::now();
         Self {
             id: UserId::generate(),
             username,
+            email,
             password_hash,
             is_active: true,
             created_at: now,
@@ -54,6 +60,11 @@ impl User {
         self.username = username;
         self.updated_at = clock::now();
         Ok(())
+    }
+
+    pub fn set_email(&mut self, email: Option<Email>) {
+        self.email = email;
+        self.updated_at = clock::now();
     }
 
     pub fn update_password_hash(&mut self, password_hash: PasswordHash) {
@@ -87,6 +98,11 @@ impl User {
     #[must_use]
     pub fn username(&self) -> &Username {
         &self.username
+    }
+
+    #[must_use]
+    pub fn email(&self) -> Option<&Email> {
+        self.email.as_ref()
     }
 
     #[must_use]

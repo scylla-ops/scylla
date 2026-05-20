@@ -22,6 +22,9 @@ pub struct ProjectUseCases<
     user_project_repo: Arc<UP>,
     user_repo: Arc<U>,
     permission_service: Arc<PS>,
+    /// Per-org limits; only compiled (and enforced) in the SaaS `metering` build.
+    #[cfg(feature = "metering")]
+    quotas: crate::application::quota::Quotas,
 }
 
 impl<
@@ -42,6 +45,23 @@ impl<
         self.permission_service
             .check(caller, Permission::CreateProject(organization_id.clone()))
             .await?;
+
+        // SaaS metering: cap projects per organization. Visible, feature-gated
+        // enforcement — PaaS builds compile this away entirely.
+        #[cfg(feature = "metering")]
+        {
+            let used = self
+                .project_repo
+                .count_by_organization(&organization_id)
+                .await?;
+            if used >= self.quotas.max_projects_per_org {
+                return Err(DomainError::quota_exceeded(format!(
+                    "project quota reached for this organization ({used}/{})",
+                    self.quotas.max_projects_per_org
+                )));
+            }
+        }
+
         let project = Project::create(name, description, organization_id)?;
         self.project_repo.create(&project).await
     }

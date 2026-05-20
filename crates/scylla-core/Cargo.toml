@@ -13,6 +13,19 @@ postgres = ["dep:sqlx"]
 hash = ["dep:argon2"]
 permission = ["dep:cedar-policy", "postgres"]
 
+# ── SaaS edition gating ────────────────────────────────────────────────
+# `saas` is the umbrella enabling every hosted-only feature; PaaS builds omit
+# it. Each granular feature gates its module/use-case via `#[cfg(feature=…)]`,
+# so the PaaS/SaaS difference is visible in the Rust source. The umbrella grows
+# as features land (mail / invitations / oauth-github added in later phases).
+saas = ["signup", "metering", "agent-org-scope", "mail", "invitations", "oauth-github"]
+signup = []
+metering = []
+agent-org-scope = []
+mail = ["dep:lettre"]
+invitations = ["mail"]   # an invitation sends an email
+oauth-github = []        # `dep:oauth2`/`dep:reqwest` added when OAuth lands (P6)
+
 # Exposes `test_support` builders / seeders to downstream test crates. Off by
 # default; turned on via dev-dependencies in `scylla-api` etc.
 test-utils = []
@@ -48,6 +61,7 @@ tonic.workspace = true
 # infrastructure optional services
 argon2 = { workspace = true, optional = true }
 cedar-policy = { workspace = true, optional = true }
+lettre = { workspace = true, optional = true }
 
 [lints]
 workspace = true

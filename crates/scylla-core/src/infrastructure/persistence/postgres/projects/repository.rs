@@ -77,6 +77,11 @@ impl ProjectRepository for PgProjectRepository {
         let items = queries::list_page(&self.pool, &params, false, Some(organization_id)).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
+
+    #[instrument(skip(self), fields(org_id = %organization_id))]
+    async fn count_by_organization(&self, organization_id: &OrganizationId) -> DomainResult<u64> {
+        queries::count(&self.pool, false, Some(organization_id)).await
+    }
 }
 
 #[allow(clippy::wildcard_imports)]

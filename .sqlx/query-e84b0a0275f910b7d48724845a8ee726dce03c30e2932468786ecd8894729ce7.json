@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, username, password_hash, is_active, created_at, updated_at\n            FROM users\n            WHERE id = $1\n            ",
+  "query": "\n            SELECT id, username, email, password_hash, is_active, created_at, updated_at\n            FROM users\n            ORDER BY created_at DESC\n            LIMIT $1 OFFSET $2\n            ",
   "describe": {
     "columns": [
       {
@@ -15,38 +15,45 @@
       },
       {
         "ordinal": 2,
-        "name": "password_hash",
+        "name": "email",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
+        "name": "password_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
         "name": "is_active",
         "type_info": "Bool"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
       false,
       false,
+      true,
       false,
       false,
       false,
       false
     ]
   },
-  "hash": "88b11d1d5a0f2442f9ba21815faf47b0755fe220fdf105527ddc66d818ec9360"
+  "hash": "e84b0a0275f910b7d48724845a8ee726dce03c30e2932468786ecd8894729ce7"
 }

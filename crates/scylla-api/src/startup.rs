@@ -7,13 +7,21 @@ use scylla_core::application::{
     JobUseCases, OrganizationUseCases, PipelineUseCases, PolicyUseCases, ProjectUseCases,
     UserRoleUseCases, UserUseCases,
 };
+#[cfg(feature = "signup")]
+use scylla_core::application::SignupUseCases;
+#[cfg(feature = "mail")]
+use scylla_core::application::{Mailer, NoopMailer};
+#[cfg(feature = "mail")]
+use scylla_core::infrastructure::LettreMailer;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, HermesJobLogStream, PgAgentRepository,
     PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
     PgOrganizationRepository, PgPipelineRepository, PgPolicyRepository, PgProjectRepository,
-    PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
-    PgUserRoleRepository,
+    PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
+    PgUserRepository, PgUserRoleRepository,
 };
+#[cfg(feature = "signup")]
+use scylla_core::infrastructure::PgSignupRepository;
 use sqlx::PgPool;
 use std::future::Future;
 use std::sync::Arc;
@@ -31,6 +39,10 @@ pub type SharedRoleUc = Arc<UserRoleUseCases<PgUserRoleRepository, PermissionChe
 
 pub type SharedAuthUc =
     Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
+#[cfg(feature = "signup")]
+pub type SharedSignupUc = Arc<
+    SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
+>;
 pub type SharedUserUc = Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker>>;
 pub type SharedOrgUc = Arc<
     OrganizationUseCases<
@@ -62,6 +74,8 @@ pub type SharedAgentUc = Arc<AgentUseCases<PgAgentRepository, PermissionChecker>
 pub struct Services {
     pub db: PgPool,
     pub auth_uc: SharedAuthUc,
+    #[cfg(feature = "signup")]
+    pub signup_uc: SharedSignupUc,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
     pub project_uc: SharedProjectUc,
@@ -77,6 +91,8 @@ pub struct Services {
     pub session_repo: Arc<PgSessionRepository>,
     pub user_role_repo: Arc<PgUserRoleRepository>,
     pub broker_publisher: Arc<Publisher>,
+    #[cfg(feature = "mail")]
+    pub mailer: Arc<dyn Mailer>,
 }
 
 pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError> {
@@ -91,6 +107,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let job_log_repo = Arc::new(PgJobLogRepository::new(db.clone()));
     let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
+    #[cfg(feature = "signup")]
+    let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let user_role_repo = Arc::new(PgUserRoleRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
@@ -117,6 +135,13 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo.clone(),
         hash_service.clone(),
     ));
+    #[cfg(feature = "signup")]
+    let signup_uc = Arc::new(SignupUseCases::new(
+        signup_repo.clone(),
+        session_repo.clone(),
+        hash_service.clone(),
+        permission_checker.clone(),
+    ));
     let user_uc = Arc::new(UserUseCases::new(
         user_repo.clone(),
         hash_service.clone(),
@@ -128,6 +153,17 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         user_repo.clone(),
         permission_checker.clone(),
     ));
+    #[cfg(feature = "metering")]
+    let project_uc = Arc::new(ProjectUseCases::new(
+        project_repo.clone(),
+        user_project_repo.clone(),
+        user_repo.clone(),
+        permission_checker.clone(),
+        scylla_core::application::Quotas {
+            max_projects_per_org: config.metering.max_projects_per_org,
+        },
+    ));
+    #[cfg(not(feature = "metering"))]
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
         user_project_repo.clone(),
@@ -168,6 +204,16 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         crate::bootstrap::bootstrap_admin(&user_uc, user_role_repo.as_ref(), cfg).await?;
     }
 
+    // Mailer: real SMTP when configured, else a no-op (logs only).
+    #[cfg(feature = "mail")]
+    let mailer: Arc<dyn Mailer> = match &config.mail {
+        Some(m) => Arc::new(
+            LettreMailer::new(&m.host, m.port, m.username.clone(), m.password.clone(), &m.from)
+                .map_err(|e| StartupError::Mail(e.to_string()))?,
+        ),
+        None => Arc::new(NoopMailer),
+    };
+
     // Connect to Hermes broker
     let broker_channel = hermes_broker_client::connect(&config.broker.url, None)
         .await
@@ -187,6 +233,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     Ok(Services {
         db,
         auth_uc,
+        #[cfg(feature = "signup")]
+        signup_uc,
         user_uc,
         org_uc,
         project_uc,
@@ -202,6 +250,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo,
         user_role_repo,
         broker_publisher,
+        #[cfg(feature = "mail")]
+        mailer,
     })
 }
 
@@ -285,12 +335,17 @@ where
     F: Future<Output = ()> + Send + 'static,
 {
     use crate::grpc::{
-        AgentHandler, AuthHandler, GrantHandler, JobHandler, OrganizationHandler, PipelineHandler,
-        PolicyHandler, ProjectHandler, RoleHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        AgentHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler, OrganizationHandler,
+        PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler, UserHandler,
+        auth_interceptor::AuthInterceptor,
     };
+    #[cfg(feature = "signup")]
+    use crate::grpc::RegistrationHandler;
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
-        auth::auth_service_server::AuthServiceServer, job::job_service_server::JobServiceServer,
+        auth::auth_service_server::AuthServiceServer,
+        config::config_service_server::ConfigServiceServer,
+        job::job_service_server::JobServiceServer,
         organization::organization_service_server::OrganizationServiceServer,
         permission::grant_service_server::GrantServiceServer,
         permission::policy_service_server::PolicyServiceServer,
@@ -299,6 +354,8 @@ where
         project::project_service_server::ProjectServiceServer,
         user::user_service_server::UserServiceServer,
     };
+    #[cfg(feature = "signup")]
+    use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tonic_web::GrpcWebLayer;
@@ -334,6 +391,14 @@ where
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
 
     let auth_service = AuthServiceServer::new(auth_handler);
+
+    // Public capability discovery — no auth interceptor, like auth/login.
+    let config_service = ConfigServiceServer::new(ConfigHandler);
+
+    // Public self-service signup — only present in SaaS (`signup` feature) builds.
+    #[cfg(feature = "signup")]
+    let registration_service =
+        RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
 
     let user_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -371,13 +436,14 @@ where
         .layer(auth_interceptor)
         .service(RoleServiceServer::new(role_handler));
 
-    Server::builder()
+    let router = Server::builder()
         .accept_http1(true)
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
         .layer(GrpcWebLayer::new())
         .add_service(reflection)
         .add_service(auth_service)
+        .add_service(config_service)
         .add_service(user_service)
         .add_service(org_service)
         .add_service(project_service)
@@ -386,9 +452,13 @@ where
         .add_service(agent_service)
         .add_service(policy_service)
         .add_service(grant_service)
-        .add_service(role_service)
-        .serve_with_shutdown(config.grpc.address, shutdown)
-        .await?;
+        .add_service(role_service);
+
+    // SaaS-only services, registered behind their cargo feature.
+    #[cfg(feature = "signup")]
+    let router = router.add_service(registration_service);
+
+    router.serve_with_shutdown(config.grpc.address, shutdown).await?;
 
     Ok(())
 }

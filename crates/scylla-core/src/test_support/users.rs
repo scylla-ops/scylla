@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
 use crate::domain::entities::{User, UserId};
-use crate::domain::value_objects::user::{PasswordHash, Username};
+use crate::domain::value_objects::user::{Email, PasswordHash, Username};
 
 /// A PHC-format Argon2id hash that satisfies `PasswordHash::new`. Constant so
 /// builders don't pay the hashing cost in tests.
@@ -20,15 +20,18 @@ impl UserBuilder {
     pub fn assemble(
         #[builder(start_fn, into)] username: String,
         id: Option<UserId>,
+        #[builder(into)] email: Option<String>,
         #[builder(into, default = VALID_ARGON2_HASH.to_string())] password_hash: String,
         #[builder(default = true)] is_active: bool,
         created_at: Option<DateTime<Utc>>,
         updated_at: Option<DateTime<Utc>>,
     ) -> User {
         let now = created_at.unwrap_or_else(clock::now);
+        let email = email.map(|e| Email::new(e).expect("test email invalid"));
         User::from_persistence(
             id.unwrap_or_else(UserId::generate),
             Username::new(username).expect("test username invalid"),
+            email,
             PasswordHash::new(password_hash).expect("test password hash invalid"),
             is_active,
             now,

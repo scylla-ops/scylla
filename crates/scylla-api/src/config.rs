@@ -22,6 +22,28 @@ pub struct CoreConfig {
 
     #[serde(default)]
     pub bootstrap: Option<BootstrapConfig>,
+
+    #[serde(default)]
+    pub metering: MeteringConfig,
+
+    /// SMTP settings for the `mail` feature. When absent, a no-op mailer is used.
+    #[serde(default)]
+    pub mail: Option<MailConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MailConfig {
+    pub host: String,
+    #[serde(default = "default_smtp_port")]
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    /// Sender, e.g. `"Scylla <no-reply@scylla.dev>"` or `"no-reply@scylla.dev"`.
+    pub from: String,
+}
+
+fn default_smtp_port() -> u16 {
+    465
 }
 
 #[cfg(feature = "grpc")]
@@ -84,6 +106,10 @@ pub struct BootstrapConfig {
     pub username: String,
 
     pub password: String,
+
+    /// Optional email for the bootstrap admin, enabling email login for it.
+    #[serde(default)]
+    pub email: Option<String>,
 }
 
 impl Default for BootstrapConfig {
@@ -91,6 +117,27 @@ impl Default for BootstrapConfig {
         Self {
             username: "admin".to_string(),
             password: "admin123".to_string(),
+            email: None,
+        }
+    }
+}
+
+/// Per-organization quotas (SaaS `metering` feature). Parsed in every edition;
+/// only read when the server is built with `metering`.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MeteringConfig {
+    #[serde(default = "default_max_projects_per_org")]
+    pub max_projects_per_org: u64,
+}
+
+fn default_max_projects_per_org() -> u64 {
+    100
+}
+
+impl Default for MeteringConfig {
+    fn default() -> Self {
+        Self {
+            max_projects_per_org: default_max_projects_per_org(),
         }
     }
 }

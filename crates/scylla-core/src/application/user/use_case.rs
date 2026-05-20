@@ -3,7 +3,7 @@ use crate::application::{HashService, PermissionService, UserRepository};
 use crate::domain::entities::{User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::user::{Password, Username};
+use crate::domain::value_objects::user::{Email, Password, Username};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -22,6 +22,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
         &self,
         caller: &CallerContext,
         username: Username,
+        email: Option<Email>,
         password: Password,
     ) -> DomainResult<User> {
         self.permission_service
@@ -33,7 +34,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
         }
 
         let password_hash = self.hash_service.hash(&password).await?;
-        let user = User::create(username, password_hash);
+        let user = User::create(username, email, password_hash);
         self.user_repo.create(&user).await
     }
 

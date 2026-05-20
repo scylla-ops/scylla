@@ -14,6 +14,7 @@ pub fn domain_error_to_status(err: DomainError) -> Status {
         DomainError::Unauthorized(message) => Status::unauthenticated(message),
         DomainError::Forbidden(message) => Status::permission_denied(message),
         DomainError::Conflict(message) => Status::already_exists(message),
+        DomainError::QuotaExceeded(message) => Status::resource_exhausted(message),
         DomainError::Infrastructure(message) => {
             error!("Infrastructure error: {}", message);
             Status::internal("Internal server error")
@@ -71,6 +72,13 @@ mod tests {
         let err = DomainError::conflict("duplicate");
         let status = domain_error_to_status(err);
         assert_eq!(status.code(), Code::AlreadyExists);
+    }
+
+    #[test]
+    fn quota_exceeded_maps_to_resource_exhausted() {
+        let err = DomainError::quota_exceeded("project quota reached");
+        let status = domain_error_to_status(err);
+        assert_eq!(status.code(), Code::ResourceExhausted);
     }
 
     #[test]

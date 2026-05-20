@@ -6,7 +6,7 @@ use derive_more::Constructor;
 use scylla_core::application::UserUseCases;
 use scylla_core::application::{HashService, PermissionService, UserRepository};
 use scylla_core::domain::entities::UserId;
-use scylla_core::domain::value_objects::user::{Password, Username};
+use scylla_core::domain::value_objects::user::{Email, Password, Username};
 use scylla_protocol::services::user::{
     ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest,
     DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse,
@@ -35,10 +35,16 @@ impl<
         let req = request.into_inner();
         let username = Username::new(&req.username).map_err(domain_error_to_status)?;
         let password = Password::new(&req.password).map_err(domain_error_to_status)?;
+        let email = req
+            .email
+            .as_deref()
+            .map(Email::new)
+            .transpose()
+            .map_err(domain_error_to_status)?;
 
         let user = self
             .use_cases
-            .create(&caller, username, password)
+            .create(&caller, username, email, password)
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(user_to_proto(&user)))

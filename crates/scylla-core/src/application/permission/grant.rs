@@ -10,6 +10,12 @@ use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
 
+/// Role names that map to a linkable Cedar template. Single source of truth,
+/// referenced by the Cedar adapter (`TEMPLATE_ROLES`) and by callers that mint
+/// grants (e.g. signup grants the org creator [`ORGANIZATION_ADMIN_ROLE`]).
+pub const ORGANIZATION_ADMIN_ROLE: &str = "organization-admin";
+pub const PROJECT_ADMIN_ROLE: &str = "project-admin";
+
 /// The scope a grant is bound to. Maps to the `?resource` slot of the linked
 /// Cedar template (e.g. `Project::"X"`).
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -28,6 +28,7 @@ service UserService {
 message CreateUserRequest {
   string username = 1;
   string password = 2; // not hashed
+  optional string email = 3;
 }
 
 message GetUserRequest { string user_id = 1; }
@@ -43,6 +44,7 @@ message UserResponse {
   bool is_active = 3;
   string created_at = 4;
   string updated_at = 5;
+  optional string email = 6;
 }
 
 message DeleteUserRequest { string user_id = 1; }

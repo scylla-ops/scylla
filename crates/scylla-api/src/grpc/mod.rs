@@ -4,9 +4,11 @@ pub mod middleware;
 pub mod streaming;
 
 pub use handlers::{
-    AgentHandler, AuthHandler, GrantHandler, JobHandler, OrganizationHandler, PipelineHandler,
-    PolicyHandler, ProjectHandler, RoleHandler, UserHandler,
+    AgentHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler, OrganizationHandler,
+    PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler, UserHandler,
 };
+#[cfg(feature = "signup")]
+pub use handlers::RegistrationHandler;
 pub use mappers::{
     agent_to_proto, domain_error_to_status, domain_to_proto_metadata, job_to_proto,
     organization_to_proto, pipeline_to_proto, project_to_proto, proto_to_domain_pagination,

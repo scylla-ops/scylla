@@ -1,7 +1,7 @@
 use crate::application::{HashService, SessionRepository, UserRepository};
 use crate::domain::entities::{Session, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::user::{Password, Username};
+use crate::domain::value_objects::user::{Email, Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -18,17 +18,24 @@ pub struct AuthUseCases<U: UserRepository, S: SessionRepository, H: HashService>
 }
 
 impl<U: UserRepository, S: SessionRepository, H: HashService> AuthUseCases<U, S, H> {
-    #[instrument(skip(self, password), fields(username = %username))]
+    /// Authenticate by an identifier that is either an email (contains `@`) or a
+    /// username. Both paths share the same opaque error so callers can't probe
+    /// which accounts exist.
+    #[instrument(skip(self, password, identifier))]
     pub async fn login(
         &self,
-        username: Username,
+        identifier: String,
         password: Password,
     ) -> DomainResult<(String, UserId)> {
-        let user = self
-            .user_repo
-            .find_by_username(&username)
-            .await
-            .map_err(|_| DomainError::unauthorized("Invalid username or password"))?;
+        let invalid = || DomainError::unauthorized("Invalid username or password");
+        let lookup = if identifier.contains('@') {
+            let email = Email::new(&identifier).map_err(|_| invalid())?;
+            self.user_repo.find_by_email(&email).await
+        } else {
+            let username = Username::new(&identifier).map_err(|_| invalid())?;
+            self.user_repo.find_by_username(&username).await
+        };
+        let user = lookup.map_err(|_| invalid())?;
 
         if !user.is_active() {
             return Err(DomainError::unauthorized("User account is inactive"));

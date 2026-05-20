@@ -1,6 +1,6 @@
 use crate::domain::entities::{User, UserId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::user::Username;
+use crate::domain::value_objects::user::{Email, Username};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
 
@@ -11,6 +11,8 @@ pub trait UserRepository {
     async fn find_by_id(&self, id: &UserId) -> DomainResult<User>;
 
     async fn find_by_username(&self, username: &Username) -> DomainResult<User>;
+
+    async fn find_by_email(&self, email: &Email) -> DomainResult<User>;
 
     async fn update(&self, user: &User) -> DomainResult<User>;
 

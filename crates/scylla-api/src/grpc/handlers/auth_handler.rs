@@ -1,9 +1,8 @@
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::AuthUseCases;
-use scylla_core::application::{HashService, SessionRepository, UserRepository};
+use scylla_core::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
 use scylla_core::domain::entities::UserId;
-use scylla_core::domain::value_objects::user::{Password, Username};
+use scylla_core::domain::value_objects::user::Password;
 use scylla_protocol::services::auth::{
     LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
     ValidateTokenResponse, auth_service_server::AuthService,
@@ -29,12 +28,11 @@ impl<
     ) -> Result<Response<LoginResponse>, Status> {
         let req = request.into_inner();
 
-        let username = Username::new(&req.username).map_err(domain_error_to_status)?;
         let password = Password::new(&req.password).map_err(domain_error_to_status)?;
 
         let (token, user_id) = self
             .use_cases
-            .login(username, password)
+            .login(req.identifier, password)
             .await
             .map_err(domain_error_to_status)?;
 

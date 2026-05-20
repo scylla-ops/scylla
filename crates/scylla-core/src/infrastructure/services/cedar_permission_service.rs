@@ -24,7 +24,10 @@ const POLICIES_SRC: &str = include_str!("cedar/policies.cedar");
 const ROLE_TEMPLATE_SRC: &str = include_str!("cedar/role_template.cedar");
 /// Role names that map to a linkable Cedar template. A grant whose `role` is
 /// not listed here is skipped at link time (logged).
-const TEMPLATE_ROLES: &[&str] = &["organization-admin", "project-admin"];
+const TEMPLATE_ROLES: &[&str] = &[
+    crate::application::permission::grant::ORGANIZATION_ADMIN_ROLE,
+    crate::application::permission::grant::PROJECT_ADMIN_ROLE,
+];
 
 /// Cedar-backed authorization. Static policies + schema are compiled into the
 /// binary and validated at construction; explicit scoped grants are linked from

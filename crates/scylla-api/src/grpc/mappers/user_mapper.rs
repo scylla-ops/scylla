@@ -8,6 +8,7 @@ pub fn user_to_proto(user: &User) -> UserResponse {
         is_active: user.is_active(),
         created_at: user.created_at().to_rfc3339(),
         updated_at: user.updated_at().to_rfc3339(),
+        email: user.email().map(|e| e.as_str().to_string()),
     }
 }
 
@@ -20,6 +21,7 @@ mod tests {
     fn user_to_proto_maps_all_fields() {
         let user = User::create(
             Username::new("alice").unwrap(),
+            None,
             PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap(),
         );
 

@@ -19,6 +19,9 @@ pub enum DomainError {
     #[error("Conflict: {0}")]
     Conflict(String),
 
+    #[error("Quota exceeded: {0}")]
+    QuotaExceeded(String),
+
     #[error("Infrastructure error: {0}")]
     Infrastructure(String),
 
@@ -55,6 +58,10 @@ impl DomainError {
 
     pub fn conflict(message: impl Into<String>) -> Self {
         Self::Conflict(message.into())
+    }
+
+    pub fn quota_exceeded(message: impl Into<String>) -> Self {
+        Self::QuotaExceeded(message.into())
     }
 
     pub fn infrastructure(message: impl Into<String>) -> Self {

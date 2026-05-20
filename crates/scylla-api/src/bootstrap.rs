@@ -6,7 +6,7 @@ use scylla_core::application::{
 };
 use scylla_core::domain::errors::DomainError;
 use scylla_core::domain::value_objects::role::name::RoleName;
-use scylla_core::domain::value_objects::user::{Password, Username};
+use scylla_core::domain::value_objects::user::{Email, Password, Username};
 
 /// Idempotent first-boot bootstrap: create the `admin` user if missing, then
 /// ensure it carries the `admin` role (`Scylla::Role::"admin"`). Cedar's
@@ -25,10 +25,16 @@ where
 {
     let username = Username::new(&bootstrap.username).map_err(BootstrapError::InvalidUsername)?;
     let password = Password::new(&bootstrap.password).map_err(BootstrapError::InvalidPassword)?;
+    let email = bootstrap
+        .email
+        .as_deref()
+        .map(Email::new)
+        .transpose()
+        .map_err(BootstrapError::InvalidEmail)?;
     let role = RoleName::new("admin").map_err(BootstrapError::GrantPermission)?;
     let caller = CallerContext::Service(ServiceIdentity::bootstrap());
 
-    let user = match user_uc.create(&caller, username, password).await {
+    let user = match user_uc.create(&caller, username, email, password).await {
         Ok(user) => {
             tracing::info!(
                 "Bootstrap user '{}' created (id: {})",

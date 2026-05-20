@@ -20,6 +20,8 @@ pub enum BootstrapError {
     InvalidUsername(#[source] DomainError),
     #[error("invalid bootstrap password: {0}")]
     InvalidPassword(#[source] DomainError),
+    #[error("invalid bootstrap email: {0}")]
+    InvalidEmail(#[source] DomainError),
     #[error("failed to create bootstrap user: {0}")]
     CreateUser(#[source] DomainError),
     #[error("failed to grant admin permissions: {0}")]
@@ -34,6 +36,8 @@ pub enum StartupError {
     Database(#[from] DomainError),
     #[error("permission service init: {0}")]
     Permission(String),
+    #[error("mail service init: {0}")]
+    Mail(String),
     #[error("broker connection to {url}: {message}")]
     BrokerConnect { url: String, message: String },
     #[error("bootstrap: {0}")]

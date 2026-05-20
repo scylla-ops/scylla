@@ -1,7 +1,7 @@
 use crate::application::UserRepository;
 use crate::domain::entities::{User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::user::{PasswordHash, Username};
+use crate::domain::value_objects::user::{Email, PasswordHash, Username};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -39,6 +39,11 @@ impl UserRepository for PgUserRepository {
         queries::find_by_username(&self.pool, username).await
     }
 
+    #[instrument(skip(self), fields(email = %email))]
+    async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
+        queries::find_by_email(&self.pool, email).await
+    }
+
     #[instrument(skip(self, user), fields(user_id = %user.id()))]
     async fn update(&self, user: &User) -> DomainResult<User> {
         queries::update(&self.pool, user).await
@@ -70,19 +75,23 @@ impl UserRepository for PgUserRepository {
 pub mod queries {
     use super::*;
 
+    #[allow(clippy::too_many_arguments)]
     fn row_into_user(
         id: String,
         username: String,
+        email: Option<String>,
         password_hash: String,
         is_active: bool,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
     ) -> DomainResult<User> {
         let username = Username::new(username).db_field("username")?;
+        let email = email.map(Email::new).transpose().db_field("email")?;
         let password_hash = PasswordHash::new(password_hash).db_field("password hash")?;
         Ok(User::from_persistence(
             UserId::new(id),
             username,
+            email,
             password_hash,
             is_active,
             created_at,
@@ -96,11 +105,12 @@ pub mod queries {
     {
         sqlx::query!(
             r#"
-            INSERT INTO users (id, username, password_hash, is_active, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO users (id, username, email, password_hash, is_active, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
             user.id().as_str(),
             user.username().as_str(),
+            user.email().map(Email::as_str),
             user.password_hash().as_str(),
             user.is_active(),
             user.created_at(),
@@ -118,7 +128,7 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, username, password_hash, is_active, created_at, updated_at
+            SELECT id, username, email, password_hash, is_active, created_at, updated_at
             FROM users
             WHERE id = $1
             "#,
@@ -130,6 +140,7 @@ pub mod queries {
         row_into_user(
             rec.id,
             rec.username,
+            rec.email,
             rec.password_hash,
             rec.is_active,
             rec.created_at,
@@ -143,7 +154,7 @@ pub mod queries {
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, username, password_hash, is_active, created_at, updated_at
+            SELECT id, username, email, password_hash, is_active, created_at, updated_at
             FROM users
             WHERE username = $1
             "#,
@@ -155,6 +166,33 @@ pub mod queries {
         row_into_user(
             rec.id,
             rec.username,
+            rec.email,
+            rec.password_hash,
+            rec.is_active,
+            rec.created_at,
+            rec.updated_at,
+        )
+    }
+
+    pub async fn find_by_email<'e, E>(executor: E, email: &Email) -> DomainResult<User>
+    where
+        E: PgExecutor<'e>,
+    {
+        let rec = sqlx::query!(
+            r#"
+            SELECT id, username, email, password_hash, is_active, created_at, updated_at
+            FROM users
+            WHERE email = $1
+            "#,
+            email.as_str(),
+        )
+        .fetch_one(executor)
+        .await
+        .not_found_as("User", email.as_str().to_string())?;
+        row_into_user(
+            rec.id,
+            rec.username,
+            rec.email,
             rec.password_hash,
             rec.is_active,
             rec.created_at,
@@ -170,13 +208,15 @@ pub mod queries {
             r#"
             UPDATE users
             SET username = $2,
-                password_hash = $3,
-                is_active = $4,
-                updated_at = $5
+                email = $3,
+                password_hash = $4,
+                is_active = $5,
+                updated_at = $6
             WHERE id = $1
             "#,
             user.id().as_str(),
             user.username().as_str(),
+            user.email().map(Email::as_str),
             user.password_hash().as_str(),
             user.is_active(),
             user.updated_at(),
@@ -220,7 +260,7 @@ pub mod queries {
         let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
         let rows = sqlx::query!(
             r#"
-            SELECT id, username, password_hash, is_active, created_at, updated_at
+            SELECT id, username, email, password_hash, is_active, created_at, updated_at
             FROM users
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
@@ -236,6 +276,7 @@ pub mod queries {
                 row_into_user(
                     r.id,
                     r.username,
+                    r.email,
                     r.password_hash,
                     r.is_active,
                     r.created_at,

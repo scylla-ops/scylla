@@ -3,6 +3,7 @@ pub mod audit;
 pub mod auth;
 pub mod caller;
 pub mod job;
+pub mod mail;
 pub mod organization;
 // The `PermissionService` trait carries no heavy deps (no cedar, no sqlx) and is
 // a hard dependency of every use case, so it must compile regardless of which
@@ -11,6 +12,8 @@ pub mod organization;
 pub mod permission;
 pub mod pipeline;
 pub mod project;
+pub mod quota;
+pub mod signup;
 pub mod user;
 pub mod user_role;
 
@@ -22,6 +25,7 @@ pub use job::{
     JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase, JobLogUseCases,
     JobRepository, JobUseCases,
 };
+pub use mail::{Mailer, NoopMailer};
 pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
 pub use permission::{
     AuthzEntityProvider, Grant, GrantRepository, GrantScope, GrantUseCases, PermissionService,
@@ -30,5 +34,7 @@ pub use permission::{
 };
 pub use pipeline::{PipelineRepository, PipelineUseCases};
 pub use project::{ProjectRepository, ProjectUseCases, UserProjectRepository};
+pub use quota::Quotas;
+pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
 pub use user::{UserRepository, UserUseCases};
 pub use user_role::{UserRoleRepository, UserRoleUseCases};

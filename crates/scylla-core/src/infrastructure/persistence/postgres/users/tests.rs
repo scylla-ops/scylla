@@ -3,7 +3,7 @@ use crate::application::UserRepository;
 use crate::domain::entities::UserId;
 use crate::domain::errors::DomainError;
 use crate::domain::value_objects::PaginationParams;
-use crate::domain::value_objects::user::Username;
+use crate::domain::value_objects::user::{Email, Username};
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
 
@@ -42,6 +42,42 @@ async fn find_by_username_returns_persisted_user(pool: PgPool) {
 
     let found = repo.find_by_username(user.username()).await.expect("find");
     assert_eq!(found.id(), user.id());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn find_by_email_returns_persisted_user(pool: PgPool) {
+    let repo = PgUserRepository::new(pool);
+    let user = UserBuilder::new("heidi").email("heidi@example.com").build();
+    repo.create(&user).await.expect("create");
+
+    let email = Email::new("heidi@example.com").unwrap();
+    let found = repo.find_by_email(&email).await.expect("find by email");
+    assert_eq!(found.id(), user.id());
+    assert_eq!(found.email().map(Email::as_str), Some("heidi@example.com"));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn duplicate_email_maps_to_conflict(pool: PgPool) {
+    let repo = PgUserRepository::new(pool);
+    repo.create(&UserBuilder::new("ivan").email("dup@example.com").build())
+        .await
+        .expect("first");
+
+    let clash = UserBuilder::new("ivana").email("dup@example.com").build();
+    assert!(matches!(
+        repo.create(&clash).await,
+        Err(DomainError::Conflict(_))
+    ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn null_emails_do_not_collide(pool: PgPool) {
+    // Partial unique index must allow many username-only (NULL email) accounts.
+    let repo = PgUserRepository::new(pool);
+    repo.create(&user("judy")).await.expect("first null email");
+    repo.create(&user("mallory"))
+        .await
+        .expect("second null email must not conflict");
 }
 
 #[sqlx::test(migrations = "../../migrations")]

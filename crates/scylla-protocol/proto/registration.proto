@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package registration;
+
+// Self-service signup. A whole service (not just an RPC on AuthService) so the
+// SaaS-only `signup` cargo feature can gate it at registration time: PaaS builds
+// simply don't register it. Public (no auth).
+service RegistrationService {
+  rpc Signup(SignupRequest) returns (SignupResponse);
+}
+
+message SignupRequest {
+  string username = 1;
+  string password = 2;
+  string organization_name = 3;
+  string email = 4;
+}
+
+message SignupResponse {
+  string token = 1;
+  string user_id = 2;
+  string organization_id = 3;
+}
