@@ -1,6 +1,5 @@
 use crate::config::CoreConfig;
 use crate::error::StartupError;
-use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, DispatchUseCases,
@@ -141,7 +140,6 @@ pub struct Services {
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
     pub user_role_repo: Arc<PgUserRoleRepository>,
-    pub broker_publisher: Arc<Publisher>,
     #[cfg(feature = "mail")]
     pub mailer: Arc<dyn Mailer>,
 }
@@ -315,19 +313,9 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         None => None,
     };
 
-    // Connect to Hermes broker (still used by the recorder until it is removed).
-    let broker_channel = hermes_broker_client::connect(&config.broker.url, None)
-        .await
-        .map_err(|e| StartupError::BrokerConnect {
-            url: config.broker.url.clone(),
-            message: e.to_string(),
-        })?;
-    tracing::info!(url = %config.broker.url, "connected to hermes broker");
-    let broker_publisher = Arc::new(Publisher::new(broker_channel));
-
-    // In-process worker dispatch + job-log live-tail, replacing the broker for
-    // job execution (mono-instance): jobs are pushed to a connected worker's
-    // stream and log lines fan out through a per-job broadcast.
+    // In-process worker dispatch + job-log live-tail (mono-instance): jobs are
+    // pushed to a connected worker's stream and log lines fan out through a
+    // per-job broadcast. No message broker.
     let worker_registry = Arc::new(InMemoryWorkerRegistry::new());
     let job_log_stream = Arc::new(InMemoryJobLogStream::new());
     let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
@@ -369,7 +357,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo,
         app_token_repo,
         user_role_repo,
-        broker_publisher,
         #[cfg(feature = "mail")]
         mailer,
     })

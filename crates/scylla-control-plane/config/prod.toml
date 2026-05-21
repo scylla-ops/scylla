@@ -14,10 +14,3 @@ allow_origins = ["https://your-domain.example.com"]
 allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 allow_headers = ["content-type", "authorization"]
 max_age_seconds = 3600
-
-[broker]
-url = "http://127.0.0.1:50052"
-
-[broker_server]
-addr = "0.0.0.0:50052"
-channel_capacity = 8192

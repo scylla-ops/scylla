@@ -22,13 +22,6 @@ expose_headers = [
     "grpc-status-details-bin"
 ]
 
-[broker]
-url = "http://127.0.0.1:50052"
-
-[broker_server]
-addr = "127.0.0.1:50052"
-channel_capacity = 8192
-
 [bootstrap]
 username = "admin"
 password = "admin123"

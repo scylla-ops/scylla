@@ -1,42 +1,15 @@
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 use std::path::Path;
 use thiserror::Error;
 
-/// Unified control-plane configuration.
-///
-/// Wraps the existing `scylla_api::CoreConfig` (database / cors / api.grpc /
-/// broker-client / bootstrap) and adds the broker SERVER bind address so the
-/// in-process broker can listen on a known port. The same TOML file boots the
-/// entire control plane.
+/// Unified control-plane configuration. Wraps [`scylla_api::CoreConfig`]
+/// (database / cors / gRPC / bootstrap); the same TOML file boots the whole
+/// in-process control plane. Job dispatch is in-process, so there is no broker
+/// configuration.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ControlPlaneConfig {
     #[serde(flatten)]
     pub api: scylla_api::CoreConfig,
-
-    #[serde(default)]
-    pub broker_server: BrokerServerConfig,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct BrokerServerConfig {
-    pub addr: SocketAddr,
-    #[serde(default = "default_channel_capacity")]
-    pub channel_capacity: usize,
-}
-
-fn default_channel_capacity() -> usize {
-    8192
-}
-
-impl Default for BrokerServerConfig {
-    fn default() -> Self {
-        Self {
-            // SAFETY: hardcoded literal; only fails on programmer typo.
-            addr: "0.0.0.0:50052".parse().expect("default broker addr"),
-            channel_capacity: default_channel_capacity(),
-        }
-    }
 }
 
 #[derive(Debug, Error)]

@@ -1053,21 +1053,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
-name = "hermes-broker-client"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec23ca2be94428fef3e43a4fe904e70d647e6b354419933000685e67cc643770"
-dependencies = [
- "bytes",
- "hermes-broker-proto",
- "thiserror 2.0.18",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
-]
-
-[[package]]
 name = "hermes-broker-core"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2697,7 +2682,6 @@ dependencies = [
  "chrono",
  "derive_more",
  "futures-util",
- "hermes-broker-client",
  "http",
  "scylla-core",
  "scylla-protocol",
@@ -2737,11 +2721,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "hermes-broker-client",
  "scylla-api",
- "scylla-broker",
  "scylla-core",
- "scylla-recorder",
  "serde",
  "thiserror 2.0.18",
  "tokio",
@@ -2763,7 +2744,6 @@ dependencies = [
  "derive_more",
  "futures-core",
  "futures-util",
- "hermes-broker-client",
  "humantime-serde",
  "lettre",
  "nutype",
@@ -2789,20 +2769,6 @@ dependencies = [
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
-]
-
-[[package]]
-name = "scylla-recorder"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "hermes-broker-client",
- "scylla-core",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tonic",
- "tracing",
 ]
 
 [[package]]

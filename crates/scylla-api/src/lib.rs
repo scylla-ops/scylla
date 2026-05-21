@@ -15,7 +15,7 @@ pub use grpc::{
     user_to_proto,
 };
 
-pub use config::{BootstrapConfig, BrokerConfig, CoreConfig, CorsConfig};
+pub use config::{BootstrapConfig, CoreConfig, CorsConfig};
 #[cfg(feature = "grpc")]
 pub use config::GrpcConfig;
 pub use error::{BootstrapError, ConfigError, StartupError};

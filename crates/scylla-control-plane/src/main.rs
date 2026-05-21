@@ -6,7 +6,7 @@ use clap::Parser;
 use config::ControlPlaneConfig;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Scylla control-plane (API + broker + recorder)")]
+#[command(author, version, about = "Scylla control-plane (gRPC API)")]
 struct Args {
     /// Print an example configuration file and exit
     #[arg(short = 'e', long = "print-example-config")]
@@ -22,7 +22,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "audit=info,scylla_control_plane=info,scylla_api=info,scylla_broker=info,scylla_recorder=info,scylla_core=info,warn".into()
+                "audit=info,scylla_control_plane=info,scylla_api=info,scylla_core=info,warn".into()
             }),
         )
         .init();

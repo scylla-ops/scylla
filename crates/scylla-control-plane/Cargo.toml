@@ -22,11 +22,6 @@ oauth-github = ["scylla-api/oauth-github", "scylla-core/oauth-github"]
 # workspace subsystems composed in-process
 scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
 scylla-api = { path = "../scylla-api" }
-scylla-broker = { path = "../scylla-broker" }
-scylla-recorder = { path = "../scylla-recorder" }
-
-# broker client (loopback connection to the in-process broker)
-hermes-broker-client = { workspace = true }
 
 # async runtime + cancellation
 tokio = { workspace = true }

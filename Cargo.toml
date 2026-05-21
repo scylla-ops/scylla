@@ -6,7 +6,6 @@ members = [
     "crates/scylla-broker",
     "crates/scylla-protocol",
     "crates/scylla-agent",
-    "crates/scylla-recorder",
     "crates/scylla-control-plane",
 ]
 

@@ -54,8 +54,7 @@ serde.workspace = true
 serde_json.workspace = true
 humantime-serde.workspace = true
 
-# messaging (used by infrastructure/messaging when feature "jobs" is enabled)
-hermes-broker-client.workspace = true
+# messaging: gRPC types for the in-process worker stream + live-tail
 tonic.workspace = true
 
 # infrastructure optional services

@@ -18,9 +18,6 @@ pub struct CoreConfig {
     pub cors: CorsConfig,
 
     #[serde(default)]
-    pub broker: BrokerConfig,
-
-    #[serde(default)]
     pub bootstrap: Option<BootstrapConfig>,
 
     #[serde(default)]
@@ -157,19 +154,6 @@ impl Default for MeteringConfig {
     fn default() -> Self {
         Self {
             max_projects_per_org: default_max_projects_per_org(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct BrokerConfig {
-    pub url: String,
-}
-
-impl Default for BrokerConfig {
-    fn default() -> Self {
-        Self {
-            url: "http://127.0.0.1:50052".to_string(),
         }
     }
 }
