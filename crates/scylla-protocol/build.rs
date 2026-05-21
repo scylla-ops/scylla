@@ -18,7 +18,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "permission.proto",
         "pipeline.proto",
         "job.proto",
-        "agent.proto",
         "app.proto",
         "worker.proto",
     ]

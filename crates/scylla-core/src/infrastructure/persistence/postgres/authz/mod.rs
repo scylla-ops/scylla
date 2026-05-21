@@ -164,7 +164,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     ..Default::default()
                 })
             }
-            // System / User / Organization / Agent have no tenancy parents.
+            // System / User / Organization have no tenancy parents.
             _ => Ok(ResourceAncestors::default()),
         }
     }

@@ -1,7 +1,6 @@
 #[macro_use]
 pub mod macros;
 
-pub mod agent_handler;
 pub mod app_auth_handler;
 pub mod app_handler;
 pub mod auth_handler;
@@ -22,7 +21,6 @@ pub mod role_handler;
 pub mod user_handler;
 pub mod worker_handler;
 
-pub use agent_handler::AgentHandler;
 pub use app_auth_handler::AppAuthHandler;
 pub use app_handler::AppHandler;
 pub use auth_handler::AuthHandler;

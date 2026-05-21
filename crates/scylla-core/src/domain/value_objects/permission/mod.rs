@@ -2,9 +2,7 @@ pub mod resource_ref;
 
 pub use resource_ref::ResourceRef;
 
-use crate::domain::entities::{
-    AgentId, AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId,
-};
+use crate::domain::entities::{AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
 
 /// Authorization intent: a named operation plus the concrete resource it acts
 /// on. This is the single vocabulary the application layer uses to ask "is the
@@ -73,12 +71,6 @@ pub enum Permission {
     WriteJobStatus(JobId),
     WriteJobLog(JobId),
 
-    // ── agent ──────────────────────────────────────────────────────────
-    ReadAgent(AgentId),
-    WriteAgent(AgentId),
-    DeleteAgent(AgentId),
-    ListAgents,
-
     // ── app (machine principals) ───────────────────────────────────────
     CreateApp(OrganizationId),
     ReadApp(AppId),
@@ -146,11 +138,6 @@ impl Permission {
             Self::WriteJobStatus(_) => "writeJobStatus",
             Self::WriteJobLog(_) => "writeJobLog",
 
-            Self::ReadAgent(_) => "readAgent",
-            Self::WriteAgent(_) => "writeAgent",
-            Self::DeleteAgent(_) => "deleteAgent",
-            Self::ListAgents => "listAgents",
-
             Self::CreateApp(_) => "createApp",
             Self::ReadApp(_) => "readApp",
             Self::DeleteApp(_) => "deleteApp",
@@ -177,7 +164,6 @@ impl Permission {
             | Self::ListPipelines
             | Self::CreateJob
             | Self::ListJobs
-            | Self::ListAgents
             | Self::ManageGrants
             | Self::ManagePolicies
             | Self::ManageRoles => ResourceRef::System,
@@ -230,11 +216,6 @@ impl Permission {
             | Self::WriteJobLogs(id)
             | Self::WriteJobStatus(id)
             | Self::WriteJobLog(id) => ResourceRef::Job(id.clone()),
-
-            // Agent-targeted
-            Self::ReadAgent(id) | Self::WriteAgent(id) | Self::DeleteAgent(id) => {
-                ResourceRef::Agent(id.clone())
-            }
 
             Self::ReadApp(id) | Self::DeleteApp(id) => ResourceRef::App(id.clone()),
         }

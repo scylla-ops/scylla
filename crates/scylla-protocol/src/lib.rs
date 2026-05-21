@@ -37,9 +37,6 @@ pub mod services {
     pub mod permission {
         tonic::include_proto!("permission");
     }
-    pub mod agent {
-        tonic::include_proto!("agent");
-    }
     pub mod app {
         tonic::include_proto!("app");
     }

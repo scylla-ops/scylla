@@ -1,6 +1,4 @@
-use crate::domain::entities::{
-    AgentId, AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId,
-};
+use crate::domain::entities::{AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
 
 /// A concrete resource an action targets, expressed in domain terms.
 ///
@@ -15,7 +13,6 @@ pub enum ResourceRef {
     Project(ProjectId),
     Pipeline(PipelineId),
     Job(JobId),
-    Agent(AgentId),
     App(AppId),
 }
 
@@ -29,7 +26,6 @@ impl std::fmt::Display for ResourceRef {
             Self::Project(id) => write!(f, "project:{}", id.as_str()),
             Self::Pipeline(id) => write!(f, "pipeline:{}", id.as_str()),
             Self::Job(id) => write!(f, "job:{}", id.as_str()),
-            Self::Agent(id) => write!(f, "agent:{}", id.as_str()),
             Self::App(id) => write!(f, "app:{}", id.as_str()),
         }
     }

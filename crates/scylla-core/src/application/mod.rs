@@ -1,4 +1,3 @@
-pub mod agent;
 pub mod app;
 pub mod audit;
 pub mod auth;
@@ -23,7 +22,6 @@ pub mod user;
 pub mod user_role;
 pub mod worker;
 
-pub use agent::{AgentRepository, AgentUseCases};
 pub use app::{
     AppRepository, AppTokenOutcome, AppTokenRepository, AppTokenUseCases, AppUseCases, CreatedApp,
 };

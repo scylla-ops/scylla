@@ -33,7 +33,7 @@ pub trait AuthzEntityProvider: Send + Sync {
     /// Roles + memberships for a user principal.
     async fn principal_authz(&self, user: &UserId) -> DomainResult<PrincipalAuthz>;
 
-    /// Ancestor chain for a resource. For `System` / `User` / `Agent`
-    /// resources (no tenancy parents) this returns an empty `ResourceAncestors`.
+    /// Ancestor chain for a resource. For `System` / `User` resources (no
+    /// tenancy parents) this returns an empty `ResourceAncestors`.
     async fn resource_ancestors(&self, resource: &ResourceRef) -> DomainResult<ResourceAncestors>;
 }

@@ -10,7 +10,6 @@
 
 mod error;
 
-pub mod agents;
 pub mod app_tokens;
 pub mod apps;
 pub mod audit;
@@ -35,7 +34,6 @@ pub mod users;
 
 // Flat re-exports so call sites can keep `scylla_core::infrastructure::PgUserRepository`
 // without leaking the internal sub-module layout.
-pub use agents::PgAgentRepository;
 pub use app_tokens::PgAppTokenRepository;
 pub use apps::PgAppRepository;
 pub use audit::PgAuditLog;

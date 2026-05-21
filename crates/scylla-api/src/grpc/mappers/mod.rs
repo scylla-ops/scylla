@@ -1,4 +1,3 @@
-pub mod agent_mapper;
 pub mod error_mapper;
 pub mod job_log_mapper;
 pub mod job_mapper;
@@ -8,7 +7,6 @@ pub mod pipeline_mapper;
 pub mod project_mapper;
 pub mod user_mapper;
 
-pub use agent_mapper::agent_to_proto;
 pub use error_mapper::domain_error_to_status;
 pub use job_log_mapper::job_log_to_proto;
 pub use job_mapper::job_to_proto;

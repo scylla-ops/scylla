@@ -1,6 +1,5 @@
 mod ids;
 
-mod agent;
 mod app;
 mod app_token;
 mod invitation;
@@ -16,7 +15,6 @@ mod user_project;
 
 pub use ids::*;
 
-pub use agent::*;
 pub use app::*;
 pub use app_token::*;
 pub use invitation::*;

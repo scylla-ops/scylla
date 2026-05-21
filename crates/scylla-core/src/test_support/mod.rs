@@ -14,7 +14,6 @@
 //! let user = UserBuilder::new("alice").inactive().build();
 //! ```
 
-pub mod agents;
 pub mod job_logs;
 pub mod jobs;
 pub mod organizations;

@@ -11,8 +11,6 @@ pub use db::{DatabaseConfig, close_db, init_db};
 pub use messaging::{InMemoryJobLogStream, InMemoryWorkerRegistry};
 
 #[cfg(feature = "postgres")]
-pub use persistence::postgres::PgAgentRepository;
-#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAppRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAppTokenRepository;

@@ -2,7 +2,7 @@ use crate::config::CoreConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, DispatchUseCases,
+    AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, DispatchUseCases,
     GrantUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases, OrganizationUseCases,
     PipelineUseCases, PolicyUseCases, ProjectUseCases, UserRoleUseCases, UserUseCases,
 };
@@ -26,7 +26,7 @@ use scylla_core::infrastructure::{GitHubOAuthProvider, PgOAuthIdentityRepository
 use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, InMemoryJobLogStream, InMemoryWorkerRegistry,
-    PgAgentRepository, PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
+    PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
     PgGrantRepository, PgJobLogRepository, PgJobRepository, PgOrganizationRepository,
     PgPipelineRepository, PgPolicyRepository, PgProjectRepository, PgSessionRepository,
     PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository, PgUserRoleRepository,
@@ -102,7 +102,6 @@ pub type SharedJobUc = Arc<JobUseCases<PgJobRepository, PermissionChecker>>;
 pub type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
 pub type SharedJobLogStreamUc =
     Arc<JobLogStreamUseCase<PgJobLogRepository, InMemoryJobLogStream, PermissionChecker>>;
-pub type SharedAgentUc = Arc<AgentUseCases<PgAgentRepository, PermissionChecker>>;
 pub type SharedAppUc =
     Arc<AppUseCases<PgAppRepository, Argon2HashService, PermissionChecker, PermissionChecker>>;
 pub type SharedAppTokenUc =
@@ -127,7 +126,6 @@ pub struct Services {
     pub job_uc: SharedJobUc,
     pub job_log_uc: SharedJobLogUc,
     pub job_log_stream_uc: SharedJobLogStreamUc,
-    pub agent_uc: SharedAgentUc,
     pub app_uc: SharedAppUc,
     pub app_token_uc: SharedAppTokenUc,
     pub dispatch_uc: SharedDispatchUc,
@@ -154,7 +152,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let pipeline_repo = Arc::new(PgPipelineRepository::new(db.clone()));
     let job_repo = Arc::new(PgJobRepository::new(db.clone()));
     let job_log_repo = Arc::new(PgJobLogRepository::new(db.clone()));
-    let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
     let app_repo = Arc::new(PgAppRepository::new(db.clone()));
     let app_token_repo = Arc::new(PgAppTokenRepository::new(db.clone()));
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
@@ -232,10 +229,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone(), permission_checker.clone()));
     let job_log_uc = Arc::new(JobLogUseCases::new(
         job_log_repo.clone(),
-        permission_checker.clone(),
-    ));
-    let agent_uc = Arc::new(AgentUseCases::new(
-        agent_repo.clone(),
         permission_checker.clone(),
     ));
     let app_uc = Arc::new(AppUseCases::new(
@@ -344,7 +337,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         job_uc,
         job_log_uc,
         job_log_stream_uc,
-        agent_uc,
         app_uc,
         app_token_uc,
         dispatch_uc,
@@ -442,9 +434,9 @@ where
     F: Future<Output = ()> + Send + 'static,
 {
     use crate::grpc::{
-        AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler,
-        JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler,
-        RoleHandler, UserHandler, WorkerHandler, auth_interceptor::AuthInterceptor,
+        AppAuthHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler,
+        OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler,
+        UserHandler, WorkerHandler, auth_interceptor::AuthInterceptor,
     };
     #[cfg(feature = "signup")]
     use crate::grpc::RegistrationHandler;
@@ -453,7 +445,6 @@ where
     #[cfg(feature = "oauth-github")]
     use crate::grpc::OAuthHandler;
     use scylla_protocol::services::{
-        agent::agent_service_server::AgentServiceServer,
         app::app_auth_service_server::AppAuthServiceServer,
         app::app_service_server::AppServiceServer,
         auth::auth_service_server::AuthServiceServer,
@@ -496,7 +487,6 @@ where
         services.job_log_uc.clone(),
         services.job_log_stream_uc.clone(),
     );
-    let agent_handler = AgentHandler::new(services.agent_uc.clone());
     let app_handler = AppHandler::new(services.app_uc.clone(), services.worker_registry.clone());
     let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
     let worker_handler = WorkerHandler::new(
@@ -570,10 +560,6 @@ where
         .layer(auth_interceptor.clone())
         .service(JobServiceServer::new(job_handler));
 
-    let agent_service = ServiceBuilder::new()
-        .layer(auth_interceptor.clone())
-        .service(AgentServiceServer::new(agent_handler));
-
     let app_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(AppServiceServer::new(app_handler));
@@ -615,7 +601,6 @@ where
         .add_service(project_service)
         .add_service(pipeline_service)
         .add_service(job_service)
-        .add_service(agent_service)
         .add_service(app_service)
         .add_service(worker_service)
         .add_service(policy_service)
