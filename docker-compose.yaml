@@ -25,10 +25,10 @@ services:
       args:
         PACKAGE: scylla-control-plane
     container_name: scylla-control-plane
-    # 50051 = gRPC API, 50052 = in-process hermes broker (exposed for agents).
+    # 50051 = gRPC API (user APIs, app token exchange, and the agent worker
+    # stream). Agents connect here — there is no separate broker port.
     ports:
       - "50051:50051"
-      - "50052:50052"
     environment:
       RUST_LOG: info
       # Override DatabaseConfig.url via env so secrets stay out of the image.
@@ -59,21 +59,11 @@ services:
       timeout: 3s
       retries: 3
 
-  scylla-agent:
-    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-agent:${VERSION:-latest}
-    build:
-      context: .
-      args:
-        PACKAGE: scylla-agent
-    container_name: scylla-agent
-    environment:
-      RUST_LOG: info
-    command:
-      - "--broker-url"
-      - "http://scylla-control-plane:50052"
-    depends_on:
-      scylla-control-plane:
-        condition: service_started
+  # Agents are NOT part of this stack. An agent is an "App" created in the UI;
+  # the UI then hands you a `docker run .../scylla-agent --control-plane-url ...
+  # --app-id <id> --app-secret <secret>` command to run it wherever you like
+  # (its credentials only exist after the App is created, so it cannot be wired
+  # ahead of time here).
 
 volumes:
   postgres_data:

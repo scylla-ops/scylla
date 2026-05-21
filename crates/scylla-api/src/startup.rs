@@ -497,7 +497,7 @@ where
         services.job_log_stream_uc.clone(),
     );
     let agent_handler = AgentHandler::new(services.agent_uc.clone());
-    let app_handler = AppHandler::new(services.app_uc.clone());
+    let app_handler = AppHandler::new(services.app_uc.clone(), services.worker_registry.clone());
     let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
     let worker_handler = WorkerHandler::new(
         services.worker_registry.clone(),
