@@ -165,6 +165,12 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
                 entities.push(user_entity(uid.clone(), &authz)?);
                 Ok((uid, entities))
             }
+            CallerContext::App(id) => {
+                // A machine principal carries no roles/ABAC attrs of its own; its
+                // access comes entirely from linked scoped grants (worker role).
+                let uid = euid("Scylla::App", id.as_str())?;
+                Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
+            }
             CallerContext::Service(svc) => {
                 let uid = euid("Scylla::Service", svc.as_str())?;
                 Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
@@ -474,6 +480,7 @@ fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {
 fn principal_parts(caller: &CallerContext) -> (&'static str, Option<String>) {
     match caller {
         CallerContext::User(id) => ("user", Some(id.as_str().to_string())),
+        CallerContext::App(id) => ("app", Some(id.as_str().to_string())),
         CallerContext::Service(svc) => ("service", Some(svc.as_str().to_string())),
         CallerContext::Anonymous => ("anonymous", None),
     }

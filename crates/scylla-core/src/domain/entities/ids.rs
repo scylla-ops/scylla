@@ -119,5 +119,6 @@ define_id!(UserOrganizationId);
 define_id!(UserProjectId);
 define_id!(SessionId);
 define_id!(AgentId);
+define_id!(AppId);
 define_id!(CedarPolicyId);
 define_id!(InvitationId);

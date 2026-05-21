@@ -1,15 +1,19 @@
-use crate::domain::entities::UserId;
+use crate::domain::entities::{AppId, UserId};
 
 /// Identity of the principal invoking a use-case.
 ///
 /// Shape mirrors a Cedar `principal`: `User` → `Scylla::User::"<id>"`,
-/// `Service` → `Scylla::Service::"<name>"`, `Anonymous` → no entity. The
-/// `Service` variant is **sealed** — `ServiceIdentity` can only be built via
-/// the named factory functions (`recorder()`, `bootstrap()`), preventing a
-/// downstream module from forging an arbitrary service caller mid-chain.
+/// `App` → `Scylla::App::"<id>"`, `Service` → `Scylla::Service::"<name>"`,
+/// `Anonymous` → no entity. The `Service` variant is **sealed** —
+/// `ServiceIdentity` can only be built via the named factory functions
+/// (`recorder()`, `bootstrap()`), preventing a downstream module from forging
+/// an arbitrary service caller mid-chain. An `App` is a machine principal
+/// (agent / automation) authenticated by an app token; it carries scoped grants
+/// just like a user.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallerContext {
     User(UserId),
+    App(AppId),
     Service(ServiceIdentity),
     Anonymous,
 }
@@ -49,6 +53,7 @@ impl CallerContext {
     pub fn to_entity_uid(&self) -> String {
         match self {
             Self::User(id) => format!("Scylla::User::\"{}\"", id.as_str()),
+            Self::App(id) => format!("Scylla::App::\"{}\"", id.as_str()),
             Self::Service(svc) => format!("Scylla::Service::\"{}\"", svc.as_str()),
             Self::Anonymous => "Scylla::Anonymous::\"*\"".to_string(),
         }
@@ -61,6 +66,7 @@ impl std::fmt::Display for CallerContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::User(id) => write!(f, "user:{}", id.as_str()),
+            Self::App(id) => write!(f, "app:{}", id.as_str()),
             Self::Service(svc) => write!(f, "service:{}", svc.as_str()),
             Self::Anonymous => write!(f, "anonymous"),
         }

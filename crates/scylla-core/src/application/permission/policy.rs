@@ -191,6 +191,7 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
 fn caller_id(caller: &CallerContext) -> String {
     match caller {
         CallerContext::User(id) => id.as_str().to_string(),
+        CallerContext::App(id) => id.as_str().to_string(),
         CallerContext::Service(svc) => svc.as_str().to_string(),
         CallerContext::Anonymous => "anonymous".to_string(),
     }

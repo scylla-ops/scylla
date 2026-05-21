@@ -11,6 +11,10 @@ namespace Scylla {
     entity Service;
     entity System;
 
+    // Machine principal (agent / automation). Carries scoped grants like a User
+    // but no ABAC attributes; declared here so grant templates can bind it.
+    entity App;
+
     entity Organization;
     entity Project in [Organization];
     entity Pipeline in [Project];
