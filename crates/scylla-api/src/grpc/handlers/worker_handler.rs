@@ -1,0 +1,169 @@
+use crate::extract_auth_context;
+use derive_more::Constructor;
+use scylla_core::application::caller::CallerContext;
+use scylla_core::application::{
+    JobLogRepository, JobLogUseCases, JobRepository, JobUseCases, PermissionService,
+};
+use scylla_core::domain::entities::{AppId, JobId, JobLog};
+use scylla_core::domain::value_objects::job::{JobEvent, LogStream};
+use scylla_core::domain::value_objects::pipeline::{JobDispatch, NodeId};
+use scylla_core::infrastructure::{InMemoryJobLogStream, InMemoryWorkerRegistry};
+use scylla_protocol::services::worker::{
+    JobDispatch as ProtoJobDispatch, JobEventKind, WorkerDown, WorkerNode, WorkerUp,
+    worker_down, worker_service_server::WorkerService, worker_up,
+};
+use std::pin::Pin;
+use std::sync::Arc;
+use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::{Stream, StreamExt};
+use tonic::{Request, Response, Status, Streaming};
+use tracing::warn;
+
+/// Persistent worker stream: an authenticated App opens it, receives job
+/// dispatches, and streams back status + log events. Presence in the registry
+/// is the open stream. Reports are persisted as the App principal, so the
+/// worker role's `writeJobStatus` / `writeJobLog` grants gate them via Cedar.
+#[derive(Constructor)]
+pub struct WorkerHandler<J, L, PS>
+where
+    J: JobRepository,
+    L: JobLogRepository,
+    PS: PermissionService,
+{
+    registry: Arc<InMemoryWorkerRegistry>,
+    log_stream: Arc<InMemoryJobLogStream>,
+    job_use_cases: Arc<JobUseCases<J, PS>>,
+    log_use_cases: Arc<JobLogUseCases<L, PS>>,
+}
+
+#[async_trait::async_trait]
+impl<
+    J: JobRepository + Send + Sync + 'static,
+    L: JobLogRepository + Send + Sync + 'static,
+    PS: PermissionService + Send + Sync + 'static,
+> WorkerService for WorkerHandler<J, L, PS>
+{
+    type OpenStream = Pin<Box<dyn Stream<Item = Result<WorkerDown, Status>> + Send + 'static>>;
+
+    async fn open(
+        &self,
+        request: Request<Streaming<WorkerUp>>,
+    ) -> Result<Response<Self::OpenStream>, Status> {
+        let caller = caller!(request);
+        let CallerContext::App(app_id) = caller else {
+            return Err(Status::permission_denied(
+                "the worker stream requires an app token",
+            ));
+        };
+
+        let inbound = request.into_inner();
+        let dispatch_rx = self.registry.register(&app_id);
+
+        // Inbound reports run in the background; the App principal authorizes the
+        // persistence (writeJobStatus / writeJobLog) via its worker grant.
+        tokio::spawn(read_reports(
+            inbound,
+            app_id.clone(),
+            self.job_use_cases.clone(),
+            self.log_use_cases.clone(),
+            self.log_stream.clone(),
+            self.registry.clone(),
+        ));
+
+        // Outbound: forward dispatches placed in the registry to the wire.
+        let down = ReceiverStream::new(dispatch_rx).map(|d| Ok(dispatch_to_proto(&d)));
+        Ok(Response::new(Box::pin(down)))
+    }
+}
+
+async fn read_reports<J, L, PS>(
+    mut inbound: Streaming<WorkerUp>,
+    app_id: AppId,
+    job_use_cases: Arc<JobUseCases<J, PS>>,
+    log_use_cases: Arc<JobLogUseCases<L, PS>>,
+    log_stream: Arc<InMemoryJobLogStream>,
+    registry: Arc<InMemoryWorkerRegistry>,
+) where
+    J: JobRepository + Send + Sync + 'static,
+    L: JobLogRepository + Send + Sync + 'static,
+    PS: PermissionService + Send + Sync + 'static,
+{
+    let caller = CallerContext::App(app_id.clone());
+    // Loop ends when the worker disconnects (Ok(None)) or the stream errors.
+    while let Ok(Some(up)) = inbound.message().await {
+        match up.payload {
+            Some(worker_up::Payload::Status(status)) => {
+                let job_id = JobId::new(&status.job_id);
+                if let Some(event) = status_to_event(&status) {
+                    if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
+                        warn!(app_id = %app_id, job_id = %status.job_id, error = %e, "failed to record job status");
+                    }
+                }
+            }
+            Some(worker_up::Payload::Log(line)) => {
+                if let Some(log) = log_line_to_domain(&line) {
+                    if let Err(e) = log_use_cases.append(&caller, &log).await {
+                        warn!(app_id = %app_id, job_id = %line.job_id, error = %e, "failed to append job log");
+                    } else {
+                        log_stream.publish(log);
+                    }
+                }
+            }
+            None => {}
+        }
+    }
+    registry.unregister(&app_id);
+}
+
+fn dispatch_to_proto(dispatch: &JobDispatch) -> WorkerDown {
+    let nodes = dispatch
+        .nodes
+        .iter()
+        .map(|n| WorkerNode {
+            node_id: n.id().to_string(),
+            deps: n.deps().iter().map(ToString::to_string).collect(),
+            command: n.command().to_string(),
+            args: n.args().to_vec(),
+        })
+        .collect();
+    WorkerDown {
+        payload: Some(worker_down::Payload::Dispatch(ProtoJobDispatch {
+            job_id: dispatch.job_id.clone(),
+            pipeline_id: dispatch.pipeline_id.clone(),
+            nodes,
+        })),
+    }
+}
+
+fn status_to_event(status: &scylla_protocol::services::worker::JobStatus) -> Option<JobEvent> {
+    let node_id = || status.node_id.clone();
+    let error = || status.error.clone();
+    Some(match status.kind() {
+        JobEventKind::JobStarted => JobEvent::JobStarted,
+        JobEventKind::NodeStarted => JobEvent::NodeStarted { node_id: node_id() },
+        JobEventKind::NodeCompleted => JobEvent::NodeCompleted { node_id: node_id() },
+        JobEventKind::NodeFailed => JobEvent::NodeFailed {
+            node_id: node_id(),
+            error: error(),
+        },
+        JobEventKind::NodeSkipped => JobEvent::NodeSkipped { node_id: node_id() },
+        JobEventKind::JobCompleted => JobEvent::JobCompleted,
+        JobEventKind::JobFailed => JobEvent::JobFailed { error: error() },
+    })
+}
+
+fn log_line_to_domain(line: &scylla_protocol::services::worker::JobLogLine) -> Option<JobLog> {
+    let node_id = NodeId::new(&line.node_id)
+        .map_err(|e| warn!(node_id = %line.node_id, error = %e, "invalid node_id in worker log"))
+        .ok()?;
+    let stream = LogStream::new(&line.stream).unwrap_or(LogStream::Stdout);
+    let timestamp = chrono::DateTime::parse_from_rfc3339(&line.timestamp)
+        .map_or_else(|_| chrono::Utc::now(), |dt| dt.with_timezone(&chrono::Utc));
+    Some(JobLog::new(
+        JobId::new(&line.job_id),
+        node_id,
+        stream,
+        line.line.clone(),
+        timestamp,
+    ))
+}

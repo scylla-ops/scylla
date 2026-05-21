@@ -20,6 +20,7 @@ pub mod project_handler;
 pub mod registration_handler;
 pub mod role_handler;
 pub mod user_handler;
+pub mod worker_handler;
 
 pub use agent_handler::AgentHandler;
 pub use app_auth_handler::AppAuthHandler;
@@ -40,3 +41,4 @@ pub use project_handler::ProjectHandler;
 pub use registration_handler::RegistrationHandler;
 pub use role_handler::RoleHandler;
 pub use user_handler::UserHandler;
+pub use worker_handler::WorkerHandler;

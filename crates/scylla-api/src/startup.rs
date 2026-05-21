@@ -3,9 +3,9 @@ use crate::error::StartupError;
 use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, GrantUseCases,
-    JobLogStreamUseCase, JobLogUseCases, JobUseCases, OrganizationUseCases, PipelineUseCases,
-    PolicyUseCases, ProjectUseCases, UserRoleUseCases, UserUseCases,
+    AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, DispatchUseCases,
+    GrantUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases, OrganizationUseCases,
+    PipelineUseCases, PolicyUseCases, ProjectUseCases, UserRoleUseCases, UserUseCases,
 };
 #[cfg(feature = "signup")]
 use scylla_core::application::SignupUseCases;
@@ -26,12 +26,11 @@ use scylla_core::infrastructure::{GitHubOAuthProvider, PgOAuthIdentityRepository
 #[cfg(all(not(feature = "signup"), feature = "oauth-github"))]
 use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
-    Argon2HashService, CedarPermissionService, HermesJobLogStream, PgAgentRepository,
-    PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider, PgGrantRepository,
-    PgJobLogRepository, PgJobRepository,
-    PgOrganizationRepository, PgPipelineRepository, PgPolicyRepository, PgProjectRepository,
-    PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
-    PgUserRepository, PgUserRoleRepository,
+    Argon2HashService, CedarPermissionService, InMemoryJobLogStream, InMemoryWorkerRegistry,
+    PgAgentRepository, PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
+    PgGrantRepository, PgJobLogRepository, PgJobRepository, PgOrganizationRepository,
+    PgPipelineRepository, PgPolicyRepository, PgProjectRepository, PgSessionRepository,
+    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository, PgUserRoleRepository,
 };
 #[cfg(feature = "signup")]
 use scylla_core::infrastructure::PgSignupRepository;
@@ -103,12 +102,13 @@ pub type SharedPipelineUc = Arc<
 pub type SharedJobUc = Arc<JobUseCases<PgJobRepository, PermissionChecker>>;
 pub type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
 pub type SharedJobLogStreamUc =
-    Arc<JobLogStreamUseCase<PgJobLogRepository, HermesJobLogStream, PermissionChecker>>;
+    Arc<JobLogStreamUseCase<PgJobLogRepository, InMemoryJobLogStream, PermissionChecker>>;
 pub type SharedAgentUc = Arc<AgentUseCases<PgAgentRepository, PermissionChecker>>;
 pub type SharedAppUc =
     Arc<AppUseCases<PgAppRepository, Argon2HashService, PermissionChecker, PermissionChecker>>;
 pub type SharedAppTokenUc =
     Arc<AppTokenUseCases<PgAppRepository, PgAppTokenRepository, Argon2HashService>>;
+pub type SharedDispatchUc = Arc<DispatchUseCases<InMemoryWorkerRegistry, PermissionChecker>>;
 
 // ── Services container ─────────────────────────────────────────────────
 
@@ -131,6 +131,9 @@ pub struct Services {
     pub agent_uc: SharedAgentUc,
     pub app_uc: SharedAppUc,
     pub app_token_uc: SharedAppTokenUc,
+    pub dispatch_uc: SharedDispatchUc,
+    pub worker_registry: Arc<InMemoryWorkerRegistry>,
+    pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
     pub policy_uc: SharedPolicyUc,
     pub role_uc: SharedRoleUc,
@@ -312,7 +315,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         None => None,
     };
 
-    // Connect to Hermes broker
+    // Connect to Hermes broker (still used by the recorder until it is removed).
     let broker_channel = hermes_broker_client::connect(&config.broker.url, None)
         .await
         .map_err(|e| StartupError::BrokerConnect {
@@ -320,11 +323,20 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
             message: e.to_string(),
         })?;
     tracing::info!(url = %config.broker.url, "connected to hermes broker");
-    let broker_publisher = Arc::new(Publisher::new(broker_channel.clone()));
-    let job_log_stream_port = Arc::new(HermesJobLogStream::new(broker_channel));
+    let broker_publisher = Arc::new(Publisher::new(broker_channel));
+
+    // In-process worker dispatch + job-log live-tail, replacing the broker for
+    // job execution (mono-instance): jobs are pushed to a connected worker's
+    // stream and log lines fan out through a per-job broadcast.
+    let worker_registry = Arc::new(InMemoryWorkerRegistry::new());
+    let job_log_stream = Arc::new(InMemoryJobLogStream::new());
     let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
         job_log_repo.clone(),
-        job_log_stream_port,
+        job_log_stream.clone(),
+        permission_checker.clone(),
+    ));
+    let dispatch_uc = Arc::new(DispatchUseCases::new(
+        worker_registry.clone(),
         permission_checker.clone(),
     ));
 
@@ -347,6 +359,9 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         agent_uc,
         app_uc,
         app_token_uc,
+        dispatch_uc,
+        worker_registry,
+        job_log_stream,
         grant_uc,
         policy_uc,
         role_uc,
@@ -442,7 +457,7 @@ where
     use crate::grpc::{
         AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler,
         JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler,
-        RoleHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        RoleHandler, UserHandler, WorkerHandler, auth_interceptor::AuthInterceptor,
     };
     #[cfg(feature = "signup")]
     use crate::grpc::RegistrationHandler;
@@ -464,6 +479,7 @@ where
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         user::user_service_server::UserServiceServer,
+        worker::worker_service_server::WorkerServiceServer,
     };
     #[cfg(feature = "signup")]
     use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
@@ -486,7 +502,7 @@ where
     let project_handler = ProjectHandler::new(services.project_uc.clone());
     let pipeline_handler = PipelineHandler::new(
         services.pipeline_uc.clone(),
-        services.broker_publisher.clone(),
+        services.dispatch_uc.clone(),
     );
     let job_handler = JobHandler::new(
         services.job_uc.clone(),
@@ -496,6 +512,12 @@ where
     let agent_handler = AgentHandler::new(services.agent_uc.clone());
     let app_handler = AppHandler::new(services.app_uc.clone());
     let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
+    let worker_handler = WorkerHandler::new(
+        services.worker_registry.clone(),
+        services.job_log_stream.clone(),
+        services.job_uc.clone(),
+        services.job_log_uc.clone(),
+    );
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
@@ -569,6 +591,11 @@ where
         .layer(auth_interceptor.clone())
         .service(AppServiceServer::new(app_handler));
 
+    // Authenticated worker stream (app token). Presence = the open stream.
+    let worker_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(WorkerServiceServer::new(worker_handler));
+
     let policy_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(PolicyServiceServer::new(policy_handler));
@@ -603,6 +630,7 @@ where
         .add_service(job_service)
         .add_service(agent_service)
         .add_service(app_service)
+        .add_service(worker_service)
         .add_service(policy_service)
         .add_service(grant_service)
         .add_service(role_service);

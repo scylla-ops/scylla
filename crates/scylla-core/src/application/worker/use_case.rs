@@ -53,3 +53,81 @@ impl<W: WorkerDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
         Ok(DispatchOutcome::NoWorkerAvailable)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_trait::async_trait;
+    use std::sync::Mutex;
+
+    struct StubRegistry {
+        connected: Vec<AppId>,
+        dispatched: Mutex<Vec<String>>,
+    }
+
+    #[async_trait]
+    impl WorkerDispatch for StubRegistry {
+        fn connected(&self) -> Vec<AppId> {
+            self.connected.clone()
+        }
+        async fn dispatch(&self, app_id: &AppId, _dispatch: &JobDispatch) -> DomainResult<()> {
+            self.dispatched
+                .lock()
+                .unwrap()
+                .push(app_id.as_str().to_string());
+            Ok(())
+        }
+    }
+
+    struct StubPerms {
+        allowed: &'static str,
+    }
+
+    #[async_trait]
+    impl PermissionService for StubPerms {
+        async fn check(&self, caller: &CallerContext, _perm: Permission) -> DomainResult<bool> {
+            Ok(matches!(caller, CallerContext::App(id) if id.as_str() == self.allowed))
+        }
+    }
+
+    fn dispatch() -> JobDispatch {
+        JobDispatch {
+            job_id: "j1".to_string(),
+            pipeline_id: "pl1".to_string(),
+            nodes: vec![],
+        }
+    }
+
+    #[tokio::test]
+    async fn dispatches_to_first_authorized_connected_worker() {
+        let registry = Arc::new(StubRegistry {
+            connected: vec![AppId::new("app-unauthorized"), AppId::new("app-ok")],
+            dispatched: Mutex::new(vec![]),
+        });
+        let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPerms { allowed: "app-ok" }));
+
+        let outcome = uc
+            .dispatch_job(&PipelineId::new("pl1"), &dispatch())
+            .await
+            .unwrap();
+
+        assert!(matches!(outcome, DispatchOutcome::Dispatched(id) if id.as_str() == "app-ok"));
+        assert_eq!(registry.dispatched.lock().unwrap().as_slice(), ["app-ok"]);
+    }
+
+    #[tokio::test]
+    async fn no_worker_when_none_authorized() {
+        let registry = Arc::new(StubRegistry {
+            connected: vec![AppId::new("app-x")],
+            dispatched: Mutex::new(vec![]),
+        });
+        let uc = DispatchUseCases::new(registry, Arc::new(StubPerms { allowed: "nobody" }));
+
+        let outcome = uc
+            .dispatch_job(&PipelineId::new("pl1"), &dispatch())
+            .await
+            .unwrap();
+
+        assert!(matches!(outcome, DispatchOutcome::NoWorkerAvailable));
+    }
+}

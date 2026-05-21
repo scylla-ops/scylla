@@ -3,10 +3,9 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_to_proto, pipeline_to_proto,
     pipeline_to_proto_summary, proto_to_domain_pagination,
 };
-use hermes_broker_client::Publisher;
-use scylla_core::application::PipelineUseCases;
 use scylla_core::application::{
-    JobRepository, PermissionService, PipelineRepository, ProjectRepository,
+    DispatchOutcome, DispatchUseCases, JobRepository, PermissionService, PipelineRepository,
+    PipelineUseCases, ProjectRepository, WorkerDispatch,
 };
 use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
 use scylla_core::domain::value_objects::pipeline::{NodeId, PipelineName};
@@ -25,21 +24,27 @@ pub struct PipelineHandler<
     PR: ProjectRepository,
     J: JobRepository,
     PS: PermissionService,
+    WD: WorkerDispatch,
 > {
     use_cases: Arc<PipelineUseCases<P, PR, J, PS>>,
-    broker_publisher: Arc<Publisher>,
+    dispatch_uc: Arc<DispatchUseCases<WD, PS>>,
 }
 
-impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: PermissionService>
-    PipelineHandler<P, PR, J, PS>
+impl<
+    P: PipelineRepository,
+    PR: ProjectRepository,
+    J: JobRepository,
+    PS: PermissionService,
+    WD: WorkerDispatch,
+> PipelineHandler<P, PR, J, PS, WD>
 {
     pub fn new(
         use_cases: Arc<PipelineUseCases<P, PR, J, PS>>,
-        broker_publisher: Arc<Publisher>,
+        dispatch_uc: Arc<DispatchUseCases<WD, PS>>,
     ) -> Self {
         Self {
             use_cases,
-            broker_publisher,
+            dispatch_uc,
         }
     }
 }
@@ -50,7 +55,8 @@ impl<
     PR: ProjectRepository + Send + Sync + 'static,
     J: JobRepository + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
-> PipelineService for PipelineHandler<P, PR, J, PS>
+    WD: WorkerDispatch + Send + Sync + 'static,
+> PipelineService for PipelineHandler<P, PR, J, PS, WD>
 {
     async fn create_pipeline(
         &self,
@@ -250,19 +256,18 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        let payload = serde_json::to_vec(&dispatch).expect("serialization cannot fail");
-
-        // Dispatch is best-effort IO at the handler boundary; the job is
-        // already persisted, so failure here is reported but does not roll
-        // back the job row (the recorder reconciles status later).
-        self.broker_publisher
-            .publish_with_reply(
-                "scylla.jobs.dispatch",
-                payload,
-                format!("scylla.jobs.status.{}", job.id()),
-            )
-            .await
-            .map_err(|_| Status::unavailable("broker unavailable"))?;
+        // Hand the job to a connected, authorized worker. Best-effort: the job
+        // is already persisted, so a missing worker leaves it pending rather
+        // than failing the request (the use case logs the no-worker case).
+        match self.dispatch_uc.dispatch_job(&pipeline_id, &dispatch).await {
+            Ok(DispatchOutcome::Dispatched(app_id)) => {
+                tracing::info!(job_id = %job.id(), %app_id, "job dispatched to worker");
+            }
+            Ok(DispatchOutcome::NoWorkerAvailable) => {}
+            Err(e) => {
+                tracing::warn!(job_id = %job.id(), error = %e, "worker dispatch failed; job left pending");
+            }
+        }
 
         Ok(Response::new(job_to_proto(&job)))
     }
