@@ -49,6 +49,9 @@ pub enum Permission {
     UpdatePipeline(PipelineId),
     DeletePipeline(PipelineId),
     RunPipeline(PipelineId),
+    /// A worker App executing the jobs of a pipeline (distinct from a user
+    /// triggering a run via `RunPipeline`).
+    ExecuteJob(PipelineId),
     ListPipelines,
     ListPipelinesByProject(ProjectId),
     ListPipelinesByOrganization(OrganizationId),
@@ -64,6 +67,9 @@ pub enum Permission {
     ListJobsByOrganization(OrganizationId),
     ReadJobLogs(JobId),
     WriteJobLogs(JobId),
+    /// A worker App reporting a job's status / appending its logs while it runs.
+    WriteJobStatus(JobId),
+    WriteJobLog(JobId),
 
     // ── agent ──────────────────────────────────────────────────────────
     ReadAgent(AgentId),
@@ -114,6 +120,7 @@ impl Permission {
             Self::UpdatePipeline(_) => "updatePipeline",
             Self::DeletePipeline(_) => "deletePipeline",
             Self::RunPipeline(_) => "runPipeline",
+            Self::ExecuteJob(_) => "executeJob",
             Self::ListPipelines => "listPipelines",
             Self::ListPipelinesByProject(_) => "listPipelinesByProject",
             Self::ListPipelinesByOrganization(_) => "listPipelinesByOrganization",
@@ -128,6 +135,8 @@ impl Permission {
             Self::ListJobsByOrganization(_) => "listJobsByOrganization",
             Self::ReadJobLogs(_) => "readJobLogs",
             Self::WriteJobLogs(_) => "writeJobLogs",
+            Self::WriteJobStatus(_) => "writeJobStatus",
+            Self::WriteJobLog(_) => "writeJobLog",
 
             Self::ReadAgent(_) => "readAgent",
             Self::WriteAgent(_) => "writeAgent",
@@ -195,6 +204,7 @@ impl Permission {
             | Self::UpdatePipeline(id)
             | Self::DeletePipeline(id)
             | Self::RunPipeline(id)
+            | Self::ExecuteJob(id)
             | Self::ListJobsByPipeline(id) => ResourceRef::Pipeline(id.clone()),
 
             // Job-targeted
@@ -202,7 +212,9 @@ impl Permission {
             | Self::WriteJob(id)
             | Self::DeleteJob(id)
             | Self::ReadJobLogs(id)
-            | Self::WriteJobLogs(id) => ResourceRef::Job(id.clone()),
+            | Self::WriteJobLogs(id)
+            | Self::WriteJobStatus(id)
+            | Self::WriteJobLog(id) => ResourceRef::Job(id.clone()),
 
             // Agent-targeted
             Self::ReadAgent(id) | Self::WriteAgent(id) | Self::DeleteAgent(id) => {

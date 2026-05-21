@@ -15,6 +15,10 @@ use tracing::instrument;
 /// grants (e.g. signup grants the org creator [`ORGANIZATION_ADMIN_ROLE`]).
 pub const ORGANIZATION_ADMIN_ROLE: &str = "organization-admin";
 pub const PROJECT_ADMIN_ROLE: &str = "project-admin";
+/// Restricted role for machine Apps (agents): only the actions needed to pull
+/// and execute jobs within a scope. Linked via a dedicated Cedar template, not
+/// the full-control one used by the admin roles.
+pub const WORKER_ROLE: &str = "worker";
 
 /// The scope a grant is bound to. Maps to the `?resource` slot of the linked
 /// Cedar template (e.g. `Project::"X"`).

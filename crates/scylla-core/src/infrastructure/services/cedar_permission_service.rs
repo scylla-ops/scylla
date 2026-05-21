@@ -2,7 +2,10 @@ use crate::application::PermissionService;
 use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::application::caller::CallerContext;
 use crate::application::permission::entity_provider::{AuthzEntityProvider, PrincipalAuthz};
-use crate::application::permission::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
+use crate::application::permission::grant::{
+    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE,
+    WORKER_ROLE,
+};
 use crate::application::permission::policy::{PolicyControl, PolicyDefinition, PolicyRepository};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::{Permission, ResourceRef};
@@ -20,13 +23,16 @@ use tracing::{info, instrument, warn};
 
 const SCHEMA_SRC: &str = include_str!("cedar/schema.cedarschema");
 const POLICIES_SRC: &str = include_str!("cedar/policies.cedar");
-/// Shared body for every scoped role; registered once per role id below.
+/// Full-control body, registered under each admin role id below.
 const ROLE_TEMPLATE_SRC: &str = include_str!("cedar/role_template.cedar");
-/// Role names that map to a linkable Cedar template. A grant whose `role` is
-/// not listed here is skipped at link time (logged).
-const TEMPLATE_ROLES: &[&str] = &[
-    crate::application::permission::grant::ORGANIZATION_ADMIN_ROLE,
-    crate::application::permission::grant::PROJECT_ADMIN_ROLE,
+/// Restricted body for the `worker` role (machine Apps): job execution only.
+const WORKER_TEMPLATE_SRC: &str = include_str!("cedar/worker_template.cedar");
+/// Grantable role ids mapped to the Cedar template body linked per grant. A
+/// grant whose `role` is not listed here is skipped at link time (logged).
+const TEMPLATE_ROLES: &[(&str, &str)] = &[
+    (ORGANIZATION_ADMIN_ROLE, ROLE_TEMPLATE_SRC),
+    (PROJECT_ADMIN_ROLE, ROLE_TEMPLATE_SRC),
+    (WORKER_ROLE, WORKER_TEMPLATE_SRC),
 ];
 
 /// Cedar-backed authorization. Static policies + schema are compiled into the
@@ -87,8 +93,8 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
 
         // Register the scoped-role template under each grantable role id so
         // grants can link instances by role name.
-        for role in TEMPLATE_ROLES {
-            let template = Template::parse(Some(PolicyId::new(*role)), ROLE_TEMPLATE_SRC)
+        for (role, src) in TEMPLATE_ROLES {
+            let template = Template::parse(Some(PolicyId::new(*role)), src)
                 .map_err(|e| DomainError::Internal(format!("cedar template parse {role}: {e}")))?;
             policies
                 .add_template(template)
@@ -507,7 +513,9 @@ mod tests {
     use super::*;
     use crate::application::caller::ServiceIdentity;
     use crate::application::permission::entity_provider::ResourceAncestors;
-    use crate::domain::entities::{CedarPolicyId, OrganizationId, PipelineId, ProjectId, UserId};
+    use crate::domain::entities::{
+        AppId, CedarPolicyId, OrganizationId, PipelineId, ProjectId, UserId,
+    };
     use crate::domain::value_objects::role::name::RoleName;
 
     struct StubProvider {
@@ -717,6 +725,67 @@ mod tests {
             svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
                 .await
                 .is_ok()
+        );
+    }
+
+    #[tokio::test]
+    async fn worker_app_grant_allows_execute_job_in_scope_only() {
+        // A machine App with a worker grant on an org may execute jobs on a
+        // pipeline beneath it, but not management actions outside the worker set.
+        let grant = Grant::new(
+            GrantPrincipal::App(AppId::new("agent-1")),
+            role(WORKER_ROLE),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::App(AppId::new("agent-1"));
+        assert!(
+            svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
+                .await
+                .is_ok(),
+            "worker app may execute jobs within its granted org"
+        );
+        assert!(
+            svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
+                .await
+                .is_err(),
+            "worker role must not confer management actions"
+        );
+    }
+
+    #[tokio::test]
+    async fn worker_app_denied_outside_scope() {
+        let grant = Grant::new(
+            GrantPrincipal::App(AppId::new("agent-1")),
+            role(WORKER_ROLE),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        // Pipeline lives under a different org the app has no grant on.
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o2")),
+                project: Some(ProjectId::new("p2")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::App(AppId::new("agent-1"));
+        assert!(
+            svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
+                .await
+                .is_err(),
+            "worker app must be denied outside its granted scope"
         );
     }
 
