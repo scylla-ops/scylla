@@ -2,7 +2,8 @@ use crate::extract_auth_context;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
-    Grant, GrantRepository, GrantScope, GrantUseCases, PermissionService, PolicyControl,
+    Grant, GrantPrincipal, GrantRepository, GrantScope, GrantUseCases, PermissionService,
+    PolicyControl,
 };
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::role::name::RoleName;
@@ -35,7 +36,7 @@ impl<
         let role = RoleName::new(&req.role).map_err(domain_error_to_status)?;
         let scope = scope_from_proto(req.scope_kind, &req.scope_id)?;
 
-        let grant = Grant::new(user_id, role, scope);
+        let grant = Grant::new(GrantPrincipal::User(user_id), role, scope);
         self.use_cases
             .grant(&caller, &grant)
             .await
@@ -94,7 +95,7 @@ fn grant_to_proto(g: &Grant) -> ProtoGrant {
     };
     ProtoGrant {
         id: g.id.clone(),
-        user_id: g.user_id.to_string(),
+        user_id: g.principal.id().to_string(),
         role: g.role.to_string(),
         scope_kind: scope_kind as i32,
         scope_id,

@@ -1,5 +1,5 @@
-use crate::application::permission::grant::{Grant, GrantRepository, GrantScope};
-use crate::domain::entities::{OrganizationId, ProjectId, UserId};
+use crate::application::permission::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
+use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
@@ -8,11 +8,13 @@ use tracing::instrument;
 
 const SCOPE_ORGANIZATION: &str = "organization";
 const SCOPE_PROJECT: &str = "project";
+const PRINCIPAL_USER: &str = "user";
+const PRINCIPAL_APP: &str = "app";
 
 /// Insert a grant on any executor (pool or transaction). Idempotent via the
-/// `(user_id, role_name, scope_kind, scope_id)` unique constraint, so re-running
-/// a signup or grant call is a no-op rather than a conflict. Shared by the
-/// pool-backed repo and the atomic signup transaction.
+/// `(principal_kind, principal_id, role_name, scope_kind, scope_id)` unique
+/// constraint, so re-running a signup or grant call is a no-op rather than a
+/// conflict. Shared by the pool-backed repo and the atomic signup transaction.
 pub async fn insert<'e, E>(executor: E, grant: &Grant) -> DomainResult<()>
 where
     E: PgExecutor<'e>,
@@ -22,12 +24,13 @@ where
         GrantScope::Project(id) => (SCOPE_PROJECT, id.as_str()),
     };
     sqlx::query(
-        "INSERT INTO permission_grants (id, user_id, role_name, scope_kind, scope_id) \
-         VALUES ($1, $2, $3, $4, $5) \
-         ON CONFLICT (user_id, role_name, scope_kind, scope_id) DO NOTHING",
+        "INSERT INTO permission_grants (id, principal_kind, principal_id, role_name, scope_kind, scope_id) \
+         VALUES ($1, $2, $3, $4, $5, $6) \
+         ON CONFLICT (principal_kind, principal_id, role_name, scope_kind, scope_id) DO NOTHING",
     )
     .bind(&grant.id)
-    .bind(grant.user_id.as_str())
+    .bind(grant.principal.kind())
+    .bind(grant.principal.id())
     .bind(grant.role.as_str())
     .bind(scope_kind)
     .bind(scope_id)
@@ -56,7 +59,8 @@ impl GrantRepository for PgGrantRepository {
     #[instrument(skip(self))]
     async fn list_all(&self) -> DomainResult<Vec<Grant>> {
         let rows = sqlx::query(
-            "SELECT id, user_id, role_name, scope_kind, scope_id FROM permission_grants",
+            "SELECT id, principal_kind, principal_id, role_name, scope_kind, scope_id \
+             FROM permission_grants",
         )
         .fetch_all(&self.pool)
         .await
@@ -65,10 +69,20 @@ impl GrantRepository for PgGrantRepository {
         rows.iter()
             .map(|r| {
                 let id: String = r.try_get("id").map_err(infra)?;
-                let user_id: String = r.try_get("user_id").map_err(infra)?;
+                let principal_kind: String = r.try_get("principal_kind").map_err(infra)?;
+                let principal_id: String = r.try_get("principal_id").map_err(infra)?;
                 let role_name: String = r.try_get("role_name").map_err(infra)?;
                 let scope_kind: String = r.try_get("scope_kind").map_err(infra)?;
                 let scope_id: String = r.try_get("scope_id").map_err(infra)?;
+                let principal = match principal_kind.as_str() {
+                    PRINCIPAL_USER => GrantPrincipal::User(UserId::new(principal_id)),
+                    PRINCIPAL_APP => GrantPrincipal::App(AppId::new(principal_id)),
+                    other => {
+                        return Err(DomainError::Infrastructure(format!(
+                            "unknown grant principal_kind '{other}'"
+                        )));
+                    }
+                };
                 let scope = match scope_kind.as_str() {
                     SCOPE_ORGANIZATION => GrantScope::Organization(OrganizationId::new(scope_id)),
                     SCOPE_PROJECT => GrantScope::Project(ProjectId::new(scope_id)),
@@ -80,7 +94,7 @@ impl GrantRepository for PgGrantRepository {
                 };
                 Ok(Grant {
                     id,
-                    user_id: UserId::new(user_id),
+                    principal,
                     role: RoleName::new(role_name)?,
                     scope,
                 })

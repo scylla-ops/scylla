@@ -2,7 +2,7 @@ use crate::application::PermissionService;
 use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::application::caller::CallerContext;
 use crate::application::permission::entity_provider::{AuthzEntityProvider, PrincipalAuthz};
-use crate::application::permission::grant::{Grant, GrantRepository, GrantScope};
+use crate::application::permission::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
 use crate::application::permission::policy::{PolicyControl, PolicyDefinition, PolicyRepository};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::{Permission, ResourceRef};
@@ -133,7 +133,10 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
     /// (`project-admin` / `organization-admin`); `?principal` → the user,
     /// `?resource` → the granted scope.
     fn link_grant(policies: &mut PolicySet, grant: &Grant) -> DomainResult<()> {
-        let principal_uid = euid("Scylla::User", grant.user_id.as_str())?;
+        let principal_uid = match &grant.principal {
+            GrantPrincipal::User(id) => euid("Scylla::User", id.as_str())?,
+            GrantPrincipal::App(id) => euid("Scylla::App", id.as_str())?,
+        };
         let resource_uid = match &grant.scope {
             GrantScope::Organization(id) => euid("Scylla::Organization", id.as_str())?,
             GrantScope::Project(id) => euid("Scylla::Project", id.as_str())?,
@@ -695,7 +698,7 @@ mod tests {
     #[tokio::test]
     async fn linked_project_admin_grant_allows_in_scope() {
         let grant = Grant::new(
-            UserId::new("u1"),
+            GrantPrincipal::User(UserId::new("u1")),
             role("project-admin"),
             GrantScope::Project(ProjectId::new("p1")),
         );

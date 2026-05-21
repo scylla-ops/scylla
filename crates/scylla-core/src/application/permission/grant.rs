@@ -1,7 +1,7 @@
 use crate::application::caller::CallerContext;
 use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
-use crate::domain::entities::{OrganizationId, ProjectId, UserId};
+use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::role::name::RoleName;
@@ -24,22 +24,51 @@ pub enum GrantScope {
     Project(ProjectId),
 }
 
-/// An explicit, scoped role assignment — "user U holds role R within scope S".
-/// Each grant materialises as one linked Cedar template instance at startup.
+/// The principal a grant is bound to — a human `User` or a machine `App`. Maps
+/// to the `(principal_kind, principal_id)` columns of `permission_grants` and to
+/// the Cedar `?principal` slot (`Scylla::User` / `Scylla::App`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GrantPrincipal {
+    User(UserId),
+    App(AppId),
+}
+
+impl GrantPrincipal {
+    /// Persistence discriminant — the `principal_kind` column value.
+    #[must_use]
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::User(_) => "user",
+            Self::App(_) => "app",
+        }
+    }
+
+    /// The principal's raw id — the `principal_id` column value.
+    #[must_use]
+    pub fn id(&self) -> &str {
+        match self {
+            Self::User(id) => id.as_str(),
+            Self::App(id) => id.as_str(),
+        }
+    }
+}
+
+/// An explicit, scoped role assignment — "principal P holds role R within scope
+/// S". Each grant materialises as one linked Cedar template instance at startup.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Grant {
     pub id: String,
-    pub user_id: UserId,
+    pub principal: GrantPrincipal,
     pub role: RoleName,
     pub scope: GrantScope,
 }
 
 impl Grant {
     #[must_use]
-    pub fn new(user_id: UserId, role: RoleName, scope: GrantScope) -> Self {
+    pub fn new(principal: GrantPrincipal, role: RoleName, scope: GrantScope) -> Self {
         Self {
             id: ulid::Ulid::new().to_string().to_lowercase(),
-            user_id,
+            principal,
             role,
             scope,
         }

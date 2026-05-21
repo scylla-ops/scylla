@@ -1,6 +1,8 @@
 use crate::application::oauth::provider::{OAuthProvider, PROVIDER_GITHUB};
 use crate::application::oauth::repository::OAuthIdentityRepository;
-use crate::application::permission::grant::{Grant, GrantScope, ORGANIZATION_ADMIN_ROLE};
+use crate::application::permission::grant::{
+    Grant, GrantPrincipal, GrantScope, ORGANIZATION_ADMIN_ROLE,
+};
 use crate::application::permission::policy::PolicyControl;
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{HashService, SessionRepository, UserRepository};
@@ -104,7 +106,7 @@ where
         let org_name = OrganizationName::new(format!("{}'s organization", info.login))?;
         let organization = Organization::create(org_name, None)?;
         let grant = Grant::new(
-            user.id().clone(),
+            GrantPrincipal::User(user.id().clone()),
             RoleName::new(ORGANIZATION_ADMIN_ROLE)?,
             GrantScope::Organization(organization.id().clone()),
         );

@@ -38,9 +38,9 @@ pub use oauth::{
 };
 pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
 pub use permission::{
-    AuthzEntityProvider, Grant, GrantRepository, GrantScope, GrantUseCases, PermissionService,
-    PolicyControl, PolicyDefinition, PolicyRepository, PolicyUseCases, PrincipalAuthz,
-    ResourceAncestors,
+    AuthzEntityProvider, Grant, GrantPrincipal, GrantRepository, GrantScope, GrantUseCases,
+    PermissionService, PolicyControl, PolicyDefinition, PolicyRepository, PolicyUseCases,
+    PrincipalAuthz, ResourceAncestors,
 };
 pub use pipeline::{PipelineRepository, PipelineUseCases};
 pub use project::{ProjectRepository, ProjectUseCases, UserProjectRepository};

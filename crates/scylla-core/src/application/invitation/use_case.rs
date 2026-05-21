@@ -1,7 +1,7 @@
 use crate::application::caller::CallerContext;
 use crate::application::invitation::repository::InvitationRepository;
 use crate::application::mail::Mailer;
-use crate::application::permission::grant::{Grant, GrantScope};
+use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope};
 use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
 use crate::application::{HashService, OrganizationRepository, SessionRepository, UserRepository};
@@ -166,7 +166,7 @@ where
 
         let grant = invite.role().map(|role| {
             Grant::new(
-                user_id.clone(),
+                GrantPrincipal::User(user_id.clone()),
                 role.clone(),
                 GrantScope::Organization(invite.organization_id().clone()),
             )

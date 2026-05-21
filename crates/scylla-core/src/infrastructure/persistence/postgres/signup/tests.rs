@@ -1,6 +1,6 @@
 use super::PgSignupRepository;
 use crate::application::permission::grant::{
-    Grant, GrantRepository, GrantScope, ORGANIZATION_ADMIN_ROLE,
+    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_ADMIN_ROLE,
 };
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{OrganizationRepository, UserOrganizationRepository, UserRepository};
@@ -13,7 +13,7 @@ use sqlx::PgPool;
 
 fn org_admin_grant(user_id: crate::domain::entities::UserId, org_id: crate::domain::entities::OrganizationId) -> Grant {
     Grant::new(
-        user_id,
+        GrantPrincipal::User(user_id),
         RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
         GrantScope::Organization(org_id),
     )

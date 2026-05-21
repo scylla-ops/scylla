@@ -1,7 +1,7 @@
 use crate::application::audit::NoopAuditLog;
 use crate::application::caller::CallerContext;
 use crate::application::invitation::InvitationUseCases;
-use crate::application::permission::grant::{GrantRepository, GrantScope};
+use crate::application::permission::grant::{GrantPrincipal, GrantRepository, GrantScope};
 use crate::application::{Mailer, NoopMailer, UserOrganizationRepository, UserRoleRepository};
 use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
@@ -92,7 +92,7 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
     );
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
-        grants.iter().any(|g| g.user_id == outcome.user_id
+        grants.iter().any(|g| g.principal == GrantPrincipal::User(outcome.user_id.clone())
             && g.scope == GrantScope::Organization(org.id().clone())),
         "org-admin grant must be minted on accept"
     );
