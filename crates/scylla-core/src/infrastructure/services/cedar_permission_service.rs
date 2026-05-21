@@ -790,6 +790,216 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn org_admin_manages_workers_in_its_org_only() {
+        // A worker is a specialized app, so worker actions target the org (create/
+        // list) or the App resource beneath it (read/stats/delete). An org-admin
+        // grant covers all of them within its org via the role template, and
+        // nothing outside it. Pure permission — no org-member broadening.
+        let grant = Grant::new(
+            GrantPrincipal::User(UserId::new("u1")),
+            role(ORGANIZATION_ADMIN_ROLE),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: None,
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+
+        for perm in [
+            Permission::CreateWorker(OrganizationId::new("o1")),
+            Permission::ListWorkers(OrganizationId::new("o1")),
+            Permission::ReadWorker(AppId::new("agent-1")),
+            Permission::ReadWorkerStats(AppId::new("agent-1")),
+            Permission::DeleteWorker(AppId::new("agent-1")),
+        ] {
+            assert!(
+                svc.check(&caller, perm.clone()).await.is_ok(),
+                "org admin may manage workers in its org: {perm:?}"
+            );
+        }
+
+        assert!(
+            svc.check(&caller, Permission::CreateWorker(OrganizationId::new("o2")))
+                .await
+                .is_err(),
+            "org admin cannot create workers in another org"
+        );
+    }
+
+    #[tokio::test]
+    async fn user_without_grant_denied_worker_actions() {
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: None,
+                pipeline: None,
+            },
+            vec![],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("nobody"));
+        assert!(
+            svc.check(&caller, Permission::ListWorkers(OrganizationId::new("o1")))
+                .await
+                .is_err(),
+            "a user with no grant cannot list workers"
+        );
+        assert!(
+            svc.check(&caller, Permission::ReadWorkerStats(AppId::new("agent-1")))
+                .await
+                .is_err(),
+            "a user with no grant cannot read worker stats"
+        );
+    }
+
+    #[tokio::test]
+    async fn org_admin_manages_grants_in_its_org_only() {
+        let grant = Grant::new(
+            GrantPrincipal::User(UserId::new("u1")),
+            role(ORGANIZATION_ADMIN_ROLE),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: None,
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+        assert!(
+            svc.check(&caller, Permission::ManageOrgGrants(OrganizationId::new("o1")))
+                .await
+                .is_ok(),
+            "org admin may manage grants in its own org"
+        );
+        assert!(
+            svc.check(&caller, Permission::ManageOrgGrants(OrganizationId::new("o2")))
+                .await
+                .is_err(),
+            "org admin may not manage grants in another org (anti-escalation)"
+        );
+    }
+
+    #[tokio::test]
+    async fn org_admin_manages_project_grants_under_its_org() {
+        let grant = Grant::new(
+            GrantPrincipal::User(UserId::new("u1")),
+            role(ORGANIZATION_ADMIN_ROLE),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+        assert!(
+            svc.check(&caller, Permission::ManageProjectGrants(ProjectId::new("p1")))
+                .await
+                .is_ok(),
+            "org admin may manage grants on a project beneath its org"
+        );
+    }
+
+    #[tokio::test]
+    async fn project_admin_cannot_escalate_to_org_grants() {
+        let grant = Grant::new(
+            GrantPrincipal::User(UserId::new("u1")),
+            role(PROJECT_ADMIN_ROLE),
+            GrantScope::Project(ProjectId::new("p1")),
+        );
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+        assert!(
+            svc.check(&caller, Permission::ManageProjectGrants(ProjectId::new("p1")))
+                .await
+                .is_ok(),
+            "project admin manages grants on its project"
+        );
+        assert!(
+            svc.check(&caller, Permission::ManageOrgGrants(OrganizationId::new("o1")))
+                .await
+                .is_err(),
+            "project admin cannot escalate to org-level grant management"
+        );
+    }
+
+    #[tokio::test]
+    async fn user_lists_its_own_organizations() {
+        // A plain user (no role, no membership) may list its own orgs/projects
+        // via the `self` ABAC policy, but not another user's.
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors::default(),
+            vec![],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+        assert!(
+            svc.check(&caller, Permission::ListUserOrganizations(UserId::new("u1")))
+                .await
+                .is_ok(),
+            "a user may list its own organizations"
+        );
+        assert!(
+            svc.check(&caller, Permission::ListUserProjects(UserId::new("u1")))
+                .await
+                .is_ok(),
+            "a user may list its own projects"
+        );
+        assert!(
+            svc.check(&caller, Permission::UpdateUser(UserId::new("u1")))
+                .await
+                .is_ok(),
+            "a user may update its own profile"
+        );
+        assert!(
+            svc.check(&caller, Permission::DeleteUser(UserId::new("u1")))
+                .await
+                .is_err(),
+            "self-deletion is not granted by the self policy"
+        );
+        assert!(
+            svc.check(&caller, Permission::ListUserOrganizations(UserId::new("u2")))
+                .await
+                .is_err(),
+            "a user may not list another user's organizations"
+        );
+        assert!(
+            svc.check(&caller, Permission::UpdateUser(UserId::new("u2")))
+                .await
+                .is_err(),
+            "a user may not update another user's profile"
+        );
+    }
+
+    #[tokio::test]
     async fn non_member_without_role_denied() {
         let svc = service(
             PrincipalAuthz::default(),

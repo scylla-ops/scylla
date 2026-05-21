@@ -31,8 +31,16 @@ namespace Scylla {
            "createOrganization", "listOrganizations",
            "listProjects", "listPipelines",
            "createJob", "listJobs",
-           "manageGrants", "managePolicies", "manageRoles"
+           "managePolicies", "manageRoles"
         appliesTo { principal: [User, Service], resource: [System] };
+
+    // Grant management is scope-aware: a system admin manages any grant
+    // (resource System); an org/project admin manages grants within their scope
+    // (resource Organization / Project). Cedar `resource in ?resource` on the
+    // role template confines each admin to its own subtree, so an org admin
+    // cannot touch another org's grants (anti-escalation).
+    action "manageGrants"
+        appliesTo { principal: [User, Service], resource: [System, Organization, Project] };
 
     // ── User-targeted ──────────────────────────────────────────────────
     action "readUser", "updateUser", "deleteUser",
@@ -42,9 +50,9 @@ namespace Scylla {
     // ── Organization-targeted ──────────────────────────────────────────
     action "readOrganization", "updateOrganization", "deleteOrganization",
            "listOrganizationMembers", "addOrganizationMember", "removeOrganizationMember",
-           "createProject", "createApp",
+           "createProject", "createApp", "createWorker",
            "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization",
-           "listAppsByOrganization"
+           "listAppsByOrganization", "listWorkers"
         appliesTo { principal: [User, Service], resource: [Organization] };
 
     // ── Project-targeted ───────────────────────────────────────────────
@@ -70,6 +78,9 @@ namespace Scylla {
         appliesTo { principal: [User, Service, App], resource: [Job] };
 
     // ── App-targeted (manage a specific app within its org) ─────────────
-    action "readApp", "deleteApp"
+    // A worker is a specialized app, so worker introspection/management also
+    // targets the App resource (worker_app_id == app id).
+    action "readApp", "deleteApp",
+           "readWorker", "readWorkerStats", "deleteWorker"
         appliesTo { principal: [User, Service], resource: [App] };
 }

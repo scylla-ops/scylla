@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
-import { rmSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { rmSync, mkdirSync, readdirSync } from 'node:fs';
+import { resolve, dirname, delimiter } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -17,8 +17,24 @@ mkdirSync(outDir, { recursive: true });
 // protoc-gen-ts) and produce an incompatible single-file layout.
 const protoc = resolve(root, 'node_modules', '.bin', 'protoc');
 
-const cmd = `"${protoc}" -I="${protoDir}" --ts_out="${outDir}" "${protoDir}"/*.proto`;
+// Enumerate .proto files in JS rather than relying on a shell glob: cmd.exe on
+// Windows does not expand `*.proto`, so the glob would be passed to protoc
+// verbatim and fail.
+const protoFiles = readdirSync(protoDir)
+  .filter((f) => f.endsWith('.proto'))
+  .map((f) => `"${resolve(protoDir, f)}"`)
+  .join(' ');
 
-execSync(cmd, { stdio: 'inherit', shell: true, cwd: root });
+const cmd = `"${protoc}" -I="${protoDir}" --ts_out="${outDir}" ${protoFiles}`;
+
+// protoc resolves the protoc-gen-ts plugin from PATH; ensure node_modules/.bin
+// is on it so the local plugin is found (cross-platform).
+const binDir = resolve(root, 'node_modules', '.bin');
+execSync(cmd, {
+  stdio: 'inherit',
+  shell: true,
+  cwd: root,
+  env: { ...process.env, PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}` },
+});
 
 console.log('Protobuf generation done.');

@@ -17,6 +17,16 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
     }, 'Failed to fetch organizations.');
   }
 
+  // Member-scoped list: orgs the current user belongs to. Non-admins are
+  // denied listOrganizations (global), so this is the default for the switcher.
+  public getMine(): Promise<ScyllaResult<ListOrganizationsResponse>> {
+    return ScyllaResult.tryAsync<ListOrganizationsResponse>(async () => {
+      const userId = localStorage.getItem('userId') ?? '';
+      const { response } = await this._organizationClient.listUserOrganizations({ userId });
+      return { organizations: response.organizations, pagination: response.pagination };
+    }, 'Failed to fetch organizations.');
+  }
+
   public create(name: string, description?: string): Promise<ScyllaResult<OrganizationResponse>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._organizationClient.createOrganization({ name, description });

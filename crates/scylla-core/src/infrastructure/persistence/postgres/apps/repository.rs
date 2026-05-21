@@ -1,6 +1,6 @@
 use crate::application::app::AppRepository;
 use crate::application::permission::grant::Grant;
-use crate::domain::entities::{App, AppId, OrganizationId};
+use crate::domain::entities::{App, AppId, OrganizationId, Worker};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::app::{AppName, AppSecretHash};
 use async_trait::async_trait;
@@ -9,7 +9,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
-use super::super::grants;
+use super::super::{grants, workers};
 
 #[derive(Clone)]
 pub struct PgAppRepository {
@@ -25,6 +25,26 @@ impl PgAppRepository {
 
 #[async_trait]
 impl AppRepository for PgAppRepository {
+    #[instrument(skip(self, app), fields(app_id = %app.id(), org_id = %app.organization_id()))]
+    async fn create_app(&self, app: &App) -> DomainResult<()> {
+        queries::create(&self.pool, app).await
+    }
+
+    #[instrument(skip(self, app, worker, grant), fields(app_id = %app.id(), org_id = %app.organization_id()))]
+    async fn provision_worker(
+        &self,
+        app: &App,
+        worker: &Worker,
+        grant: &Grant,
+    ) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+        queries::create(&mut *tx, app).await?;
+        workers::insert(&mut *tx, worker).await?;
+        grants::insert(&mut *tx, grant).await?;
+        tx.commit().await.to_domain()?;
+        Ok(())
+    }
+
     #[instrument(skip(self, app, grant), fields(app_id = %app.id(), org_id = %app.organization_id()))]
     async fn provision(&self, app: &App, grant: &Grant) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;

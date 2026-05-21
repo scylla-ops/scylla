@@ -12,6 +12,7 @@ mod session;
 mod user;
 mod user_organization;
 mod user_project;
+mod worker;
 
 pub use ids::*;
 
@@ -27,3 +28,4 @@ pub use session::*;
 pub use user::*;
 pub use user_organization::*;
 pub use user_project::*;
+pub use worker::*;

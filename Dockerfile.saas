@@ -1,0 +1,62 @@
+# syntax=docker/dockerfile:1
+#
+# SaaS edition of scylla-control-plane. Mirror of ./Dockerfile but pinned to the
+# control-plane package with `--features saas` in BOTH the chef `cook` and the
+# final `build`. Aligning the feature set across cook and build is what keeps the
+# cargo-chef dependency cache valid — otherwise cook (PaaS deps) and build (SaaS
+# deps) disagree on feature unification and cargo recompiles every feature-gated
+# dependency. ./Dockerfile stays the generic/PaaS builder for the other services.
+
+# === Chef base ===
+FROM rust:1-bookworm AS chef
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    protobuf-compiler libclang-dev && \
+    rm -rf /var/lib/apt/lists/*
+RUN cargo install cargo-chef --locked
+WORKDIR /app
+
+# === Planner: extract dependency recipe from Cargo.toml/Cargo.lock ===
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+# === Deps: cook the control-plane's SaaS dependencies ===
+# Cooked with the exact same package + features as the builder below so the
+# compiled artifacts are reused instead of rebuilt.
+FROM chef AS deps
+COPY --from=planner /app/recipe.json recipe.json
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    cargo chef cook --release -p scylla-control-plane --features saas --recipe-path recipe.json
+
+# === Builder: build the SaaS control-plane on top of cooked deps ===
+FROM deps AS builder
+COPY . .
+
+ARG CARGO_BUILD_JOBS=2
+ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
+# Use the committed .sqlx/ offline cache so query!/query_as! macros expand
+# without needing a live Postgres at build time.
+ENV SQLX_OFFLINE=true
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    cargo build --release -p scylla-control-plane --features saas && \
+    cp target/release/scylla-control-plane /app/service
+
+# === Runtime ===
+FROM debian:bookworm-slim AS runtime
+
+LABEL org.opencontainers.image.source="https://github.com/scylla-ops/scylla"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --gid 10001 appuser && \
+    useradd --uid 10001 --gid appuser --no-create-home appuser
+
+WORKDIR /app
+USER appuser
+
+COPY --from=builder --chown=appuser:appuser /app/service ./service
+ENTRYPOINT ["./service"]

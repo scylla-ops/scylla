@@ -1,57 +1,33 @@
 use crate::extract_auth_context;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::{
-    AppRepository, AppUseCases, HashService, PermissionService, PolicyControl, WorkerDispatch,
-};
+use scylla_core::application::{AppRepository, AppUseCases, HashService, PermissionService};
 use scylla_core::domain::entities::{App, AppId, OrganizationId};
 use scylla_core::domain::value_objects::app::AppName;
-use scylla_core::infrastructure::InMemoryWorkerRegistry;
 use scylla_protocol::services::app::{
     App as ProtoApp, CreateAppRequest, CreatedApp as ProtoCreatedApp, DeleteAppRequest,
     DeleteAppResponse, GetAppRequest, ListAppsRequest, ListAppsResponse,
     app_service_server::AppService,
 };
-use std::collections::HashSet;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct AppHandler<A, H, PC, PS>
+pub struct AppHandler<A, H, PS>
 where
     A: AppRepository,
     H: HashService,
-    PC: PolicyControl,
     PS: PermissionService,
 {
-    use_cases: Arc<AppUseCases<A, H, PC, PS>>,
-    /// Used to report which apps currently have an open worker stream (online).
-    registry: Arc<InMemoryWorkerRegistry>,
-}
-
-impl<A, H, PC, PS> AppHandler<A, H, PC, PS>
-where
-    A: AppRepository,
-    H: HashService,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
-    fn connected_ids(&self) -> HashSet<String> {
-        self.registry
-            .connected()
-            .iter()
-            .map(|id| id.as_str().to_string())
-            .collect()
-    }
+    use_cases: Arc<AppUseCases<A, H, PS>>,
 }
 
 #[async_trait::async_trait]
 impl<
     A: AppRepository + Send + Sync + 'static,
     H: HashService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
-> AppService for AppHandler<A, H, PC, PS>
+> AppService for AppHandler<A, H, PS>
 {
     async fn create_app(
         &self,
@@ -68,9 +44,8 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        // A freshly created app has not connected yet.
         Ok(Response::new(ProtoCreatedApp {
-            app: Some(app_to_proto(&created.app, false)),
+            app: Some(app_to_proto(&created.app)),
             secret: created.secret.as_str().to_string(),
         }))
     }
@@ -83,8 +58,7 @@ impl<
             .get(&caller, AppId::new(&req.id))
             .await
             .map_err(domain_error_to_status)?;
-        let connected = self.connected_ids().contains(app.id().as_str());
-        Ok(Response::new(app_to_proto(&app, connected)))
+        Ok(Response::new(app_to_proto(&app)))
     }
 
     async fn list_apps(
@@ -98,12 +72,8 @@ impl<
             .list(&caller, OrganizationId::new(&req.organization_id))
             .await
             .map_err(domain_error_to_status)?;
-        let connected = self.connected_ids();
         Ok(Response::new(ListAppsResponse {
-            apps: apps
-                .iter()
-                .map(|a| app_to_proto(a, connected.contains(a.id().as_str())))
-                .collect(),
+            apps: apps.iter().map(app_to_proto).collect(),
         }))
     }
 
@@ -121,7 +91,7 @@ impl<
     }
 }
 
-fn app_to_proto(a: &App, connected: bool) -> ProtoApp {
+fn app_to_proto(a: &App) -> ProtoApp {
     ProtoApp {
         id: a.id().to_string(),
         organization_id: a.organization_id().to_string(),
@@ -129,6 +99,5 @@ fn app_to_proto(a: &App, connected: bool) -> ProtoApp {
         is_active: a.is_active(),
         created_at: a.created_at().to_rfc3339(),
         updated_at: a.updated_at().to_rfc3339(),
-        connected,
     }
 }

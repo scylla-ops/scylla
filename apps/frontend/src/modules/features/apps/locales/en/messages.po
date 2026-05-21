@@ -1,0 +1,107 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-05-21 19:33+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:30
+msgid "Active"
+msgstr "Active"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:97
+msgid "An app is the machine identity an agent connects with. You will get a one-time secret."
+msgstr "An app is the machine identity an agent connects with. You will get a one-time secret."
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:111
+msgid "App created"
+msgstr "App created"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:24
+msgid "App ID"
+msgstr "App ID"
+
+#: src/modules/features/apps/presentation/utils/create-app-form-items.ts:7
+msgid "App name"
+msgstr "App name"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:169
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:128
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:141
+msgid "Copy"
+msgstr "Copy"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:114
+msgid "Copy the secret now — it is shown once and cannot be retrieved later."
+msgstr "Copy the secret now — it is shown once and cannot be retrieved later."
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:95
+msgid "Create a new app"
+msgstr "Create a new app"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:103
+msgid "Create App"
+msgstr "Create App"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:36
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:75
+msgid "Created"
+msgstr "Created"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:79
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:177
+msgid "Delete"
+msgstr "Delete"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:159
+msgid "Delete app?"
+msgstr "Delete app?"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:149
+msgid "Done"
+msgstr "Done"
+
+#: src/modules/features/apps/presentation/utils/create-app-form-items.ts:8
+msgid "e.g., ci-runner"
+msgstr "e.g., ci-runner"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:87
+msgid "No apps yet. Create one to connect an agent."
+msgstr "No apps yet. Create one to connect an agent."
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:22
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:73
+#~ msgid "offline"
+#~ msgstr "offline"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:22
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:73
+#~ msgid "online"
+#~ msgstr "online"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:134
+msgid "Run the agent"
+msgstr "Run the agent"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:121
+msgid "Secret"
+msgstr "Secret"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:162
+msgid "This revokes the app's grants and disconnects its agent. Cannot be undone."
+msgstr "This revokes the app's grants and disconnects its agent. Cannot be undone."
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:42
+msgid "Updated"
+msgstr "Updated"

@@ -44,6 +44,8 @@ pub use persistence::postgres::PgUserProjectRepository;
 pub use persistence::postgres::PgUserRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserRoleRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgWorkerRepository;
 
 #[cfg(feature = "hash")]
 pub use services::Argon2HashService;

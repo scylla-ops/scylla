@@ -65,12 +65,18 @@ impl<
         request: Request<ListGrantsRequest>,
     ) -> Result<Response<ListGrantsResponse>, Status> {
         let caller = caller!(request);
+        let req = request.into_inner();
 
-        let grants = self
-            .use_cases
-            .list(&caller)
-            .await
-            .map_err(domain_error_to_status)?;
+        // Scope filter present → scoped listing (org/project admins). Absent →
+        // list every grant (system admins only).
+        let grants = match (req.scope_kind, req.scope_id) {
+            (Some(kind), Some(id)) => {
+                let scope = scope_from_proto(kind, &id)?;
+                self.use_cases.list_by_scope(&caller, &scope).await
+            }
+            _ => self.use_cases.list(&caller).await,
+        }
+        .map_err(domain_error_to_status)?;
 
         Ok(Response::new(ListGrantsResponse {
             grants: grants.iter().map(grant_to_proto).collect(),

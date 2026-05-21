@@ -77,8 +77,22 @@ pub enum Permission {
     DeleteApp(AppId),
     ListAppsByOrganization(OrganizationId),
 
-    // ── grants / policies / roles (admin) ──────────────────────────────
+    // ── worker (specialized apps that run jobs) ─────────────────────────
+    CreateWorker(OrganizationId),
+    ListWorkers(OrganizationId),
+    ReadWorker(AppId),
+    ReadWorkerStats(AppId),
+    DeleteWorker(AppId),
+
+    // ── grants / policies / roles ──────────────────────────────────────
+    /// System-scoped grant management (admin / service): manage any grant.
     ManageGrants,
+    /// Manage grants whose scope is this organization (org-admins). Cedar
+    /// hierarchy bounds it to the org and the projects beneath it, so it cannot
+    /// be used to touch grants in another org (anti-escalation).
+    ManageOrgGrants(OrganizationId),
+    /// Manage grants whose scope is this project (project-admins).
+    ManageProjectGrants(ProjectId),
     ManagePolicies,
     ManageRoles,
 }
@@ -143,7 +157,15 @@ impl Permission {
             Self::DeleteApp(_) => "deleteApp",
             Self::ListAppsByOrganization(_) => "listAppsByOrganization",
 
-            Self::ManageGrants => "manageGrants",
+            Self::CreateWorker(_) => "createWorker",
+            Self::ListWorkers(_) => "listWorkers",
+            Self::ReadWorker(_) => "readWorker",
+            Self::ReadWorkerStats(_) => "readWorkerStats",
+            Self::DeleteWorker(_) => "deleteWorker",
+
+            Self::ManageGrants
+            | Self::ManageOrgGrants(_)
+            | Self::ManageProjectGrants(_) => "manageGrants",
             Self::ManagePolicies => "managePolicies",
             Self::ManageRoles => "manageRoles",
         }
@@ -187,7 +209,10 @@ impl Permission {
             | Self::ListPipelinesByOrganization(id)
             | Self::ListJobsByOrganization(id)
             | Self::CreateApp(id)
-            | Self::ListAppsByOrganization(id) => ResourceRef::Organization(id.clone()),
+            | Self::ListAppsByOrganization(id)
+            | Self::CreateWorker(id)
+            | Self::ListWorkers(id)
+            | Self::ManageOrgGrants(id) => ResourceRef::Organization(id.clone()),
 
             // Project-targeted
             Self::ReadProject(id)
@@ -198,7 +223,8 @@ impl Permission {
             | Self::RemoveProjectMember(id)
             | Self::CreatePipeline(id)
             | Self::ListPipelinesByProject(id)
-            | Self::ListJobsByProject(id) => ResourceRef::Project(id.clone()),
+            | Self::ListJobsByProject(id)
+            | Self::ManageProjectGrants(id) => ResourceRef::Project(id.clone()),
 
             // Pipeline-targeted
             Self::ReadPipeline(id)
@@ -218,6 +244,10 @@ impl Permission {
             | Self::WriteJobLog(id) => ResourceRef::Job(id.clone()),
 
             Self::ReadApp(id) | Self::DeleteApp(id) => ResourceRef::App(id.clone()),
+
+            Self::ReadWorker(id) | Self::ReadWorkerStats(id) | Self::DeleteWorker(id) => {
+                ResourceRef::App(id.clone())
+            }
         }
     }
 }

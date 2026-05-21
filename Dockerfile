@@ -29,6 +29,9 @@ FROM deps AS builder
 COPY . .
 
 ARG PACKAGE
+# Optional cargo features (e.g. FEATURES=saas for the SaaS edition). Empty = the
+# default PaaS edition.
+ARG FEATURES=""
 ARG CARGO_BUILD_JOBS=2
 ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
 # Use the committed .sqlx/ offline cache so query!/query_as! macros expand
@@ -36,7 +39,7 @@ ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
 ENV SQLX_OFFLINE=true
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
-    cargo build --release -p ${PACKAGE} && \
+    cargo build --release -p ${PACKAGE} ${FEATURES:+--features ${FEATURES}} && \
     cp target/release/${PACKAGE} /app/service
 
 # === Runtime ===

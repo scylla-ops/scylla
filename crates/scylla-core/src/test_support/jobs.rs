@@ -55,6 +55,7 @@ impl JobBuilder {
             pipeline_id,
             status,
             node_executions,
+            None,
             now,
             updated_at.unwrap_or(now),
             started_at,

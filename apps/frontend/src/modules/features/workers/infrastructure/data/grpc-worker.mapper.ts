@@ -1,39 +1,33 @@
-import type { AgentResponse, ListAgentsResponse } from '@/generated/agent.ts';
 import type {
-  Worker,
-  WorkersListResponse,
-} from '@/modules/features/workers/domain/models/worker.model.ts';
+  WorkerStats as ProtoWorkerStats,
+  WorkerView as ProtoWorkerView,
+} from '@/generated/worker_admin.ts';
+import type { Worker, WorkerStats } from '@/modules/features/workers/domain/models/worker.model.ts';
 
-/**
- * Mapper for converting gRPC agent responses to domain Worker models
- */
+/** Maps gRPC WorkerAdmin messages to the domain Worker models. */
 export class GrpcWorkerMapper {
-  /**
-   * Map single agent gRPC response to Worker domain model
-   */
-  static toDomain(agent: AgentResponse): Worker {
+  static toDomain(w: ProtoWorkerView): Worker {
     return {
-      agentId: agent.agentId,
-      hostname: agent.hostname,
-      status: agent.status,
-      lastSeenAt: agent.lastSeenAt,
-      createdAt: agent.createdAt,
-      updatedAt: agent.updatedAt,
+      id: w.id,
+      organizationId: w.organizationId,
+      name: w.name,
+      isActive: w.isActive,
+      connected: w.connected,
+      lastSeen: w.lastSeen,
+      createdAt: w.createdAt,
+      updatedAt: w.updatedAt,
     };
   }
 
-  /**
-   * Map list agents gRPC response to WorkersListResponse domain model
-   */
-  static toDomainList(response: ListAgentsResponse): WorkersListResponse {
+  static statsToDomain(s: ProtoWorkerStats): WorkerStats {
     return {
-      workers: response.agents?.map(agent => this.toDomain(agent)) || [],
-      pagination: response.pagination
-        ? {
-            total: response.pagination.totalCount,
-            hasMore: response.pagination.hasNext,
-          }
-        : undefined,
+      total: Number(s.total),
+      pending: Number(s.pending),
+      running: Number(s.running),
+      completed: Number(s.completed),
+      failed: Number(s.failed),
+      cancelled: Number(s.cancelled),
+      lastRunAt: s.lastRunAt,
     };
   }
 }

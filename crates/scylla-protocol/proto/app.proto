@@ -21,9 +21,8 @@ message App {
   bool   is_active       = 4;
   string created_at      = 5; // RFC 3339
   string updated_at      = 6; // RFC 3339
-  // True when the app currently has an open worker stream (it is an online
-  // agent). Derived live from the worker registry, not stored.
-  bool   connected       = 7;
+  // (field 7 `connected` removed — presence is a Worker concept now, exposed by
+  //  worker_admin.WorkerAdminService, not on a generic App.)
 }
 
 message CreateAppRequest {

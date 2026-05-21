@@ -25,6 +25,26 @@ permit (
     principal is Scylla::Service
 };
 
+// ── Self access (ABAC) ─────────────────────────────────────────────────
+// A user owns its own User entity: it may read and update its own profile and
+// list the orgs/projects it belongs to. `deleteUser` is intentionally excluded
+// — self-deletion is destructive and stays an admin / dedicated-flow action.
+// Without this, only global admins could fetch their own org/project list —
+// non-admins were denied listUserOrganizations even for themselves.
+@id("self")
+permit (
+    principal,
+    action in [
+        Scylla::Action::"readUser",
+        Scylla::Action::"updateUser",
+        Scylla::Action::"listUserOrganizations",
+        Scylla::Action::"listUserProjects"
+    ],
+    resource
+) when {
+    principal is Scylla::User && principal == resource
+};
+
 // ── Organization members (ABAC) ────────────────────────────────────────
 // A user may perform read/list operations on an organization it belongs to.
 // `principal is User` narrows the type so `principal.memberOrgs` typechecks.

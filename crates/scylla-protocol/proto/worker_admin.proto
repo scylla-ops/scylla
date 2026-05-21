@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package worker_admin;
+
+// Management + introspection of Workers — specialized Apps that run jobs.
+// Creating a worker provisions an App credential under the hood (the secret is
+// returned exactly once) plus its worker grant. Distinct from the streaming
+// `worker.WorkerService` (the agent ↔ control-plane job stream): this service is
+// the unary control surface used by the dashboard. Authorization is org-scoped:
+// the caller must hold the matching worker permission on the org / worker.
+service WorkerAdminService {
+  rpc CreateWorker(CreateWorkerRequest)     returns (CreatedWorker);
+  rpc ListWorkers(ListWorkersRequest)       returns (ListWorkersResponse);
+  rpc GetWorker(GetWorkerRequest)           returns (WorkerView);
+  rpc GetWorkerStats(GetWorkerStatsRequest) returns (WorkerStats);
+  rpc DeleteWorker(DeleteWorkerRequest)     returns (DeleteWorkerResponse);
+}
+
+// A worker: its backing app identity plus live presence and durable last-seen.
+// The id is the worker's app id (== jobs.worker_app_id).
+message WorkerView {
+  string id              = 1;
+  string organization_id = 2;
+  string name            = 3;
+  bool   is_active       = 4;
+  string created_at      = 5; // RFC 3339
+  string updated_at      = 6; // RFC 3339
+  // True while an agent currently holds an open worker stream for this worker.
+  // Derived live from the worker registry, not stored.
+  bool   connected       = 7;
+  // Last activity timestamp; empty if the worker has never connected.
+  string last_seen       = 8; // RFC 3339 or ""
+}
+
+// Aggregate run stats for a worker, derived from the jobs it executed.
+message WorkerStats {
+  int64  total       = 1;
+  int64  pending     = 2;
+  int64  running     = 3;
+  int64  completed   = 4;
+  int64  failed      = 5;
+  int64  cancelled   = 6;
+  string last_run_at = 7; // RFC 3339 or ""
+}
+
+message CreateWorkerRequest {
+  string organization_id = 1;
+  string name            = 2;
+}
+
+// The newly created worker plus its plaintext secret, shown exactly once.
+message CreatedWorker {
+  WorkerView worker = 1;
+  string     secret = 2;
+}
+
+message ListWorkersRequest {
+  string organization_id = 1;
+}
+
+message ListWorkersResponse {
+  repeated WorkerView workers = 1;
+}
+
+message GetWorkerRequest {
+  string id = 1;
+}
+
+message GetWorkerStatsRequest {
+  string id = 1;
+}
+
+message DeleteWorkerRequest {
+  string id = 1;
+}
+
+message DeleteWorkerResponse {
+  bool deleted = 1;
+}

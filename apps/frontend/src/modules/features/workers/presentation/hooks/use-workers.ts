@@ -1,17 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import { useState } from 'react';
+import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 
-const WORKERS_QUERY_KEY = ['workers'];
+const WORKERS_QUERY_KEY = 'workers';
 
 export function useWorkers() {
   const { workers } = useDependencies();
-  const [searchTerm, setSearchTerm] = useState('');
+  const organizationId = useContextStore(state => state.organization.id);
+  const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: WORKERS_QUERY_KEY,
+  const query = useQuery({
+    queryKey: [WORKERS_QUERY_KEY, organizationId],
+    enabled: !!organizationId,
     queryFn: async () => {
-      const result = await workers.getWorkers.execute();
+      const result = await workers.getWorkers.execute(organizationId ?? '');
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -21,22 +23,41 @@ export function useWorkers() {
     },
   });
 
-  // Filter workers based on search term
-  const filtered = data?.workers?.filter(
-    worker =>
-      worker.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.agentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.status.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const createWorker = useMutation({
+    mutationFn: async (name: string) => {
+      const result = await workers.createWorker.execute(organizationId ?? '', name);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY, organizationId] }),
+  });
+
+  const deleteWorker = useMutation({
+    mutationFn: async (workerId: string) => {
+      const result = await workers.deleteWorker.execute(workerId);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY, organizationId] }),
+  });
 
   return {
-    workers: filtered || [],
-    allWorkers: data?.workers || [],
-    isLoading,
-    isError,
-    error,
-    searchTerm,
-    setSearchTerm,
+    workers: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    createWorker,
+    deleteWorker,
   };
 }
 
@@ -44,7 +65,8 @@ export function useWorker(workerId: string) {
   const { workers } = useDependencies();
 
   return useQuery({
-    queryKey: [...WORKERS_QUERY_KEY, workerId],
+    queryKey: [WORKERS_QUERY_KEY, 'detail', workerId],
+    enabled: !!workerId,
     queryFn: async () => {
       const result = await workers.getWorker.execute(workerId);
       return result.fold({
@@ -54,6 +76,23 @@ export function useWorker(workerId: string) {
         },
       });
     },
+  });
+}
+
+export function useWorkerStats(workerId: string) {
+  const { workers } = useDependencies();
+
+  return useQuery({
+    queryKey: [WORKERS_QUERY_KEY, 'stats', workerId],
     enabled: !!workerId,
+    queryFn: async () => {
+      const result = await workers.getWorkerStats.execute(workerId);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
   });
 }

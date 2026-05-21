@@ -1,4 +1,8 @@
 use crate::application::caller::CallerContext;
+use crate::application::permission::grant::{
+    Grant, GrantPrincipal, GrantScope, ORGANIZATION_ADMIN_ROLE,
+};
+use crate::application::permission::policy::PolicyControl;
 use crate::application::{
     OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
 };
@@ -6,6 +10,7 @@ use crate::domain::entities::{Organization, OrganizationId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -17,11 +22,13 @@ pub struct OrganizationUseCases<
     UO: UserOrganizationRepository,
     U: UserRepository,
     PS: PermissionService,
+    PC: PolicyControl,
 > {
     org_repo: Arc<O>,
     user_org_repo: Arc<UO>,
     user_repo: Arc<U>,
     permission_service: Arc<PS>,
+    policy_control: Arc<PC>,
 }
 
 impl<
@@ -29,7 +36,8 @@ impl<
     UO: UserOrganizationRepository,
     U: UserRepository,
     PS: PermissionService,
-> OrganizationUseCases<O, UO, U, PS>
+    PC: PolicyControl,
+> OrganizationUseCases<O, UO, U, PS, PC>
 {
     #[instrument(skip(self, caller), fields(name = %name))]
     pub async fn create(
@@ -47,7 +55,32 @@ impl<
         }
 
         let org = Organization::create(name, description)?;
-        self.org_repo.create(&org).await
+
+        // Enroll the human creator as a member + org-admin of the org they just
+        // created — mirrors signup's `provision_account`. The org insert,
+        // membership and owner grant happen in ONE transaction so a partial
+        // failure can never leave an org without an owner. Machine/anonymous
+        // callers create nothing to enroll, so they just get the bare org.
+        match caller {
+            CallerContext::User(user_id) => {
+                let grant = Grant::new(
+                    GrantPrincipal::User(user_id.clone()),
+                    RoleName::new(ORGANIZATION_ADMIN_ROLE)?,
+                    GrantScope::Organization(org.id().clone()),
+                );
+                self.org_repo
+                    .provision_with_owner(&org, user_id, &grant)
+                    .await?;
+                // Make the org-admin grant live now so the creator can act on
+                // the org immediately, without a control-plane restart.
+                self.policy_control.reload().await?;
+            }
+            _ => {
+                self.org_repo.create(&org).await?;
+            }
+        }
+
+        Ok(org)
     }
 
     #[instrument(skip(self, caller), fields(org_id = %id))]

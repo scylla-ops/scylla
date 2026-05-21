@@ -1,5 +1,14 @@
 import * as React from 'react';
-import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon, HardDriveIcon } from 'lucide-react';
+import {
+  Building2,
+  ShoppingCartIcon,
+  UsersIcon,
+  WorkflowIcon,
+  HardDriveIcon,
+  FolderKanbanIcon,
+  CpuIcon,
+  ServerIcon,
+} from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {
@@ -25,27 +34,46 @@ const useNavSections = (): NavSectionModel[] => {
 
   return [
     {
-      title: 'Main',
+      // Organization scope (Org → Project → Pipeline → Job; App ∈ Org).
+      title: 'Organization',
       items: [
         {
-          title: 'Projects',
-          url: `${prefix}/projects`,
+          title: 'Workspace',
           icon: WorkflowIcon,
+          items: [
+            {
+              title: 'Projects',
+              url: `${prefix}/projects`,
+              icon: FolderKanbanIcon,
+            },
+            {
+              title: 'Marketplace',
+              url: `${prefix}/marketplace`,
+              icon: ShoppingCartIcon,
+            },
+          ],
         },
         {
-          title: 'Marketplace',
-          url: `${prefix}/marketplace`,
-          icon: ShoppingCartIcon,
-        },
-        {
-          title: 'Workers',
-          url: `${prefix}/workers`,
-          icon: HardDriveIcon,
+          title: 'Service',
+          icon: ServerIcon,
+          items: [
+            {
+              title: 'Apps',
+              url: `${prefix}/apps`,
+              icon: HardDriveIcon,
+            },
+            {
+              title: 'Workers',
+              url: `${prefix}/workers`,
+              icon: CpuIcon,
+            },
+          ],
         },
       ],
     },
     {
-      title: 'Admin',
+      // Global administration (system scope).
+      title: 'Administration',
       items: [
         {
           title: 'Users',

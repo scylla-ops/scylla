@@ -17,7 +17,7 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:149
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:151
 msgid "Active account"
 msgstr ""
 
@@ -49,18 +49,18 @@ msgstr ""
 msgid "Enter a username and password for the new user."
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:92
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:95
 msgid "Error loading user information"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:72
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:75
 msgid "Loading user information..."
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:87
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:137
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:50
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:70
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:90
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:139
 msgid "Manage your account details."
 msgstr ""
 
@@ -76,14 +76,14 @@ msgstr ""
 msgid "User"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:44
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:64
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:84
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:134
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:87
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:136
 msgid "User information"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:52
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:55
 msgid "User information not available"
 msgstr ""
 

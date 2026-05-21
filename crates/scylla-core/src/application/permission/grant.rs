@@ -3,7 +3,7 @@ use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
 use crate::application::worker::dispatch_port::WorkerDispatch;
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
-use crate::domain::errors::DomainResult;
+use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
@@ -20,6 +20,13 @@ pub const PROJECT_ADMIN_ROLE: &str = "project-admin";
 /// and execute jobs within a scope. Linked via a dedicated Cedar template, not
 /// the full-control one used by the admin roles.
 pub const WORKER_ROLE: &str = "worker";
+
+/// Owner-equivalent roles: holding one grants full control over a scope. A scope
+/// must never lose its last owner, so revoking one of these is guarded.
+#[must_use]
+fn is_owner_role(role: &RoleName) -> bool {
+    matches!(role.as_str(), ORGANIZATION_ADMIN_ROLE | PROJECT_ADMIN_ROLE)
+}
 
 /// The scope a grant is bound to. Maps to the `?resource` slot of the linked
 /// Cedar template (e.g. `Project::"X"`).
@@ -103,6 +110,21 @@ pub struct GrantUseCases<G: GrantRepository, PC: PolicyControl, PS: PermissionSe
 }
 
 impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases<G, PC, PS> {
+    /// Permission required to manage a grant bound to `scope`. An org-scoped
+    /// grant needs `manageGrants` on that org; a project-scoped grant needs it on
+    /// that project. The Cedar role template (`resource in ?resource`) then
+    /// confines the caller to its own subtree — a system admin holds it on
+    /// `System` (admin policy), an org admin on its org, a project admin on its
+    /// project — so no caller can manage grants outside their scope
+    /// (anti-escalation is enforced by Cedar, not by trusting the caller).
+    fn manage_perm(scope: &GrantScope) -> Permission {
+        match scope {
+            GrantScope::Organization(id) => Permission::ManageOrgGrants(id.clone()),
+            GrantScope::Project(id) => Permission::ManageProjectGrants(id.clone()),
+        }
+    }
+
+    /// Every grant in the system — system admins only.
     #[instrument(skip(self, caller))]
     pub async fn list(&self, caller: &CallerContext) -> DomainResult<Vec<Grant>> {
         self.permission_service
@@ -111,10 +133,25 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         self.grant_repo.list_all().await
     }
 
+    /// Grants bound to a specific scope — manageable by an admin of that scope
+    /// (or a system admin). Backs per-org / per-project permission views.
+    #[instrument(skip(self, caller))]
+    pub async fn list_by_scope(
+        &self,
+        caller: &CallerContext,
+        scope: &GrantScope,
+    ) -> DomainResult<Vec<Grant>> {
+        self.permission_service
+            .check(caller, Self::manage_perm(scope))
+            .await?;
+        let grants = self.grant_repo.list_all().await?;
+        Ok(grants.into_iter().filter(|g| &g.scope == scope).collect())
+    }
+
     #[instrument(skip(self, caller))]
     pub async fn grant(&self, caller: &CallerContext, grant: &Grant) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::ManageGrants)
+            .check(caller, Self::manage_perm(&grant.scope))
             .await?;
         self.grant_repo.create(grant).await?;
         self.policy_control.reload().await
@@ -122,24 +159,39 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
 
     #[instrument(skip(self, caller))]
     pub async fn revoke(&self, caller: &CallerContext, id: &str) -> DomainResult<()> {
-        self.permission_service
-            .check(caller, Permission::ManageGrants)
-            .await?;
+        // Look the grant up first: the caller must hold management rights over
+        // *its* scope, and a revoked worker App must be disconnected.
+        let grants = self.grant_repo.list_all().await?;
+        let grant = grants.iter().find(|g| g.id == id).cloned();
 
-        // Capture the principal before deleting so a revoked worker App can be
-        // disconnected (its authorization just changed).
-        let principal = self
-            .grant_repo
-            .list_all()
-            .await?
-            .into_iter()
-            .find(|g| g.id == id)
-            .map(|g| g.principal);
+        // Unknown id falls back to the system-scoped permission, so only admins
+        // can probe arbitrary ids; the subsequent delete is then a no-op.
+        let perm = grant
+            .as_ref()
+            .map_or(Permission::ManageGrants, |g| Self::manage_perm(&g.scope));
+        self.permission_service.check(caller, perm).await?;
+
+        // Last-owner guard: a scope must always retain at least one owner. If
+        // this grant is the final owner-role grant for its scope, block the
+        // revoke rather than orphan the org/project.
+        if let Some(g) = &grant
+            && is_owner_role(&g.role)
+        {
+            let other_owners = grants
+                .iter()
+                .filter(|o| o.id != g.id && o.role == g.role && o.scope == g.scope)
+                .count();
+            if other_owners == 0 {
+                return Err(DomainError::business_rule(
+                    "cannot revoke the last owner of this scope",
+                ));
+            }
+        }
 
         self.grant_repo.delete(id).await?;
         self.policy_control.reload().await?;
 
-        if let Some(GrantPrincipal::App(app_id)) = principal {
+        if let Some(GrantPrincipal::App(app_id)) = grant.map(|g| g.principal) {
             self.worker_registry.disconnect(&app_id);
         }
         Ok(())
@@ -236,14 +288,63 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn revoking_user_grant_leaves_workers_alone() {
+    async fn cannot_revoke_last_owner_of_scope() {
+        // The sole org-admin of an org may not be revoked — it would orphan it.
         let grant = Grant::new(
             GrantPrincipal::User(UserId::new("u1")),
             RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
             GrantScope::Organization(OrganizationId::new("o1")),
         );
         let reg = Arc::new(RecordingRegistry::default());
-        let uc = use_cases(vec![grant.clone()], reg.clone());
+        let uc = use_cases(vec![grant.clone()], reg);
+
+        assert!(
+            uc.revoke(&CallerContext::User(UserId::new("admin")), &grant.id)
+                .await
+                .is_err(),
+            "revoking the last owner must be blocked"
+        );
+    }
+
+    #[tokio::test]
+    async fn can_revoke_owner_when_another_exists() {
+        let scope = GrantScope::Organization(OrganizationId::new("o1"));
+        let g1 = Grant::new(
+            GrantPrincipal::User(UserId::new("u1")),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            scope.clone(),
+        );
+        let g2 = Grant::new(
+            GrantPrincipal::User(UserId::new("u2")),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            scope,
+        );
+        let reg = Arc::new(RecordingRegistry::default());
+        let uc = use_cases(vec![g1.clone(), g2], reg);
+
+        assert!(
+            uc.revoke(&CallerContext::User(UserId::new("admin")), &g1.id)
+                .await
+                .is_ok(),
+            "revoking one of two owners is allowed"
+        );
+    }
+
+    #[tokio::test]
+    async fn revoking_user_grant_leaves_workers_alone() {
+        let grant = Grant::new(
+            GrantPrincipal::User(UserId::new("u1")),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        // A co-owner so the last-owner guard permits the revoke.
+        let co_owner = Grant::new(
+            GrantPrincipal::User(UserId::new("u2")),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let reg = Arc::new(RecordingRegistry::default());
+        let uc = use_cases(vec![grant.clone(), co_owner], reg.clone());
 
         uc.revoke(&CallerContext::User(UserId::new("admin")), &grant.id)
             .await

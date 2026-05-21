@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT j.id, j.pipeline_id, j.status,\n                       j.node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       j.created_at, j.updated_at, j.started_at, j.finished_at\n                FROM jobs j\n                JOIN pipelines p ON p.id = j.pipeline_id\n                WHERE p.project_id = $1\n                ORDER BY j.created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
+  "query": "\n            SELECT id, pipeline_id, status,\n                   node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                   worker_app_id,\n                   created_at, updated_at, started_at, finished_at\n            FROM jobs\n            WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -25,30 +25,33 @@
       },
       {
         "ordinal": 4,
+        "name": "worker_app_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "started_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "finished_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Int8",
-        "Int8"
+        "Text"
       ]
     },
     "nullable": [
@@ -56,11 +59,12 @@
       false,
       false,
       false,
+      true,
       false,
       false,
       true,
       true
     ]
   },
-  "hash": "edbd7af920d9361c85a894914f25b3ecbe9b937f4eff387207f81dd64d7b5fb4"
+  "hash": "c6b081f62ef54d832b949c995fc48547eea2654fbcda5b985573639331a065b3"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT id, pipeline_id, status,\n                       node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       created_at, updated_at, started_at, finished_at\n                FROM jobs\n                ORDER BY created_at DESC\n                LIMIT $1 OFFSET $2\n                ",
+  "query": "\n                SELECT id, pipeline_id, status,\n                       node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       worker_app_id,\n                       created_at, updated_at, started_at, finished_at\n                FROM jobs\n                WHERE pipeline_id = $1\n                ORDER BY created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
   "describe": {
     "columns": [
       {
@@ -25,27 +25,33 @@
       },
       {
         "ordinal": 4,
+        "name": "worker_app_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "started_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "finished_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        "Text",
         "Int8",
         "Int8"
       ]
@@ -55,11 +61,12 @@
       false,
       false,
       false,
+      true,
       false,
       false,
       true,
       true
     ]
   },
-  "hash": "a2b13955c9ee00861775529772d24d6b63570e03b34afd7058276a540c4f444f"
+  "hash": "8112bef3bc13e9064c007a1170d3249a33211617227b3a6b7332a4b8c81ce228"
 }

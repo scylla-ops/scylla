@@ -20,16 +20,27 @@ default:
 
 # -- Dev --
 
-# Build all services for local dev (native arch)
+# Build all services for local dev (native arch, PaaS edition)
 [group('dev')]
 local:
     docker compose build
+
+# Build the SaaS edition of the control-plane (Dockerfile.saas, --features saas)
+[group('dev')]
+local-saas:
+    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml build
 
 # Start the stack from already-present images (no pull, no rebuild)
 [group('dev')]
 [no-exit-message]
 start:
     docker compose up -d
+
+# Start the stack with the SaaS control-plane image
+[group('dev')]
+[no-exit-message]
+start-saas:
+    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d
 
 # -- Database (sqlx) --
 

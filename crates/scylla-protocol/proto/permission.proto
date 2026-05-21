@@ -107,7 +107,12 @@ message RevokeGrantResponse {
   bool revoked = 1;
 }
 
-message ListGrantsRequest {}
+message ListGrantsRequest {
+  // Optional scope filter. Set → list grants bound to that scope (manageable by
+  // an org/project admin of it). Unset → list every grant (system admins only).
+  optional GrantScopeKind scope_kind = 1;
+  optional string         scope_id   = 2;
+}
 
 message ListGrantsResponse {
   repeated Grant grants = 1;

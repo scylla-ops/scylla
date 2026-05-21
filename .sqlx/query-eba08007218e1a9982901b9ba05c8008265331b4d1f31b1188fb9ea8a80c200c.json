@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT j.id, j.pipeline_id, j.status,\n                       j.node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       j.created_at, j.updated_at, j.started_at, j.finished_at\n                FROM jobs j\n                JOIN pipelines p ON p.id = j.pipeline_id\n                JOIN projects pr ON pr.id = p.project_id\n                WHERE pr.organization_id = $1\n                ORDER BY j.created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
+  "query": "\n                SELECT j.id, j.pipeline_id, j.status,\n                       j.node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       j.worker_app_id,\n                       j.created_at, j.updated_at, j.started_at, j.finished_at\n                FROM jobs j\n                JOIN pipelines p ON p.id = j.pipeline_id\n                JOIN projects pr ON pr.id = p.project_id\n                WHERE pr.organization_id = $1\n                ORDER BY j.created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
   "describe": {
     "columns": [
       {
@@ -25,21 +25,26 @@
       },
       {
         "ordinal": 4,
+        "name": "worker_app_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "started_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "finished_at",
         "type_info": "Timestamptz"
       }
@@ -56,11 +61,12 @@
       false,
       false,
       false,
+      true,
       false,
       false,
       true,
       true
     ]
   },
-  "hash": "a13390f47c4e74f937780228736e5b92b552efdd6948095c835fedfb0543ff53"
+  "hash": "eba08007218e1a9982901b9ba05c8008265331b4d1f31b1188fb9ea8a80c200c"
 }

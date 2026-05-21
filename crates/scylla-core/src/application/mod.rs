@@ -51,4 +51,7 @@ pub use quota::Quotas;
 pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
 pub use user::{UserRepository, UserUseCases};
 pub use user_role::{UserRoleRepository, UserRoleUseCases};
-pub use worker::{DispatchOutcome, DispatchUseCases, WorkerDispatch};
+pub use worker::{
+    CreatedWorker, DispatchOutcome, DispatchUseCases, WorkerDispatch, WorkerRepository,
+    WorkerStats, WorkerUseCases, WorkerView,
+};

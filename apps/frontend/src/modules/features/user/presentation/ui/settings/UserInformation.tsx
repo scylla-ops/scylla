@@ -28,7 +28,10 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
 
   const handleSubmit = (values: FormChange[]) => {
     if (userId) {
-      const formData = values.reduce((acc, { id, value }) => ({ ...acc, [id]: value }), {});
+      const formData = values.reduce<Record<string, string>>(
+        (acc, { id, value }) => ({ ...acc, [id]: value }),
+        {},
+      );
       updateUserMutation.mutate({
         userId,
         username: formData.username,
@@ -104,7 +107,6 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
       type: FormItemType.Input,
       inputType: 'text',
       disabled: false,
-      required: true,
       defaultValue: user.username,
     },
     {

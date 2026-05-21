@@ -1,6 +1,8 @@
 use crate::application::caller::CallerContext;
 use crate::application::{JobRepository, PermissionService, PipelineRepository, ProjectRepository};
-use crate::domain::entities::{Job, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId};
+use crate::domain::entities::{
+    AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
+};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::pipeline::{JobDispatch, PipelineName};
@@ -160,5 +162,13 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
             nodes: pipeline.nodes().to_vec(),
         };
         Ok((job, dispatch))
+    }
+
+    /// Record which worker the job was dispatched to. An internal continuation
+    /// of the already-authorized `run` (the handler calls this once a worker
+    /// accepts the dispatch), so it carries no extra Cedar check.
+    #[instrument(skip(self), fields(job_id = %job_id, app_id = %app_id))]
+    pub async fn assign_worker(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
+        self.job_repo.set_worker(job_id, app_id).await
     }
 }

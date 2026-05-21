@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: section.title
-#: src/modules/layout/presentation/ui/NavMain.tsx:24
+#: src/modules/layout/presentation/ui/NavMain.tsx:83
 msgid "{0}"
 msgstr "{0}"
 
@@ -22,7 +22,7 @@ msgstr "{0}"
 msgid "An error occurred"
 msgstr "An error occurred"
 
-#: src/modules/core/presentation/ui/App.tsx:56
+#: src/modules/core/presentation/ui/App.tsx:57
 msgid "An unexpected error occurred"
 msgstr "An unexpected error occurred"
 
@@ -87,12 +87,12 @@ msgstr "Log out"
 msgid "New {label}"
 msgstr "New {label}"
 
-#: src/modules/core/presentation/ui/App.tsx:86
+#: src/modules/core/presentation/ui/App.tsx:87
 msgid "Operation failed"
 msgstr "Operation failed"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:69
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:73
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:97
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:101
 msgid "Organization"
 msgstr "Organization"
 
@@ -100,12 +100,12 @@ msgstr "Organization"
 #~ msgid "Organization name"
 #~ msgstr "Organization name"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:72
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:100
 msgid "Select Organization"
 msgstr "Select Organization"
 
-#: src/modules/core/presentation/ui/App.tsx:55
-#: src/modules/core/presentation/ui/App.tsx:85
+#: src/modules/core/presentation/ui/App.tsx:56
+#: src/modules/core/presentation/ui/App.tsx:86
 msgid "Server unreachable"
 msgstr "Server unreachable"
 

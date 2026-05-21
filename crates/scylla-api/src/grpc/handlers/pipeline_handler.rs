@@ -262,6 +262,11 @@ impl<
         match self.dispatch_uc.dispatch_job(&pipeline_id, &dispatch).await {
             Ok(DispatchOutcome::Dispatched(app_id)) => {
                 tracing::info!(job_id = %job.id(), %app_id, "job dispatched to worker");
+                // Record attribution for worker stats. Best-effort: the job ran
+                // regardless, so a failed write must not fail the request.
+                if let Err(e) = self.use_cases.assign_worker(job.id(), &app_id).await {
+                    tracing::warn!(job_id = %job.id(), %app_id, error = %e, "failed to record job worker attribution");
+                }
             }
             Ok(DispatchOutcome::NoWorkerAvailable) => {}
             Err(e) => {

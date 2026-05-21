@@ -5,6 +5,7 @@ use crate::grpc::mappers::{
 };
 use derive_more::Constructor;
 use scylla_core::application::OrganizationUseCases;
+use scylla_core::application::permission::policy::PolicyControl;
 use scylla_core::application::{
     OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
 };
@@ -29,8 +30,9 @@ pub struct OrganizationHandler<
     UO: UserOrganizationRepository,
     U: UserRepository,
     PS: PermissionService,
+    PC: PolicyControl,
 > {
-    use_cases: Arc<OrganizationUseCases<O, UO, U, PS>>,
+    use_cases: Arc<OrganizationUseCases<O, UO, U, PS, PC>>,
 }
 
 #[async_trait::async_trait]
@@ -39,7 +41,8 @@ impl<
     UO: UserOrganizationRepository + Send + Sync + 'static,
     U: UserRepository + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
-> OrganizationService for OrganizationHandler<O, UO, U, PS>
+    PC: PolicyControl + Send + Sync + 'static,
+> OrganizationService for OrganizationHandler<O, UO, U, PS, PC>
 {
     async fn create_organization(
         &self,

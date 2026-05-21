@@ -1,14 +1,11 @@
 use crate::application::HashService;
 use crate::application::app::repository::AppRepository;
 use crate::application::caller::CallerContext;
-use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope, WORKER_ROLE};
-use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
 use crate::domain::entities::{App, AppId, OrganizationId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::app::{AppName, AppSecret};
 use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::role::name::RoleName;
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
@@ -20,29 +17,27 @@ pub struct CreatedApp {
     pub secret: AppSecret,
 }
 
-/// Org-scoped management of machine Apps. Every method is Cedar-gated, so an
-/// org-admin can manage the apps of orgs they control (admins can manage any).
-/// Creating an app provisions it together with a worker grant on the same org
-/// and reloads the policy set so the grant takes effect immediately.
+/// Org-scoped management of machine Apps — generic credentials. Every method is
+/// Cedar-gated, so an org-admin can manage the apps of orgs they control (admins
+/// can manage any). An app is just an identity: it carries no authorization until
+/// grants are assigned to it. A *worker* (an app that runs jobs) is provisioned
+/// separately via `WorkerUseCases`, which also grants it the worker role.
 #[derive(Constructor)]
-pub struct AppUseCases<A, H, PC, PS>
+pub struct AppUseCases<A, H, PS>
 where
     A: AppRepository,
     H: HashService,
-    PC: PolicyControl,
     PS: PermissionService,
 {
     app_repo: Arc<A>,
     hash_service: Arc<H>,
-    policy_control: Arc<PC>,
     permission_service: Arc<PS>,
 }
 
-impl<A, H, PC, PS> AppUseCases<A, H, PC, PS>
+impl<A, H, PS> AppUseCases<A, H, PS>
 where
     A: AppRepository,
     H: HashService,
-    PC: PolicyControl,
     PS: PermissionService,
 {
     #[instrument(skip(self, caller), fields(org_id = %organization_id, name = %name))]
@@ -58,17 +53,11 @@ where
 
         let secret = AppSecret::generate();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
-        let app = App::create(organization_id.clone(), name, secret_hash);
+        let app = App::create(organization_id, name, secret_hash);
 
-        // The app becomes a worker on its own org via a scoped grant, so it can
-        // pull and execute jobs across that org's pipelines through Cedar.
-        let grant = Grant::new(
-            GrantPrincipal::App(app.id().clone()),
-            RoleName::new(WORKER_ROLE)?,
-            GrantScope::Organization(organization_id),
-        );
-        self.app_repo.provision(&app, &grant).await?;
-        self.policy_control.reload().await?;
+        // A plain app is an identity only — no grant, no policy reload. It gains
+        // capabilities later through explicit grants (or becomes a worker).
+        self.app_repo.create_app(&app).await?;
 
         Ok(CreatedApp { app, secret })
     }

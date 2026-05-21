@@ -1,5 +1,6 @@
 use crate::application::OrganizationRepository;
-use crate::domain::entities::{Organization, OrganizationId};
+use crate::application::permission::grant::Grant;
+use crate::domain::entities::{Organization, OrganizationId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
@@ -9,6 +10,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
+use super::super::{grants, user_organization};
 
 #[derive(Clone)]
 pub struct PgOrganizationRepository {
@@ -27,6 +29,22 @@ impl OrganizationRepository for PgOrganizationRepository {
     #[instrument(skip(self, organization), fields(org_id = %organization.id()))]
     async fn create(&self, organization: &Organization) -> DomainResult<Organization> {
         queries::create(&self.pool, organization).await
+    }
+
+    #[instrument(skip(self, organization, grant), fields(org_id = %organization.id(), owner = %owner))]
+    async fn provision_with_owner(
+        &self,
+        organization: &Organization,
+        owner: &UserId,
+        grant: &Grant,
+    ) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+        queries::create(&mut *tx, organization).await?;
+        user_organization::repository::queries::add_member(&mut *tx, owner, organization.id())
+            .await?;
+        grants::insert(&mut *tx, grant).await?;
+        tx.commit().await.to_domain()?;
+        Ok(())
     }
 
     #[instrument(skip(self), fields(org_id = %id))]

@@ -1,4 +1,4 @@
-use crate::domain::entities::{JobId, Pipeline, PipelineId};
+use crate::domain::entities::{AppId, JobId, Pipeline, PipelineId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::job::{JobStatus, NodeState};
 use crate::domain::value_objects::pipeline::NodeId;
@@ -69,6 +69,9 @@ pub struct Job {
     pipeline_id: PipelineId,
     status: JobStatus,
     node_executions: Vec<JobNode>,
+    /// The worker (app) that executed this job, set at dispatch. `None` while
+    /// pending / never dispatched.
+    worker_app_id: Option<AppId>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     started_at: Option<DateTime<Utc>>,
@@ -83,6 +86,7 @@ impl Job {
         pipeline_id: PipelineId,
         status: JobStatus,
         node_executions: Vec<JobNode>,
+        worker_app_id: Option<AppId>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
         started_at: Option<DateTime<Utc>>,
@@ -93,6 +97,7 @@ impl Job {
             pipeline_id,
             status,
             node_executions,
+            worker_app_id,
             created_at,
             updated_at,
             started_at,
@@ -115,11 +120,18 @@ impl Job {
             pipeline_id: pipeline.id().clone(),
             status: JobStatus::Pending,
             node_executions,
+            worker_app_id: None,
             created_at: now,
             updated_at: now,
             started_at: None,
             finished_at: None,
         }
+    }
+
+    /// Record which worker (app) was handed this job at dispatch.
+    pub fn assign_worker(&mut self, app_id: AppId) {
+        self.worker_app_id = Some(app_id);
+        self.updated_at = clock::now();
     }
 
     pub fn update_status(&mut self, new_status: JobStatus) -> DomainResult<()> {
@@ -285,6 +297,11 @@ impl Job {
     #[must_use]
     pub fn node_executions(&self) -> &[JobNode] {
         &self.node_executions
+    }
+
+    #[must_use]
+    pub fn worker_app_id(&self) -> Option<&AppId> {
+        self.worker_app_id.as_ref()
     }
 
     #[must_use]

@@ -1,4 +1,4 @@
-use crate::domain::entities::{Job, JobId, OrganizationId, PipelineId, ProjectId};
+use crate::domain::entities::{AppId, Job, JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
@@ -10,6 +10,10 @@ pub trait JobRepository {
     async fn find_by_id(&self, id: &JobId) -> DomainResult<Job>;
 
     async fn update(&self, job: &Job) -> DomainResult<Job>;
+
+    /// Record which worker (app) executed a job. Targeted column update so it
+    /// can't clobber concurrent status/node writes from the worker stream.
+    async fn set_worker(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()>;
 
     async fn delete(&self, id: &JobId) -> DomainResult<()>;
 

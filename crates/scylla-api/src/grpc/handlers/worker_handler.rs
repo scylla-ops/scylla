@@ -3,6 +3,7 @@ use derive_more::Constructor;
 use scylla_core::application::caller::CallerContext;
 use scylla_core::application::{
     JobLogRepository, JobLogUseCases, JobRepository, JobUseCases, PermissionService,
+    WorkerRepository,
 };
 use scylla_core::domain::entities::{AppId, JobId, JobLog};
 use scylla_core::domain::value_objects::job::{JobEvent, LogStream};
@@ -34,6 +35,8 @@ where
     log_stream: Arc<InMemoryJobLogStream>,
     job_use_cases: Arc<JobUseCases<J, PS>>,
     log_use_cases: Arc<JobLogUseCases<L, PS>>,
+    /// Durable worker presence: stamped on connect, each report, and disconnect.
+    worker_repo: Arc<dyn WorkerRepository>,
 }
 
 #[async_trait::async_trait]
@@ -68,6 +71,7 @@ impl<
             self.log_use_cases.clone(),
             self.log_stream.clone(),
             self.registry.clone(),
+            self.worker_repo.clone(),
         ));
 
         // Outbound: forward dispatches placed in the registry to the wire.
@@ -76,6 +80,7 @@ impl<
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn read_reports<J, L, PS>(
     mut inbound: Streaming<WorkerUp>,
     app_id: AppId,
@@ -83,12 +88,15 @@ async fn read_reports<J, L, PS>(
     log_use_cases: Arc<JobLogUseCases<L, PS>>,
     log_stream: Arc<InMemoryJobLogStream>,
     registry: Arc<InMemoryWorkerRegistry>,
+    worker_repo: Arc<dyn WorkerRepository>,
 ) where
     J: JobRepository + Send + Sync + 'static,
     L: JobLogRepository + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
 {
     let caller = CallerContext::App(app_id.clone());
+    // Stamp presence on connect (best-effort, never fails the stream).
+    touch_last_seen(&worker_repo, &app_id).await;
     // Loop ends when the worker disconnects (Ok(None)) or the stream errors.
     while let Ok(Some(up)) = inbound.message().await {
         match up.payload {
@@ -99,6 +107,7 @@ async fn read_reports<J, L, PS>(
                         warn!(app_id = %app_id, job_id = %status.job_id, error = %e, "failed to record job status");
                     }
                 }
+                touch_last_seen(&worker_repo, &app_id).await;
             }
             Some(worker_up::Payload::Log(line)) => {
                 if let Some(log) = log_line_to_domain(&line) {
@@ -112,7 +121,17 @@ async fn read_reports<J, L, PS>(
             None => {}
         }
     }
+    // Stamp final activity on disconnect, then drop the stream from the registry.
+    touch_last_seen(&worker_repo, &app_id).await;
     registry.unregister(&app_id);
+}
+
+/// Best-effort durable presence update. Worker introspection must never break
+/// the live stream, so failures are logged and swallowed.
+async fn touch_last_seen(worker_repo: &Arc<dyn WorkerRepository>, app_id: &AppId) {
+    if let Err(e) = worker_repo.touch_last_seen(app_id, chrono::Utc::now()).await {
+        warn!(app_id = %app_id, error = %e, "failed to update worker last_seen");
+    }
 }
 
 fn dispatch_to_proto(dispatch: &JobDispatch) -> WorkerDown {
