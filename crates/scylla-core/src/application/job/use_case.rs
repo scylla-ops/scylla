@@ -2,7 +2,9 @@ use crate::application::caller::CallerContext;
 use crate::application::{JobRepository, PermissionService};
 use crate::domain::entities::{Job, JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;
+use crate::domain::value_objects::job::{JobEvent, NodeState};
 use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -42,6 +44,44 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
             .check(caller, Permission::WriteJob(job.id().clone()))
             .await?;
         self.job_repo.update(job).await
+    }
+
+    /// Apply a status event reported by a worker to its job and persist it.
+    /// Gated by a single [`Permission::WriteJobStatus`] check (the worker role
+    /// confers it); the load/update repo calls deliberately bypass per-step
+    /// Cedar so a worker needs only `writeJobStatus`, not `readJob`/`writeJob`.
+    #[instrument(skip(self, caller), fields(job_id = %job_id))]
+    pub async fn record_status(
+        &self,
+        caller: &CallerContext,
+        job_id: &JobId,
+        event: &JobEvent,
+    ) -> DomainResult<()> {
+        self.permission_service
+            .check(caller, Permission::WriteJobStatus(job_id.clone()))
+            .await?;
+
+        let mut job = self.job_repo.find_by_id(job_id).await?;
+        let now = chrono::Utc::now();
+        match event {
+            JobEvent::JobStarted => job.start()?,
+            JobEvent::NodeStarted { node_id } => {
+                job.apply_node_started(&NodeId::new(node_id)?, now)?;
+            }
+            JobEvent::NodeCompleted { node_id } => {
+                job.apply_node_finished(&NodeId::new(node_id)?, NodeState::Completed, now)?;
+            }
+            JobEvent::NodeFailed { node_id, .. } => {
+                job.apply_node_finished(&NodeId::new(node_id)?, NodeState::Failed, now)?;
+            }
+            JobEvent::NodeSkipped { node_id } => {
+                job.apply_node_skipped(&NodeId::new(node_id)?, now)?;
+            }
+            JobEvent::JobCompleted => job.complete()?,
+            JobEvent::JobFailed { .. } => job.fail()?,
+        }
+        self.job_repo.update(&job).await?;
+        Ok(())
     }
 
     #[instrument(skip(self, caller), fields(job_id = %id))]

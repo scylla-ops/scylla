@@ -26,6 +26,17 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         self.repo.create(log).await
     }
 
+    /// Append a log line emitted by a worker over its stream. Gated by
+    /// [`Permission::WriteJobLog`] — the action the worker role confers — so a
+    /// worker can write logs without the broader `writeJobLogs` recorder grant.
+    #[instrument(skip(self, caller, log))]
+    pub async fn append(&self, caller: &CallerContext, log: &JobLog) -> DomainResult<JobLog> {
+        self.permission_service
+            .check(caller, Permission::WriteJobLog(log.job_id().clone()))
+            .await?;
+        self.repo.create(log).await
+    }
+
     #[instrument(skip(self, caller), fields(id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &JobLogId) -> DomainResult<JobLog> {
         // Reading a single log line is gated by its job's read-logs grant; we

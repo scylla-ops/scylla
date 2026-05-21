@@ -21,6 +21,7 @@ pub mod quota;
 pub mod signup;
 pub mod user;
 pub mod user_role;
+pub mod worker;
 
 pub use agent::{AgentRepository, AgentUseCases};
 pub use app::{
@@ -52,3 +53,4 @@ pub use quota::Quotas;
 pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
 pub use user::{UserRepository, UserUseCases};
 pub use user_role::{UserRoleRepository, UserRoleUseCases};
+pub use worker::{DispatchOutcome, DispatchUseCases, WorkerDispatch};

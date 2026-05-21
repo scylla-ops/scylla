@@ -8,7 +8,7 @@ pub mod services;
 #[cfg(feature = "postgres")]
 pub use db::{DatabaseConfig, close_db, init_db};
 
-pub use messaging::HermesJobLogStream;
+pub use messaging::{HermesJobLogStream, InMemoryJobLogStream, InMemoryWorkerRegistry};
 
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAgentRepository;
