@@ -26,4 +26,15 @@ pub struct AgentConfig {
     /// Too small ⇒ the executor stalls on `send().await`; too big ⇒ memory bloat.
     #[arg(long, default_value_t = 8192, value_parser = clap::value_parser!(u64).range(1..))]
     pub publish_buffer_size: u64,
+
+    /// Max consecutive failed (re)connection attempts before the agent exits.
+    /// The counter resets after each successful connection, so this only trips
+    /// when the control plane is unreachable for a sustained stretch. `0` =
+    /// retry forever.
+    #[arg(long, env = "SCYLLA_MAX_RECONNECT_ATTEMPTS", default_value_t = 10)]
+    pub max_reconnect_attempts: u32,
+
+    /// Seconds to wait between (re)connection attempts.
+    #[arg(long, env = "SCYLLA_RECONNECT_BACKOFF_SECS", default_value_t = 3, value_parser = clap::value_parser!(u64).range(1..))]
+    pub reconnect_backoff_secs: u64,
 }

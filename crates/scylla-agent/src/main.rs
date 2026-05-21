@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
         "starting scylla-agent"
     );
 
-    let agent = Agent::connect(config).await?;
+    let agent = Agent::new(config);
 
     tokio::select! {
         result = agent.run() => result.map_err(anyhow::Error::from),
