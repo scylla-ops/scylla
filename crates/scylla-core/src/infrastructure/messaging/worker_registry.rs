@@ -74,4 +74,10 @@ impl WorkerDispatch for InMemoryWorkerRegistry {
             ))),
         }
     }
+
+    fn disconnect(&self, app_id: &AppId) {
+        // Dropping the stored sender ends the worker's down-stream, which closes
+        // the RPC and stops the agent.
+        self.unregister(app_id);
+    }
 }

@@ -14,4 +14,10 @@ pub trait WorkerDispatch: Send + Sync {
     /// Push a job dispatch to a connected app. Errors if the app is not
     /// currently connected (or its stream has gone away).
     async fn dispatch(&self, app_id: &AppId, dispatch: &JobDispatch) -> DomainResult<()>;
+
+    /// Force-disconnect a worker by closing its stream. Called when an app's
+    /// authorization changes (e.g. a grant is revoked) so a no-longer-authorized
+    /// worker stops immediately instead of finishing its job. No-op if the app
+    /// is not connected.
+    fn disconnect(&self, app_id: &AppId);
 }

@@ -242,10 +242,13 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         app_token_repo.clone(),
         hash_service.clone(),
     ));
+    // Built here (before grant_uc) so revoking an app's grant can disconnect it.
+    let worker_registry = Arc::new(InMemoryWorkerRegistry::new());
     let grant_uc = Arc::new(GrantUseCases::new(
         grant_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
+        worker_registry.clone(),
     ));
     let policy_uc = Arc::new(PolicyUseCases::new(
         policy_repo.clone(),
@@ -308,8 +311,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
 
     // In-process worker dispatch + job-log live-tail (mono-instance): jobs are
     // pushed to a connected worker's stream and log lines fan out through a
-    // per-job broadcast. No message broker.
-    let worker_registry = Arc::new(InMemoryWorkerRegistry::new());
+    // per-job broadcast. No message broker. (worker_registry is built above.)
     let job_log_stream = Arc::new(InMemoryJobLogStream::new());
     let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
         job_log_repo.clone(),

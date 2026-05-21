@@ -77,6 +77,7 @@ mod tests {
                 .push(app_id.as_str().to_string());
             Ok(())
         }
+        fn disconnect(&self, _app_id: &AppId) {}
     }
 
     struct StubPerms {

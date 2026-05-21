@@ -1,6 +1,7 @@
 use crate::application::caller::CallerContext;
 use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
+use crate::application::worker::dispatch_port::WorkerDispatch;
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::permission::Permission;
@@ -91,12 +92,14 @@ pub trait GrantRepository: Send + Sync {
 /// Admin-only management of scoped grants. Every method is gated by
 /// `Permission::ManageGrants` (admin/service in practice). A created or revoked
 /// grant is applied live via [`PolicyControl::reload`], so it takes effect
-/// immediately without a control-plane restart.
+/// immediately without a control-plane restart. Revoking an App's grant also
+/// disconnects its worker stream so a no-longer-authorized agent stops at once.
 #[derive(Constructor)]
 pub struct GrantUseCases<G: GrantRepository, PC: PolicyControl, PS: PermissionService> {
     grant_repo: Arc<G>,
     policy_control: Arc<PC>,
     permission_service: Arc<PS>,
+    worker_registry: Arc<dyn WorkerDispatch>,
 }
 
 impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases<G, PC, PS> {
@@ -122,7 +125,130 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         self.permission_service
             .check(caller, Permission::ManageGrants)
             .await?;
+
+        // Capture the principal before deleting so a revoked worker App can be
+        // disconnected (its authorization just changed).
+        let principal = self
+            .grant_repo
+            .list_all()
+            .await?
+            .into_iter()
+            .find(|g| g.id == id)
+            .map(|g| g.principal);
+
         self.grant_repo.delete(id).await?;
-        self.policy_control.reload().await
+        self.policy_control.reload().await?;
+
+        if let Some(GrantPrincipal::App(app_id)) = principal {
+            self.worker_registry.disconnect(&app_id);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::entities::{AppId, OrganizationId, UserId};
+    use crate::domain::value_objects::pipeline::JobDispatch;
+    use std::sync::Mutex;
+
+    struct StubGrants(Vec<Grant>);
+    #[async_trait]
+    impl GrantRepository for StubGrants {
+        async fn list_all(&self) -> DomainResult<Vec<Grant>> {
+            Ok(self.0.clone())
+        }
+        async fn create(&self, _g: &Grant) -> DomainResult<()> {
+            Ok(())
+        }
+        async fn delete(&self, _id: &str) -> DomainResult<()> {
+            Ok(())
+        }
+    }
+
+    struct StubPolicy;
+    #[async_trait]
+    impl PolicyControl for StubPolicy {
+        async fn validate_policy(&self, _text: &str) -> DomainResult<()> {
+            Ok(())
+        }
+        async fn reload(&self) -> DomainResult<()> {
+            Ok(())
+        }
+    }
+
+    struct StubPerms;
+    #[async_trait]
+    impl PermissionService for StubPerms {
+        async fn check(&self, _caller: &CallerContext, _perm: Permission) -> DomainResult<bool> {
+            Ok(true)
+        }
+    }
+
+    #[derive(Default)]
+    struct RecordingRegistry {
+        disconnected: Mutex<Vec<String>>,
+    }
+    #[async_trait]
+    impl WorkerDispatch for RecordingRegistry {
+        fn connected(&self) -> Vec<AppId> {
+            vec![]
+        }
+        async fn dispatch(&self, _app_id: &AppId, _d: &JobDispatch) -> DomainResult<()> {
+            Ok(())
+        }
+        fn disconnect(&self, app_id: &AppId) {
+            self.disconnected
+                .lock()
+                .unwrap()
+                .push(app_id.as_str().to_string());
+        }
+    }
+
+    fn use_cases(
+        grants: Vec<Grant>,
+        reg: Arc<RecordingRegistry>,
+    ) -> GrantUseCases<StubGrants, StubPolicy, StubPerms> {
+        GrantUseCases::new(
+            Arc::new(StubGrants(grants)),
+            Arc::new(StubPolicy),
+            Arc::new(StubPerms),
+            reg,
+        )
+    }
+
+    #[tokio::test]
+    async fn revoking_app_grant_disconnects_the_worker() {
+        let grant = Grant::new(
+            GrantPrincipal::App(AppId::new("agent-1")),
+            RoleName::new(WORKER_ROLE).unwrap(),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let reg = Arc::new(RecordingRegistry::default());
+        let uc = use_cases(vec![grant.clone()], reg.clone());
+
+        uc.revoke(&CallerContext::User(UserId::new("admin")), &grant.id)
+            .await
+            .unwrap();
+
+        assert_eq!(reg.disconnected.lock().unwrap().as_slice(), ["agent-1"]);
+    }
+
+    #[tokio::test]
+    async fn revoking_user_grant_leaves_workers_alone() {
+        let grant = Grant::new(
+            GrantPrincipal::User(UserId::new("u1")),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let reg = Arc::new(RecordingRegistry::default());
+        let uc = use_cases(vec![grant.clone()], reg.clone());
+
+        uc.revoke(&CallerContext::User(UserId::new("admin")), &grant.id)
+            .await
+            .unwrap();
+
+        assert!(reg.disconnected.lock().unwrap().is_empty());
     }
 }
