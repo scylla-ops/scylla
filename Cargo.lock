@@ -2678,11 +2678,8 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
- "hermes-broker-client",
- "hermes-broker-proto",
- "hostname",
  "scylla-core",
- "serde_json",
+ "scylla-protocol",
  "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
@@ -2690,7 +2687,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber",
- "ulid",
 ]
 
 [[package]]

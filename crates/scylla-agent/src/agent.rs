@@ -1,40 +1,56 @@
-use hermes_broker_client::Subscriber;
-use hermes_broker_proto::PublishRequest;
-use hermes_broker_proto::broker_client::BrokerClient;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
+use tonic::Request;
+use tonic::metadata::MetadataValue;
 use tonic::transport::Channel;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
+
+use scylla_core::domain::entities::PipelineNode;
+use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_protocol::services::app::IssueTokenRequest;
+use scylla_protocol::services::app::app_auth_service_client::AppAuthServiceClient;
+use scylla_protocol::services::worker::worker_service_client::WorkerServiceClient;
+use scylla_protocol::services::worker::{WorkerNode, WorkerUp, worker_down};
 
 use crate::config::AgentConfig;
 use crate::error::AgentError;
 use crate::executor::Executor;
-use scylla_core::domain::value_objects::pipeline::JobDispatch;
 
 pub struct Agent {
     config: AgentConfig,
     channel: Channel,
+    token: String,
 }
 
 impl Agent {
-    /// Connect to the Hermes broker.
+    /// Connect to the control plane and exchange the app credentials for a
+    /// bearer token used on the worker stream.
     pub async fn connect(config: AgentConfig) -> Result<Self, AgentError> {
-        let channel = Channel::from_shared(config.broker_url.clone())
-            .map_err(|e| AgentError::InvalidBrokerUrl {
-                url: config.broker_url.clone(),
+        let channel = Channel::from_shared(config.control_plane_url.clone())
+            .map_err(|e| AgentError::InvalidUrl {
+                url: config.control_plane_url.clone(),
                 message: e.to_string(),
             })?
             .connect()
             .await?;
+        info!(url = %config.control_plane_url, "connected to control plane");
 
-        info!("connected to broker at {}", config.broker_url);
-        Ok(Self { config, channel })
-    }
+        let mut auth = AppAuthServiceClient::new(channel.clone());
+        let token = auth
+            .issue_token(IssueTokenRequest {
+                app_id: config.app_id.clone(),
+                secret: config.app_secret.clone(),
+            })
+            .await?
+            .into_inner()
+            .token;
+        info!(app_id = %config.app_id, "obtained app token");
 
-    /// Cloned broker channel for sharing with auxiliary publishers (presence, etc.).
-    #[must_use]
-    pub fn channel(&self) -> Channel {
-        self.channel.clone()
+        Ok(Self {
+            config,
+            channel,
+            token,
+        })
     }
 
     /// Borrow the underlying agent configuration.
@@ -43,85 +59,63 @@ impl Agent {
         &self.config
     }
 
-    /// Main loop: subscribe to dispatch subject, receive jobs, execute them.
+    /// Open the worker stream and execute dispatched jobs until it closes.
     pub async fn run(&self) -> Result<(), AgentError> {
-        // Create subscriber for receiving job dispatches
-        let mut subscriber = Subscriber::new(self.channel.clone())
-            .await
-            .map_err(AgentError::Send)?;
+        let buffer = usize::try_from(self.config.publish_buffer_size).unwrap_or(8192);
+        let (up_tx, up_rx) = mpsc::channel::<WorkerUp>(buffer);
 
-        subscriber
-            .subscribe(
-                &self.config.dispatch_subject,
-                Some(self.config.queue_group.clone()),
-            )
-            .await
-            .map_err(|_| AgentError::StreamClosed)?;
+        let bearer: MetadataValue<_> = format!("Bearer {}", self.token)
+            .parse()
+            .map_err(|_| AgentError::InvalidToken("token is not valid header ASCII".into()))?;
+        let mut request = Request::new(ReceiverStream::new(up_rx));
+        request.metadata_mut().insert("authorization", bearer);
 
-        info!(
-            subject = %self.config.dispatch_subject,
-            queue_group = %self.config.queue_group,
-            "subscribed — waiting for jobs"
-        );
+        let mut client = WorkerServiceClient::new(self.channel.clone());
+        let mut inbound = client.open(request).await?.into_inner();
+        info!("worker stream open — waiting for jobs");
 
-        // Open a raw publish stream for status updates and logs.
-        // We use the raw BrokerClient so we can set reply_to on messages if needed.
-        // INVARIANT: publish_buffer_size is a clap-validated u32 >= 1 and always fits in usize.
-        let publish_buffer = usize::try_from(self.config.publish_buffer_size)
-            .expect("publish_buffer_size fits in usize (clap range starts at 1)");
-        let (publish_tx, publish_rx) = mpsc::channel::<PublishRequest>(publish_buffer);
-        let mut publish_client = BrokerClient::new(self.channel.clone());
-        tokio::spawn(async move {
-            match publish_client
-                .publish(ReceiverStream::new(publish_rx))
-                .await
-            {
-                Ok(resp) => {
-                    let ack = resp.into_inner();
-                    info!(total = ack.total_published, "publish stream completed");
+        while let Some(down) = inbound.message().await? {
+            match down.payload {
+                Some(worker_down::Payload::Dispatch(dispatch)) => {
+                    info!(
+                        job_id = %dispatch.job_id,
+                        pipeline_id = %dispatch.pipeline_id,
+                        nodes = dispatch.nodes.len(),
+                        "received job"
+                    );
+                    let nodes = match to_domain_nodes(dispatch.nodes) {
+                        Ok(nodes) => nodes,
+                        Err(e) => {
+                            warn!(job_id = %dispatch.job_id, error = %e, "invalid dispatch nodes, skipping");
+                            continue;
+                        }
+                    };
+                    let executor = Executor::new(up_tx.clone(), dispatch.job_id.clone());
+                    // V1: sequential — finish the job before accepting the next.
+                    if let Err(e) = executor.run(nodes).await {
+                        warn!(job_id = %dispatch.job_id, error = %e, "job execution failed");
+                    }
                 }
-                Err(e) => {
-                    warn!(error = %e, "publish stream failed");
-                }
-            }
-        });
-
-        // Receive loop
-        while let Some(msg) = subscriber.recv().await {
-            let dispatch: JobDispatch = match serde_json::from_slice(&msg.payload) {
-                Ok(d) => d,
-                Err(e) => {
-                    error!(error = %e, "failed to deserialize dispatch message, skipping");
-                    continue;
-                }
-            };
-
-            // Read reply_to from the message
-            let status_subject = if msg.reply_to.is_empty() {
-                warn!("no reply_to in dispatch message, using default");
-                format!("scylla.jobs.status.{}", dispatch.job_id)
-            } else {
-                msg.reply_to
-            };
-
-            info!(
-                job_id = %dispatch.job_id,
-                pipeline_id = %dispatch.pipeline_id,
-                nodes = dispatch.nodes.len(),
-                reply_to = %status_subject,
-                "received job"
-            );
-
-            let executor =
-                Executor::new(publish_tx.clone(), status_subject, dispatch.job_id.clone());
-
-            // V1: sequential execution — wait for job to finish before accepting next
-            if let Err(e) = executor.run(dispatch.nodes).await {
-                warn!(job_id = %dispatch.job_id, error = %e, "job execution failed");
+                None => {}
             }
         }
 
-        info!("dispatch stream closed, shutting down");
+        info!("worker stream closed, shutting down");
         Ok(())
     }
+}
+
+fn to_domain_nodes(nodes: Vec<WorkerNode>) -> Result<Vec<PipelineNode>, String> {
+    nodes
+        .into_iter()
+        .map(|n| {
+            let id = NodeId::new(&n.node_id).map_err(|e| e.to_string())?;
+            let deps = n
+                .deps
+                .iter()
+                .map(|d| NodeId::new(d).map_err(|e| e.to_string()))
+                .collect::<Result<Vec<_>, _>>()?;
+            PipelineNode::new(id, deps, n.command, n.args).map_err(|e| e.to_string())
+        })
+        .collect()
 }

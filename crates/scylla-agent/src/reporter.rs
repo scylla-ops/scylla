@@ -1,57 +1,60 @@
-//! Status publishing + terminal event guard.
+//! Status reporting + terminal event guard.
 //!
-//! [`StatusPublisher`] is a thin wrapper around the broker channel that emits
-//! [`JobEvent`]s on the correct subject. [`JobReporter`] wraps it with
-//! scope-exit semantics: `JobStarted` fires on construction, and exactly one
-//! of `JobCompleted`/`JobFailed` fires via [`JobReporter::finalize`] at the
-//! end of the run — regardless of which path the executor took.
+//! [`StatusPublisher`] wraps the worker up-stream channel and emits
+//! [`JobEvent`]s as `WorkerUp` status messages. [`JobReporter`] wraps it with
+//! scope-exit semantics: `JobStarted` fires on construction, and exactly one of
+//! `JobCompleted`/`JobFailed` fires via [`JobReporter::finalize`] at the end of
+//! the run — regardless of which path the executor took.
 
-use hermes_broker_proto::PublishRequest;
-use scylla_core::domain::value_objects::job::{JobEvent, JobStatusUpdate};
+use scylla_core::domain::value_objects::job::JobEvent;
+use scylla_protocol::services::worker::{JobEventKind, JobStatus, WorkerUp, worker_up};
 use tokio::sync::mpsc;
 
 use crate::error::ExecutionError;
 
-/// Publishes [`JobEvent`]s to the broker via the status subject.
-///
-/// Cheaply cloneable — all fields are `Arc`/`String` clones.
+/// Emits [`JobEvent`]s as `WorkerUp` status messages on the worker stream.
+/// Cheaply cloneable.
 #[derive(Clone)]
 pub struct StatusPublisher {
-    publish_tx: mpsc::Sender<PublishRequest>,
-    status_subject: String,
+    up_tx: mpsc::Sender<WorkerUp>,
     job_id: String,
 }
 
 impl StatusPublisher {
     #[must_use]
-    pub fn new(
-        publish_tx: mpsc::Sender<PublishRequest>,
-        status_subject: String,
-        job_id: String,
-    ) -> Self {
-        Self {
-            publish_tx,
-            status_subject,
-            job_id,
-        }
+    pub fn new(up_tx: mpsc::Sender<WorkerUp>, job_id: String) -> Self {
+        Self { up_tx, job_id }
     }
 
     pub async fn emit(&self, event: JobEvent) -> Result<(), ExecutionError> {
-        let update = JobStatusUpdate {
-            job_id: self.job_id.clone(),
-            event,
-        };
-        // INVARIANT: JobStatusUpdate is a plain serde-derived struct, serialization is infallible.
-        let payload = serde_json::to_vec(&update).expect("serialization cannot fail");
-
-        self.publish_tx
-            .send(PublishRequest {
-                subject: self.status_subject.clone(),
-                payload,
-                reply_to: String::new(),
+        let status = job_event_to_status(&self.job_id, event);
+        self.up_tx
+            .send(WorkerUp {
+                payload: Some(worker_up::Payload::Status(status)),
             })
             .await
             .map_err(|e| ExecutionError::Publish(e.to_string()))
+    }
+}
+
+/// Map a domain [`JobEvent`] to the proto [`JobStatus`] sent over the stream.
+fn job_event_to_status(job_id: &str, event: JobEvent) -> JobStatus {
+    let (kind, node_id, error) = match event {
+        JobEvent::JobStarted => (JobEventKind::JobStarted, String::new(), String::new()),
+        JobEvent::NodeStarted { node_id } => (JobEventKind::NodeStarted, node_id, String::new()),
+        JobEvent::NodeCompleted { node_id } => {
+            (JobEventKind::NodeCompleted, node_id, String::new())
+        }
+        JobEvent::NodeFailed { node_id, error } => (JobEventKind::NodeFailed, node_id, error),
+        JobEvent::NodeSkipped { node_id } => (JobEventKind::NodeSkipped, node_id, String::new()),
+        JobEvent::JobCompleted => (JobEventKind::JobCompleted, String::new(), String::new()),
+        JobEvent::JobFailed { error } => (JobEventKind::JobFailed, String::new(), error),
+    };
+    JobStatus {
+        job_id: job_id.to_string(),
+        kind: kind as i32,
+        node_id,
+        error,
     }
 }
 
@@ -61,27 +64,15 @@ enum JobOutcome {
     Failure(String),
 }
 
-/// Guards the terminal lifecycle of a job: emits `JobStarted` on creation and
-/// a single `JobCompleted`/`JobFailed` on [`JobReporter::finalize`].
-///
-/// The executor consumes the reporter at scope exit:
-/// ```ignore
-/// let reporter = JobReporter::start(publisher).await?;
-/// let outcome = async { /* run body */ }.await;
-/// match &outcome {
-///     Ok(())  => reporter.commit_success(),
-///     Err(e)  => reporter.commit_failure(e.to_string()),
-/// }
-/// reporter.finalize().await?;
-/// outcome
-/// ```
+/// Guards the terminal lifecycle of a job: emits `JobStarted` on creation and a
+/// single `JobCompleted`/`JobFailed` on [`JobReporter::finalize`].
 pub struct JobReporter {
     publisher: StatusPublisher,
     outcome: JobOutcome,
 }
 
 impl JobReporter {
-    /// Start a new job: emits `JobStarted` on the status subject.
+    /// Start a new job: emits `JobStarted`.
     pub async fn start(publisher: StatusPublisher) -> Result<Self, ExecutionError> {
         publisher.emit(JobEvent::JobStarted).await?;
         Ok(Self {
@@ -103,7 +94,7 @@ impl JobReporter {
         self.publisher.clone()
     }
 
-    /// Emit the terminal event (`JobCompleted` or `JobFailed`) and consume the guard.
+    /// Emit the terminal event (`JobCompleted` / `JobFailed`) and consume the guard.
     pub async fn finalize(self) -> Result<(), ExecutionError> {
         let event = match self.outcome {
             JobOutcome::Success => JobEvent::JobCompleted,

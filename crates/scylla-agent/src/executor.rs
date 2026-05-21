@@ -5,9 +5,10 @@
 //!   * cancels in-flight sibling tasks via [`CancellationToken`];
 //!   * emits `NodeSkipped` for every node that hasn't reached a terminal state;
 //!   * emits a single `JobFailed` on scope exit (via [`JobReporter`]).
+//!
+//! Status and log events are sent as `WorkerUp` messages on the worker stream.
 
 use chrono::Utc;
-use hermes_broker_proto::PublishRequest;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::mpsc;
@@ -16,43 +17,28 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
 use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::job::{JobEvent, JobLogLine, LogStream};
+use scylla_core::domain::value_objects::job::{JobEvent, LogStream};
+use scylla_protocol::services::worker::{JobLogLine, WorkerUp, worker_up};
 
 use crate::error::ExecutionError;
 use crate::plan::DagPlan;
 use crate::reporter::{JobReporter, StatusPublisher};
 
-/// Executes a pipeline DAG by walking nodes in topological order,
-/// spawning parallel tasks for independent nodes.
+/// Executes a pipeline DAG by walking nodes in topological order, spawning
+/// parallel tasks for independent nodes.
 pub struct Executor {
-    publish_tx: mpsc::Sender<PublishRequest>,
-    status_subject: String,
-    logs_subject: String,
+    up_tx: mpsc::Sender<WorkerUp>,
     job_id: String,
 }
 
 impl Executor {
-    pub fn new(
-        publish_tx: mpsc::Sender<PublishRequest>,
-        status_subject: String,
-        job_id: String,
-    ) -> Self {
-        let logs_subject = format!("scylla.jobs.logs.{}", &job_id);
-        Self {
-            publish_tx,
-            status_subject,
-            logs_subject,
-            job_id,
-        }
+    pub fn new(up_tx: mpsc::Sender<WorkerUp>, job_id: String) -> Self {
+        Self { up_tx, job_id }
     }
 
     /// Execute all nodes in the DAG, respecting dependencies.
     pub async fn run(&self, nodes: Vec<PipelineNode>) -> Result<(), ExecutionError> {
-        let publisher = StatusPublisher::new(
-            self.publish_tx.clone(),
-            self.status_subject.clone(),
-            self.job_id.clone(),
-        );
+        let publisher = StatusPublisher::new(self.up_tx.clone(), self.job_id.clone());
         let mut reporter = JobReporter::start(publisher.clone()).await?;
         let cancel = CancellationToken::new();
 
@@ -82,9 +68,7 @@ impl Executor {
                 return Err(ExecutionError::DanglingDeps);
             }
 
-            let mut running = self
-                .dispatch_batch(&batch, &plan, publisher, cancel)
-                .await?;
+            let mut running = self.dispatch_batch(&batch, &plan, publisher, cancel).await?;
 
             while let Some(joined) = running.join_next().await {
                 let (id, result) = joined.map_err(|e| ExecutionError::NodeTaskPanic {
@@ -140,13 +124,13 @@ impl Executor {
                 .await?;
 
             let spec = plan.lookup(node_id).clone();
-            let tx = self.publish_tx.clone();
-            let logs = self.logs_subject.clone();
+            let tx = self.up_tx.clone();
+            let job_id = self.job_id.clone();
             let token = cancel.clone();
             let id = node_id.to_string();
 
             running.spawn(async move {
-                let result = run_node(&id, &spec, &tx, &logs, token).await;
+                let result = run_node(&id, &spec, &tx, &job_id, token).await;
                 (id, result)
             });
         }
@@ -155,8 +139,8 @@ impl Executor {
     }
 }
 
-/// Drain the in-flight JoinSet after cancellation: each survivor is reported
-/// as [`JobEvent::NodeSkipped`] regardless of how its child exited.
+/// Drain the in-flight JoinSet after cancellation: each survivor is reported as
+/// [`JobEvent::NodeSkipped`] regardless of how its child exited.
 async fn drain_cancelled(
     running: &mut JoinSet<(String, Result<(), ExecutionError>)>,
     plan: &mut DagPlan<'_>,
@@ -193,18 +177,17 @@ async fn skip_all_pending(
     Ok(())
 }
 
-/// Run a single node's command, streaming stdout/stderr to the broker.
+/// Run a single node's command, streaming stdout/stderr to the worker stream.
 ///
 /// Listens to `cancel` in parallel with `child.wait()`: if cancellation fires
 /// first, the child is killed and [`ExecutionError::Cancelled`] is returned.
 async fn run_node(
     node_id: &str,
     spec: &PipelineNode,
-    publish_tx: &mpsc::Sender<PublishRequest>,
-    logs_subject: &str,
+    up_tx: &mpsc::Sender<WorkerUp>,
+    job_id: &str,
     cancel: CancellationToken,
 ) -> Result<(), ExecutionError> {
-    let log_subject = format!("{logs_subject}.{node_id}");
     let mut child = match Command::new(spec.command())
         .args(spec.args())
         .stdout(std::process::Stdio::piped())
@@ -218,8 +201,8 @@ async fn run_node(
             // stream so it shows up in the node logs view, not just in the
             // NodeFailed status event.
             publish_log_line(
-                publish_tx,
-                &log_subject,
+                up_tx,
+                job_id,
                 node_id,
                 LogStream::Stderr,
                 format!("failed to spawn `{}`: {e}", spec.command()),
@@ -233,15 +216,15 @@ async fn run_node(
         child.stdout.take().expect("stdout was piped"),
         LogStream::Stdout,
         node_id.to_string(),
-        log_subject.clone(),
-        publish_tx.clone(),
+        job_id.to_string(),
+        up_tx.clone(),
     );
     let stderr_handle = spawn_log_streamer(
         child.stderr.take().expect("stderr was piped"),
         LogStream::Stderr,
         node_id.to_string(),
-        log_subject,
-        publish_tx.clone(),
+        job_id.to_string(),
+        up_tx.clone(),
     );
 
     let wait_outcome: Result<(), ExecutionError> = tokio::select! {
@@ -288,8 +271,8 @@ fn spawn_log_streamer<R>(
     reader: R,
     stream: LogStream,
     node_id: String,
-    log_subject: String,
-    publish_tx: mpsc::Sender<PublishRequest>,
+    job_id: String,
+    up_tx: mpsc::Sender<WorkerUp>,
 ) -> tokio::task::JoinHandle<()>
 where
     R: tokio::io::AsyncRead + Unpin + Send + 'static,
@@ -297,41 +280,37 @@ where
     tokio::spawn(async move {
         let mut lines = BufReader::new(reader).lines();
         while let Ok(Some(line)) = lines.next_line().await {
-            if !publish_log_line(&publish_tx, &log_subject, &node_id, stream, line).await {
+            if !publish_log_line(&up_tx, &job_id, &node_id, stream, line).await {
                 break;
             }
         }
     })
 }
 
-/// Publish a single log line on the given subject. Returns `false` if the
-/// publish channel is closed (caller should stop emitting).
+/// Send a single log line as a `WorkerUp`. Returns `false` if the channel is
+/// closed (caller should stop emitting).
 async fn publish_log_line(
-    publish_tx: &mpsc::Sender<PublishRequest>,
-    log_subject: &str,
+    up_tx: &mpsc::Sender<WorkerUp>,
+    job_id: &str,
     node_id: &str,
     stream: LogStream,
     line: String,
 ) -> bool {
-    // INVARIANT: JobLogLine is a plain serde-derived struct with no custom impl that can fail.
-    let payload = serde_json::to_vec(&JobLogLine {
+    let log = JobLogLine {
+        job_id: job_id.to_string(),
         node_id: node_id.to_string(),
-        stream,
+        stream: stream.as_str().to_string(),
         line,
         timestamp: Utc::now().to_rfc3339(),
-    })
-    .expect("serialization cannot fail");
-
-    if publish_tx
-        .send(PublishRequest {
-            subject: log_subject.to_string(),
-            payload,
-            reply_to: String::new(),
+    };
+    if up_tx
+        .send(WorkerUp {
+            payload: Some(worker_up::Payload::Log(log)),
         })
         .await
         .is_err()
     {
-        warn!("log publish channel closed");
+        warn!("worker up-stream channel closed");
         return false;
     }
     true

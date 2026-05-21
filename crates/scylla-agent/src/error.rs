@@ -1,19 +1,19 @@
 #[derive(Debug, thiserror::Error)]
 pub enum AgentError {
-    #[error("invalid broker URL `{url}`: {message}")]
-    InvalidBrokerUrl { url: String, message: String },
+    #[error("invalid control-plane URL `{url}`: {message}")]
+    InvalidUrl { url: String, message: String },
 
-    #[error("failed to connect to broker: {0}")]
+    #[error("failed to connect to control plane: {0}")]
     Connection(#[from] tonic::transport::Error),
 
-    #[error("broker stream closed unexpectedly")]
+    #[error("worker stream closed unexpectedly")]
     StreamClosed,
 
-    #[error("failed to send to broker: {0}")]
-    Send(#[from] tonic::Status),
+    #[error("gRPC error: {0}")]
+    Status(#[from] tonic::Status),
 
-    #[error("failed to deserialize message: {0}")]
-    Deserialization(#[from] serde_json::Error),
+    #[error("invalid bearer token metadata: {0}")]
+    InvalidToken(String),
 }
 
 #[derive(Debug, thiserror::Error)]
