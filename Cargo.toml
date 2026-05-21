@@ -3,7 +3,6 @@ resolver = "3"
 members = [
     "crates/scylla-core",
     "crates/scylla-api",
-    "crates/scylla-broker",
     "crates/scylla-protocol",
     "crates/scylla-agent",
     "crates/scylla-control-plane",
@@ -17,12 +16,6 @@ tokio-util = { version = "0.7", features = ["rt"] }
 async-trait = "0.1.89"
 futures-core = "0.3"
 futures-util = "0.3"
-
-# broker
-hermes-broker-core = "0.7.0"
-hermes-broker-proto = "0.7.0"
-hermes-broker-client = "0.7.0"
-hermes-broker-server = "0.7.0"
 
 # grpc / proto
 tonic = { version = "0.14.5", features = ["server"] }

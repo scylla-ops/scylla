@@ -5,22 +5,16 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 ## Platform services
 
 ### `scylla-control-plane`
-Single binary that boots the entire central brain in one process: API gRPC server on `50051`, hermes broker on `50052`, and the recorder's broker subscribers persisting to PostgreSQL. Composition root for `scylla-api`, `scylla-broker`, and `scylla-recorder`. Config lives in `crates/scylla-control-plane/config/*.toml`.
+Single binary that boots the central brain: the gRPC API on `50051` (user APIs, app token exchange, and the agent worker stream). Composition root for `scylla-api`. Job dispatch and log fan-out are in-process — there is no message broker and no recorder. Config lives in `crates/scylla-control-plane/config/*.toml`.
 
 ### `scylla-api`
-Library crate exposing the gRPC handlers (auth, organizations, projects, pipelines, jobs, agents, permissions) plus the `Services` composition struct and a `run_grpc` runner. Composed inside `scylla-control-plane`.
-
-### `scylla-broker`
-Library crate wrapping the `hermes-broker` crates (`hermes-broker-core` router + `hermes-broker-server` gRPC service). Exposes a `run(BrokerConfig, shutdown)` function spawned by `scylla-control-plane`.
-
-### `scylla-recorder`
-Library crate that subscribes to broker events and writes them into PostgreSQL via sqlx. Exposes `spawn_listeners(broker_channel, RecorderServices)` returning the 4 subscriber tasks (job status, job logs, agent heartbeats, agent shutdowns). Spawned by `scylla-control-plane`.
+Library crate exposing the gRPC handlers (auth, organizations, projects, pipelines, jobs, apps, the worker stream, permissions) plus the `Services` composition struct and a `run_grpc` runner. Composed inside `scylla-control-plane`.
 
 ### `scylla-agent`
-Worker binary deployed on each pipeline-executing machine. Connects to the control plane's broker port, subscribes to the job-dispatch subject as part of a queue group, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status events + stdout/stderr back to the broker. Also emits presence events (heartbeat/shutdown).
+Worker binary installed on each pipeline-executing machine. Authenticates as its [App](#app) (`--app-id` / `--app-secret` exchanged for a bearer token), opens the control plane's `WorkerService` stream over `50051`, receives `JobDispatch` messages, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status + log events back on the same stream. Presence is simply the open stream — no heartbeats.
 
 ### `scylla-core`
-Library crate containing the domain model (entities, value objects, use cases, ports). Not a service — it's imported by `scylla-api`, `scylla-recorder`, and `scylla-control-plane`.
+Library crate containing the domain model (entities, value objects, use cases, ports). Not a service — it's imported by `scylla-api` and `scylla-control-plane`.
 
 ### `scylla-protocol`
 Library crate holding shared `.proto` definitions and their generated Rust + TypeScript bindings. Both the backend and the frontend import these.
@@ -48,8 +42,8 @@ A single execution of a pipeline. Carries a `JobStatus` and a `JobNode` per pipe
 ### JobNode
 The runtime record for one pipeline node inside a job. Holds `NodeState`, `started_at`, `finished_at`.
 
-### Agent
-A registered worker. Identified by an `AgentId`, reports a `Hostname`, sends periodic heartbeats.
+### App
+A machine principal owned by an organization (an agent / automation). Identified by an `AppId`; authenticates with a secret (stored hashed) that it exchanges for an app token, and acts under scoped grants — typically the `worker` role on its org. An App with an open worker stream is an online **agent**; "agent" now means an App running the worker binary.
 
 ### Session
 An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions.
@@ -107,7 +101,7 @@ External authorization engine used by the permission service. Policies are persi
 The initial `admin` account created on first control-plane startup (configured under `[bootstrap]` in the control-plane config). Default credentials in local dev: `admin` / `admin123`. Gets the absolute policy.
 
 ### `CallerContext`
-Identity-aware principal threaded through the permission layer. Variants: `User(UserId)`, `Service(ServiceIdentity)`, `Anonymous`. Shaped as a Cedar entity (`Scylla::User::"…"`, `Scylla::Service::"recorder"`) so the upcoming Casbin→Cedar migration is a `PermissionService` impl swap rather than a workspace-wide refactor.
+Identity-aware principal threaded through the permission layer. Variants: `User(UserId)`, `App(AppId)` (a machine principal / agent), `Service(ServiceIdentity)`, `Anonymous`. Each maps to a Cedar entity (`Scylla::User::"…"`, `Scylla::App::"…"`, `Scylla::Service::"…"`); the Cedar `PermissionService` resolves the caller's roles, scoped grants, and tenancy ancestry on each check.
 
 ## Pipeline execution concepts
 
@@ -128,20 +122,8 @@ A prerequisite node ID. A node only becomes runnable once all its deps are in a 
 
 ## Agent presence
 
-### Heartbeat
-Periodic message an agent publishes to the broker on subject `scylla.agents.heartbeat.<agent_id>`. Payload: `agent_id`, `hostname`, `heartbeat_interval_secs`. The recorder consumes these and updates `last_seen_at`.
-
-### `last_seen_at`
-Timestamp of the most recent heartbeat from an agent.
-
-### `MISSED_HEARTBEAT_GRACE`
-Constant (`3`). An agent is considered **connected** only if `now - last_seen_at <= interval * grace`. After three missed heartbeats it is reported disconnected.
-
-### Graceful shutdown (`shutdown_at`)
-When an agent exits cleanly it publishes to `scylla.agents.shutdown.<agent_id>`. The recorder sets `shutdown_at` on the agent record, which forces `is_connected() == false` regardless of `last_seen_at`. A subsequent heartbeat clears the field.
-
-### Stale agent
-An agent whose last heartbeat is older than the grace window. Not connected; jobs won't be dispatched to it.
+### Connected (online)
+An agent is connected when its [App](#app) holds an open `WorkerService` stream to the control plane. Presence is tracked in memory (the worker registry), not persisted — there are no heartbeats. App listings expose this as a `connected` flag, and `RunPipeline` only dispatches to a connected, authorized worker.
 
 ## Networking & protocol
 
@@ -161,15 +143,12 @@ Protobuf code generator used by Tonic. Converts `.proto` → Rust structs.
 TypeScript protobuf toolchain used by the frontend to generate clients from `.proto`.
 
 ### Auth interceptor
-Async Tonic interceptor (`crates/scylla-api/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata, looks the session up via `SessionRepository`, rejects expired or unknown tokens with `Unauthenticated`, and attaches an `AuthContext { user_id }` to the request extensions for handlers to pull out.
-
-### Hermes broker
-Third-party message broker (`hermes-broker-*` crates) that Scylla's broker is built on top of.
+Async Tonic interceptor (`crates/scylla-api/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal — a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
 
 ## Identifiers
 
 ### Entity IDs
-All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AgentId`, `UserOrganizationId`, `UserProjectId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`, which is how agents can register with a caller-supplied `AgentId`.
+All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AppId`, `AppTokenId`, `UserOrganizationId`, `UserProjectId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`.
 
 ### `NodeId`
 Caller-supplied ID for each pipeline node. Must be unique within its pipeline. Validated as a lowercase ASCII alphanumeric string plus `-` / `_`, max 128 chars.
@@ -177,7 +156,7 @@ Caller-supplied ID for each pipeline node. Must be unique within its pipeline. V
 ## Infra & dev
 
 ### `docker-compose.yaml`
-Defines the full backend stack (`postgres`, `scylla-control-plane`, `scylla-agent`, `scylla-frontend`).
+Defines the backend stack (`postgres`, `scylla-control-plane`, `scylla-frontend`). Agents are installed out-of-band (see [`scylla-agent`](#scylla-agent)), not in this stack.
 
 ### `justfile`
 Task runner recipes: `just up`, `just down`, `just logs`, `just push-all`, etc.
@@ -210,7 +189,7 @@ A concrete implementation of a port. All current adapters live under `scylla-cor
 A struct in `application/use_cases/*.rs` grouping operations on one aggregate (e.g. `PipelineUseCases`, `JobUseCases`). Holds `Arc<dyn Port>` fields and exposes async methods. gRPC handlers in `scylla-api` call these.
 
 ### Entity
-A domain object with an identity and mutable state (e.g. `Pipeline`, `Job`, `Agent`, `Organization`). Defined in `domain/entities/`.
+A domain object with an identity and mutable state (e.g. `Pipeline`, `Job`, `App`, `Organization`). Defined in `domain/entities/`.
 
 ### Value object
 An immutable, validated wrapper in `domain/value_objects/` (e.g. `PipelineName`, `Hostname`, `NodeId`, `JobStatus`). Built via a fallible constructor that enforces the invariant.
