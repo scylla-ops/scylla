@@ -3,16 +3,15 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListUsersResponse, UserResponse, UpdateUserRequest } from '@/generated/user.ts';
 import { UserServiceClient } from '@/generated/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
-import { PermissionServiceClient } from '@/generated/permission.client.ts';
-import { Act, ResourceType, ScopeType } from '@/generated/permission.ts';
+import { RoleServiceClient } from '@/generated/permission.client.ts';
 
 export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   private readonly _userClient: UserServiceClient;
-  private readonly _permissionsClient: PermissionServiceClient;
+  private readonly _roleClient: RoleServiceClient;
 
   constructor(transport: CoreGrpcTransport) {
     this._userClient = new UserServiceClient(transport.getTransport());
-    this._permissionsClient = new PermissionServiceClient(transport.getTransport());
+    this._roleClient = new RoleServiceClient(transport.getTransport());
   }
 
   public async getAll(): Promise<ScyllaResult<ListUsersResponse>> {
@@ -33,12 +32,11 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
     return ScyllaResult.tryAsync<UserResponse>(async () => {
       const user = await this._userClient.createUser({ username, password }).response;
 
-      // Temporary: grant all permissions to the new user until permissions system is finalized
-      await this._permissionsClient.addPolicy({
-        subject: user.userId,
-        scope: { type: ScopeType.SCOPE_ALL },
-        resource: { type: ResourceType.RESOURCE_ALL },
-        act: Act.ALL,
+      // Temporary: grant full access to the new user via the admin role until the
+      // permissions system is finalized (Cedar's admin policy grants all access).
+      await this._roleClient.assignRole({
+        userId: user.userId,
+        role: 'admin',
       }).response;
 
       return user;
