@@ -233,7 +233,7 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         let leaf_parent = match resource {
             ResourceRef::Job(_) => pipeline_uid.as_ref(),
             ResourceRef::Pipeline(_) => project_uid.as_ref(),
-            ResourceRef::Project(_) => org_uid.as_ref(),
+            ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
             _ => None,
         };
 
@@ -482,6 +482,7 @@ fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {
         ResourceRef::Pipeline(id) => euid("Scylla::Pipeline", id.as_str()),
         ResourceRef::Job(id) => euid("Scylla::Job", id.as_str()),
         ResourceRef::Agent(id) => euid("Scylla::Agent", id.as_str()),
+        ResourceRef::App(id) => euid("Scylla::App", id.as_str()),
     }
 }
 
@@ -505,6 +506,7 @@ fn resource_parts(resource: &ResourceRef) -> (&'static str, Option<String>) {
         ResourceRef::Pipeline(id) => ("pipeline", Some(id.as_str().to_string())),
         ResourceRef::Job(id) => ("job", Some(id.as_str().to_string())),
         ResourceRef::Agent(id) => ("agent", Some(id.as_str().to_string())),
+        ResourceRef::App(id) => ("app", Some(id.as_str().to_string())),
     }
 }
 

@@ -2,7 +2,9 @@ pub mod resource_ref;
 
 pub use resource_ref::ResourceRef;
 
-use crate::domain::entities::{AgentId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::entities::{
+    AgentId, AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId,
+};
 
 /// Authorization intent: a named operation plus the concrete resource it acts
 /// on. This is the single vocabulary the application layer uses to ask "is the
@@ -77,6 +79,12 @@ pub enum Permission {
     DeleteAgent(AgentId),
     ListAgents,
 
+    // ── app (machine principals) ───────────────────────────────────────
+    CreateApp(OrganizationId),
+    ReadApp(AppId),
+    DeleteApp(AppId),
+    ListAppsByOrganization(OrganizationId),
+
     // ── grants / policies / roles (admin) ──────────────────────────────
     ManageGrants,
     ManagePolicies,
@@ -143,6 +151,11 @@ impl Permission {
             Self::DeleteAgent(_) => "deleteAgent",
             Self::ListAgents => "listAgents",
 
+            Self::CreateApp(_) => "createApp",
+            Self::ReadApp(_) => "readApp",
+            Self::DeleteApp(_) => "deleteApp",
+            Self::ListAppsByOrganization(_) => "listAppsByOrganization",
+
             Self::ManageGrants => "manageGrants",
             Self::ManagePolicies => "managePolicies",
             Self::ManageRoles => "manageRoles",
@@ -186,7 +199,9 @@ impl Permission {
             | Self::CreateProject(id)
             | Self::ListProjectsByOrganization(id)
             | Self::ListPipelinesByOrganization(id)
-            | Self::ListJobsByOrganization(id) => ResourceRef::Organization(id.clone()),
+            | Self::ListJobsByOrganization(id)
+            | Self::CreateApp(id)
+            | Self::ListAppsByOrganization(id) => ResourceRef::Organization(id.clone()),
 
             // Project-targeted
             Self::ReadProject(id)
@@ -220,6 +235,8 @@ impl Permission {
             Self::ReadAgent(id) | Self::WriteAgent(id) | Self::DeleteAgent(id) => {
                 ResourceRef::Agent(id.clone())
             }
+
+            Self::ReadApp(id) | Self::DeleteApp(id) => ResourceRef::App(id.clone()),
         }
     }
 }

@@ -13,6 +13,8 @@ pub use messaging::HermesJobLogStream;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAgentRepository;
 #[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAppRepository;
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAuditLog;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAuthzEntityProvider;

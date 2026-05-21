@@ -1,6 +1,7 @@
 mod ids;
 
 mod agent;
+mod app;
 mod invitation;
 mod job;
 mod job_log;
@@ -15,6 +16,7 @@ mod user_project;
 pub use ids::*;
 
 pub use agent::*;
+pub use app::*;
 pub use invitation::*;
 pub use job::*;
 pub use job_log::*;

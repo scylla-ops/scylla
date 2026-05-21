@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package app;
+
+// Management of machine Apps (agents / automations) owned by an organization.
+// An App authenticates with an app token and acts under a worker grant on its
+// org. Creating one returns the plaintext secret exactly once — it is never
+// stored or retrievable again. Authorization is org-scoped: the caller must
+// hold the matching app permission on the target organization / app.
+service AppService {
+  rpc CreateApp(CreateAppRequest) returns (CreatedApp);
+  rpc GetApp(GetAppRequest)       returns (App);
+  rpc ListApps(ListAppsRequest)   returns (ListAppsResponse);
+  rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse);
+}
+
+message App {
+  string id              = 1;
+  string organization_id = 2;
+  string name            = 3;
+  bool   is_active       = 4;
+  string created_at      = 5; // RFC 3339
+  string updated_at      = 6; // RFC 3339
+}
+
+message CreateAppRequest {
+  string organization_id = 1;
+  string name            = 2;
+}
+
+// The newly created app plus its plaintext secret, shown exactly once.
+message CreatedApp {
+  App    app    = 1;
+  string secret = 2;
+}
+
+message GetAppRequest {
+  string id = 1;
+}
+
+message ListAppsRequest {
+  string organization_id = 1;
+}
+
+message ListAppsResponse {
+  repeated App apps = 1;
+}
+
+message DeleteAppRequest {
+  string id = 1;
+}
+
+message DeleteAppResponse {
+  bool deleted = 1;
+}

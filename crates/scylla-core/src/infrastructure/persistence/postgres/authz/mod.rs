@@ -147,6 +147,23 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     None => Ok(ResourceAncestors::default()),
                 }
             }
+            ResourceRef::App(id) => {
+                let row = sqlx::query("SELECT organization_id FROM apps WHERE id = $1")
+                    .bind(id.as_str())
+                    .fetch_optional(&self.pool)
+                    .await
+                    .map_err(infra)?;
+                let organization = match row {
+                    Some(r) => Some(OrganizationId::new(
+                        r.try_get::<String, _>("organization_id").map_err(infra)?,
+                    )),
+                    None => None,
+                };
+                Ok(ResourceAncestors {
+                    organization,
+                    ..Default::default()
+                })
+            }
             // System / User / Organization / Agent have no tenancy parents.
             _ => Ok(ResourceAncestors::default()),
         }

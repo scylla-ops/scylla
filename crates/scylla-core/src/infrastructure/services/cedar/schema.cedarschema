@@ -11,9 +11,10 @@ namespace Scylla {
     entity Service;
     entity System;
 
-    // Machine principal (agent / automation). Carries scoped grants like a User
-    // but no ABAC attributes; declared here so grant templates can bind it.
-    entity App;
+    // Machine principal (agent / automation) owned by an organization. As a
+    // principal it carries scoped grants like a User (no ABAC attributes); as a
+    // resource it lives under its org, so org-admins manage it via the hierarchy.
+    entity App in [Organization];
 
     entity Organization;
     entity Project in [Organization];
@@ -42,8 +43,9 @@ namespace Scylla {
     // ── Organization-targeted ──────────────────────────────────────────
     action "readOrganization", "updateOrganization", "deleteOrganization",
            "listOrganizationMembers", "addOrganizationMember", "removeOrganizationMember",
-           "createProject",
-           "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization"
+           "createProject", "createApp",
+           "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization",
+           "listAppsByOrganization"
         appliesTo { principal: [User, Service], resource: [Organization] };
 
     // ── Project-targeted ───────────────────────────────────────────────
@@ -71,4 +73,8 @@ namespace Scylla {
     // ── Agent-targeted ─────────────────────────────────────────────────
     action "readAgent", "writeAgent", "deleteAgent"
         appliesTo { principal: [User, Service], resource: [Agent] };
+
+    // ── App-targeted (manage a specific app within its org) ─────────────
+    action "readApp", "deleteApp"
+        appliesTo { principal: [User, Service], resource: [App] };
 }

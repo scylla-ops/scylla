@@ -19,6 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "pipeline.proto",
         "job.proto",
         "agent.proto",
+        "app.proto",
     ]
     .map(|f| proto_dir.join(f));
 

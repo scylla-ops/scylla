@@ -11,6 +11,7 @@
 mod error;
 
 pub mod agents;
+pub mod apps;
 pub mod audit;
 pub mod authz;
 pub mod cedar_policies;
@@ -34,6 +35,7 @@ pub mod users;
 // Flat re-exports so call sites can keep `scylla_core::infrastructure::PgUserRepository`
 // without leaking the internal sub-module layout.
 pub use agents::PgAgentRepository;
+pub use apps::PgAppRepository;
 pub use audit::PgAuditLog;
 pub use authz::PgAuthzEntityProvider;
 pub use cedar_policies::PgPolicyRepository;

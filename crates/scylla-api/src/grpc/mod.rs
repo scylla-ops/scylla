@@ -4,8 +4,8 @@ pub mod middleware;
 pub mod streaming;
 
 pub use handlers::{
-    AgentHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler, OrganizationHandler,
-    PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler, UserHandler,
+    AgentHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler,
+    OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler, UserHandler,
 };
 #[cfg(feature = "signup")]
 pub use handlers::RegistrationHandler;
