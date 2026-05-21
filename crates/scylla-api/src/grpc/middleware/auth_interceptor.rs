@@ -1,14 +1,14 @@
 use derive_more::Constructor;
-use scylla_core::application::SessionRepository;
-use scylla_core::domain::entities::UserId;
+use scylla_core::application::{AppTokenRepository, CallerContext, SessionRepository};
 use std::sync::Arc;
 use tonic::{Request, Status};
 use tonic_async_interceptor::AsyncInterceptor;
 
-/// Authenticated user context attached to each request by the auth interceptor.
+/// Authenticated principal attached to each request by the auth interceptor.
+/// Either a user (resolved from a session) or a machine App (from an app token).
 #[derive(Debug, Clone, Constructor)]
 pub struct AuthContext {
-    pub user_id: UserId,
+    pub caller: CallerContext,
 }
 
 /// Extracts the [`AuthContext`] previously attached by the auth interceptor.
@@ -41,42 +41,61 @@ fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {
 }
 
 #[derive(Clone)]
-pub struct AuthInterceptor<R> {
+pub struct AuthInterceptor<R, AT> {
     session_repo: Arc<R>,
+    app_token_repo: Arc<AT>,
 }
 
-impl<R> AuthInterceptor<R> {
-    pub fn new(session_repo: Arc<R>) -> Self {
-        Self { session_repo }
+impl<R, AT> AuthInterceptor<R, AT> {
+    pub fn new(session_repo: Arc<R>, app_token_repo: Arc<AT>) -> Self {
+        Self {
+            session_repo,
+            app_token_repo,
+        }
     }
 }
 
-impl<R> AsyncInterceptor for AuthInterceptor<R>
+impl<R, AT> AsyncInterceptor for AuthInterceptor<R, AT>
 where
     R: SessionRepository + Send + Sync + 'static,
+    AT: AppTokenRepository + Send + Sync + 'static,
 {
     type Future = std::pin::Pin<Box<dyn Future<Output = Result<Request<()>, Status>> + Send>>;
     fn call(&mut self, mut request: Request<()>) -> Self::Future {
         let session_repo = self.session_repo.clone();
+        let app_token_repo = self.app_token_repo.clone();
 
         Box::pin(async move {
             let token = extract_bearer_token(&request)?;
 
-            let session = session_repo
-                .find_by_token(&token)
-                .await
-                .map_err(|_| Status::unauthenticated("Invalid or expired token"))?;
-
-            if session.is_expired() {
-                let _ = session_repo.delete_by_token(&token).await;
-                return Err(Status::unauthenticated("Token has expired"));
+            // A user session takes precedence; an expired one is swept.
+            if let Ok(session) = session_repo.find_by_token(&token).await {
+                if session.is_expired() {
+                    let _ = session_repo.delete_by_token(&token).await;
+                    return Err(Status::unauthenticated("Token has expired"));
+                }
+                request
+                    .extensions_mut()
+                    .insert(AuthContext::new(CallerContext::User(
+                        session.user_id().clone(),
+                    )));
+                return Ok(request);
             }
 
-            request
-                .extensions_mut()
-                .insert(AuthContext::new(session.user_id().clone()));
+            // Otherwise the token may belong to a machine App.
+            if let Ok(app_token) = app_token_repo.find_by_token(&token).await {
+                if app_token.is_expired() {
+                    return Err(Status::unauthenticated("Token has expired"));
+                }
+                request
+                    .extensions_mut()
+                    .insert(AuthContext::new(CallerContext::App(
+                        app_token.app_id().clone(),
+                    )));
+                return Ok(request);
+            }
 
-            Ok(request)
+            Err(Status::unauthenticated("Invalid or expired token"))
         })
     }
 }
@@ -86,8 +105,8 @@ mod tests {
     use super::*;
     use async_trait::async_trait;
     use chrono::Duration;
-    use scylla_core::application::SessionRepository;
-    use scylla_core::domain::entities::{Session, UserId};
+    use scylla_core::application::{AppTokenRepository, SessionRepository};
+    use scylla_core::domain::entities::{AppId, AppToken, Session, UserId};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use std::sync::Arc;
     use tonic_async_interceptor::AsyncInterceptor;
@@ -119,6 +138,27 @@ mod tests {
         }
     }
 
+    struct StubAppTokenRepo {
+        find_by_token_fn: Box<dyn Fn(&str) -> DomainResult<AppToken> + Send + Sync>,
+    }
+
+    #[async_trait]
+    impl AppTokenRepository for StubAppTokenRepo {
+        async fn create(&self, _t: &AppToken) -> DomainResult<()> {
+            unimplemented!()
+        }
+        async fn find_by_token(&self, token: &str) -> DomainResult<AppToken> {
+            (self.find_by_token_fn)(token)
+        }
+    }
+
+    /// An app-token repo that never matches — for the user-only test paths.
+    fn no_app_tokens() -> Arc<StubAppTokenRepo> {
+        Arc::new(StubAppTokenRepo {
+            find_by_token_fn: Box::new(|t| Err(DomainError::not_found("AppToken", t))),
+        })
+    }
+
     fn valid_session() -> Session {
         Session::create(
             UserId::generate(),
@@ -138,8 +178,7 @@ mod tests {
     #[test]
     fn extract_auth_context_missing() {
         let req = Request::new(());
-        let result = extract_auth_context(&req);
-        assert!(result.is_err());
+        assert!(extract_auth_context(&req).is_err());
     }
 
     #[test]
@@ -147,14 +186,14 @@ mod tests {
         let mut req = Request::new(());
         let user_id = UserId::generate();
         req.extensions_mut()
-            .insert(AuthContext::new(user_id.clone()));
+            .insert(AuthContext::new(CallerContext::User(user_id.clone())));
 
         let ctx = extract_auth_context(&req).unwrap();
-        assert_eq!(ctx.user_id, user_id);
+        assert_eq!(ctx.caller, CallerContext::User(user_id));
     }
 
     #[tokio::test]
-    async fn interceptor_valid_token() {
+    async fn interceptor_valid_session_token() {
         let session = valid_session();
         let user_id = session.user_id().clone();
         let s = session.clone();
@@ -164,7 +203,7 @@ mod tests {
             delete_by_token_fn: Box::new(|_| Ok(())),
         });
 
-        let mut interceptor = AuthInterceptor::new(repo);
+        let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());
         let mut req = Request::new(());
         req.metadata_mut()
             .insert("authorization", "Bearer valid-token".parse().unwrap());
@@ -173,7 +212,34 @@ mod tests {
         assert!(result.is_ok());
         let req = result.unwrap();
         let ctx = req.extensions().get::<AuthContext>().unwrap();
-        assert_eq!(ctx.user_id, user_id);
+        assert_eq!(ctx.caller, CallerContext::User(user_id));
+    }
+
+    #[tokio::test]
+    async fn interceptor_app_token_resolves_to_app() {
+        // Session lookup misses; the same token resolves to an App principal.
+        let app_id = AppId::new("agent-1");
+        let token = AppToken::create(app_id.clone(), "app-token".to_string(), Duration::hours(24));
+        let t = token.clone();
+
+        let session_repo = Arc::new(StubSessionRepo {
+            find_by_token_fn: Box::new(|tok| Err(DomainError::not_found("Session", tok))),
+            delete_by_token_fn: Box::new(|_| Ok(())),
+        });
+        let app_repo = Arc::new(StubAppTokenRepo {
+            find_by_token_fn: Box::new(move |_| Ok(t.clone())),
+        });
+
+        let mut interceptor = AuthInterceptor::new(session_repo, app_repo);
+        let mut req = Request::new(());
+        req.metadata_mut()
+            .insert("authorization", "Bearer app-token".parse().unwrap());
+
+        let result = interceptor.call(req).await;
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        let ctx = req.extensions().get::<AuthContext>().unwrap();
+        assert_eq!(ctx.caller, CallerContext::App(app_id));
     }
 
     #[tokio::test]
@@ -183,7 +249,7 @@ mod tests {
             delete_by_token_fn: Box::new(|_| unreachable!()),
         });
 
-        let mut interceptor = AuthInterceptor::new(repo);
+        let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());
         let req = Request::new(());
         let result = interceptor.call(req).await;
         assert!(result.is_err());
@@ -191,7 +257,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn interceptor_expired_token() {
+    async fn interceptor_expired_session() {
         let session = expired_session();
         let s = session.clone();
 
@@ -200,7 +266,7 @@ mod tests {
             delete_by_token_fn: Box::new(|_| Ok(())),
         });
 
-        let mut interceptor = AuthInterceptor::new(repo);
+        let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());
         let mut req = Request::new(());
         req.metadata_mut()
             .insert("authorization", "Bearer expired-token".parse().unwrap());
@@ -217,7 +283,7 @@ mod tests {
             delete_by_token_fn: Box::new(|_| Ok(())),
         });
 
-        let mut interceptor = AuthInterceptor::new(repo);
+        let mut interceptor = AuthInterceptor::new(repo, no_app_tokens());
         let mut req = Request::new(());
         req.metadata_mut()
             .insert("authorization", "Bearer unknown".parse().unwrap());

@@ -1,0 +1,70 @@
+use super::PgAppTokenRepository;
+use crate::application::HashService;
+use crate::application::app::{AppRepository, AppTokenRepository, AppTokenUseCases};
+use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope, WORKER_ROLE};
+use crate::domain::entities::App;
+use crate::domain::value_objects::app::{AppName, AppSecret};
+use crate::domain::value_objects::role::name::RoleName;
+use crate::infrastructure::Argon2HashService;
+use crate::infrastructure::persistence::postgres::PgAppRepository;
+use crate::test_support::prelude::*;
+use sqlx::PgPool;
+use std::sync::Arc;
+
+async fn seed_app(pool: &PgPool, secret: &AppSecret) -> App {
+    let org = seed_org(pool, "Acme").await;
+    let hash = Argon2HashService::new().hash_secret(secret).await.unwrap();
+    let app = App::create(org.id().clone(), AppName::new("ci").unwrap(), hash);
+    let grant = Grant::new(
+        GrantPrincipal::App(app.id().clone()),
+        RoleName::new(WORKER_ROLE).unwrap(),
+        GrantScope::Organization(org.id().clone()),
+    );
+    PgAppRepository::new(pool.clone())
+        .provision(&app, &grant)
+        .await
+        .unwrap();
+    app
+}
+
+fn use_cases(
+    pool: &PgPool,
+) -> AppTokenUseCases<PgAppRepository, PgAppTokenRepository, Argon2HashService> {
+    AppTokenUseCases::new(
+        Arc::new(PgAppRepository::new(pool.clone())),
+        Arc::new(PgAppTokenRepository::new(pool.clone())),
+        Arc::new(Argon2HashService::new()),
+    )
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn issue_with_correct_secret_then_token_resolves(pool: PgPool) {
+    let secret = AppSecret::generate();
+    let app = seed_app(&pool, &secret).await;
+
+    let outcome = use_cases(&pool)
+        .issue(app.id().clone(), secret)
+        .await
+        .expect("issue");
+
+    let found = PgAppTokenRepository::new(pool.clone())
+        .find_by_token(&outcome.token)
+        .await
+        .expect("token persisted");
+    assert_eq!(found.app_id(), app.id());
+    assert!(!found.is_expired());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn issue_with_wrong_secret_is_unauthorized(pool: PgPool) {
+    let secret = AppSecret::generate();
+    let app = seed_app(&pool, &secret).await;
+
+    let result = use_cases(&pool)
+        .issue(app.id().clone(), AppSecret::generate())
+        .await;
+    assert!(matches!(
+        result,
+        Err(crate::domain::errors::DomainError::Unauthorized(_))
+    ));
+}

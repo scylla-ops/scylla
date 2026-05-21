@@ -23,7 +23,9 @@ pub mod user;
 pub mod user_role;
 
 pub use agent::{AgentRepository, AgentUseCases};
-pub use app::{AppRepository, AppUseCases, CreatedApp};
+pub use app::{
+    AppRepository, AppTokenOutcome, AppTokenRepository, AppTokenUseCases, AppUseCases, CreatedApp,
+};
 pub use audit::{AuditDecision, AuditEntry, AuditLog, NoopAuditLog};
 pub use auth::{AuthUseCases, HashService, SessionRepository};
 pub use caller::{CallerContext, ServiceIdentity};

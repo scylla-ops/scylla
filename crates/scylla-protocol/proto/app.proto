@@ -53,3 +53,20 @@ message DeleteAppRequest {
 message DeleteAppResponse {
   bool deleted = 1;
 }
+
+// Public credential exchange: an App presents its id + secret and receives a
+// bearer token. No auth interceptor — the secret is the credential, like user
+// login. The token is then sent as `Authorization: Bearer <token>`.
+service AppAuthService {
+  rpc IssueToken(IssueTokenRequest) returns (IssueTokenResponse);
+}
+
+message IssueTokenRequest {
+  string app_id = 1;
+  string secret = 2;
+}
+
+message IssueTokenResponse {
+  string token      = 1;
+  string expires_at = 2; // RFC 3339
+}

@@ -3,9 +3,9 @@ use crate::error::StartupError;
 use hermes_broker_client::Publisher;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AgentUseCases, AppUseCases, AuditLog, AuthUseCases, GrantUseCases, JobLogStreamUseCase,
-    JobLogUseCases, JobUseCases, OrganizationUseCases, PipelineUseCases, PolicyUseCases,
-    ProjectUseCases, UserRoleUseCases, UserUseCases,
+    AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, GrantUseCases,
+    JobLogStreamUseCase, JobLogUseCases, JobUseCases, OrganizationUseCases, PipelineUseCases,
+    PolicyUseCases, ProjectUseCases, UserRoleUseCases, UserUseCases,
 };
 #[cfg(feature = "signup")]
 use scylla_core::application::SignupUseCases;
@@ -27,8 +27,8 @@ use scylla_core::infrastructure::{GitHubOAuthProvider, PgOAuthIdentityRepository
 use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, HermesJobLogStream, PgAgentRepository,
-    PgAppRepository, PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository,
-    PgJobRepository,
+    PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider, PgGrantRepository,
+    PgJobLogRepository, PgJobRepository,
     PgOrganizationRepository, PgPipelineRepository, PgPolicyRepository, PgProjectRepository,
     PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
     PgUserRepository, PgUserRoleRepository,
@@ -107,6 +107,8 @@ pub type SharedJobLogStreamUc =
 pub type SharedAgentUc = Arc<AgentUseCases<PgAgentRepository, PermissionChecker>>;
 pub type SharedAppUc =
     Arc<AppUseCases<PgAppRepository, Argon2HashService, PermissionChecker, PermissionChecker>>;
+pub type SharedAppTokenUc =
+    Arc<AppTokenUseCases<PgAppRepository, PgAppTokenRepository, Argon2HashService>>;
 
 // ── Services container ─────────────────────────────────────────────────
 
@@ -128,11 +130,13 @@ pub struct Services {
     pub job_log_stream_uc: SharedJobLogStreamUc,
     pub agent_uc: SharedAgentUc,
     pub app_uc: SharedAppUc,
+    pub app_token_uc: SharedAppTokenUc,
     pub grant_uc: SharedGrantUc,
     pub policy_uc: SharedPolicyUc,
     pub role_uc: SharedRoleUc,
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
+    pub app_token_repo: Arc<PgAppTokenRepository>,
     pub user_role_repo: Arc<PgUserRoleRepository>,
     pub broker_publisher: Arc<Publisher>,
     #[cfg(feature = "mail")]
@@ -151,6 +155,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let job_log_repo = Arc::new(PgJobLogRepository::new(db.clone()));
     let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
     let app_repo = Arc::new(PgAppRepository::new(db.clone()));
+    let app_token_repo = Arc::new(PgAppTokenRepository::new(db.clone()));
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
     #[cfg(any(feature = "signup", feature = "oauth-github"))]
     let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
@@ -237,6 +242,11 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         hash_service.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
+    ));
+    let app_token_uc = Arc::new(AppTokenUseCases::new(
+        app_repo.clone(),
+        app_token_repo.clone(),
+        hash_service.clone(),
     ));
     let grant_uc = Arc::new(GrantUseCases::new(
         grant_repo.clone(),
@@ -336,11 +346,13 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         job_log_stream_uc,
         agent_uc,
         app_uc,
+        app_token_uc,
         grant_uc,
         policy_uc,
         role_uc,
         permission_checker,
         session_repo,
+        app_token_repo,
         user_role_repo,
         broker_publisher,
         #[cfg(feature = "mail")]
@@ -428,9 +440,9 @@ where
     F: Future<Output = ()> + Send + 'static,
 {
     use crate::grpc::{
-        AgentHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler,
-        OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler,
-        UserHandler, auth_interceptor::AuthInterceptor,
+        AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler,
+        JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler,
+        RoleHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     #[cfg(feature = "signup")]
     use crate::grpc::RegistrationHandler;
@@ -440,6 +452,7 @@ where
     use crate::grpc::OAuthHandler;
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
+        app::app_auth_service_server::AppAuthServiceServer,
         app::app_service_server::AppServiceServer,
         auth::auth_service_server::AuthServiceServer,
         config::config_service_server::ConfigServiceServer,
@@ -482,13 +495,17 @@ where
     );
     let agent_handler = AgentHandler::new(services.agent_uc.clone());
     let app_handler = AppHandler::new(services.app_uc.clone());
+    let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
     #[cfg(feature = "invitations")]
     let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());
 
-    let auth_interceptor = async_interceptor(AuthInterceptor::new(services.session_repo.clone()));
+    let auth_interceptor = async_interceptor(AuthInterceptor::new(
+        services.session_repo.clone(),
+        services.app_token_repo.clone(),
+    ));
     let cors_layer = build_cors_layer(&config.cors);
 
     tracing::info!("gRPC server listening on {}", config.grpc.address);
@@ -502,6 +519,10 @@ where
 
     // Public capability discovery — no auth interceptor, like auth/login.
     let config_service = ConfigServiceServer::new(ConfigHandler);
+
+    // Public app credential exchange — the secret is the credential, so no
+    // interceptor; it mints the bearer token apps use on every other call.
+    let app_auth_service = AppAuthServiceServer::new(app_auth_handler);
 
     // Public self-service signup — only present in SaaS (`signup` feature) builds.
     #[cfg(feature = "signup")]
@@ -574,6 +595,7 @@ where
         .add_service(reflection)
         .add_service(auth_service)
         .add_service(config_service)
+        .add_service(app_auth_service)
         .add_service(user_service)
         .add_service(org_service)
         .add_service(project_service)
