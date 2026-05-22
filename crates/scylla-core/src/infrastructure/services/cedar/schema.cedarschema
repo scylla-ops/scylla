@@ -50,9 +50,9 @@ namespace Scylla {
     // ── Organization-targeted ──────────────────────────────────────────
     action "readOrganization", "updateOrganization", "deleteOrganization",
            "listOrganizationMembers", "addOrganizationMember", "removeOrganizationMember",
-           "createProject", "createApp", "createWorker",
+           "createProject", "createApp", "createAgent",
            "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization",
-           "listAppsByOrganization", "listWorkers"
+           "listAppsByOrganization", "listAgents"
         appliesTo { principal: [User, Service], resource: [Organization] };
 
     // ── Project-targeted ───────────────────────────────────────────────
@@ -66,21 +66,21 @@ namespace Scylla {
     action "updatePipeline", "deletePipeline", "runPipeline",
            "listJobsByPipeline"
         appliesTo { principal: [User, Service], resource: [Pipeline] };
-    // Also grantable to worker Apps (read the pipeline, execute its jobs).
+    // Also grantable to agent Apps (read the pipeline, execute its jobs).
     action "readPipeline", "executeJob"
         appliesTo { principal: [User, Service, App], resource: [Pipeline] };
 
     // ── Job-targeted ───────────────────────────────────────────────────
     action "readJob", "writeJob", "deleteJob", "readJobLogs", "writeJobLogs"
         appliesTo { principal: [User, Service], resource: [Job] };
-    // Job status / log writes are also grantable to worker Apps.
+    // Job status / log writes are also grantable to agent Apps.
     action "writeJobStatus", "writeJobLog"
         appliesTo { principal: [User, Service, App], resource: [Job] };
 
     // ── App-targeted (manage a specific app within its org) ─────────────
-    // A worker is a specialized app, so worker introspection/management also
-    // targets the App resource (worker_app_id == app id).
+    // A agent is a specialized app, so agent introspection/management also
+    // targets the App resource (agent_app_id == app id).
     action "readApp", "deleteApp",
-           "readWorker", "readWorkerStats", "deleteWorker"
+           "readAgent", "readAgentStats", "deleteAgent"
         appliesTo { principal: [User, Service], resource: [App] };
 }

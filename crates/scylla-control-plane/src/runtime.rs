@@ -5,7 +5,7 @@ use tracing::info;
 
 /// Build the shared application services and run the gRPC API until shutdown.
 /// Single composition root for the in-process control plane. Job dispatch and
-/// log fan-out are in-process (the worker stream), so there is no broker or
+/// log fan-out are in-process (the agent stream), so there is no broker or
 /// recorder to boot.
 pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     let token = CancellationToken::new();

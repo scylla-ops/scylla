@@ -11,9 +11,9 @@ pub trait JobRepository {
 
     async fn update(&self, job: &Job) -> DomainResult<Job>;
 
-    /// Record which worker (app) executed a job. Targeted column update so it
-    /// can't clobber concurrent status/node writes from the worker stream.
-    async fn set_worker(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()>;
+    /// Record which agent (app) executed a job. Targeted column update so it
+    /// can't clobber concurrent status/node writes from the agent stream.
+    async fn set_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()>;
 
     async fn delete(&self, id: &JobId) -> DomainResult<()>;
 

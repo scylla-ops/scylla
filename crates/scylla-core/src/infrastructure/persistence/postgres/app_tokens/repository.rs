@@ -1,5 +1,5 @@
 use crate::application::app::token_repository::AppTokenRepository;
-use crate::domain::entities::{AppId, AppToken, AppTokenId};
+use crate::domain::entities::{AppCredentialId, AppId, AppToken, AppTokenId};
 use crate::domain::errors::DomainResult;
 use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
@@ -42,12 +42,13 @@ pub mod queries {
     {
         sqlx::query!(
             r#"
-            INSERT INTO app_tokens (id, token, app_id, created_at, expires_at)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO app_tokens (id, token, app_id, secret_id, created_at, expires_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
             "#,
             token.id().as_str(),
             token.token(),
             token.app_id().as_str(),
+            token.secret_id().as_str(),
             token.created_at(),
             token.expires_at(),
         )
@@ -57,15 +58,21 @@ pub mod queries {
         Ok(())
     }
 
+    /// Resolve a token to its `App`, but only while its minting secret is still
+    /// enabled and its app is still active. A disabled/revoked secret or an
+    /// inactive app makes the join return nothing → the token reads as not found,
+    /// so credential changes take effect on the very next request.
     pub async fn find_by_token<'e, E>(executor: E, token: &str) -> DomainResult<AppToken>
     where
         E: PgExecutor<'e>,
     {
         let rec = sqlx::query!(
             r#"
-            SELECT id, token, app_id, created_at, expires_at
-            FROM app_tokens
-            WHERE token = $1
+            SELECT t.id, t.token, t.app_id, t.secret_id, t.created_at, t.expires_at
+            FROM app_tokens t
+            JOIN app_secrets s ON s.id = t.secret_id AND s.enabled = TRUE
+            JOIN apps a ON a.id = t.app_id AND a.is_active = TRUE
+            WHERE t.token = $1
             "#,
             token,
         )
@@ -76,6 +83,7 @@ pub mod queries {
             AppTokenId::new(rec.id),
             rec.token,
             AppId::new(rec.app_id),
+            AppCredentialId::new(rec.secret_id),
             rec.created_at,
             rec.expires_at,
         ))

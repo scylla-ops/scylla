@@ -1,14 +1,18 @@
 use crate::application::HashService;
+use crate::application::app::credential_repository::AppCredentialRepository;
 use crate::application::app::repository::AppRepository;
 use crate::application::caller::CallerContext;
 use crate::application::permission::service::PermissionService;
-use crate::domain::entities::{App, AppId, OrganizationId};
+use crate::domain::entities::{App, AppCredential, AppCredentialId, AppId, OrganizationId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::app::{AppName, AppSecret};
+use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::value_objects::permission::Permission;
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
+
+/// Label given to an App's first secret, created alongside the App itself.
+const DEFAULT_SECRET_LABEL: &str = "default";
 
 /// What a successful `create` returns: the persisted app plus its plaintext
 /// secret, which is presented exactly once and never stored or retrievable.
@@ -17,26 +21,40 @@ pub struct CreatedApp {
     pub secret: AppSecret,
 }
 
+/// What a successful secret creation/regeneration returns: the persisted secret
+/// record plus its plaintext, shown exactly once.
+pub struct CreatedAppSecret {
+    pub credential: AppCredential,
+    pub secret: AppSecret,
+}
+
 /// Org-scoped management of machine Apps — generic credentials. Every method is
 /// Cedar-gated, so an org-admin can manage the apps of orgs they control (admins
 /// can manage any). An app is just an identity: it carries no authorization until
-/// grants are assigned to it. A *worker* (an app that runs jobs) is provisioned
-/// separately via `WorkerUseCases`, which also grants it the worker role.
+/// grants are assigned to it. A *agent* (an app that runs jobs) is provisioned
+/// separately via `AgentUseCases`, which also grants it the agent role.
+///
+/// An App can hold several secrets; secret management (create/list/revoke/
+/// enable) is gated on the app permissions: reading uses `ReadApp`, mutating
+/// uses `DeleteApp` (the manage-level app permission).
 #[derive(Constructor)]
-pub struct AppUseCases<A, H, PS>
+pub struct AppUseCases<A, C, H, PS>
 where
     A: AppRepository,
+    C: AppCredentialRepository,
     H: HashService,
     PS: PermissionService,
 {
     app_repo: Arc<A>,
+    credential_repo: Arc<C>,
     hash_service: Arc<H>,
     permission_service: Arc<PS>,
 }
 
-impl<A, H, PS> AppUseCases<A, H, PS>
+impl<A, C, H, PS> AppUseCases<A, C, H, PS>
 where
     A: AppRepository,
+    C: AppCredentialRepository,
     H: HashService,
     PS: PermissionService,
 {
@@ -53,11 +71,17 @@ where
 
         let secret = AppSecret::generate();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
-        let app = App::create(organization_id, name, secret_hash);
+        let app = App::create(organization_id, name);
+        let credential = AppCredential::create(
+            app.id().clone(),
+            AppSecretLabel::new(DEFAULT_SECRET_LABEL)?,
+            secret_hash,
+        );
 
         // A plain app is an identity only — no grant, no policy reload. It gains
-        // capabilities later through explicit grants (or becomes a worker).
-        self.app_repo.create_app(&app).await?;
+        // capabilities later through explicit grants (or becomes a agent). The
+        // initial secret is written in the same tx so it can authenticate.
+        self.app_repo.create_app(&app, &credential).await?;
 
         Ok(CreatedApp { app, secret })
     }
@@ -91,5 +115,89 @@ where
             .check(caller, Permission::DeleteApp(id.clone()))
             .await?;
         self.app_repo.delete(&id).await
+    }
+
+    /// Enable or disable the whole app. Disabling cuts every active token (the
+    /// auth lookup filters on `is_active`) and blocks new token issuance.
+    #[instrument(skip(self, caller), fields(app_id = %id, active))]
+    pub async fn set_active(
+        &self,
+        caller: &CallerContext,
+        id: AppId,
+        active: bool,
+    ) -> DomainResult<App> {
+        self.permission_service
+            .check(caller, Permission::DeleteApp(id.clone()))
+            .await?;
+        self.app_repo.set_active(&id, active).await?;
+        self.app_repo.find_by_id(&id).await
+    }
+
+    // --- Secret management -------------------------------------------------
+
+    /// Create (regenerate) a new secret for an app. Returns the plaintext once.
+    #[instrument(skip(self, caller), fields(app_id = %app_id, label = %label))]
+    pub async fn create_secret(
+        &self,
+        caller: &CallerContext,
+        app_id: AppId,
+        label: AppSecretLabel,
+    ) -> DomainResult<CreatedAppSecret> {
+        self.permission_service
+            .check(caller, Permission::DeleteApp(app_id.clone()))
+            .await?;
+        // Ensure the app exists (surfaces NOT_FOUND rather than a dangling secret).
+        self.app_repo.find_by_id(&app_id).await?;
+
+        let secret = AppSecret::generate();
+        let secret_hash = self.hash_service.hash_secret(&secret).await?;
+        let credential = AppCredential::create(app_id, label, secret_hash);
+        self.credential_repo.create(&credential).await?;
+
+        Ok(CreatedAppSecret { credential, secret })
+    }
+
+    /// List an app's secrets (metadata only — never the plaintext).
+    #[instrument(skip(self, caller), fields(app_id = %app_id))]
+    pub async fn list_secrets(
+        &self,
+        caller: &CallerContext,
+        app_id: AppId,
+    ) -> DomainResult<Vec<AppCredential>> {
+        self.permission_service
+            .check(caller, Permission::ReadApp(app_id.clone()))
+            .await?;
+        self.credential_repo.list_by_app(&app_id).await
+    }
+
+    /// Permanently remove a secret. Calls made with it stop authenticating.
+    #[instrument(skip(self, caller), fields(secret_id = %secret_id))]
+    pub async fn revoke_secret(
+        &self,
+        caller: &CallerContext,
+        secret_id: AppCredentialId,
+    ) -> DomainResult<()> {
+        let credential = self.credential_repo.find_by_id(&secret_id).await?;
+        self.permission_service
+            .check(caller, Permission::DeleteApp(credential.app_id().clone()))
+            .await?;
+        self.credential_repo.delete(&secret_id).await
+    }
+
+    /// Enable or disable a secret. A disabled secret is kept but rejected at
+    /// auth. Returns the updated record.
+    #[instrument(skip(self, caller), fields(secret_id = %secret_id, enabled))]
+    pub async fn set_secret_enabled(
+        &self,
+        caller: &CallerContext,
+        secret_id: AppCredentialId,
+        enabled: bool,
+    ) -> DomainResult<AppCredential> {
+        let credential = self.credential_repo.find_by_id(&secret_id).await?;
+        self.permission_service
+            .check(caller, Permission::DeleteApp(credential.app_id().clone()))
+            .await?;
+        self.credential_repo.set_enabled(&secret_id, enabled).await?;
+        self.credential_repo.find_by_id(&secret_id).await
     }
 }

@@ -46,8 +46,8 @@ export const useScyllaNavigate = () => {
     navigate(`${getOrgPrefix()}/users/${userId || 'me'}`, { replace: true });
   };
 
-  const goToWorkerDetails = (workerId: string) => {
-    navigate(`${getOrgPrefix()}/workers/${workerId}`);
+  const goToAgentDetails = (agentId: string) => {
+    navigate(`${getOrgPrefix()}/agents/${agentId}`);
   };
 
   const goToOrgRoute = (path: string) => {
@@ -61,7 +61,7 @@ export const useScyllaNavigate = () => {
     goToSubRoute,
     goToCreatePipeline,
     goToJobs,
-    goToWorkerDetails,
+    goToAgentDetails,
     goBack: () => navigate(-1),
     goToProject,
     goToOrgRoute,

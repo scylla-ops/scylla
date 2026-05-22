@@ -1,6 +1,7 @@
 mod ids;
 
 mod app;
+mod app_credential;
 mod app_token;
 mod invitation;
 mod job;
@@ -12,11 +13,12 @@ mod session;
 mod user;
 mod user_organization;
 mod user_project;
-mod worker;
+mod agent;
 
 pub use ids::*;
 
 pub use app::*;
+pub use app_credential::*;
 pub use app_token::*;
 pub use invitation::*;
 pub use job::*;
@@ -28,4 +30,4 @@ pub use session::*;
 pub use user::*;
 pub use user_organization::*;
 pub use user_project::*;
-pub use worker::*;
+pub use agent::*;

@@ -164,11 +164,11 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         Ok((job, dispatch))
     }
 
-    /// Record which worker the job was dispatched to. An internal continuation
-    /// of the already-authorized `run` (the handler calls this once a worker
+    /// Record which agent the job was dispatched to. An internal continuation
+    /// of the already-authorized `run` (the handler calls this once a agent
     /// accepts the dispatch), so it carries no extra Cedar check.
     #[instrument(skip(self), fields(job_id = %job_id, app_id = %app_id))]
-    pub async fn assign_worker(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
-        self.job_repo.set_worker(job_id, app_id).await
+    pub async fn assign_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
+        self.job_repo.set_agent(job_id, app_id).await
     }
 }

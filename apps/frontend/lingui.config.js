@@ -37,8 +37,8 @@ export default defineConfig({
       include: ['src/modules/features/apps/'],
     },
     {
-      path: '<rootDir>/src/modules/features/workers/locales/{locale}/messages',
-      include: ['src/modules/features/workers/'],
+      path: '<rootDir>/src/modules/features/agents/locales/{locale}/messages',
+      include: ['src/modules/features/agents/'],
     },
     {
       path: '<rootDir>/src/locales/{locale}/messages',

@@ -1,36 +1,36 @@
 //! Status reporting + terminal event guard.
 //!
-//! [`StatusPublisher`] wraps the worker up-stream channel and emits
-//! [`JobEvent`]s as `WorkerUp` status messages. [`JobReporter`] wraps it with
+//! [`StatusPublisher`] wraps the agent up-stream channel and emits
+//! [`JobEvent`]s as `AgentUp` status messages. [`JobReporter`] wraps it with
 //! scope-exit semantics: `JobStarted` fires on construction, and exactly one of
 //! `JobCompleted`/`JobFailed` fires via [`JobReporter::finalize`] at the end of
 //! the run — regardless of which path the executor took.
 
 use scylla_core::domain::value_objects::job::JobEvent;
-use scylla_protocol::services::worker::{JobEventKind, JobStatus, WorkerUp, worker_up};
+use scylla_protocol::services::agent::{JobEventKind, JobStatus, AgentUp, agent_up};
 use tokio::sync::mpsc;
 
 use crate::error::ExecutionError;
 
-/// Emits [`JobEvent`]s as `WorkerUp` status messages on the worker stream.
+/// Emits [`JobEvent`]s as `AgentUp` status messages on the agent stream.
 /// Cheaply cloneable.
 #[derive(Clone)]
 pub struct StatusPublisher {
-    up_tx: mpsc::Sender<WorkerUp>,
+    up_tx: mpsc::Sender<AgentUp>,
     job_id: String,
 }
 
 impl StatusPublisher {
     #[must_use]
-    pub fn new(up_tx: mpsc::Sender<WorkerUp>, job_id: String) -> Self {
+    pub fn new(up_tx: mpsc::Sender<AgentUp>, job_id: String) -> Self {
         Self { up_tx, job_id }
     }
 
     pub async fn emit(&self, event: JobEvent) -> Result<(), ExecutionError> {
         let status = job_event_to_status(&self.job_id, event);
         self.up_tx
-            .send(WorkerUp {
-                payload: Some(worker_up::Payload::Status(status)),
+            .send(AgentUp {
+                payload: Some(agent_up::Payload::Status(status)),
             })
             .await
             .map_err(|e| ExecutionError::Publish(e.to_string()))

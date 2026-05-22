@@ -13,95 +13,162 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:30
-msgid "Active"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:61
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:77
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:113
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:56
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:90
+msgid "active"
+msgstr "actif"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:97
-msgid "An app is the machine identity an agent connects with. You will get a one-time secret."
-msgstr ""
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:131
+msgid "Add a credential for this app."
+msgstr "Ajouter un identifiant pour cette app."
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:96
+msgid "App ID"
+msgstr "ID de l'app"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:132
+msgid "Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead."
+msgstr "Les apps sont des identifiants, pas des processus. Rien à surveiller ici — pas d'en ligne/hors ligne, pas d'exécutions. Pour de l'observabilité, créez plutôt un agent."
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:78
+msgid "Apps are machine credentials. Create one to let an automation authenticate against the Scylla API."
+msgstr "Les apps sont des identifiants machine. Créez-en une pour qu'une automatisation s'authentifie auprès de l'API Scylla."
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:154
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:141
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:163
+msgid "Cancel"
+msgstr "Annuler"
+
+#: src/modules/features/apps/presentation/utils/create-app-secret-form-items.ts:8
+msgid "ci-runner"
+msgstr "ci-runner"
+
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:58
+msgid "Copy id"
+msgstr "Copier l'id"
 
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:111
-msgid "App created"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:134
+msgid "Create & reveal secret →"
+msgstr "Créer & révéler le secret →"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:24
-msgid "App ID"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:84
+msgid "Create your first app"
+msgstr "Créez votre première app"
 
-#: src/modules/features/apps/presentation/utils/create-app-form-items.ts:7
-msgid "App name"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:77
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:99
+msgid "created"
+msgstr "créé le"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:169
-msgid "Cancel"
-msgstr ""
-
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:128
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:141
-msgid "Copy"
-msgstr ""
-
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:114
-msgid "Copy the secret now — it is shown once and cannot be retrieved later."
-msgstr ""
-
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:95
-msgid "Create a new app"
-msgstr ""
-
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:103
-msgid "Create App"
-msgstr ""
-
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:36
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:75
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:119
 msgid "Created"
-msgstr ""
+msgstr "Créé le"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:79
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:177
-msgid "Delete"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:54
+msgid "Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret."
+msgstr "Identifiants pour authentifier cette app. Désactiver coupe les sessions actives immédiatement ; révoquer supprime le secret."
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:159
-msgid "Delete app?"
-msgstr ""
-
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:83
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:162
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:149
-msgid "Done"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:62
+msgid "Delete"
+msgstr "Supprimer"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:146
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:133
+msgid "Delete app?"
+msgstr "Supprimer l'app ?"
+
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:94
+msgid "disabled"
+msgstr "désactivé"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:108
+msgid "Get credentials to authenticate."
+msgstr "Obtenez des identifiants pour vous authentifier."
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:61
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:77
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:113
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:57
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:70
+msgid "inactive"
+msgstr "inactif"
+
+#: src/modules/features/apps/presentation/utils/create-app-secret-form-items.ts:7
+msgid "Label"
+msgstr "Label"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:65
+msgid "Machine credential · no runtime presence"
+msgstr "Identifiant machine · aucune présence runtime"
 
 #: src/modules/features/apps/presentation/utils/create-app-form-items.ts:8
-msgid "e.g., ci-runner"
-msgstr ""
+msgid "my-build-runner"
+msgstr "my-build-runner"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:87
-msgid "No apps yet. Create one to connect an agent."
-msgstr ""
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:103
+#: src/modules/features/apps/presentation/utils/create-app-form-items.ts:7
+msgid "Name"
+msgstr "Nom"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:22
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:73
-#~ msgid "offline"
-#~ msgstr ""
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:99
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:107
+msgid "New App"
+msgstr "Nouvelle app"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:22
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:73
-#~ msgid "online"
-#~ msgstr ""
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:62
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:130
+msgid "New secret"
+msgstr "Nouveau secret"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:134
-msgid "Run the agent"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:75
+msgid "No apps yet"
+msgstr "Aucune app pour l'instant"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:121
-msgid "Secret"
-msgstr ""
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:73
+msgid "No secrets. Create one so this app can authenticate."
+msgstr "Aucun secret. Créez-en un pour que cette app puisse s'authentifier."
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:162
-msgid "This revokes the app's grants and disconnects its agent. Cannot be undone."
-msgstr ""
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:80
+msgid "Rename"
+msgstr "Renommer"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:42
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:171
+msgid "Revoke"
+msgstr "Révoquer"
+
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:152
+msgid "Revoke secret?"
+msgstr "Révoquer le secret ?"
+
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:51
+msgid "Secrets"
+msgstr "Secrets"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:51
+msgid "Service"
+msgstr "Service"
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:109
+msgid "Status"
+msgstr "Statut"
+
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:155
+msgid "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
+msgstr "Supprime définitivement le secret et coupe immédiatement toute session qui l'utilise. Irréversible."
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:149
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:136
+msgid "This revokes the app's credentials. Cannot be undone."
+msgstr "Cela révoque les identifiants de l'app. Irréversible."
+
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:125
 msgid "Updated"
-msgstr ""
+msgstr "Mis à jour le"

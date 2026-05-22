@@ -49,6 +49,22 @@ export function useApps() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [APPS_QUERY_KEY, organizationId] }),
   });
 
+  const setAppActive = useMutation({
+    mutationFn: async ({ appId, active }: { appId: string; active: boolean }) => {
+      const result = await apps.setAppActive.execute(appId, active);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
+    onSuccess: (_data, { appId }) => {
+      queryClient.invalidateQueries({ queryKey: [APPS_QUERY_KEY, organizationId] });
+      queryClient.invalidateQueries({ queryKey: [APPS_QUERY_KEY, 'detail', appId] });
+    },
+  });
+
   return {
     apps: query.data ?? [],
     isLoading: query.isLoading,
@@ -56,6 +72,7 @@ export function useApps() {
     error: query.error,
     createApp,
     deleteApp,
+    setAppActive,
   };
 }
 
@@ -75,4 +92,77 @@ export function useApp(appId: string) {
       });
     },
   });
+}
+
+const SECRETS_QUERY_KEY = 'app-secrets';
+
+/** Secrets of one app: list query + create/revoke/enable mutations. */
+export function useAppSecrets(appId: string) {
+  const { apps } = useDependencies();
+  const queryClient = useQueryClient();
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, appId] });
+
+  const query = useQuery({
+    queryKey: [SECRETS_QUERY_KEY, appId],
+    enabled: !!appId,
+    queryFn: async () => {
+      const result = await apps.listAppSecrets.execute(appId);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
+  });
+
+  const createSecret = useMutation({
+    mutationFn: async (label: string) => {
+      const result = await apps.createAppSecret.execute(appId, label);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
+    onSuccess: invalidate,
+  });
+
+  const revokeSecret = useMutation({
+    mutationFn: async (secretId: string) => {
+      const result = await apps.revokeAppSecret.execute(secretId);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
+    onSuccess: invalidate,
+  });
+
+  const setSecretEnabled = useMutation({
+    mutationFn: async ({ secretId, enabled }: { secretId: string; enabled: boolean }) => {
+      const result = await apps.setAppSecretEnabled.execute(secretId, enabled);
+      return result.fold({
+        onSuccess: data => data,
+        onError: err => {
+          throw err;
+        },
+      });
+    },
+    onSuccess: invalidate,
+  });
+
+  return {
+    secrets: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    createSecret,
+    revokeSecret,
+    setSecretEnabled,
+  };
 }

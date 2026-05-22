@@ -10,7 +10,7 @@ use tokio_stream::wrappers::ReceiverStream;
 
 const CHANNEL_CAPACITY: usize = 256;
 
-/// In-process job-log fan-out that replaces the broker live-tail. The worker
+/// In-process job-log fan-out that replaces the broker live-tail. The agent
 /// stream handler publishes each log line as it persists it; readers subscribe
 /// per job. One bounded broadcast channel per job — a slow reader drops lagged
 /// lines (the persisted snapshot via `JobLogRepository` remains authoritative).

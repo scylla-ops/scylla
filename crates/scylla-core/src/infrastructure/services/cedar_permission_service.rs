@@ -4,7 +4,7 @@ use crate::application::caller::CallerContext;
 use crate::application::permission::entity_provider::{AuthzEntityProvider, PrincipalAuthz};
 use crate::application::permission::grant::{
     Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE,
-    WORKER_ROLE,
+    AGENT_ROLE,
 };
 use crate::application::permission::policy::{PolicyControl, PolicyDefinition, PolicyRepository};
 use crate::domain::errors::{DomainError, DomainResult};
@@ -25,14 +25,14 @@ const SCHEMA_SRC: &str = include_str!("cedar/schema.cedarschema");
 const POLICIES_SRC: &str = include_str!("cedar/policies.cedar");
 /// Full-control body, registered under each admin role id below.
 const ROLE_TEMPLATE_SRC: &str = include_str!("cedar/role_template.cedar");
-/// Restricted body for the `worker` role (machine Apps): job execution only.
-const WORKER_TEMPLATE_SRC: &str = include_str!("cedar/worker_template.cedar");
+/// Restricted body for the `agent` role (machine Apps): job execution only.
+const AGENT_TEMPLATE_SRC: &str = include_str!("cedar/agent_template.cedar");
 /// Grantable role ids mapped to the Cedar template body linked per grant. A
 /// grant whose `role` is not listed here is skipped at link time (logged).
 const TEMPLATE_ROLES: &[(&str, &str)] = &[
     (ORGANIZATION_ADMIN_ROLE, ROLE_TEMPLATE_SRC),
     (PROJECT_ADMIN_ROLE, ROLE_TEMPLATE_SRC),
-    (WORKER_ROLE, WORKER_TEMPLATE_SRC),
+    (AGENT_ROLE, AGENT_TEMPLATE_SRC),
 ];
 
 /// Cedar-backed authorization. Static policies + schema are compiled into the
@@ -176,7 +176,7 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             }
             CallerContext::App(id) => {
                 // A machine principal carries no roles/ABAC attrs of its own; its
-                // access comes entirely from linked scoped grants (worker role).
+                // access comes entirely from linked scoped grants (agent role).
                 let uid = euid("Scylla::App", id.as_str())?;
                 Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
             }
@@ -729,12 +729,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn worker_app_grant_allows_execute_job_in_scope_only() {
-        // A machine App with a worker grant on an org may execute jobs on a
-        // pipeline beneath it, but not management actions outside the worker set.
+    async fn agent_app_grant_allows_execute_job_in_scope_only() {
+        // A machine App with a agent grant on an org may execute jobs on a
+        // pipeline beneath it, but not management actions outside the agent set.
         let grant = Grant::new(
             GrantPrincipal::App(AppId::new("agent-1")),
-            role(WORKER_ROLE),
+            role(AGENT_ROLE),
             GrantScope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
@@ -752,21 +752,21 @@ mod tests {
             svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
                 .await
                 .is_ok(),
-            "worker app may execute jobs within its granted org"
+            "agent app may execute jobs within its granted org"
         );
         assert!(
             svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
                 .await
                 .is_err(),
-            "worker role must not confer management actions"
+            "agent role must not confer management actions"
         );
     }
 
     #[tokio::test]
-    async fn worker_app_denied_outside_scope() {
+    async fn agent_app_denied_outside_scope() {
         let grant = Grant::new(
             GrantPrincipal::App(AppId::new("agent-1")),
-            role(WORKER_ROLE),
+            role(AGENT_ROLE),
             GrantScope::Organization(OrganizationId::new("o1")),
         );
         // Pipeline lives under a different org the app has no grant on.
@@ -785,13 +785,13 @@ mod tests {
             svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
                 .await
                 .is_err(),
-            "worker app must be denied outside its granted scope"
+            "agent app must be denied outside its granted scope"
         );
     }
 
     #[tokio::test]
-    async fn org_admin_manages_workers_in_its_org_only() {
-        // A worker is a specialized app, so worker actions target the org (create/
+    async fn org_admin_manages_agents_in_its_org_only() {
+        // A agent is a specialized app, so agent actions target the org (create/
         // list) or the App resource beneath it (read/stats/delete). An org-admin
         // grant covers all of them within its org via the role template, and
         // nothing outside it. Pure permission — no org-member broadening.
@@ -813,28 +813,28 @@ mod tests {
         let caller = CallerContext::User(UserId::new("u1"));
 
         for perm in [
-            Permission::CreateWorker(OrganizationId::new("o1")),
-            Permission::ListWorkers(OrganizationId::new("o1")),
-            Permission::ReadWorker(AppId::new("agent-1")),
-            Permission::ReadWorkerStats(AppId::new("agent-1")),
-            Permission::DeleteWorker(AppId::new("agent-1")),
+            Permission::CreateAgent(OrganizationId::new("o1")),
+            Permission::ListAgents(OrganizationId::new("o1")),
+            Permission::ReadAgent(AppId::new("agent-1")),
+            Permission::ReadAgentStats(AppId::new("agent-1")),
+            Permission::DeleteAgent(AppId::new("agent-1")),
         ] {
             assert!(
                 svc.check(&caller, perm.clone()).await.is_ok(),
-                "org admin may manage workers in its org: {perm:?}"
+                "org admin may manage agents in its org: {perm:?}"
             );
         }
 
         assert!(
-            svc.check(&caller, Permission::CreateWorker(OrganizationId::new("o2")))
+            svc.check(&caller, Permission::CreateAgent(OrganizationId::new("o2")))
                 .await
                 .is_err(),
-            "org admin cannot create workers in another org"
+            "org admin cannot create agents in another org"
         );
     }
 
     #[tokio::test]
-    async fn user_without_grant_denied_worker_actions() {
+    async fn user_without_grant_denied_agent_actions() {
         let svc = service(
             PrincipalAuthz::default(),
             ResourceAncestors {
@@ -847,16 +847,16 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("nobody"));
         assert!(
-            svc.check(&caller, Permission::ListWorkers(OrganizationId::new("o1")))
+            svc.check(&caller, Permission::ListAgents(OrganizationId::new("o1")))
                 .await
                 .is_err(),
-            "a user with no grant cannot list workers"
+            "a user with no grant cannot list agents"
         );
         assert!(
-            svc.check(&caller, Permission::ReadWorkerStats(AppId::new("agent-1")))
+            svc.check(&caller, Permission::ReadAgentStats(AppId::new("agent-1")))
                 .await
                 .is_err(),
-            "a user with no grant cannot read worker stats"
+            "a user with no grant cannot read agent stats"
         );
     }
 

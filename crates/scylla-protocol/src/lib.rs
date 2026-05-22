@@ -40,11 +40,11 @@ pub mod services {
     pub mod app {
         tonic::include_proto!("app");
     }
-    pub mod worker {
-        tonic::include_proto!("worker");
+    pub mod agent {
+        tonic::include_proto!("agent");
     }
-    pub mod worker_admin {
-        tonic::include_proto!("worker_admin");
+    pub mod agent_admin {
+        tonic::include_proto!("agent_admin");
     }
 
     pub const FILE_DESCRIPTOR_SET: &[u8] =

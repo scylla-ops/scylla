@@ -8,8 +8,10 @@ pub mod services;
 #[cfg(feature = "postgres")]
 pub use db::{DatabaseConfig, close_db, init_db};
 
-pub use messaging::{InMemoryJobLogStream, InMemoryWorkerRegistry};
+pub use messaging::{InMemoryJobLogStream, InMemoryAgentRegistry};
 
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAppCredentialRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAppRepository;
 #[cfg(feature = "postgres")]
@@ -45,7 +47,7 @@ pub use persistence::postgres::PgUserRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserRoleRepository;
 #[cfg(feature = "postgres")]
-pub use persistence::postgres::PgWorkerRepository;
+pub use persistence::postgres::PgAgentRepository;
 
 #[cfg(feature = "hash")]
 pub use services::Argon2HashService;

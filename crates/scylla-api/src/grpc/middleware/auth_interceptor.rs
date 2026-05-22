@@ -106,7 +106,7 @@ mod tests {
     use async_trait::async_trait;
     use chrono::Duration;
     use scylla_core::application::{AppTokenRepository, SessionRepository};
-    use scylla_core::domain::entities::{AppId, AppToken, Session, UserId};
+    use scylla_core::domain::entities::{AppCredentialId, AppId, AppToken, Session, UserId};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use std::sync::Arc;
     use tonic_async_interceptor::AsyncInterceptor;
@@ -219,7 +219,12 @@ mod tests {
     async fn interceptor_app_token_resolves_to_app() {
         // Session lookup misses; the same token resolves to an App principal.
         let app_id = AppId::new("agent-1");
-        let token = AppToken::create(app_id.clone(), "app-token".to_string(), Duration::hours(24));
+        let token = AppToken::create(
+            app_id.clone(),
+            AppCredentialId::new("secret-1"),
+            "app-token".to_string(),
+            Duration::hours(24),
+        );
         let t = token.clone();
 
         let session_repo = Arc::new(StubSessionRepo {

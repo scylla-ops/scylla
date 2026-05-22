@@ -11,8 +11,8 @@ use scylla_core::domain::entities::PipelineNode;
 use scylla_core::domain::value_objects::pipeline::NodeId;
 use scylla_protocol::services::app::IssueTokenRequest;
 use scylla_protocol::services::app::app_auth_service_client::AppAuthServiceClient;
-use scylla_protocol::services::worker::worker_service_client::WorkerServiceClient;
-use scylla_protocol::services::worker::{WorkerDown, WorkerNode, WorkerUp, worker_down};
+use scylla_protocol::services::agent::agent_service_client::AgentServiceClient;
+use scylla_protocol::services::agent::{AgentDown, AgentNode, AgentUp, agent_down};
 
 use crate::config::AgentConfig;
 use crate::error::AgentError;
@@ -48,9 +48,9 @@ impl Agent {
             match self.connect().await {
                 Ok((inbound, up_tx)) => {
                     failures = 0;
-                    info!("worker stream open — waiting for jobs");
+                    info!("agent stream open — waiting for jobs");
                     self.serve(inbound, up_tx).await;
-                    info!("worker stream closed; reconnecting");
+                    info!("agent stream closed; reconnecting");
                 }
                 Err(e) => {
                     failures += 1;
@@ -66,9 +66,9 @@ impl Agent {
     }
 
     /// Build a channel, exchange credentials for a bearer token, and open the
-    /// worker stream. Returns the inbound (server→worker) stream and the
-    /// up-stream sender (worker→server).
-    async fn connect(&self) -> Result<(Streaming<WorkerDown>, mpsc::Sender<WorkerUp>), AgentError> {
+    /// agent stream. Returns the inbound (server→agent) stream and the
+    /// up-stream sender (agent→server).
+    async fn connect(&self) -> Result<(Streaming<AgentDown>, mpsc::Sender<AgentUp>), AgentError> {
         let channel = Channel::from_shared(self.config.control_plane_url.clone())
             .map_err(|e| AgentError::InvalidUrl {
                 url: self.config.control_plane_url.clone(),
@@ -87,14 +87,14 @@ impl Agent {
             .token;
 
         let buffer = usize::try_from(self.config.publish_buffer_size).unwrap_or(8192);
-        let (up_tx, up_rx) = mpsc::channel::<WorkerUp>(buffer);
+        let (up_tx, up_rx) = mpsc::channel::<AgentUp>(buffer);
         let bearer: MetadataValue<_> = format!("Bearer {token}")
             .parse()
             .map_err(|_| AgentError::InvalidToken("token is not valid header ASCII".into()))?;
         let mut request = Request::new(ReceiverStream::new(up_rx));
         request.metadata_mut().insert("authorization", bearer);
 
-        let inbound = WorkerServiceClient::new(channel)
+        let inbound = AgentServiceClient::new(channel)
             .open(request)
             .await?
             .into_inner();
@@ -102,11 +102,11 @@ impl Agent {
     }
 
     /// Run dispatched jobs until the stream ends (clean close or error).
-    async fn serve(&self, mut inbound: Streaming<WorkerDown>, up_tx: mpsc::Sender<WorkerUp>) {
+    async fn serve(&self, mut inbound: Streaming<AgentDown>, up_tx: mpsc::Sender<AgentUp>) {
         loop {
             match inbound.message().await {
                 Ok(Some(down)) => match down.payload {
-                    Some(worker_down::Payload::Dispatch(dispatch)) => {
+                    Some(agent_down::Payload::Dispatch(dispatch)) => {
                         info!(
                             job_id = %dispatch.job_id,
                             pipeline_id = %dispatch.pipeline_id,
@@ -130,7 +130,7 @@ impl Agent {
                 },
                 Ok(None) => break,
                 Err(e) => {
-                    warn!(error = %e, "worker stream error");
+                    warn!(error = %e, "agent stream error");
                     break;
                 }
             }
@@ -138,7 +138,7 @@ impl Agent {
     }
 }
 
-fn to_domain_nodes(nodes: Vec<WorkerNode>) -> Result<Vec<PipelineNode>, String> {
+fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
     nodes
         .into_iter()
         .map(|n| {

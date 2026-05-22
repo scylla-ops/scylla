@@ -1,12 +1,12 @@
 use super::PgAppTokenRepository;
 use crate::application::HashService;
 use crate::application::app::{AppRepository, AppTokenRepository, AppTokenUseCases};
-use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope, WORKER_ROLE};
-use crate::domain::entities::App;
-use crate::domain::value_objects::app::{AppName, AppSecret};
+use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope, AGENT_ROLE};
+use crate::domain::entities::{App, AppCredential};
+use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::value_objects::role::name::RoleName;
 use crate::infrastructure::Argon2HashService;
-use crate::infrastructure::persistence::postgres::PgAppRepository;
+use crate::infrastructure::persistence::postgres::{PgAppCredentialRepository, PgAppRepository};
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -14,14 +14,16 @@ use std::sync::Arc;
 async fn seed_app(pool: &PgPool, secret: &AppSecret) -> App {
     let org = seed_org(pool, "Acme").await;
     let hash = Argon2HashService::new().hash_secret(secret).await.unwrap();
-    let app = App::create(org.id().clone(), AppName::new("ci").unwrap(), hash);
+    let app = App::create(org.id().clone(), AppName::new("ci").unwrap());
+    let credential =
+        AppCredential::create(app.id().clone(), AppSecretLabel::new("default").unwrap(), hash);
     let grant = Grant::new(
         GrantPrincipal::App(app.id().clone()),
-        RoleName::new(WORKER_ROLE).unwrap(),
+        RoleName::new(AGENT_ROLE).unwrap(),
         GrantScope::Organization(org.id().clone()),
     );
     PgAppRepository::new(pool.clone())
-        .provision(&app, &grant)
+        .provision(&app, &credential, &grant)
         .await
         .unwrap();
     app
@@ -29,10 +31,16 @@ async fn seed_app(pool: &PgPool, secret: &AppSecret) -> App {
 
 fn use_cases(
     pool: &PgPool,
-) -> AppTokenUseCases<PgAppRepository, PgAppTokenRepository, Argon2HashService> {
+) -> AppTokenUseCases<
+    PgAppRepository,
+    PgAppTokenRepository,
+    PgAppCredentialRepository,
+    Argon2HashService,
+> {
     AppTokenUseCases::new(
         Arc::new(PgAppRepository::new(pool.clone())),
         Arc::new(PgAppTokenRepository::new(pool.clone())),
+        Arc::new(PgAppCredentialRepository::new(pool.clone())),
         Arc::new(Argon2HashService::new()),
     )
 }

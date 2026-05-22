@@ -6,7 +6,7 @@ pub enum AgentError {
     #[error("failed to connect to control plane: {0}")]
     Connection(#[from] tonic::transport::Error),
 
-    #[error("worker stream closed unexpectedly")]
+    #[error("agent stream closed unexpectedly")]
     StreamClosed,
 
     #[error("gRPC error: {0}")]

@@ -1,7 +1,7 @@
 use crate::application::caller::CallerContext;
 use crate::application::permission::policy::PolicyControl;
 use crate::application::permission::service::PermissionService;
-use crate::application::worker::dispatch_port::WorkerDispatch;
+use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
@@ -19,7 +19,7 @@ pub const PROJECT_ADMIN_ROLE: &str = "project-admin";
 /// Restricted role for machine Apps (agents): only the actions needed to pull
 /// and execute jobs within a scope. Linked via a dedicated Cedar template, not
 /// the full-control one used by the admin roles.
-pub const WORKER_ROLE: &str = "worker";
+pub const AGENT_ROLE: &str = "agent";
 
 /// Owner-equivalent roles: holding one grants full control over a scope. A scope
 /// must never lose its last owner, so revoking one of these is guarded.
@@ -100,13 +100,13 @@ pub trait GrantRepository: Send + Sync {
 /// `Permission::ManageGrants` (admin/service in practice). A created or revoked
 /// grant is applied live via [`PolicyControl::reload`], so it takes effect
 /// immediately without a control-plane restart. Revoking an App's grant also
-/// disconnects its worker stream so a no-longer-authorized agent stops at once.
+/// disconnects its agent stream so a no-longer-authorized agent stops at once.
 #[derive(Constructor)]
 pub struct GrantUseCases<G: GrantRepository, PC: PolicyControl, PS: PermissionService> {
     grant_repo: Arc<G>,
     policy_control: Arc<PC>,
     permission_service: Arc<PS>,
-    worker_registry: Arc<dyn WorkerDispatch>,
+    agent_registry: Arc<dyn AgentDispatch>,
 }
 
 impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases<G, PC, PS> {
@@ -160,7 +160,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
     #[instrument(skip(self, caller))]
     pub async fn revoke(&self, caller: &CallerContext, id: &str) -> DomainResult<()> {
         // Look the grant up first: the caller must hold management rights over
-        // *its* scope, and a revoked worker App must be disconnected.
+        // *its* scope, and a revoked agent App must be disconnected.
         let grants = self.grant_repo.list_all().await?;
         let grant = grants.iter().find(|g| g.id == id).cloned();
 
@@ -192,7 +192,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         self.policy_control.reload().await?;
 
         if let Some(GrantPrincipal::App(app_id)) = grant.map(|g| g.principal) {
-            self.worker_registry.disconnect(&app_id);
+            self.agent_registry.disconnect(&app_id);
         }
         Ok(())
     }
@@ -243,7 +243,7 @@ mod tests {
         disconnected: Mutex<Vec<String>>,
     }
     #[async_trait]
-    impl WorkerDispatch for RecordingRegistry {
+    impl AgentDispatch for RecordingRegistry {
         fn connected(&self) -> Vec<AppId> {
             vec![]
         }
@@ -271,10 +271,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn revoking_app_grant_disconnects_the_worker() {
+    async fn revoking_app_grant_disconnects_the_agent() {
         let grant = Grant::new(
             GrantPrincipal::App(AppId::new("agent-1")),
-            RoleName::new(WORKER_ROLE).unwrap(),
+            RoleName::new(AGENT_ROLE).unwrap(),
             GrantScope::Organization(OrganizationId::new("o1")),
         );
         let reg = Arc::new(RecordingRegistry::default());
@@ -331,7 +331,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn revoking_user_grant_leaves_workers_alone() {
+    async fn revoking_user_grant_leaves_agents_alone() {
         let grant = Grant::new(
             GrantPrincipal::User(UserId::new("u1")),
             RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),

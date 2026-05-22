@@ -20,10 +20,11 @@ pub mod quota;
 pub mod signup;
 pub mod user;
 pub mod user_role;
-pub mod worker;
+pub mod agent;
 
 pub use app::{
-    AppRepository, AppTokenOutcome, AppTokenRepository, AppTokenUseCases, AppUseCases, CreatedApp,
+    AppCredentialRepository, AppRepository, AppTokenOutcome, AppTokenRepository, AppTokenUseCases,
+    AppUseCases, CreatedApp, CreatedAppSecret,
 };
 pub use audit::{AuditDecision, AuditEntry, AuditLog, NoopAuditLog};
 pub use auth::{AuthUseCases, HashService, SessionRepository};
@@ -51,7 +52,7 @@ pub use quota::Quotas;
 pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
 pub use user::{UserRepository, UserUseCases};
 pub use user_role::{UserRoleRepository, UserRoleUseCases};
-pub use worker::{
-    CreatedWorker, DispatchOutcome, DispatchUseCases, WorkerDispatch, WorkerRepository,
-    WorkerStats, WorkerUseCases, WorkerView,
+pub use agent::{
+    CreatedAgent, DispatchOutcome, DispatchUseCases, AgentDispatch, AgentRepository,
+    AgentStats, AgentUseCases, AgentView,
 };

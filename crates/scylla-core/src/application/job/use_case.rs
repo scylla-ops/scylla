@@ -46,10 +46,10 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         self.job_repo.update(job).await
     }
 
-    /// Apply a status event reported by a worker to its job and persist it.
-    /// Gated by a single [`Permission::WriteJobStatus`] check (the worker role
+    /// Apply a status event reported by a agent to its job and persist it.
+    /// Gated by a single [`Permission::WriteJobStatus`] check (the agent role
     /// confers it); the load/update repo calls deliberately bypass per-step
-    /// Cedar so a worker needs only `writeJobStatus`, not `readJob`/`writeJob`.
+    /// Cedar so a agent needs only `writeJobStatus`, not `readJob`/`writeJob`.
     #[instrument(skip(self, caller), fields(job_id = %job_id))]
     pub async fn record_status(
         &self,

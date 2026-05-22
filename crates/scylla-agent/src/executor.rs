@@ -6,7 +6,7 @@
 //!   * emits `NodeSkipped` for every node that hasn't reached a terminal state;
 //!   * emits a single `JobFailed` on scope exit (via [`JobReporter`]).
 //!
-//! Status and log events are sent as `WorkerUp` messages on the worker stream.
+//! Status and log events are sent as `AgentUp` messages on the agent stream.
 
 use chrono::Utc;
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -18,7 +18,7 @@ use tracing::{error, info, warn};
 
 use scylla_core::domain::entities::PipelineNode;
 use scylla_core::domain::value_objects::job::{JobEvent, LogStream};
-use scylla_protocol::services::worker::{JobLogLine, WorkerUp, worker_up};
+use scylla_protocol::services::agent::{JobLogLine, AgentUp, agent_up};
 
 use crate::error::ExecutionError;
 use crate::plan::DagPlan;
@@ -27,12 +27,12 @@ use crate::reporter::{JobReporter, StatusPublisher};
 /// Executes a pipeline DAG by walking nodes in topological order, spawning
 /// parallel tasks for independent nodes.
 pub struct Executor {
-    up_tx: mpsc::Sender<WorkerUp>,
+    up_tx: mpsc::Sender<AgentUp>,
     job_id: String,
 }
 
 impl Executor {
-    pub fn new(up_tx: mpsc::Sender<WorkerUp>, job_id: String) -> Self {
+    pub fn new(up_tx: mpsc::Sender<AgentUp>, job_id: String) -> Self {
         Self { up_tx, job_id }
     }
 
@@ -177,14 +177,14 @@ async fn skip_all_pending(
     Ok(())
 }
 
-/// Run a single node's command, streaming stdout/stderr to the worker stream.
+/// Run a single node's command, streaming stdout/stderr to the agent stream.
 ///
 /// Listens to `cancel` in parallel with `child.wait()`: if cancellation fires
 /// first, the child is killed and [`ExecutionError::Cancelled`] is returned.
 async fn run_node(
     node_id: &str,
     spec: &PipelineNode,
-    up_tx: &mpsc::Sender<WorkerUp>,
+    up_tx: &mpsc::Sender<AgentUp>,
     job_id: &str,
     cancel: CancellationToken,
 ) -> Result<(), ExecutionError> {
@@ -272,7 +272,7 @@ fn spawn_log_streamer<R>(
     stream: LogStream,
     node_id: String,
     job_id: String,
-    up_tx: mpsc::Sender<WorkerUp>,
+    up_tx: mpsc::Sender<AgentUp>,
 ) -> tokio::task::JoinHandle<()>
 where
     R: tokio::io::AsyncRead + Unpin + Send + 'static,
@@ -287,10 +287,10 @@ where
     })
 }
 
-/// Send a single log line as a `WorkerUp`. Returns `false` if the channel is
+/// Send a single log line as a `AgentUp`. Returns `false` if the channel is
 /// closed (caller should stop emitting).
 async fn publish_log_line(
-    up_tx: &mpsc::Sender<WorkerUp>,
+    up_tx: &mpsc::Sender<AgentUp>,
     job_id: &str,
     node_id: &str,
     stream: LogStream,
@@ -304,13 +304,13 @@ async fn publish_log_line(
         timestamp: Utc::now().to_rfc3339(),
     };
     if up_tx
-        .send(WorkerUp {
-            payload: Some(worker_up::Payload::Log(log)),
+        .send(AgentUp {
+            payload: Some(agent_up::Payload::Log(log)),
         })
         .await
         .is_err()
     {
-        warn!("worker up-stream channel closed");
+        warn!("agent up-stream channel closed");
         return false;
     }
     true

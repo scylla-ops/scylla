@@ -120,5 +120,6 @@ define_id!(UserProjectId);
 define_id!(SessionId);
 define_id!(AppId);
 define_id!(AppTokenId);
+define_id!(AppCredentialId);
 define_id!(CedarPolicyId);
 define_id!(InvitationId);

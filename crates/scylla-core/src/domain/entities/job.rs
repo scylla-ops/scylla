@@ -69,9 +69,9 @@ pub struct Job {
     pipeline_id: PipelineId,
     status: JobStatus,
     node_executions: Vec<JobNode>,
-    /// The worker (app) that executed this job, set at dispatch. `None` while
+    /// The agent (app) that executed this job, set at dispatch. `None` while
     /// pending / never dispatched.
-    worker_app_id: Option<AppId>,
+    agent_app_id: Option<AppId>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     started_at: Option<DateTime<Utc>>,
@@ -86,7 +86,7 @@ impl Job {
         pipeline_id: PipelineId,
         status: JobStatus,
         node_executions: Vec<JobNode>,
-        worker_app_id: Option<AppId>,
+        agent_app_id: Option<AppId>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
         started_at: Option<DateTime<Utc>>,
@@ -97,7 +97,7 @@ impl Job {
             pipeline_id,
             status,
             node_executions,
-            worker_app_id,
+            agent_app_id,
             created_at,
             updated_at,
             started_at,
@@ -120,7 +120,7 @@ impl Job {
             pipeline_id: pipeline.id().clone(),
             status: JobStatus::Pending,
             node_executions,
-            worker_app_id: None,
+            agent_app_id: None,
             created_at: now,
             updated_at: now,
             started_at: None,
@@ -128,9 +128,9 @@ impl Job {
         }
     }
 
-    /// Record which worker (app) was handed this job at dispatch.
-    pub fn assign_worker(&mut self, app_id: AppId) {
-        self.worker_app_id = Some(app_id);
+    /// Record which agent (app) was handed this job at dispatch.
+    pub fn assign_agent(&mut self, app_id: AppId) {
+        self.agent_app_id = Some(app_id);
         self.updated_at = clock::now();
     }
 
@@ -300,8 +300,8 @@ impl Job {
     }
 
     #[must_use]
-    pub fn worker_app_id(&self) -> Option<&AppId> {
-        self.worker_app_id.as_ref()
+    pub fn agent_app_id(&self) -> Option<&AppId> {
+        self.agent_app_id.as_ref()
     }
 
     #[must_use]

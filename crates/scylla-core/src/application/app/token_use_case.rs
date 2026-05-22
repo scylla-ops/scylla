@@ -1,4 +1,5 @@
 use crate::application::HashService;
+use crate::application::app::credential_repository::AppCredentialRepository;
 use crate::application::app::repository::AppRepository;
 use crate::application::app::token_repository::AppTokenRepository;
 use crate::domain::entities::{AppId, AppToken};
@@ -18,18 +19,32 @@ pub struct AppTokenOutcome {
     pub expires_at: DateTime<Utc>,
 }
 
-/// Exchanges an App's id + secret for a bearer token. Public (takes no
-/// `CallerContext`) — the secret is the credential, mirroring user login. An
-/// unknown app and a wrong secret return the same opaque error so callers can't
-/// probe which apps exist.
+/// Exchanges an App's id + the plaintext of any of its *enabled* secrets for a
+/// bearer token. Public (takes no `CallerContext`) — the secret is the
+/// credential, mirroring user login. An unknown app, an inactive app, a
+/// disabled/revoked secret, and a wrong secret all return the same opaque error
+/// so callers can't probe which apps or secrets exist.
 #[derive(Constructor)]
-pub struct AppTokenUseCases<A: AppRepository, T: AppTokenRepository, H: HashService> {
+pub struct AppTokenUseCases<A, T, C, H>
+where
+    A: AppRepository,
+    T: AppTokenRepository,
+    C: AppCredentialRepository,
+    H: HashService,
+{
     app_repo: Arc<A>,
     token_repo: Arc<T>,
+    credential_repo: Arc<C>,
     hash_service: Arc<H>,
 }
 
-impl<A: AppRepository, T: AppTokenRepository, H: HashService> AppTokenUseCases<A, T, H> {
+impl<A, T, C, H> AppTokenUseCases<A, T, C, H>
+where
+    A: AppRepository,
+    T: AppTokenRepository,
+    C: AppCredentialRepository,
+    H: HashService,
+{
     #[instrument(skip(self, secret), fields(app_id = %app_id))]
     pub async fn issue(&self, app_id: AppId, secret: AppSecret) -> DomainResult<AppTokenOutcome> {
         let invalid = || DomainError::unauthorized("Invalid app credentials");
@@ -37,17 +52,32 @@ impl<A: AppRepository, T: AppTokenRepository, H: HashService> AppTokenUseCases<A
         if !app.is_active() {
             return Err(invalid());
         }
-        let valid = self
-            .hash_service
-            .verify_secret(&secret, app.secret_hash())
-            .await?;
-        if !valid {
-            return Err(invalid());
+
+        // Accept the plaintext against any enabled secret. Verify all candidates
+        // (no early break) so timing doesn't leak which secret matched, but keep
+        // the matched one so the token is tied to it (revoke/disable that secret
+        // → this token dies).
+        let credentials = self
+            .credential_repo
+            .list_enabled_by_app(&app_id)
+            .await
+            .map_err(|_| invalid())?;
+        let mut matched: Option<&_> = None;
+        for credential in &credentials {
+            if self
+                .hash_service
+                .verify_secret(&secret, credential.secret_hash())
+                .await?
+            {
+                matched = Some(credential);
+            }
         }
+        let matched = matched.ok_or_else(invalid)?;
 
         let token = Uuid::new_v4().to_string();
         let app_token = AppToken::create(
             app_id,
+            matched.id().clone(),
             token.clone(),
             Duration::days(DEFAULT_APP_TOKEN_DURATION_DAYS),
         );

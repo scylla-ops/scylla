@@ -49,7 +49,7 @@ pub enum Permission {
     UpdatePipeline(PipelineId),
     DeletePipeline(PipelineId),
     RunPipeline(PipelineId),
-    /// A worker App executing the jobs of a pipeline (distinct from a user
+    /// A agent App executing the jobs of a pipeline (distinct from a user
     /// triggering a run via `RunPipeline`).
     ExecuteJob(PipelineId),
     ListPipelines,
@@ -67,7 +67,7 @@ pub enum Permission {
     ListJobsByOrganization(OrganizationId),
     ReadJobLogs(JobId),
     WriteJobLogs(JobId),
-    /// A worker App reporting a job's status / appending its logs while it runs.
+    /// A agent App reporting a job's status / appending its logs while it runs.
     WriteJobStatus(JobId),
     WriteJobLog(JobId),
 
@@ -77,12 +77,12 @@ pub enum Permission {
     DeleteApp(AppId),
     ListAppsByOrganization(OrganizationId),
 
-    // ── worker (specialized apps that run jobs) ─────────────────────────
-    CreateWorker(OrganizationId),
-    ListWorkers(OrganizationId),
-    ReadWorker(AppId),
-    ReadWorkerStats(AppId),
-    DeleteWorker(AppId),
+    // ── agent (specialized apps that run jobs) ─────────────────────────
+    CreateAgent(OrganizationId),
+    ListAgents(OrganizationId),
+    ReadAgent(AppId),
+    ReadAgentStats(AppId),
+    DeleteAgent(AppId),
 
     // ── grants / policies / roles ──────────────────────────────────────
     /// System-scoped grant management (admin / service): manage any grant.
@@ -157,11 +157,11 @@ impl Permission {
             Self::DeleteApp(_) => "deleteApp",
             Self::ListAppsByOrganization(_) => "listAppsByOrganization",
 
-            Self::CreateWorker(_) => "createWorker",
-            Self::ListWorkers(_) => "listWorkers",
-            Self::ReadWorker(_) => "readWorker",
-            Self::ReadWorkerStats(_) => "readWorkerStats",
-            Self::DeleteWorker(_) => "deleteWorker",
+            Self::CreateAgent(_) => "createAgent",
+            Self::ListAgents(_) => "listAgents",
+            Self::ReadAgent(_) => "readAgent",
+            Self::ReadAgentStats(_) => "readAgentStats",
+            Self::DeleteAgent(_) => "deleteAgent",
 
             Self::ManageGrants
             | Self::ManageOrgGrants(_)
@@ -210,8 +210,8 @@ impl Permission {
             | Self::ListJobsByOrganization(id)
             | Self::CreateApp(id)
             | Self::ListAppsByOrganization(id)
-            | Self::CreateWorker(id)
-            | Self::ListWorkers(id)
+            | Self::CreateAgent(id)
+            | Self::ListAgents(id)
             | Self::ManageOrgGrants(id) => ResourceRef::Organization(id.clone()),
 
             // Project-targeted
@@ -245,7 +245,7 @@ impl Permission {
 
             Self::ReadApp(id) | Self::DeleteApp(id) => ResourceRef::App(id.clone()),
 
-            Self::ReadWorker(id) | Self::ReadWorkerStats(id) | Self::DeleteWorker(id) => {
+            Self::ReadAgent(id) | Self::ReadAgentStats(id) | Self::DeleteAgent(id) => {
                 ResourceRef::App(id.clone())
             }
         }

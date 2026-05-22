@@ -5,7 +5,7 @@ use crate::grpc::mappers::{
 };
 use scylla_core::application::{
     DispatchOutcome, DispatchUseCases, JobRepository, PermissionService, PipelineRepository,
-    PipelineUseCases, ProjectRepository, WorkerDispatch,
+    PipelineUseCases, ProjectRepository, AgentDispatch,
 };
 use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
 use scylla_core::domain::value_objects::pipeline::{NodeId, PipelineName};
@@ -24,7 +24,7 @@ pub struct PipelineHandler<
     PR: ProjectRepository,
     J: JobRepository,
     PS: PermissionService,
-    WD: WorkerDispatch,
+    WD: AgentDispatch,
 > {
     use_cases: Arc<PipelineUseCases<P, PR, J, PS>>,
     dispatch_uc: Arc<DispatchUseCases<WD, PS>>,
@@ -35,7 +35,7 @@ impl<
     PR: ProjectRepository,
     J: JobRepository,
     PS: PermissionService,
-    WD: WorkerDispatch,
+    WD: AgentDispatch,
 > PipelineHandler<P, PR, J, PS, WD>
 {
     pub fn new(
@@ -55,7 +55,7 @@ impl<
     PR: ProjectRepository + Send + Sync + 'static,
     J: JobRepository + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
-    WD: WorkerDispatch + Send + Sync + 'static,
+    WD: AgentDispatch + Send + Sync + 'static,
 > PipelineService for PipelineHandler<P, PR, J, PS, WD>
 {
     async fn create_pipeline(
@@ -256,21 +256,21 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        // Hand the job to a connected, authorized worker. Best-effort: the job
-        // is already persisted, so a missing worker leaves it pending rather
-        // than failing the request (the use case logs the no-worker case).
+        // Hand the job to a connected, authorized agent. Best-effort: the job
+        // is already persisted, so a missing agent leaves it pending rather
+        // than failing the request (the use case logs the no-agent case).
         match self.dispatch_uc.dispatch_job(&pipeline_id, &dispatch).await {
             Ok(DispatchOutcome::Dispatched(app_id)) => {
-                tracing::info!(job_id = %job.id(), %app_id, "job dispatched to worker");
-                // Record attribution for worker stats. Best-effort: the job ran
+                tracing::info!(job_id = %job.id(), %app_id, "job dispatched to agent");
+                // Record attribution for agent stats. Best-effort: the job ran
                 // regardless, so a failed write must not fail the request.
-                if let Err(e) = self.use_cases.assign_worker(job.id(), &app_id).await {
-                    tracing::warn!(job_id = %job.id(), %app_id, error = %e, "failed to record job worker attribution");
+                if let Err(e) = self.use_cases.assign_agent(job.id(), &app_id).await {
+                    tracing::warn!(job_id = %job.id(), %app_id, error = %e, "failed to record job agent attribution");
                 }
             }
-            Ok(DispatchOutcome::NoWorkerAvailable) => {}
+            Ok(DispatchOutcome::NoAgentAvailable) => {}
             Err(e) => {
-                tracing::warn!(job_id = %job.id(), error = %e, "worker dispatch failed; job left pending");
+                tracing::warn!(job_id = %job.id(), error = %e, "agent dispatch failed; job left pending");
             }
         }
 

@@ -6,7 +6,7 @@ pub mod streaming;
 pub use handlers::{
     AppAuthHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler,
     OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler, UserHandler,
-    WorkerAdminHandler, WorkerHandler,
+    AgentAdminHandler, AgentHandler,
 };
 #[cfg(feature = "signup")]
 pub use handlers::RegistrationHandler;

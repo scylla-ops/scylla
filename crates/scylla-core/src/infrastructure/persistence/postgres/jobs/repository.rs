@@ -40,8 +40,8 @@ impl JobRepository for PgJobRepository {
     }
 
     #[instrument(skip(self), fields(job_id = %job_id, app_id = %app_id))]
-    async fn set_worker(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
-        queries::set_worker(&self.pool, job_id, app_id).await
+    async fn set_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
+        queries::set_agent(&self.pool, job_id, app_id).await
     }
 
     #[instrument(skip(self), fields(job_id = %id))]
@@ -114,7 +114,7 @@ struct JobRow {
     pipeline_id: String,
     status: String,
     node_executions: Json<Vec<JobNode>>,
-    worker_app_id: Option<String>,
+    agent_app_id: Option<String>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     started_at: Option<DateTime<Utc>>,
@@ -130,7 +130,7 @@ impl TryFrom<JobRow> for Job {
             PipelineId::new(r.pipeline_id),
             status,
             r.node_executions.0,
-            r.worker_app_id.map(AppId::new),
+            r.agent_app_id.map(AppId::new),
             r.created_at,
             r.updated_at,
             r.started_at,
@@ -150,14 +150,14 @@ pub mod queries {
         let nodes = Json(job.node_executions().to_vec());
         sqlx::query!(
             r#"
-            INSERT INTO jobs (id, pipeline_id, status, node_executions, worker_app_id, created_at, updated_at, started_at, finished_at)
+            INSERT INTO jobs (id, pipeline_id, status, node_executions, agent_app_id, created_at, updated_at, started_at, finished_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             "#,
             job.id().as_str(),
             job.pipeline_id().as_str(),
             job.status().as_str(),
             nodes as _,
-            job.worker_app_id().map(AppId::as_str),
+            job.agent_app_id().map(AppId::as_str),
             job.created_at(),
             job.updated_at(),
             job.started_at(),
@@ -169,14 +169,14 @@ pub mod queries {
         Ok(job.clone())
     }
 
-    /// Targeted attribution write: set only `worker_app_id` so it can't clobber
-    /// concurrent status / node_executions updates from the worker stream.
-    pub async fn set_worker<'e, E>(executor: E, job_id: &JobId, app_id: &AppId) -> DomainResult<()>
+    /// Targeted attribution write: set only `agent_app_id` so it can't clobber
+    /// concurrent status / node_executions updates from the agent stream.
+    pub async fn set_agent<'e, E>(executor: E, job_id: &JobId, app_id: &AppId) -> DomainResult<()>
     where
         E: PgExecutor<'e>,
     {
         sqlx::query!(
-            "UPDATE jobs SET worker_app_id = $2 WHERE id = $1",
+            "UPDATE jobs SET agent_app_id = $2 WHERE id = $1",
             job_id.as_str(),
             app_id.as_str(),
         )
@@ -195,7 +195,7 @@ pub mod queries {
             r#"
             SELECT id, pipeline_id, status,
                    node_executions AS "node_executions: Json<Vec<JobNode>>",
-                   worker_app_id,
+                   agent_app_id,
                    created_at, updated_at, started_at, finished_at
             FROM jobs
             WHERE id = $1
@@ -314,7 +314,7 @@ pub mod queries {
                 r#"
                 SELECT id, pipeline_id, status,
                        node_executions AS "node_executions: Json<Vec<JobNode>>",
-                       worker_app_id,
+                       agent_app_id,
                        created_at, updated_at, started_at, finished_at
                 FROM jobs
                 ORDER BY created_at DESC
@@ -331,7 +331,7 @@ pub mod queries {
                 r#"
                 SELECT id, pipeline_id, status,
                        node_executions AS "node_executions: Json<Vec<JobNode>>",
-                       worker_app_id,
+                       agent_app_id,
                        created_at, updated_at, started_at, finished_at
                 FROM jobs
                 WHERE pipeline_id = $1
@@ -350,7 +350,7 @@ pub mod queries {
                 r#"
                 SELECT j.id, j.pipeline_id, j.status,
                        j.node_executions AS "node_executions: Json<Vec<JobNode>>",
-                       j.worker_app_id,
+                       j.agent_app_id,
                        j.created_at, j.updated_at, j.started_at, j.finished_at
                 FROM jobs j
                 JOIN pipelines p ON p.id = j.pipeline_id
@@ -370,7 +370,7 @@ pub mod queries {
                 r#"
                 SELECT j.id, j.pipeline_id, j.status,
                        j.node_executions AS "node_executions: Json<Vec<JobNode>>",
-                       j.worker_app_id,
+                       j.agent_app_id,
                        j.created_at, j.updated_at, j.started_at, j.finished_at
                 FROM jobs j
                 JOIN pipelines p ON p.id = j.pipeline_id

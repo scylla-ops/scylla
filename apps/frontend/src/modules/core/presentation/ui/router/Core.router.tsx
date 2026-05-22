@@ -15,8 +15,8 @@ import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/u
 import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
 import { AppsPage } from '@/modules/features/apps/presentation/ui/Apps.page.tsx';
 import { AppDetailsPage } from '@/modules/features/apps/presentation/ui/AppDetails.page.tsx';
-import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.page.tsx';
-import { WorkerDetailsPage } from '@/modules/features/workers/presentation/ui/WorkerDetails.page.tsx';
+import { AgentsPage } from '@/modules/features/agents/presentation/ui/Agents.page.tsx';
+import { AgentDetailsPage } from '@/modules/features/agents/presentation/ui/AgentDetails.page.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
 
@@ -114,20 +114,20 @@ export const CoreRouter = createBrowserRouter([
                 ],
               },
               {
-                path: 'workers',
+                path: 'agents',
                 children: [
                   {
                     index: true,
-                    element: <WorkersPage />,
+                    element: <AgentsPage />,
                     handle: {
-                      breadcrumb: () => 'Workers',
+                      breadcrumb: () => 'Agents',
                     },
                   },
                   {
-                    path: ':workerId',
-                    element: <WorkerDetailsPage />,
+                    path: ':agentId',
+                    element: <AgentDetailsPage />,
                     handle: {
-                      breadcrumb: () => 'Worker details',
+                      breadcrumb: () => 'Agent details',
                     },
                   },
                 ],

@@ -3,7 +3,7 @@ syntax = "proto3";
 package app;
 
 // Management of machine Apps (agents / automations) owned by an organization.
-// An App authenticates with an app token and acts under a worker grant on its
+// An App authenticates with an app token and acts under a agent grant on its
 // org. Creating one returns the plaintext secret exactly once — it is never
 // stored or retrievable again. Authorization is org-scoped: the caller must
 // hold the matching app permission on the target organization / app.
@@ -12,6 +12,17 @@ service AppService {
   rpc GetApp(GetAppRequest)       returns (App);
   rpc ListApps(ListAppsRequest)   returns (ListAppsResponse);
   rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse);
+  // Enable / disable the whole App. Disabling rejects auth and cuts every
+  // active token across all its secrets at once (interceptor checks is_active).
+  rpc SetAppActive(SetAppActiveRequest) returns (App);
+
+  // Secrets. An App can hold several; the plaintext of any *enabled* one
+  // authenticates. Creating one (regen) returns the plaintext exactly once.
+  // Revoking deletes it; disabling keeps it but rejects it at auth.
+  rpc CreateAppSecret(CreateAppSecretRequest)         returns (CreatedAppSecret);
+  rpc ListAppSecrets(ListAppSecretsRequest)           returns (ListAppSecretsResponse);
+  rpc RevokeAppSecret(RevokeAppSecretRequest)         returns (RevokeAppSecretResponse);
+  rpc SetAppSecretEnabled(SetAppSecretEnabledRequest) returns (AppSecret);
 }
 
 message App {
@@ -21,8 +32,8 @@ message App {
   bool   is_active       = 4;
   string created_at      = 5; // RFC 3339
   string updated_at      = 6; // RFC 3339
-  // (field 7 `connected` removed — presence is a Worker concept now, exposed by
-  //  worker_admin.WorkerAdminService, not on a generic App.)
+  // (field 7 `connected` removed — presence is a Agent concept now, exposed by
+  //  agent_admin.AgentAdminService, not on a generic App.)
 }
 
 message CreateAppRequest {
@@ -54,6 +65,54 @@ message DeleteAppRequest {
 
 message DeleteAppResponse {
   bool deleted = 1;
+}
+
+message SetAppActiveRequest {
+  string app_id = 1;
+  bool   active = 2;
+}
+
+// Metadata for one App secret. Never carries the plaintext (only shown once at
+// creation, via CreatedAppSecret).
+message AppSecret {
+  string id         = 1;
+  string app_id     = 2;
+  string label      = 3;
+  bool   enabled    = 4;
+  string created_at = 5; // RFC 3339
+  string updated_at = 6; // RFC 3339
+}
+
+message CreateAppSecretRequest {
+  string app_id = 1;
+  string label  = 2;
+}
+
+// The newly created secret plus its plaintext, shown exactly once.
+message CreatedAppSecret {
+  AppSecret credential = 1;
+  string    secret     = 2;
+}
+
+message ListAppSecretsRequest {
+  string app_id = 1;
+}
+
+message ListAppSecretsResponse {
+  repeated AppSecret secrets = 1;
+}
+
+message RevokeAppSecretRequest {
+  string secret_id = 1;
+}
+
+message RevokeAppSecretResponse {
+  bool deleted = 1;
+}
+
+message SetAppSecretEnabledRequest {
+  string secret_id = 1;
+  bool   enabled   = 2;
 }
 
 // Public credential exchange: an App presents its id + secret and receives a

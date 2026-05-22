@@ -54,7 +54,7 @@ serde.workspace = true
 serde_json.workspace = true
 humantime-serde.workspace = true
 
-# messaging: gRPC types for the in-process worker stream + live-tail
+# messaging: gRPC types for the in-process agent stream + live-tail
 tonic.workspace = true
 
 # infrastructure optional services

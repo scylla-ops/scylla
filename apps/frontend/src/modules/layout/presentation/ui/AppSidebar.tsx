@@ -63,8 +63,8 @@ const useNavSections = (): NavSectionModel[] => {
               icon: HardDriveIcon,
             },
             {
-              title: 'Workers',
-              url: `${prefix}/workers`,
+              title: 'Agents',
+              url: `${prefix}/agents`,
               icon: CpuIcon,
             },
           ],

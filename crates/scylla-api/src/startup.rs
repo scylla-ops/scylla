@@ -5,7 +5,7 @@ use scylla_core::application::{
     AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, DispatchUseCases,
     GrantUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases, OrganizationUseCases,
     PipelineUseCases, PolicyUseCases, ProjectUseCases, UserRoleUseCases, UserUseCases,
-    WorkerUseCases,
+    AgentUseCases,
 };
 #[cfg(feature = "signup")]
 use scylla_core::application::SignupUseCases;
@@ -26,12 +26,12 @@ use scylla_core::infrastructure::{GitHubOAuthProvider, PgOAuthIdentityRepository
 #[cfg(all(not(feature = "signup"), feature = "oauth-github"))]
 use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
-    Argon2HashService, CedarPermissionService, InMemoryJobLogStream, InMemoryWorkerRegistry,
-    PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
+    Argon2HashService, CedarPermissionService, InMemoryJobLogStream, InMemoryAgentRegistry,
+    PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
     PgGrantRepository, PgJobLogRepository, PgJobRepository, PgOrganizationRepository,
     PgPipelineRepository, PgPolicyRepository, PgProjectRepository, PgSessionRepository,
     PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository, PgUserRoleRepository,
-    PgWorkerRepository,
+    PgAgentRepository,
 };
 #[cfg(feature = "signup")]
 use scylla_core::infrastructure::PgSignupRepository;
@@ -105,15 +105,22 @@ pub type SharedJobUc = Arc<JobUseCases<PgJobRepository, PermissionChecker>>;
 pub type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
 pub type SharedJobLogStreamUc =
     Arc<JobLogStreamUseCase<PgJobLogRepository, InMemoryJobLogStream, PermissionChecker>>;
-pub type SharedAppUc =
-    Arc<AppUseCases<PgAppRepository, Argon2HashService, PermissionChecker>>;
-pub type SharedAppTokenUc =
-    Arc<AppTokenUseCases<PgAppRepository, PgAppTokenRepository, Argon2HashService>>;
-pub type SharedDispatchUc = Arc<DispatchUseCases<InMemoryWorkerRegistry, PermissionChecker>>;
-pub type SharedWorkerUc = Arc<
-    WorkerUseCases<
+pub type SharedAppUc = Arc<
+    AppUseCases<PgAppRepository, PgAppCredentialRepository, Argon2HashService, PermissionChecker>,
+>;
+pub type SharedAppTokenUc = Arc<
+    AppTokenUseCases<
         PgAppRepository,
-        PgWorkerRepository,
+        PgAppTokenRepository,
+        PgAppCredentialRepository,
+        Argon2HashService,
+    >,
+>;
+pub type SharedDispatchUc = Arc<DispatchUseCases<InMemoryAgentRegistry, PermissionChecker>>;
+pub type SharedAgentUc = Arc<
+    AgentUseCases<
+        PgAppRepository,
+        PgAgentRepository,
         Argon2HashService,
         PermissionChecker,
         PermissionChecker,
@@ -140,10 +147,10 @@ pub struct Services {
     pub job_log_stream_uc: SharedJobLogStreamUc,
     pub app_uc: SharedAppUc,
     pub app_token_uc: SharedAppTokenUc,
-    pub worker_uc: SharedWorkerUc,
-    pub worker_repo: Arc<PgWorkerRepository>,
+    pub agent_uc: SharedAgentUc,
+    pub agent_repo: Arc<PgAgentRepository>,
     pub dispatch_uc: SharedDispatchUc,
-    pub worker_registry: Arc<InMemoryWorkerRegistry>,
+    pub agent_registry: Arc<InMemoryAgentRegistry>,
     pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
     pub policy_uc: SharedPolicyUc,
@@ -167,8 +174,9 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let job_repo = Arc::new(PgJobRepository::new(db.clone()));
     let job_log_repo = Arc::new(PgJobLogRepository::new(db.clone()));
     let app_repo = Arc::new(PgAppRepository::new(db.clone()));
+    let app_credential_repo = Arc::new(PgAppCredentialRepository::new(db.clone()));
     let app_token_repo = Arc::new(PgAppTokenRepository::new(db.clone()));
-    let worker_repo = Arc::new(PgWorkerRepository::new(db.clone()));
+    let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
     #[cfg(any(feature = "signup", feature = "oauth-github"))]
     let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
@@ -249,29 +257,31 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     ));
     let app_uc = Arc::new(AppUseCases::new(
         app_repo.clone(),
+        app_credential_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
     ));
     let app_token_uc = Arc::new(AppTokenUseCases::new(
         app_repo.clone(),
         app_token_repo.clone(),
+        app_credential_repo.clone(),
         hash_service.clone(),
     ));
     // Built here (before grant_uc) so revoking an app's grant can disconnect it.
-    let worker_registry = Arc::new(InMemoryWorkerRegistry::new());
-    let worker_uc = Arc::new(WorkerUseCases::new(
+    let agent_registry = Arc::new(InMemoryAgentRegistry::new());
+    let agent_uc = Arc::new(AgentUseCases::new(
         app_repo.clone(),
-        worker_repo.clone(),
+        agent_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        worker_registry.clone(),
+        agent_registry.clone(),
     ));
     let grant_uc = Arc::new(GrantUseCases::new(
         grant_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        worker_registry.clone(),
+        agent_registry.clone(),
     ));
     let policy_uc = Arc::new(PolicyUseCases::new(
         policy_repo.clone(),
@@ -332,9 +342,9 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         None => None,
     };
 
-    // In-process worker dispatch + job-log live-tail (mono-instance): jobs are
-    // pushed to a connected worker's stream and log lines fan out through a
-    // per-job broadcast. No message broker. (worker_registry is built above.)
+    // In-process agent dispatch + job-log live-tail (mono-instance): jobs are
+    // pushed to a connected agent's stream and log lines fan out through a
+    // per-job broadcast. No message broker. (agent_registry is built above.)
     let job_log_stream = Arc::new(InMemoryJobLogStream::new());
     let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
         job_log_repo.clone(),
@@ -342,7 +352,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
     ));
     let dispatch_uc = Arc::new(DispatchUseCases::new(
-        worker_registry.clone(),
+        agent_registry.clone(),
         permission_checker.clone(),
     ));
 
@@ -364,10 +374,10 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         job_log_stream_uc,
         app_uc,
         app_token_uc,
-        worker_uc,
-        worker_repo,
+        agent_uc,
+        agent_repo,
         dispatch_uc,
-        worker_registry,
+        agent_registry,
         job_log_stream,
         grant_uc,
         policy_uc,
@@ -463,7 +473,7 @@ where
     use crate::grpc::{
         AppAuthHandler, AppHandler, AuthHandler, ConfigHandler, GrantHandler, JobHandler,
         OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler, RoleHandler,
-        UserHandler, WorkerAdminHandler, WorkerHandler, auth_interceptor::AuthInterceptor,
+        UserHandler, AgentAdminHandler, AgentHandler, auth_interceptor::AuthInterceptor,
     };
     #[cfg(feature = "signup")]
     use crate::grpc::RegistrationHandler;
@@ -484,8 +494,8 @@ where
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         user::user_service_server::UserServiceServer,
-        worker::worker_service_server::WorkerServiceServer,
-        worker_admin::worker_admin_service_server::WorkerAdminServiceServer,
+        agent::agent_service_server::AgentServiceServer,
+        agent_admin::agent_admin_service_server::AgentAdminServiceServer,
     };
     #[cfg(feature = "signup")]
     use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
@@ -517,14 +527,14 @@ where
     );
     let app_handler = AppHandler::new(services.app_uc.clone());
     let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
-    let worker_handler = WorkerHandler::new(
-        services.worker_registry.clone(),
+    let agent_handler = AgentHandler::new(
+        services.agent_registry.clone(),
         services.job_log_stream.clone(),
         services.job_uc.clone(),
         services.job_log_uc.clone(),
-        services.worker_repo.clone(),
+        services.agent_repo.clone(),
     );
-    let worker_admin_handler = WorkerAdminHandler::new(services.worker_uc.clone());
+    let agent_admin_handler = AgentAdminHandler::new(services.agent_uc.clone());
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
@@ -594,15 +604,15 @@ where
         .layer(auth_interceptor.clone())
         .service(AppServiceServer::new(app_handler));
 
-    // Authenticated worker stream (app token). Presence = the open stream.
-    let worker_service = ServiceBuilder::new()
+    // Authenticated agent stream (app token). Presence = the open stream.
+    let agent_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
-        .service(WorkerServiceServer::new(worker_handler));
+        .service(AgentServiceServer::new(agent_handler));
 
-    // Authenticated worker management + introspection (dashboard).
-    let worker_admin_service = ServiceBuilder::new()
+    // Authenticated agent management + introspection (dashboard).
+    let agent_admin_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
-        .service(WorkerAdminServiceServer::new(worker_admin_handler));
+        .service(AgentAdminServiceServer::new(agent_admin_handler));
 
     let policy_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -637,8 +647,8 @@ where
         .add_service(pipeline_service)
         .add_service(job_service)
         .add_service(app_service)
-        .add_service(worker_service)
-        .add_service(worker_admin_service)
+        .add_service(agent_service)
+        .add_service(agent_admin_service)
         .add_service(policy_service)
         .add_service(grant_service)
         .add_service(role_service);
