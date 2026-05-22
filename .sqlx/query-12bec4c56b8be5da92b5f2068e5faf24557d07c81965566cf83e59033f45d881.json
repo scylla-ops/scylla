@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE cedar_policies SET description = $2, text = $3, enabled = $4, updated_at = $5 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Bool",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "12bec4c56b8be5da92b5f2068e5faf24557d07c81965566cf83e59033f45d881"
+}

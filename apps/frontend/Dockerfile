@@ -2,6 +2,12 @@
 
 FROM node:22-alpine AS build
 
+# Provide protoc on PATH so @protobuf-ts/protoc uses the system binary instead
+# of downloading a release from GitHub at build time (which fails offline / on
+# flaky networks with "socket hang up"). Our protos are proto3 and only import
+# local files, so the system protoc needs no bundled well-known-types includes.
+RUN apk add --no-cache protobuf
+
 RUN corepack enable
 
 ENV PNPM_HOME=/pnpm \

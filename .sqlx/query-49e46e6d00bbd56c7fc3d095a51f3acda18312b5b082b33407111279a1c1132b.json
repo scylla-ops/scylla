@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM user_roles WHERE user_id = $1 AND role_name = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "49e46e6d00bbd56c7fc3d095a51f3acda18312b5b082b33407111279a1c1132b"
+}

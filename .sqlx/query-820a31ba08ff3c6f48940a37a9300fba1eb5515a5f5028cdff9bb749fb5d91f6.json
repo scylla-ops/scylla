@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, principal_kind, principal_id, role_name, scope_kind, scope_id FROM permission_grants",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "principal_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "principal_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "role_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "scope_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "scope_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "820a31ba08ff3c6f48940a37a9300fba1eb5515a5f5028cdff9bb749fb5d91f6"
+}
