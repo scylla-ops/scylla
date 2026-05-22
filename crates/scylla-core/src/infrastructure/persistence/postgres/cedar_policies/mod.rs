@@ -3,7 +3,7 @@ use crate::domain::entities::CedarPolicyId;
 use crate::domain::errors::{DomainError, DomainResult};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use tracing::instrument;
 
 /// Persistence for runtime Cedar policies (`cedar_policies` table). Read on every
@@ -24,58 +24,92 @@ impl PgPolicyRepository {
 impl PolicyRepository for PgPolicyRepository {
     #[instrument(skip(self))]
     async fn list_enabled(&self) -> DomainResult<Vec<PolicyDefinition>> {
-        let rows = sqlx::query(
+        let rows = sqlx::query!(
             "SELECT id, description, text, enabled, created_by, created_at, updated_at \
              FROM cedar_policies WHERE enabled = TRUE",
         )
         .fetch_all(&self.pool)
         .await
         .map_err(infra)?;
-        rows.iter().map(row_to_policy).collect()
+        Ok(rows
+            .into_iter()
+            .map(|r| {
+                to_policy(
+                    r.id,
+                    r.description,
+                    r.text,
+                    r.enabled,
+                    r.created_by,
+                    r.created_at,
+                    r.updated_at,
+                )
+            })
+            .collect())
     }
 
     #[instrument(skip(self))]
     async fn list_all(&self) -> DomainResult<Vec<PolicyDefinition>> {
-        let rows = sqlx::query(
+        let rows = sqlx::query!(
             "SELECT id, description, text, enabled, created_by, created_at, updated_at \
              FROM cedar_policies ORDER BY created_at DESC",
         )
         .fetch_all(&self.pool)
         .await
         .map_err(infra)?;
-        rows.iter().map(row_to_policy).collect()
+        Ok(rows
+            .into_iter()
+            .map(|r| {
+                to_policy(
+                    r.id,
+                    r.description,
+                    r.text,
+                    r.enabled,
+                    r.created_by,
+                    r.created_at,
+                    r.updated_at,
+                )
+            })
+            .collect())
     }
 
     #[instrument(skip(self))]
     async fn get(&self, id: &CedarPolicyId) -> DomainResult<PolicyDefinition> {
-        let row = sqlx::query(
+        let row = sqlx::query!(
             "SELECT id, description, text, enabled, created_by, created_at, updated_at \
              FROM cedar_policies WHERE id = $1",
+            id.as_str(),
         )
-        .bind(id.as_str())
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(infra)?;
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(infra)?;
         match row {
-            Some(r) => row_to_policy(&r),
+            Some(r) => Ok(to_policy(
+                r.id,
+                r.description,
+                r.text,
+                r.enabled,
+                r.created_by,
+                r.created_at,
+                r.updated_at,
+            )),
             None => Err(DomainError::not_found("CedarPolicy", id.as_str())),
         }
     }
 
     #[instrument(skip(self, policy), fields(policy_id = %policy.id))]
     async fn create(&self, policy: &PolicyDefinition) -> DomainResult<()> {
-        sqlx::query(
+        sqlx::query!(
             "INSERT INTO cedar_policies \
              (id, description, text, enabled, created_by, created_at, updated_at) \
              VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            policy.id.as_str(),
+            policy.description,
+            policy.text,
+            policy.enabled,
+            policy.created_by,
+            policy.created_at,
+            policy.updated_at,
         )
-        .bind(policy.id.as_str())
-        .bind(&policy.description)
-        .bind(&policy.text)
-        .bind(policy.enabled)
-        .bind(&policy.created_by)
-        .bind(policy.created_at)
-        .bind(policy.updated_at)
         .execute(&self.pool)
         .await
         .map_err(infra)?;
@@ -84,16 +118,16 @@ impl PolicyRepository for PgPolicyRepository {
 
     #[instrument(skip(self, policy), fields(policy_id = %policy.id))]
     async fn update(&self, policy: &PolicyDefinition) -> DomainResult<()> {
-        sqlx::query(
+        sqlx::query!(
             "UPDATE cedar_policies \
              SET description = $2, text = $3, enabled = $4, updated_at = $5 \
              WHERE id = $1",
+            policy.id.as_str(),
+            policy.description,
+            policy.text,
+            policy.enabled,
+            policy.updated_at,
         )
-        .bind(policy.id.as_str())
-        .bind(&policy.description)
-        .bind(&policy.text)
-        .bind(policy.enabled)
-        .bind(policy.updated_at)
         .execute(&self.pool)
         .await
         .map_err(infra)?;
@@ -102,8 +136,7 @@ impl PolicyRepository for PgPolicyRepository {
 
     #[instrument(skip(self))]
     async fn delete(&self, id: &CedarPolicyId) -> DomainResult<()> {
-        sqlx::query("DELETE FROM cedar_policies WHERE id = $1")
-            .bind(id.as_str())
+        sqlx::query!("DELETE FROM cedar_policies WHERE id = $1", id.as_str())
             .execute(&self.pool)
             .await
             .map_err(infra)?;
@@ -111,16 +144,24 @@ impl PolicyRepository for PgPolicyRepository {
     }
 }
 
-fn row_to_policy(r: &sqlx::postgres::PgRow) -> DomainResult<PolicyDefinition> {
-    Ok(PolicyDefinition {
-        id: CedarPolicyId::new(r.try_get::<String, _>("id").map_err(infra)?),
-        description: r.try_get("description").map_err(infra)?,
-        text: r.try_get("text").map_err(infra)?,
-        enabled: r.try_get("enabled").map_err(infra)?,
-        created_by: r.try_get("created_by").map_err(infra)?,
-        created_at: r.try_get::<DateTime<Utc>, _>("created_at").map_err(infra)?,
-        updated_at: r.try_get::<DateTime<Utc>, _>("updated_at").map_err(infra)?,
-    })
+fn to_policy(
+    id: String,
+    description: String,
+    text: String,
+    enabled: bool,
+    created_by: String,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+) -> PolicyDefinition {
+    PolicyDefinition {
+        id: CedarPolicyId::new(id),
+        description,
+        text,
+        enabled,
+        created_by,
+        created_at,
+        updated_at,
+    }
 }
 
 fn infra<E: std::fmt::Display>(e: E) -> DomainError {

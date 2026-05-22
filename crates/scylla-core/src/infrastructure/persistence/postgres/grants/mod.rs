@@ -3,7 +3,7 @@ use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
-use sqlx::{PgExecutor, PgPool, Row};
+use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 const SCOPE_ORGANIZATION: &str = "organization";
@@ -23,17 +23,17 @@ where
         GrantScope::Organization(id) => (SCOPE_ORGANIZATION, id.as_str()),
         GrantScope::Project(id) => (SCOPE_PROJECT, id.as_str()),
     };
-    sqlx::query(
+    sqlx::query!(
         "INSERT INTO permission_grants (id, principal_kind, principal_id, role_name, scope_kind, scope_id) \
          VALUES ($1, $2, $3, $4, $5, $6) \
          ON CONFLICT (principal_kind, principal_id, role_name, scope_kind, scope_id) DO NOTHING",
+        grant.id.as_str(),
+        grant.principal.kind(),
+        grant.principal.id(),
+        grant.role.as_str(),
+        scope_kind,
+        scope_id,
     )
-    .bind(&grant.id)
-    .bind(grant.principal.kind())
-    .bind(grant.principal.id())
-    .bind(grant.role.as_str())
-    .bind(scope_kind)
-    .bind(scope_id)
     .execute(executor)
     .await
     .map_err(infra)?;
@@ -58,7 +58,7 @@ impl PgGrantRepository {
 impl GrantRepository for PgGrantRepository {
     #[instrument(skip(self))]
     async fn list_all(&self) -> DomainResult<Vec<Grant>> {
-        let rows = sqlx::query(
+        let rows = sqlx::query!(
             "SELECT id, principal_kind, principal_id, role_name, scope_kind, scope_id \
              FROM permission_grants",
         )
@@ -66,26 +66,20 @@ impl GrantRepository for PgGrantRepository {
         .await
         .map_err(infra)?;
 
-        rows.iter()
+        rows.into_iter()
             .map(|r| {
-                let id: String = r.try_get("id").map_err(infra)?;
-                let principal_kind: String = r.try_get("principal_kind").map_err(infra)?;
-                let principal_id: String = r.try_get("principal_id").map_err(infra)?;
-                let role_name: String = r.try_get("role_name").map_err(infra)?;
-                let scope_kind: String = r.try_get("scope_kind").map_err(infra)?;
-                let scope_id: String = r.try_get("scope_id").map_err(infra)?;
-                let principal = match principal_kind.as_str() {
-                    PRINCIPAL_USER => GrantPrincipal::User(UserId::new(principal_id)),
-                    PRINCIPAL_APP => GrantPrincipal::App(AppId::new(principal_id)),
+                let principal = match r.principal_kind.as_str() {
+                    PRINCIPAL_USER => GrantPrincipal::User(UserId::new(r.principal_id)),
+                    PRINCIPAL_APP => GrantPrincipal::App(AppId::new(r.principal_id)),
                     other => {
                         return Err(DomainError::Infrastructure(format!(
                             "unknown grant principal_kind '{other}'"
                         )));
                     }
                 };
-                let scope = match scope_kind.as_str() {
-                    SCOPE_ORGANIZATION => GrantScope::Organization(OrganizationId::new(scope_id)),
-                    SCOPE_PROJECT => GrantScope::Project(ProjectId::new(scope_id)),
+                let scope = match r.scope_kind.as_str() {
+                    SCOPE_ORGANIZATION => GrantScope::Organization(OrganizationId::new(r.scope_id)),
+                    SCOPE_PROJECT => GrantScope::Project(ProjectId::new(r.scope_id)),
                     other => {
                         return Err(DomainError::Infrastructure(format!(
                             "unknown grant scope_kind '{other}'"
@@ -93,9 +87,9 @@ impl GrantRepository for PgGrantRepository {
                     }
                 };
                 Ok(Grant {
-                    id,
+                    id: r.id,
                     principal,
-                    role: RoleName::new(role_name)?,
+                    role: RoleName::new(r.role_name)?,
                     scope,
                 })
             })
@@ -109,8 +103,7 @@ impl GrantRepository for PgGrantRepository {
 
     #[instrument(skip(self))]
     async fn delete(&self, id: &str) -> DomainResult<()> {
-        sqlx::query("DELETE FROM permission_grants WHERE id = $1")
-            .bind(id)
+        sqlx::query!("DELETE FROM permission_grants WHERE id = $1", id)
             .execute(&self.pool)
             .await
             .map_err(infra)?;
