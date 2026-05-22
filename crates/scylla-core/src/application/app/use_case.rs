@@ -1,4 +1,5 @@
 use crate::application::HashService;
+use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::app::credential_repository::AppCredentialRepository;
 use crate::application::app::repository::AppRepository;
 use crate::application::caller::CallerContext;
@@ -49,6 +50,10 @@ where
     credential_repo: Arc<C>,
     hash_service: Arc<H>,
     permission_service: Arc<PS>,
+    /// Live agent-stream registry. Disabling/deleting an app drops its stream
+    /// here so a connected agent stops at once. No-op for apps that aren't
+    /// connected agents.
+    registry: Arc<dyn AgentDispatch>,
 }
 
 impl<A, C, H, PS> AppUseCases<A, C, H, PS>
@@ -117,8 +122,11 @@ where
         self.app_repo.delete(&id).await
     }
 
-    /// Enable or disable the whole app. Disabling cuts every active token (the
-    /// auth lookup filters on `is_active`) and blocks new token issuance.
+    /// Enable or disable the whole app. Disabling has three effects: new token
+    /// issuance is blocked and existing token lookups fail (the auth join filters
+    /// on `is_active`); every privileged action is denied at the permission
+    /// chokepoint, which re-checks `is_active` per request (so a live stream
+    /// can't keep acting); and any open agent stream is dropped immediately.
     #[instrument(skip(self, caller), fields(app_id = %id, active))]
     pub async fn set_active(
         &self,
@@ -130,6 +138,13 @@ where
             .check(caller, Permission::DeleteApp(id.clone()))
             .await?;
         self.app_repo.set_active(&id, active).await?;
+        // Cut the live stream on disable so a connected agent stops at once
+        // rather than running on its already-open connection. The per-action
+        // liveness re-check in the permission service is the durable guarantee;
+        // this just makes the effect instant and frees the registry slot.
+        if !active {
+            self.registry.disconnect(&id);
+        }
         self.app_repo.find_by_id(&id).await
     }
 

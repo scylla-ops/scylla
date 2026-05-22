@@ -1,12 +1,12 @@
 use crate::application::permission::entity_provider::{
     AuthzEntityProvider, PrincipalAuthz, ResourceAncestors,
 };
-use crate::domain::entities::{OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::ResourceRef;
 use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use tracing::instrument;
 
 /// Loads the authz facts Cedar needs from the existing membership tables and
@@ -28,47 +28,41 @@ impl PgAuthzEntityProvider {
 impl AuthzEntityProvider for PgAuthzEntityProvider {
     #[instrument(skip(self), fields(user_id = %user))]
     async fn principal_authz(&self, user: &UserId) -> DomainResult<PrincipalAuthz> {
-        let role_rows = sqlx::query("SELECT role_name FROM user_roles WHERE user_id = $1")
-            .bind(user.as_str())
-            .fetch_all(&self.pool)
-            .await
-            .map_err(infra)?;
+        let role_rows = sqlx::query!(
+            "SELECT role_name FROM user_roles WHERE user_id = $1",
+            user.as_str(),
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(infra)?;
         let roles = role_rows
-            .iter()
-            .map(|r| {
-                let name: String = r.try_get("role_name").map_err(infra)?;
-                RoleName::new(name)
-            })
+            .into_iter()
+            .map(|r| RoleName::new(r.role_name))
             .collect::<DomainResult<Vec<_>>>()?;
 
-        let org_rows =
-            sqlx::query("SELECT organization_id FROM user_organization WHERE user_id = $1")
-                .bind(user.as_str())
-                .fetch_all(&self.pool)
-                .await
-                .map_err(infra)?;
+        let org_rows = sqlx::query!(
+            "SELECT organization_id FROM user_organization WHERE user_id = $1",
+            user.as_str(),
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(infra)?;
         let member_orgs = org_rows
-            .iter()
-            .map(|r| -> DomainResult<OrganizationId> {
-                Ok(OrganizationId::new(
-                    r.try_get::<String, _>("organization_id").map_err(infra)?,
-                ))
-            })
-            .collect::<DomainResult<Vec<_>>>()?;
+            .into_iter()
+            .map(|r| OrganizationId::new(r.organization_id))
+            .collect();
 
-        let proj_rows = sqlx::query("SELECT project_id FROM user_project WHERE user_id = $1")
-            .bind(user.as_str())
-            .fetch_all(&self.pool)
-            .await
-            .map_err(infra)?;
+        let proj_rows = sqlx::query!(
+            "SELECT project_id FROM user_project WHERE user_id = $1",
+            user.as_str(),
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(infra)?;
         let member_projects = proj_rows
-            .iter()
-            .map(|r| -> DomainResult<ProjectId> {
-                Ok(ProjectId::new(
-                    r.try_get::<String, _>("project_id").map_err(infra)?,
-                ))
-            })
-            .collect::<DomainResult<Vec<_>>>()?;
+            .into_iter()
+            .map(|r| ProjectId::new(r.project_id))
+            .collect();
 
         Ok(PrincipalAuthz {
             roles,
@@ -81,92 +75,88 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
     async fn resource_ancestors(&self, resource: &ResourceRef) -> DomainResult<ResourceAncestors> {
         match resource {
             ResourceRef::Project(id) => {
-                let row = sqlx::query("SELECT organization_id FROM projects WHERE id = $1")
-                    .bind(id.as_str())
-                    .fetch_optional(&self.pool)
-                    .await
-                    .map_err(infra)?;
-                let organization = match row {
-                    Some(r) => Some(OrganizationId::new(
-                        r.try_get::<String, _>("organization_id").map_err(infra)?,
-                    )),
-                    None => None,
-                };
+                let row = sqlx::query!(
+                    "SELECT organization_id FROM projects WHERE id = $1",
+                    id.as_str(),
+                )
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(infra)?;
                 Ok(ResourceAncestors {
-                    organization,
+                    organization: row.map(|r| OrganizationId::new(r.organization_id)),
                     ..Default::default()
                 })
             }
             ResourceRef::Pipeline(id) => {
-                let row = sqlx::query(
-                    "SELECT pl.project_id, pr.organization_id \
+                // Joined columns: sqlx can't prove the inner join yields a row,
+                // so force NOT NULL with `!` — both FKs are NOT NULL in schema.
+                let row = sqlx::query!(
+                    "SELECT pl.project_id AS \"project_id!\", pr.organization_id AS \"organization_id!\" \
                      FROM pipelines pl JOIN projects pr ON pr.id = pl.project_id \
                      WHERE pl.id = $1",
+                    id.as_str(),
                 )
-                .bind(id.as_str())
                 .fetch_optional(&self.pool)
                 .await
                 .map_err(infra)?;
                 match row {
                     Some(r) => Ok(ResourceAncestors {
-                        organization: Some(OrganizationId::new(
-                            r.try_get::<String, _>("organization_id").map_err(infra)?,
-                        )),
-                        project: Some(ProjectId::new(
-                            r.try_get::<String, _>("project_id").map_err(infra)?,
-                        )),
+                        organization: Some(OrganizationId::new(r.organization_id)),
+                        project: Some(ProjectId::new(r.project_id)),
                         pipeline: None,
                     }),
                     None => Ok(ResourceAncestors::default()),
                 }
             }
             ResourceRef::Job(id) => {
-                let row = sqlx::query(
-                    "SELECT j.pipeline_id, pl.project_id, pr.organization_id \
+                let row = sqlx::query!(
+                    "SELECT j.pipeline_id AS \"pipeline_id!\", pl.project_id AS \"project_id!\", \
+                            pr.organization_id AS \"organization_id!\" \
                      FROM jobs j \
                      JOIN pipelines pl ON pl.id = j.pipeline_id \
                      JOIN projects pr ON pr.id = pl.project_id \
                      WHERE j.id = $1",
+                    id.as_str(),
                 )
-                .bind(id.as_str())
                 .fetch_optional(&self.pool)
                 .await
                 .map_err(infra)?;
                 match row {
                     Some(r) => Ok(ResourceAncestors {
-                        organization: Some(OrganizationId::new(
-                            r.try_get::<String, _>("organization_id").map_err(infra)?,
-                        )),
-                        project: Some(ProjectId::new(
-                            r.try_get::<String, _>("project_id").map_err(infra)?,
-                        )),
-                        pipeline: Some(PipelineId::new(
-                            r.try_get::<String, _>("pipeline_id").map_err(infra)?,
-                        )),
+                        organization: Some(OrganizationId::new(r.organization_id)),
+                        project: Some(ProjectId::new(r.project_id)),
+                        pipeline: Some(PipelineId::new(r.pipeline_id)),
                     }),
                     None => Ok(ResourceAncestors::default()),
                 }
             }
             ResourceRef::App(id) => {
-                let row = sqlx::query("SELECT organization_id FROM apps WHERE id = $1")
-                    .bind(id.as_str())
-                    .fetch_optional(&self.pool)
-                    .await
-                    .map_err(infra)?;
-                let organization = match row {
-                    Some(r) => Some(OrganizationId::new(
-                        r.try_get::<String, _>("organization_id").map_err(infra)?,
-                    )),
-                    None => None,
-                };
+                let row = sqlx::query!(
+                    "SELECT organization_id FROM apps WHERE id = $1",
+                    id.as_str(),
+                )
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(infra)?;
                 Ok(ResourceAncestors {
-                    organization,
+                    organization: row.map(|r| OrganizationId::new(r.organization_id)),
                     ..Default::default()
                 })
             }
             // System / User / Organization have no tenancy parents.
             _ => Ok(ResourceAncestors::default()),
         }
+    }
+
+    #[instrument(skip(self), fields(app_id = %app))]
+    async fn app_is_active(&self, app: &AppId) -> DomainResult<bool> {
+        let row = sqlx::query!("SELECT is_active FROM apps WHERE id = $1", app.as_str())
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(infra)?;
+        // No row → the App was deleted; treat as inactive so an in-flight stream
+        // from a now-removed App is denied rather than trusted.
+        Ok(row.is_some_and(|r| r.is_active))
     }
 }
 

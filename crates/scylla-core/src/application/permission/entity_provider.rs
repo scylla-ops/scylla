@@ -1,4 +1,4 @@
-use crate::domain::entities::{OrganizationId, PipelineId, ProjectId, UserId};
+use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::permission::ResourceRef;
 use crate::domain::value_objects::role::name::RoleName;
@@ -36,4 +36,11 @@ pub trait AuthzEntityProvider: Send + Sync {
     /// Ancestor chain for a resource. For `System` / `User` resources (no
     /// tenancy parents) this returns an empty `ResourceAncestors`.
     async fn resource_ancestors(&self, resource: &ResourceRef) -> DomainResult<ResourceAncestors>;
+
+    /// Whether a machine **App** principal is currently active: its row still
+    /// exists *and* its `is_active` flag is set. Re-checked on every
+    /// authorization so a disabled or deleted App is denied immediately — even
+    /// over a long-lived stream opened while it was still active. An unknown id
+    /// (deleted App) returns `false`.
+    async fn app_is_active(&self, app: &AppId) -> DomainResult<bool>;
 }

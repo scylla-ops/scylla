@@ -247,14 +247,76 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
 
         Ok((uid, entities))
     }
+
+    /// Emit both audit trails (the live `audit` tracing target + the persistent
+    /// store) for a single authorization verdict. Shared by the Cedar decision
+    /// path and the principal-liveness gate so every deny is recorded the same
+    /// way.
+    fn record_decision(
+        &self,
+        caller: &CallerContext,
+        perm: &Permission,
+        resource: &ResourceRef,
+        decision: AuditDecision,
+        reason: Option<String>,
+        policies: Vec<String>,
+    ) {
+        let (principal_kind, principal_id) = principal_parts(caller);
+        let (resource_kind, resource_id) = resource_parts(resource);
+
+        match decision {
+            AuditDecision::Allow => info!(
+                target: "audit",
+                who = %caller, action = perm.action(), resource = %resource,
+                decision = "allow", policies = ?policies, "action authorized"
+            ),
+            AuditDecision::Deny => warn!(
+                target: "audit",
+                who = %caller, action = perm.action(), resource = %resource,
+                decision = "deny", policies = ?policies, "action denied"
+            ),
+        }
+
+        self.audit.record(AuditEntry {
+            occurred_at: Utc::now(),
+            principal_kind,
+            principal_id,
+            action: perm.action(),
+            resource_kind,
+            resource_id,
+            decision,
+            policies,
+            reason,
+        });
+    }
 }
 
 #[async_trait]
 impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionService<EP> {
     #[instrument(skip(self, caller, perm), fields(caller = ?caller, action = perm.action()))]
     async fn check(&self, caller: &CallerContext, perm: Permission) -> DomainResult<bool> {
-        let (principal_uid, principal_entities) = self.principal_entities(caller).await?;
         let resource = perm.resource();
+
+        // Durable liveness gate: re-validate the principal on EVERY action, not
+        // just at stream-open / token-issue time. A long-lived agent stream
+        // otherwise keeps acting after its backing App is disabled or deleted.
+        // This `check` is the single chokepoint every privileged operation flows
+        // through, so the guarantee holds for streamed and one-shot calls alike.
+        if let CallerContext::App(app_id) = caller {
+            if !self.entity_provider.app_is_active(app_id).await? {
+                self.record_decision(
+                    caller,
+                    &perm,
+                    &resource,
+                    AuditDecision::Deny,
+                    Some("app principal is disabled or no longer exists".to_string()),
+                    Vec::new(),
+                );
+                return Err(DomainError::Forbidden("Permission denied".to_string()));
+            }
+        }
+
+        let (principal_uid, principal_entities) = self.principal_entities(caller).await?;
         let (resource_uid, resource_entities) = self.resource_entities(&resource).await?;
         let action_uid = euid("Scylla::Action", perm.action())?;
 
@@ -294,9 +356,6 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
             .reason()
             .map(ToString::to_string)
             .collect();
-        let (principal_kind, principal_id) = principal_parts(caller);
-        let (resource_kind, resource_id) = resource_parts(&resource);
-
         let (audit_decision, reason, result) = match response.decision() {
             Decision::Allow => (AuditDecision::Allow, None, Ok(true)),
             Decision::Deny => {
@@ -314,33 +373,7 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
             }
         };
 
-        // Live console trail (the `audit` tracing target) …
-        match audit_decision {
-            AuditDecision::Allow => info!(
-                target: "audit",
-                who = %caller, action = perm.action(), resource = %resource,
-                decision = "allow", policies = ?policies, "action authorized"
-            ),
-            AuditDecision::Deny => warn!(
-                target: "audit",
-                who = %caller, action = perm.action(), resource = %resource,
-                decision = "deny", policies = ?policies, "action denied"
-            ),
-        }
-
-        // … and the persistent trail (out-of-band insert).
-        self.audit.record(AuditEntry {
-            occurred_at: Utc::now(),
-            principal_kind,
-            principal_id,
-            action: perm.action(),
-            resource_kind,
-            resource_id,
-            decision: audit_decision,
-            policies,
-            reason,
-        });
-
+        self.record_decision(caller, &perm, &resource, audit_decision, reason, policies);
         result
     }
 }
@@ -521,6 +554,7 @@ mod tests {
     struct StubProvider {
         authz: PrincipalAuthz,
         ancestors: ResourceAncestors,
+        app_active: bool,
     }
 
     #[async_trait]
@@ -533,6 +567,9 @@ mod tests {
             _resource: &ResourceRef,
         ) -> DomainResult<ResourceAncestors> {
             Ok(self.ancestors.clone())
+        }
+        async fn app_is_active(&self, _app: &AppId) -> DomainResult<bool> {
+            Ok(self.app_active)
         }
     }
 
@@ -602,9 +639,33 @@ mod tests {
         policies: Vec<PolicyDefinition>,
     ) -> CedarPermissionService<StubProvider> {
         CedarPermissionService::new(
-            Arc::new(StubProvider { authz, ancestors }),
+            Arc::new(StubProvider {
+                authz,
+                ancestors,
+                app_active: true,
+            }),
             Arc::new(StubGrants(grants)),
             Arc::new(StubPolicies(policies)),
+            Arc::new(crate::application::audit::NoopAuditLog),
+        )
+        .await
+        .expect("schema + policies must parse, validate, and link")
+    }
+
+    /// Like `service`, but the App principal's backing row is disabled
+    /// (`app_is_active` → false). Exercises the liveness gate.
+    async fn service_app_inactive(
+        ancestors: ResourceAncestors,
+        grants: Vec<Grant>,
+    ) -> CedarPermissionService<StubProvider> {
+        CedarPermissionService::new(
+            Arc::new(StubProvider {
+                authz: PrincipalAuthz::default(),
+                ancestors,
+                app_active: false,
+            }),
+            Arc::new(StubGrants(grants)),
+            Arc::new(StubPolicies(vec![])),
             Arc::new(crate::application::audit::NoopAuditLog),
         )
         .await
@@ -759,6 +820,36 @@ mod tests {
                 .await
                 .is_err(),
             "agent role must not confer management actions"
+        );
+    }
+
+    #[tokio::test]
+    async fn disabled_app_denied_even_with_valid_grant() {
+        // Same grant + in-scope resource as the "allows execute" test, but the
+        // App's backing row is disabled. The per-action liveness gate in `check`
+        // must deny regardless of the otherwise-sufficient agent grant. This is
+        // the durable guarantee that a disabled worker cannot keep acting over
+        // an already-open stream.
+        let grant = Grant::new(
+            GrantPrincipal::App(AppId::new("agent-1")),
+            role(AGENT_ROLE),
+            GrantScope::Organization(OrganizationId::new("o1")),
+        );
+        let svc = service_app_inactive(
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::App(AppId::new("agent-1"));
+        assert!(
+            svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
+                .await
+                .is_err(),
+            "a disabled app must be denied even where its grant would otherwise allow"
         );
     }
 

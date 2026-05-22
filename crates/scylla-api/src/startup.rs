@@ -255,11 +255,15 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         job_log_repo.clone(),
         permission_checker.clone(),
     ));
+    // Built before app_uc/grant_uc so disabling, deleting, or revoking an app's
+    // grant can drop its live agent stream immediately.
+    let agent_registry = Arc::new(InMemoryAgentRegistry::new());
     let app_uc = Arc::new(AppUseCases::new(
         app_repo.clone(),
         app_credential_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
+        agent_registry.clone(),
     ));
     let app_token_uc = Arc::new(AppTokenUseCases::new(
         app_repo.clone(),
@@ -267,8 +271,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         app_credential_repo.clone(),
         hash_service.clone(),
     ));
-    // Built here (before grant_uc) so revoking an app's grant can disconnect it.
-    let agent_registry = Arc::new(InMemoryAgentRegistry::new());
     let agent_uc = Arc::new(AgentUseCases::new(
         app_repo.clone(),
         agent_repo.clone(),
