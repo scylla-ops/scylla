@@ -185,7 +185,10 @@ where
         self.credential_repo.list_by_app(&app_id).await
     }
 
-    /// Permanently remove a secret. Calls made with it stop authenticating.
+    /// Permanently remove a secret. Calls made with it stop authenticating, and
+    /// any agent currently streaming under this app is dropped at once so it
+    /// can't keep running on its already-open (token-authed) stream — it will
+    /// fail to re-auth on reconnect.
     #[instrument(skip(self, caller), fields(secret_id = %secret_id))]
     pub async fn revoke_secret(
         &self,
@@ -196,11 +199,18 @@ where
         self.permission_service
             .check(caller, Permission::DeleteApp(credential.app_id().clone()))
             .await?;
-        self.credential_repo.delete(&secret_id).await
+        self.credential_repo.delete(&secret_id).await?;
+        // Cut the live agent stream: it was authed once at open and isn't
+        // re-checked per message, so without this it keeps running. The registry
+        // is keyed by app id; a reconnect with a still-valid *other* secret
+        // re-registers, so this is safe for multi-secret apps.
+        self.registry.disconnect(credential.app_id());
+        Ok(())
     }
 
     /// Enable or disable a secret. A disabled secret is kept but rejected at
-    /// auth. Returns the updated record.
+    /// auth. Returns the updated record. Disabling also drops any live agent
+    /// stream of this app (see `revoke_secret`).
     #[instrument(skip(self, caller), fields(secret_id = %secret_id, enabled))]
     pub async fn set_secret_enabled(
         &self,
@@ -213,6 +223,9 @@ where
             .check(caller, Permission::DeleteApp(credential.app_id().clone()))
             .await?;
         self.credential_repo.set_enabled(&secret_id, enabled).await?;
+        if !enabled {
+            self.registry.disconnect(credential.app_id());
+        }
         self.credential_repo.find_by_id(&secret_id).await
     }
 }
