@@ -2,7 +2,7 @@ use crate::config::CoreConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_core::application::{
-    AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, DispatchUseCases,
+    AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases, DispatchUseCases,
     GrantUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases, OrganizationUseCases,
     PipelineUseCases, PolicyUseCases, ProjectUseCases, UserRoleUseCases, UserUseCases,
     AgentUseCases,
@@ -296,7 +296,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     ));
 
     if let Some(cfg) = &config.bootstrap {
-        crate::bootstrap::bootstrap_admin(&user_uc, user_role_repo.as_ref(), cfg).await?;
+        let bootstrap_uc = BootstrapUseCases::new(user_uc.clone(), role_uc.clone());
+        crate::bootstrap::bootstrap_admin(&bootstrap_uc, cfg).await?;
     }
 
     // Mailer: real SMTP when configured, else a no-op (logs only).

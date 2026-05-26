@@ -1,6 +1,7 @@
 pub mod app;
 pub mod audit;
 pub mod auth;
+pub mod bootstrap;
 pub mod caller;
 #[cfg(feature = "invitations")]
 pub mod invitation;
@@ -28,6 +29,7 @@ pub use app::{
 };
 pub use audit::{AuditDecision, AuditEntry, AuditLog, NoopAuditLog};
 pub use auth::{AuthUseCases, HashService, SessionRepository};
+pub use bootstrap::BootstrapUseCases;
 pub use caller::{CallerContext, ServiceIdentity};
 pub use job::{
     JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase, JobLogUseCases,
