@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{permission_from_key, resource_type_from_tag, ts};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
@@ -153,12 +154,15 @@ impl<
         Ok(Response::new(ListAuthzVocabularyResponse {
             actions: actions
                 .iter()
-                .map(|(id, resource_type)| AuthzAction {
-                    id: (*id).to_string(),
-                    resource_type: (*resource_type).to_string(),
+                .map(|(key, resource_type)| AuthzAction {
+                    permission: permission_from_key(key).map_or(0, |p| p as i32),
+                    resource_type: resource_type_from_tag(resource_type) as i32,
                 })
                 .collect(),
-            resource_types: resource_types.iter().map(|s| (*s).to_string()).collect(),
+            resource_types: resource_types
+                .iter()
+                .map(|s| resource_type_from_tag(s) as i32)
+                .collect(),
         }))
     }
 }
@@ -170,7 +174,7 @@ fn policy_to_proto(p: &PolicyDefinition) -> Policy {
         text: p.text.clone(),
         enabled: p.enabled,
         created_by: p.created_by.clone(),
-        created_at: p.created_at.to_rfc3339(),
-        updated_at: p.updated_at.to_rfc3339(),
+        created_at: ts(p.created_at),
+        updated_at: ts(p.updated_at),
     }
 }

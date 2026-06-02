@@ -6,6 +6,7 @@
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
 use scylla_protocol::services::common;
+use scylla_protocol::services::permission::{Permission, ResourceType};
 use tonic::Status;
 
 /// A proto wrapper message (`common.*Id` / `common.Email`) — a single `value`.
@@ -72,4 +73,88 @@ pub fn dt(ts: Option<Timestamp>) -> Option<DateTime<Utc>> {
         Utc.timestamp_opt(t.seconds, u32::try_from(t.nanos).unwrap_or(0))
             .single()
     })
+}
+
+// ── Authz enum ⇄ catalog-key conversions ─────────────────────────────────────
+// The proto `Permission` enum mirrors the backend `Permission` catalog: each
+// value's proto name is the SCREAMING_SNAKE form of the camelCase key
+// (`RUN_PIPELINE` ⇄ `runPipeline`). These transforms bridge the two; the
+// `permission_catalog_matches_proto` test guarantees the mapping is total.
+
+fn screaming_snake(camel: &str) -> String {
+    let mut out = String::new();
+    for ch in camel.chars() {
+        if ch.is_ascii_uppercase() {
+            out.push('_');
+        }
+        out.push(ch.to_ascii_uppercase());
+    }
+    out
+}
+
+fn camel_case(screaming: &str) -> String {
+    let mut out = String::new();
+    let mut upper_next = false;
+    for ch in screaming.chars() {
+        if ch == '_' {
+            upper_next = true;
+        } else if upper_next {
+            out.push(ch);
+            upper_next = false;
+        } else {
+            out.push(ch.to_ascii_lowercase());
+        }
+    }
+    out
+}
+
+/// The catalog key for a proto `Permission` (e.g. `RUN_PIPELINE` → `"runPipeline"`).
+/// `None` for the `UNSPECIFIED` sentinel.
+#[must_use]
+pub fn permission_key(p: Permission) -> Option<String> {
+    (p != Permission::Unspecified).then(|| camel_case(p.as_str_name()))
+}
+
+/// The proto `Permission` for a catalog key, or `None` if the key is unknown.
+#[must_use]
+pub fn permission_from_key(key: &str) -> Option<Permission> {
+    Permission::from_str_name(&screaming_snake(key))
+}
+
+/// The proto `ResourceType` for a resource-type tag (e.g. `"pipeline"` → `PIPELINE`).
+#[must_use]
+pub fn resource_type_from_tag(tag: &str) -> ResourceType {
+    ResourceType::from_str_name(&format!("RESOURCE_TYPE_{}", tag.to_ascii_uppercase()))
+        .unwrap_or(ResourceType::Unspecified)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use scylla_core::domain::value_objects::permission::{PERMISSION_CATALOG, RESOURCE_TYPES};
+
+    #[test]
+    fn permission_catalog_matches_proto_enum() {
+        // Every backend permission key round-trips through the proto enum, and
+        // every resource type maps to a concrete proto ResourceType. This is the
+        // single guard that the hand-written proto enum stays in sync with the
+        // code-owned catalog.
+        for (key, rt) in PERMISSION_CATALOG {
+            let p = permission_from_key(key)
+                .unwrap_or_else(|| panic!("no proto Permission for catalog key '{key}'"));
+            assert_eq!(
+                permission_key(p).as_deref(),
+                Some(*key),
+                "round-trip for {key}"
+            );
+            assert_ne!(
+                resource_type_from_tag(rt),
+                ResourceType::Unspecified,
+                "no proto ResourceType for '{rt}'"
+            );
+        }
+        for rt in RESOURCE_TYPES {
+            assert_ne!(resource_type_from_tag(rt), ResourceType::Unspecified);
+        }
+    }
 }

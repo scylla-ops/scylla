@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
@@ -8,9 +9,10 @@ use scylla_core::application::{
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::role::name::RoleName;
 use scylla_protocol::services::permission::{
-    CreateGrantRequest, Grant as ProtoGrant, GrantScopeKind, GrantableRole as ProtoGrantableRole,
+    CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
     ListGrantableRolesRequest, ListGrantableRolesResponse, ListGrantsRequest, ListGrantsResponse,
-    RevokeGrantRequest, RevokeGrantResponse, grant_service_server::GrantService,
+    RevokeGrantRequest, RevokeGrantResponse, Scope as ProtoScope,
+    grant_service_server::GrantService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -33,9 +35,9 @@ impl<
     ) -> Result<Response<ProtoGrant>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let user_id = UserId::new(&req.user_id);
+        let user_id = UserId::new(&required(req.user_id, "user_id")?);
         let role = RoleName::new(&req.role).map_err(domain_error_to_status)?;
-        let scope = scope_from_proto(req.scope_kind, &req.scope_id)?;
+        let scope = scope_from_proto(req.scope, &req.scope_id)?;
 
         let grant = Grant::new(Principal::User(user_id), role, scope);
         self.use_cases
@@ -71,7 +73,7 @@ impl<
         // Scope filter present → scoped listing (org/project/system admins of it).
         // Absent → list every grant (system admins only). The `scope_id` is
         // ignored for SYSTEM (singleton root) and used for org/project.
-        let grants = match req.scope_kind {
+        let grants = match req.scope {
             Some(kind) => {
                 let scope = scope_from_proto(kind, req.scope_id.as_deref().unwrap_or(""))?;
                 self.use_cases.list_by_scope(&caller, &scope).await
@@ -93,7 +95,7 @@ impl<
         // non-sensitive compile-time data, so no Cedar check is applied.
         let _caller = caller!(request);
         let req = request.into_inner();
-        let filter = req.scope_kind.map(scope_kind_from_proto).transpose()?;
+        let filter = req.scope.map(scope_kind_from_proto).transpose()?;
 
         Ok(Response::new(ListGrantableRolesResponse {
             roles: grantable_roles(filter)
@@ -104,60 +106,62 @@ impl<
     }
 }
 
-/// Map a proto `GrantScopeKind` discriminant to the id-free domain `ScopeKind`
-/// (used to filter the assignable-role catalog).
+/// Map a proto `Scope` discriminant to the id-free domain `ScopeKind` (used to
+/// filter the assignable-role catalog).
 fn scope_kind_from_proto(kind: i32) -> Result<ScopeKind, Status> {
-    match GrantScopeKind::try_from(kind) {
-        Ok(GrantScopeKind::GrantScopeSystem) => Ok(ScopeKind::System),
-        Ok(GrantScopeKind::GrantScopeOrganization) => Ok(ScopeKind::Organization),
-        Ok(GrantScopeKind::GrantScopeProject) => Ok(ScopeKind::Project),
-        Err(_) => Err(Status::invalid_argument("unknown grant scope kind")),
+    match ProtoScope::try_from(kind) {
+        Ok(ProtoScope::System) => Ok(ScopeKind::System),
+        Ok(ProtoScope::Organization) => Ok(ScopeKind::Organization),
+        Ok(ProtoScope::Project) => Ok(ScopeKind::Project),
+        Ok(ProtoScope::Unspecified) | Err(_) => {
+            Err(Status::invalid_argument("unknown or unspecified scope"))
+        }
     }
 }
 
-fn scope_kind_to_proto(kind: ScopeKind) -> GrantScopeKind {
+fn scope_kind_to_proto(kind: ScopeKind) -> ProtoScope {
     match kind {
-        ScopeKind::System => GrantScopeKind::GrantScopeSystem,
-        ScopeKind::Organization => GrantScopeKind::GrantScopeOrganization,
-        ScopeKind::Project => GrantScopeKind::GrantScopeProject,
+        ScopeKind::System => ProtoScope::System,
+        ScopeKind::Organization => ProtoScope::Organization,
+        ScopeKind::Project => ProtoScope::Project,
     }
 }
 
 fn grantable_role_to_proto(r: &GrantableRole) -> ProtoGrantableRole {
     ProtoGrantableRole {
         name: r.name.to_string(),
-        scope_kind: scope_kind_to_proto(r.scope) as i32,
+        scope: scope_kind_to_proto(r.scope) as i32,
         kind: r.kind.as_str().to_string(),
         description: r.description.to_string(),
     }
 }
 
 fn scope_from_proto(kind: i32, id: &str) -> Result<Scope, Status> {
-    match GrantScopeKind::try_from(kind) {
+    match ProtoScope::try_from(kind) {
         // System is the tenancy root; scope_id is ignored (single root).
-        Ok(GrantScopeKind::GrantScopeSystem) => Ok(Scope::System),
-        Ok(GrantScopeKind::GrantScopeOrganization) => {
-            Ok(Scope::Organization(OrganizationId::new(id)))
+        Ok(ProtoScope::System) => Ok(Scope::System),
+        Ok(ProtoScope::Organization) => Ok(Scope::Organization(OrganizationId::new(id))),
+        Ok(ProtoScope::Project) => Ok(Scope::Project(ProjectId::new(id))),
+        Ok(ProtoScope::Unspecified) | Err(_) => {
+            Err(Status::invalid_argument("unknown or unspecified scope"))
         }
-        Ok(GrantScopeKind::GrantScopeProject) => Ok(Scope::Project(ProjectId::new(id))),
-        Err(_) => Err(Status::invalid_argument("unknown grant scope kind")),
     }
 }
 
 fn grant_to_proto(g: &Grant) -> ProtoGrant {
-    let (scope_kind, scope_id) = match &g.scope {
-        Scope::System => (GrantScopeKind::GrantScopeSystem, String::new()),
-        Scope::Organization(id) => (GrantScopeKind::GrantScopeOrganization, id.to_string()),
-        Scope::Project(id) => (GrantScopeKind::GrantScopeProject, id.to_string()),
+    let (scope, scope_id) = match &g.scope {
+        Scope::System => (ProtoScope::System, String::new()),
+        Scope::Organization(id) => (ProtoScope::Organization, id.to_string()),
+        Scope::Project(id) => (ProtoScope::Project, id.to_string()),
     };
     ProtoGrant {
         id: g.id.clone(),
-        user_id: g.principal.id().to_string(),
+        user_id: wrap(g.principal.id().to_string()),
         // Interim: the proto exposes a single `role` string. Surface the target's
-        // value (role id or permission key) here; Phase 4 replaces this with a
-        // typed oneof { role_id | permission }.
+        // value (role id or permission key) here; the generalized GrantService
+        // (typed role-or-permission target) lands with the rest of Phase 4b.
         role: g.target.value().to_string(),
-        scope_kind: scope_kind as i32,
+        scope: scope as i32,
         scope_id,
     }
 }
