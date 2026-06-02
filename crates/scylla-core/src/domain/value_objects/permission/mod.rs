@@ -346,6 +346,13 @@ pub const PERMISSION_CATALOG: &[(&str, &str)] = &[
     ("managePolicies", "system"),
 ];
 
+/// Whether `key` is a permission the system knows (a [`PERMISSION_CATALOG`] key).
+/// Used to validate a direct permission grant before persisting it.
+#[must_use]
+pub fn is_known_permission(key: &str) -> bool {
+    PERMISSION_CATALOG.iter().any(|(k, _)| *k == key)
+}
+
 #[cfg(test)]
 mod catalog_tests {
     use super::{PERMISSION_CATALOG, RESOURCE_TYPES};

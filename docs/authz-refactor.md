@@ -217,8 +217,16 @@ Each phase compiles, keeps tests green, and is independently commitable.
   id); the `role_name → role_id` column rename waits until custom roles need
   opaque ids (Phase 2/4). Grant validation still uses the compile-time
   `GRANTABLE_ROLES` catalog; it moves to the DB when role CRUD lands (Phase 4).
-- **Phase 2 — Direct permission grants.** Generalized `grants` (role|permission);
-  "Alice RunPipeline Org A" use case; effective-permission resolution.
+- **Phase 2 — Direct permission grants. ✅ done.** Generalized the `grants` table
+  to `target_kind` + `target` (a grant confers a role *or* a single permission).
+  `GrantTarget` enum; `Grant::with_permission`; repo + Cedar updated (role →
+  template instance, permission → a direct `permit(... action == Action::"key"
+  ... resource in scope)`); validation rejects unknown permission keys. The
+  canonical "Alice runPipeline in Org A" is proven by a Cedar test (allows that
+  action in scope, denies everything else). *Deferred to Phase 4:* exposing
+  permission grants over gRPC (needs the typed `Permission` enum) and
+  `GetEffectivePermissions`. The grant use case still gates on the existing
+  manage-grants permission; the no-escalation rule is Phase 5.
 - **Phase 3 — Default-role pointers.** `default_role_bindings`; rewire
   org/project creation + bootstrap; lazy re-seed.
 - **Phase 4 — Strong-typed proto + introspection.** `Permission`/`Scope`/

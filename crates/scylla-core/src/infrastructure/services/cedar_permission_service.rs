@@ -4,7 +4,7 @@ use super::cedar_authz::{
 use crate::application::PermissionService;
 use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::application::authz::entity_provider::{AuthzEntityProvider, PrincipalAuthz};
-use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
+use crate::application::authz::grant::{Grant, GrantRepository, GrantTarget, Principal, Scope};
 use crate::application::authz::policy::{PolicyControl, PolicyDefinition, PolicyRepository};
 use crate::application::authz::role::{Role, RoleRepository};
 use crate::application::caller::CallerContext;
@@ -53,10 +53,11 @@ fn role_template_src(role: &Role) -> Option<String> {
 }
 
 /// Cedar-backed authorization. Static policies + schema are compiled into the
-/// binary and validated at construction; explicit scoped grants are linked from
-/// the grant store as Cedar template instances. The principal's roles and
-/// org/project memberships, plus the resource's ancestor chain, are materialised
-/// per request via the [`AuthzEntityProvider`].
+/// binary and validated at construction; per-role templates are generated from
+/// the role store and explicit scoped grants are emitted from the grant store —
+/// role grants as template instances, permission grants as direct permits. The
+/// principal's org/project memberships, plus the resource's ancestor chain, are
+/// materialised per request via the [`AuthzEntityProvider`].
 pub struct CedarPermissionService<EP: AuthzEntityProvider> {
     /// Live policy set behind an `RwLock<Arc<…>>` so it can be swapped atomically
     /// on reload. The new set is built fully off-lock; the write lock is only held
@@ -168,9 +169,10 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         Ok(policies)
     }
 
-    /// Link a stored grant as a template instance. Template id == role name
-    /// (`project-admin` / `organization-admin`); `?principal` → the user,
-    /// `?resource` → the granted scope.
+    /// Emit a stored grant into the policy set. A **role** grant links a template
+    /// instance (template id == role id; `?principal` → the principal, `?resource`
+    /// → the granted scope). A **permission** grant emits a direct permit for that
+    /// one action within the scope. Both are keyed `grant-<id>`.
     fn link_grant(policies: &mut PolicySet, grant: &Grant) -> DomainResult<()> {
         let principal_uid = match &grant.principal {
             Principal::User(id) => euid("Scylla::User", id.as_str())?,
@@ -183,17 +185,32 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             Scope::Organization(id) => euid("Scylla::Organization", id.as_str())?,
             Scope::Project(id) => euid("Scylla::Project", id.as_str())?,
         };
-        let vals = HashMap::from([
-            (SlotId::principal(), principal_uid),
-            (SlotId::resource(), resource_uid),
-        ]);
-        policies
-            .link(
-                PolicyId::new(grant.role.as_str()),
-                PolicyId::new(format!("grant-{}", grant.id)),
-                vals,
-            )
-            .map_err(|e| DomainError::Internal(format!("cedar link: {e}")))
+        let policy_id = format!("grant-{}", grant.id);
+        match &grant.target {
+            GrantTarget::Role(role) => {
+                let vals = HashMap::from([
+                    (SlotId::principal(), principal_uid),
+                    (SlotId::resource(), resource_uid),
+                ]);
+                policies
+                    .link(PolicyId::new(role.as_str()), PolicyId::new(policy_id), vals)
+                    .map_err(|e| DomainError::Internal(format!("cedar link: {e}")))
+            }
+            GrantTarget::Permission(key) => {
+                // Direct permission grant: permit exactly this action for this
+                // principal within the granted scope (the resource hierarchy
+                // bounds it, just like a role template's `resource in ?resource`).
+                let text = format!(
+                    "permit (principal == {principal_uid}, action == Scylla::Action::\"{key}\", resource in {resource_uid});"
+                );
+                let policy = Policy::parse(Some(PolicyId::new(policy_id)), &text).map_err(|e| {
+                    DomainError::Internal(format!("cedar permission-grant parse: {e}"))
+                })?;
+                policies
+                    .add(policy)
+                    .map_err(|e| DomainError::Internal(format!("cedar add permission-grant: {e}")))
+            }
+        }
     }
 
     /// Build the principal entity (+ role entities) for the caller. Returns the
@@ -829,6 +846,41 @@ mod tests {
                 .await
                 .is_err(),
             "agent role must not confer management actions"
+        );
+    }
+
+    #[tokio::test]
+    async fn direct_permission_grant_allows_only_that_action_in_scope() {
+        // "Alice may runPipeline within Org A" — a single permission granted
+        // directly (additive to any roles). She may run pipelines beneath the org
+        // but the grant confers no other action there.
+        let grant = Grant::with_permission(
+            Principal::User(UserId::new("alice")),
+            "runPipeline",
+            Scope::Organization(OrganizationId::new("o1")),
+        );
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("alice"));
+        assert!(
+            svc.check(&caller, Permission::RunPipeline(PipelineId::new("pl1")))
+                .await
+                .is_ok(),
+            "a direct runPipeline grant must allow running a pipeline beneath the org",
+        );
+        assert!(
+            svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
+                .await
+                .is_err(),
+            "a single-permission grant must not confer any other action",
         );
     }
 

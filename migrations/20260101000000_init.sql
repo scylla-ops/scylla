@@ -238,17 +238,21 @@ CREATE TABLE role_permissions (
     PRIMARY KEY (role_id, permission)
 );
 
--- An explicit scoped grant: "principal P holds role R within scope S". The one
--- authorization mechanism, linked into Cedar as a role-template instance.
+-- An explicit scoped grant: "principal P holds TARGET within scope S", where the
+-- target is either a whole role or a single permission (additive to roles). The
+-- one authorization mechanism: role grants link a Cedar role-template instance,
+-- permission grants generate a direct permit policy.
 CREATE TABLE grants (
     id             TEXT        PRIMARY KEY,
     principal_kind TEXT        NOT NULL CHECK (principal_kind IN ('user', 'app')),
     principal_id   TEXT        NOT NULL,
-    role_name      TEXT        NOT NULL,
+    target_kind    TEXT        NOT NULL CHECK (target_kind IN ('role', 'permission')),
+    -- The role id (target_kind='role') or a Permission::key (target_kind='permission').
+    target         TEXT        NOT NULL,
     scope_kind     TEXT        NOT NULL CHECK (scope_kind IN ('system', 'organization', 'project')),
     scope_id       TEXT        NOT NULL,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (principal_kind, principal_id, role_name, scope_kind, scope_id)
+    UNIQUE (principal_kind, principal_id, target_kind, target, scope_kind, scope_id)
 );
 CREATE INDEX grants_principal_idx ON grants (principal_kind, principal_id);
 

@@ -180,7 +180,7 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
 async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
     use crate::application::UserProjectRepository;
     use crate::application::authz::grant::{
-        Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
+        Grant, GrantRepository, GrantTarget, PROJECT_ADMIN_ROLE, Principal, Scope,
     };
     use crate::domain::value_objects::role::name::RoleName;
     use crate::infrastructure::persistence::postgres::{
@@ -216,7 +216,7 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
     assert!(
         grants.iter().any(|g| {
             matches!(&g.principal, Principal::User(u) if u.as_str() == owner.id().as_str())
-                && g.role.as_str() == PROJECT_ADMIN_ROLE
+                && matches!(&g.target, GrantTarget::Role(r) if r.as_str() == PROJECT_ADMIN_ROLE)
                 && matches!(&g.scope, Scope::Project(p) if p.as_str() == project.id().as_str())
         }),
         "creator should hold a project-admin owner grant",

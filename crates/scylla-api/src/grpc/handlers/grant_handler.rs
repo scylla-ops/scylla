@@ -153,7 +153,10 @@ fn grant_to_proto(g: &Grant) -> ProtoGrant {
     ProtoGrant {
         id: g.id.clone(),
         user_id: g.principal.id().to_string(),
-        role: g.role.to_string(),
+        // Interim: the proto exposes a single `role` string. Surface the target's
+        // value (role id or permission key) here; Phase 4 replaces this with a
+        // typed oneof { role_id | permission }.
+        role: g.target.value().to_string(),
         scope_kind: scope_kind as i32,
         scope_id,
     }

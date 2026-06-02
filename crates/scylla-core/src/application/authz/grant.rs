@@ -4,31 +4,29 @@ use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::permission::{Permission, is_known_permission};
 use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
 
-// Canonical role names — single source of truth. Convention: `<scope>-<role>`,
-// kebab-case, scope ∈ {system, organization, project}. Referenced by the Cedar
-// adapter (`TEMPLATE_ROLES`), the embedded policies, and callers that mint
-// grants. NOTE: the global `system-admin` name is also hard-coded in
-// `policies.cedar` (`@id("admin")` → `Scylla::Role::"system-admin"`) — keep both
-// in sync. The implicit `system-member` / `organization-member` /
-// `project-member` tiers are NOT named roles: membership is ABAC
-// (`user_roles` absent / `user_organization` / `user_project`).
+// Canonical builtin role keys — the stable ids grants reference and the default
+// seed inserts. Convention: `<scope>-<role>`, kebab-case, scope ∈ {system,
+// organization, project}. The live Cedar policy bodies are generated per role
+// from the `roles` table (see `cedar_permission_service`), not hard-coded here.
+// The implicit `system-member` / `organization-member` / `project-member` tiers
+// are NOT named roles: membership is ABAC (`user_organization` / `user_project`).
 
-/// Global super-user (full control, every scope). Materialised from `user_roles`.
+/// Global super-user (full control, every scope), via a grant on the System scope.
 pub const SYSTEM_ADMIN_ROLE: &str = "system-admin";
 /// Owner of an organization and everything beneath it.
 pub const ORGANIZATION_ADMIN_ROLE: &str = "organization-admin";
 /// Owner of a project and everything beneath it.
 pub const PROJECT_ADMIN_ROLE: &str = "project-admin";
 /// Restricted role for machine Apps (agents) scoped to an organization: only the
-/// actions needed to pull and execute jobs within that scope. Linked via a
-/// dedicated Cedar template, not the full-control one used by the admin roles.
+/// permissions needed to pull and execute jobs within that scope (read pipeline,
+/// execute job, write job status/log), held in the role's `role_permissions`.
 pub const ORGANIZATION_AGENT_ROLE: &str = "organization-agent";
 /// Same restricted agent capability, scoped to a single project.
 pub const PROJECT_AGENT_ROLE: &str = "project-agent";
@@ -199,6 +197,18 @@ pub fn validate_role_for_scope(role: &RoleName, scope: &Scope) -> DomainResult<(
     Ok(())
 }
 
+/// Validate a direct permission grant's key against the permission catalog, so a
+/// persisted grant can never name a permission the Cedar adapter cannot emit.
+pub fn validate_permission_key(key: &str) -> DomainResult<()> {
+    if is_known_permission(key) {
+        Ok(())
+    } else {
+        Err(DomainError::validation(format!(
+            "unknown permission '{key}'"
+        )))
+    }
+}
+
 /// The principal a grant is bound to — a human `User` or a machine `App`. Maps
 /// to the `(principal_kind, principal_id)` columns of `grants` and to
 /// the Cedar `?principal` slot (`Scylla::User` / `Scylla::App`).
@@ -228,23 +238,72 @@ impl Principal {
     }
 }
 
-/// An explicit, scoped role assignment — "principal P holds role R within scope
-/// S". Each grant materialises as one linked Cedar template instance at startup.
+/// What a grant confers: a whole role, or a single permission. A direct
+/// permission grant is additive to the principal's role-derived permissions
+/// (e.g. "Alice may runPipeline within Org A" on top of whatever roles she has).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GrantTarget {
+    /// A role, referenced by its id (== key for builtins).
+    Role(RoleName),
+    /// A single permission, by its [`crate::domain::value_objects::permission::Permission::key`].
+    Permission(String),
+}
+
+impl GrantTarget {
+    /// Persistence discriminant — the `target_kind` column value.
+    #[must_use]
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::Role(_) => "role",
+            Self::Permission(_) => "permission",
+        }
+    }
+
+    /// The stored `target` column value — a role id or a permission key.
+    #[must_use]
+    pub fn value(&self) -> &str {
+        match self {
+            Self::Role(role) => role.as_str(),
+            Self::Permission(key) => key.as_str(),
+        }
+    }
+}
+
+/// An explicit, scoped grant — "principal P holds TARGET within scope S", where
+/// the target is a role or a single permission. A role grant materialises as a
+/// linked Cedar template instance; a permission grant as a direct permit policy.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Grant {
     pub id: String,
     pub principal: Principal,
-    pub role: RoleName,
+    pub target: GrantTarget,
     pub scope: Scope,
 }
 
 impl Grant {
+    /// A grant of a whole role.
     #[must_use]
     pub fn new(principal: Principal, role: RoleName, scope: Scope) -> Self {
+        Self::with_target(principal, GrantTarget::Role(role), scope)
+    }
+
+    /// A grant of a single permission (by its `Permission::key()`), additive to
+    /// the principal's role-derived permissions.
+    #[must_use]
+    pub fn with_permission(
+        principal: Principal,
+        permission: impl Into<String>,
+        scope: Scope,
+    ) -> Self {
+        Self::with_target(principal, GrantTarget::Permission(permission.into()), scope)
+    }
+
+    #[must_use]
+    fn with_target(principal: Principal, target: GrantTarget, scope: Scope) -> Self {
         Self {
             id: ulid::Ulid::new().to_string().to_lowercase(),
             principal,
-            role,
+            target,
             scope,
         }
     }
@@ -317,9 +376,13 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         self.permission_service
             .check(caller, Self::manage_perm(&grant.scope))
             .await?;
-        // Reject unknown roles and role/scope mismatches before persisting, so a
-        // grant always names a catalog role the Cedar adapter can link.
-        validate_role_for_scope(&grant.role, &grant.scope)?;
+        // Validate the target before persisting so a stored grant is always
+        // emittable into Cedar: a role grant names a catalog role valid at its
+        // scope; a permission grant names a known permission key.
+        match &grant.target {
+            GrantTarget::Role(role) => validate_role_for_scope(role, &grant.scope)?,
+            GrantTarget::Permission(key) => validate_permission_key(key)?,
+        }
         self.grant_repo.create(grant).await?;
         self.policy_control.reload().await
     }
@@ -345,14 +408,15 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         // to administer it). If this is the final human owner, block the revoke
         // rather than orphan the org/project.
         if let Some(g) = &grant
-            && is_owner_role(&g.role)
+            && let GrantTarget::Role(role) = &g.target
+            && is_owner_role(role)
             && matches!(g.principal, Principal::User(_))
         {
             let other_human_owners = grants
                 .iter()
                 .filter(|o| {
                     o.id != g.id
-                        && o.role == g.role
+                        && o.target == g.target
                         && o.scope == g.scope
                         && matches!(o.principal, Principal::User(_))
                 })
@@ -485,6 +549,34 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn validate_permission_key_accepts_catalog_rejects_unknown() {
+        // A real permission key validates; an invented one is rejected, so a
+        // direct permission grant can never name something Cedar can't emit.
+        assert!(validate_permission_key("runPipeline").is_ok());
+        assert!(validate_permission_key("readJob").is_ok());
+        assert!(validate_permission_key("flyToTheMoon").is_err());
+    }
+
+    #[test]
+    fn grant_target_constructors_set_kind_and_value() {
+        let role = Grant::new(
+            Principal::User(UserId::new("u1")),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            Scope::Organization(OrganizationId::new("o1")),
+        );
+        assert_eq!(role.target.kind(), "role");
+        assert_eq!(role.target.value(), ORGANIZATION_ADMIN_ROLE);
+
+        let perm = Grant::with_permission(
+            Principal::User(UserId::new("u1")),
+            "runPipeline",
+            Scope::Organization(OrganizationId::new("o1")),
+        );
+        assert_eq!(perm.target.kind(), "permission");
+        assert_eq!(perm.target.value(), "runPipeline");
     }
 
     #[tokio::test]

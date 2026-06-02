@@ -1,4 +1,4 @@
-use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
+use crate::application::authz::grant::{Grant, GrantRepository, GrantTarget, Principal, Scope};
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::name::RoleName;
@@ -16,11 +16,13 @@ const SCOPE_PROJECT: &str = "project";
 const SYSTEM_SCOPE_ID: &str = "system";
 const PRINCIPAL_USER: &str = "user";
 const PRINCIPAL_APP: &str = "app";
+const TARGET_ROLE: &str = "role";
+const TARGET_PERMISSION: &str = "permission";
 
 /// Insert a grant on any executor (pool or transaction). Idempotent via the
-/// `(principal_kind, principal_id, role_name, scope_kind, scope_id)` unique
-/// constraint, so re-running a signup or grant call is a no-op rather than a
-/// conflict. Shared by the pool-backed repo and the atomic signup transaction.
+/// `(principal_kind, principal_id, target_kind, target, scope_kind, scope_id)`
+/// unique constraint, so re-running a signup or grant call is a no-op rather than
+/// a conflict. Shared by the pool-backed repo and the atomic signup transaction.
 pub async fn insert<'e, E>(executor: E, grant: &Grant) -> DomainResult<()>
 where
     E: PgExecutor<'e>,
@@ -31,13 +33,16 @@ where
         Scope::Project(id) => (SCOPE_PROJECT, id.as_str()),
     };
     sqlx::query!(
-        "INSERT INTO grants (id, principal_kind, principal_id, role_name, scope_kind, scope_id) \
-         VALUES ($1, $2, $3, $4, $5, $6) \
-         ON CONFLICT (principal_kind, principal_id, role_name, scope_kind, scope_id) DO NOTHING",
+        "INSERT INTO grants \
+             (id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7) \
+         ON CONFLICT (principal_kind, principal_id, target_kind, target, scope_kind, scope_id) \
+             DO NOTHING",
         grant.id.as_str(),
         grant.principal.kind(),
         grant.principal.id(),
-        grant.role.as_str(),
+        grant.target.kind(),
+        grant.target.value(),
         scope_kind,
         scope_id,
     )
@@ -66,7 +71,7 @@ impl GrantRepository for PgGrantRepository {
     #[instrument(skip(self))]
     async fn list_all(&self) -> DomainResult<Vec<Grant>> {
         let rows = sqlx::query!(
-            "SELECT id, principal_kind, principal_id, role_name, scope_kind, scope_id \
+            "SELECT id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id \
              FROM grants",
         )
         .fetch_all(&self.pool)
@@ -84,6 +89,15 @@ impl GrantRepository for PgGrantRepository {
                         )));
                     }
                 };
+                let target = match r.target_kind.as_str() {
+                    TARGET_ROLE => GrantTarget::Role(RoleName::new(r.target)?),
+                    TARGET_PERMISSION => GrantTarget::Permission(r.target),
+                    other => {
+                        return Err(DomainError::Infrastructure(format!(
+                            "unknown grant target_kind '{other}'"
+                        )));
+                    }
+                };
                 let scope = match r.scope_kind.as_str() {
                     SCOPE_SYSTEM => Scope::System,
                     SCOPE_ORGANIZATION => Scope::Organization(OrganizationId::new(r.scope_id)),
@@ -97,7 +111,7 @@ impl GrantRepository for PgGrantRepository {
                 Ok(Grant {
                     id: r.id,
                     principal,
-                    role: RoleName::new(r.role_name)?,
+                    target,
                     scope,
                 })
             })
