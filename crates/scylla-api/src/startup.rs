@@ -292,6 +292,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     ));
     let grant_uc = Arc::new(GrantUseCases::new(
         grant_repo.clone(),
+        role_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
         agent_registry.clone(),
