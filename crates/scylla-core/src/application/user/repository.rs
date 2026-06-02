@@ -10,6 +10,11 @@ pub trait UserRepository {
 
     async fn find_by_id(&self, id: &UserId) -> DomainResult<User>;
 
+    /// Resolve many users in a single round-trip. Returned order is unspecified
+    /// and missing ids are simply absent — callers that need the input order
+    /// re-associate by id. Avoids the N+1 of `find_by_id` in a loop.
+    async fn find_by_ids(&self, ids: &[UserId]) -> DomainResult<Vec<User>>;
+
     async fn find_by_username(&self, username: &Username) -> DomainResult<User>;
 
     async fn find_by_email(&self, email: &Email) -> DomainResult<User>;

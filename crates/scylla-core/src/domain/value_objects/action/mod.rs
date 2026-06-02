@@ -12,7 +12,7 @@ use crate::domain::entities::{AppId, JobId, OrganizationId, PipelineId, ProjectI
 /// One variant per operation (fine-grained actions) so the Cedar schema can pin
 /// `appliesTo` per action and policies stay readable.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Permission {
+pub enum Action {
     // ── user ───────────────────────────────────────────────────────────
     CreateUser,
     ReadUser(UserId),
@@ -29,6 +29,10 @@ pub enum Permission {
     ListOrganizationMembers(OrganizationId),
     AddOrganizationMember(OrganizationId),
     RemoveOrganizationMember(OrganizationId),
+    /// Manage this organization's invitations (create / revoke / list pending).
+    /// Distinct from member listing so a plain org member can't enumerate
+    /// outstanding invites (and their invitee emails) — only org-admins can.
+    ManageInvitations(OrganizationId),
     ListUserOrganizations(UserId),
 
     // ── project ────────────────────────────────────────────────────────
@@ -94,10 +98,9 @@ pub enum Permission {
     /// Manage grants whose scope is this project (project-admins).
     ManageProjectGrants(ProjectId),
     ManagePolicies,
-    ManageRoles,
 }
 
-impl Permission {
+impl Action {
     /// Canonical action identifier — becomes the Cedar `Action::"<id>"` eid.
     #[must_use]
     pub fn action(&self) -> &'static str {
@@ -116,6 +119,7 @@ impl Permission {
             Self::ListOrganizationMembers(_) => "listOrganizationMembers",
             Self::AddOrganizationMember(_) => "addOrganizationMember",
             Self::RemoveOrganizationMember(_) => "removeOrganizationMember",
+            Self::ManageInvitations(_) => "manageInvitations",
             Self::ListUserOrganizations(_) => "listUserOrganizations",
 
             Self::CreateProject(_) => "createProject",
@@ -163,11 +167,14 @@ impl Permission {
             Self::ReadAgentStats(_) => "readAgentStats",
             Self::DeleteAgent(_) => "deleteAgent",
 
-            Self::ManageGrants
-            | Self::ManageOrgGrants(_)
-            | Self::ManageProjectGrants(_) => "manageGrants",
+            // Distinct action ids per scope so the Cedar schema pins `appliesTo`
+            // (System / Organization / Project) per action. A single shared
+            // "manageGrants" would let one over-broad permit on it authorize all
+            // three scopes (scope load-bearing only via the resource arm).
+            Self::ManageGrants => "manageGrants",
+            Self::ManageOrgGrants(_) => "manageOrgGrants",
+            Self::ManageProjectGrants(_) => "manageProjectGrants",
             Self::ManagePolicies => "managePolicies",
-            Self::ManageRoles => "manageRoles",
         }
     }
 
@@ -187,8 +194,7 @@ impl Permission {
             | Self::CreateJob
             | Self::ListJobs
             | Self::ManageGrants
-            | Self::ManagePolicies
-            | Self::ManageRoles => ResourceRef::System,
+            | Self::ManagePolicies => ResourceRef::System,
 
             // User-targeted
             Self::ReadUser(id)
@@ -204,6 +210,7 @@ impl Permission {
             | Self::ListOrganizationMembers(id)
             | Self::AddOrganizationMember(id)
             | Self::RemoveOrganizationMember(id)
+            | Self::ManageInvitations(id)
             | Self::CreateProject(id)
             | Self::ListProjectsByOrganization(id)
             | Self::ListPipelinesByOrganization(id)
@@ -248,6 +255,111 @@ impl Permission {
             Self::ReadAgent(id) | Self::ReadAgentStats(id) | Self::DeleteAgent(id) => {
                 ResourceRef::App(id.clone())
             }
+        }
+    }
+}
+
+/// Every resource type a policy may target — the `Scylla::<Type>` entities, by
+/// their lowercase tag. Mirrors [`ResourceRef`].
+pub const RESOURCE_TYPES: &[&str] = &[
+    "system",
+    "user",
+    "organization",
+    "project",
+    "pipeline",
+    "job",
+    "app",
+];
+
+/// The full authorization vocabulary: every action id paired with the resource
+/// type it targets. Drives `ListAuthzVocabulary` so a policy author sees what a
+/// `permit`/`forbid` may reference instead of guessing names. One row per
+/// [`Action`] variant — keep in sync (the test below asserts every row's
+/// resource type is one of [`RESOURCE_TYPES`] and ids are unique).
+pub const ACTION_CATALOG: &[(&str, &str)] = &[
+    // user
+    ("createUser", "system"),
+    ("readUser", "user"),
+    ("updateUser", "user"),
+    ("deleteUser", "user"),
+    ("listUsers", "system"),
+    // organization
+    ("createOrganization", "system"),
+    ("readOrganization", "organization"),
+    ("updateOrganization", "organization"),
+    ("deleteOrganization", "organization"),
+    ("listOrganizations", "system"),
+    ("listOrganizationMembers", "organization"),
+    ("addOrganizationMember", "organization"),
+    ("removeOrganizationMember", "organization"),
+    ("manageInvitations", "organization"),
+    ("listUserOrganizations", "user"),
+    // project
+    ("createProject", "organization"),
+    ("readProject", "project"),
+    ("updateProject", "project"),
+    ("deleteProject", "project"),
+    ("listProjects", "system"),
+    ("listProjectsByOrganization", "organization"),
+    ("listProjectMembers", "project"),
+    ("addProjectMember", "project"),
+    ("removeProjectMember", "project"),
+    ("listUserProjects", "user"),
+    // pipeline
+    ("createPipeline", "project"),
+    ("readPipeline", "pipeline"),
+    ("updatePipeline", "pipeline"),
+    ("deletePipeline", "pipeline"),
+    ("runPipeline", "pipeline"),
+    ("executeJob", "pipeline"),
+    ("listPipelines", "system"),
+    ("listPipelinesByProject", "project"),
+    ("listPipelinesByOrganization", "organization"),
+    // job
+    ("createJob", "system"),
+    ("readJob", "job"),
+    ("writeJob", "job"),
+    ("deleteJob", "job"),
+    ("listJobs", "system"),
+    ("listJobsByPipeline", "pipeline"),
+    ("listJobsByProject", "project"),
+    ("listJobsByOrganization", "organization"),
+    ("readJobLogs", "job"),
+    ("writeJobLogs", "job"),
+    ("writeJobStatus", "job"),
+    ("writeJobLog", "job"),
+    // app
+    ("createApp", "organization"),
+    ("readApp", "app"),
+    ("deleteApp", "app"),
+    ("listAppsByOrganization", "organization"),
+    // agent
+    ("createAgent", "organization"),
+    ("listAgents", "organization"),
+    ("readAgent", "app"),
+    ("readAgentStats", "app"),
+    ("deleteAgent", "app"),
+    // grants / policies
+    ("manageGrants", "system"),
+    ("manageOrgGrants", "organization"),
+    ("manageProjectGrants", "project"),
+    ("managePolicies", "system"),
+];
+
+#[cfg(test)]
+mod catalog_tests {
+    use super::{ACTION_CATALOG, RESOURCE_TYPES};
+    use std::collections::HashSet;
+
+    #[test]
+    fn action_catalog_is_consistent() {
+        let mut ids = HashSet::new();
+        for (id, resource_type) in ACTION_CATALOG {
+            assert!(ids.insert(*id), "duplicate action id in catalog: {id}");
+            assert!(
+                RESOURCE_TYPES.contains(resource_type),
+                "action {id} has unknown resource type {resource_type}",
+            );
         }
     }
 }

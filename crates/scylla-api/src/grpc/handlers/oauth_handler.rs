@@ -1,6 +1,6 @@
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::permission::policy::PolicyControl;
+use scylla_core::application::authz::policy::PolicyControl;
 use scylla_core::application::{
     HashService, OAuthIdentityRepository, OAuthProvider, OAuthUseCases, SessionRepository,
     SignupRepository, UserRepository,

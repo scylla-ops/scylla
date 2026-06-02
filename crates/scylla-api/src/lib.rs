@@ -14,12 +14,12 @@ pub use grpc::{
     proto_to_domain_pagination, user_to_proto,
 };
 
-pub use config::{BootstrapConfig, CoreConfig, CorsConfig};
 #[cfg(feature = "grpc")]
 pub use config::GrpcConfig;
+pub use config::{BootstrapConfig, CoreConfig, CorsConfig};
 pub use error::{BootstrapError, ConfigError, StartupError};
 pub use startup::{
-    SharedAuthUc, SharedGrantUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc, SharedOrgUc,
-    SharedPipelineUc, SharedProjectUc, SharedUserUc, Services, build_cors_layer, init_services,
+    Services, SharedAuthUc, SharedGrantUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc,
+    SharedOrgUc, SharedPipelineUc, SharedProjectUc, SharedUserUc, build_cors_layer, init_services,
     run_grpc, shutdown_signal,
 };

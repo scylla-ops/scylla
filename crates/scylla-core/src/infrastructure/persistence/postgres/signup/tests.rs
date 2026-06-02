@@ -1,5 +1,5 @@
 use super::PgSignupRepository;
-use crate::application::permission::grant::{
+use crate::application::authz::grant::{
     Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_ADMIN_ROLE,
 };
 use crate::application::signup::repository::SignupRepository;
@@ -11,7 +11,10 @@ use crate::infrastructure::persistence::postgres::{
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
 
-fn org_admin_grant(user_id: crate::domain::entities::UserId, org_id: crate::domain::entities::OrganizationId) -> Grant {
+fn org_admin_grant(
+    user_id: crate::domain::entities::UserId,
+    org_id: crate::domain::entities::OrganizationId,
+) -> Grant {
     Grant::new(
         GrantPrincipal::User(user_id),
         RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
@@ -98,8 +101,8 @@ async fn login_by_email_or_username(pool: PgPool) {
     use crate::application::{HashService, UserRepository};
     use crate::domain::entities::User;
     use crate::domain::value_objects::user::{Email, Password, Username};
-    use crate::infrastructure::persistence::postgres::PgSessionRepository;
     use crate::infrastructure::Argon2HashService;
+    use crate::infrastructure::persistence::postgres::PgSessionRepository;
     use std::sync::Arc;
 
     let hash = Arc::new(Argon2HashService::new());
@@ -110,7 +113,10 @@ async fn login_by_email_or_username(pool: PgPool) {
         hash.clone(),
     );
 
-    let password_hash = hash.hash(&Password::new("SecurePass123!").unwrap()).await.unwrap();
+    let password_hash = hash
+        .hash(&Password::new("SecurePass123!").unwrap())
+        .await
+        .unwrap();
     let user = User::create(
         Username::new("kevin").unwrap(),
         Some(Email::new("kevin@example.com").unwrap()),
@@ -118,17 +124,26 @@ async fn login_by_email_or_username(pool: PgPool) {
     );
     user_repo.create(&user).await.expect("seed user");
 
-    auth.login("kevin@example.com".to_string(), Password::new("SecurePass123!").unwrap())
-        .await
-        .expect("login by email");
-    auth.login("kevin".to_string(), Password::new("SecurePass123!").unwrap())
-        .await
-        .expect("login by username");
+    auth.login(
+        "kevin@example.com".to_string(),
+        Password::new("SecurePass123!").unwrap(),
+    )
+    .await
+    .expect("login by email");
+    auth.login(
+        "kevin".to_string(),
+        Password::new("SecurePass123!").unwrap(),
+    )
+    .await
+    .expect("login by username");
     let err = auth
         .login("kevin".to_string(), Password::new("WrongPass123!").unwrap())
         .await
         .expect_err("wrong password rejected");
-    assert!(matches!(err, crate::domain::errors::DomainError::Unauthorized(_)));
+    assert!(matches!(
+        err,
+        crate::domain::errors::DomainError::Unauthorized(_)
+    ));
 }
 
 /// End-to-end: signup through the use case must yield a user who is org-admin of
@@ -139,13 +154,13 @@ async fn login_by_email_or_username(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;
+    use crate::application::caller::CallerContext;
     use crate::application::{PermissionService, SignupUseCases};
+    use crate::domain::value_objects::action::Action;
     use crate::domain::value_objects::organization::OrganizationName;
-    use crate::domain::value_objects::permission::Permission;
     use crate::domain::value_objects::user::{Email, Password, Username};
     use crate::infrastructure::persistence::postgres::{PgPolicyRepository, PgSessionRepository};
     use crate::infrastructure::{Argon2HashService, CedarPermissionService, PgAuthzEntityProvider};
-    use crate::application::caller::CallerContext;
     use std::sync::Arc;
 
     // A second, foreign org the new user has nothing to do with.
@@ -183,13 +198,13 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     permission
         .check(
             &caller,
-            Permission::UpdateOrganization(outcome.organization_id.clone()),
+            Action::UpdateOrganization(outcome.organization_id.clone()),
         )
         .await
         .expect("org-admin can update own org");
 
     let err = permission
-        .check(&caller, Permission::UpdateOrganization(foreign.id().clone()))
+        .check(&caller, Action::UpdateOrganization(foreign.id().clone()))
         .await
         .expect_err("must be denied on a foreign org");
     assert!(

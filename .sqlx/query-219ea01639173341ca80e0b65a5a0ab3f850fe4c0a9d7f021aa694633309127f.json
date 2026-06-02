@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM permission_grants WHERE id = $1",
+  "query": "DELETE FROM grants WHERE id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "2556a216a579e6cac6d482dbb0350d8ca7e7c20fb970e4b3a36a39bb10ca7509"
+  "hash": "219ea01639173341ca80e0b65a5a0ab3f850fe4c0a9d7f021aa694633309127f"
 }

@@ -16,9 +16,10 @@ use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
+use scylla_core::application::JobEvent;
 use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::job::{JobEvent, LogStream};
-use scylla_protocol::services::agent::{JobLogLine, AgentUp, agent_up};
+use scylla_core::domain::value_objects::job::LogStream;
+use scylla_protocol::services::agent::{AgentUp, JobLogLine, agent_up};
 
 use crate::error::ExecutionError;
 use crate::plan::DagPlan;
@@ -68,7 +69,9 @@ impl Executor {
                 return Err(ExecutionError::DanglingDeps);
             }
 
-            let mut running = self.dispatch_batch(&batch, &plan, publisher, cancel).await?;
+            let mut running = self
+                .dispatch_batch(&batch, &plan, publisher, cancel)
+                .await?;
 
             while let Some(joined) = running.join_next().await {
                 let (id, result) = joined.map_err(|e| ExecutionError::NodeTaskPanic {

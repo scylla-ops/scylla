@@ -6,8 +6,8 @@
 //! `JobCompleted`/`JobFailed` fires via [`JobReporter::finalize`] at the end of
 //! the run — regardless of which path the executor took.
 
-use scylla_core::domain::value_objects::job::JobEvent;
-use scylla_protocol::services::agent::{JobEventKind, JobStatus, AgentUp, agent_up};
+use scylla_core::application::JobEvent;
+use scylla_protocol::services::agent::{AgentUp, JobEventKind, JobStatus, agent_up};
 use tokio::sync::mpsc;
 
 use crate::error::ExecutionError;

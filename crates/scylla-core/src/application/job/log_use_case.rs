@@ -2,7 +2,7 @@ use crate::application::caller::CallerContext;
 use crate::application::{JobLogRepository, PermissionService};
 use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
@@ -21,18 +21,18 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         // Recorder-only path today; routed through the trait so tightening
         // (per-service action allowlists) is contained to Cedar.
         self.permission_service
-            .check(caller, Permission::WriteJobLogs(log.job_id().clone()))
+            .check(caller, Action::WriteJobLogs(log.job_id().clone()))
             .await?;
         self.repo.create(log).await
     }
 
     /// Append a log line emitted by a agent over its stream. Gated by
-    /// [`Permission::WriteJobLog`] — the action the agent role confers — so a
+    /// [`Action::WriteJobLog`] — the action the agent role confers — so a
     /// agent can write logs without the broader `writeJobLogs` recorder grant.
     #[instrument(skip(self, caller, log))]
     pub async fn append(&self, caller: &CallerContext, log: &JobLog) -> DomainResult<JobLog> {
         self.permission_service
-            .check(caller, Permission::WriteJobLog(log.job_id().clone()))
+            .check(caller, Action::WriteJobLog(log.job_id().clone()))
             .await?;
         self.repo.create(log).await
     }
@@ -43,7 +43,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         // load first because the id alone does not carry the job context.
         let log = self.repo.find_by_id(id).await?;
         self.permission_service
-            .check(caller, Permission::ReadJobLogs(log.job_id().clone()))
+            .check(caller, Action::ReadJobLogs(log.job_id().clone()))
             .await?;
         Ok(log)
     }
@@ -56,7 +56,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>> {
         self.permission_service
-            .check(caller, Permission::ReadJobLogs(job_id.clone()))
+            .check(caller, Action::ReadJobLogs(job_id.clone()))
             .await?;
         self.repo.list_by_job(job_id, pagination).await
     }
@@ -70,7 +70,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>> {
         self.permission_service
-            .check(caller, Permission::ReadJobLogs(job_id.clone()))
+            .check(caller, Action::ReadJobLogs(job_id.clone()))
             .await?;
         self.repo
             .list_by_job_and_node(job_id, node_id, pagination)

@@ -4,8 +4,8 @@ use crate::grpc::mappers::{
     pipeline_to_proto_summary, proto_to_domain_pagination,
 };
 use scylla_core::application::{
-    DispatchOutcome, DispatchUseCases, JobRepository, PermissionService, PipelineRepository,
-    PipelineUseCases, ProjectRepository, AgentDispatch,
+    AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PermissionService,
+    PipelineRepository, PipelineUseCases, ProjectRepository,
 };
 use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
 use scylla_core::domain::value_objects::pipeline::{NodeId, PipelineName};

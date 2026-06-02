@@ -8,8 +8,10 @@ pub mod services;
 #[cfg(feature = "postgres")]
 pub use db::{DatabaseConfig, close_db, init_db};
 
-pub use messaging::{InMemoryJobLogStream, InMemoryAgentRegistry};
+pub use messaging::{InMemoryAgentRegistry, InMemoryJobLogStream};
 
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAgentRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAppCredentialRepository;
 #[cfg(feature = "postgres")]
@@ -23,8 +25,6 @@ pub use persistence::postgres::PgAuthzEntityProvider;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgGrantRepository;
 #[cfg(feature = "postgres")]
-pub use persistence::postgres::PgPolicyRepository;
-#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgJobLogRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgJobRepository;
@@ -32,6 +32,8 @@ pub use persistence::postgres::PgJobRepository;
 pub use persistence::postgres::PgOrganizationRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgPipelineRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgPolicyRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgProjectRepository;
 #[cfg(feature = "postgres")]
@@ -45,10 +47,6 @@ pub use persistence::postgres::PgUserProjectRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserRepository;
 #[cfg(feature = "postgres")]
-pub use persistence::postgres::PgUserRoleRepository;
-#[cfg(feature = "postgres")]
-pub use persistence::postgres::PgAgentRepository;
-
 #[cfg(feature = "hash")]
 pub use services::Argon2HashService;
 
@@ -62,6 +60,6 @@ pub use services::LettreMailer;
 pub use persistence::postgres::PgInvitationRepository;
 
 #[cfg(feature = "oauth-github")]
-pub use services::GitHubOAuthProvider;
-#[cfg(feature = "oauth-github")]
 pub use persistence::postgres::PgOAuthIdentityRepository;
+#[cfg(feature = "oauth-github")]
+pub use services::GitHubOAuthProvider;

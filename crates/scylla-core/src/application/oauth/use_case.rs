@@ -1,9 +1,9 @@
-use crate::application::oauth::provider::{OAuthProvider, PROVIDER_GITHUB};
-use crate::application::oauth::repository::OAuthIdentityRepository;
-use crate::application::permission::grant::{
+use crate::application::authz::grant::{
     Grant, GrantPrincipal, GrantScope, ORGANIZATION_ADMIN_ROLE,
 };
-use crate::application::permission::policy::PolicyControl;
+use crate::application::authz::policy::PolicyControl;
+use crate::application::oauth::provider::{OAuthProvider, PROVIDER_GITHUB};
+use crate::application::oauth::repository::OAuthIdentityRepository;
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{HashService, SessionRepository, UserRepository};
 use crate::domain::entities::{Organization, OrganizationId, Session, User, UserId};
@@ -75,7 +75,11 @@ where
             .await?
         {
             let token = self.issue_session(&user_id).await?;
-            return Ok(OAuthOutcome { token, user_id, organization_id: None });
+            return Ok(OAuthOutcome {
+                token,
+                user_id,
+                organization_id: None,
+            });
         }
 
         // 2. Same email as an existing account → link the identity.
@@ -111,13 +115,20 @@ where
             GrantScope::Organization(organization.id().clone()),
         );
 
+        // Account, org, owner grant AND the GitHub identity link commit in ONE
+        // transaction — a failure can't leave an account with no linked identity
+        // (which, for an emailless GitHub account, would be unrecoverable).
         self.signup_repo
-            .provision_account(&user, &organization, &grant)
+            .provision_account_with_identity(
+                &user,
+                &organization,
+                &grant,
+                PROVIDER_GITHUB,
+                &info.provider_user_id,
+            )
             .await?;
+        // Make the owner grant live now (after the account is durably committed).
         self.policy_control.reload().await?;
-        self.identity_repo
-            .link(user.id(), PROVIDER_GITHUB, &info.provider_user_id)
-            .await?;
 
         let token = self.issue_session(user.id()).await?;
         Ok(OAuthOutcome {
@@ -129,8 +140,11 @@ where
 
     async fn issue_session(&self, user_id: &UserId) -> DomainResult<String> {
         let token = Uuid::new_v4().to_string();
-        let session =
-            Session::create(user_id.clone(), token.clone(), Duration::hours(SESSION_TTL_HOURS));
+        let session = Session::create(
+            user_id.clone(),
+            token.clone(),
+            Duration::hours(SESSION_TTL_HOURS),
+        );
         self.session_repo.create(&session).await?;
         Ok(token)
     }

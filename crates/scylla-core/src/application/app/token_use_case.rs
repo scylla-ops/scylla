@@ -48,7 +48,11 @@ where
     #[instrument(skip(self, secret), fields(app_id = %app_id))]
     pub async fn issue(&self, app_id: AppId, secret: AppSecret) -> DomainResult<AppTokenOutcome> {
         let invalid = || DomainError::unauthorized("Invalid app credentials");
-        let app = self.app_repo.find_by_id(&app_id).await.map_err(|_| invalid())?;
+        let app = self
+            .app_repo
+            .find_by_id(&app_id)
+            .await
+            .map_err(|_| invalid())?;
         if !app.is_active() {
             return Err(invalid());
         }

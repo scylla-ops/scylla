@@ -78,7 +78,9 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("AppToken", token.to_string())?;
+        // Never echo the raw bearer token into the error id — it can flow into
+        // logs / tracing fields / gRPC status. Use a non-secret placeholder.
+        .not_found_as("AppToken", "<token>")?;
         Ok(AppToken::from_persistence(
             AppTokenId::new(rec.id),
             rec.token,

@@ -1,6 +1,6 @@
+use crate::application::UserOrganizationRepository;
 use crate::application::audit::NoopAuditLog;
 use crate::application::oauth::{OAuthProvider, OAuthUseCases, OAuthUserInfo};
-use crate::application::UserOrganizationRepository;
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::user::Email;
 use crate::infrastructure::persistence::postgres::{
@@ -83,7 +83,10 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
     );
 
     let second = uc.callback("code-2").await.expect("second login");
-    assert_eq!(first.user_id, second.user_id, "same identity reuses account");
+    assert_eq!(
+        first.user_id, second.user_id,
+        "same identity reuses account"
+    );
     assert!(
         second.organization_id.is_none(),
         "returning user creates no org"
@@ -109,5 +112,8 @@ async fn login_links_to_existing_user_by_email(pool: sqlx::PgPool) {
 
     let out = uc.callback("code").await.expect("login");
     assert_eq!(out.user_id, *existing.id(), "linked to existing account");
-    assert!(out.organization_id.is_none(), "no new org for existing user");
+    assert!(
+        out.organization_id.is_none(),
+        "no new org for existing user"
+    );
 }

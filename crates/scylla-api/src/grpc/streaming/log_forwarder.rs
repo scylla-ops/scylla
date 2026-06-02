@@ -2,7 +2,7 @@
 //! `ReceiverStream` for tonic. Back-pressure drops lines rather than blocking
 //! the upstream; the task exits cleanly when the client disconnects.
 
-use crate::grpc::mappers::job_log_to_proto;
+use crate::grpc::mappers::{domain_error_to_status, job_log_to_proto};
 use futures_util::StreamExt;
 use scylla_core::application::JobLogLiveStream;
 use scylla_protocol::services::job::JobLogEvent;
@@ -43,7 +43,9 @@ async fn forward(mut stream: JobLogLiveStream, tx: mpsc::Sender<Result<JobLogEve
                     }
                 }
                 Some(Err(e)) => {
-                    let _ = tx.send(Err(Status::internal(format!("{e}")))).await;
+                    // Route through the central mapper: correct gRPC code per
+                    // variant and internal detail suppressed (don't leak `{e}`).
+                    let _ = tx.send(Err(domain_error_to_status(e))).await;
                 }
                 None => {
                     info!("log forwarder: upstream stream ended");

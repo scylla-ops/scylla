@@ -9,9 +9,9 @@ use scylla_core::domain::value_objects::app::{AppName, AppSecretLabel};
 use scylla_protocol::services::app::{
     App as ProtoApp, AppSecret as ProtoAppSecret, CreateAppRequest, CreateAppSecretRequest,
     CreatedApp as ProtoCreatedApp, CreatedAppSecret as ProtoCreatedAppSecret, DeleteAppRequest,
-    DeleteAppResponse, GetAppRequest, ListAppSecretsRequest, ListAppSecretsResponse, ListAppsRequest,
-    ListAppsResponse, RevokeAppSecretRequest, RevokeAppSecretResponse, SetAppActiveRequest,
-    SetAppSecretEnabledRequest, app_service_server::AppService,
+    DeleteAppResponse, GetAppRequest, ListAppSecretsRequest, ListAppSecretsResponse,
+    ListAppsRequest, ListAppsResponse, RevokeAppSecretRequest, RevokeAppSecretResponse,
+    SetAppActiveRequest, SetAppSecretEnabledRequest, app_service_server::AppService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};

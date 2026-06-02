@@ -1,5 +1,5 @@
-use crate::application::permission::grant::Grant;
-use crate::domain::entities::{App, AppCredential, AppId, OrganizationId, Agent};
+use crate::application::authz::grant::Grant;
+use crate::domain::entities::{Agent, App, AppCredential, AppId, OrganizationId};
 use crate::domain::errors::DomainResult;
 use async_trait::async_trait;
 

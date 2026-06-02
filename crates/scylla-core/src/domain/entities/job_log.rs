@@ -1,7 +1,7 @@
+use crate::domain::clock;
 use crate::domain::entities::{JobId, JobLogId};
 use crate::domain::value_objects::job::LogStream;
 use crate::domain::value_objects::pipeline::NodeId;
-use crate::domain::clock;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone)]

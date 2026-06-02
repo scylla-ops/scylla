@@ -1,15 +1,15 @@
-use crate::application::caller::CallerContext;
-use crate::application::permission::grant::{
+use crate::application::authz::grant::{
     Grant, GrantPrincipal, GrantScope, ORGANIZATION_ADMIN_ROLE,
 };
-use crate::application::permission::policy::PolicyControl;
+use crate::application::authz::policy::PolicyControl;
+use crate::application::caller::CallerContext;
 use crate::application::{
     OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
 };
 use crate::domain::entities::{Organization, OrganizationId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
-use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
@@ -47,7 +47,7 @@ impl<
         description: Option<OrganizationDescription>,
     ) -> DomainResult<Organization> {
         self.permission_service
-            .check(caller, Permission::CreateOrganization)
+            .check(caller, Action::CreateOrganization)
             .await?;
 
         if self.org_repo.name_exists(&name).await? {
@@ -90,7 +90,7 @@ impl<
         id: &OrganizationId,
     ) -> DomainResult<Organization> {
         self.permission_service
-            .check(caller, Permission::ReadOrganization(id.clone()))
+            .check(caller, Action::ReadOrganization(id.clone()))
             .await?;
         self.org_repo.find_by_id(id).await
     }
@@ -104,7 +104,7 @@ impl<
         description: Option<Option<OrganizationDescription>>,
     ) -> DomainResult<Organization> {
         self.permission_service
-            .check(caller, Permission::UpdateOrganization(id.clone()))
+            .check(caller, Action::UpdateOrganization(id.clone()))
             .await?;
 
         let mut org = self.org_repo.find_by_id(id).await?;
@@ -129,7 +129,7 @@ impl<
         id: &OrganizationId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::UpdateOrganization(id.clone()))
+            .check(caller, Action::UpdateOrganization(id.clone()))
             .await?;
         let mut org = self.org_repo.find_by_id(id).await?;
         org.toggle_active()?;
@@ -140,7 +140,7 @@ impl<
     #[instrument(skip(self, caller), fields(org_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &OrganizationId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::DeleteOrganization(id.clone()))
+            .check(caller, Action::DeleteOrganization(id.clone()))
             .await?;
         self.org_repo.find_by_id(id).await?;
         self.org_repo.delete(id).await
@@ -153,7 +153,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Organization>> {
         self.permission_service
-            .check(caller, Permission::ListOrganizations)
+            .check(caller, Action::ListOrganizations)
             .await?;
         self.org_repo.list_all(pagination).await
     }
@@ -166,17 +166,25 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
         self.permission_service
-            .check(caller, Permission::ListOrganizationMembers(org_id.clone()))
+            .check(caller, Action::ListOrganizationMembers(org_id.clone()))
             .await?;
 
         let paginated = self.user_org_repo.list_members(org_id, pagination).await?;
         let (user_ids, metadata) = paginated.into_parts();
 
-        let mut users = Vec::with_capacity(user_ids.len());
-        for user_id in &user_ids {
-            let user = self.user_repo.find_by_id(user_id).await?;
-            users.push(user);
-        }
+        // One batched read instead of N `find_by_id`; re-order to the paginated
+        // membership order (the batch result order is unspecified).
+        let mut by_id: std::collections::HashMap<String, User> = self
+            .user_repo
+            .find_by_ids(&user_ids)
+            .await?
+            .into_iter()
+            .map(|u| (u.id().as_str().to_owned(), u))
+            .collect();
+        let users = user_ids
+            .iter()
+            .filter_map(|id| by_id.remove(id.as_str()))
+            .collect();
 
         Ok((users, metadata))
     }
@@ -189,10 +197,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<Organization>, PaginationMetadata)> {
         self.permission_service
-            .check(
-                caller,
-                Permission::ListUserOrganizations(user_id.clone()),
-            )
+            .check(caller, Action::ListUserOrganizations(user_id.clone()))
             .await?;
 
         let paginated = self
@@ -201,11 +206,17 @@ impl<
             .await?;
         let (org_ids, metadata) = paginated.into_parts();
 
-        let mut orgs = Vec::with_capacity(org_ids.len());
-        for org_id in &org_ids {
-            let org = self.org_repo.find_by_id(org_id).await?;
-            orgs.push(org);
-        }
+        let mut by_id: std::collections::HashMap<String, Organization> = self
+            .org_repo
+            .find_by_ids(&org_ids)
+            .await?
+            .into_iter()
+            .map(|o| (o.id().as_str().to_owned(), o))
+            .collect();
+        let orgs = org_ids
+            .iter()
+            .filter_map(|id| by_id.remove(id.as_str()))
+            .collect();
 
         Ok((orgs, metadata))
     }
@@ -218,10 +229,7 @@ impl<
         org_id: &OrganizationId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(
-                caller,
-                Permission::AddOrganizationMember(org_id.clone()),
-            )
+            .check(caller, Action::AddOrganizationMember(org_id.clone()))
             .await?;
 
         if self.user_org_repo.is_member(user_id, org_id).await? {
@@ -241,10 +249,7 @@ impl<
         org_id: &OrganizationId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(
-                caller,
-                Permission::RemoveOrganizationMember(org_id.clone()),
-            )
+            .check(caller, Action::RemoveOrganizationMember(org_id.clone()))
             .await?;
         self.user_org_repo.remove_member(user_id, org_id).await
     }

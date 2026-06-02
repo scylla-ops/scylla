@@ -12,7 +12,10 @@ pub enum InvitationStatus {
 impl InvitationStatus {
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
         let value = value.into();
-        match value.as_str() {
+        // Trim + lowercase on the way in, mirroring `JobStatus`/`NodeState`, so a
+        // stored or inbound `"Pending"` / `" pending"` rehydrates instead of
+        // failing validation (the doc promises lowercase but nothing enforced it).
+        match value.trim().to_lowercase().as_str() {
             "pending" => Ok(Self::Pending),
             "accepted" => Ok(Self::Accepted),
             "revoked" => Ok(Self::Revoked),

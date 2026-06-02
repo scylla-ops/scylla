@@ -1,7 +1,7 @@
 use super::PgAppRepository;
 use crate::application::app::AppRepository;
-use crate::application::permission::grant::{
-    Grant, GrantPrincipal, GrantRepository, GrantScope, AGENT_ROLE,
+use crate::application::authz::grant::{
+    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_AGENT_ROLE,
 };
 use crate::domain::entities::{App, AppCredential};
 use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
@@ -24,7 +24,7 @@ fn agent_app(
     );
     let grant = Grant::new(
         GrantPrincipal::App(app.id().clone()),
-        RoleName::new(AGENT_ROLE).unwrap(),
+        RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
         GrantScope::Organization(org_id.clone()),
     );
     (app, credential, grant)
@@ -36,7 +36,9 @@ async fn provision_then_find_list_and_delete(pool: PgPool) {
     let repo = PgAppRepository::new(pool.clone());
     let (app, credential, grant) = agent_app(org.id(), "ci-runner");
 
-    repo.provision(&app, &credential, &grant).await.expect("provision");
+    repo.provision(&app, &credential, &grant)
+        .await
+        .expect("provision");
 
     let found = repo.find_by_id(app.id()).await.expect("app persisted");
     assert_eq!(found.name().as_str(), "ci-runner");
@@ -46,7 +48,10 @@ async fn provision_then_find_list_and_delete(pool: PgPool) {
     assert_eq!(list.len(), 1);
 
     // The initial agent grant is persisted in the same transaction.
-    let grants = PgGrantRepository::new(pool.clone()).list_all().await.unwrap();
+    let grants = PgGrantRepository::new(pool.clone())
+        .list_all()
+        .await
+        .unwrap();
     assert!(
         grants
             .iter()
@@ -63,7 +68,9 @@ async fn duplicate_name_in_same_org_conflicts(pool: PgPool) {
     let org = seed_org(&pool, "Acme").await;
     let repo = PgAppRepository::new(pool.clone());
     let (first, first_cred, first_grant) = agent_app(org.id(), "dup");
-    repo.provision(&first, &first_cred, &first_grant).await.expect("first");
+    repo.provision(&first, &first_cred, &first_grant)
+        .await
+        .expect("first");
 
     let (clash, clash_cred, clash_grant) = agent_app(org.id(), "dup");
     let err = repo
@@ -83,7 +90,9 @@ async fn cascade_org_delete_removes_apps(pool: PgPool) {
     let org = seed_org(&pool, "Acme").await;
     let repo = PgAppRepository::new(pool.clone());
     let (app, credential, grant) = agent_app(org.id(), "ci-runner");
-    repo.provision(&app, &credential, &grant).await.expect("provision");
+    repo.provision(&app, &credential, &grant)
+        .await
+        .expect("provision");
 
     PgOrganizationRepository::new(pool.clone())
         .delete(org.id())

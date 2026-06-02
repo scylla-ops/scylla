@@ -1,5 +1,5 @@
 use crate::application::OrganizationRepository;
-use crate::application::permission::grant::Grant;
+use crate::application::authz::grant::Grant;
 use crate::domain::entities::{Organization, OrganizationId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
@@ -50,6 +50,11 @@ impl OrganizationRepository for PgOrganizationRepository {
     #[instrument(skip(self), fields(org_id = %id))]
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization> {
         queries::find_by_id(&self.pool, id).await
+    }
+
+    #[instrument(skip(self, ids), fields(n = ids.len()))]
+    async fn find_by_ids(&self, ids: &[OrganizationId]) -> DomainResult<Vec<Organization>> {
+        queries::find_by_ids(&self.pool, ids).await
     }
 
     #[instrument(skip(self), fields(name = %name))]
@@ -167,6 +172,42 @@ pub mod queries {
             rec.created_at,
             rec.updated_at,
         )
+    }
+
+    pub async fn find_by_ids<'e, E>(
+        executor: E,
+        ids: &[OrganizationId],
+    ) -> DomainResult<Vec<Organization>>
+    where
+        E: PgExecutor<'e>,
+    {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let id_strs: Vec<String> = ids.iter().map(|i| i.as_str().to_owned()).collect();
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, name, description, is_active, created_at, updated_at
+            FROM organizations
+            WHERE id = ANY($1::text[])
+            "#,
+            &id_strs,
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter()
+            .map(|r| {
+                row_into_org(
+                    r.id,
+                    r.name,
+                    r.description,
+                    r.is_active,
+                    r.created_at,
+                    r.updated_at,
+                )
+            })
+            .collect()
     }
 
     pub async fn find_by_name<'e, E>(

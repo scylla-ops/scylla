@@ -1,6 +1,6 @@
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::permission::policy::PolicyControl;
+use scylla_core::application::authz::policy::PolicyControl;
 use scylla_core::application::{HashService, SessionRepository, SignupRepository, SignupUseCases};
 use scylla_core::domain::value_objects::organization::OrganizationName;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};

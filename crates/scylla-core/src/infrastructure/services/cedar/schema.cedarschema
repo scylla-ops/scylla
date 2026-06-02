@@ -7,8 +7,10 @@
 // type and policies stay readable.
 
 namespace Scylla {
-    entity Role;
     entity Service;
+    // Tenancy root. Every Organization is `in` System, so a System-scoped grant
+    // (system-admin) reaches the whole tree — the unified replacement for the
+    // former global role.
     entity System;
 
     // Machine principal (agent / automation) owned by an organization. As a
@@ -16,12 +18,15 @@ namespace Scylla {
     // resource it lives under its org, so org-admins manage it via the hierarchy.
     entity App in [Organization];
 
-    entity Organization;
+    entity Organization in [System];
     entity Project in [Organization];
     entity Pipeline in [Project];
     entity Job in [Pipeline];
 
-    entity User in [Role] {
+    // Users are also `in [System]` so a System-scoped grant (system-admin)
+    // reaches User-targeted actions (read/update/delete user) — without it,
+    // System would only cover the org subtree, not user management.
+    entity User in [System] {
         "memberOrgs": Set<Organization>,
         "memberProjects": Set<Project>,
     };
@@ -31,16 +36,22 @@ namespace Scylla {
            "createOrganization", "listOrganizations",
            "listProjects", "listPipelines",
            "createJob", "listJobs",
-           "managePolicies", "manageRoles"
+           "managePolicies"
         appliesTo { principal: [User, Service], resource: [System] };
 
-    // Grant management is scope-aware: a system admin manages any grant
-    // (resource System); an org/project admin manages grants within their scope
-    // (resource Organization / Project). Cedar `resource in ?resource` on the
-    // role template confines each admin to its own subtree, so an org admin
-    // cannot touch another org's grants (anti-escalation).
+    // Grant management is scope-aware, one action per scope so `appliesTo` pins
+    // the resource type: a system admin manages any grant (`manageGrants` on
+    // System); an org/project admin manages grants within their scope
+    // (`manageOrgGrants` on Organization / `manageProjectGrants` on Project).
+    // Cedar `resource in ?resource` on the role template confines each admin to
+    // its own subtree, so an org admin cannot touch another org's grants
+    // (anti-escalation).
     action "manageGrants"
-        appliesTo { principal: [User, Service], resource: [System, Organization, Project] };
+        appliesTo { principal: [User, Service], resource: [System] };
+    action "manageOrgGrants"
+        appliesTo { principal: [User, Service], resource: [Organization] };
+    action "manageProjectGrants"
+        appliesTo { principal: [User, Service], resource: [Project] };
 
     // ── User-targeted ──────────────────────────────────────────────────
     action "readUser", "updateUser", "deleteUser",
@@ -50,6 +61,7 @@ namespace Scylla {
     // ── Organization-targeted ──────────────────────────────────────────
     action "readOrganization", "updateOrganization", "deleteOrganization",
            "listOrganizationMembers", "addOrganizationMember", "removeOrganizationMember",
+           "manageInvitations",
            "createProject", "createApp", "createAgent",
            "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization",
            "listAppsByOrganization", "listAgents"

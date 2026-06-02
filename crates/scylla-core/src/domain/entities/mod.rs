@@ -1,5 +1,6 @@
 mod ids;
 
+mod agent;
 mod app;
 mod app_credential;
 mod app_token;
@@ -13,10 +14,10 @@ mod session;
 mod user;
 mod user_organization;
 mod user_project;
-mod agent;
 
 pub use ids::*;
 
+pub use agent::*;
 pub use app::*;
 pub use app_credential::*;
 pub use app_token::*;
@@ -30,4 +31,3 @@ pub use session::*;
 pub use user::*;
 pub use user_organization::*;
 pub use user_project::*;
-pub use agent::*;

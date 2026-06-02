@@ -15,7 +15,10 @@ fn validate(s: &str) -> Result<(), DomainError> {
     let Some((local, domain)) = s.split_once('@') else {
         return Err(DomainError::validation("Email must contain '@'"));
     };
-    if local.is_empty() || domain.is_empty() || !domain.contains('.') || domain.starts_with('.')
+    if local.is_empty()
+        || domain.is_empty()
+        || !domain.contains('.')
+        || domain.starts_with('.')
         || domain.ends_with('.')
     {
         return Err(DomainError::validation("Email is not a valid address"));

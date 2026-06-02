@@ -5,7 +5,7 @@ use crate::grpc::mappers::{
 };
 use derive_more::Constructor;
 use scylla_core::application::OrganizationUseCases;
-use scylla_core::application::permission::policy::PolicyControl;
+use scylla_core::application::authz::policy::PolicyControl;
 use scylla_core::application::{
     OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
 };

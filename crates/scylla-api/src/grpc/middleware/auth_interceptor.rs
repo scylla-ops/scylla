@@ -1,3 +1,4 @@
+use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{AppTokenRepository, CallerContext, SessionRepository};
 use std::sync::Arc;
@@ -68,31 +69,42 @@ where
         Box::pin(async move {
             let token = extract_bearer_token(&request)?;
 
-            // A user session takes precedence; an expired one is swept.
-            if let Ok(session) = session_repo.find_by_token(&token).await {
-                if session.is_expired() {
-                    let _ = session_repo.delete_by_token(&token).await;
-                    return Err(Status::unauthenticated("Token has expired"));
+            // A user session takes precedence; an expired one is swept. Only a
+            // genuine "not found" falls through to the App-token path — any other
+            // error (DB down, pool exhausted) is a real failure and must surface
+            // as INTERNAL, not be masked as an authentication failure.
+            match session_repo.find_by_token(&token).await {
+                Ok(session) => {
+                    if session.is_expired() {
+                        let _ = session_repo.delete_by_token(&token).await;
+                        return Err(Status::unauthenticated("Token has expired"));
+                    }
+                    request
+                        .extensions_mut()
+                        .insert(AuthContext::new(CallerContext::User(
+                            session.user_id().clone(),
+                        )));
+                    return Ok(request);
                 }
-                request
-                    .extensions_mut()
-                    .insert(AuthContext::new(CallerContext::User(
-                        session.user_id().clone(),
-                    )));
-                return Ok(request);
+                Err(e) if e.is_not_found() => {}
+                Err(e) => return Err(domain_error_to_status(e)),
             }
 
             // Otherwise the token may belong to a machine App.
-            if let Ok(app_token) = app_token_repo.find_by_token(&token).await {
-                if app_token.is_expired() {
-                    return Err(Status::unauthenticated("Token has expired"));
+            match app_token_repo.find_by_token(&token).await {
+                Ok(app_token) => {
+                    if app_token.is_expired() {
+                        return Err(Status::unauthenticated("Token has expired"));
+                    }
+                    request
+                        .extensions_mut()
+                        .insert(AuthContext::new(CallerContext::App(
+                            app_token.app_id().clone(),
+                        )));
+                    return Ok(request);
                 }
-                request
-                    .extensions_mut()
-                    .insert(AuthContext::new(CallerContext::App(
-                        app_token.app_id().clone(),
-                    )));
-                return Ok(request);
+                Err(e) if e.is_not_found() => {}
+                Err(e) => return Err(domain_error_to_status(e)),
             }
 
             Err(Status::unauthenticated("Invalid or expired token"))

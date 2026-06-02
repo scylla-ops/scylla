@@ -1,7 +1,7 @@
+use crate::domain::clock;
 use crate::domain::entities::UserId;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::{Email, PasswordHash, Username};
-use crate::domain::clock;
 use chrono::{DateTime, Utc};
 
 /// User domain entity

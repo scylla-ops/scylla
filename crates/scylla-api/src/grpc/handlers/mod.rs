@@ -1,6 +1,8 @@
 #[macro_use]
 pub mod macros;
 
+pub mod agent_admin_handler;
+pub mod agent_handler;
 pub mod app_auth_handler;
 pub mod app_handler;
 pub mod auth_handler;
@@ -17,11 +19,10 @@ pub mod policy_handler;
 pub mod project_handler;
 #[cfg(feature = "signup")]
 pub mod registration_handler;
-pub mod role_handler;
 pub mod user_handler;
-pub mod agent_admin_handler;
-pub mod agent_handler;
 
+pub use agent_admin_handler::AgentAdminHandler;
+pub use agent_handler::AgentHandler;
 pub use app_auth_handler::AppAuthHandler;
 pub use app_handler::AppHandler;
 pub use auth_handler::AuthHandler;
@@ -38,7 +39,4 @@ pub use policy_handler::PolicyHandler;
 pub use project_handler::ProjectHandler;
 #[cfg(feature = "signup")]
 pub use registration_handler::RegistrationHandler;
-pub use role_handler::RoleHandler;
 pub use user_handler::UserHandler;
-pub use agent_admin_handler::AgentAdminHandler;
-pub use agent_handler::AgentHandler;

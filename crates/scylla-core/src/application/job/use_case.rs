@@ -1,9 +1,10 @@
 use crate::application::caller::CallerContext;
+use crate::application::job::event::JobEvent;
 use crate::application::{JobRepository, PermissionService};
 use crate::domain::entities::{Job, JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::job::{JobEvent, NodeState};
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::action::Action;
+use crate::domain::value_objects::job::NodeState;
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
@@ -25,7 +26,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         // `create` is service-only today (orchestrator / recorder); the Cedar
         // service-permit rule admits it. End-user job creation has no policy yet.
         self.permission_service
-            .check(caller, Permission::CreateJob)
+            .check(caller, Action::CreateJob)
             .await?;
         self.job_repo.create(job).await
     }
@@ -33,7 +34,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
     #[instrument(skip(self, caller), fields(job_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &JobId) -> DomainResult<Job> {
         self.permission_service
-            .check(caller, Permission::ReadJob(id.clone()))
+            .check(caller, Action::ReadJob(id.clone()))
             .await?;
         self.job_repo.find_by_id(id).await
     }
@@ -41,13 +42,13 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
     #[instrument(skip(self, caller, job))]
     pub async fn update(&self, caller: &CallerContext, job: &Job) -> DomainResult<Job> {
         self.permission_service
-            .check(caller, Permission::WriteJob(job.id().clone()))
+            .check(caller, Action::WriteJob(job.id().clone()))
             .await?;
         self.job_repo.update(job).await
     }
 
     /// Apply a status event reported by a agent to its job and persist it.
-    /// Gated by a single [`Permission::WriteJobStatus`] check (the agent role
+    /// Gated by a single [`Action::WriteJobStatus`] check (the agent role
     /// confers it); the load/update repo calls deliberately bypass per-step
     /// Cedar so a agent needs only `writeJobStatus`, not `readJob`/`writeJob`.
     #[instrument(skip(self, caller), fields(job_id = %job_id))]
@@ -58,7 +59,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         event: &JobEvent,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::WriteJobStatus(job_id.clone()))
+            .check(caller, Action::WriteJobStatus(job_id.clone()))
             .await?;
 
         let mut job = self.job_repo.find_by_id(job_id).await?;
@@ -87,7 +88,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
     #[instrument(skip(self, caller), fields(job_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &JobId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::DeleteJob(id.clone()))
+            .check(caller, Action::DeleteJob(id.clone()))
             .await?;
         self.job_repo.find_by_id(id).await?;
         self.job_repo.delete(id).await
@@ -100,7 +101,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
         self.permission_service
-            .check(caller, Permission::ListJobs)
+            .check(caller, Action::ListJobs)
             .await?;
         self.job_repo.list_all(pagination).await
     }
@@ -113,7 +114,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
         self.permission_service
-            .check(caller, Permission::ListJobsByPipeline(pipeline_id.clone()))
+            .check(caller, Action::ListJobsByPipeline(pipeline_id.clone()))
             .await?;
         self.job_repo
             .list_by_pipeline(pipeline_id, pagination)
@@ -128,7 +129,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
         self.permission_service
-            .check(caller, Permission::ListJobsByProject(project_id.clone()))
+            .check(caller, Action::ListJobsByProject(project_id.clone()))
             .await?;
         self.job_repo.list_by_project(project_id, pagination).await
     }
@@ -143,7 +144,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         self.permission_service
             .check(
                 caller,
-                Permission::ListJobsByOrganization(organization_id.clone()),
+                Action::ListJobsByOrganization(organization_id.clone()),
             )
             .await?;
         self.job_repo

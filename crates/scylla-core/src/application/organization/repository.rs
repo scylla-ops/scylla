@@ -1,4 +1,4 @@
-use crate::application::permission::grant::Grant;
+use crate::application::authz::grant::Grant;
 use crate::domain::entities::{Organization, OrganizationId, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::organization::OrganizationName;
@@ -20,6 +20,11 @@ pub trait OrganizationRepository {
     ) -> DomainResult<()>;
 
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization>;
+
+    /// Resolve many organizations in one round-trip (order unspecified, missing
+    /// ids absent). Callers needing the input order re-associate by id. Avoids
+    /// the N+1 of `find_by_id` in a loop.
+    async fn find_by_ids(&self, ids: &[OrganizationId]) -> DomainResult<Vec<Organization>>;
 
     async fn find_by_name(&self, name: &OrganizationName) -> DomainResult<Organization>;
 

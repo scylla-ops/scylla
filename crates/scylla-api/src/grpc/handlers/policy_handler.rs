@@ -7,7 +7,8 @@ use scylla_core::application::{
 use scylla_core::domain::entities::CedarPolicyId;
 use scylla_core::domain::errors::DomainError;
 use scylla_protocol::services::permission::{
-    CreatePolicyRequest, DeletePolicyRequest, DeletePolicyResponse, ListPoliciesRequest,
+    AuthzAction, CreatePolicyRequest, DeletePolicyRequest, DeletePolicyResponse,
+    ListAuthzVocabularyRequest, ListAuthzVocabularyResponse, ListPoliciesRequest,
     ListPoliciesResponse, Policy, PolicyResponse, SetPolicyEnabledRequest, UpdatePolicyRequest,
     ValidatePolicyRequest, ValidatePolicyResponse, policy_service_server::PolicyService,
 };
@@ -135,6 +136,30 @@ impl<
             })),
             Err(e) => Err(domain_error_to_status(e)),
         }
+    }
+
+    async fn list_authz_vocabulary(
+        &self,
+        request: Request<ListAuthzVocabularyRequest>,
+    ) -> Result<Response<ListAuthzVocabularyResponse>, Status> {
+        let caller = caller!(request);
+
+        let (actions, resource_types) = self
+            .use_cases
+            .authz_vocabulary(&caller)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(ListAuthzVocabularyResponse {
+            actions: actions
+                .iter()
+                .map(|(id, resource_type)| AuthzAction {
+                    id: (*id).to_string(),
+                    resource_type: (*resource_type).to_string(),
+                })
+                .collect(),
+            resource_types: resource_types.iter().map(|s| (*s).to_string()).collect(),
+        }))
     }
 }
 

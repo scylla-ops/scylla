@@ -1,13 +1,13 @@
 use crate::application::audit::NoopAuditLog;
+use crate::application::authz::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
 use crate::application::caller::CallerContext;
 use crate::application::invitation::InvitationUseCases;
-use crate::application::permission::grant::{GrantPrincipal, GrantRepository, GrantScope};
-use crate::application::{Mailer, NoopMailer, UserOrganizationRepository, UserRoleRepository};
+use crate::application::{Mailer, NoopMailer, UserOrganizationRepository};
 use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use crate::infrastructure::persistence::postgres::{
     PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgOrganizationRepository,
-    PgSessionRepository, PgUserOrganizationRepository, PgUserRepository, PgUserRoleRepository,
+    PgSessionRepository, PgUserOrganizationRepository, PgUserRepository,
 };
 use crate::infrastructure::{Argon2HashService, CedarPermissionService};
 use crate::test_support::prelude::*;
@@ -29,9 +29,9 @@ async fn use_cases(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
-            Arc::new(crate::infrastructure::persistence::postgres::PgPolicyRepository::new(
-                pool.clone(),
-            )),
+            Arc::new(
+                crate::infrastructure::persistence::postgres::PgPolicyRepository::new(pool.clone()),
+            ),
             Arc::new(NoopAuditLog),
         )
         .await
@@ -54,11 +54,17 @@ async fn use_cases(
 async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
     let org = seed_org(&pool, "Acme").await;
     let inviter = seed_user(&pool, "boss").await;
-    // Make the inviter a global admin so the AddOrganizationMember check passes.
-    PgUserRoleRepository::new(pool.clone())
-        .assign(inviter.id(), &RoleName::new("admin").unwrap())
+    // Make the inviter a global admin (System-scoped system-admin grant) so the
+    // manageInvitations check passes. Inserted BEFORE the permission service is
+    // built (grants are linked at construction).
+    PgGrantRepository::new(pool.clone())
+        .create(&Grant::new(
+            GrantPrincipal::User(inviter.id().clone()),
+            RoleName::new("system-admin").unwrap(),
+            GrantScope::System,
+        ))
         .await
-        .expect("assign admin");
+        .expect("grant system-admin");
 
     let uc = use_cases(&pool).await;
     let caller = CallerContext::User(inviter.id().clone());
@@ -92,8 +98,10 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
     );
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
-        grants.iter().any(|g| g.principal == GrantPrincipal::User(outcome.user_id.clone())
-            && g.scope == GrantScope::Organization(org.id().clone())),
+        grants.iter().any(
+            |g| g.principal == GrantPrincipal::User(outcome.user_id.clone())
+                && g.scope == GrantScope::Organization(org.id().clone())
+        ),
         "org-admin grant must be minted on accept"
     );
 }

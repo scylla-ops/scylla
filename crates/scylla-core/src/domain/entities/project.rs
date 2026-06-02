@@ -1,7 +1,7 @@
+use crate::domain::clock;
 use crate::domain::entities::{OrganizationId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
-use crate::domain::clock;
 use chrono::{DateTime, Utc};
 
 /// Project domain entity

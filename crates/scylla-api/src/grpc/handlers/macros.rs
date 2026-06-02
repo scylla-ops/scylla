@@ -6,7 +6,5 @@
 /// right principal; permission enforcement lives inside each use case, so
 /// handlers only forward the caller.
 macro_rules! caller {
-    ($request:expr) => {{
-        extract_auth_context(&$request)?.caller
-    }};
+    ($request:expr) => {{ extract_auth_context(&$request)?.caller }};
 }

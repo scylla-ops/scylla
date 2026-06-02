@@ -2,12 +2,12 @@ use crate::application::HashService;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::app::credential_repository::AppCredentialRepository;
 use crate::application::app::repository::AppRepository;
+use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
-use crate::application::permission::service::PermissionService;
 use crate::domain::entities::{App, AppCredential, AppCredentialId, AppId, OrganizationId};
 use crate::domain::errors::DomainResult;
+use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
-use crate::domain::value_objects::permission::Permission;
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
@@ -71,7 +71,7 @@ where
         name: AppName,
     ) -> DomainResult<CreatedApp> {
         self.permission_service
-            .check(caller, Permission::CreateApp(organization_id.clone()))
+            .check(caller, Action::CreateApp(organization_id.clone()))
             .await?;
 
         let secret = AppSecret::generate();
@@ -100,7 +100,7 @@ where
         self.permission_service
             .check(
                 caller,
-                Permission::ListAppsByOrganization(organization_id.clone()),
+                Action::ListAppsByOrganization(organization_id.clone()),
             )
             .await?;
         self.app_repo.list_by_organization(&organization_id).await
@@ -109,7 +109,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: AppId) -> DomainResult<App> {
         self.permission_service
-            .check(caller, Permission::ReadApp(id.clone()))
+            .check(caller, Action::ReadApp(id.clone()))
             .await?;
         self.app_repo.find_by_id(&id).await
     }
@@ -117,7 +117,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: AppId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::DeleteApp(id.clone()))
+            .check(caller, Action::DeleteApp(id.clone()))
             .await?;
         self.app_repo.delete(&id).await
     }
@@ -135,7 +135,7 @@ where
         active: bool,
     ) -> DomainResult<App> {
         self.permission_service
-            .check(caller, Permission::DeleteApp(id.clone()))
+            .check(caller, Action::DeleteApp(id.clone()))
             .await?;
         self.app_repo.set_active(&id, active).await?;
         // Cut the live stream on disable so a connected agent stops at once
@@ -159,7 +159,7 @@ where
         label: AppSecretLabel,
     ) -> DomainResult<CreatedAppSecret> {
         self.permission_service
-            .check(caller, Permission::DeleteApp(app_id.clone()))
+            .check(caller, Action::DeleteApp(app_id.clone()))
             .await?;
         // Ensure the app exists (surfaces NOT_FOUND rather than a dangling secret).
         self.app_repo.find_by_id(&app_id).await?;
@@ -180,7 +180,7 @@ where
         app_id: AppId,
     ) -> DomainResult<Vec<AppCredential>> {
         self.permission_service
-            .check(caller, Permission::ReadApp(app_id.clone()))
+            .check(caller, Action::ReadApp(app_id.clone()))
             .await?;
         self.credential_repo.list_by_app(&app_id).await
     }
@@ -197,7 +197,7 @@ where
     ) -> DomainResult<()> {
         let credential = self.credential_repo.find_by_id(&secret_id).await?;
         self.permission_service
-            .check(caller, Permission::DeleteApp(credential.app_id().clone()))
+            .check(caller, Action::DeleteApp(credential.app_id().clone()))
             .await?;
         self.credential_repo.delete(&secret_id).await?;
         // Cut the live agent stream: it was authed once at open and isn't
@@ -220,9 +220,11 @@ where
     ) -> DomainResult<AppCredential> {
         let credential = self.credential_repo.find_by_id(&secret_id).await?;
         self.permission_service
-            .check(caller, Permission::DeleteApp(credential.app_id().clone()))
+            .check(caller, Action::DeleteApp(credential.app_id().clone()))
             .await?;
-        self.credential_repo.set_enabled(&secret_id, enabled).await?;
+        self.credential_repo
+            .set_enabled(&secret_id, enabled)
+            .await?;
         if !enabled {
             self.registry.disconnect(credential.app_id());
         }

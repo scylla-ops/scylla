@@ -1,4 +1,4 @@
-use crate::application::permission::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
+use crate::application::authz::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::name::RoleName;
@@ -6,8 +6,14 @@ use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
+use super::error::SqlxResultExt;
+
+const SCOPE_SYSTEM: &str = "system";
 const SCOPE_ORGANIZATION: &str = "organization";
 const SCOPE_PROJECT: &str = "project";
+/// Sentinel `scope_id` for the singleton System scope (column is NOT NULL; there
+/// is only one System root, so the id is constant and ignored on read).
+const SYSTEM_SCOPE_ID: &str = "system";
 const PRINCIPAL_USER: &str = "user";
 const PRINCIPAL_APP: &str = "app";
 
@@ -20,11 +26,12 @@ where
     E: PgExecutor<'e>,
 {
     let (scope_kind, scope_id) = match &grant.scope {
+        GrantScope::System => (SCOPE_SYSTEM, SYSTEM_SCOPE_ID),
         GrantScope::Organization(id) => (SCOPE_ORGANIZATION, id.as_str()),
         GrantScope::Project(id) => (SCOPE_PROJECT, id.as_str()),
     };
     sqlx::query!(
-        "INSERT INTO permission_grants (id, principal_kind, principal_id, role_name, scope_kind, scope_id) \
+        "INSERT INTO grants (id, principal_kind, principal_id, role_name, scope_kind, scope_id) \
          VALUES ($1, $2, $3, $4, $5, $6) \
          ON CONFLICT (principal_kind, principal_id, role_name, scope_kind, scope_id) DO NOTHING",
         grant.id.as_str(),
@@ -36,11 +43,11 @@ where
     )
     .execute(executor)
     .await
-    .map_err(infra)?;
+    .to_domain()?;
     Ok(())
 }
 
-/// Persistence for explicit scoped grants (`permission_grants` table). Read once
+/// Persistence for explicit scoped grants (`grants` table). Read once
 /// at `CedarPermissionService` construction to link template instances.
 #[derive(Clone)]
 pub struct PgGrantRepository {
@@ -60,11 +67,11 @@ impl GrantRepository for PgGrantRepository {
     async fn list_all(&self) -> DomainResult<Vec<Grant>> {
         let rows = sqlx::query!(
             "SELECT id, principal_kind, principal_id, role_name, scope_kind, scope_id \
-             FROM permission_grants",
+             FROM grants",
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
 
         rows.into_iter()
             .map(|r| {
@@ -78,6 +85,7 @@ impl GrantRepository for PgGrantRepository {
                     }
                 };
                 let scope = match r.scope_kind.as_str() {
+                    SCOPE_SYSTEM => GrantScope::System,
                     SCOPE_ORGANIZATION => GrantScope::Organization(OrganizationId::new(r.scope_id)),
                     SCOPE_PROJECT => GrantScope::Project(ProjectId::new(r.scope_id)),
                     other => {
@@ -103,14 +111,10 @@ impl GrantRepository for PgGrantRepository {
 
     #[instrument(skip(self))]
     async fn delete(&self, id: &str) -> DomainResult<()> {
-        sqlx::query!("DELETE FROM permission_grants WHERE id = $1", id)
+        sqlx::query!("DELETE FROM grants WHERE id = $1", id)
             .execute(&self.pool)
             .await
-            .map_err(infra)?;
+            .to_domain()?;
         Ok(())
     }
-}
-
-fn infra<E: std::fmt::Display>(e: E) -> DomainError {
-    DomainError::Infrastructure(e.to_string())
 }

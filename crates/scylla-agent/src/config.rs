@@ -24,7 +24,7 @@ pub struct AgentConfig {
     /// Each node emits ~3 messages (NodeStarted, log lines, NodeCompleted), so a
     /// fast sequential chain can queue several hundred before the stream drains.
     /// Too small ⇒ the executor stalls on `send().await`; too big ⇒ memory bloat.
-    #[arg(long, default_value_t = 8192, value_parser = clap::value_parser!(u64).range(1..))]
+    #[arg(long, default_value_t = 8192, value_parser = clap::value_parser!(u64).range(1..=1_048_576))]
     pub publish_buffer_size: u64,
 
     /// Max consecutive failed (re)connection attempts before the agent exits.

@@ -1,7 +1,9 @@
 use super::PgAppTokenRepository;
 use crate::application::HashService;
 use crate::application::app::{AppRepository, AppTokenRepository, AppTokenUseCases};
-use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope, AGENT_ROLE};
+use crate::application::authz::grant::{
+    Grant, GrantPrincipal, GrantScope, ORGANIZATION_AGENT_ROLE,
+};
 use crate::domain::entities::{App, AppCredential};
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::value_objects::role::name::RoleName;
@@ -15,11 +17,14 @@ async fn seed_app(pool: &PgPool, secret: &AppSecret) -> App {
     let org = seed_org(pool, "Acme").await;
     let hash = Argon2HashService::new().hash_secret(secret).await.unwrap();
     let app = App::create(org.id().clone(), AppName::new("ci").unwrap());
-    let credential =
-        AppCredential::create(app.id().clone(), AppSecretLabel::new("default").unwrap(), hash);
+    let credential = AppCredential::create(
+        app.id().clone(),
+        AppSecretLabel::new("default").unwrap(),
+        hash,
+    );
     let grant = Grant::new(
         GrantPrincipal::App(app.id().clone()),
-        RoleName::new(AGENT_ROLE).unwrap(),
+        RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
         GrantScope::Organization(org.id().clone()),
     );
     PgAppRepository::new(pool.clone())

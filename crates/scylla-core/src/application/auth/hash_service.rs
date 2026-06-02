@@ -13,9 +13,5 @@ pub trait HashService {
     /// type system keeps app credentials and user passwords from being mixed up.
     async fn hash_secret(&self, secret: &AppSecret) -> DomainResult<AppSecretHash>;
 
-    async fn verify_secret(
-        &self,
-        secret: &AppSecret,
-        hash: &AppSecretHash,
-    ) -> DomainResult<bool>;
+    async fn verify_secret(&self, secret: &AppSecret, hash: &AppSecretHash) -> DomainResult<bool>;
 }

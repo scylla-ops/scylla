@@ -14,6 +14,11 @@ service PolicyService {
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
   // Dry-run: parse + typecheck a candidate without persisting it.
   rpc ValidatePolicy(ValidatePolicyRequest) returns (ValidatePolicyResponse);
+  // The authorization vocabulary a policy may reference: every action id (with
+  // the resource type it applies to) and the set of resource types. Read-only,
+  // derived from the compiled-in schema — lets an author write a permit/forbid
+  // against real actions instead of guessing names.
+  rpc ListAuthzVocabulary(ListAuthzVocabularyRequest) returns (ListAuthzVocabularyResponse);
 }
 
 message Policy {
@@ -69,6 +74,20 @@ message ValidatePolicyResponse {
   optional string error = 2;
 }
 
+message ListAuthzVocabularyRequest {}
+
+// One entry of the action vocabulary: the Cedar action id and the resource type
+// it applies to (the `Scylla::<Type>` a policy targets for that action).
+message AuthzAction {
+  string id            = 1; // e.g. "runPipeline"
+  string resource_type = 2; // e.g. "pipeline"
+}
+
+message ListAuthzVocabularyResponse {
+  repeated AuthzAction actions        = 1;
+  repeated string      resource_types = 2; // e.g. ["system","organization",…]
+}
+
 // ── Scoped grants ────────────────────────────────────────────────────────
 // An explicit "user holds role within scope" assignment, linked as a Cedar
 // template instance. Applied live (hot-reload). Requires `manageGrants`.
@@ -76,12 +95,21 @@ message ValidatePolicyResponse {
 enum GrantScopeKind {
   GRANT_SCOPE_ORGANIZATION = 0;
   GRANT_SCOPE_PROJECT      = 1;
+  // Global scope: a grant on the System root. A `system-admin` grant here is the
+  // unified replacement for the former global role — System is the top of the
+  // tenancy tree (org ∈ System), so it covers everything beneath. scope_id is
+  // ignored for SYSTEM (there is a single System root).
+  GRANT_SCOPE_SYSTEM       = 2;
 }
 
 service GrantService {
   rpc CreateGrant(CreateGrantRequest) returns (Grant);
   rpc RevokeGrant(RevokeGrantRequest) returns (RevokeGrantResponse);
   rpc ListGrants(ListGrantsRequest)   returns (ListGrantsResponse);
+  // The static catalog of roles assignable via CreateGrant. Read-only, no DB —
+  // there are no runtime-defined roles. Optional scope_kind filter narrows to
+  // roles valid on that scope (e.g. PROJECT → project-admin, project-agent).
+  rpc ListGrantableRoles(ListGrantableRolesRequest) returns (ListGrantableRolesResponse);
 }
 
 message Grant {
@@ -118,34 +146,23 @@ message ListGrantsResponse {
   repeated Grant grants = 1;
 }
 
-// ── Global role assignment ───────────────────────────────────────────────
-// User ↔ role membership (the `user_roles` table). Read live on every check,
-// so changes take effect immediately. Requires `manageRoles`.
-
-service RoleService {
-  rpc AssignRole(AssignRoleRequest)       returns (AssignRoleResponse);
-  rpc RevokeRole(RevokeRoleRequest)       returns (RevokeRoleResponse);
-  rpc ListUserRoles(ListUserRolesRequest) returns (ListUserRolesResponse);
+message ListGrantableRolesRequest {
+  // Optional: narrow to roles assignable on this scope kind.
+  optional GrantScopeKind scope_kind = 1;
 }
 
-message AssignRoleRequest {
-  string user_id = 1;
-  string role    = 2;
+// A role that may be assigned through a grant.
+message GrantableRole {
+  string         name        = 1; // e.g. "organization-admin"
+  GrantScopeKind scope_kind  = 2; // the scope kind it must be granted on
+  string         kind        = 3; // "admin" (full control) | "agent" (restricted)
+  string         description = 4;
 }
 
-message AssignRoleResponse {}
-
-message RevokeRoleRequest {
-  string user_id = 1;
-  string role    = 2;
+message ListGrantableRolesResponse {
+  repeated GrantableRole roles = 1;
 }
 
-message RevokeRoleResponse {}
-
-message ListUserRolesRequest {
-  string user_id = 1;
-}
-
-message ListUserRolesResponse {
-  repeated string roles = 1;
-}
+// NOTE: the former `RoleService` (global role assignment via the `user_roles`
+// table) has been removed. A "global role" is now just a grant on the System
+// scope — use GrantService.CreateGrant(user, "system-admin", GRANT_SCOPE_SYSTEM).

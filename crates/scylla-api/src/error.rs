@@ -35,7 +35,7 @@ pub enum StartupError {
     #[error("database initialization: {0}")]
     Database(#[from] DomainError),
     #[error("permission service init: {0}")]
-    Permission(String),
+    Action(String),
     #[error("mail service init: {0}")]
     Mail(String),
     #[error("oauth service init: {0}")]

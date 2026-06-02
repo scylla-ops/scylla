@@ -2,7 +2,7 @@ use crate::application::caller::CallerContext;
 use crate::application::{HashService, PermissionService, UserRepository};
 use crate::domain::entities::{User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
@@ -26,7 +26,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
         password: Password,
     ) -> DomainResult<User> {
         self.permission_service
-            .check(caller, Permission::CreateUser)
+            .check(caller, Action::CreateUser)
             .await?;
 
         if self.user_repo.username_exists(&username).await? {
@@ -41,7 +41,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
     #[instrument(skip(self, caller), fields(user_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &UserId) -> DomainResult<User> {
         self.permission_service
-            .check(caller, Permission::ReadUser(id.clone()))
+            .check(caller, Action::ReadUser(id.clone()))
             .await?;
         self.user_repo.find_by_id(id).await
     }
@@ -56,7 +56,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
         username: &Username,
     ) -> DomainResult<User> {
         self.permission_service
-            .check(caller, Permission::ListUsers)
+            .check(caller, Action::ListUsers)
             .await?;
         self.user_repo.find_by_username(username).await
     }
@@ -69,7 +69,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
         username: Option<Username>,
     ) -> DomainResult<User> {
         self.permission_service
-            .check(caller, Permission::UpdateUser(id.clone()))
+            .check(caller, Action::UpdateUser(id.clone()))
             .await?;
 
         let mut user = self.user_repo.find_by_id(id).await?;
@@ -89,7 +89,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
     #[instrument(skip(self, caller), fields(user_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &UserId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::DeleteUser(id.clone()))
+            .check(caller, Action::DeleteUser(id.clone()))
             .await?;
         self.user_repo.find_by_id(id).await?;
         self.user_repo.delete(id).await
@@ -102,7 +102,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<User>> {
         self.permission_service
-            .check(caller, Permission::ListUsers)
+            .check(caller, Action::ListUsers)
             .await?;
         self.user_repo.list_all(pagination).await
     }

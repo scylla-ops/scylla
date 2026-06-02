@@ -2,19 +2,21 @@ use crate::extract_auth_context;
 use derive_more::Constructor;
 use scylla_core::application::caller::CallerContext;
 use scylla_core::application::{
-    JobLogRepository, JobLogUseCases, JobRepository, JobUseCases, PermissionService,
-    AgentRepository,
+    AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
+    PermissionService,
 };
+use scylla_core::application::{JobDispatch, JobEvent};
 use scylla_core::domain::entities::{AppId, JobId, JobLog};
-use scylla_core::domain::value_objects::job::{JobEvent, LogStream};
-use scylla_core::domain::value_objects::pipeline::{JobDispatch, NodeId};
-use scylla_core::infrastructure::{InMemoryJobLogStream, InMemoryAgentRegistry};
+use scylla_core::domain::value_objects::job::LogStream;
+use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_core::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use scylla_protocol::services::agent::{
-    JobDispatch as ProtoJobDispatch, JobEventKind, AgentDown, AgentNode, AgentUp,
-    agent_down, agent_service_server::AgentService, agent_up,
+    AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, JobEventKind, agent_down,
+    agent_service_server::AgentService, agent_up,
 };
 use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status, Streaming};
@@ -60,7 +62,7 @@ impl<
         };
 
         let inbound = request.into_inner();
-        let dispatch_rx = self.registry.register(&app_id);
+        let (conn_id, dispatch_rx) = self.registry.register(&app_id);
 
         // Inbound reports run in the background; the App principal authorizes the
         // persistence (writeJobStatus / writeJobLog) via its agent grant.
@@ -72,11 +74,24 @@ impl<
             self.log_stream.clone(),
             self.registry.clone(),
             self.agent_repo.clone(),
+            conn_id,
         ));
 
-        // Outbound: forward dispatches placed in the registry to the wire.
+        // Outbound: forward dispatches placed in the registry to the wire. The
+        // stream owns a `DisconnectGuard`, so when tonic drops it (client RST /
+        // transport close) the registry entry is removed at once — cleanup no
+        // longer depends solely on the inbound half closing (a half-closed client
+        // would otherwise leave a stale sender that fills the dispatch queue).
         let down = ReceiverStream::new(dispatch_rx).map(|d| Ok(dispatch_to_proto(&d)));
-        Ok(Response::new(Box::pin(down)))
+        let guarded = GuardedStream {
+            inner: down,
+            _guard: DisconnectGuard {
+                registry: self.registry.clone(),
+                app_id: app_id.clone(),
+                conn_id,
+            },
+        };
+        Ok(Response::new(Box::pin(guarded)))
     }
 }
 
@@ -89,6 +104,7 @@ async fn read_reports<J, L, PS>(
     log_stream: Arc<InMemoryJobLogStream>,
     registry: Arc<InMemoryAgentRegistry>,
     agent_repo: Arc<dyn AgentRepository>,
+    conn_id: u64,
 ) where
     J: JobRepository + Send + Sync + 'static,
     L: JobLogRepository + Send + Sync + 'static,
@@ -106,6 +122,11 @@ async fn read_reports<J, L, PS>(
                     if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
                         warn!(app_id = %app_id, job_id = %status.job_id, error = %e, "failed to record job status");
                     }
+                    // A terminal job won't emit more log lines — evict its live
+                    // channel so the per-job stream map can't grow without bound.
+                    if matches!(event, JobEvent::JobCompleted | JobEvent::JobFailed { .. }) {
+                        log_stream.close(job_id.as_str());
+                    }
                 }
                 touch_last_seen(&agent_repo, &app_id).await;
             }
@@ -121,9 +142,43 @@ async fn read_reports<J, L, PS>(
             None => {}
         }
     }
-    // Stamp final activity on disconnect, then drop the stream from the registry.
+    // Stamp final activity on disconnect, then drop the stream from the registry
+    // — but only if this connection is still the live one (a reconnect may have
+    // replaced it). The outbound `DisconnectGuard` does the same on its side.
     touch_last_seen(&agent_repo, &app_id).await;
-    registry.unregister(&app_id);
+    registry.unregister_if_current(&app_id, conn_id);
+}
+
+/// RAII cleanup tied to the outbound dispatch stream. When tonic drops the
+/// response stream (client disconnect / transport close), this removes the
+/// App's registry entry — generation-checked so it never evicts a newer
+/// reconnect.
+struct DisconnectGuard {
+    registry: Arc<InMemoryAgentRegistry>,
+    app_id: AppId,
+    conn_id: u64,
+}
+
+impl Drop for DisconnectGuard {
+    fn drop(&mut self) {
+        self.registry
+            .unregister_if_current(&self.app_id, self.conn_id);
+    }
+}
+
+/// A stream that owns a value dropped with it. Used to attach a [`DisconnectGuard`]
+/// to the agent's outbound stream so client disconnect triggers registry cleanup.
+struct GuardedStream<S> {
+    inner: S,
+    _guard: DisconnectGuard,
+}
+
+impl<S: Stream + Unpin> Stream for GuardedStream<S> {
+    type Item = S::Item;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        Pin::new(&mut self.inner).poll_next(cx)
+    }
 }
 
 /// Best-effort durable presence update. Agent introspection must never break

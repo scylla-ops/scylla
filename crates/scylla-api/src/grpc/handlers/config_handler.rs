@@ -44,6 +44,9 @@ mod tests {
         assert_eq!(resp.oauth_github_enabled, cfg!(feature = "oauth-github"));
         assert_eq!(resp.metering_enabled, cfg!(feature = "metering"));
         assert_eq!(resp.mail_enabled, cfg!(feature = "mail"));
-        assert_eq!(resp.agent_org_scope_enabled, cfg!(feature = "agent-org-scope"));
+        assert_eq!(
+            resp.agent_org_scope_enabled,
+            cfg!(feature = "agent-org-scope")
+        );
     }
 }

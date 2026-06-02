@@ -1,10 +1,11 @@
+use crate::application::agent::dispatch::JobDispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::domain::entities::AppId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::pipeline::JobDispatch;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::mpsc;
 use tracing::warn;
 
@@ -14,9 +15,21 @@ const DISPATCH_QUEUE: usize = 64;
 /// to the sender side of its agent stream; the gRPC handler owns the receiver
 /// and forwards dispatches to the wire. Replaces the message broker for job
 /// dispatch — presence is simply having an entry here.
+///
+/// Each registration carries a monotonic **connection id**. Per-connection
+/// cleanup ([`unregister_if_current`](Self::unregister_if_current)) only removes
+/// the entry when its id still matches — so a slow cleanup of an old, dropped
+/// stream can never evict the entry of a *newer* reconnect of the same App
+/// (a check-then-act race that an unconditional `remove(app_id)` would hit).
+///
+/// Lock access recovers from poisoning (`unwrap_or_else(into_inner)`) instead of
+/// panicking: the map is plain data with no invariant a panicking thread could
+/// corrupt, and a poisoned panic would otherwise take down agent dispatch for
+/// the whole instance in a cascade.
 #[derive(Default)]
 pub struct InMemoryAgentRegistry {
-    agents: Mutex<HashMap<String, mpsc::Sender<JobDispatch>>>,
+    agents: Mutex<HashMap<String, (u64, mpsc::Sender<JobDispatch>)>>,
+    next_conn: AtomicU64,
 }
 
 impl InMemoryAgentRegistry {
@@ -25,23 +38,49 @@ impl InMemoryAgentRegistry {
         Self::default()
     }
 
-    /// Register a newly-connected agent and return the receiver the handler
-    /// forwards to the client stream. A reconnect replaces the prior sender.
-    pub fn register(&self, app_id: &AppId) -> mpsc::Receiver<JobDispatch> {
+    /// Register a newly-connected agent. Returns the connection id (for
+    /// per-connection cleanup) and the receiver the handler forwards to the
+    /// client stream. A reconnect replaces the prior sender.
+    pub fn register(&self, app_id: &AppId) -> (u64, mpsc::Receiver<JobDispatch>) {
         let (tx, rx) = mpsc::channel(DISPATCH_QUEUE);
-        let mut map = self.agents.lock().expect("agent registry lock poisoned");
-        if map.insert(app_id.as_str().to_string(), tx).is_some() {
+        let conn_id = self.next_conn.fetch_add(1, Ordering::Relaxed);
+        let mut map = self
+            .agents
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if map
+            .insert(app_id.as_str().to_string(), (conn_id, tx))
+            .is_some()
+        {
             warn!(app_id = %app_id, "agent reconnected; replacing previous stream");
         }
-        rx
+        (conn_id, rx)
     }
 
-    /// Remove a agent on disconnect.
+    /// Force-remove an App's current stream regardless of connection id. Used by
+    /// admin actions (secret revoke / app disable) that must drop whatever stream
+    /// is connected right now.
     pub fn unregister(&self, app_id: &AppId) {
         self.agents
             .lock()
-            .expect("agent registry lock poisoned")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .remove(app_id.as_str());
+    }
+
+    /// Remove an App's stream only if `conn_id` is still the live registration.
+    /// Used by per-connection cleanup so tearing down a stale connection doesn't
+    /// evict a newer reconnect.
+    pub fn unregister_if_current(&self, app_id: &AppId, conn_id: u64) {
+        let mut map = self
+            .agents
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if map
+            .get(app_id.as_str())
+            .is_some_and(|(id, _)| *id == conn_id)
+        {
+            map.remove(app_id.as_str());
+        }
     }
 }
 
@@ -50,7 +89,7 @@ impl AgentDispatch for InMemoryAgentRegistry {
     fn connected(&self) -> Vec<AppId> {
         self.agents
             .lock()
-            .expect("agent registry lock poisoned")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .keys()
             .map(AppId::new)
             .collect()
@@ -61,9 +100,9 @@ impl AgentDispatch for InMemoryAgentRegistry {
         let sender = self
             .agents
             .lock()
-            .expect("agent registry lock poisoned")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(app_id.as_str())
-            .cloned();
+            .map(|(_, tx)| tx.clone());
         match sender {
             Some(tx) => tx
                 .send(dispatch.clone())

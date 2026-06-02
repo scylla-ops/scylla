@@ -1,4 +1,4 @@
-use crate::application::permission::grant::Grant;
+use crate::application::authz::grant::Grant;
 use crate::application::signup::repository::SignupRepository;
 use crate::domain::entities::{Organization, User};
 use crate::domain::errors::DomainResult;
@@ -40,6 +40,35 @@ impl SignupRepository for PgSignupRepository {
         user_organization::repository::queries::add_member(&mut *tx, user.id(), organization.id())
             .await?;
         grants::insert(&mut *tx, grant).await?;
+
+        tx.commit().await.to_domain()?;
+        Ok(())
+    }
+
+    #[cfg(feature = "oauth-github")]
+    #[instrument(skip(self, user, organization, grant), fields(user_id = %user.id(), org_id = %organization.id(), provider))]
+    async fn provision_account_with_identity(
+        &self,
+        user: &User,
+        organization: &Organization,
+        grant: &Grant,
+        provider: &str,
+        provider_user_id: &str,
+    ) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+
+        users::repository::queries::create(&mut *tx, user).await?;
+        organizations::repository::queries::create(&mut *tx, organization).await?;
+        user_organization::repository::queries::add_member(&mut *tx, user.id(), organization.id())
+            .await?;
+        grants::insert(&mut *tx, grant).await?;
+        super::super::oauth_identities::repository::queries::link(
+            &mut *tx,
+            user.id(),
+            provider,
+            provider_user_id,
+        )
+        .await?;
 
         tx.commit().await.to_domain()?;
         Ok(())

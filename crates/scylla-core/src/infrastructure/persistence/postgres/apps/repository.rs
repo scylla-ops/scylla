@@ -1,6 +1,6 @@
 use crate::application::app::AppRepository;
-use crate::application::permission::grant::Grant;
-use crate::domain::entities::{App, AppCredential, AppId, OrganizationId, Agent};
+use crate::application::authz::grant::Grant;
+use crate::domain::entities::{Agent, App, AppCredential, AppId, OrganizationId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::app::AppName;
 use async_trait::async_trait;
@@ -9,7 +9,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
-use super::super::{app_secrets, grants, agents};
+use super::super::{agents, app_secrets, grants};
 
 #[derive(Clone)]
 pub struct PgAppRepository {

@@ -4,6 +4,7 @@ use crate::grpc::mappers::{
 };
 use derive_more::Constructor;
 use scylla_core::application::ProjectUseCases;
+use scylla_core::application::authz::policy::PolicyControl;
 use scylla_core::application::{
     PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
 };
@@ -26,8 +27,9 @@ pub struct ProjectHandler<
     UP: UserProjectRepository,
     U: UserRepository,
     PS: PermissionService,
+    PC: PolicyControl,
 > {
-    use_cases: Arc<ProjectUseCases<P, UP, U, PS>>,
+    use_cases: Arc<ProjectUseCases<P, UP, U, PS, PC>>,
 }
 
 #[async_trait::async_trait]
@@ -36,7 +38,8 @@ impl<
     UP: UserProjectRepository + Send + Sync + 'static,
     U: UserRepository + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
-> ProjectService for ProjectHandler<P, UP, U, PS>
+    PC: PolicyControl + Send + Sync + 'static,
+> ProjectService for ProjectHandler<P, UP, U, PS, PC>
 {
     async fn create_project(
         &self,

@@ -1,13 +1,14 @@
-use crate::application::permission::entity_provider::{
+use crate::application::authz::entity_provider::{
     AuthzEntityProvider, PrincipalAuthz, ResourceAncestors,
 };
 use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
-use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::ResourceRef;
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::errors::DomainResult;
+use crate::domain::value_objects::action::ResourceRef;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use tracing::instrument;
+
+use super::error::SqlxResultExt;
 
 /// Loads the authz facts Cedar needs from the existing membership tables and
 /// tenancy foreign keys. Read-only; one query per dimension, no caching (fine
@@ -28,25 +29,13 @@ impl PgAuthzEntityProvider {
 impl AuthzEntityProvider for PgAuthzEntityProvider {
     #[instrument(skip(self), fields(user_id = %user))]
     async fn principal_authz(&self, user: &UserId) -> DomainResult<PrincipalAuthz> {
-        let role_rows = sqlx::query!(
-            "SELECT role_name FROM user_roles WHERE user_id = $1",
-            user.as_str(),
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(infra)?;
-        let roles = role_rows
-            .into_iter()
-            .map(|r| RoleName::new(r.role_name))
-            .collect::<DomainResult<Vec<_>>>()?;
-
         let org_rows = sqlx::query!(
             "SELECT organization_id FROM user_organization WHERE user_id = $1",
             user.as_str(),
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
         let member_orgs = org_rows
             .into_iter()
             .map(|r| OrganizationId::new(r.organization_id))
@@ -58,14 +47,13 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
         let member_projects = proj_rows
             .into_iter()
             .map(|r| ProjectId::new(r.project_id))
             .collect();
 
         Ok(PrincipalAuthz {
-            roles,
             member_orgs,
             member_projects,
         })
@@ -81,7 +69,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                 )
                 .fetch_optional(&self.pool)
                 .await
-                .map_err(infra)?;
+                .to_domain()?;
                 Ok(ResourceAncestors {
                     organization: row.map(|r| OrganizationId::new(r.organization_id)),
                     ..Default::default()
@@ -98,7 +86,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                 )
                 .fetch_optional(&self.pool)
                 .await
-                .map_err(infra)?;
+                .to_domain()?;
                 match row {
                     Some(r) => Ok(ResourceAncestors {
                         organization: Some(OrganizationId::new(r.organization_id)),
@@ -120,7 +108,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                 )
                 .fetch_optional(&self.pool)
                 .await
-                .map_err(infra)?;
+                .to_domain()?;
                 match row {
                     Some(r) => Ok(ResourceAncestors {
                         organization: Some(OrganizationId::new(r.organization_id)),
@@ -137,7 +125,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                 )
                 .fetch_optional(&self.pool)
                 .await
-                .map_err(infra)?;
+                .to_domain()?;
                 Ok(ResourceAncestors {
                     organization: row.map(|r| OrganizationId::new(r.organization_id)),
                     ..Default::default()
@@ -153,13 +141,9 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
         let row = sqlx::query!("SELECT is_active FROM apps WHERE id = $1", app.as_str())
             .fetch_optional(&self.pool)
             .await
-            .map_err(infra)?;
+            .to_domain()?;
         // No row → the App was deleted; treat as inactive so an in-flight stream
         // from a now-removed App is denied rather than trusted.
         Ok(row.is_some_and(|r| r.is_active))
     }
-}
-
-fn infra<E: std::fmt::Display>(e: E) -> DomainError {
-    DomainError::Infrastructure(e.to_string())
 }

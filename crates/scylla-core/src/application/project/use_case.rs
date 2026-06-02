@@ -1,11 +1,14 @@
+use crate::application::authz::grant::{Grant, GrantPrincipal, GrantScope, PROJECT_ADMIN_ROLE};
+use crate::application::authz::policy::PolicyControl;
 use crate::application::caller::CallerContext;
 use crate::application::{
     PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
 };
 use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
+use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -17,11 +20,13 @@ pub struct ProjectUseCases<
     UP: UserProjectRepository,
     U: UserRepository,
     PS: PermissionService,
+    PC: PolicyControl,
 > {
     project_repo: Arc<P>,
     user_project_repo: Arc<UP>,
     user_repo: Arc<U>,
     permission_service: Arc<PS>,
+    policy_control: Arc<PC>,
     /// Per-org limits; only compiled (and enforced) in the SaaS `metering` build.
     #[cfg(feature = "metering")]
     quotas: crate::application::quota::Quotas,
@@ -32,7 +37,8 @@ impl<
     UP: UserProjectRepository,
     U: UserRepository,
     PS: PermissionService,
-> ProjectUseCases<P, UP, U, PS>
+    PC: PolicyControl,
+> ProjectUseCases<P, UP, U, PS, PC>
 {
     #[instrument(skip(self, caller), fields(name = %name, org_id = %organization_id))]
     pub async fn create(
@@ -43,7 +49,7 @@ impl<
         organization_id: OrganizationId,
     ) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, Permission::CreateProject(organization_id.clone()))
+            .check(caller, Action::CreateProject(organization_id.clone()))
             .await?;
 
         // SaaS metering: cap projects per organization. Visible, feature-gated
@@ -63,13 +69,35 @@ impl<
         }
 
         let project = Project::create(name, description, organization_id)?;
-        self.project_repo.create(&project).await
+
+        // Enroll the human creator as a member + project-admin of the project they
+        // just created — mirrors organization create. The project insert,
+        // membership and owner grant happen in ONE transaction so a partial
+        // failure can never leave a project without an owner. Machine/anonymous
+        // callers have no human to enroll, so they just get the bare project.
+        match caller {
+            CallerContext::User(user_id) => {
+                let grant = Grant::new(
+                    GrantPrincipal::User(user_id.clone()),
+                    RoleName::new(PROJECT_ADMIN_ROLE)?,
+                    GrantScope::Project(project.id().clone()),
+                );
+                self.project_repo
+                    .provision_with_owner(&project, user_id, &grant)
+                    .await?;
+                // Make the project-admin grant live now so the creator can act on
+                // the project immediately, without a control-plane restart.
+                self.policy_control.reload().await?;
+                Ok(project)
+            }
+            _ => self.project_repo.create(&project).await,
+        }
     }
 
     #[instrument(skip(self, caller), fields(project_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, Permission::ReadProject(id.clone()))
+            .check(caller, Action::ReadProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await
     }
@@ -83,7 +111,7 @@ impl<
         description: Option<Option<ProjectDescription>>,
     ) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, Permission::UpdateProject(id.clone()))
+            .check(caller, Action::UpdateProject(id.clone()))
             .await?;
 
         let mut project = self.project_repo.find_by_id(id).await?;
@@ -99,13 +127,9 @@ impl<
     }
 
     #[instrument(skip(self, caller), fields(project_id = %id))]
-    pub async fn toggle_active(
-        &self,
-        caller: &CallerContext,
-        id: &ProjectId,
-    ) -> DomainResult<()> {
+    pub async fn toggle_active(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::UpdateProject(id.clone()))
+            .check(caller, Action::UpdateProject(id.clone()))
             .await?;
 
         let mut project = self.project_repo.find_by_id(id).await?;
@@ -117,7 +141,7 @@ impl<
     #[instrument(skip(self, caller), fields(project_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::DeleteProject(id.clone()))
+            .check(caller, Action::DeleteProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await?;
         self.project_repo.delete(id).await
@@ -130,7 +154,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
         self.permission_service
-            .check(caller, Permission::ListProjects)
+            .check(caller, Action::ListProjects)
             .await?;
         self.project_repo.list_all(pagination).await
     }
@@ -145,7 +169,7 @@ impl<
         self.permission_service
             .check(
                 caller,
-                Permission::ListProjectsByOrganization(organization_id.clone()),
+                Action::ListProjectsByOrganization(organization_id.clone()),
             )
             .await?;
         self.project_repo
@@ -161,7 +185,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
         self.permission_service
-            .check(caller, Permission::ListProjectMembers(project_id.clone()))
+            .check(caller, Action::ListProjectMembers(project_id.clone()))
             .await?;
 
         let paginated = self
@@ -170,11 +194,18 @@ impl<
             .await?;
         let (user_ids, metadata) = paginated.into_parts();
 
-        let mut users = Vec::with_capacity(user_ids.len());
-        for user_id in &user_ids {
-            let user = self.user_repo.find_by_id(user_id).await?;
-            users.push(user);
-        }
+        // Batched read + re-order to the paginated membership order.
+        let mut by_id: std::collections::HashMap<String, User> = self
+            .user_repo
+            .find_by_ids(&user_ids)
+            .await?
+            .into_iter()
+            .map(|u| (u.id().as_str().to_owned(), u))
+            .collect();
+        let users = user_ids
+            .iter()
+            .filter_map(|id| by_id.remove(id.as_str()))
+            .collect();
 
         Ok((users, metadata))
     }
@@ -187,7 +218,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<Project>, PaginationMetadata)> {
         self.permission_service
-            .check(caller, Permission::ListUserProjects(user_id.clone()))
+            .check(caller, Action::ListUserProjects(user_id.clone()))
             .await?;
 
         let paginated = self
@@ -196,11 +227,17 @@ impl<
             .await?;
         let (project_ids, metadata) = paginated.into_parts();
 
-        let mut projects = Vec::with_capacity(project_ids.len());
-        for project_id in &project_ids {
-            let project = self.project_repo.find_by_id(project_id).await?;
-            projects.push(project);
-        }
+        let mut by_id: std::collections::HashMap<String, Project> = self
+            .project_repo
+            .find_by_ids(&project_ids)
+            .await?
+            .into_iter()
+            .map(|p| (p.id().as_str().to_owned(), p))
+            .collect();
+        let projects = project_ids
+            .iter()
+            .filter_map(|id| by_id.remove(id.as_str()))
+            .collect();
 
         Ok((projects, metadata))
     }
@@ -213,10 +250,7 @@ impl<
         project_id: &ProjectId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(
-                caller,
-                Permission::AddProjectMember(project_id.clone()),
-            )
+            .check(caller, Action::AddProjectMember(project_id.clone()))
             .await?;
 
         if self
@@ -240,10 +274,7 @@ impl<
         project_id: &ProjectId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(
-                caller,
-                Permission::RemoveProjectMember(project_id.clone()),
-            )
+            .check(caller, Action::RemoveProjectMember(project_id.clone()))
             .await?;
         self.user_project_repo
             .remove_member(user_id, project_id)

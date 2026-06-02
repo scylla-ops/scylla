@@ -1,5 +1,5 @@
+use crate::application::authz::grant::Grant;
 use crate::application::invitation::InvitationRepository;
-use crate::application::permission::grant::Grant;
 use crate::domain::entities::{Invitation, InvitationId, OrganizationId, User, UserId};
 use crate::domain::errors::DomainResult;
 use async_trait::async_trait;
@@ -96,7 +96,10 @@ pub mod queries {
         created_at: DateTime<Utc>,
     ) -> DomainResult<Invitation> {
         let email = Email::new(email).db_field("email")?;
-        let role = role_name.map(RoleName::new).transpose().db_field("role name")?;
+        let role = role_name
+            .map(RoleName::new)
+            .transpose()
+            .db_field("role name")?;
         let status = InvitationStatus::new(status).db_field("invitation status")?;
         Ok(Invitation::from_persistence(
             InvitationId::new(id),

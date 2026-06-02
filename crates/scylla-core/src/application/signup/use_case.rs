@@ -1,7 +1,7 @@
-use crate::application::permission::grant::{
+use crate::application::authz::grant::{
     Grant, GrantPrincipal, GrantScope, ORGANIZATION_ADMIN_ROLE,
 };
-use crate::application::permission::policy::PolicyControl;
+use crate::application::authz::policy::PolicyControl;
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{HashService, SessionRepository};
 use crate::domain::entities::{Organization, OrganizationId, Session, User, UserId};

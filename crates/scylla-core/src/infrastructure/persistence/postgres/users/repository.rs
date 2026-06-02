@@ -34,6 +34,11 @@ impl UserRepository for PgUserRepository {
         queries::find_by_id(&self.pool, id).await
     }
 
+    #[instrument(skip(self, ids), fields(n = ids.len()))]
+    async fn find_by_ids(&self, ids: &[UserId]) -> DomainResult<Vec<User>> {
+        queries::find_by_ids(&self.pool, ids).await
+    }
+
     #[instrument(skip(self), fields(username = %username))]
     async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
         queries::find_by_username(&self.pool, username).await
@@ -148,6 +153,40 @@ pub mod queries {
         )
     }
 
+    pub async fn find_by_ids<'e, E>(executor: E, ids: &[UserId]) -> DomainResult<Vec<User>>
+    where
+        E: PgExecutor<'e>,
+    {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let id_strs: Vec<String> = ids.iter().map(|i| i.as_str().to_owned()).collect();
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, username, email, password_hash, is_active, created_at, updated_at
+            FROM users
+            WHERE id = ANY($1::text[])
+            "#,
+            &id_strs,
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter()
+            .map(|r| {
+                row_into_user(
+                    r.id,
+                    r.username,
+                    r.email,
+                    r.password_hash,
+                    r.is_active,
+                    r.created_at,
+                    r.updated_at,
+                )
+            })
+            .collect()
+    }
+
     pub async fn find_by_username<'e, E>(executor: E, username: &Username) -> DomainResult<User>
     where
         E: PgExecutor<'e>,
@@ -162,7 +201,9 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("User", username.as_str().to_string())?;
+        // Don't echo the looked-up username (PII / account-existence oracle on
+        // login paths) into the error id.
+        .not_found_as("User", "<username>")?;
         row_into_user(
             rec.id,
             rec.username,
@@ -188,7 +229,9 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("User", email.as_str().to_string())?;
+        // Don't echo the looked-up email (PII / account-existence oracle) into
+        // the error id.
+        .not_found_as("User", "<email>")?;
         row_into_user(
             rec.id,
             rec.username,

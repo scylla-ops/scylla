@@ -27,10 +27,11 @@ pub enum ConfigError {
 impl ControlPlaneConfig {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
         let path_ref = path.as_ref();
-        let content = std::fs::read_to_string(path_ref).map_err(|source| ConfigError::ReadFile {
-            path: path_ref.to_path_buf(),
-            source,
-        })?;
+        let content =
+            std::fs::read_to_string(path_ref).map_err(|source| ConfigError::ReadFile {
+                path: path_ref.to_path_buf(),
+                source,
+            })?;
         Ok(toml::from_str(&content)?)
     }
 

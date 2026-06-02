@@ -1,10 +1,12 @@
-use crate::application::permission::policy::{PolicyDefinition, PolicyRepository};
+use crate::application::authz::policy::{PolicyDefinition, PolicyRepository};
 use crate::domain::entities::CedarPolicyId;
 use crate::domain::errors::{DomainError, DomainResult};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use tracing::instrument;
+
+use super::error::SqlxResultExt;
 
 /// Persistence for runtime Cedar policies (`cedar_policies` table). Read on every
 /// live policy-set rebuild (`list_enabled`) and mutated by `PolicyUseCases`.
@@ -30,7 +32,7 @@ impl PolicyRepository for PgPolicyRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
         Ok(rows
             .into_iter()
             .map(|r| {
@@ -55,7 +57,7 @@ impl PolicyRepository for PgPolicyRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
         Ok(rows
             .into_iter()
             .map(|r| {
@@ -81,7 +83,7 @@ impl PolicyRepository for PgPolicyRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
         match row {
             Some(r) => Ok(to_policy(
                 r.id,
@@ -112,13 +114,13 @@ impl PolicyRepository for PgPolicyRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
         Ok(())
     }
 
     #[instrument(skip(self, policy), fields(policy_id = %policy.id))]
     async fn update(&self, policy: &PolicyDefinition) -> DomainResult<()> {
-        sqlx::query!(
+        let res = sqlx::query!(
             "UPDATE cedar_policies \
              SET description = $2, text = $3, enabled = $4, updated_at = $5 \
              WHERE id = $1",
@@ -130,7 +132,12 @@ impl PolicyRepository for PgPolicyRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(infra)?;
+        .to_domain()?;
+        // A no-op update means the policy id doesn't exist — surface NOT_FOUND
+        // rather than silently reporting success, matching the other repos.
+        if res.rows_affected() == 0 {
+            return Err(DomainError::not_found("CedarPolicy", policy.id.as_str()));
+        }
         Ok(())
     }
 
@@ -139,7 +146,7 @@ impl PolicyRepository for PgPolicyRepository {
         sqlx::query!("DELETE FROM cedar_policies WHERE id = $1", id.as_str())
             .execute(&self.pool)
             .await
-            .map_err(infra)?;
+            .to_domain()?;
         Ok(())
     }
 }
@@ -162,8 +169,4 @@ fn to_policy(
         created_at,
         updated_at,
     }
-}
-
-fn infra<E: std::fmt::Display>(e: E) -> DomainError {
-    DomainError::Infrastructure(e.to_string())
 }

@@ -39,11 +39,7 @@ impl AppSecret {
     /// Generate a fresh high-entropy secret (256 bits, hex-encoded).
     #[must_use]
     pub fn generate() -> Self {
-        let raw = format!(
-            "{}{}",
-            Uuid::new_v4().simple(),
-            Uuid::new_v4().simple()
-        );
+        let raw = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
         // 64 hex chars always satisfies the length bounds.
         Self::try_new(raw).expect("generated secret is always valid")
     }

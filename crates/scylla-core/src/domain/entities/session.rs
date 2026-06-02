@@ -1,5 +1,5 @@
-use crate::domain::entities::{SessionId, UserId};
 use crate::domain::clock;
+use crate::domain::entities::{SessionId, UserId};
 use chrono::{DateTime, Duration, Utc};
 
 /// Session domain entity for authentication

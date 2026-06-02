@@ -1,10 +1,10 @@
 use super::PgAgentRepository;
-use crate::application::permission::grant::{
-    Grant, GrantPrincipal, GrantRepository, GrantScope, AGENT_ROLE,
+use crate::application::authz::grant::{
+    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_AGENT_ROLE,
 };
-use crate::application::{AppRepository, JobRepository, AgentRepository};
+use crate::application::{AgentRepository, AppRepository, JobRepository};
 use crate::domain::clock;
-use crate::domain::entities::{App, AppCredential, Job, JobId, OrganizationId, Agent};
+use crate::domain::entities::{Agent, App, AppCredential, Job, JobId, OrganizationId};
 use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
 use crate::domain::value_objects::job::JobStatus;
 use crate::domain::value_objects::role::name::RoleName;
@@ -30,7 +30,7 @@ fn make_agent(org_id: &OrganizationId, name: &str) -> (App, AppCredential, Agent
     let agent = Agent::create(app.id().clone());
     let grant = Grant::new(
         GrantPrincipal::App(app.id().clone()),
-        RoleName::new(AGENT_ROLE).unwrap(),
+        RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
         GrantScope::Organization(org_id.clone()),
     );
     (app, credential, agent, grant)
@@ -48,14 +48,20 @@ async fn provision_agent_persists_app_row_and_grant(pool: PgPool) {
         .await
         .expect("provision_agent");
 
-    let found = agent_repo.find_by_app_id(app.id()).await.expect("agent row");
+    let found = agent_repo
+        .find_by_app_id(app.id())
+        .await
+        .expect("agent row");
     assert_eq!(found.app_id(), app.id());
     assert!(found.last_seen().is_none(), "fresh agent never seen");
 
     let list = agent_repo.list_by_organization(org.id()).await.unwrap();
     assert_eq!(list.len(), 1);
 
-    let grants = PgGrantRepository::new(pool.clone()).list_all().await.unwrap();
+    let grants = PgGrantRepository::new(pool.clone())
+        .list_all()
+        .await
+        .unwrap();
     assert!(
         grants
             .iter()
@@ -72,13 +78,22 @@ async fn plain_app_is_not_a_agent(pool: PgPool) {
 
     let app = App::create(org.id().clone(), AppName::new("bot").unwrap());
     let credential = default_credential(&app);
-    app_repo.create_app(&app, &credential).await.expect("create_app");
+    app_repo
+        .create_app(&app, &credential)
+        .await
+        .expect("create_app");
 
     assert!(
         agent_repo.find_by_app_id(app.id()).await.is_err(),
         "a plain app has no agents row"
     );
-    assert!(agent_repo.list_by_organization(org.id()).await.unwrap().is_empty());
+    assert!(
+        agent_repo
+            .list_by_organization(org.id())
+            .await
+            .unwrap()
+            .is_empty()
+    );
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -93,14 +108,23 @@ async fn touch_last_seen_upserts_and_self_heals(pool: PgPool) {
     app_repo.create_app(&app, &credential).await.unwrap();
 
     let t1 = clock::now();
-    agent_repo.touch_last_seen(app.id(), t1).await.expect("self-heal insert");
+    agent_repo
+        .touch_last_seen(app.id(), t1)
+        .await
+        .expect("self-heal insert");
     let after_first = agent_repo.find_by_app_id(app.id()).await.unwrap();
     assert!(after_first.last_seen().is_some());
 
     let t2 = t1 + chrono::Duration::seconds(30);
-    agent_repo.touch_last_seen(app.id(), t2).await.expect("upsert update");
+    agent_repo
+        .touch_last_seen(app.id(), t2)
+        .await
+        .expect("upsert update");
     let after_second = agent_repo.find_by_app_id(app.id()).await.unwrap();
-    assert_eq!(after_second.last_seen().unwrap().timestamp(), t2.timestamp());
+    assert_eq!(
+        after_second.last_seen().unwrap().timestamp(),
+        t2.timestamp()
+    );
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -110,7 +134,10 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
     let agent_repo = PgAgentRepository::new(pool.clone());
     let job_repo = PgJobRepository::new(pool.clone());
     let (app, credential, agent, grant) = make_agent(org.id(), "runner");
-    app_repo.provision_agent(&app, &credential, &agent, &grant).await.unwrap();
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
 
     let mk = |status: JobStatus| {
         let now = clock::now();
@@ -150,7 +177,10 @@ async fn deleting_agent_keeps_jobs_and_nulls_attribution(pool: PgPool) {
     let agent_repo = PgAgentRepository::new(pool.clone());
     let job_repo = PgJobRepository::new(pool.clone());
     let (app, credential, agent, grant) = make_agent(org.id(), "runner");
-    app_repo.provision_agent(&app, &credential, &agent, &grant).await.unwrap();
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
 
     let mut job = Job::create_from_pipeline(&pipeline);
     job.assign_agent(app.id().clone());

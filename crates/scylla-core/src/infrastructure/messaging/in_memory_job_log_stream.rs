@@ -26,7 +26,13 @@ impl InMemoryJobLogStream {
     }
 
     fn sender_for(&self, job_id: &str) -> broadcast::Sender<JobLog> {
-        let mut map = self.channels.lock().expect("job log channels lock poisoned");
+        // Recover from a poisoned lock rather than panicking: the map is plain
+        // data with no broken invariant after a thread panic, and a poisoned
+        // panic here would take down log fan-out for the whole control plane.
+        let mut map = self
+            .channels
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         map.entry(job_id.to_string())
             .or_insert_with(|| broadcast::channel(CHANNEL_CAPACITY).0)
             .clone()
@@ -35,6 +41,19 @@ impl InMemoryJobLogStream {
     /// Publish a log line to the live subscribers of its job (no-op if none).
     pub fn publish(&self, log: JobLog) {
         let _ = self.sender_for(log.job_id().as_str()).send(log);
+    }
+
+    /// Drop a job's live channel once the job reaches a terminal state. No more
+    /// lines will be published, so subscribers receive `Closed` and fall back to
+    /// the persisted snapshot (authoritative). Without this the channel map grows
+    /// monotonically — one entry per job ever streamed — on a long-running
+    /// control plane.
+    pub fn close(&self, job_id: &str) {
+        let mut map = self
+            .channels
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        map.remove(job_id);
     }
 }
 

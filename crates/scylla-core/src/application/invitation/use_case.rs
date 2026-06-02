@@ -1,13 +1,15 @@
+use crate::application::authz::grant::{
+    Grant, GrantPrincipal, GrantScope, validate_role_for_scope,
+};
+use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::application::invitation::repository::InvitationRepository;
 use crate::application::mail::Mailer;
-use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope};
-use crate::application::permission::policy::PolicyControl;
-use crate::application::permission::service::PermissionService;
 use crate::application::{HashService, OrganizationRepository, SessionRepository, UserRepository};
 use crate::domain::entities::{Invitation, InvitationId, OrganizationId, Session, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use chrono::Duration;
@@ -74,8 +76,17 @@ where
         role: Option<RoleName>,
     ) -> DomainResult<Invitation> {
         self.permission_service
-            .check(caller, Permission::AddOrganizationMember(organization_id.clone()))
+            .check(caller, Action::ManageInvitations(organization_id.clone()))
             .await?;
+
+        // An invite mints an Organization-scoped grant on accept; reject a role
+        // that isn't assignable on an org now, before persisting/emailing it.
+        if let Some(role) = &role {
+            validate_role_for_scope(
+                role,
+                &GrantScope::Organization(organization_id.clone()),
+            )?;
+        }
 
         let org = self.org_repo.find_by_id(&organization_id).await?;
         let invited_by = match caller {
@@ -111,10 +122,7 @@ where
         organization_id: &OrganizationId,
     ) -> DomainResult<Vec<Invitation>> {
         self.permission_service
-            .check(
-                caller,
-                Permission::ListOrganizationMembers(organization_id.clone()),
-            )
+            .check(caller, Action::ManageInvitations(organization_id.clone()))
             .await?;
         self.invite_repo.list_pending(organization_id).await
     }
@@ -130,7 +138,7 @@ where
         self.permission_service
             .check(
                 caller,
-                Permission::AddOrganizationMember(invite.organization_id().clone()),
+                Action::ManageInvitations(invite.organization_id().clone()),
             )
             .await?;
         self.invite_repo.revoke(invite_id).await
@@ -148,9 +156,7 @@ where
     ) -> DomainResult<AcceptOutcome> {
         let invite = self.invite_repo.find_by_token(token).await?;
         if !invite.is_acceptable() {
-            return Err(DomainError::business_rule(
-                "Invitation is no longer valid",
-            ));
+            return Err(DomainError::business_rule("Invitation is no longer valid"));
         }
 
         // Existing account with this email joins directly; otherwise create one.

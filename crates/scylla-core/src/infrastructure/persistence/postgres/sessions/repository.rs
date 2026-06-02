@@ -92,7 +92,9 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        .not_found_as("Session", token.to_string())?;
+        // Never echo the raw session token into the error id (logs / tracing /
+        // status). Use a non-secret placeholder.
+        .not_found_as("Session", "<token>")?;
         Ok(Session::from_persistence(
             SessionId::new(rec.id),
             rec.token,

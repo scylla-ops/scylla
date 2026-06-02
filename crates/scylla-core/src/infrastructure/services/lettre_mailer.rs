@@ -2,8 +2,8 @@ use crate::application::Mailer;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::user::Email;
 use async_trait::async_trait;
-use lettre::message::header::ContentType;
 use lettre::message::Mailbox;
+use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
@@ -62,7 +62,13 @@ mod tests {
 
     #[test]
     fn rejects_invalid_from_address() {
-        let res = LettreMailer::new("smtp.example.com", 465, "u".into(), "p".into(), "not-an-email");
+        let res = LettreMailer::new(
+            "smtp.example.com",
+            465,
+            "u".into(),
+            "p".into(),
+            "not-an-email",
+        );
         assert!(res.is_err());
     }
 

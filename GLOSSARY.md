@@ -43,7 +43,7 @@ A single execution of a pipeline. Carries a `JobStatus` and a `JobNode` per pipe
 The runtime record for one pipeline node inside a job. Holds `NodeState`, `started_at`, `finished_at`.
 
 ### App
-A machine principal owned by an organization (an agent / automation). Identified by an `AppId`; authenticates with a secret (stored hashed) that it exchanges for an app token, and acts under scoped grants — typically the `worker` role on its org. An App with an open worker stream is an online **agent**; "agent" now means an App running the worker binary.
+A machine principal owned by an organization (an agent / automation). Identified by an `AppId`; authenticates with a secret (stored hashed) that it exchanges for an app token, and acts under scoped grants — typically the `organization-agent` role on its org. An App with an open agent stream is an online **agent**; "agent" now means an App running the agent binary.
 
 ### Session
 An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions.
@@ -71,7 +71,24 @@ A state from which no transition is possible. A job or node in a terminal state 
 
 ## Permissions
 
-Scylla has no role entity. Every check is a direct `(subject, policy)` lookup — subjects are users, policies are triples. Memberships (`user_organization`, `user_project`) only record which orgs/projects a user belongs to; they carry no permission info.
+> **NB:** the subsections below (Policy/Scope/Resource/Act/Casbin/Absolute policy) describe the **legacy Casbin** model and are out of date — authorization is now **Cedar**-based (roles + scoped grants + ABAC policies). See the [code review notes] / `infrastructure/services/cedar/` for the current model. Rewrite pending.
+
+### Role naming convention
+Role names follow **`<scope>-<role>`**, kebab-case, with scope ∈ {`system`, `organization`, `project`}. Single source of truth: the `*_ROLE` constants in `application/permission/grant.rs`.
+
+**Unified model:** there is ONE authorization mechanism — the **grant** (`permission_grants`), a `(principal, role, scope)` triple linked as a Cedar role-template instance. A "global role" is just a grant on the **System** scope (the tenancy root: `Organization`/`User` are `in [System]`, so a System grant reaches everything). There is no separate `user_roles` table and no `RoleService` — `GrantService.CreateGrant(user, role, GRANT_SCOPE_SYSTEM)` replaces the old `AssignRole`.
+
+Canonical roles (all stored in `permission_grants`):
+
+| Role | Scope | Cedar template | Confers |
+|------|-------|----------------|---------|
+| `system-admin` | System | full-control | everything, every scope (System is the root) |
+| `organization-admin` | Organization | full-control | all actions on the org + everything beneath |
+| `project-admin` | Project | full-control | all actions on the project + everything beneath |
+| `organization-agent` | Organization | restricted agent | `readPipeline`/`executeJob`/`writeJobStatus`/`writeJobLog` within the org |
+| `project-agent` | Project | restricted agent | same, within a project |
+
+**Implicit tiers (NOT named roles):** `system-member` (a plain user with no grant), `organization-member` / `project-member` (membership via the `user_organization` / `user_project` tables, granted read/operate access through ABAC policies). They follow the same naming vocabulary but are realized as membership/ABAC, not stored grants.
 
 ### Policy
 A triple `(scope, resource, act)` describing one permitted action. Built per call site in `scylla-core/src/domain/value_objects/permission/policy.rs` (e.g. `pipeline::run(pipeline_id)`).

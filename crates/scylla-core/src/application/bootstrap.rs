@@ -1,8 +1,9 @@
+use crate::application::authz::grant::{Grant, GrantPrincipal, GrantScope, GrantUseCases};
+use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::service::PermissionService;
 use crate::application::caller::{CallerContext, ServiceIdentity};
-use crate::application::permission::service::PermissionService;
 use crate::application::user::UserUseCases;
-use crate::application::user_role::UserRoleUseCases;
-use crate::application::{HashService, UserRepository, UserRoleRepository};
+use crate::application::{GrantRepository, HashService, UserRepository};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
@@ -10,8 +11,9 @@ use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
 
-/// Idempotent system bootstrap. Composes the user + role use cases to ensure a
-/// privileged user exists and carries the given role on every boot. All
+/// Idempotent system bootstrap. Composes the user + grant use cases to ensure a
+/// privileged user exists and holds a `system-admin` grant on the System scope
+/// (the unified replacement for the former global role) on every boot. All
 /// operations run as `CallerContext::Service(ServiceIdentity::bootstrap())`,
 /// which the static `service` Cedar policy permits — so every step is gated by
 /// the normal permission pipeline and audited like any other call.
@@ -20,23 +22,26 @@ pub struct BootstrapUseCases<
     U: UserRepository,
     H: HashService,
     PS: PermissionService,
-    URR: UserRoleRepository,
+    G: GrantRepository,
+    PC: PolicyControl,
 > {
     user_uc: Arc<UserUseCases<U, H, PS>>,
-    user_role_uc: Arc<UserRoleUseCases<URR, PS>>,
+    grant_uc: Arc<GrantUseCases<G, PC, PS>>,
 }
 
-impl<U, H, PS, URR> BootstrapUseCases<U, H, PS, URR>
+impl<U, H, PS, G, PC> BootstrapUseCases<U, H, PS, G, PC>
 where
     U: UserRepository,
     H: HashService,
     PS: PermissionService,
-    URR: UserRoleRepository,
+    G: GrantRepository,
+    PC: PolicyControl,
 {
-    /// Ensure `username` exists (create if missing) and carries `role`. Returns
-    /// `Ok(())` whether the user is freshly created or already present. Any
-    /// other failure (validation, infrastructure, forbidden) bubbles up as
-    /// [`DomainError`] for the caller to map at the layer boundary.
+    /// Ensure `username` exists (create if missing) and holds `role` on the
+    /// System scope. Returns `Ok(())` whether the user is freshly created or
+    /// already present (the grant insert is idempotent). Any other failure
+    /// (validation, infrastructure, forbidden) bubbles up as [`DomainError`] for
+    /// the caller to map at the layer boundary.
     #[instrument(skip(self, password))]
     pub async fn bootstrap_admin(
         &self,
@@ -67,13 +72,18 @@ where
             Err(e) => return Err(e),
         };
 
-        self.user_role_uc
-            .assign(&caller, user.id(), &role)
-            .await?;
+        // Global authority is a System-scoped grant (idempotent insert + live
+        // policy reload). Replaces the former `user_roles` role assignment.
+        let grant = Grant::new(
+            GrantPrincipal::User(user.id().clone()),
+            role.clone(),
+            GrantScope::System,
+        );
+        self.grant_uc.grant(&caller, &grant).await?;
         tracing::info!(
             user_id = %user.id(),
             role = %role,
-            "bootstrap role ensured",
+            "bootstrap system grant ensured",
         );
         Ok(())
     }

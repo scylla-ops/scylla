@@ -1,15 +1,14 @@
 use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::ResourceRef;
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::action::ResourceRef;
 use async_trait::async_trait;
 
-/// Everything Cedar needs to know about the *principal* at check time:
-/// the roles it holds (→ entity parents `User in Role`) and the orgs/projects
-/// it belongs to (→ ABAC attributes `principal.memberOrgs` / `memberProjects`).
+/// Everything Cedar needs to know about the *principal* at check time: the
+/// orgs/projects it belongs to (→ ABAC attributes `principal.memberOrgs` /
+/// `memberProjects`). Global authority is no longer a role here — it is a
+/// System-scoped grant, linked as a template instance like any other grant.
 #[derive(Debug, Default, Clone)]
 pub struct PrincipalAuthz {
-    pub roles: Vec<RoleName>,
     pub member_orgs: Vec<OrganizationId>,
     pub member_projects: Vec<ProjectId>,
 }

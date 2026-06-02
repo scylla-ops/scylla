@@ -60,11 +60,7 @@ impl HashService for Argon2HashService {
     }
 
     #[instrument(skip(self, secret, hash))]
-    async fn verify_secret(
-        &self,
-        secret: &AppSecret,
-        hash: &AppSecretHash,
-    ) -> DomainResult<bool> {
+    async fn verify_secret(&self, secret: &AppSecret, hash: &AppSecretHash) -> DomainResult<bool> {
         let argon2 = self.argon2.clone();
         let secret = secret.clone();
         let hash = hash.as_str().to_string();

@@ -1,4 +1,4 @@
-use crate::domain::entities::{AppId, OrganizationId, Agent};
+use crate::domain::entities::{Agent, AppId, OrganizationId};
 use crate::domain::errors::DomainResult;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

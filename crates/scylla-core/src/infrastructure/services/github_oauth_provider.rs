@@ -52,7 +52,11 @@ struct GitHubEmail {
 }
 
 impl GitHubOAuthProvider {
-    pub fn new(client_id: String, client_secret: String, redirect_uri: String) -> DomainResult<Self> {
+    pub fn new(
+        client_id: String,
+        client_secret: String,
+        redirect_uri: String,
+    ) -> DomainResult<Self> {
         let client = BasicClient::new(ClientId::new(client_id))
             .set_client_secret(ClientSecret::new(client_secret))
             .set_auth_uri(

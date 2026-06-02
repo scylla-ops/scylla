@@ -1,5 +1,6 @@
 use crate::application::ProjectRepository;
-use crate::domain::entities::{OrganizationId, Project, ProjectId};
+use crate::application::authz::grant::Grant;
+use crate::domain::entities::{OrganizationId, Project, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
@@ -9,6 +10,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
+use super::super::{grants, user_project};
 
 #[derive(Clone)]
 pub struct PgProjectRepository {
@@ -29,9 +31,29 @@ impl ProjectRepository for PgProjectRepository {
         queries::create(&self.pool, project).await
     }
 
+    #[instrument(skip(self, project, grant), fields(project_id = %project.id(), owner = %owner))]
+    async fn provision_with_owner(
+        &self,
+        project: &Project,
+        owner: &UserId,
+        grant: &Grant,
+    ) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+        queries::create(&mut *tx, project).await?;
+        user_project::repository::queries::add_member(&mut *tx, owner, project.id()).await?;
+        grants::insert(&mut *tx, grant).await?;
+        tx.commit().await.to_domain()?;
+        Ok(())
+    }
+
     #[instrument(skip(self), fields(project_id = %id))]
     async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> {
         queries::find_by_id(&self.pool, id).await
+    }
+
+    #[instrument(skip(self, ids), fields(n = ids.len()))]
+    async fn find_by_ids(&self, ids: &[ProjectId]) -> DomainResult<Vec<Project>> {
+        queries::find_by_ids(&self.pool, ids).await
     }
 
     #[instrument(skip(self, project), fields(project_id = %project.id()))]
@@ -161,6 +183,40 @@ pub mod queries {
             rec.created_at,
             rec.updated_at,
         )
+    }
+
+    pub async fn find_by_ids<'e, E>(executor: E, ids: &[ProjectId]) -> DomainResult<Vec<Project>>
+    where
+        E: PgExecutor<'e>,
+    {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let id_strs: Vec<String> = ids.iter().map(|i| i.as_str().to_owned()).collect();
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, name, description, organization_id, is_active, created_at, updated_at
+            FROM projects
+            WHERE id = ANY($1::text[])
+            "#,
+            &id_strs,
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter()
+            .map(|r| {
+                row_into_project(
+                    r.id,
+                    r.name,
+                    r.description,
+                    r.organization_id,
+                    r.is_active,
+                    r.created_at,
+                    r.updated_at,
+                )
+            })
+            .collect()
     }
 
     pub async fn update<'e, E>(executor: E, project: &Project) -> DomainResult<Project>

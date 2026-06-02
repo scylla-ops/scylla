@@ -2,15 +2,11 @@
 // permits below grant access. Compiled into the binary via include_str! and
 // validated against schema.cedarschema at startup.
 
-// ── Admin role ─────────────────────────────────────────────────────────
-// Any user in Scylla::Role::"admin" can do anything. Role membership is
-// materialised at check time from the user_roles table.
-@id("admin")
-permit (
-    principal in Scylla::Role::"admin",
-    action,
-    resource
-);
+// ── System admin ────────────────────────────────────────────────────────
+// There is no static admin policy: `system-admin` is now a GRANT on the System
+// scope (the tenancy root), linked as a role-template instance like any other
+// grant. Because every resource is `in` System, that single grant confers full
+// control over everything. See `application/permission/grant.rs` (SYSTEM scope).
 
 // ── Internal services ──────────────────────────────────────────────────
 // In-process subsystems (recorder, bootstrap) bypass user RBAC. Explicit,

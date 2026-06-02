@@ -1,4 +1,4 @@
-use crate::application::permission::grant::Grant;
+use crate::application::authz::grant::Grant;
 use crate::domain::entities::{Invitation, InvitationId, OrganizationId, User, UserId};
 use crate::domain::errors::DomainResult;
 use async_trait::async_trait;

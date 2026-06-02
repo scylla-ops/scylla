@@ -2,15 +2,15 @@ use crate::extract_auth_context;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
-    AppRepository, HashService, PermissionService, PolicyControl, AgentRepository, AgentStats,
-    AgentUseCases, AgentView,
+    AgentRepository, AgentStats, AgentUseCases, AgentView, AppRepository, HashService,
+    PermissionService, PolicyControl,
 };
 use scylla_core::domain::entities::{AppId, OrganizationId};
 use scylla_core::domain::value_objects::app::AppName;
 use scylla_protocol::services::agent_admin::{
-    CreateAgentRequest, CreatedAgent as ProtoCreatedAgent, DeleteAgentRequest,
-    DeleteAgentResponse, GetAgentRequest, GetAgentStatsRequest, ListAgentsRequest,
-    ListAgentsResponse, AgentStats as ProtoAgentStats, AgentView as ProtoAgentView,
+    AgentStats as ProtoAgentStats, AgentView as ProtoAgentView, CreateAgentRequest,
+    CreatedAgent as ProtoCreatedAgent, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest,
+    GetAgentStatsRequest, ListAgentsRequest, ListAgentsResponse,
     agent_admin_service_server::AgentAdminService,
 };
 use std::sync::Arc;

@@ -1,16 +1,18 @@
 use crate::application::HashService;
-use crate::application::app::repository::AppRepository;
-use crate::application::caller::CallerContext;
-use crate::application::permission::grant::{Grant, GrantPrincipal, GrantScope, AGENT_ROLE};
-use crate::application::permission::policy::PolicyControl;
-use crate::application::permission::service::PermissionService;
+use crate::application::agent::dispatch::JobDispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::agent::repository::{AgentRepository, AgentStats};
-use crate::domain::entities::{App, AppCredential, AppId, OrganizationId, PipelineId, Agent};
-use crate::domain::errors::DomainResult;
+use crate::application::app::repository::AppRepository;
+use crate::application::authz::grant::{
+    Grant, GrantPrincipal, GrantScope, ORGANIZATION_AGENT_ROLE,
+};
+use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::service::PermissionService;
+use crate::application::caller::CallerContext;
+use crate::domain::entities::{Agent, App, AppCredential, AppId, OrganizationId, PipelineId};
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
-use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::pipeline::JobDispatch;
 use crate::domain::value_objects::role::name::RoleName;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
@@ -48,14 +50,27 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
     ) -> DomainResult<DispatchOutcome> {
         for app_id in self.registry.connected() {
             let caller = CallerContext::App(app_id.clone());
-            let authorized = self
+            match self
                 .permission_service
-                .check(&caller, Permission::ExecuteJob(pipeline_id.clone()))
+                .check(&caller, Action::ExecuteJob(pipeline_id.clone()))
                 .await
-                .unwrap_or(false);
-            if authorized {
-                self.registry.dispatch(&app_id, dispatch).await?;
-                return Ok(DispatchOutcome::Dispatched(app_id));
+            {
+                Ok(()) => match self.registry.dispatch(&app_id, dispatch).await {
+                    Ok(()) => return Ok(DispatchOutcome::Dispatched(app_id)),
+                    // The agent disconnected since `connected()` snapshotted
+                    // (check-then-act race) or its queue is gone — try the next
+                    // candidate rather than failing the whole run.
+                    Err(e) => {
+                        warn!(app_id = %app_id, error = %e, "dispatch to agent failed; trying next");
+                    }
+                },
+                // Not authorized for this pipeline — expected; try the next agent.
+                Err(DomainError::Forbidden(_)) => {}
+                // A real failure (e.g. authz DB blip): don't silently treat it as
+                // a clean deny — log it, then still try the remaining agents.
+                Err(e) => {
+                    warn!(app_id = %app_id, error = %e, "authz check errored during dispatch; skipping agent");
+                }
             }
         }
         warn!(
@@ -119,7 +134,7 @@ where
         name: AppName,
     ) -> DomainResult<CreatedAgent> {
         self.permission_service
-            .check(caller, Permission::CreateAgent(organization_id.clone()))
+            .check(caller, Action::CreateAgent(organization_id.clone()))
             .await?;
 
         let secret = AppSecret::generate();
@@ -137,7 +152,7 @@ where
         // initial secret is written in the same tx so the agent can authenticate.
         let grant = Grant::new(
             GrantPrincipal::App(app.id().clone()),
-            RoleName::new(AGENT_ROLE)?,
+            RoleName::new(ORGANIZATION_AGENT_ROLE)?,
             GrantScope::Organization(organization_id),
         );
         self.app_repo
@@ -155,7 +170,7 @@ where
         organization_id: OrganizationId,
     ) -> DomainResult<Vec<AgentView>> {
         self.permission_service
-            .check(caller, Permission::ListAgents(organization_id.clone()))
+            .check(caller, Action::ListAgents(organization_id.clone()))
             .await?;
 
         let agents = self
@@ -185,7 +200,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn get(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentView> {
         self.permission_service
-            .check(caller, Permission::ReadAgent(app_id.clone()))
+            .check(caller, Action::ReadAgent(app_id.clone()))
             .await?;
 
         let agent = self.agent_repo.find_by_app_id(&app_id).await?;
@@ -205,7 +220,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn stats(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentStats> {
         self.permission_service
-            .check(caller, Permission::ReadAgentStats(app_id.clone()))
+            .check(caller, Action::ReadAgentStats(app_id.clone()))
             .await?;
         self.agent_repo.agent_stats(&app_id).await
     }
@@ -213,7 +228,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn delete(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::DeleteAgent(app_id.clone()))
+            .check(caller, Action::DeleteAgent(app_id.clone()))
             .await?;
         // Drop the live stream first so a removed agent stops at once; the app
         // delete cascades the agents row + grants and nulls jobs.agent_app_id.
@@ -255,8 +270,12 @@ mod tests {
 
     #[async_trait]
     impl PermissionService for StubPerms {
-        async fn check(&self, caller: &CallerContext, _perm: Permission) -> DomainResult<bool> {
-            Ok(matches!(caller, CallerContext::App(id) if id.as_str() == self.allowed))
+        async fn check(&self, caller: &CallerContext, _perm: Action) -> DomainResult<()> {
+            if matches!(caller, CallerContext::App(id) if id.as_str() == self.allowed) {
+                Ok(())
+            } else {
+                Err(DomainError::forbidden("not the allowed agent"))
+            }
         }
     }
 
