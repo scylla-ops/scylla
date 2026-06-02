@@ -10,7 +10,8 @@ use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases,
     DispatchUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases,
-    OrganizationUseCases, PipelineUseCases, PolicyUseCases, ProjectUseCases, UserUseCases,
+    OrganizationUseCases, PipelineUseCases, PolicyUseCases, ProjectUseCases, RoleUseCases,
+    UserUseCases,
 };
 #[cfg(feature = "mail")]
 use scylla_core::application::{Mailer, NoopMailer};
@@ -45,6 +46,8 @@ pub type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
 pub type SharedPermissionChecker = Arc<PermissionChecker>;
 pub type SharedGrantUc =
     Arc<GrantUseCases<PgGrantRepository, PermissionChecker, PermissionChecker>>;
+pub type SharedRoleUc =
+    Arc<RoleUseCases<PgRoleRepository, PgGrantRepository, PermissionChecker, PermissionChecker>>;
 pub type SharedPolicyUc =
     Arc<PolicyUseCases<PgPolicyRepository, PermissionChecker, PermissionChecker>>;
 
@@ -151,6 +154,7 @@ pub struct Services {
     pub agent_registry: Arc<InMemoryAgentRegistry>,
     pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
+    pub role_uc: SharedRoleUc,
     pub policy_uc: SharedPolicyUc,
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
@@ -292,6 +296,12 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
         agent_registry.clone(),
     ));
+    let role_uc = Arc::new(RoleUseCases::new(
+        role_repo.clone(),
+        grant_repo.clone(),
+        permission_checker.clone(),
+        permission_checker.clone(),
+    ));
     let policy_uc = Arc::new(PolicyUseCases::new(
         policy_repo.clone(),
         permission_checker.clone(),
@@ -394,6 +404,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         agent_registry,
         job_log_stream,
         grant_uc,
+        role_uc,
         policy_uc,
         permission_checker,
         session_repo,
@@ -497,7 +508,7 @@ where
     use crate::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler,
         GrantHandler, JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler,
-        ProjectHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        ProjectHandler, RoleHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     #[cfg(feature = "invitations")]
     use scylla_protocol::services::invitation::{
@@ -518,6 +529,7 @@ where
         organization::organization_service_server::OrganizationServiceServer,
         permission::grant_service_server::GrantServiceServer,
         permission::policy_service_server::PolicyServiceServer,
+        permission::role_service_server::RoleServiceServer,
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         user::user_service_server::UserServiceServer,
@@ -551,6 +563,7 @@ where
     let agent_admin_handler = AgentAdminHandler::new(services.agent_uc.clone());
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
+    let role_handler = RoleHandler::new(services.role_uc.clone());
     #[cfg(feature = "invitations")]
     let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());
 
@@ -634,6 +647,10 @@ where
         .layer(auth_interceptor.clone())
         .service(GrantServiceServer::new(grant_handler));
 
+    let role_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(RoleServiceServer::new(role_handler));
+
     // Authenticated invitation management (org-admins).
     #[cfg(feature = "invitations")]
     let invitation_service = ServiceBuilder::new()
@@ -658,7 +675,8 @@ where
         .add_service(agent_service)
         .add_service(agent_admin_service)
         .add_service(policy_service)
-        .add_service(grant_service);
+        .add_service(grant_service)
+        .add_service(role_service);
 
     // SaaS-only services, registered behind their cargo feature.
     #[cfg(feature = "signup")]

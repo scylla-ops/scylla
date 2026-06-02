@@ -71,6 +71,7 @@ enum Permission {
   MANAGE_ORG_GRANTS = 57;
   MANAGE_PROJECT_GRANTS = 58;
   MANAGE_POLICIES = 59;
+  MANAGE_ROLES = 60;
 }
 
 // Where an authorization applies — the tenancy level. SYSTEM is the root of the
@@ -255,3 +256,60 @@ message GrantableRole {
 message ListGrantableRolesResponse {
   repeated GrantableRole roles = 1;
 }
+
+// ── Roles ────────────────────────────────────────────────────────────────
+// CRUD for the dynamic role catalog — a role is a named, editable bundle of
+// permissions bound to a scope kind. All RPCs require `manageRoles` (system).
+// A change is applied live (hot-reload), so editing a role's permissions
+// re-authorizes everyone who holds it on the next request.
+
+service RoleService {
+  rpc CreateRole(CreateRoleRequest) returns (Role);
+  rpc UpdateRole(UpdateRoleRequest) returns (Role);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+  rpc ListRoles(ListRolesRequest)   returns (ListRolesResponse);
+  rpc GetRole(GetRoleRequest)       returns (Role);
+}
+
+message Role {
+  // Opaque role id — the value a grant references. For builtins, equals `key`.
+  string id = 1;
+  // Stable key, set only for builtin roles (e.g. "organization-admin").
+  optional string key = 2;
+  string name = 3;
+  string description = 4;
+  // The scope kind a grant of this role must bind to.
+  Scope scope = 5;
+  bool builtin = 6;
+  // Full control: the role confers every permission within the grant's scope.
+  // When true, `permissions` is empty.
+  bool full_control = 7;
+  // The role's explicit permission set (when not full_control).
+  repeated Permission permissions = 8;
+}
+
+message CreateRoleRequest {
+  string name = 1;
+  string description = 2;
+  Scope scope = 3;
+  bool full_control = 4;
+  repeated Permission permissions = 5;
+}
+
+// Replaces the role's name, description and permission set wholesale (PUT-style).
+// A role's scope kind and builtin status are immutable.
+message UpdateRoleRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  bool full_control = 4;
+  repeated Permission permissions = 5;
+}
+
+message DeleteRoleRequest { string id = 1; }
+message DeleteRoleResponse { bool deleted = 1; }
+
+message ListRolesRequest {}
+message ListRolesResponse { repeated Role roles = 1; }
+
+message GetRoleRequest { string id = 1; }

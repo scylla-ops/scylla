@@ -13,7 +13,7 @@ pub use handlers::RegistrationHandler;
 pub use handlers::{
     AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler,
     GrantHandler, JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler,
-    UserHandler,
+    RoleHandler, UserHandler,
 };
 pub use mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_to_proto, organization_to_proto,

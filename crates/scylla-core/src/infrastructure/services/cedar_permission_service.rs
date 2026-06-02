@@ -564,6 +564,18 @@ mod tests {
         async fn list_all(&self) -> DomainResult<Vec<Role>> {
             Ok(self.0.clone())
         }
+        async fn get(&self, id: &str) -> DomainResult<Option<Role>> {
+            Ok(self.0.iter().find(|r| r.id == id).cloned())
+        }
+        async fn create(&self, _role: &Role) -> DomainResult<()> {
+            Ok(())
+        }
+        async fn update(&self, _role: &Role) -> DomainResult<()> {
+            Ok(())
+        }
+        async fn delete(&self, _id: &str) -> DomainResult<()> {
+            Ok(())
+        }
     }
 
     struct StubProvider {

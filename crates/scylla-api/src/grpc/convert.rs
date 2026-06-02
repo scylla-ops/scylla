@@ -5,8 +5,9 @@
 
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
+use scylla_core::application::ScopeKind;
 use scylla_protocol::services::common;
-use scylla_protocol::services::permission::{Permission, ResourceType};
+use scylla_protocol::services::permission::{Permission, ResourceType, Scope as ProtoScope};
 use tonic::Status;
 
 /// A proto wrapper message (`common.*Id` / `common.Email`) — a single `value`.
@@ -126,6 +127,28 @@ pub fn permission_from_key(key: &str) -> Option<Permission> {
 pub fn resource_type_from_tag(tag: &str) -> ResourceType {
     ResourceType::from_str_name(&format!("RESOURCE_TYPE_{}", tag.to_ascii_uppercase()))
         .unwrap_or(ResourceType::Unspecified)
+}
+
+/// Domain `ScopeKind` → proto `Scope`.
+#[must_use]
+pub fn scope_kind_to_proto(kind: ScopeKind) -> ProtoScope {
+    match kind {
+        ScopeKind::System => ProtoScope::System,
+        ScopeKind::Organization => ProtoScope::Organization,
+        ScopeKind::Project => ProtoScope::Project,
+    }
+}
+
+/// Proto `Scope` discriminant → domain `ScopeKind`, erroring on unset/unknown.
+pub fn scope_kind_from_proto(kind: i32) -> Result<ScopeKind, Status> {
+    match ProtoScope::try_from(kind) {
+        Ok(ProtoScope::System) => Ok(ScopeKind::System),
+        Ok(ProtoScope::Organization) => Ok(ScopeKind::Organization),
+        Ok(ProtoScope::Project) => Ok(ScopeKind::Project),
+        Ok(ProtoScope::Unspecified) | Err(_) => {
+            Err(Status::invalid_argument("unknown or unspecified scope"))
+        }
+    }
 }
 
 #[cfg(test)]

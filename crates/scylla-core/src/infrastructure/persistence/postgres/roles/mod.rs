@@ -71,6 +71,120 @@ impl RoleRepository for PgRoleRepository {
             })
             .collect()
     }
+
+    #[instrument(skip(self))]
+    async fn get(&self, id: &str) -> DomainResult<Option<Role>> {
+        let row = sqlx::query!(
+            "SELECT r.id, r.key, r.name, r.description, r.scope_kind, r.owner_org_id, r.builtin, \
+             COALESCE(ARRAY_AGG(rp.permission) FILTER (WHERE rp.permission IS NOT NULL), ARRAY[]::text[]) \
+                 AS \"permissions!\" \
+             FROM roles r \
+             LEFT JOIN role_permissions rp ON rp.role_id = r.id \
+             WHERE r.id = $1 \
+             GROUP BY r.id",
+            id,
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .to_domain()?;
+
+        row.map(|r| {
+            let scope = match r.scope_kind.as_str() {
+                SCOPE_SYSTEM => ScopeKind::System,
+                SCOPE_ORGANIZATION => ScopeKind::Organization,
+                SCOPE_PROJECT => ScopeKind::Project,
+                other => {
+                    return Err(DomainError::Infrastructure(format!(
+                        "unknown role scope_kind '{other}'"
+                    )));
+                }
+            };
+            Ok(Role {
+                id: r.id,
+                key: r.key,
+                name: r.name,
+                description: r.description,
+                scope,
+                owner_org: r.owner_org_id.map(OrganizationId::new),
+                builtin: r.builtin,
+                permissions: r.permissions,
+            })
+        })
+        .transpose()
+    }
+
+    #[instrument(skip(self, role), fields(role_id = %role.id))]
+    async fn create(&self, role: &Role) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+        sqlx::query!(
+            "INSERT INTO roles (id, key, name, description, scope_kind, owner_org_id, builtin) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            role.id,
+            role.key.as_deref(),
+            role.name,
+            role.description,
+            role.scope.as_str(),
+            role.owner_org.as_ref().map(OrganizationId::as_str),
+            role.builtin,
+        )
+        .execute(&mut *tx)
+        .await
+        .to_domain()?;
+        for permission in &role.permissions {
+            sqlx::query!(
+                "INSERT INTO role_permissions (role_id, permission) VALUES ($1, $2)",
+                role.id,
+                permission,
+            )
+            .execute(&mut *tx)
+            .await
+            .to_domain()?;
+        }
+        tx.commit().await.to_domain()
+    }
+
+    #[instrument(skip(self, role), fields(role_id = %role.id))]
+    async fn update(&self, role: &Role) -> DomainResult<()> {
+        // The role's scope kind / builtin / owner are immutable; only name,
+        // description and the permission set change. Replace the permission set
+        // wholesale inside the transaction.
+        let mut tx = self.pool.begin().await.to_domain()?;
+        sqlx::query!(
+            "UPDATE roles SET name = $2, description = $3, updated_at = NOW() WHERE id = $1",
+            role.id,
+            role.name,
+            role.description,
+        )
+        .execute(&mut *tx)
+        .await
+        .to_domain()?;
+        sqlx::query!("DELETE FROM role_permissions WHERE role_id = $1", role.id)
+            .execute(&mut *tx)
+            .await
+            .to_domain()?;
+        for permission in &role.permissions {
+            sqlx::query!(
+                "INSERT INTO role_permissions (role_id, permission) VALUES ($1, $2)",
+                role.id,
+                permission,
+            )
+            .execute(&mut *tx)
+            .await
+            .to_domain()?;
+        }
+        tx.commit().await.to_domain()
+    }
+
+    #[instrument(skip(self))]
+    async fn delete(&self, id: &str) -> DomainResult<()> {
+        // `role_permissions` cascades; a role still pointed at by a
+        // default-role binding is blocked by that FK's ON DELETE RESTRICT.
+        sqlx::query!("DELETE FROM roles WHERE id = $1", id)
+            .execute(&self.pool)
+            .await
+            .to_domain()?;
+        Ok(())
+    }
 }
 
 /// Reads the configurable default-role pointers (`default_role_bindings`).
@@ -108,11 +222,46 @@ impl DefaultRoleBindingRepository for PgDefaultRoleBindingRepository {
 
 #[cfg(test)]
 mod tests {
-    use super::PgDefaultRoleBindingRepository;
+    use super::{PgDefaultRoleBindingRepository, PgRoleRepository};
+    use crate::application::authz::grant::ScopeKind;
     use crate::application::authz::role::{
-        DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
+        DefaultRoleBindingRepository, DefaultRoleSlot, Role, RoleRepository, resolve_default_role,
     };
     use sqlx::PgPool;
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn role_crud_round_trip(pool: PgPool) {
+        let repo = PgRoleRepository::new(pool);
+        let role = Role::new_custom(
+            "CI Runner".into(),
+            "reads and runs pipelines".into(),
+            ScopeKind::Project,
+            vec!["readPipeline".into(), "runPipeline".into()],
+        );
+        let id = role.id.clone();
+        repo.create(&role).await.unwrap();
+
+        let got = repo
+            .get(&id)
+            .await
+            .unwrap()
+            .expect("role exists after create");
+        assert_eq!(got.name, "CI Runner");
+        assert_eq!(got.permissions.len(), 2);
+        assert!(!got.builtin);
+        assert!(got.key.is_none());
+
+        let mut updated = got.clone();
+        updated.name = "CI".into();
+        updated.permissions = vec!["readPipeline".into()];
+        repo.update(&updated).await.unwrap();
+        let got = repo.get(&id).await.unwrap().unwrap();
+        assert_eq!(got.name, "CI");
+        assert_eq!(got.permissions, vec!["readPipeline".to_string()]);
+
+        repo.delete(&id).await.unwrap();
+        assert!(repo.get(&id).await.unwrap().is_none());
+    }
 
     #[sqlx::test(migrations = "../../migrations")]
     async fn default_binding_resolves_to_seeded_builtin(pool: PgPool) {

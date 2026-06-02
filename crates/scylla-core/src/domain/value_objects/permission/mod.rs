@@ -98,6 +98,8 @@ pub enum Permission {
     /// Manage grants whose scope is this project (project-admins).
     ManageProjectGrants(ProjectId),
     ManagePolicies,
+    /// Create / edit / delete roles (the dynamic role catalog). System-scoped.
+    ManageRoles,
 }
 
 impl Permission {
@@ -175,6 +177,7 @@ impl Permission {
             Self::ManageOrgGrants(_) => "manageOrgGrants",
             Self::ManageProjectGrants(_) => "manageProjectGrants",
             Self::ManagePolicies => "managePolicies",
+            Self::ManageRoles => "manageRoles",
         }
     }
 
@@ -194,7 +197,8 @@ impl Permission {
             | Self::CreateJob
             | Self::ListJobs
             | Self::ManageGrants
-            | Self::ManagePolicies => ResourceRef::System,
+            | Self::ManagePolicies
+            | Self::ManageRoles => ResourceRef::System,
 
             // User-targeted
             Self::ReadUser(id)
@@ -344,6 +348,7 @@ pub const PERMISSION_CATALOG: &[(&str, &str)] = &[
     ("manageOrgGrants", "organization"),
     ("manageProjectGrants", "project"),
     ("managePolicies", "system"),
+    ("manageRoles", "system"),
 ];
 
 /// Whether `key` is a permission the system knows (a [`PERMISSION_CATALOG`] key).
