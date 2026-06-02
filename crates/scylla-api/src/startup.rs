@@ -29,10 +29,10 @@ use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, InMemoryAgentRegistry, InMemoryJobLogStream,
     PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
-    PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
-    PgOrganizationRepository, PgPipelineRepository, PgPolicyRepository, PgProjectRepository,
-    PgRoleRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
-    PgUserRepository,
+    PgAuditLog, PgAuthzEntityProvider, PgDefaultRoleBindingRepository, PgGrantRepository,
+    PgJobLogRepository, PgJobRepository, PgOrganizationRepository, PgPipelineRepository,
+    PgPolicyRepository, PgProjectRepository, PgRoleRepository, PgSessionRepository,
+    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
@@ -181,6 +181,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
     let role_repo = Arc::new(PgRoleRepository::new(db.clone()));
+    let default_role_repo = Arc::new(PgDefaultRoleBindingRepository::new(db.clone()));
     let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
     let policy_repo = Arc::new(PgPolicyRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
@@ -211,6 +212,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
+        default_role_repo.clone(),
     ));
     let user_uc = Arc::new(UserUseCases::new(
         user_repo.clone(),
@@ -223,6 +225,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         user_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
+        default_role_repo.clone(),
     ));
     #[cfg(feature = "metering")]
     let project_uc = Arc::new(ProjectUseCases::new(
@@ -231,6 +234,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         user_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
+        default_role_repo.clone(),
         scylla_core::application::Quotas {
             max_projects_per_org: config.metering.max_projects_per_org,
         },
@@ -242,6 +246,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         user_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
+        default_role_repo.clone(),
     ));
     let pipeline_uc = Arc::new(PipelineUseCases::new(
         pipeline_repo.clone(),
@@ -345,6 +350,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
                 session_repo.clone(),
                 hash_service.clone(),
                 permission_checker.clone(),
+                default_role_repo.clone(),
             )))
         }
         None => None,

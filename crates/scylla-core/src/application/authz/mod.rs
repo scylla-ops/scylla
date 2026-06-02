@@ -10,5 +10,8 @@ pub use grant::{
     ScopeKind, grantable_roles, validate_permission_key, validate_role_for_scope,
 };
 pub use policy::{PolicyControl, PolicyDefinition, PolicyRepository, PolicyUseCases};
-pub use role::{FULL_CONTROL, Role, RoleRepository};
+pub use role::{
+    DefaultRoleBindingRepository, DefaultRoleSlot, FULL_CONTROL, Role, RoleRepository,
+    resolve_default_role,
+};
 pub use service::PermissionService;

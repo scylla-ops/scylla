@@ -1,5 +1,8 @@
-use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
+use crate::application::authz::grant::{Grant, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::{
+    DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
+};
 use crate::application::oauth::provider::{OAuthProvider, PROVIDER_GITHUB};
 use crate::application::oauth::repository::OAuthIdentityRepository;
 use crate::application::signup::repository::SignupRepository;
@@ -7,7 +10,6 @@ use crate::application::{HashService, SessionRepository, UserRepository};
 use crate::domain::entities::{Organization, OrganizationId, Session, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::OrganizationName;
-use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::user::{Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;
@@ -28,6 +30,9 @@ pub struct OAuthOutcome {
 /// GitHub calls back with a code, and `callback` resolves it to a session —
 /// linking to an existing account (by identity, then email) or provisioning a
 /// new account + organization on first login.
+// The derived `new` wires eight collaborators (the public onboarding flow needs
+// them all); that's intrinsic, not a smell worth a parameter object here.
+#[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct OAuthUseCases<P, IR, SR, U, S, H, PC>
 where
@@ -46,6 +51,7 @@ where
     session_repo: Arc<S>,
     hash_service: Arc<H>,
     policy_control: Arc<PC>,
+    default_roles: Arc<dyn DefaultRoleBindingRepository>,
 }
 
 impl<P, IR, SR, U, S, H, PC> OAuthUseCases<P, IR, SR, U, S, H, PC>
@@ -107,9 +113,11 @@ where
 
         let org_name = OrganizationName::new(format!("{}'s organization", info.login))?;
         let organization = Organization::create(org_name, None)?;
+        let role =
+            resolve_default_role(self.default_roles.as_ref(), DefaultRoleSlot::OrgCreation).await?;
         let grant = Grant::new(
             Principal::User(user.id().clone()),
-            RoleName::new(ORGANIZATION_ADMIN_ROLE)?,
+            role,
             Scope::Organization(organization.id().clone()),
         );
 

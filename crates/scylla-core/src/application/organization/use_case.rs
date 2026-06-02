@@ -1,5 +1,8 @@
-use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
+use crate::application::authz::grant::{Grant, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::{
+    DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
+};
 use crate::application::caller::CallerContext;
 use crate::application::{
     OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
@@ -8,7 +11,6 @@ use crate::domain::entities::{Organization, OrganizationId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -27,6 +29,7 @@ pub struct OrganizationUseCases<
     user_repo: Arc<U>,
     permission_service: Arc<PS>,
     policy_control: Arc<PC>,
+    default_roles: Arc<dyn DefaultRoleBindingRepository>,
 }
 
 impl<
@@ -61,9 +64,12 @@ impl<
         // callers create nothing to enroll, so they just get the bare org.
         match caller {
             CallerContext::User(user_id) => {
+                let role =
+                    resolve_default_role(self.default_roles.as_ref(), DefaultRoleSlot::OrgCreation)
+                        .await?;
                 let grant = Grant::new(
                     Principal::User(user_id.clone()),
-                    RoleName::new(ORGANIZATION_ADMIN_ROLE)?,
+                    role,
                     Scope::Organization(org.id().clone()),
                 );
                 self.org_repo

@@ -1,5 +1,8 @@
-use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
+use crate::application::authz::grant::{Grant, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::{
+    DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
+};
 use crate::application::caller::CallerContext;
 use crate::application::{
     PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
@@ -8,7 +11,6 @@ use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
-use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -27,6 +29,7 @@ pub struct ProjectUseCases<
     user_repo: Arc<U>,
     permission_service: Arc<PS>,
     policy_control: Arc<PC>,
+    default_roles: Arc<dyn DefaultRoleBindingRepository>,
     /// Per-org limits; only compiled (and enforced) in the SaaS `metering` build.
     #[cfg(feature = "metering")]
     quotas: crate::application::quota::Quotas,
@@ -77,9 +80,14 @@ impl<
         // callers have no human to enroll, so they just get the bare project.
         match caller {
             CallerContext::User(user_id) => {
+                let role = resolve_default_role(
+                    self.default_roles.as_ref(),
+                    DefaultRoleSlot::ProjectCreation,
+                )
+                .await?;
                 let grant = Grant::new(
                     Principal::User(user_id.clone()),
-                    RoleName::new(PROJECT_ADMIN_ROLE)?,
+                    role,
                     Scope::Project(project.id().clone()),
                 );
                 self.project_repo

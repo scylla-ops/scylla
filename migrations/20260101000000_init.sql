@@ -256,6 +256,16 @@ CREATE TABLE grants (
 );
 CREATE INDEX grants_principal_idx ON grants (principal_kind, principal_id);
 
+-- Configurable pointer from a "default role" slot (e.g. the role assigned to the
+-- creator on org/project creation) to a role. Decouples the creation flows from
+-- a hard-coded role name: an admin can rebind a slot to a custom role.
+-- ON DELETE RESTRICT keeps a bound role from being deleted out from under the
+-- slot, so the pointer never dangles (rebind first, then delete).
+CREATE TABLE default_role_bindings (
+    slot    TEXT PRIMARY KEY,
+    role_id TEXT NOT NULL REFERENCES roles (id) ON DELETE RESTRICT
+);
+
 -- ── Seed: builtin roles ───────────────────────────────────────────────────────
 -- Admin roles confer full control ('*'); agent roles only the job-execution
 -- permissions. The Cedar policy set is generated from these.
@@ -278,3 +288,9 @@ INSERT INTO role_permissions (role_id, permission) VALUES
     ('project-agent',      'executeJob'),
     ('project-agent',      'writeJobStatus'),
     ('project-agent',      'writeJobLog');
+
+-- ── Seed: default-role slots ──────────────────────────────────────────────────
+-- Point each creation flow at its builtin admin role by default; rebindable.
+INSERT INTO default_role_bindings (slot, role_id) VALUES
+    ('org_creation',     'organization-admin'),
+    ('project_creation', 'project-admin');

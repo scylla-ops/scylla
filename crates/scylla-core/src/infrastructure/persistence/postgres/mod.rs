@@ -53,7 +53,7 @@ pub use oauth_identities::PgOAuthIdentityRepository;
 pub use organizations::PgOrganizationRepository;
 pub use pipelines::PgPipelineRepository;
 pub use projects::PgProjectRepository;
-pub use roles::PgRoleRepository;
+pub use roles::{PgDefaultRoleBindingRepository, PgRoleRepository};
 pub use sessions::PgSessionRepository;
 pub use signup::PgSignupRepository;
 pub use user_organization::PgUserOrganizationRepository;

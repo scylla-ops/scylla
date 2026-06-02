@@ -41,8 +41,8 @@ async fn project_quota_enforced_when_metering_on(pool: PgPool) {
     use crate::domain::value_objects::project::ProjectName;
     use crate::infrastructure::CedarPermissionService;
     use crate::infrastructure::persistence::postgres::{
-        PgAuthzEntityProvider, PgGrantRepository, PgPolicyRepository, PgRoleRepository,
-        PgUserProjectRepository, PgUserRepository,
+        PgAuthzEntityProvider, PgDefaultRoleBindingRepository, PgGrantRepository,
+        PgPolicyRepository, PgRoleRepository, PgUserProjectRepository, PgUserRepository,
     };
     use std::sync::Arc;
 
@@ -64,6 +64,7 @@ async fn project_quota_enforced_when_metering_on(pool: PgPool) {
         Arc::new(PgUserRepository::new(pool.clone())),
         permission.clone(),
         permission,
+        Arc::new(PgDefaultRoleBindingRepository::new(pool.clone())),
         Quotas {
             max_projects_per_org: 2,
         },

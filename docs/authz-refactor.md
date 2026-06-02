@@ -131,14 +131,18 @@ role-derived permissions.
 
 ```sql
 CREATE TABLE default_role_bindings (
-    slot     TEXT PRIMARY KEY,   -- 'org_creation' | 'project_creation' | 'system_bootstrap'
-    role_id  TEXT NOT NULL REFERENCES roles(id)
+    slot     TEXT PRIMARY KEY,   -- 'org_creation' | 'project_creation'
+    role_id  TEXT NOT NULL REFERENCES roles(id) ON DELETE RESTRICT
 );
 ```
 
-Org/project creation and bootstrap resolve the role via its slot. If the pointer
-is missing or dangles, the builtin default is re-seeded and the slot re-pointed
-(lazy heal). Code never references a role by hard-coded name.
+Org/project creation resolve the assigned role via its slot, so the code never
+names a role directly — an admin can rebind a slot to a custom role.
+`ON DELETE RESTRICT` keeps a bound role from being deleted out from under its
+slot (rebind first, then delete), so the pointer never dangles — simpler and
+safer than a lazy re-seed. The resolver still falls back to the slot's builtin
+key if a binding is somehow absent. (Bootstrap keeps assigning `system-admin`
+directly for now; it could be slotted later.)
 
 ### 4.5 Cedar generation (from RBAC)
 
@@ -227,8 +231,14 @@ Each phase compiles, keeps tests green, and is independently commitable.
   permission grants over gRPC (needs the typed `Permission` enum) and
   `GetEffectivePermissions`. The grant use case still gates on the existing
   manage-grants permission; the no-escalation rule is Phase 5.
-- **Phase 3 — Default-role pointers.** `default_role_bindings`; rewire
-  org/project creation + bootstrap; lazy re-seed.
+- **Phase 3 — Default-role pointers. ✅ done.** Added `default_role_bindings`
+  (`slot → role_id`, `ON DELETE RESTRICT`), seeded `org_creation → organization-
+  admin` and `project_creation → project-admin`. `DefaultRoleSlot` +
+  `DefaultRoleBindingRepository` + `resolve_default_role` (falls back to the
+  builtin key). Rewired org/project creation, signup and OAuth onboarding to
+  resolve via the slot instead of a hard-coded role name; an admin can rebind a
+  slot to a custom role (proven by tests). Bootstrap still assigns `system-admin`
+  directly.
 - **Phase 4 — Strong-typed proto + introspection.** `Permission`/`Scope`/
   `ResourceType`/`PrincipalKind` enums; `RoleService` (CRUD roles); generalized
   `GrantService`; `CheckPermissions`/`ListPermissions`/`GetEffectivePermissions`.

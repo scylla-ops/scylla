@@ -1,6 +1,7 @@
-use crate::application::authz::grant::ScopeKind;
+use crate::application::authz::grant::{ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, ScopeKind};
 use crate::domain::entities::OrganizationId;
 use crate::domain::errors::DomainResult;
+use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
 
 /// Sentinel permission meaning **full control** — any action within the grant's
@@ -50,4 +51,56 @@ pub trait RoleRepository: Send + Sync {
     /// Every role with its permission set — global builtins plus all tenant
     /// custom roles. Drives the Cedar policy-set generation.
     async fn list_all(&self) -> DomainResult<Vec<Role>>;
+}
+
+/// A "default role" slot: a named pointer the creation flows resolve to decide
+/// which role to grant the creator, decoupling them from a hard-coded role name.
+/// An admin can rebind a slot to a custom role.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DefaultRoleSlot {
+    /// Role granted to the creator of an organization.
+    OrgCreation,
+    /// Role granted to the creator of a project.
+    ProjectCreation,
+}
+
+impl DefaultRoleSlot {
+    /// The `default_role_bindings.slot` column value.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::OrgCreation => "org_creation",
+            Self::ProjectCreation => "project_creation",
+        }
+    }
+
+    /// The builtin role key this slot falls back to when no binding is set.
+    #[must_use]
+    pub fn builtin_role(self) -> &'static str {
+        match self {
+            Self::OrgCreation => ORGANIZATION_ADMIN_ROLE,
+            Self::ProjectCreation => PROJECT_ADMIN_ROLE,
+        }
+    }
+}
+
+/// Read access to the configurable default-role pointers (`default_role_bindings`).
+#[async_trait]
+pub trait DefaultRoleBindingRepository: Send + Sync {
+    /// The role bound to `slot`, if the binding exists and its role still exists;
+    /// `None` lets the caller fall back to the slot's builtin role.
+    async fn role_for_slot(&self, slot: DefaultRoleSlot) -> DomainResult<Option<RoleName>>;
+}
+
+/// Resolve the role a default slot points to, falling back to the slot's builtin
+/// role when no binding is set. The creation flows call this instead of naming a
+/// role directly, so the assigned role stays configurable.
+pub async fn resolve_default_role(
+    bindings: &dyn DefaultRoleBindingRepository,
+    slot: DefaultRoleSlot,
+) -> DomainResult<RoleName> {
+    match bindings.role_for_slot(slot).await? {
+        Some(role) => Ok(role),
+        None => RoleName::new(slot.builtin_role()),
+    }
 }

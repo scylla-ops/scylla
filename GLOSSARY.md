@@ -120,6 +120,14 @@ is **generated** from these rows (a full-control role — permission `*` — map
 the unconstrained-action body; any other role lists its permission keys), so
 editing a role's permissions changes authorization on the next reload.
 
+### Default role binding
+A configurable pointer (`default_role_bindings`, a `slot → role` row) telling a
+creation flow which role to grant: `org_creation` → the role the org creator
+gets, `project_creation` → the role the project creator gets. Seeded to the
+builtin admin roles but rebindable to a custom role, so the code never names a
+role directly. `ON DELETE RESTRICT` keeps a bound role from being deleted out
+from under its slot (rebind first, then delete).
+
 ### Scope
 The level a grant/role binds to: `System` (tenancy root), `Organization(id)`, or
 `Project(id)`. `Scope` carries the id; `ScopeKind` is its id-free discriminant.
