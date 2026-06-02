@@ -137,7 +137,7 @@ msgstr "Showing {start}-{end} of {totalCount}"
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:67
+#: src/modules/layout/presentation/ui/Layout.tsx:68
 msgid "To get started, please create your first organization."
 msgstr "To get started, please create your first organization."
 
@@ -149,7 +149,7 @@ msgstr "Use these credentials (id + secret) to authenticate an automation agains
 msgid "We don't store this. Copy it now — closing this dialog deletes it forever."
 msgstr "We don't store this. Copy it now — closing this dialog deletes it forever."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:64
+#: src/modules/layout/presentation/ui/Layout.tsx:65
 msgid "Welcome to Scylla!"
 msgstr "Welcome to Scylla!"
 

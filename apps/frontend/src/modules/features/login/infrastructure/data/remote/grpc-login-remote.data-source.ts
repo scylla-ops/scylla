@@ -2,6 +2,7 @@ import type { LoginRemoteDataSource } from '@/modules/features/login/infrastruct
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { AuthServiceClient } from '@/generated/auth.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class GrpcLoginRemoteDataSource implements LoginRemoteDataSource {
   private readonly _authClient: AuthServiceClient;
@@ -16,7 +17,7 @@ export class GrpcLoginRemoteDataSource implements LoginRemoteDataSource {
 
       //TODO: persist store zustand context ici
       localStorage.setItem('token', response.token);
-      localStorage.setItem('userId', response.userId);
+      localStorage.setItem('userId', idValue(response.userId));
     }, 'Failed to login.');
   }
 }

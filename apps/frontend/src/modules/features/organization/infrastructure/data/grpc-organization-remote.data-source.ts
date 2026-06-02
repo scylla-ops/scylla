@@ -2,6 +2,7 @@ import { OrganizationServiceClient } from '@/generated/organization.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListOrganizationsResponse, OrganizationResponse } from '@/generated/organization.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 
 export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizationRemoteDataSource {
   private readonly _organizationClient: OrganizationServiceClient;
@@ -22,7 +23,9 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
   public getMine(): Promise<ScyllaResult<ListOrganizationsResponse>> {
     return ScyllaResult.tryAsync<ListOrganizationsResponse>(async () => {
       const userId = localStorage.getItem('userId') ?? '';
-      const { response } = await this._organizationClient.listUserOrganizations({ userId });
+      const { response } = await this._organizationClient.listUserOrganizations({
+        userId: wrapId(userId),
+      });
       return { organizations: response.organizations, pagination: response.pagination };
     }, 'Failed to fetch organizations.');
   }
@@ -41,7 +44,7 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
   ): Promise<ScyllaResult<OrganizationResponse>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._organizationClient.updateOrganization({
-        organizationId,
+        organizationId: wrapId(organizationId),
         name,
         description,
       });
@@ -51,7 +54,7 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
 
   public delete(organizationId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
-      await this._organizationClient.deleteOrganization({ organizationId });
+      await this._organizationClient.deleteOrganization({ organizationId: wrapId(organizationId) });
     }, 'Failed to delete organization.');
   }
 }

@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
-import { rmSync, mkdirSync, readdirSync } from 'node:fs';
-import { resolve, dirname, delimiter } from 'node:path';
+import { rmSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+import { resolve, dirname, delimiter, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -36,5 +36,27 @@ execSync(cmd, {
   cwd: root,
   env: { ...process.env, PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}` },
 });
+
+// protobuf-ts emits well-known-type helpers (e.g. google/protobuf/timestamp.ts)
+// whose method signatures carry parameters they don't use. Our tsconfig enables
+// `noUnusedParameters`, which would flag this *generated* code. Prepend
+// `// @ts-nocheck` to every generated file so machine output stays out of the
+// strict app lint while its type declarations remain importable. Re-applied on
+// every regeneration, so the generated tree never needs hand-editing.
+function prependTsNoCheck(dir) {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      prependTsNoCheck(full);
+    } else if (entry.endsWith('.ts')) {
+      const source = readFileSync(full, 'utf8');
+      if (!source.startsWith('// @ts-nocheck')) {
+        writeFileSync(full, `// @ts-nocheck\n${source}`);
+      }
+    }
+  }
+}
+
+prependTsNoCheck(outDir);
 
 console.log('Protobuf generation done.');

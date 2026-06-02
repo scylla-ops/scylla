@@ -8,6 +8,7 @@ import {
   type PaginationParams,
 } from '@shared/domain/models/pagination.model.ts';
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
+import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   private readonly _projectClient: ProjectServiceClient;
@@ -22,16 +23,24 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   ): Promise<ScyllaResult<ListProjectsResponse>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._projectClient.listOrganizationProjects({
-        organizationId,
+        organizationId: wrapId(organizationId),
         pagination: pagination ?? { page: 1, pageSize: DEFAULT_PAGE_SIZE },
       });
       return response;
     }, 'Failed to fetch projects.');
   }
 
-  public create(name: string, organizationId: string, description?: string): Promise<ScyllaResult<ProjectResponse>> {
+  public create(
+    name: string,
+    organizationId: string,
+    description?: string,
+  ): Promise<ScyllaResult<ProjectResponse>> {
     return ScyllaResult.tryAsync(async () => {
-      const { response } = await this._projectClient.createProject({ name, organizationId, description });
+      const { response } = await this._projectClient.createProject({
+        name,
+        organizationId: wrapId(organizationId),
+        description,
+      });
       return response;
     }, 'Failed to create project.');
   }
@@ -43,7 +52,7 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   ): Promise<ScyllaResult<ProjectResponse>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._projectClient.updateProject({
-        projectId,
+        projectId: wrapId(projectId),
         name,
         description,
       });
@@ -53,7 +62,7 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
 
   public delete(projectId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
-      await this._projectClient.deleteProject({ projectId });
+      await this._projectClient.deleteProject({ projectId: wrapId(projectId) });
     }, 'Failed to delete project.');
   }
 }

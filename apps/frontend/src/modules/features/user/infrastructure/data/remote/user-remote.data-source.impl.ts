@@ -4,7 +4,8 @@ import type { ListUsersResponse, UserResponse, UpdateUserRequest } from '@/gener
 import { UserServiceClient } from '@/generated/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
 import { GrantServiceClient } from '@/generated/permission.client.ts';
-import { GrantScopeKind } from '@/generated/permission.ts';
+import { Scope } from '@/generated/permission.ts';
+import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   private readonly _userClient: UserServiceClient;
@@ -24,7 +25,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
   public async getById(userId: string): Promise<ScyllaResult<UserResponse>> {
     return ScyllaResult.tryAsync<UserResponse>(
-      async () => await this._userClient.getUser({ userId }).response,
+      async () => await this._userClient.getUser({ userId: wrapId(userId) }).response,
       'Error fetching user',
     );
   }
@@ -39,7 +40,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       await this._grantClient.createGrant({
         userId: user.userId,
         role: 'system-admin',
-        scopeKind: GrantScopeKind.GRANT_SCOPE_SYSTEM,
+        scope: Scope.SYSTEM,
         scopeId: '',
       }).response;
 
@@ -56,7 +57,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
   public async delete(userId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync<void>(async () => {
-      await this._userClient.deleteUser({ userId }).response;
+      await this._userClient.deleteUser({ userId: wrapId(userId) }).response;
     }, 'Failed to delete user.');
   }
 }

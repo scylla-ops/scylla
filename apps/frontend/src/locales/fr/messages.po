@@ -117,7 +117,7 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:67
+#: src/modules/layout/presentation/ui/Layout.tsx:68
 msgid "To get started, please create your first organization."
 msgstr "Pour commencer, créez votre première organisation."
 
@@ -129,7 +129,7 @@ msgstr "Utilisez ces identifiants (id + secret) pour authentifier une automatisa
 msgid "We don't store this. Copy it now — closing this dialog deletes it forever."
 msgstr "Nous ne le stockons pas. Copiez-le maintenant — fermer cette fenêtre le supprime définitivement."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:64
+#: src/modules/layout/presentation/ui/Layout.tsx:65
 msgid "Welcome to Scylla!"
 msgstr "Bienvenue sur Scylla !"
 

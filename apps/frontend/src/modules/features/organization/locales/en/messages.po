@@ -21,11 +21,11 @@ msgstr "Add a description..."
 #~ msgid "Cancel"
 #~ msgstr "Cancel"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:47
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:49
 msgid "Create a new organization"
 msgstr "Create a new organization"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:56
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:58
 msgid "Create Organization"
 msgstr "Create Organization"
 
@@ -33,7 +33,7 @@ msgstr "Create Organization"
 #~ msgid "Creating..."
 #~ msgstr "Creating..."
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:87
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:110
 msgid "Delete"
 msgstr "Delete"
 
@@ -50,7 +50,7 @@ msgstr "e.g., My Organization"
 msgid "e.g., Our company's main organization"
 msgstr "e.g., Our company's main organization"
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:77
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:96
 msgid "Edit"
 msgstr "Edit"
 
@@ -58,7 +58,7 @@ msgstr "Edit"
 msgid "Edit organization"
 msgstr "Edit organization"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:49
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:51
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Enter a name and description for your new organization. You can change these later in settings."
 
