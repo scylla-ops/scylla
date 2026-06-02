@@ -29,6 +29,7 @@ impl_wrapper!(
     common::ProjectId,
     common::PipelineId,
     common::JobId,
+    common::JobLogId,
     common::AppId,
     common::AppSecretId,
     common::InvitationId,

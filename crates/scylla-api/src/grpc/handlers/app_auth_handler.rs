@@ -1,3 +1,4 @@
+use crate::grpc::convert::{required, ts};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
@@ -35,7 +36,7 @@ impl<
         request: Request<IssueTokenRequest>,
     ) -> Result<Response<IssueTokenResponse>, Status> {
         let req = request.into_inner();
-        let app_id = AppId::new(&req.app_id);
+        let app_id = AppId::new(&required(req.app_id, "app_id")?);
         // A malformed secret is treated as an auth failure, not a validation
         // error, so the response never reveals why credentials were rejected.
         let secret = AppSecret::new(&req.secret)
@@ -49,7 +50,7 @@ impl<
 
         Ok(Response::new(IssueTokenResponse {
             token: outcome.token,
-            expires_at: outcome.expires_at.to_rfc3339(),
+            expires_at: ts(outcome.expires_at),
         }))
     }
 }

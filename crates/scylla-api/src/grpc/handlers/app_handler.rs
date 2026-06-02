@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
@@ -41,7 +42,8 @@ impl<
     ) -> Result<Response<ProtoCreatedApp>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let organization_id = OrganizationId::new(&req.organization_id);
+        let organization_id =
+            OrganizationId::new(&required(req.organization_id, "organization_id")?);
         let name = AppName::new(&req.name).map_err(domain_error_to_status)?;
 
         let created = self
@@ -61,7 +63,7 @@ impl<
         let req = request.into_inner();
         let app = self
             .use_cases
-            .get(&caller, AppId::new(&req.id))
+            .get(&caller, AppId::new(&required(req.id, "id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(app_to_proto(&app)))
@@ -75,7 +77,10 @@ impl<
         let req = request.into_inner();
         let apps = self
             .use_cases
-            .list(&caller, OrganizationId::new(&req.organization_id))
+            .list(
+                &caller,
+                OrganizationId::new(&required(req.organization_id, "organization_id")?),
+            )
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(ListAppsResponse {
@@ -90,7 +95,7 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         self.use_cases
-            .delete(&caller, AppId::new(&req.id))
+            .delete(&caller, AppId::new(&required(req.id, "id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(DeleteAppResponse { deleted: true }))
@@ -104,7 +109,11 @@ impl<
         let req = request.into_inner();
         let app = self
             .use_cases
-            .set_active(&caller, AppId::new(&req.app_id), req.active)
+            .set_active(
+                &caller,
+                AppId::new(&required(req.app_id, "app_id")?),
+                req.active,
+            )
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(app_to_proto(&app)))
@@ -116,7 +125,7 @@ impl<
     ) -> Result<Response<ProtoCreatedAppSecret>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let app_id = AppId::new(&req.app_id);
+        let app_id = AppId::new(&required(req.app_id, "app_id")?);
         let label = AppSecretLabel::new(&req.label).map_err(domain_error_to_status)?;
 
         let created = self
@@ -139,7 +148,7 @@ impl<
         let req = request.into_inner();
         let secrets = self
             .use_cases
-            .list_secrets(&caller, AppId::new(&req.app_id))
+            .list_secrets(&caller, AppId::new(&required(req.app_id, "app_id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(ListAppSecretsResponse {
@@ -154,7 +163,10 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         self.use_cases
-            .revoke_secret(&caller, AppCredentialId::new(&req.secret_id))
+            .revoke_secret(
+                &caller,
+                AppCredentialId::new(&required(req.secret_id, "secret_id")?),
+            )
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(RevokeAppSecretResponse { deleted: true }))
@@ -168,7 +180,11 @@ impl<
         let req = request.into_inner();
         let credential = self
             .use_cases
-            .set_secret_enabled(&caller, AppCredentialId::new(&req.secret_id), req.enabled)
+            .set_secret_enabled(
+                &caller,
+                AppCredentialId::new(&required(req.secret_id, "secret_id")?),
+                req.enabled,
+            )
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(credential_to_proto(&credential)))
@@ -177,22 +193,22 @@ impl<
 
 fn app_to_proto(a: &App) -> ProtoApp {
     ProtoApp {
-        id: a.id().to_string(),
-        organization_id: a.organization_id().to_string(),
+        id: wrap(a.id().to_string()),
+        organization_id: wrap(a.organization_id().to_string()),
         name: a.name().as_str().to_string(),
         is_active: a.is_active(),
-        created_at: a.created_at().to_rfc3339(),
-        updated_at: a.updated_at().to_rfc3339(),
+        created_at: ts(a.created_at()),
+        updated_at: ts(a.updated_at()),
     }
 }
 
 fn credential_to_proto(c: &AppCredential) -> ProtoAppSecret {
     ProtoAppSecret {
-        id: c.id().to_string(),
-        app_id: c.app_id().to_string(),
+        id: wrap(c.id().to_string()),
+        app_id: wrap(c.app_id().to_string()),
         label: c.label().as_str().to_string(),
         enabled: c.is_enabled(),
-        created_at: c.created_at().to_rfc3339(),
-        updated_at: c.updated_at().to_rfc3339(),
+        created_at: ts(c.created_at()),
+        updated_at: ts(c.updated_at()),
     }
 }

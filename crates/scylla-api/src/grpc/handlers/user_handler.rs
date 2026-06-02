@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{optional, required};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
 };
@@ -35,8 +36,7 @@ impl<
         let req = request.into_inner();
         let username = Username::new(&req.username).map_err(domain_error_to_status)?;
         let password = Password::new(&req.password).map_err(domain_error_to_status)?;
-        let email = req
-            .email
+        let email = optional(req.email)
             .as_deref()
             .map(Email::new)
             .transpose()
@@ -56,7 +56,7 @@ impl<
     ) -> Result<Response<UserResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = UserId::new(&req.user_id);
+        let id = UserId::new(&required(req.user_id, "user_id")?);
         let user = self
             .use_cases
             .get(&caller, &id)
@@ -71,7 +71,7 @@ impl<
     ) -> Result<Response<UserResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = UserId::new(&req.user_id);
+        let id = UserId::new(&required(req.user_id, "user_id")?);
         let username = req
             .username
             .map(|u| Username::new(&u))
@@ -91,7 +91,7 @@ impl<
     ) -> Result<Response<DeleteUserResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = UserId::new(&req.user_id);
+        let id = UserId::new(&required(req.user_id, "user_id")?);
         self.use_cases
             .delete(&caller, &id)
             .await

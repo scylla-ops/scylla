@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
 };
@@ -53,7 +54,8 @@ impl<
             .map(|d| ProjectDescription::new(&d))
             .transpose()
             .map_err(domain_error_to_status)?;
-        let organization_id = OrganizationId::new(&req.organization_id);
+        let organization_id =
+            OrganizationId::new(&required(req.organization_id, "organization_id")?);
 
         let project = self
             .use_cases
@@ -70,7 +72,7 @@ impl<
     ) -> Result<Response<ProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = ProjectId::new(&req.project_id);
+        let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         let project = self
             .use_cases
@@ -87,7 +89,7 @@ impl<
     ) -> Result<Response<ProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = ProjectId::new(&req.project_id);
+        let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         let name = req
             .name
@@ -115,7 +117,7 @@ impl<
     ) -> Result<Response<ToggleProjectActiveResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = ProjectId::new(&req.project_id);
+        let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         self.use_cases
             .toggle_active(&caller, &id)
@@ -131,7 +133,7 @@ impl<
     ) -> Result<Response<DeleteProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = ProjectId::new(&req.project_id);
+        let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         self.use_cases
             .delete(&caller, &id)
@@ -170,7 +172,8 @@ impl<
     ) -> Result<Response<ListProjectsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let organization_id = OrganizationId::new(&req.organization_id);
+        let organization_id =
+            OrganizationId::new(&required(req.organization_id, "organization_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
@@ -194,7 +197,7 @@ impl<
     ) -> Result<Response<ListProjectUsersResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let project_id = ProjectId::new(&req.project_id);
+        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let (users, metadata) = self
@@ -206,7 +209,7 @@ impl<
         let users = users
             .iter()
             .map(|user| ProjectUserInfoResponse {
-                user_id: user.id().to_string(),
+                user_id: wrap(user.id().to_string()),
                 username: user.username().to_string(),
             })
             .collect();
@@ -223,7 +226,7 @@ impl<
     ) -> Result<Response<ListProjectsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let user_id = UserId::new(&req.user_id);
+        let user_id = UserId::new(&required(req.user_id, "user_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let (projects, metadata) = self
@@ -246,8 +249,8 @@ impl<
     ) -> Result<Response<AddUserToProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let user_id = UserId::new(&req.user_id);
-        let project_id = ProjectId::new(&req.project_id);
+        let user_id = UserId::new(&required(req.user_id, "user_id")?);
+        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         self.use_cases
             .add_user(&caller, &user_id, &project_id)
@@ -263,8 +266,8 @@ impl<
     ) -> Result<Response<RemoveUserFromProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let user_id = UserId::new(&req.user_id);
-        let project_id = ProjectId::new(&req.project_id);
+        let user_id = UserId::new(&required(req.user_id, "user_id")?);
+        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         self.use_cases
             .remove_user(&caller, &user_id, &project_id)

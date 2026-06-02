@@ -114,7 +114,9 @@ impl Agent {
 
         let token = AppAuthServiceClient::new(channel.clone())
             .issue_token(IssueTokenRequest {
-                app_id: self.config.app_id.clone(),
+                app_id: Some(scylla_protocol::services::common::AppId {
+                    value: self.config.app_id.clone(),
+                }),
                 secret: self.config.app_secret.clone(),
             })
             .await?

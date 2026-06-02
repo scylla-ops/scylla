@@ -3,6 +3,7 @@ syntax = "proto3";
 package user;
 
 import "common.proto";
+import "google/protobuf/timestamp.proto";
 
 service UserService {
   // Create a user
@@ -28,26 +29,26 @@ service UserService {
 message CreateUserRequest {
   string username = 1;
   string password = 2; // not hashed
-  optional string email = 3;
+  optional common.Email email = 3;
 }
 
-message GetUserRequest { string user_id = 1; }
+message GetUserRequest { common.UserId user_id = 1; }
 
 message UpdateUserRequest {
-  string user_id = 1;
+  common.UserId user_id = 1;
   optional string username = 2;
 }
 
 message UserResponse {
-  string user_id = 1;
+  common.UserId user_id = 1;
   string username = 2;
   bool is_active = 3;
-  string created_at = 4;
-  string updated_at = 5;
-  optional string email = 6;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  optional common.Email email = 6;
 }
 
-message DeleteUserRequest { string user_id = 1; }
+message DeleteUserRequest { common.UserId user_id = 1; }
 
 message DeleteUserResponse {}
 
@@ -59,11 +60,11 @@ message ListUsersResponse {
 }
 
 message ChangeUserGlobalRoleRequest {
-  string user_id = 1;
+  common.UserId user_id = 1;
   string new_role = 2; // "admin" or "user"
 }
 
 message ChangeUserGlobalRoleResponse {
-  string user_id = 1;
+  common.UserId user_id = 1;
   string new_role = 2;
 }

@@ -4,6 +4,7 @@ package pipeline;
 
 import "common.proto";
 import "job.proto";
+import "google/protobuf/timestamp.proto";
 
 service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (PipelineResponse);
@@ -17,52 +18,52 @@ service PipelineService {
 }
 
 message RunPipelineRequest {
-  string pipeline_id = 1;
+  common.PipelineId pipeline_id = 1;
 }
 
 message PipelineNode {
-  string node_id = 1;
-  repeated string deps = 2;
+  common.NodeId node_id = 1;
+  repeated common.NodeId deps = 2;
   string command = 3;
   repeated string args = 4;
 }
 
 message CreatePipelineRequest {
   string name = 1;
-  string project_id = 2;
+  common.ProjectId project_id = 2;
   repeated PipelineNode nodes = 3;
 }
 
 message GetPipelineRequest {
-  string pipeline_id = 1;
+  common.PipelineId pipeline_id = 1;
 }
 
 message UpdatePipelineRequest {
-  string pipeline_id = 1;
+  common.PipelineId pipeline_id = 1;
   optional string name = 2;
   repeated PipelineNode nodes = 3;
 }
 
 message PipelineResponse {
-  string pipeline_id = 1;
-  string project_id = 2;
+  common.PipelineId pipeline_id = 1;
+  common.ProjectId project_id = 2;
   string name = 3;
   repeated PipelineNode nodes = 4;
-  string created_at = 5;
-  string updated_at = 6;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
 }
 
 message PipelineSummary {
-  string pipeline_id = 1;
-  string project_id = 2;
+  common.PipelineId pipeline_id = 1;
+  common.ProjectId project_id = 2;
   string name = 3;
   uint32 node_count = 4;
-  string created_at = 5;
-  string updated_at = 6;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
 }
 
 message DeletePipelineRequest {
-  string pipeline_id = 1;
+  common.PipelineId pipeline_id = 1;
 }
 
 message DeletePipelineResponse {}
@@ -77,11 +78,11 @@ message ListPipelinesResponse {
 }
 
 message ListProjectPipelinesRequest {
-  string project_id = 1;
+  common.ProjectId project_id = 1;
   optional common.PaginationRequest pagination = 2;
 }
 
 message ListOrganizationPipelinesRequest {
-  string organization_id = 1;
+  common.OrganizationId organization_id = 1;
   optional common.PaginationRequest pagination = 2;
 }

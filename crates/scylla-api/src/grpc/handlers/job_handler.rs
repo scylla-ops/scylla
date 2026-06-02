@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{optional, required};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_log_to_proto, job_to_proto,
     proto_to_domain_pagination,
@@ -48,7 +49,7 @@ impl<
     ) -> Result<Response<JobResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = JobId::new(&req.job_id);
+        let id = JobId::new(&required(req.job_id, "job_id")?);
 
         let job = self
             .use_cases
@@ -65,7 +66,7 @@ impl<
     ) -> Result<Response<DeleteJobResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = JobId::new(&req.job_id);
+        let id = JobId::new(&required(req.job_id, "job_id")?);
 
         self.use_cases
             .delete(&caller, &id)
@@ -104,7 +105,7 @@ impl<
     ) -> Result<Response<ListJobsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let pipeline_id = PipelineId::new(&req.pipeline_id);
+        let pipeline_id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
@@ -128,7 +129,7 @@ impl<
     ) -> Result<Response<ListJobsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let project_id = ProjectId::new(&req.project_id);
+        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
@@ -152,7 +153,8 @@ impl<
     ) -> Result<Response<ListJobsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let organization_id = OrganizationId::new(&req.organization_id);
+        let organization_id =
+            OrganizationId::new(&required(req.organization_id, "organization_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
@@ -176,10 +178,11 @@ impl<
     ) -> Result<Response<ListJobLogsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let job_id = JobId::new(&req.job_id);
+        let job_id = JobId::new(&required(req.job_id, "job_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
-        let result = if let Some(node_id_str) = req.node_id.as_deref() {
+        let node_id_arg = optional(req.node_id);
+        let result = if let Some(node_id_str) = node_id_arg.as_deref() {
             let node_id = NodeId::new(node_id_str)
                 .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?;
 
@@ -229,9 +232,8 @@ impl<
     ) -> Result<Response<Self::TailJobLogsStream>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let job_id = JobId::new(&req.job_id);
-        let node_id = req
-            .node_id
+        let job_id = JobId::new(&required(req.job_id, "job_id")?);
+        let node_id = optional(req.node_id)
             .as_deref()
             .map(NodeId::new)
             .transpose()

@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package app;
 
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
 // Management of machine Apps (agents / automations) owned by an organization.
 // An App authenticates with an app token and acts under a agent grant on its
 // org. Creating one returns the plaintext secret exactly once — it is never
@@ -26,19 +29,19 @@ service AppService {
 }
 
 message App {
-  string id              = 1;
-  string organization_id = 2;
-  string name            = 3;
-  bool   is_active       = 4;
-  string created_at      = 5; // RFC 3339
-  string updated_at      = 6; // RFC 3339
+  common.AppId          id              = 1;
+  common.OrganizationId organization_id = 2;
+  string                name            = 3;
+  bool                  is_active       = 4;
+  google.protobuf.Timestamp created_at  = 5;
+  google.protobuf.Timestamp updated_at  = 6;
   // (field 7 `connected` removed — presence is a Agent concept now, exposed by
   //  agent_admin.AgentAdminService, not on a generic App.)
 }
 
 message CreateAppRequest {
-  string organization_id = 1;
-  string name            = 2;
+  common.OrganizationId organization_id = 1;
+  string                name            = 2;
 }
 
 // The newly created app plus its plaintext secret, shown exactly once.
@@ -48,11 +51,11 @@ message CreatedApp {
 }
 
 message GetAppRequest {
-  string id = 1;
+  common.AppId id = 1;
 }
 
 message ListAppsRequest {
-  string organization_id = 1;
+  common.OrganizationId organization_id = 1;
 }
 
 message ListAppsResponse {
@@ -60,7 +63,7 @@ message ListAppsResponse {
 }
 
 message DeleteAppRequest {
-  string id = 1;
+  common.AppId id = 1;
 }
 
 message DeleteAppResponse {
@@ -68,24 +71,24 @@ message DeleteAppResponse {
 }
 
 message SetAppActiveRequest {
-  string app_id = 1;
-  bool   active = 2;
+  common.AppId app_id = 1;
+  bool         active = 2;
 }
 
 // Metadata for one App secret. Never carries the plaintext (only shown once at
 // creation, via CreatedAppSecret).
 message AppSecret {
-  string id         = 1;
-  string app_id     = 2;
-  string label      = 3;
-  bool   enabled    = 4;
-  string created_at = 5; // RFC 3339
-  string updated_at = 6; // RFC 3339
+  common.AppSecretId id         = 1;
+  common.AppId       app_id     = 2;
+  string             label      = 3;
+  bool               enabled    = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
 }
 
 message CreateAppSecretRequest {
-  string app_id = 1;
-  string label  = 2;
+  common.AppId app_id = 1;
+  string       label  = 2;
 }
 
 // The newly created secret plus its plaintext, shown exactly once.
@@ -95,7 +98,7 @@ message CreatedAppSecret {
 }
 
 message ListAppSecretsRequest {
-  string app_id = 1;
+  common.AppId app_id = 1;
 }
 
 message ListAppSecretsResponse {
@@ -103,7 +106,7 @@ message ListAppSecretsResponse {
 }
 
 message RevokeAppSecretRequest {
-  string secret_id = 1;
+  common.AppSecretId secret_id = 1;
 }
 
 message RevokeAppSecretResponse {
@@ -111,8 +114,8 @@ message RevokeAppSecretResponse {
 }
 
 message SetAppSecretEnabledRequest {
-  string secret_id = 1;
-  bool   enabled   = 2;
+  common.AppSecretId secret_id = 1;
+  bool               enabled   = 2;
 }
 
 // Public credential exchange: an App presents its id + secret and receives a
@@ -123,11 +126,13 @@ service AppAuthService {
 }
 
 message IssueTokenRequest {
-  string app_id = 1;
+  common.AppId app_id = 1;
+  // The plaintext app secret exchanged for a token (opaque credential).
   string secret = 2;
 }
 
 message IssueTokenResponse {
-  string token      = 1;
-  string expires_at = 2; // RFC 3339
+  // Opaque bearer token; send as `authorization: Bearer <token>`.
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
 }

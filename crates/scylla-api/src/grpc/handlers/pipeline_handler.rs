@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::required;
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_to_proto, pipeline_to_proto,
     pipeline_to_proto_summary, proto_to_domain_pagination,
@@ -66,17 +67,18 @@ impl<
         let req = request.into_inner();
 
         let name = PipelineName::new(&req.name).map_err(domain_error_to_status)?;
-        let project_id = ProjectId::new(&req.project_id);
+        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         let nodes: Vec<PipelineNode> = req
             .nodes
             .into_iter()
             .map(|n| {
-                let node_id = NodeId::new(&n.node_id).map_err(domain_error_to_status)?;
+                let node_id = NodeId::new(&required(n.node_id, "node_id")?)
+                    .map_err(domain_error_to_status)?;
                 let deps: Vec<NodeId> = n
                     .deps
-                    .iter()
-                    .map(|d| NodeId::new(d).map_err(domain_error_to_status))
+                    .into_iter()
+                    .map(|d| NodeId::new(&d.value).map_err(domain_error_to_status))
                     .collect::<Result<_, _>>()?;
                 PipelineNode::new(node_id, deps, n.command, n.args).map_err(domain_error_to_status)
             })
@@ -97,7 +99,7 @@ impl<
     ) -> Result<Response<PipelineResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = PipelineId::new(&req.pipeline_id);
+        let id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
 
         let pipeline = self
             .use_cases
@@ -114,7 +116,7 @@ impl<
     ) -> Result<Response<PipelineResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = PipelineId::new(&req.pipeline_id);
+        let id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
 
         let name = req
             .name
@@ -129,11 +131,12 @@ impl<
                 .nodes
                 .into_iter()
                 .map(|n| {
-                    let node_id = NodeId::new(&n.node_id).map_err(domain_error_to_status)?;
+                    let node_id = NodeId::new(&required(n.node_id, "node_id")?)
+                        .map_err(domain_error_to_status)?;
                     let deps: Vec<NodeId> = n
                         .deps
-                        .iter()
-                        .map(|d| NodeId::new(d).map_err(domain_error_to_status))
+                        .into_iter()
+                        .map(|d| NodeId::new(&d.value).map_err(domain_error_to_status))
                         .collect::<Result<_, _>>()?;
                     PipelineNode::new(node_id, deps, n.command, n.args)
                         .map_err(domain_error_to_status)
@@ -157,7 +160,7 @@ impl<
     ) -> Result<Response<DeletePipelineResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = PipelineId::new(&req.pipeline_id);
+        let id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
 
         self.use_cases
             .delete(&caller, &id)
@@ -197,7 +200,7 @@ impl<
     ) -> Result<Response<ListPipelinesResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let project_id = ProjectId::new(&req.project_id);
+        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
@@ -222,7 +225,8 @@ impl<
     ) -> Result<Response<ListPipelinesResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let organization_id = OrganizationId::new(&req.organization_id);
+        let organization_id =
+            OrganizationId::new(&required(req.organization_id, "organization_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
@@ -247,7 +251,7 @@ impl<
     ) -> Result<Response<JobResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let pipeline_id = PipelineId::new(&req.pipeline_id);
+        let pipeline_id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
 
         // Single permission check + load + job mint, all inside the use case.
         let (job, dispatch) = self

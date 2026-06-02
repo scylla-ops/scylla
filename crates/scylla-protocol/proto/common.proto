@@ -22,6 +22,8 @@ message ProjectId { string value = 1; }
 message PipelineId { string value = 1; }
 // Identifies a job (one execution of a pipeline).
 message JobId { string value = 1; }
+// Identifies a single job log line.
+message JobLogId { string value = 1; }
 // Identifies an app — a machine principal owned by an organization.
 message AppId { string value = 1; }
 // Identifies an app secret (a hashed credential belonging to an app).
