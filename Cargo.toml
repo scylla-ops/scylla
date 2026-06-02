@@ -23,6 +23,7 @@ tonic-web = "0.14.5"
 tonic-prost = "0.14.5"
 tonic-reflection = "0.14.5"
 prost = "0.14.3"
+prost-types = "0.14.3"
 tonic-prost-build = "0.14.5"
 scylla-protocol = { path = "crates/scylla-protocol" }
 tonic-async-interceptor = "0.14.1"

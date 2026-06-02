@@ -2,6 +2,40 @@ syntax = "proto3";
 
 package common;
 
+// Shared, strongly-typed value objects used across every Scylla service. They
+// exist so a client (frontend or otherwise) cannot accidentally pass a
+// ProjectId where an OrganizationId is expected, and so the exact format of each
+// value is documented in one place rather than guessed from a bare `string`.
+//
+// Each id wraps a single `value`. Unless noted, an id is a **lowercase ULID**
+// (Crockford base32, 26 chars, e.g. `01hb2k...`): opaque, lexicographically
+// sortable by creation time, case-sensitive — treat it as a token, do not parse
+// or upper-case it. Timestamps use the well-known `google.protobuf.Timestamp`.
+
+// Identifies a user account.
+message UserId { string value = 1; }
+// Identifies an organization (top-level tenant).
+message OrganizationId { string value = 1; }
+// Identifies a project (a unit of work inside an organization).
+message ProjectId { string value = 1; }
+// Identifies a pipeline (a DAG blueprint inside a project).
+message PipelineId { string value = 1; }
+// Identifies a job (one execution of a pipeline).
+message JobId { string value = 1; }
+// Identifies an app — a machine principal owned by an organization.
+message AppId { string value = 1; }
+// Identifies an app secret (a hashed credential belonging to an app).
+message AppSecretId { string value = 1; }
+// Identifies an organization invitation.
+message InvitationId { string value = 1; }
+// Identifies one node within a pipeline. NOT a ULID: a caller-supplied id,
+// unique within its pipeline, lowercase ASCII alphanumeric plus `-`/`_`, ≤128
+// chars.
+message NodeId { string value = 1; }
+
+// An email address. Validated (RFC-5322-ish) and stored lowercased on write.
+message Email { string value = 1; }
+
 // Pagination request parameters
 message PaginationRequest {
   // Page number (1-indexed, defaults to 1)

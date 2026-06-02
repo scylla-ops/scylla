@@ -35,6 +35,7 @@ http.workspace = true
 serde.workspace = true
 toml.workspace = true
 chrono.workspace = true
+prost-types.workspace = true
 tracing.workspace = true
 derive_more.workspace = true
 thiserror.workspace = true

@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, organization_to_proto,
     proto_to_domain_pagination,
@@ -72,7 +73,7 @@ impl<
     ) -> Result<Response<OrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
 
         let org = self
             .use_cases
@@ -89,7 +90,7 @@ impl<
     ) -> Result<Response<OrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
 
         let name = req
             .name
@@ -117,7 +118,7 @@ impl<
     ) -> Result<Response<ToggleOrganizationActiveResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
 
         self.use_cases
             .toggle_active(&caller, &org_id)
@@ -133,7 +134,7 @@ impl<
     ) -> Result<Response<DeleteOrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
 
         self.use_cases
             .delete(&caller, &org_id)
@@ -173,7 +174,7 @@ impl<
     ) -> Result<Response<ListOrganizationUsersResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
+        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let (users, metadata) = self
@@ -185,7 +186,7 @@ impl<
         let users = users
             .iter()
             .map(|user| OrganizationUserInfoResponse {
-                user_id: user.id().to_string(),
+                user_id: wrap(user.id().to_string()),
                 username: user.username().to_string(),
             })
             .collect();
@@ -202,7 +203,7 @@ impl<
     ) -> Result<Response<ListUserOrganizationsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let user_id = UserId::new(&req.user_id);
+        let user_id = UserId::new(&required(req.user_id, "user_id")?);
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let (orgs, metadata) = self
@@ -226,8 +227,8 @@ impl<
     ) -> Result<Response<AddUserToOrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
-        let user_id = UserId::new(&req.user_id);
+        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
+        let user_id = UserId::new(&required(req.user_id, "user_id")?);
 
         self.use_cases
             .add_user(&caller, &user_id, &org_id)
@@ -243,8 +244,8 @@ impl<
     ) -> Result<Response<RemoveUserFromOrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(&req.organization_id);
-        let user_id = UserId::new(&req.user_id);
+        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
+        let user_id = UserId::new(&required(req.user_id, "user_id")?);
 
         self.use_cases
             .remove_user(&caller, &user_id, &org_id)

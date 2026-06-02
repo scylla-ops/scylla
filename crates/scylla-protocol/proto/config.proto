@@ -15,7 +15,7 @@ message GetServerConfigRequest {}
 message ServerConfigResponse {
   bool signup_enabled = 1;
   bool invitations_enabled = 2;
-  bool oauth_github_enabled = 3;
+  bool oauth_github_enabled = 3;  
   bool metering_enabled = 4;
   bool mail_enabled = 5;
   bool agent_org_scope_enabled = 6;
