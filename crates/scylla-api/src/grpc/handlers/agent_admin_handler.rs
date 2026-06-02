@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
@@ -45,7 +46,8 @@ impl<
     ) -> Result<Response<ProtoCreatedAgent>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let organization_id = OrganizationId::new(&req.organization_id);
+        let organization_id =
+            OrganizationId::new(&required(req.organization_id, "organization_id")?);
         let name = AppName::new(&req.name).map_err(domain_error_to_status)?;
 
         let created = self
@@ -56,14 +58,14 @@ impl<
 
         // A freshly created agent has not connected yet.
         let agent = ProtoAgentView {
-            id: created.app.id().to_string(),
-            organization_id: created.app.organization_id().to_string(),
+            id: wrap(created.app.id().to_string()),
+            organization_id: wrap(created.app.organization_id().to_string()),
             name: created.app.name().as_str().to_string(),
             is_active: created.app.is_active(),
-            created_at: created.app.created_at().to_rfc3339(),
-            updated_at: created.app.updated_at().to_rfc3339(),
+            created_at: ts(created.app.created_at()),
+            updated_at: ts(created.app.updated_at()),
             connected: false,
-            last_seen: String::new(),
+            last_seen: None,
         };
         Ok(Response::new(ProtoCreatedAgent {
             agent: Some(agent),
@@ -79,7 +81,10 @@ impl<
         let req = request.into_inner();
         let views = self
             .use_cases
-            .list(&caller, OrganizationId::new(&req.organization_id))
+            .list(
+                &caller,
+                OrganizationId::new(&required(req.organization_id, "organization_id")?),
+            )
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(ListAgentsResponse {
@@ -95,7 +100,7 @@ impl<
         let req = request.into_inner();
         let view = self
             .use_cases
-            .get(&caller, AppId::new(&req.id))
+            .get(&caller, AppId::new(&required(req.id, "id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(agent_view_to_proto(&view)))
@@ -109,7 +114,7 @@ impl<
         let req = request.into_inner();
         let stats = self
             .use_cases
-            .stats(&caller, AppId::new(&req.id))
+            .stats(&caller, AppId::new(&required(req.id, "id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(stats_to_proto(&stats)))
@@ -122,7 +127,7 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         self.use_cases
-            .delete(&caller, AppId::new(&req.id))
+            .delete(&caller, AppId::new(&required(req.id, "id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(DeleteAgentResponse { deleted: true }))
@@ -131,14 +136,14 @@ impl<
 
 fn agent_view_to_proto(view: &AgentView) -> ProtoAgentView {
     ProtoAgentView {
-        id: view.app.id().to_string(),
-        organization_id: view.app.organization_id().to_string(),
+        id: wrap(view.app.id().to_string()),
+        organization_id: wrap(view.app.organization_id().to_string()),
         name: view.app.name().as_str().to_string(),
         is_active: view.app.is_active(),
-        created_at: view.app.created_at().to_rfc3339(),
-        updated_at: view.app.updated_at().to_rfc3339(),
+        created_at: ts(view.app.created_at()),
+        updated_at: ts(view.app.updated_at()),
         connected: view.connected,
-        last_seen: view.last_seen.map(|t| t.to_rfc3339()).unwrap_or_default(),
+        last_seen: view.last_seen.and_then(ts),
     }
 }
 
@@ -150,6 +155,6 @@ fn stats_to_proto(s: &AgentStats) -> ProtoAgentStats {
         completed: s.completed,
         failed: s.failed,
         cancelled: s.cancelled,
-        last_run_at: s.last_run_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
+        last_run_at: s.last_run_at.and_then(ts),
     }
 }

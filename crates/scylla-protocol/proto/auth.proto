@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package auth;
 
+import "common.proto";
+
 service AuthService {
   // Login
   rpc Login(LoginRequest) returns (LoginResponse);
@@ -21,7 +23,7 @@ message LoginRequest {
 
 message LoginResponse {
   string token = 1;
-  string user_id = 2;
+  common.UserId user_id = 2;
 }
 
 message ValidateTokenRequest {

@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package invitation;
 
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
 // Authenticated management of org invitations (org-admins).
 service InvitationService {
   rpc CreateInvite(CreateInviteRequest) returns (InvitationResponse);
@@ -16,22 +19,22 @@ service InvitationAcceptService {
 }
 
 message CreateInviteRequest {
-  string organization_id = 1;
-  string email = 2;
+  common.OrganizationId organization_id = 1;
+  common.Email email = 2;
   optional string role = 3; // e.g. "organization-admin"; omitted = plain member
 }
 
 message InvitationResponse {
-  string id = 1;
-  string organization_id = 2;
-  string email = 3;
+  common.InvitationId id = 1;
+  common.OrganizationId organization_id = 2;
+  common.Email email = 3;
   optional string role = 4;
   string status = 5;
-  string expires_at = 6;
+  google.protobuf.Timestamp expires_at = 6;
 }
 
 message ListInvitesRequest {
-  string organization_id = 1;
+  common.OrganizationId organization_id = 1;
 }
 
 message ListInvitesResponse {
@@ -39,7 +42,7 @@ message ListInvitesResponse {
 }
 
 message RevokeInviteRequest {
-  string invitation_id = 1;
+  common.InvitationId invitation_id = 1;
 }
 
 message RevokeInviteResponse {}
@@ -52,6 +55,6 @@ message AcceptInviteRequest {
 
 message AcceptInviteResponse {
   string token = 1;
-  string user_id = 2;
-  string organization_id = 3;
+  common.UserId user_id = 2;
+  common.OrganizationId organization_id = 3;
 }

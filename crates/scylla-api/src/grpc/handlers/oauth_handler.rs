@@ -1,3 +1,4 @@
+use crate::grpc::convert::wrap;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::authz::policy::PolicyControl;
@@ -62,8 +63,8 @@ impl<
             .map_err(domain_error_to_status)?;
         Ok(Response::new(OauthCallbackResponse {
             token: outcome.token,
-            user_id: outcome.user_id.to_string(),
-            organization_id: outcome.organization_id.map(|o| o.to_string()),
+            user_id: wrap(outcome.user_id.to_string()),
+            organization_id: outcome.organization_id.and_then(|o| wrap(o.to_string())),
         }))
     }
 }

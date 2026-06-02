@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::authz::policy::PolicyControl;
@@ -53,12 +54,12 @@ where
 
 fn to_proto(i: &Invitation) -> InvitationResponse {
     InvitationResponse {
-        id: i.id().to_string(),
-        organization_id: i.organization_id().to_string(),
-        email: i.email().as_str().to_string(),
+        id: wrap(i.id().to_string()),
+        organization_id: wrap(i.organization_id().to_string()),
+        email: wrap(i.email().as_str().to_string()),
         role: i.role().map(|r| r.as_str().to_string()),
         status: i.status().as_str().to_string(),
-        expires_at: i.expires_at().to_rfc3339(),
+        expires_at: ts(i.expires_at()),
     }
 }
 
@@ -79,8 +80,8 @@ impl<
     ) -> Result<Response<InvitationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(req.organization_id);
-        let email = Email::new(&req.email).map_err(domain_error_to_status)?;
+        let org_id = OrganizationId::new(required(req.organization_id, "organization_id")?);
+        let email = Email::new(&required(req.email, "email")?).map_err(domain_error_to_status)?;
         let role = req
             .role
             .as_deref()
@@ -102,7 +103,7 @@ impl<
     ) -> Result<Response<ListInvitesResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let org_id = OrganizationId::new(req.organization_id);
+        let org_id = OrganizationId::new(required(req.organization_id, "organization_id")?);
         let invites = self
             .use_cases
             .list_pending(&caller, &org_id)
@@ -119,7 +120,7 @@ impl<
     ) -> Result<Response<RevokeInviteResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = InvitationId::new(req.invitation_id);
+        let id = InvitationId::new(required(req.invitation_id, "invitation_id")?);
         self.use_cases
             .revoke(&caller, &id)
             .await
@@ -154,8 +155,8 @@ impl<
             .map_err(domain_error_to_status)?;
         Ok(Response::new(AcceptInviteResponse {
             token: outcome.token,
-            user_id: outcome.user_id.to_string(),
-            organization_id: outcome.organization_id.to_string(),
+            user_id: wrap(outcome.user_id.to_string()),
+            organization_id: wrap(outcome.organization_id.to_string()),
         }))
     }
 }

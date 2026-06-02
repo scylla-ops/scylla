@@ -1,3 +1,4 @@
+use crate::grpc::convert::wrap;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
@@ -38,7 +39,7 @@ impl<
 
         Ok(Response::new(LoginResponse {
             token,
-            user_id: user_id.to_string(),
+            user_id: wrap(user_id.to_string()),
         }))
     }
 

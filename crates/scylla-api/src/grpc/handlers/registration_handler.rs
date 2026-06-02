@@ -1,3 +1,4 @@
+use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::authz::policy::PolicyControl;
@@ -38,7 +39,7 @@ impl<
         let req = request.into_inner();
 
         let username = Username::new(&req.username).map_err(domain_error_to_status)?;
-        let email = Email::new(&req.email).map_err(domain_error_to_status)?;
+        let email = Email::new(&required(req.email, "email")?).map_err(domain_error_to_status)?;
         let password = Password::new(&req.password).map_err(domain_error_to_status)?;
         let organization_name =
             OrganizationName::new(&req.organization_name).map_err(domain_error_to_status)?;
@@ -51,8 +52,8 @@ impl<
 
         Ok(Response::new(SignupResponse {
             token: outcome.token,
-            user_id: outcome.user_id.to_string(),
-            organization_id: outcome.organization_id.to_string(),
+            user_id: wrap(outcome.user_id.to_string()),
+            organization_id: wrap(outcome.organization_id.to_string()),
         }))
     }
 }
