@@ -260,11 +260,18 @@ Each phase compiles, keeps tests green, and is independently commitable.
   `RoleService` (Create/Update/Delete/List/GetRole) with a typed
   `Role { Scope, repeated Permission, full_control }`; handler + wiring. First
   cut: global roles, system-admin only.
-- **Phase 4b.3 — remaining (next).** Org-owned custom roles + org-admin
+- **Phase 4b.3 — introspection (`GetEffectivePermissions`). ✅ done.**
+  `RoleService.GetEffectivePermissions(principal)` resolves a principal's grants
+  into permissions grouped by scope (roles expanded + direct grants; `*` →
+  full_control) — the matrix source. Gated by `manageGrants`.
+- **Phase 4b.4 — remaining (next).** Org-owned custom roles + org-admin
   management (`ManageOrgRoles`); generalized `GrantService` (typed
-  `oneof { role | permission }`, app principals); `CheckPermissions` /
-  `GetEffectivePermissions` (the matrix + "can I do X"). `ListGrantableRoles`
-  moves from the compile-time catalog to the DB roles.
+  `oneof { role | permission }`, app principals); `CheckPermissions`
+  (per-resource "can I do X"); `ListGrantableRoles` from DB roles.
+- **Frontend reconciliation.** The proto big-bang + enums changed every id field
+  to a wrapper and timestamps to `Timestamp`, breaking ~96 app-code typecheck
+  errors at the gRPC boundary (mappers/data-sources). Reconciled so the existing
+  features keep working: `pnpm i && pnpm run gen-proto && pnpm run typecheck`.
 - **Phase 5 — Anti-escalation + meta-permission rules.**
 - **Phase 6 — Frontend permission matrix** (documented only — the frontend does
   not build in this environment; see memory `project_frontend_codegen_blocker`).
