@@ -1,6 +1,6 @@
 use super::PgAgentRepository;
 use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_AGENT_ROLE,
+    Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
 };
 use crate::application::{AgentRepository, AppRepository, JobRepository};
 use crate::domain::clock;
@@ -29,9 +29,9 @@ fn make_agent(org_id: &OrganizationId, name: &str) -> (App, AppCredential, Agent
     let credential = default_credential(&app);
     let agent = Agent::create(app.id().clone());
     let grant = Grant::new(
-        GrantPrincipal::App(app.id().clone()),
+        Principal::App(app.id().clone()),
         RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
-        GrantScope::Organization(org_id.clone()),
+        Scope::Organization(org_id.clone()),
     );
     (app, credential, agent, grant)
 }
@@ -65,7 +65,7 @@ async fn provision_agent_persists_app_row_and_grant(pool: PgPool) {
     assert!(
         grants
             .iter()
-            .any(|g| g.principal == GrantPrincipal::App(app.id().clone())),
+            .any(|g| g.principal == Principal::App(app.id().clone())),
         "agent grant minted with the app"
     );
 }

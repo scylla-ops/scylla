@@ -1,9 +1,7 @@
 use super::PgAppTokenRepository;
 use crate::application::HashService;
 use crate::application::app::{AppRepository, AppTokenRepository, AppTokenUseCases};
-use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantScope, ORGANIZATION_AGENT_ROLE,
-};
+use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use crate::domain::entities::{App, AppCredential};
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::value_objects::role::name::RoleName;
@@ -23,9 +21,9 @@ async fn seed_app(pool: &PgPool, secret: &AppSecret) -> App {
         hash,
     );
     let grant = Grant::new(
-        GrantPrincipal::App(app.id().clone()),
+        Principal::App(app.id().clone()),
         RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
-        GrantScope::Organization(org.id().clone()),
+        Scope::Organization(org.id().clone()),
     );
     PgAppRepository::new(pool.clone())
         .provision(&app, &credential, &grant)

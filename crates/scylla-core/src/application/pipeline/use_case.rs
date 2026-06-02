@@ -6,7 +6,7 @@ use crate::domain::entities::{
     AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
 };
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::action::Action;
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::pipeline::PipelineName;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
@@ -38,7 +38,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         nodes: Vec<PipelineNode>,
     ) -> DomainResult<Pipeline> {
         self.permission_service
-            .check(caller, Action::CreatePipeline(project_id.clone()))
+            .check(caller, Permission::CreatePipeline(project_id.clone()))
             .await?;
         self.project_repo.find_by_id(&project_id).await?;
         let pipeline = Pipeline::create(name, project_id, nodes)?;
@@ -48,14 +48,14 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
     #[instrument(skip(self, caller), fields(pipeline_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &PipelineId) -> DomainResult<Pipeline> {
         self.permission_service
-            .check(caller, Action::ReadPipeline(id.clone()))
+            .check(caller, Permission::ReadPipeline(id.clone()))
             .await?;
         self.pipeline_repo.find_by_id(id).await
     }
 
     // Note: previously had `find_internal` for orchestration paths to bypass the
     // get-check; replaced by the consolidated `run()` method below which does a
-    // single `Action::RunPipeline` check and reads the pipeline via the repo.
+    // single `Permission::RunPipeline` check and reads the pipeline via the repo.
 
     #[instrument(skip(self, caller, nodes), fields(pipeline_id = %id))]
     pub async fn update(
@@ -66,7 +66,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         nodes: Option<Vec<PipelineNode>>,
     ) -> DomainResult<Pipeline> {
         self.permission_service
-            .check(caller, Action::UpdatePipeline(id.clone()))
+            .check(caller, Permission::UpdatePipeline(id.clone()))
             .await?;
 
         let mut pipeline = self.pipeline_repo.find_by_id(id).await?;
@@ -84,7 +84,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
     #[instrument(skip(self, caller), fields(pipeline_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &PipelineId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::DeletePipeline(id.clone()))
+            .check(caller, Permission::DeletePipeline(id.clone()))
             .await?;
         self.pipeline_repo.find_by_id(id).await?;
         self.pipeline_repo.delete(id).await
@@ -97,7 +97,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Pipeline>> {
         self.permission_service
-            .check(caller, Action::ListPipelines)
+            .check(caller, Permission::ListPipelines)
             .await?;
         self.pipeline_repo.list_all(pagination).await
     }
@@ -110,7 +110,10 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Pipeline>> {
         self.permission_service
-            .check(caller, Action::ListPipelinesByProject(project_id.clone()))
+            .check(
+                caller,
+                Permission::ListPipelinesByProject(project_id.clone()),
+            )
             .await?;
         self.pipeline_repo
             .list_by_project(project_id, pagination)
@@ -127,7 +130,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         self.permission_service
             .check(
                 caller,
-                Action::ListPipelinesByOrganization(organization_id.clone()),
+                Permission::ListPipelinesByOrganization(organization_id.clone()),
             )
             .await?;
         self.pipeline_repo
@@ -137,7 +140,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
 
     /// Authorize + materialise the run of `pipeline_id` for `caller`. Loads
     /// the pipeline, mints a `Job`, persists it, and returns the dispatch
-    /// payload. **Single** permission check (`Action::RunPipeline`) — the
+    /// payload. **Single** permission check (`Permission::RunPipeline`) — the
     /// internal repo calls deliberately bypass per-step Cedar so that
     /// granting "run" doesn't also require granting "get" and "create-job".
     /// The caller (handler) is responsible for actually publishing the
@@ -149,7 +152,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         pipeline_id: &PipelineId,
     ) -> DomainResult<(Job, JobDispatch)> {
         self.permission_service
-            .check(caller, Action::RunPipeline(pipeline_id.clone()))
+            .check(caller, Permission::RunPipeline(pipeline_id.clone()))
             .await?;
 
         let pipeline = self.pipeline_repo.find_by_id(pipeline_id).await?;

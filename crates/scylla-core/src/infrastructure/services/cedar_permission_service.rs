@@ -4,14 +4,12 @@ use super::cedar_authz::{
 use crate::application::PermissionService;
 use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::application::authz::entity_provider::{AuthzEntityProvider, PrincipalAuthz};
-use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_ADMIN_ROLE,
-    ORGANIZATION_AGENT_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, SYSTEM_ADMIN_ROLE,
-};
+use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::application::authz::policy::{PolicyControl, PolicyDefinition, PolicyRepository};
+use crate::application::authz::role::{Role, RoleRepository};
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::action::{Action, ResourceRef};
+use crate::domain::value_objects::permission::{Permission, ResourceRef};
 use async_trait::async_trait;
 use cedar_policy::{
     Authorizer, Context, Decision, Effect, Entities, Entity, EntityUid, Policy, PolicyId,
@@ -25,21 +23,34 @@ use tracing::{info, instrument, warn};
 
 const SCHEMA_SRC: &str = include_str!("cedar/schema.cedarschema");
 const POLICIES_SRC: &str = include_str!("cedar/policies.cedar");
-/// Full-control body, registered under each admin role id below.
+/// Cedar body for a full-control role: the action is unconstrained, so a grant
+/// of the role confers every action within the granted scope. Used for roles
+/// whose permission set is the `*` sentinel; other roles get an explicit
+/// `action in [...]` body generated from their permission keys.
 const ROLE_TEMPLATE_SRC: &str = include_str!("cedar/role_template.cedar");
-/// Restricted body for the `agent` role (machine Apps): job execution only.
-const AGENT_TEMPLATE_SRC: &str = include_str!("cedar/agent_template.cedar");
-/// Grantable role ids mapped to the Cedar template body linked per grant. A
-/// grant whose `role` is not listed here is skipped at link time (logged).
-const TEMPLATE_ROLES: &[(&str, &str)] = &[
-    // system-admin uses the same full-control body as org/project admin; scoped
-    // to System (the root) it confers control over everything.
-    (SYSTEM_ADMIN_ROLE, ROLE_TEMPLATE_SRC),
-    (ORGANIZATION_ADMIN_ROLE, ROLE_TEMPLATE_SRC),
-    (PROJECT_ADMIN_ROLE, ROLE_TEMPLATE_SRC),
-    (ORGANIZATION_AGENT_ROLE, AGENT_TEMPLATE_SRC),
-    (PROJECT_AGENT_ROLE, AGENT_TEMPLATE_SRC),
-];
+
+/// The Cedar permit body for a role, instantiated per grant via the `?principal`
+/// / `?resource` slots. A full-control role reuses the unconstrained-action body
+/// above; any other role lists its permission keys explicitly. Returns `None`
+/// for a role that confers nothing (empty permission set): it gets no template,
+/// so a grant of it links to nothing (and is logged as unlinkable).
+fn role_template_src(role: &Role) -> Option<String> {
+    if role.is_full_control() {
+        return Some(ROLE_TEMPLATE_SRC.to_string());
+    }
+    let actions: Vec<String> = role
+        .permissions
+        .iter()
+        .map(|key| format!("        Scylla::Action::\"{key}\""))
+        .collect();
+    if actions.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "permit (\n    principal == ?principal,\n    action in [\n{}\n    ],\n    resource in ?resource\n);\n",
+        actions.join(",\n")
+    ))
+}
 
 /// Cedar-backed authorization. Static policies + schema are compiled into the
 /// binary and validated at construction; explicit scoped grants are linked from
@@ -54,6 +65,8 @@ pub struct CedarPermissionService<EP: AuthzEntityProvider> {
     authorizer: Authorizer,
     entity_provider: Arc<EP>,
     /// Stores backing the live set; re-read on every `reload` to rebuild it.
+    /// Roles supply the per-role template bodies; grants link instances of them.
+    role_repo: Arc<dyn RoleRepository>,
     grant_repo: Arc<dyn GrantRepository>,
     policy_repo: Arc<dyn PolicyRepository>,
     audit: Arc<dyn AuditLog>,
@@ -65,18 +78,21 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
     /// embedded schema/policies don't typecheck — catching drift at startup.
     pub async fn new(
         entity_provider: Arc<EP>,
+        role_repo: Arc<dyn RoleRepository>,
         grant_repo: Arc<dyn GrantRepository>,
         policy_repo: Arc<dyn PolicyRepository>,
         audit: Arc<dyn AuditLog>,
     ) -> DomainResult<Self> {
+        let roles = role_repo.list_all().await?;
         let grants = grant_repo.list_all().await?;
         let db_policies = policy_repo.list_enabled().await?;
-        let policies = Self::build_policy_set(&grants, &db_policies)?;
+        let policies = Self::build_policy_set(&roles, &grants, &db_policies)?;
 
         Ok(Self {
             policies: RwLock::new(Arc::new(policies)),
             authorizer: Authorizer::new(),
             entity_provider,
+            role_repo,
             grant_repo,
             policy_repo,
             audit,
@@ -88,6 +104,7 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
     /// stored grants linked as template instances. Shared by `new` and `reload`;
     /// on any error the caller keeps the previous live set.
     fn build_policy_set(
+        roles: &[Role],
         grants: &[Grant],
         db_policies: &[PolicyDefinition],
     ) -> DomainResult<PolicySet> {
@@ -97,14 +114,21 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         let mut policies = PolicySet::from_str(POLICIES_SRC)
             .map_err(|e| DomainError::Internal(format!("cedar policy parse: {e}")))?;
 
-        // Register the scoped-role template under each grantable role id so
-        // grants can link instances by role name.
-        for (role, src) in TEMPLATE_ROLES {
-            let template = Template::parse(Some(PolicyId::new(*role)), src)
-                .map_err(|e| DomainError::Internal(format!("cedar template parse {role}: {e}")))?;
-            policies
-                .add_template(template)
-                .map_err(|e| DomainError::Internal(format!("cedar add template {role}: {e}")))?;
+        // Register a template per role, its action set generated from the role's
+        // permissions (full control → unconstrained action; otherwise an explicit
+        // list). Grants then link an instance of their role's template, matched
+        // by role id. A role that confers nothing gets no template.
+        for role in roles {
+            let Some(src) = role_template_src(role) else {
+                continue;
+            };
+            let template =
+                Template::parse(Some(PolicyId::new(role.id.as_str())), &src).map_err(|e| {
+                    DomainError::Internal(format!("cedar template parse {}: {e}", role.id))
+                })?;
+            policies.add_template(template).map_err(|e| {
+                DomainError::Internal(format!("cedar add template {}: {e}", role.id))
+            })?;
         }
 
         // Runtime policies: permits are always allowed (additive); forbids only
@@ -149,15 +173,15 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
     /// `?resource` → the granted scope.
     fn link_grant(policies: &mut PolicySet, grant: &Grant) -> DomainResult<()> {
         let principal_uid = match &grant.principal {
-            GrantPrincipal::User(id) => euid("Scylla::User", id.as_str())?,
-            GrantPrincipal::App(id) => euid("Scylla::App", id.as_str())?,
+            Principal::User(id) => euid("Scylla::User", id.as_str())?,
+            Principal::App(id) => euid("Scylla::App", id.as_str())?,
         };
         let resource_uid = match &grant.scope {
             // System is the tenancy root; a grant here (e.g. system-admin) covers
             // everything beneath via `resource in ?resource`.
-            GrantScope::System => euid("Scylla::System", "root")?,
-            GrantScope::Organization(id) => euid("Scylla::Organization", id.as_str())?,
-            GrantScope::Project(id) => euid("Scylla::Project", id.as_str())?,
+            Scope::System => euid("Scylla::System", "root")?,
+            Scope::Organization(id) => euid("Scylla::Organization", id.as_str())?,
+            Scope::Project(id) => euid("Scylla::Project", id.as_str())?,
         };
         let vals = HashMap::from([
             (SlotId::principal(), principal_uid),
@@ -280,7 +304,7 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
     fn record_decision(
         &self,
         caller: &CallerContext,
-        perm: &Action,
+        perm: &Permission,
         resource: &ResourceRef,
         decision: AuditDecision,
         reason: Option<String>,
@@ -292,12 +316,12 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         match decision {
             AuditDecision::Allow => info!(
                 target: "audit",
-                who = %caller, action = perm.action(), resource = %resource,
+                who = %caller, action = perm.key(), resource = %resource,
                 decision = "allow", policies = ?policies, "action authorized"
             ),
             AuditDecision::Deny => warn!(
                 target: "audit",
-                who = %caller, action = perm.action(), resource = %resource,
+                who = %caller, action = perm.key(), resource = %resource,
                 decision = "deny", policies = ?policies, "action denied"
             ),
         }
@@ -306,7 +330,7 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             occurred_at: Utc::now(),
             principal_kind,
             principal_id,
-            action: perm.action(),
+            action: perm.key(),
             resource_kind,
             resource_id,
             decision,
@@ -318,8 +342,8 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
 
 #[async_trait]
 impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionService<EP> {
-    #[instrument(skip(self, caller, perm), fields(caller = ?caller, action = perm.action()))]
-    async fn check(&self, caller: &CallerContext, perm: Action) -> DomainResult<()> {
+    #[instrument(skip(self, caller, perm), fields(caller = ?caller, action = perm.key()))]
+    async fn check(&self, caller: &CallerContext, perm: Permission) -> DomainResult<()> {
         let resource = perm.resource();
 
         // Durable liveness gate: re-validate the principal on EVERY action, not
@@ -343,7 +367,7 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
 
         let (principal_uid, principal_entities) = self.principal_entities(caller).await?;
         let (resource_uid, resource_entities) = self.resource_entities(&resource).await?;
-        let action_uid = euid("Scylla::Action", perm.action())?;
+        let action_uid = euid("Scylla::Action", perm.key())?;
 
         // Dedup by UID (e.g. a user reading itself: principal == resource).
         // Principal entities win so the principal keeps its roles + attrs.
@@ -449,9 +473,10 @@ impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService
     /// broken or partial set.
     #[instrument(skip(self))]
     async fn reload(&self) -> DomainResult<()> {
+        let roles = self.role_repo.list_all().await?;
         let grants = self.grant_repo.list_all().await?;
         let db_policies = self.policy_repo.list_enabled().await?;
-        let policies = Self::build_policy_set(&grants, &db_policies)?;
+        let policies = Self::build_policy_set(&roles, &grants, &db_policies)?;
         *self.policies.write().expect("policy set lock poisoned") = Arc::new(policies);
         info!(target: "audit", "authorization policy set reloaded");
         Ok(())
@@ -462,11 +487,67 @@ impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService
 mod tests {
     use super::*;
     use crate::application::authz::entity_provider::ResourceAncestors;
+    use crate::application::authz::grant::{
+        ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE,
+        SYSTEM_ADMIN_ROLE, ScopeKind,
+    };
+    use crate::application::authz::role::FULL_CONTROL;
     use crate::application::caller::ServiceIdentity;
     use crate::domain::entities::{
         AppId, CedarPolicyId, OrganizationId, PipelineId, ProjectId, UserId,
     };
     use crate::domain::value_objects::role::name::RoleName;
+
+    /// The five builtin roles as the seed migration defines them: admin roles
+    /// confer full control (`*`), agent roles the four job-execution
+    /// permissions. The Cedar templates are generated from these, so the stub
+    /// must match the seed for the admin/agent behaviour tests to hold.
+    fn builtin_roles() -> Vec<Role> {
+        let admin = |id: &str, scope: ScopeKind| Role {
+            id: id.to_string(),
+            key: Some(id.to_string()),
+            name: id.to_string(),
+            description: String::new(),
+            scope,
+            owner_org: None,
+            builtin: true,
+            permissions: vec![FULL_CONTROL.to_string()],
+        };
+        let agent = |id: &str, scope: ScopeKind| Role {
+            id: id.to_string(),
+            key: Some(id.to_string()),
+            name: id.to_string(),
+            description: String::new(),
+            scope,
+            owner_org: None,
+            builtin: true,
+            permissions: [
+                "readPipeline",
+                "executeJob",
+                "writeJobStatus",
+                "writeJobLog",
+            ]
+            .iter()
+            .map(ToString::to_string)
+            .collect(),
+        };
+        vec![
+            admin(SYSTEM_ADMIN_ROLE, ScopeKind::System),
+            admin(ORGANIZATION_ADMIN_ROLE, ScopeKind::Organization),
+            admin(PROJECT_ADMIN_ROLE, ScopeKind::Project),
+            agent(ORGANIZATION_AGENT_ROLE, ScopeKind::Organization),
+            agent(PROJECT_AGENT_ROLE, ScopeKind::Project),
+        ]
+    }
+
+    struct StubRoles(Vec<Role>);
+
+    #[async_trait]
+    impl RoleRepository for StubRoles {
+        async fn list_all(&self) -> DomainResult<Vec<Role>> {
+            Ok(self.0.clone())
+        }
+    }
 
     struct StubProvider {
         authz: PrincipalAuthz,
@@ -561,6 +642,7 @@ mod tests {
                 ancestors,
                 app_active: true,
             }),
+            Arc::new(StubRoles(builtin_roles())),
             Arc::new(StubGrants(grants)),
             Arc::new(StubPolicies(policies)),
             Arc::new(crate::application::audit::NoopAuditLog),
@@ -581,6 +663,7 @@ mod tests {
                 ancestors,
                 app_active: false,
             }),
+            Arc::new(StubRoles(builtin_roles())),
             Arc::new(StubGrants(grants)),
             Arc::new(StubPolicies(vec![])),
             Arc::new(crate::application::audit::NoopAuditLog),
@@ -601,16 +684,16 @@ mod tests {
             PrincipalAuthz::default(),
             ResourceAncestors::default(),
             vec![Grant::new(
-                GrantPrincipal::User(UserId::new("u-admin")),
+                Principal::User(UserId::new("u-admin")),
                 role("system-admin"),
-                GrantScope::System,
+                Scope::System,
             )],
         )
         .await;
 
         let caller = CallerContext::User(UserId::new("u-admin"));
         assert!(
-            svc.check(&caller, Action::DeleteUser(UserId::new("victim")))
+            svc.check(&caller, Permission::DeleteUser(UserId::new("victim")))
                 .await
                 .is_ok()
         );
@@ -625,7 +708,7 @@ mod tests {
         )
         .await;
         let caller = CallerContext::Service(ServiceIdentity::recorder());
-        assert!(svc.check(&caller, Action::CreateJob).await.is_ok());
+        assert!(svc.check(&caller, Permission::CreateJob).await.is_ok());
     }
 
     #[tokio::test]
@@ -637,7 +720,7 @@ mod tests {
         )
         .await;
         assert!(
-            svc.check(&CallerContext::Anonymous, Action::ListUsers)
+            svc.check(&CallerContext::Anonymous, Permission::ListUsers)
                 .await
                 .is_err()
         );
@@ -660,7 +743,7 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
-            svc.check(&caller, Action::RunPipeline(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::RunPipeline(PipelineId::new("pl1")))
                 .await
                 .is_ok()
         );
@@ -684,7 +767,7 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
-            svc.check(&caller, Action::RunPipeline(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::RunPipeline(PipelineId::new("pl1")))
                 .await
                 .is_err()
         );
@@ -693,9 +776,9 @@ mod tests {
     #[tokio::test]
     async fn linked_project_admin_grant_allows_in_scope() {
         let grant = Grant::new(
-            GrantPrincipal::User(UserId::new("u1")),
+            Principal::User(UserId::new("u1")),
             role("project-admin"),
-            GrantScope::Project(ProjectId::new("p1")),
+            Scope::Project(ProjectId::new("p1")),
         );
         let svc = service(
             PrincipalAuthz::default(),
@@ -709,7 +792,7 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
-            svc.check(&caller, Action::DeletePipeline(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
                 .await
                 .is_ok()
         );
@@ -720,9 +803,9 @@ mod tests {
         // A machine App with a agent grant on an org may execute jobs on a
         // pipeline beneath it, but not management actions outside the agent set.
         let grant = Grant::new(
-            GrantPrincipal::App(AppId::new("agent-1")),
+            Principal::App(AppId::new("agent-1")),
             role(ORGANIZATION_AGENT_ROLE),
-            GrantScope::Organization(OrganizationId::new("o1")),
+            Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
             PrincipalAuthz::default(),
@@ -736,13 +819,13 @@ mod tests {
         .await;
         let caller = CallerContext::App(AppId::new("agent-1"));
         assert!(
-            svc.check(&caller, Action::ExecuteJob(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
                 .await
                 .is_ok(),
             "agent app may execute jobs within its granted org"
         );
         assert!(
-            svc.check(&caller, Action::DeletePipeline(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
                 .await
                 .is_err(),
             "agent role must not confer management actions"
@@ -757,9 +840,9 @@ mod tests {
         // the durable guarantee that a disabled worker cannot keep acting over
         // an already-open stream.
         let grant = Grant::new(
-            GrantPrincipal::App(AppId::new("agent-1")),
+            Principal::App(AppId::new("agent-1")),
             role(ORGANIZATION_AGENT_ROLE),
-            GrantScope::Organization(OrganizationId::new("o1")),
+            Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service_app_inactive(
             ResourceAncestors {
@@ -772,7 +855,7 @@ mod tests {
         .await;
         let caller = CallerContext::App(AppId::new("agent-1"));
         assert!(
-            svc.check(&caller, Action::ExecuteJob(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
                 .await
                 .is_err(),
             "a disabled app must be denied even where its grant would otherwise allow"
@@ -782,9 +865,9 @@ mod tests {
     #[tokio::test]
     async fn agent_app_denied_outside_scope() {
         let grant = Grant::new(
-            GrantPrincipal::App(AppId::new("agent-1")),
+            Principal::App(AppId::new("agent-1")),
             role(ORGANIZATION_AGENT_ROLE),
-            GrantScope::Organization(OrganizationId::new("o1")),
+            Scope::Organization(OrganizationId::new("o1")),
         );
         // Pipeline lives under a different org the app has no grant on.
         let svc = service(
@@ -799,7 +882,7 @@ mod tests {
         .await;
         let caller = CallerContext::App(AppId::new("agent-1"));
         assert!(
-            svc.check(&caller, Action::ExecuteJob(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::ExecuteJob(PipelineId::new("pl1")))
                 .await
                 .is_err(),
             "agent app must be denied outside its granted scope"
@@ -813,9 +896,9 @@ mod tests {
         // grant covers all of them within its org via the role template, and
         // nothing outside it. Pure permission — no org-member broadening.
         let grant = Grant::new(
-            GrantPrincipal::User(UserId::new("u1")),
+            Principal::User(UserId::new("u1")),
             role(ORGANIZATION_ADMIN_ROLE),
-            GrantScope::Organization(OrganizationId::new("o1")),
+            Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
             PrincipalAuthz::default(),
@@ -830,11 +913,11 @@ mod tests {
         let caller = CallerContext::User(UserId::new("u1"));
 
         for perm in [
-            Action::CreateAgent(OrganizationId::new("o1")),
-            Action::ListAgents(OrganizationId::new("o1")),
-            Action::ReadAgent(AppId::new("agent-1")),
-            Action::ReadAgentStats(AppId::new("agent-1")),
-            Action::DeleteAgent(AppId::new("agent-1")),
+            Permission::CreateAgent(OrganizationId::new("o1")),
+            Permission::ListAgents(OrganizationId::new("o1")),
+            Permission::ReadAgent(AppId::new("agent-1")),
+            Permission::ReadAgentStats(AppId::new("agent-1")),
+            Permission::DeleteAgent(AppId::new("agent-1")),
         ] {
             assert!(
                 svc.check(&caller, perm.clone()).await.is_ok(),
@@ -843,7 +926,7 @@ mod tests {
         }
 
         assert!(
-            svc.check(&caller, Action::CreateAgent(OrganizationId::new("o2")))
+            svc.check(&caller, Permission::CreateAgent(OrganizationId::new("o2")))
                 .await
                 .is_err(),
             "org admin cannot create agents in another org"
@@ -864,13 +947,13 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("nobody"));
         assert!(
-            svc.check(&caller, Action::ListAgents(OrganizationId::new("o1")))
+            svc.check(&caller, Permission::ListAgents(OrganizationId::new("o1")))
                 .await
                 .is_err(),
             "a user with no grant cannot list agents"
         );
         assert!(
-            svc.check(&caller, Action::ReadAgentStats(AppId::new("agent-1")))
+            svc.check(&caller, Permission::ReadAgentStats(AppId::new("agent-1")))
                 .await
                 .is_err(),
             "a user with no grant cannot read agent stats"
@@ -880,9 +963,9 @@ mod tests {
     #[tokio::test]
     async fn org_admin_manages_grants_in_its_org_only() {
         let grant = Grant::new(
-            GrantPrincipal::User(UserId::new("u1")),
+            Principal::User(UserId::new("u1")),
             role(ORGANIZATION_ADMIN_ROLE),
-            GrantScope::Organization(OrganizationId::new("o1")),
+            Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
             PrincipalAuthz::default(),
@@ -896,15 +979,21 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
-            svc.check(&caller, Action::ManageOrgGrants(OrganizationId::new("o1")))
-                .await
-                .is_ok(),
+            svc.check(
+                &caller,
+                Permission::ManageOrgGrants(OrganizationId::new("o1"))
+            )
+            .await
+            .is_ok(),
             "org admin may manage grants in its own org"
         );
         assert!(
-            svc.check(&caller, Action::ManageOrgGrants(OrganizationId::new("o2")))
-                .await
-                .is_err(),
+            svc.check(
+                &caller,
+                Permission::ManageOrgGrants(OrganizationId::new("o2"))
+            )
+            .await
+            .is_err(),
             "org admin may not manage grants in another org (anti-escalation)"
         );
     }
@@ -930,7 +1019,7 @@ mod tests {
             member
                 .check(
                     &member_caller,
-                    Action::ListOrganizationMembers(OrganizationId::new("o1"))
+                    Permission::ListOrganizationMembers(OrganizationId::new("o1"))
                 )
                 .await
                 .is_ok(),
@@ -940,7 +1029,7 @@ mod tests {
             member
                 .check(
                     &member_caller,
-                    Action::ManageInvitations(OrganizationId::new("o1"))
+                    Permission::ManageInvitations(OrganizationId::new("o1"))
                 )
                 .await
                 .is_err(),
@@ -952,9 +1041,9 @@ mod tests {
             PrincipalAuthz::default(),
             ResourceAncestors::default(),
             vec![Grant::new(
-                GrantPrincipal::User(UserId::new("admin")),
+                Principal::User(UserId::new("admin")),
                 role(ORGANIZATION_ADMIN_ROLE),
-                GrantScope::Organization(OrganizationId::new("o1")),
+                Scope::Organization(OrganizationId::new("o1")),
             )],
         )
         .await;
@@ -962,7 +1051,7 @@ mod tests {
             admin
                 .check(
                     &CallerContext::User(UserId::new("admin")),
-                    Action::ManageInvitations(OrganizationId::new("o1"))
+                    Permission::ManageInvitations(OrganizationId::new("o1"))
                 )
                 .await
                 .is_ok(),
@@ -973,9 +1062,9 @@ mod tests {
     #[tokio::test]
     async fn org_admin_manages_project_grants_under_its_org() {
         let grant = Grant::new(
-            GrantPrincipal::User(UserId::new("u1")),
+            Principal::User(UserId::new("u1")),
             role(ORGANIZATION_ADMIN_ROLE),
-            GrantScope::Organization(OrganizationId::new("o1")),
+            Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
             PrincipalAuthz::default(),
@@ -989,9 +1078,12 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
-            svc.check(&caller, Action::ManageProjectGrants(ProjectId::new("p1")))
-                .await
-                .is_ok(),
+            svc.check(
+                &caller,
+                Permission::ManageProjectGrants(ProjectId::new("p1"))
+            )
+            .await
+            .is_ok(),
             "org admin may manage grants on a project beneath its org"
         );
     }
@@ -999,9 +1091,9 @@ mod tests {
     #[tokio::test]
     async fn project_admin_cannot_escalate_to_org_grants() {
         let grant = Grant::new(
-            GrantPrincipal::User(UserId::new("u1")),
+            Principal::User(UserId::new("u1")),
             role(PROJECT_ADMIN_ROLE),
-            GrantScope::Project(ProjectId::new("p1")),
+            Scope::Project(ProjectId::new("p1")),
         );
         let svc = service(
             PrincipalAuthz::default(),
@@ -1015,15 +1107,21 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
-            svc.check(&caller, Action::ManageProjectGrants(ProjectId::new("p1")))
-                .await
-                .is_ok(),
+            svc.check(
+                &caller,
+                Permission::ManageProjectGrants(ProjectId::new("p1"))
+            )
+            .await
+            .is_ok(),
             "project admin manages grants on its project"
         );
         assert!(
-            svc.check(&caller, Action::ManageOrgGrants(OrganizationId::new("o1")))
-                .await
-                .is_err(),
+            svc.check(
+                &caller,
+                Permission::ManageOrgGrants(OrganizationId::new("o1"))
+            )
+            .await
+            .is_err(),
             "project admin cannot escalate to org-level grant management"
         );
     }
@@ -1040,37 +1138,43 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
-            svc.check(&caller, Action::ListUserOrganizations(UserId::new("u1")))
-                .await
-                .is_ok(),
+            svc.check(
+                &caller,
+                Permission::ListUserOrganizations(UserId::new("u1"))
+            )
+            .await
+            .is_ok(),
             "a user may list its own organizations"
         );
         assert!(
-            svc.check(&caller, Action::ListUserProjects(UserId::new("u1")))
+            svc.check(&caller, Permission::ListUserProjects(UserId::new("u1")))
                 .await
                 .is_ok(),
             "a user may list its own projects"
         );
         assert!(
-            svc.check(&caller, Action::UpdateUser(UserId::new("u1")))
+            svc.check(&caller, Permission::UpdateUser(UserId::new("u1")))
                 .await
                 .is_ok(),
             "a user may update its own profile"
         );
         assert!(
-            svc.check(&caller, Action::DeleteUser(UserId::new("u1")))
+            svc.check(&caller, Permission::DeleteUser(UserId::new("u1")))
                 .await
                 .is_err(),
             "self-deletion is not granted by the self policy"
         );
         assert!(
-            svc.check(&caller, Action::ListUserOrganizations(UserId::new("u2")))
-                .await
-                .is_err(),
+            svc.check(
+                &caller,
+                Permission::ListUserOrganizations(UserId::new("u2"))
+            )
+            .await
+            .is_err(),
             "a user may not list another user's organizations"
         );
         assert!(
-            svc.check(&caller, Action::UpdateUser(UserId::new("u2")))
+            svc.check(&caller, Permission::UpdateUser(UserId::new("u2")))
                 .await
                 .is_err(),
             "a user may not update another user's profile"
@@ -1091,7 +1195,7 @@ mod tests {
         .await;
         let caller = CallerContext::User(UserId::new("nobody"));
         assert!(
-            svc.check(&caller, Action::ReadPipeline(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::ReadPipeline(PipelineId::new("pl1")))
                 .await
                 .is_err()
         );
@@ -1112,7 +1216,7 @@ mod tests {
         )
         .await;
         let caller = CallerContext::User(UserId::new("u-ci"));
-        assert!(svc.check(&caller, Action::ListUsers).await.is_ok());
+        assert!(svc.check(&caller, Permission::ListUsers).await.is_ok());
     }
 
     #[tokio::test]
@@ -1184,20 +1288,20 @@ mod tests {
                 pipeline: None,
             },
             vec![Grant::new(
-                GrantPrincipal::User(UserId::new("u-admin")),
+                Principal::User(UserId::new("u-admin")),
                 role("system-admin"),
-                GrantScope::System,
+                Scope::System,
             )],
             vec![forbid],
         )
         .await;
         let caller = CallerContext::User(UserId::new("u-admin"));
         assert!(
-            svc.check(&caller, Action::DeletePipeline(PipelineId::new("pl1")))
+            svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
                 .await
                 .is_err()
         );
-        assert!(svc.check(&caller, Action::ListUsers).await.is_ok());
+        assert!(svc.check(&caller, Permission::ListUsers).await.is_ok());
     }
 
     #[tokio::test]

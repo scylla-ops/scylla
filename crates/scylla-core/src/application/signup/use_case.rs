@@ -1,6 +1,4 @@
-use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantScope, ORGANIZATION_ADMIN_ROLE,
-};
+use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{HashService, SessionRepository};
@@ -66,9 +64,9 @@ where
         // The org creator becomes its admin via a scoped grant on their own org.
         let role = RoleName::new(ORGANIZATION_ADMIN_ROLE)?;
         let grant = Grant::new(
-            GrantPrincipal::User(user.id().clone()),
+            Principal::User(user.id().clone()),
             role,
-            GrantScope::Organization(organization.id().clone()),
+            Scope::Organization(organization.id().clone()),
         );
 
         self.signup_repo

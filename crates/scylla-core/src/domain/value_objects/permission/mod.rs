@@ -7,12 +7,12 @@ use crate::domain::entities::{AppId, JobId, OrganizationId, PipelineId, ProjectI
 /// Authorization intent: a named operation plus the concrete resource it acts
 /// on. This is the single vocabulary the application layer uses to ask "is the
 /// caller allowed to do X?". It carries no Cedar types — the infra adapter maps
-/// `action()` to a Cedar `Action::"…"` and `resource()` to a typed entity.
+/// `key()` to a Cedar `Action::"…"` and `resource()` to a typed entity.
 ///
 /// One variant per operation (fine-grained actions) so the Cedar schema can pin
 /// `appliesTo` per action and policies stay readable.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Action {
+pub enum Permission {
     // ── user ───────────────────────────────────────────────────────────
     CreateUser,
     ReadUser(UserId),
@@ -100,10 +100,10 @@ pub enum Action {
     ManagePolicies,
 }
 
-impl Action {
-    /// Canonical action identifier — becomes the Cedar `Action::"<id>"` eid.
+impl Permission {
+    /// Canonical permission key — becomes the Cedar `Action::"<id>"` eid.
     #[must_use]
-    pub fn action(&self) -> &'static str {
+    pub fn key(&self) -> &'static str {
         match self {
             Self::CreateUser => "createUser",
             Self::ReadUser(_) => "readUser",
@@ -271,12 +271,12 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "app",
 ];
 
-/// The full authorization vocabulary: every action id paired with the resource
-/// type it targets. Drives `ListAuthzVocabulary` so a policy author sees what a
+/// The full authorization vocabulary: every permission key paired with the
+/// resource type it targets. Drives `ListAuthzVocabulary` so a policy author sees what a
 /// `permit`/`forbid` may reference instead of guessing names. One row per
-/// [`Action`] variant — keep in sync (the test below asserts every row's
+/// [`Permission`] variant — keep in sync (the test below asserts every row's
 /// resource type is one of [`RESOURCE_TYPES`] and ids are unique).
-pub const ACTION_CATALOG: &[(&str, &str)] = &[
+pub const PERMISSION_CATALOG: &[(&str, &str)] = &[
     // user
     ("createUser", "system"),
     ("readUser", "user"),
@@ -348,17 +348,20 @@ pub const ACTION_CATALOG: &[(&str, &str)] = &[
 
 #[cfg(test)]
 mod catalog_tests {
-    use super::{ACTION_CATALOG, RESOURCE_TYPES};
+    use super::{PERMISSION_CATALOG, RESOURCE_TYPES};
     use std::collections::HashSet;
 
     #[test]
-    fn action_catalog_is_consistent() {
-        let mut ids = HashSet::new();
-        for (id, resource_type) in ACTION_CATALOG {
-            assert!(ids.insert(*id), "duplicate action id in catalog: {id}");
+    fn permission_catalog_is_consistent() {
+        let mut keys = HashSet::new();
+        for (key, resource_type) in PERMISSION_CATALOG {
+            assert!(
+                keys.insert(*key),
+                "duplicate permission key in catalog: {key}"
+            );
             assert!(
                 RESOURCE_TYPES.contains(resource_type),
-                "action {id} has unknown resource type {resource_type}",
+                "permission {key} has unknown resource type {resource_type}",
             );
         }
     }

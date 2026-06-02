@@ -31,7 +31,8 @@ use scylla_core::infrastructure::{
     PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
     PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgJobLogRepository, PgJobRepository,
     PgOrganizationRepository, PgPipelineRepository, PgPolicyRepository, PgProjectRepository,
-    PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
+    PgRoleRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
+    PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
@@ -179,6 +180,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let invite_repo = Arc::new(PgInvitationRepository::new(db.clone()));
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
+    let role_repo = Arc::new(PgRoleRepository::new(db.clone()));
     let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
     let policy_repo = Arc::new(PgPolicyRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
@@ -189,12 +191,13 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let permission_checker = Arc::new(
         CedarPermissionService::new(
             authz_provider,
+            role_repo.clone(),
             grant_repo.clone(),
             policy_repo.clone(),
             audit_log,
         )
         .await
-        .map_err(|e| StartupError::Action(e.to_string()))?,
+        .map_err(|e| StartupError::Permission(e.to_string()))?,
     );
 
     let auth_uc = Arc::new(AuthUseCases::new(

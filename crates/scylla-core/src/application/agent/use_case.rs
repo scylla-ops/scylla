@@ -3,16 +3,14 @@ use crate::application::agent::dispatch::JobDispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::agent::repository::{AgentRepository, AgentStats};
 use crate::application::app::repository::AppRepository;
-use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantScope, ORGANIZATION_AGENT_ROLE,
-};
+use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::entities::{Agent, App, AppCredential, AppId, OrganizationId, PipelineId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::role::name::RoleName;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
@@ -52,7 +50,7 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
             let caller = CallerContext::App(app_id.clone());
             match self
                 .permission_service
-                .check(&caller, Action::ExecuteJob(pipeline_id.clone()))
+                .check(&caller, Permission::ExecuteJob(pipeline_id.clone()))
                 .await
             {
                 Ok(()) => match self.registry.dispatch(&app_id, dispatch).await {
@@ -134,7 +132,7 @@ where
         name: AppName,
     ) -> DomainResult<CreatedAgent> {
         self.permission_service
-            .check(caller, Action::CreateAgent(organization_id.clone()))
+            .check(caller, Permission::CreateAgent(organization_id.clone()))
             .await?;
 
         let secret = AppSecret::generate();
@@ -151,9 +149,9 @@ where
         // scoped agent grant — the same role a plain app no longer gets. The
         // initial secret is written in the same tx so the agent can authenticate.
         let grant = Grant::new(
-            GrantPrincipal::App(app.id().clone()),
+            Principal::App(app.id().clone()),
             RoleName::new(ORGANIZATION_AGENT_ROLE)?,
-            GrantScope::Organization(organization_id),
+            Scope::Organization(organization_id),
         );
         self.app_repo
             .provision_agent(&app, &credential, &agent, &grant)
@@ -170,7 +168,7 @@ where
         organization_id: OrganizationId,
     ) -> DomainResult<Vec<AgentView>> {
         self.permission_service
-            .check(caller, Action::ListAgents(organization_id.clone()))
+            .check(caller, Permission::ListAgents(organization_id.clone()))
             .await?;
 
         let agents = self
@@ -200,7 +198,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn get(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentView> {
         self.permission_service
-            .check(caller, Action::ReadAgent(app_id.clone()))
+            .check(caller, Permission::ReadAgent(app_id.clone()))
             .await?;
 
         let agent = self.agent_repo.find_by_app_id(&app_id).await?;
@@ -220,7 +218,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn stats(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentStats> {
         self.permission_service
-            .check(caller, Action::ReadAgentStats(app_id.clone()))
+            .check(caller, Permission::ReadAgentStats(app_id.clone()))
             .await?;
         self.agent_repo.agent_stats(&app_id).await
     }
@@ -228,7 +226,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn delete(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::DeleteAgent(app_id.clone()))
+            .check(caller, Permission::DeleteAgent(app_id.clone()))
             .await?;
         // Drop the live stream first so a removed agent stops at once; the app
         // delete cascades the agents row + grants and nulls jobs.agent_app_id.
@@ -270,7 +268,7 @@ mod tests {
 
     #[async_trait]
     impl PermissionService for StubPerms {
-        async fn check(&self, caller: &CallerContext, _perm: Action) -> DomainResult<()> {
+        async fn check(&self, caller: &CallerContext, _perm: Permission) -> DomainResult<()> {
             if matches!(caller, CallerContext::App(id) if id.as_str() == self.allowed) {
                 Ok(())
             } else {

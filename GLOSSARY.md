@@ -49,7 +49,7 @@ A machine principal owned by an organization (an agent / automation). Identified
 An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions.
 
 ### User / Membership
-A user account. Membership is modeled via the `user_organization` and `user_project` join tables — each row is just `(user_id, org_id)` or `(user_id, project_id)`. No role or permission is stored on the row itself (see [Permissions](#permissions)).
+A user account. Membership is modeled via the `user_organization` and `user_project` join tables — each row is just `(user_id, org_id)` or `(user_id, project_id)`. No role or permission is stored on the row itself (see [Authorization](#authorization)).
 
 ## States & status values
 
@@ -69,16 +69,28 @@ Per-node execution state: `Pending`, `Running`, `Completed`, `Failed`, `Cancelle
 ### Terminal state
 A state from which no transition is possible. A job or node in a terminal state is done.
 
-## Permissions
+## Authorization
 
-> **NB:** the subsections below (Policy/Scope/Resource/Act/Casbin/Absolute policy) describe the **legacy Casbin** model and are out of date — authorization is now **Cedar**-based (roles + scoped grants + ABAC policies). See the [code review notes] / `infrastructure/services/cedar/` for the current model. Rewrite pending.
+The vocabulary below is the **single source of truth** for authorization words —
+one word per concept, used identically in code, proto, DB, and UI. The model is
+mid-refactor toward dynamic RBAC; see [`docs/authz-refactor.md`](docs/authz-refactor.md)
+for the target model, phased plan, and status.
+
+**The seven words:** **Permission** (atomic capability) · **Role** (bundle of
+permissions) · **Scope** (System/Organization/Project) · **Grant** (P holds X in
+scope S) · **Principal** (a grant-holding User\|App) · **Caller** (the request
+identity) · **Policy** (advanced Cedar rule). Plus **Resource** (the entity an
+action targets). "action" is retired from the domain vocabulary — it survives
+only as Cedar's wire term inside the infra adapter.
 
 ### Role naming convention
-Role names follow **`<scope>-<role>`**, kebab-case, with scope ∈ {`system`, `organization`, `project`}. Single source of truth: the `*_ROLE` constants in `application/permission/grant.rs`.
+Builtin role names follow **`<scope>-<role>`**, kebab-case, with scope ∈ {`system`,
+`organization`, `project`}. Single source of truth: the `*_ROLE` constants in
+`application/authz/grant.rs`.
 
-**Unified model:** there is ONE authorization mechanism — the **grant** (`permission_grants`), a `(principal, role, scope)` triple linked as a Cedar role-template instance. A "global role" is just a grant on the **System** scope (the tenancy root: `Organization`/`User` are `in [System]`, so a System grant reaches everything). There is no separate `user_roles` table and no `RoleService` — `GrantService.CreateGrant(user, role, GRANT_SCOPE_SYSTEM)` replaces the old `AssignRole`.
+**Unified model:** there is ONE authorization mechanism — the **grant** (`grants`), a `(principal, role, scope)` triple linked as a Cedar role-template instance. A "global role" is just a grant on the **System** scope (the tenancy root: `Organization`/`User` are `in [System]`, so a System grant reaches everything). There is no separate `user_roles` table and no `RoleService` — `GrantService.CreateGrant(user, role, GRANT_SCOPE_SYSTEM)` replaces the old `AssignRole`.
 
-Canonical roles (all stored in `permission_grants`):
+Canonical roles (all stored in `grants`):
 
 | Role | Scope | Cedar template | Confers |
 |------|-------|----------------|---------|
@@ -90,35 +102,66 @@ Canonical roles (all stored in `permission_grants`):
 
 **Implicit tiers (NOT named roles):** `system-member` (a plain user with no grant), `organization-member` / `project-member` (membership via the `user_organization` / `user_project` tables, granted read/operate access through ABAC policies). They follow the same naming vocabulary but are realized as membership/ABAC, not stored grants.
 
-### Policy
-A triple `(scope, resource, act)` describing one permitted action. Built per call site in `scylla-core/src/domain/value_objects/permission/policy.rs` (e.g. `pipeline::run(pipeline_id)`).
+### Permission
+The atomic capability — a verb on a resource type, e.g. `runPipeline` on a
+pipeline. Closed, code-owned catalog: the `Permission` enum
+(`domain/value_objects/permission/`), one variant per real enforced capability.
+`Permission::key()` is its canonical id (`"runPipeline"`) — the value a role
+stores and the Cedar `Action::"…"` eid. A permission cannot be created at runtime
+(only the code that enforces it gives it meaning); **roles** are the dynamic part.
+
+### Role
+A named bundle of permissions bound to a scope kind, stored in the `roles` +
+`role_permissions` tables. Builtin roles (`system-admin`, `organization-admin`,
+`project-admin`, `organization-agent`, `project-agent`) are global and seeded on
+first boot; custom roles are owned by an Org (tenant-isolated). A grant of a role
+confers all its permissions within the grant's scope. The live Cedar policy set
+is **generated** from these rows (a full-control role — permission `*` — maps to
+the unconstrained-action body; any other role lists its permission keys), so
+editing a role's permissions changes authorization on the next reload.
 
 ### Scope
-Where a policy applies: `System`, `Org(id)`, `Project(id)`, `User(id)`, or `All`. Serialized as `system`, `org/<id>`, `project/<id>`, `user/<id>`, `*`.
+The level a grant/role binds to: `System` (tenancy root), `Organization(id)`, or
+`Project(id)`. `Scope` carries the id; `ScopeKind` is its id-free discriminant.
+Because every entity is `in` its scope ancestors (Project `in` Org `in` System),
+a grant at a scope reaches everything beneath it.
 
-### Resource
-What the policy governs. One of `User`, `Pipeline`, `Job`, `Project`, `Organization`, `Agent`, or `All`. Each variant wraps a `Target::All` (any instance) or `Target::Single(id)`.
+### Grant
+"Principal P holds {a role | a single permission} within scope S." The one
+authorization mechanism — stored in `grants`, linked into Cedar on reload. A
+direct **permission** grant (e.g. Alice `runPipeline` in Org A) is additive to
+P's role-derived permissions.
 
-### Target
-Resource granularity: `All` (the whole kind, e.g. all pipelines) or `Single(id)` (one specific entity).
+### Principal
+A grant-holding actor: a human `User` or a machine `App`. Maps to the
+`(principal_kind, principal_id)` columns of `grants` and to the Cedar
+`?principal` slot. Distinct from **Caller**: a Caller may also be a Service or
+Anonymous, which cannot hold grants.
 
-### Act
-The verb: `Create`, `Read`, `Write`, `Delete`, `Execute`, or `All`. Serialized as `create`, `read`, `write`, `delete`, `execute`, `*`.
+### Policy
+**Only** an advanced Cedar escape-hatch rule (a `permit`/`forbid` in the
+`cedar_policies` table), layered on top of the role/grant-derived policy set for
+cases RBAC can't express. Not a synonym for permission or grant.
 
 ### `PermissionService`
-Port (`application/ports/services/permission_service.rs`) used by every use case to check policies. The production adapter is Casbin-backed.
+Port (`application/authz/service.rs`) used by every use case to check a
+permission: `check(caller, Permission) -> DomainResult<()>` (fail-closed — never
+a bool). The production adapter is **Cedar**-backed (`CedarPermissionService`):
+it builds the principal/resource entities, snapshots the live policy set, asks
+Cedar, and records an audit-log row.
 
-### Casbin
-External authorization engine used by the permission service. Policies are persisted in PostgreSQL through `sqlx-adapter` (the `casbin_rule` table is created by the dedicated migration).
-
-### Absolute policy
-`Policy::absolute()` = `(Scope::All, Resource::All, Act::All)`. Granted to the bootstrap user so the first account can do anything.
+### Cedar
+The authorization engine (AWS Cedar). Scylla generates its policy set from the
+RBAC model (roles + grants → `permit` policies), keeps a static ABAC base
+(`policies.cedar`: membership, self-read) and the admin-defined `cedar_policies`.
+Resolves the scope hierarchy via `in` and yields the allow/deny decision +
+diagnostics.
 
 ### Bootstrap user
-The initial `admin` account created on first control-plane startup (configured under `[bootstrap]` in the control-plane config). Default credentials in local dev: `admin` / `admin123`. Gets the absolute policy.
+The initial `admin` account created on first control-plane startup (configured under `[bootstrap]` in the control-plane config). Default credentials in local dev: `admin` / `admin123`. Gets a `system-admin` grant on the `System` scope (full control over every scope, since System is the tenancy root).
 
-### `CallerContext`
-Identity-aware principal threaded through the permission layer. Variants: `User(UserId)`, `App(AppId)` (a machine principal / agent), `Service(ServiceIdentity)`, `Anonymous`. Each maps to a Cedar entity (`Scylla::User::"…"`, `Scylla::App::"…"`, `Scylla::Service::"…"`); the Cedar `PermissionService` resolves the caller's roles, scoped grants, and tenancy ancestry on each check.
+### Caller (`CallerContext`)
+The identity that made a request, threaded through the authorization layer. Variants: `User(UserId)`, `App(AppId)` (a machine principal / agent), `Service(ServiceIdentity)` (sealed internal identity), `Anonymous`. A Caller that is a `User` or `App` is also a **Principal** (can hold grants); `Service`/`Anonymous` cannot. Each maps to a Cedar entity (`Scylla::User::"…"`, `Scylla::App::"…"`, `Scylla::Service::"…"`); the Cedar `PermissionService` resolves the caller's roles, scoped grants, and tenancy ancestry on each check.
 
 ## Pipeline execution concepts
 

@@ -1,4 +1,4 @@
-use crate::application::authz::grant::{Grant, GrantPrincipal, GrantScope, GrantUseCases};
+use crate::application::authz::grant::{Grant, GrantUseCases, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::{CallerContext, ServiceIdentity};
@@ -75,9 +75,9 @@ where
         // Global authority is a System-scoped grant (idempotent insert + live
         // policy reload). Replaces the former `user_roles` role assignment.
         let grant = Grant::new(
-            GrantPrincipal::User(user.id().clone()),
+            Principal::User(user.id().clone()),
             role.clone(),
-            GrantScope::System,
+            Scope::System,
         );
         self.grant_uc.grant(&caller, &grant).await?;
         tracing::info!(

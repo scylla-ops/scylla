@@ -7,7 +7,7 @@
 use crate::application::authz::entity_provider::PrincipalAuthz;
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::action::ResourceRef;
+use crate::domain::value_objects::permission::ResourceRef;
 use cedar_policy::{ActionConstraint, Entity, EntityUid, Policy, RestrictedExpression};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;

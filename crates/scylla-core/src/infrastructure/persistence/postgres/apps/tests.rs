@@ -1,7 +1,7 @@
 use super::PgAppRepository;
 use crate::application::app::AppRepository;
 use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_AGENT_ROLE,
+    Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
 };
 use crate::domain::entities::{App, AppCredential};
 use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
@@ -23,9 +23,9 @@ fn agent_app(
         AppSecretHash::new(TEST_HASH).unwrap(),
     );
     let grant = Grant::new(
-        GrantPrincipal::App(app.id().clone()),
+        Principal::App(app.id().clone()),
         RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
-        GrantScope::Organization(org_id.clone()),
+        Scope::Organization(org_id.clone()),
     );
     (app, credential, grant)
 }
@@ -55,7 +55,7 @@ async fn provision_then_find_list_and_delete(pool: PgPool) {
     assert!(
         grants
             .iter()
-            .any(|g| g.principal == GrantPrincipal::App(app.id().clone())),
+            .any(|g| g.principal == Principal::App(app.id().clone())),
         "agent grant must be minted with the app"
     );
 

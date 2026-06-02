@@ -1,6 +1,4 @@
-use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantScope, ORGANIZATION_ADMIN_ROLE,
-};
+use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::oauth::provider::{OAuthProvider, PROVIDER_GITHUB};
 use crate::application::oauth::repository::OAuthIdentityRepository;
@@ -110,9 +108,9 @@ where
         let org_name = OrganizationName::new(format!("{}'s organization", info.login))?;
         let organization = Organization::create(org_name, None)?;
         let grant = Grant::new(
-            GrantPrincipal::User(user.id().clone()),
+            Principal::User(user.id().clone()),
             RoleName::new(ORGANIZATION_ADMIN_ROLE)?,
-            GrantScope::Organization(organization.id().clone()),
+            Scope::Organization(organization.id().clone()),
         );
 
         // Account, org, owner grant AND the GitHub identity link commit in ONE

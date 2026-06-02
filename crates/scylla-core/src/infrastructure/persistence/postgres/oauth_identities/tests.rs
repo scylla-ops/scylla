@@ -5,7 +5,8 @@ use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::user::Email;
 use crate::infrastructure::persistence::postgres::{
     PgAuthzEntityProvider, PgGrantRepository, PgOAuthIdentityRepository, PgPolicyRepository,
-    PgSessionRepository, PgSignupRepository, PgUserOrganizationRepository, PgUserRepository,
+    PgRoleRepository, PgSessionRepository, PgSignupRepository, PgUserOrganizationRepository,
+    PgUserRepository,
 };
 use crate::infrastructure::{Argon2HashService, CedarPermissionService};
 use crate::test_support::prelude::*;
@@ -43,6 +44,7 @@ async fn use_cases(
     let permission = Arc::new(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
+            Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
             Arc::new(PgPolicyRepository::new(pool.clone())),
             Arc::new(NoopAuditLog),

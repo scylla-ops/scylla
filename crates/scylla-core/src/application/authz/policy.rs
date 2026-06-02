@@ -3,7 +3,7 @@ use crate::application::caller::CallerContext;
 use crate::domain::clock;
 use crate::domain::entities::CedarPolicyId;
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::action::{ACTION_CATALOG, Action, RESOURCE_TYPES};
+use crate::domain::value_objects::permission::{PERMISSION_CATALOG, Permission, RESOURCE_TYPES};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
@@ -54,7 +54,7 @@ pub trait PolicyControl: Send + Sync {
 }
 
 /// Admin-only management of runtime Cedar policies. Every method is gated by
-/// [`Action::ManagePolicies`] (admin / service in practice). Writes are
+/// [`Permission::ManagePolicies`] (admin / service in practice). Writes are
 /// validated before persistence and applied live via [`PolicyControl::reload`];
 /// a failed reload is compensated so the store and the live set stay in sync.
 #[derive(Constructor)]
@@ -68,7 +68,7 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
     #[instrument(skip(self, caller))]
     pub async fn list(&self, caller: &CallerContext) -> DomainResult<Vec<PolicyDefinition>> {
         self.permission_service
-            .check(caller, Action::ManagePolicies)
+            .check(caller, Permission::ManagePolicies)
             .await?;
         self.policy_repo.list_all().await
     }
@@ -81,18 +81,21 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
     pub async fn authz_vocabulary(
         &self,
         caller: &CallerContext,
-    ) -> DomainResult<(&'static [(&'static str, &'static str)], &'static [&'static str])> {
+    ) -> DomainResult<(
+        &'static [(&'static str, &'static str)],
+        &'static [&'static str],
+    )> {
         self.permission_service
-            .check(caller, Action::ManagePolicies)
+            .check(caller, Permission::ManagePolicies)
             .await?;
-        Ok((ACTION_CATALOG, RESOURCE_TYPES))
+        Ok((PERMISSION_CATALOG, RESOURCE_TYPES))
     }
 
     /// Dry-run validation without persisting — backs a "check before save" UX.
     #[instrument(skip(self, caller, text))]
     pub async fn validate(&self, caller: &CallerContext, text: &str) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::ManagePolicies)
+            .check(caller, Permission::ManagePolicies)
             .await?;
         self.policy_control.validate_policy(text).await
     }
@@ -105,7 +108,7 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
         text: String,
     ) -> DomainResult<PolicyDefinition> {
         self.permission_service
-            .check(caller, Action::ManagePolicies)
+            .check(caller, Permission::ManagePolicies)
             .await?;
         self.policy_control.validate_policy(&text).await?;
 
@@ -138,7 +141,7 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
         text: Option<String>,
     ) -> DomainResult<PolicyDefinition> {
         self.permission_service
-            .check(caller, Action::ManagePolicies)
+            .check(caller, Permission::ManagePolicies)
             .await?;
 
         let previous = self.policy_repo.get(id).await?;
@@ -168,7 +171,7 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
         enabled: bool,
     ) -> DomainResult<PolicyDefinition> {
         self.permission_service
-            .check(caller, Action::ManagePolicies)
+            .check(caller, Permission::ManagePolicies)
             .await?;
 
         let previous = self.policy_repo.get(id).await?;
@@ -187,7 +190,7 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
     #[instrument(skip(self, caller))]
     pub async fn delete(&self, caller: &CallerContext, id: &CedarPolicyId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::ManagePolicies)
+            .check(caller, Permission::ManagePolicies)
             .await?;
 
         let previous = self.policy_repo.get(id).await?;

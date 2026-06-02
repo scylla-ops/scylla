@@ -1,4 +1,4 @@
-use crate::application::authz::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
+use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::name::RoleName;
@@ -26,9 +26,9 @@ where
     E: PgExecutor<'e>,
 {
     let (scope_kind, scope_id) = match &grant.scope {
-        GrantScope::System => (SCOPE_SYSTEM, SYSTEM_SCOPE_ID),
-        GrantScope::Organization(id) => (SCOPE_ORGANIZATION, id.as_str()),
-        GrantScope::Project(id) => (SCOPE_PROJECT, id.as_str()),
+        Scope::System => (SCOPE_SYSTEM, SYSTEM_SCOPE_ID),
+        Scope::Organization(id) => (SCOPE_ORGANIZATION, id.as_str()),
+        Scope::Project(id) => (SCOPE_PROJECT, id.as_str()),
     };
     sqlx::query!(
         "INSERT INTO grants (id, principal_kind, principal_id, role_name, scope_kind, scope_id) \
@@ -76,8 +76,8 @@ impl GrantRepository for PgGrantRepository {
         rows.into_iter()
             .map(|r| {
                 let principal = match r.principal_kind.as_str() {
-                    PRINCIPAL_USER => GrantPrincipal::User(UserId::new(r.principal_id)),
-                    PRINCIPAL_APP => GrantPrincipal::App(AppId::new(r.principal_id)),
+                    PRINCIPAL_USER => Principal::User(UserId::new(r.principal_id)),
+                    PRINCIPAL_APP => Principal::App(AppId::new(r.principal_id)),
                     other => {
                         return Err(DomainError::Infrastructure(format!(
                             "unknown grant principal_kind '{other}'"
@@ -85,9 +85,9 @@ impl GrantRepository for PgGrantRepository {
                     }
                 };
                 let scope = match r.scope_kind.as_str() {
-                    SCOPE_SYSTEM => GrantScope::System,
-                    SCOPE_ORGANIZATION => GrantScope::Organization(OrganizationId::new(r.scope_id)),
-                    SCOPE_PROJECT => GrantScope::Project(ProjectId::new(r.scope_id)),
+                    SCOPE_SYSTEM => Scope::System,
+                    SCOPE_ORGANIZATION => Scope::Organization(OrganizationId::new(r.scope_id)),
+                    SCOPE_PROJECT => Scope::Project(ProjectId::new(r.scope_id)),
                     other => {
                         return Err(DomainError::Infrastructure(format!(
                             "unknown grant scope_kind '{other}'"

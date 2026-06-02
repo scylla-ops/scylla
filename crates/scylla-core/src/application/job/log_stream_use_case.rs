@@ -2,8 +2,8 @@ use crate::application::caller::CallerContext;
 use crate::application::{JobLogLiveStream, JobLogRepository, JobLogStreamPort, PermissionService};
 use crate::domain::entities::{JobId, JobLog};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::action::Action;
 use crate::domain::value_objects::job::LogStream;
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
@@ -35,7 +35,7 @@ where
         node_id: Option<&NodeId>,
     ) -> DomainResult<JobLogLiveStream> {
         self.permission_service
-            .check(caller, Action::ReadJobLogs(job_id.clone()))
+            .check(caller, Permission::ReadJobLogs(job_id.clone()))
             .await?;
 
         let live = self.stream_port.subscribe(job_id, node_id).await?;

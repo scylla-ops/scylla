@@ -41,8 +41,8 @@ async fn project_quota_enforced_when_metering_on(pool: PgPool) {
     use crate::domain::value_objects::project::ProjectName;
     use crate::infrastructure::CedarPermissionService;
     use crate::infrastructure::persistence::postgres::{
-        PgAuthzEntityProvider, PgGrantRepository, PgPolicyRepository, PgUserProjectRepository,
-        PgUserRepository,
+        PgAuthzEntityProvider, PgGrantRepository, PgPolicyRepository, PgRoleRepository,
+        PgUserProjectRepository, PgUserRepository,
     };
     use std::sync::Arc;
 
@@ -50,6 +50,7 @@ async fn project_quota_enforced_when_metering_on(pool: PgPool) {
     let permission = Arc::new(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
+            Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
             Arc::new(PgPolicyRepository::new(pool.clone())),
             Arc::new(NoopAuditLog),
@@ -179,7 +180,7 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
 async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
     use crate::application::UserProjectRepository;
     use crate::application::authz::grant::{
-        Grant, GrantPrincipal, GrantRepository, GrantScope, PROJECT_ADMIN_ROLE,
+        Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
     };
     use crate::domain::value_objects::role::name::RoleName;
     use crate::infrastructure::persistence::postgres::{
@@ -190,9 +191,9 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
     let owner = seed_user(&pool, "alice").await;
     let project = project(&org, "rocket");
     let grant = Grant::new(
-        GrantPrincipal::User(owner.id().clone()),
+        Principal::User(owner.id().clone()),
         RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
-        GrantScope::Project(project.id().clone()),
+        Scope::Project(project.id().clone()),
     );
 
     let repo = PgProjectRepository::new(pool.clone());
@@ -214,9 +215,9 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
         grants.iter().any(|g| {
-            matches!(&g.principal, GrantPrincipal::User(u) if u.as_str() == owner.id().as_str())
+            matches!(&g.principal, Principal::User(u) if u.as_str() == owner.id().as_str())
                 && g.role.as_str() == PROJECT_ADMIN_ROLE
-                && matches!(&g.scope, GrantScope::Project(p) if p.as_str() == project.id().as_str())
+                && matches!(&g.scope, Scope::Project(p) if p.as_str() == project.id().as_str())
         }),
         "creator should hold a project-admin owner grant",
     );
@@ -226,7 +227,7 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
 /// dangling owner id → FK violation) rolls back the project too.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
-    use crate::application::authz::grant::{Grant, GrantPrincipal, GrantScope, PROJECT_ADMIN_ROLE};
+    use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
     use crate::domain::entities::UserId;
     use crate::domain::value_objects::role::name::RoleName;
 
@@ -234,9 +235,9 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
     let project = project(&org, "rocket");
     let ghost = UserId::new("does-not-exist");
     let grant = Grant::new(
-        GrantPrincipal::User(ghost.clone()),
+        Principal::User(ghost.clone()),
         RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
-        GrantScope::Project(project.id().clone()),
+        Scope::Project(project.id().clone()),
     );
 
     let repo = PgProjectRepository::new(pool.clone());

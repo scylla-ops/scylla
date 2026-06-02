@@ -1,4 +1,4 @@
-use crate::application::authz::grant::{Grant, GrantPrincipal, GrantScope, PROJECT_ADMIN_ROLE};
+use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::caller::CallerContext;
 use crate::application::{
@@ -6,7 +6,7 @@ use crate::application::{
 };
 use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::action::Action;
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
 use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
@@ -49,7 +49,7 @@ impl<
         organization_id: OrganizationId,
     ) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, Action::CreateProject(organization_id.clone()))
+            .check(caller, Permission::CreateProject(organization_id.clone()))
             .await?;
 
         // SaaS metering: cap projects per organization. Visible, feature-gated
@@ -78,9 +78,9 @@ impl<
         match caller {
             CallerContext::User(user_id) => {
                 let grant = Grant::new(
-                    GrantPrincipal::User(user_id.clone()),
+                    Principal::User(user_id.clone()),
                     RoleName::new(PROJECT_ADMIN_ROLE)?,
-                    GrantScope::Project(project.id().clone()),
+                    Scope::Project(project.id().clone()),
                 );
                 self.project_repo
                     .provision_with_owner(&project, user_id, &grant)
@@ -97,7 +97,7 @@ impl<
     #[instrument(skip(self, caller), fields(project_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, Action::ReadProject(id.clone()))
+            .check(caller, Permission::ReadProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await
     }
@@ -111,7 +111,7 @@ impl<
         description: Option<Option<ProjectDescription>>,
     ) -> DomainResult<Project> {
         self.permission_service
-            .check(caller, Action::UpdateProject(id.clone()))
+            .check(caller, Permission::UpdateProject(id.clone()))
             .await?;
 
         let mut project = self.project_repo.find_by_id(id).await?;
@@ -129,7 +129,7 @@ impl<
     #[instrument(skip(self, caller), fields(project_id = %id))]
     pub async fn toggle_active(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::UpdateProject(id.clone()))
+            .check(caller, Permission::UpdateProject(id.clone()))
             .await?;
 
         let mut project = self.project_repo.find_by_id(id).await?;
@@ -141,7 +141,7 @@ impl<
     #[instrument(skip(self, caller), fields(project_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::DeleteProject(id.clone()))
+            .check(caller, Permission::DeleteProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await?;
         self.project_repo.delete(id).await
@@ -154,7 +154,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
         self.permission_service
-            .check(caller, Action::ListProjects)
+            .check(caller, Permission::ListProjects)
             .await?;
         self.project_repo.list_all(pagination).await
     }
@@ -169,7 +169,7 @@ impl<
         self.permission_service
             .check(
                 caller,
-                Action::ListProjectsByOrganization(organization_id.clone()),
+                Permission::ListProjectsByOrganization(organization_id.clone()),
             )
             .await?;
         self.project_repo
@@ -185,7 +185,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
         self.permission_service
-            .check(caller, Action::ListProjectMembers(project_id.clone()))
+            .check(caller, Permission::ListProjectMembers(project_id.clone()))
             .await?;
 
         let paginated = self
@@ -218,7 +218,7 @@ impl<
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<(Vec<Project>, PaginationMetadata)> {
         self.permission_service
-            .check(caller, Action::ListUserProjects(user_id.clone()))
+            .check(caller, Permission::ListUserProjects(user_id.clone()))
             .await?;
 
         let paginated = self
@@ -250,7 +250,7 @@ impl<
         project_id: &ProjectId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::AddProjectMember(project_id.clone()))
+            .check(caller, Permission::AddProjectMember(project_id.clone()))
             .await?;
 
         if self
@@ -274,7 +274,7 @@ impl<
         project_id: &ProjectId,
     ) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Action::RemoveProjectMember(project_id.clone()))
+            .check(caller, Permission::RemoveProjectMember(project_id.clone()))
             .await?;
         self.user_project_repo
             .remove_member(user_id, project_id)

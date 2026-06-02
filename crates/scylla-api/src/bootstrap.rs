@@ -47,7 +47,7 @@ where
         .bootstrap_admin(username, email, password, role)
         .await
         .map_err(|e| match e {
-            // Action service refused — service policy or role-step denial.
+            // Permission service refused — service policy or role-step denial.
             DomainError::Forbidden(_) => BootstrapError::GrantPermission(e),
             // Everything else (validation, conflict resolution, infrastructure)
             // happened around the user-creation / fetch flow.

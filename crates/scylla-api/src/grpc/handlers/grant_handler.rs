@@ -2,8 +2,8 @@ use crate::extract_auth_context;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
-    Grant, GrantPrincipal, GrantRepository, GrantScope, GrantUseCases, GrantableRole,
-    PermissionService, PolicyControl, ScopeKind, grantable_roles,
+    Grant, GrantRepository, GrantUseCases, GrantableRole, PermissionService, PolicyControl,
+    Principal, Scope, ScopeKind, grantable_roles,
 };
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::role::name::RoleName;
@@ -37,7 +37,7 @@ impl<
         let role = RoleName::new(&req.role).map_err(domain_error_to_status)?;
         let scope = scope_from_proto(req.scope_kind, &req.scope_id)?;
 
-        let grant = Grant::new(GrantPrincipal::User(user_id), role, scope);
+        let grant = Grant::new(Principal::User(user_id), role, scope);
         self.use_cases
             .grant(&caller, &grant)
             .await
@@ -132,23 +132,23 @@ fn grantable_role_to_proto(r: &GrantableRole) -> ProtoGrantableRole {
     }
 }
 
-fn scope_from_proto(kind: i32, id: &str) -> Result<GrantScope, Status> {
+fn scope_from_proto(kind: i32, id: &str) -> Result<Scope, Status> {
     match GrantScopeKind::try_from(kind) {
         // System is the tenancy root; scope_id is ignored (single root).
-        Ok(GrantScopeKind::GrantScopeSystem) => Ok(GrantScope::System),
+        Ok(GrantScopeKind::GrantScopeSystem) => Ok(Scope::System),
         Ok(GrantScopeKind::GrantScopeOrganization) => {
-            Ok(GrantScope::Organization(OrganizationId::new(id)))
+            Ok(Scope::Organization(OrganizationId::new(id)))
         }
-        Ok(GrantScopeKind::GrantScopeProject) => Ok(GrantScope::Project(ProjectId::new(id))),
+        Ok(GrantScopeKind::GrantScopeProject) => Ok(Scope::Project(ProjectId::new(id))),
         Err(_) => Err(Status::invalid_argument("unknown grant scope kind")),
     }
 }
 
 fn grant_to_proto(g: &Grant) -> ProtoGrant {
     let (scope_kind, scope_id) = match &g.scope {
-        GrantScope::System => (GrantScopeKind::GrantScopeSystem, String::new()),
-        GrantScope::Organization(id) => (GrantScopeKind::GrantScopeOrganization, id.to_string()),
-        GrantScope::Project(id) => (GrantScopeKind::GrantScopeProject, id.to_string()),
+        Scope::System => (GrantScopeKind::GrantScopeSystem, String::new()),
+        Scope::Organization(id) => (GrantScopeKind::GrantScopeOrganization, id.to_string()),
+        Scope::Project(id) => (GrantScopeKind::GrantScopeProject, id.to_string()),
     };
     ProtoGrant {
         id: g.id.clone(),

@@ -1,6 +1,6 @@
 use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::action::ResourceRef;
+use crate::domain::value_objects::permission::ResourceRef;
 use async_trait::async_trait;
 
 /// Everything Cedar needs to know about the *principal* at check time: the

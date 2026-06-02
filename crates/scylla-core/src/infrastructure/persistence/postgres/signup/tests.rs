@@ -1,12 +1,13 @@
 use super::PgSignupRepository;
 use crate::application::authz::grant::{
-    Grant, GrantPrincipal, GrantRepository, GrantScope, ORGANIZATION_ADMIN_ROLE,
+    Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope,
 };
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{OrganizationRepository, UserOrganizationRepository, UserRepository};
 use crate::domain::value_objects::role::name::RoleName;
 use crate::infrastructure::persistence::postgres::{
-    PgGrantRepository, PgOrganizationRepository, PgUserOrganizationRepository, PgUserRepository,
+    PgGrantRepository, PgOrganizationRepository, PgRoleRepository, PgUserOrganizationRepository,
+    PgUserRepository,
 };
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
@@ -16,9 +17,9 @@ fn org_admin_grant(
     org_id: crate::domain::entities::OrganizationId,
 ) -> Grant {
     Grant::new(
-        GrantPrincipal::User(user_id),
+        Principal::User(user_id),
         RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
-        GrantScope::Organization(org_id),
+        Scope::Organization(org_id),
     )
 }
 
@@ -156,8 +157,8 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;
     use crate::application::caller::CallerContext;
     use crate::application::{PermissionService, SignupUseCases};
-    use crate::domain::value_objects::action::Action;
     use crate::domain::value_objects::organization::OrganizationName;
+    use crate::domain::value_objects::permission::Permission;
     use crate::domain::value_objects::user::{Email, Password, Username};
     use crate::infrastructure::persistence::postgres::{PgPolicyRepository, PgSessionRepository};
     use crate::infrastructure::{Argon2HashService, CedarPermissionService, PgAuthzEntityProvider};
@@ -169,6 +170,7 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     let permission = Arc::new(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
+            Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
             Arc::new(PgPolicyRepository::new(pool.clone())),
             Arc::new(NoopAuditLog),
@@ -198,13 +200,16 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     permission
         .check(
             &caller,
-            Action::UpdateOrganization(outcome.organization_id.clone()),
+            Permission::UpdateOrganization(outcome.organization_id.clone()),
         )
         .await
         .expect("org-admin can update own org");
 
     let err = permission
-        .check(&caller, Action::UpdateOrganization(foreign.id().clone()))
+        .check(
+            &caller,
+            Permission::UpdateOrganization(foreign.id().clone()),
+        )
         .await
         .expect_err("must be denied on a foreign org");
     assert!(

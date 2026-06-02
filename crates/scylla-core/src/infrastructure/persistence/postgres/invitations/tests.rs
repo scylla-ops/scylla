@@ -1,5 +1,5 @@
 use crate::application::audit::NoopAuditLog;
-use crate::application::authz::grant::{Grant, GrantPrincipal, GrantRepository, GrantScope};
+use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::application::caller::CallerContext;
 use crate::application::invitation::InvitationUseCases;
 use crate::application::{Mailer, NoopMailer, UserOrganizationRepository};
@@ -7,7 +7,7 @@ use crate::domain::value_objects::role::name::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use crate::infrastructure::persistence::postgres::{
     PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgOrganizationRepository,
-    PgSessionRepository, PgUserOrganizationRepository, PgUserRepository,
+    PgRoleRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserRepository,
 };
 use crate::infrastructure::{Argon2HashService, CedarPermissionService};
 use crate::test_support::prelude::*;
@@ -28,6 +28,7 @@ async fn use_cases(
     let permission = Arc::new(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
+            Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
             Arc::new(
                 crate::infrastructure::persistence::postgres::PgPolicyRepository::new(pool.clone()),
@@ -59,9 +60,9 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
     // built (grants are linked at construction).
     PgGrantRepository::new(pool.clone())
         .create(&Grant::new(
-            GrantPrincipal::User(inviter.id().clone()),
+            Principal::User(inviter.id().clone()),
             RoleName::new("system-admin").unwrap(),
-            GrantScope::System,
+            Scope::System,
         ))
         .await
         .expect("grant system-admin");
@@ -98,10 +99,10 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
     );
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
-        grants.iter().any(
-            |g| g.principal == GrantPrincipal::User(outcome.user_id.clone())
-                && g.scope == GrantScope::Organization(org.id().clone())
-        ),
+        grants
+            .iter()
+            .any(|g| g.principal == Principal::User(outcome.user_id.clone())
+                && g.scope == Scope::Organization(org.id().clone())),
         "org-admin grant must be minted on accept"
     );
 }
