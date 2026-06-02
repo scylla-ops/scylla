@@ -264,14 +264,22 @@ Each phase compiles, keeps tests green, and is independently commitable.
   `RoleService.GetEffectivePermissions(principal)` resolves a principal's grants
   into permissions grouped by scope (roles expanded + direct grants; `*` →
   full_control) — the matrix source. Gated by `manageGrants`.
-- **Phase 4b.4 — remaining (next).** Org-owned custom roles + org-admin
-  management (`ManageOrgRoles`); generalized `GrantService` (typed
-  `oneof { role | permission }`, app principals); `CheckPermissions`
-  (per-resource "can I do X"); `ListGrantableRoles` from DB roles.
-- **Frontend reconciliation.** The proto big-bang + enums changed every id field
-  to a wrapper and timestamps to `Timestamp`, breaking ~96 app-code typecheck
-  errors at the gRPC boundary (mappers/data-sources). Reconciled so the existing
-  features keep working: `pnpm i && pnpm run gen-proto && pnpm run typecheck`.
+- **Phase 5 — Anti-escalation. ✅ done.** A grant's creator may only confer
+  permissions it already holds at the scope (subset check; full control may only
+  be conferred by a full-control holder). Closes the lateral-movement hole.
+  System + Organization scopes; Project deferred.
+- **Direct permission grants over gRPC. ✅ done.** `CreateGrant`/`Grant` gained an
+  optional `permission` field (additive, frontend-safe). "Alice runPipeline in
+  Org A" is now grantable via the API; same anti-escalation applies.
+- **Frontend reconciliation. ✅ done.** The proto big-bang broke ~96 app-code
+  typecheck errors at the gRPC boundary; reconciled with a small wrapper helper
+  so existing features keep working. `pnpm i && pnpm run gen-proto && pnpm run
+  typecheck` → 0, build OK.
+- **Remaining thin slices (post-MCP-testing).** Org-owned custom roles + org-admin
+  management (`ManageOrgRoles`, `owner_org`); `ListGrantableRoles` from DB (custom
+  roles in the assignable list — needs a `GrantableRole` id/name split);
+  `CheckPermissions` per-resource probe (needs key→domain-Permission construction);
+  App principals as grant targets; Project-scope anti-escalation.
 - **Phase 5 — Anti-escalation + meta-permission rules.**
 - **Phase 6 — Frontend permission matrix** (documented only — the frontend does
   not build in this environment; see memory `project_frontend_codegen_blocker`).
