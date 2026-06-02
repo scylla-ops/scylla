@@ -264,6 +264,89 @@ mod tests {
     }
 
     #[sqlx::test(migrations = "../../migrations")]
+    async fn effective_permissions_resolves_roles_and_direct_grants(pool: PgPool) {
+        use crate::application::PermissionService;
+        use crate::application::authz::policy::PolicyControl;
+        use crate::application::authz::{Principal, RoleUseCases, Scope};
+        use crate::application::caller::{CallerContext, ServiceIdentity};
+        use crate::domain::entities::UserId;
+        use crate::domain::errors::DomainResult;
+        use crate::domain::value_objects::permission::Permission;
+        use crate::infrastructure::persistence::postgres::PgGrantRepository;
+        use std::sync::Arc;
+
+        // A custom project-scoped role with two permissions.
+        sqlx::query!(
+            "INSERT INTO roles (id, name, scope_kind, builtin) VALUES ('ci', 'CI', 'project', FALSE)"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        for p in ["readPipeline", "runPipeline"] {
+            sqlx::query!(
+                "INSERT INTO role_permissions (role_id, permission) VALUES ('ci', $1)",
+                p
+            )
+            .execute(&pool)
+            .await
+            .unwrap();
+        }
+        // Alice holds the role at project p1, and a direct deleteJob at org o1.
+        sqlx::query!(
+            "INSERT INTO grants (id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id) \
+             VALUES ('g1', 'user', 'alice', 'role', 'ci', 'project', 'p1'), \
+                    ('g2', 'user', 'alice', 'permission', 'deleteJob', 'organization', 'o1')"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        struct AllowAll;
+        #[async_trait::async_trait]
+        impl PermissionService for AllowAll {
+            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
+                Ok(())
+            }
+        }
+        struct NoopPolicy;
+        #[async_trait::async_trait]
+        impl PolicyControl for NoopPolicy {
+            async fn validate_policy(&self, _t: &str) -> DomainResult<()> {
+                Ok(())
+            }
+            async fn reload(&self) -> DomainResult<()> {
+                Ok(())
+            }
+        }
+
+        let uc = RoleUseCases::new(
+            Arc::new(PgRoleRepository::new(pool.clone())),
+            Arc::new(PgGrantRepository::new(pool)),
+            Arc::new(AllowAll),
+            Arc::new(NoopPolicy),
+        );
+        let caller = CallerContext::Service(ServiceIdentity::recorder());
+        let scopes = uc
+            .effective_permissions(&caller, &Principal::User(UserId::new("alice")))
+            .await
+            .unwrap();
+
+        assert_eq!(scopes.len(), 2);
+        let project = scopes
+            .iter()
+            .find(|s| matches!(&s.scope, Scope::Project(p) if p.as_str() == "p1"))
+            .expect("project p1 scope");
+        assert!(!project.full_control);
+        assert!(project.permissions.contains(&"readPipeline".to_string()));
+        assert!(project.permissions.contains(&"runPipeline".to_string()));
+        let org = scopes
+            .iter()
+            .find(|s| matches!(&s.scope, Scope::Organization(o) if o.as_str() == "o1"))
+            .expect("org o1 scope");
+        assert_eq!(org.permissions, vec!["deleteJob".to_string()]);
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
     async fn default_binding_resolves_to_seeded_builtin(pool: PgPool) {
         let repo = PgDefaultRoleBindingRepository::new(pool);
         let role = repo

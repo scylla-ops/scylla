@@ -5,7 +5,7 @@
 
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
-use scylla_core::application::ScopeKind;
+use scylla_core::application::{Scope, ScopeKind};
 use scylla_protocol::services::common;
 use scylla_protocol::services::permission::{Permission, ResourceType, Scope as ProtoScope};
 use tonic::Status;
@@ -136,6 +136,17 @@ pub fn scope_kind_to_proto(kind: ScopeKind) -> ProtoScope {
         ScopeKind::System => ProtoScope::System,
         ScopeKind::Organization => ProtoScope::Organization,
         ScopeKind::Project => ProtoScope::Project,
+    }
+}
+
+/// Domain `Scope` (with id) → proto `Scope` discriminant + the bound id
+/// (empty for `System`).
+#[must_use]
+pub fn scope_to_proto(scope: &Scope) -> (ProtoScope, String) {
+    match scope {
+        Scope::System => (ProtoScope::System, String::new()),
+        Scope::Organization(id) => (ProtoScope::Organization, id.to_string()),
+        Scope::Project(id) => (ProtoScope::Project, id.to_string()),
     }
 }
 

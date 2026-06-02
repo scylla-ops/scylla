@@ -269,6 +269,11 @@ service RoleService {
   rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
   rpc ListRoles(ListRolesRequest)   returns (ListRolesResponse);
   rpc GetRole(GetRoleRequest)       returns (Role);
+  // "What can this principal do" — the principal's resolved permissions grouped
+  // by the scope each grant binds to. Backs a permission matrix. Requires
+  // `manageGrants`.
+  rpc GetEffectivePermissions(GetEffectivePermissionsRequest)
+      returns (GetEffectivePermissionsResponse);
 }
 
 message Role {
@@ -313,3 +318,24 @@ message ListRolesRequest {}
 message ListRolesResponse { repeated Role roles = 1; }
 
 message GetRoleRequest { string id = 1; }
+
+message GetEffectivePermissionsRequest {
+  PrincipalKind principal_kind = 1;
+  string        principal_id   = 2;
+}
+
+// The permissions a principal holds at one scope (roles expanded + direct
+// permission grants), as resolved for the matrix.
+message EffectiveScope {
+  Scope  scope    = 1;
+  // The org/project id the grants are bound to; empty for SCOPE_SYSTEM.
+  string scope_id = 2;
+  // Full control: the principal holds every permission within this scope
+  // (`permissions` is then empty).
+  bool   full_control = 3;
+  repeated Permission permissions = 4;
+}
+
+message GetEffectivePermissionsResponse {
+  repeated EffectiveScope scopes = 1;
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO grants (id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id) VALUES ('g1', 'user', 'alice', 'role', 'ci', 'project', 'p1'), ('g2', 'user', 'alice', 'permission', 'deleteJob', 'organization', 'o1')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "f67e3f21e48da3d027974a40321ea2b182ca5185e88b9bc0cfe8c8fdbac814d6"
+}

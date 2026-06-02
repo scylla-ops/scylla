@@ -1,5 +1,6 @@
 use crate::application::authz::grant::{
-    GrantRepository, GrantTarget, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, ScopeKind,
+    GrantRepository, GrantTarget, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, Principal, Scope,
+    ScopeKind,
 };
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
@@ -10,6 +11,7 @@ use crate::domain::value_objects::permission::{Permission, is_known_permission};
 use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
 use derive_more::Constructor;
+use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -88,6 +90,19 @@ pub fn validate_role_permissions(permissions: &[String]) -> DomainResult<()> {
         }
     }
     Ok(())
+}
+
+/// A scope a principal holds grants at, with the union of permissions those
+/// grants confer there (role grants expanded to their permission sets, direct
+/// permission grants included). The resolved view that backs a permission matrix.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EffectiveScope {
+    pub scope: Scope,
+    /// `true` if a grant here confers full control (`*`); `permissions` is then
+    /// returned empty (the set is conceptually the whole catalog).
+    pub full_control: bool,
+    /// Permission keys conferred at this scope (empty when `full_control`).
+    pub permissions: Vec<String>,
 }
 
 /// Read + write access to role definitions. `list_all` is read at
@@ -229,6 +244,64 @@ where
         }
         self.role_repo.delete(id).await?;
         self.policy_control.reload().await
+    }
+
+    /// Resolve a principal's effective permissions, grouped by the scope each
+    /// grant binds to (role grants expanded, direct permission grants included).
+    /// Powers the "what can this principal do" matrix. Gated by `manageGrants`.
+    ///
+    /// Note: this returns grants AS BOUND per scope; it does not expand scope
+    /// inheritance (a System grant is reported at System, not re-listed under
+    /// every org/project beneath it).
+    #[instrument(skip(self, caller))]
+    pub async fn effective_permissions(
+        &self,
+        caller: &CallerContext,
+        principal: &Principal,
+    ) -> DomainResult<Vec<EffectiveScope>> {
+        self.permission_service
+            .check(caller, Permission::ManageGrants)
+            .await?;
+
+        let role_perms: HashMap<String, Vec<String>> = self
+            .role_repo
+            .list_all()
+            .await?
+            .into_iter()
+            .map(|r| (r.id, r.permissions))
+            .collect();
+        let grants = self.grant_repo.list_all().await?;
+
+        let mut groups: Vec<(Scope, BTreeSet<String>)> = Vec::new();
+        for grant in grants.iter().filter(|g| g.principal == *principal) {
+            let perms: Vec<String> = match &grant.target {
+                GrantTarget::Role(role) => {
+                    role_perms.get(role.as_str()).cloned().unwrap_or_default()
+                }
+                GrantTarget::Permission(key) => vec![key.clone()],
+            };
+            if let Some(idx) = groups.iter().position(|(s, _)| *s == grant.scope) {
+                groups[idx].1.extend(perms);
+            } else {
+                groups.push((grant.scope.clone(), perms.into_iter().collect()));
+            }
+        }
+
+        Ok(groups
+            .into_iter()
+            .map(|(scope, set)| {
+                let full_control = set.contains(FULL_CONTROL);
+                EffectiveScope {
+                    scope,
+                    full_control,
+                    permissions: if full_control {
+                        Vec::new()
+                    } else {
+                        set.into_iter().collect()
+                    },
+                }
+            })
+            .collect())
     }
 }
 

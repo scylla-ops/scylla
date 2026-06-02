@@ -1,16 +1,19 @@
 use crate::extract_auth_context;
 use crate::grpc::convert::{
-    permission_from_key, permission_key, scope_kind_from_proto, scope_kind_to_proto,
+    permission_from_key, permission_key, scope_kind_from_proto, scope_kind_to_proto, scope_to_proto,
 };
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
-    FULL_CONTROL, GrantRepository, PermissionService, PolicyControl, Role, RoleRepository,
-    RoleUseCases,
+    EffectiveScope, FULL_CONTROL, GrantRepository, PermissionService, PolicyControl, Principal,
+    Role, RoleRepository, RoleUseCases,
 };
+use scylla_core::domain::entities::{AppId, UserId};
 use scylla_protocol::services::permission::{
-    CreateRoleRequest, DeleteRoleRequest, DeleteRoleResponse, GetRoleRequest, ListRolesRequest,
-    ListRolesResponse, Permission, Role as ProtoRole, UpdateRoleRequest,
+    CreateRoleRequest, DeleteRoleRequest, DeleteRoleResponse,
+    EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest,
+    GetEffectivePermissionsResponse, GetRoleRequest, ListRolesRequest, ListRolesResponse,
+    Permission, PrincipalKind, Role as ProtoRole, UpdateRoleRequest,
     role_service_server::RoleService,
 };
 use std::sync::Arc;
@@ -116,6 +119,49 @@ impl<
             .map_err(domain_error_to_status)?;
 
         Ok(Response::new(role_to_proto(&role)))
+    }
+
+    async fn get_effective_permissions(
+        &self,
+        request: Request<GetEffectivePermissionsRequest>,
+    ) -> Result<Response<GetEffectivePermissionsResponse>, Status> {
+        let caller = caller!(request);
+        let req = request.into_inner();
+        let principal = principal_from_proto(req.principal_kind, req.principal_id)?;
+
+        let scopes = self
+            .use_cases
+            .effective_permissions(&caller, &principal)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(GetEffectivePermissionsResponse {
+            scopes: scopes.iter().map(effective_scope_to_proto).collect(),
+        }))
+    }
+}
+
+fn principal_from_proto(kind: i32, id: String) -> Result<Principal, Status> {
+    match PrincipalKind::try_from(kind) {
+        Ok(PrincipalKind::User) => Ok(Principal::User(UserId::new(id))),
+        Ok(PrincipalKind::App) => Ok(Principal::App(AppId::new(id))),
+        Ok(PrincipalKind::Unspecified) | Err(_) => Err(Status::invalid_argument(
+            "unknown or unspecified principal kind",
+        )),
+    }
+}
+
+fn effective_scope_to_proto(es: &EffectiveScope) -> ProtoEffectiveScope {
+    let (scope, scope_id) = scope_to_proto(&es.scope);
+    ProtoEffectiveScope {
+        scope: scope as i32,
+        scope_id,
+        full_control: es.full_control,
+        permissions: es
+            .permissions
+            .iter()
+            .filter_map(|key| permission_from_key(key).map(|p| p as i32))
+            .collect(),
     }
 }
 
