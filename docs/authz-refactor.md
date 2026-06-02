@@ -239,10 +239,18 @@ Each phase compiles, keeps tests green, and is independently commitable.
   resolve via the slot instead of a hard-coded role name; an admin can rebind a
   slot to a custom role (proven by tests). Bootstrap still assigns `system-admin`
   directly.
-- **Phase 4 — Strong-typed proto + introspection.** `Permission`/`Scope`/
+- **Phase 4a — Strong-typed proto common value objects. ✅ done.** `common.proto`
+  wrapper messages for every id (UserId, OrganizationId, …, NodeId, JobLogId) +
+  Email, with solid docs (ids are lowercase ULIDs); timestamps →
+  `google.protobuf.Timestamp` (added `prost-types`). A `grpc::convert` helper
+  module (`wrap`/`required`/`optional`/`ts`/`dt`) keeps mappers/handlers terse.
+  Every service migrated except `permission.proto` (folded into 4b) and
+  `config`/`agent` (no ids). Frontend regen works via `pnpm i && pnpm run
+  gen-proto`; frontend **app** code still needs unwrapping `.value`/Timestamp.
+- **Phase 4b — Typed authz proto + introspection.** `Permission`/`Scope`/
   `ResourceType`/`PrincipalKind` enums; `RoleService` (CRUD roles); generalized
-  `GrantService`; `CheckPermissions`/`ListPermissions`/`GetEffectivePermissions`.
-  Regen proto + sqlx `--all-features`.
+  `GrantService` (permission grants over the wire);
+  `CheckPermissions`/`GetEffectivePermissions`. Regen proto + sqlx `--all-features`.
 - **Phase 5 — Anti-escalation + meta-permission rules.**
 - **Phase 6 — Frontend permission matrix** (documented only — the frontend does
   not build in this environment; see memory `project_frontend_codegen_blocker`).
