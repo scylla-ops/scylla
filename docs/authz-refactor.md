@@ -254,10 +254,17 @@ Each phase compiles, keeps tests green, and is independently commitable.
   Timestamp. `grpc::convert` gains `permission_key`/`permission_from_key`/
   `resource_type_from_tag` (camelCase ⇄ SCREAMING_SNAKE) with a sync test that
   keeps the enum a total mirror of the catalog.
-- **Phase 4b.2 — RoleService + introspection (next).** `RoleService` CRUD
-  (create/edit/delete roles + permissions — the dynamic-role capability);
-  generalized `GrantService` (typed `oneof { role | permission }` target, app
-  principals); `CheckPermissions` / `GetEffectivePermissions`.
+- **Phase 4b.2 — RoleService (dynamic role CRUD). ✅ done.** New `manageRoles`
+  permission; `RoleRepository` writes + `RoleUseCases` (validate permission set,
+  reload on change, refuse deleting builtins / still-granted roles); proto
+  `RoleService` (Create/Update/Delete/List/GetRole) with a typed
+  `Role { Scope, repeated Permission, full_control }`; handler + wiring. First
+  cut: global roles, system-admin only.
+- **Phase 4b.3 — remaining (next).** Org-owned custom roles + org-admin
+  management (`ManageOrgRoles`); generalized `GrantService` (typed
+  `oneof { role | permission }`, app principals); `CheckPermissions` /
+  `GetEffectivePermissions` (the matrix + "can I do X"). `ListGrantableRoles`
+  moves from the compile-time catalog to the DB roles.
 - **Phase 5 — Anti-escalation + meta-permission rules.**
 - **Phase 6 — Frontend permission matrix** (documented only — the frontend does
   not build in this environment; see memory `project_frontend_codegen_blocker`).
