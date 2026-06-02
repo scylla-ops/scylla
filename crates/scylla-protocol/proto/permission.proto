@@ -207,18 +207,26 @@ service GrantService {
 message Grant {
   string         id       = 1;
   common.UserId  user_id  = 2;
-  // Role id (== key for builtins), e.g. "organization-admin".
+  // Role id (== key for builtins), e.g. "organization-admin". Empty for a
+  // permission grant (see `permission`).
   string         role     = 3;
   Scope          scope    = 4;
   // The org/project id the grant is bound to; ignored for SCOPE_SYSTEM.
   string         scope_id = 5;
+  // Set instead of `role` when this is a direct single-permission grant.
+  optional Permission permission = 6;
 }
 
 message CreateGrantRequest {
   common.UserId user_id  = 1;
+  // The role to grant. Used unless `permission` is set.
   string        role     = 2;
   Scope         scope    = 3;
   string        scope_id = 4;
+  // Set to grant a SINGLE permission instead of a role (additive to the user's
+  // roles, e.g. "Alice may runPipeline within Org A"). When set, `role` is
+  // ignored. Subject to the same anti-escalation rule as a role grant.
+  optional Permission permission = 5;
 }
 
 message RevokeGrantRequest {

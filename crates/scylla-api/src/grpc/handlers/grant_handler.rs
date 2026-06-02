@@ -1,17 +1,17 @@
 use crate::extract_auth_context;
-use crate::grpc::convert::{required, wrap};
+use crate::grpc::convert::{permission_from_key, permission_key, required, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
-    Grant, GrantRepository, GrantUseCases, GrantableRole, PermissionService, PolicyControl,
-    Principal, Scope, ScopeKind, grantable_roles,
+    Grant, GrantRepository, GrantTarget, GrantUseCases, GrantableRole, PermissionService,
+    PolicyControl, Principal, Scope, ScopeKind, grantable_roles,
 };
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::role::name::RoleName;
 use scylla_protocol::services::permission::{
     CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
     ListGrantableRolesRequest, ListGrantableRolesResponse, ListGrantsRequest, ListGrantsResponse,
-    RevokeGrantRequest, RevokeGrantResponse, Scope as ProtoScope,
+    Permission, RevokeGrantRequest, RevokeGrantResponse, Scope as ProtoScope,
     grant_service_server::GrantService,
 };
 use std::sync::Arc;
@@ -36,10 +36,23 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         let user_id = UserId::new(&required(req.user_id, "user_id")?);
-        let role = RoleName::new(&req.role).map_err(domain_error_to_status)?;
         let scope = scope_from_proto(req.scope, &req.scope_id)?;
 
-        let grant = Grant::new(Principal::User(user_id), role, scope);
+        // A `permission` set → grant that single permission (additive); otherwise
+        // grant the named `role`. Both go through the same anti-escalation check.
+        let grant = match req.permission {
+            Some(p) if p != Permission::Unspecified as i32 => {
+                let perm = Permission::try_from(p)
+                    .map_err(|_| Status::invalid_argument("unknown permission value"))?;
+                let key = permission_key(perm)
+                    .ok_or_else(|| Status::invalid_argument("permission unspecified"))?;
+                Grant::with_permission(Principal::User(user_id), key, scope)
+            }
+            _ => {
+                let role = RoleName::new(&req.role).map_err(domain_error_to_status)?;
+                Grant::new(Principal::User(user_id), role, scope)
+            }
+        };
         self.use_cases
             .grant(&caller, &grant)
             .await
@@ -154,14 +167,17 @@ fn grant_to_proto(g: &Grant) -> ProtoGrant {
         Scope::Organization(id) => (ProtoScope::Organization, id.to_string()),
         Scope::Project(id) => (ProtoScope::Project, id.to_string()),
     };
+    // A role grant fills `role`; a permission grant fills `permission`.
+    let (role, permission) = match &g.target {
+        GrantTarget::Role(r) => (r.to_string(), None),
+        GrantTarget::Permission(key) => (String::new(), permission_from_key(key).map(|p| p as i32)),
+    };
     ProtoGrant {
         id: g.id.clone(),
         user_id: wrap(g.principal.id().to_string()),
-        // Interim: the proto exposes a single `role` string. Surface the target's
-        // value (role id or permission key) here; the generalized GrantService
-        // (typed role-or-permission target) lands with the rest of Phase 4b.
-        role: g.target.value().to_string(),
+        role,
         scope: scope as i32,
         scope_id,
+        permission,
     }
 }
