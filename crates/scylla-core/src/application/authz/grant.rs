@@ -388,15 +388,37 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
             .check(caller, Self::manage_perm(&grant.scope))
             .await?;
         // Validate the target before persisting so a stored grant is always
-        // emittable into Cedar: a role grant names a catalog role valid at its
+        // emittable into Cedar: a role grant names an existing role valid at its
         // scope; a permission grant names a known permission key.
         match &grant.target {
-            GrantTarget::Role(role) => validate_role_for_scope(role, &grant.scope)?,
+            GrantTarget::Role(role) => self.validate_role_target(role, &grant.scope).await?,
             GrantTarget::Permission(key) => validate_permission_key(key)?,
         }
         self.check_no_escalation(caller, grant).await?;
         self.grant_repo.create(grant).await?;
         self.policy_control.reload().await
+    }
+
+    /// Validate a role grant against the DB role catalog: the role must exist
+    /// (builtin *or* custom) and declare the scope kind the grant binds to.
+    /// Supersedes the static, builtin-only [`validate_role_for_scope`] so a role
+    /// created through `RoleService` becomes grantable — the rest of the pipeline
+    /// (anti-escalation expansion via [`Self::target_keys`] and Cedar emission)
+    /// already resolves any role by id. Builtins live in the same table (id ==
+    /// key), so they validate through this path unchanged.
+    async fn validate_role_target(&self, role: &RoleName, scope: &Scope) -> DomainResult<()> {
+        let found = self.role_repo.get(role.as_str()).await?.ok_or_else(|| {
+            DomainError::validation(format!("unknown role '{}'", role.as_str()))
+        })?;
+        if found.scope != scope.kind() {
+            return Err(DomainError::validation(format!(
+                "role '{}' is grantable only on {} scope, not {}",
+                role.as_str(),
+                found.scope.as_str(),
+                scope.kind().as_str()
+            )));
+        }
+        Ok(())
     }
 
     /// Anti-escalation: a delegator may only confer permissions it already holds
@@ -789,6 +811,71 @@ mod tests {
             .await
             .is_ok(),
             "a full-control admin may grant",
+        );
+    }
+
+    #[tokio::test]
+    async fn custom_role_grantable_via_db_with_scope_check() {
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        // A custom (non-builtin) org-scoped role, resolved from the DB by id.
+        let mut custom = test_role("01customrole", ScopeKind::Organization, &["readOrganization"]);
+        custom.builtin = false;
+        custom.key = None;
+        let admin = test_role(ORGANIZATION_ADMIN_ROLE, ScopeKind::Organization, &[FULL_CONTROL]);
+        let uc = use_cases_with(
+            vec![Grant::new(
+                Principal::User(UserId::new("owner")),
+                RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+                org.clone(),
+            )],
+            vec![custom, admin],
+            Arc::new(RecordingRegistry::default()),
+        );
+        let owner = CallerContext::User(UserId::new("owner"));
+
+        // A custom role valid at its scope is grantable (owner holds full control).
+        assert!(
+            uc.grant(
+                &owner,
+                &Grant::new(
+                    Principal::User(UserId::new("alice")),
+                    RoleName::new("01customrole").unwrap(),
+                    org.clone(),
+                ),
+            )
+            .await
+            .is_ok(),
+            "a custom role valid at its scope must be grantable",
+        );
+
+        // An unknown role id is rejected (closes the free-form RoleName hole).
+        assert!(
+            uc.grant(
+                &owner,
+                &Grant::new(
+                    Principal::User(UserId::new("alice")),
+                    RoleName::new("ghost").unwrap(),
+                    org,
+                ),
+            )
+            .await
+            .is_err(),
+            "unknown role must be rejected",
+        );
+
+        // The custom role on the wrong scope kind is rejected.
+        assert!(
+            uc.grant(
+                &owner,
+                &Grant::new(
+                    Principal::User(UserId::new("alice")),
+                    RoleName::new("01customrole").unwrap(),
+                    Scope::Project(ProjectId::new("p1")),
+                ),
+            )
+            .await
+            .is_err(),
+            "a custom role on the wrong scope kind must be rejected",
         );
     }
 
