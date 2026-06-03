@@ -107,8 +107,8 @@ msgstr "New {label}"
 msgid "Operation failed"
 msgstr "Operation failed"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:97
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:101
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:121
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:125
 msgid "Organization"
 msgstr "Organization"
 
@@ -120,7 +120,7 @@ msgstr "Organization"
 msgid "Run the agent"
 msgstr "Run the agent"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:100
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:124
 msgid "Select Organization"
 msgstr "Select Organization"
 

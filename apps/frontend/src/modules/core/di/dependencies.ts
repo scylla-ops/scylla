@@ -7,6 +7,7 @@ import { JobsModule } from '@/modules/features/jobs/di/jobs.module.ts';
 import { UserModule } from '@/modules/features/user/di/user.module.ts';
 import { AppsModule } from '@/modules/features/apps/di/apps.module.ts';
 import { AgentsModule } from '@/modules/features/agents/di/agents.module.ts';
+import { AuthzModule } from '@/modules/features/authz/di/authz.module.ts';
 
 export const dependencies = {
   login: LoginModule.domain,
@@ -18,6 +19,7 @@ export const dependencies = {
   jobs: JobsModule.domain,
   apps: AppsModule.domain,
   agents: AgentsModule.domain,
+  authz: AuthzModule.domain,
 };
 
 export type Dependencies = typeof dependencies;

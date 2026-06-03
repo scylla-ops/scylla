@@ -8,6 +8,9 @@ import {
   FolderKanbanIcon,
   CpuIcon,
   ServerIcon,
+  ShieldIcon,
+  KeyRoundIcon,
+  ListChecksIcon,
 } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
@@ -79,6 +82,27 @@ const useNavSections = (): NavSectionModel[] => {
           title: 'Users',
           url: `${prefix}/users-admin`,
           icon: UsersIcon,
+        },
+        {
+          title: 'Authorization',
+          icon: ShieldIcon,
+          items: [
+            {
+              title: 'Roles',
+              url: `${prefix}/roles`,
+              icon: ShieldIcon,
+            },
+            {
+              title: 'Grants',
+              url: `${prefix}/grants`,
+              icon: KeyRoundIcon,
+            },
+            {
+              title: 'Permissions',
+              url: `${prefix}/permissions`,
+              icon: ListChecksIcon,
+            },
+          ],
         },
       ],
     },

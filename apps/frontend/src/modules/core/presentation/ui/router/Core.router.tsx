@@ -19,6 +19,9 @@ import { AgentsPage } from '@/modules/features/agents/presentation/ui/Agents.pag
 import { AgentDetailsPage } from '@/modules/features/agents/presentation/ui/AgentDetails.page.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
+import { RolesPage } from '@/modules/features/authz/presentation/ui/Roles.page.tsx';
+import { GrantsPage } from '@/modules/features/authz/presentation/ui/Grants.page.tsx';
+import { EffectivePermissionsPage } from '@/modules/features/authz/presentation/ui/EffectivePermissions.page.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -135,6 +138,27 @@ export const CoreRouter = createBrowserRouter([
               {
                 path: 'users-admin',
                 element: <UserAdminPage />,
+              },
+              {
+                path: 'roles',
+                element: <RolesPage />,
+                handle: {
+                  breadcrumb: () => 'Roles',
+                },
+              },
+              {
+                path: 'grants',
+                element: <GrantsPage />,
+                handle: {
+                  breadcrumb: () => 'Grants',
+                },
+              },
+              {
+                path: 'permissions',
+                element: <EffectivePermissionsPage />,
+                handle: {
+                  breadcrumb: () => 'Permissions',
+                },
               },
               {
                 path: 'users',
