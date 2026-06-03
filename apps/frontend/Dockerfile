@@ -4,9 +4,10 @@ FROM node:22-alpine AS build
 
 # Provide protoc on PATH so @protobuf-ts/protoc uses the system binary instead
 # of downloading a release from GitHub at build time (which fails offline / on
-# flaky networks with "socket hang up"). Our protos are proto3 and only import
-# local files, so the system protoc needs no bundled well-known-types includes.
-RUN apk add --no-cache protobuf
+# flaky networks with "socket hang up"). The protos import
+# google/protobuf/timestamp.proto; `protobuf-dev` ships the well-known-types
+# under /usr/include and protoc resolves them automatically.
+RUN apk add --no-cache protobuf protobuf-dev
 
 RUN corepack enable
 

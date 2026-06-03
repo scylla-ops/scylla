@@ -2,8 +2,12 @@
 
 # === Chef base ===
 FROM rust:1-bookworm AS chef
+# protobuf-compiler ships `protoc`; libprotobuf-dev ships the well-known-type
+# .proto files under /usr/include/google/protobuf (e.g. timestamp.proto), which
+# protoc auto-resolves. The protos import google/protobuf/timestamp.proto, so
+# both are required — the compiler alone is not enough.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    protobuf-compiler libclang-dev && \
+    protobuf-compiler libprotobuf-dev libclang-dev && \
     rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-chef --locked
 WORKDIR /app
