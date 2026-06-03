@@ -3,6 +3,7 @@ import type {
   DeleteRoleResponse,
   GetEffectivePermissionsResponse,
   Grant,
+  ListAuthzVocabularyResponse,
   ListGrantableRolesResponse,
   ListGrantsResponse,
   ListRolesResponse,
@@ -65,4 +66,8 @@ export interface AuthzRepository {
   createGrant(input: CreateGrantInput): Promise<ScyllaResult<Grant>>;
   revokeGrant(id: string): Promise<ScyllaResult<RevokeGrantResponse>>;
   listGrantableRoles(scope?: Scope): Promise<ScyllaResult<ListGrantableRolesResponse>>;
+
+  // Permission vocabulary: each permission + the minimal scope at which it is
+  // coherent. Backs the per-scope filtering of a role's permission picker.
+  listAuthzVocabulary(): Promise<ScyllaResult<ListAuthzVocabularyResponse>>;
 }

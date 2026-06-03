@@ -36,7 +36,8 @@ pub use authz::{
     AuthzEntityProvider, EffectiveScope, FULL_CONTROL, Grant, GrantRepository, GrantTarget,
     GrantUseCases, GrantableRole, PermissionService, PolicyControl, PolicyDefinition,
     PolicyRepository, PolicyUseCases, Principal, PrincipalAuthz, ResourceAncestors, Role, RoleKind,
-    RoleRepository, RoleUseCases, Scope, ScopeKind, grantable_roles, validate_role_for_scope,
+    RoleRepository, RoleUseCases, Scope, ScopeKind, grantable_roles, resource_home_scope,
+    validate_role_for_scope,
 };
 pub use bootstrap::BootstrapUseCases;
 pub use caller::{CallerContext, ServiceIdentity};

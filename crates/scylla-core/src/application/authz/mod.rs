@@ -12,6 +12,7 @@ pub use grant::{
 pub use policy::{PolicyControl, PolicyDefinition, PolicyRepository, PolicyUseCases};
 pub use role::{
     DefaultRoleBindingRepository, DefaultRoleSlot, EffectiveScope, FULL_CONTROL, Role,
-    RoleRepository, RoleUseCases, resolve_default_role, validate_role_permissions,
+    RoleRepository, RoleUseCases, resolve_default_role, resource_home_scope,
+    validate_role_permissions,
 };
 pub use service::PermissionService;

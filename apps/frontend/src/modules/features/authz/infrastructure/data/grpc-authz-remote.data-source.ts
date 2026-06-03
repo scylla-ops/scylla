@@ -1,4 +1,8 @@
-import { GrantServiceClient, RoleServiceClient } from '@/generated/permission.client.ts';
+import {
+  GrantServiceClient,
+  PolicyServiceClient,
+  RoleServiceClient,
+} from '@/generated/permission.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
@@ -6,6 +10,7 @@ import type {
   DeleteRoleResponse,
   GetEffectivePermissionsResponse,
   Grant,
+  ListAuthzVocabularyResponse,
   ListGrantableRolesResponse,
   ListGrantsResponse,
   ListRolesResponse,
@@ -25,10 +30,12 @@ import type {
 export class GrpcAuthzRemoteDataSource implements AuthzRepository {
   private readonly _roles: RoleServiceClient;
   private readonly _grants: GrantServiceClient;
+  private readonly _policies: PolicyServiceClient;
 
   constructor(transport: CoreGrpcTransport) {
     this._roles = new RoleServiceClient(transport.getTransport());
     this._grants = new GrantServiceClient(transport.getTransport());
+    this._policies = new PolicyServiceClient(transport.getTransport());
   }
 
   public listRoles(): Promise<ScyllaResult<ListRolesResponse>> {
@@ -64,7 +71,8 @@ export class GrpcAuthzRemoteDataSource implements AuthzRepository {
     principalId: string,
   ): Promise<ScyllaResult<GetEffectivePermissionsResponse>> {
     return ScyllaResult.tryAsync(
-      async () => (await this._roles.getEffectivePermissions({ principalKind, principalId })).response,
+      async () =>
+        (await this._roles.getEffectivePermissions({ principalKind, principalId })).response,
       'Failed to fetch effective permissions.',
     );
   }
@@ -103,6 +111,13 @@ export class GrpcAuthzRemoteDataSource implements AuthzRepository {
     return ScyllaResult.tryAsync(
       async () => (await this._grants.listGrantableRoles({ scope })).response,
       'Failed to list grantable roles.',
+    );
+  }
+
+  public listAuthzVocabulary(): Promise<ScyllaResult<ListAuthzVocabularyResponse>> {
+    return ScyllaResult.tryAsync(
+      async () => (await this._policies.listAuthzVocabulary({})).response,
+      'Failed to load authz vocabulary.',
     );
   }
 }

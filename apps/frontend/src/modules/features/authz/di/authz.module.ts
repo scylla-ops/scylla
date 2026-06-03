@@ -9,6 +9,7 @@ import { ListGrantsUseCase } from '@/modules/features/authz/domain/usecases/list
 import { CreateGrantUseCase } from '@/modules/features/authz/domain/usecases/create-grant.use-case.ts';
 import { RevokeGrantUseCase } from '@/modules/features/authz/domain/usecases/revoke-grant.use-case.ts';
 import { ListGrantableRolesUseCase } from '@/modules/features/authz/domain/usecases/list-grantable-roles.use-case.ts';
+import { ListAuthzVocabularyUseCase } from '@/modules/features/authz/domain/usecases/list-authz-vocabulary.use-case.ts';
 
 // The gRPC data source implements AuthzRepository directly, so it is the
 // repository the use cases depend on.
@@ -25,5 +26,6 @@ export const AuthzModule = {
     createGrant: new CreateGrantUseCase(repository),
     revokeGrant: new RevokeGrantUseCase(repository),
     listGrantableRoles: new ListGrantableRolesUseCase(repository),
+    listAuthzVocabulary: new ListAuthzVocabularyUseCase(repository),
   },
 };

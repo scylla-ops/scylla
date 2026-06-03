@@ -7,7 +7,7 @@ use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::entities::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::{Permission, is_known_permission};
+use crate::domain::value_objects::permission::{Permission, permission_resource_type};
 use crate::domain::value_objects::role::name::RoleName;
 use async_trait::async_trait;
 use derive_more::Constructor;
@@ -75,18 +75,49 @@ impl Role {
     }
 }
 
-/// Validate a role's permission set: every entry must be a known permission key
-/// (or the [`FULL_CONTROL`] sentinel), and the set must be non-empty (a role that
-/// confers nothing is almost always a mistake).
-pub fn validate_role_permissions(permissions: &[String]) -> DomainResult<()> {
+/// The home scope of a resource type: the broadest scope whose Cedar subtree
+/// contains it. Mirrors the entity hierarchy (`Organization`, `User` ∈ System;
+/// `Project`, `App` ∈ Organization; `Pipeline`, `Job` ∈ Project). A permission
+/// targeting the type is usable in a role iff the role's scope [`ScopeKind::covers`]
+/// this home scope. Exposed so the API can publish each permission's minimal
+/// scope in the authz vocabulary (so a client can filter a role's checkboxes).
+pub fn resource_home_scope(resource_type: &str) -> ScopeKind {
+    match resource_type {
+        "organization" | "app" => ScopeKind::Organization,
+        "project" | "pipeline" | "job" => ScopeKind::Project,
+        // "system", "user", and anything unrecognised resolve at System (broadest).
+        _ => ScopeKind::System,
+    }
+}
+
+/// Validate a role's permission set against its scope: the set must be non-empty
+/// (a role that confers nothing is almost always a mistake), every entry must be
+/// a known permission key (or the [`FULL_CONTROL`] sentinel), and each permission
+/// must be *coherent* with the role's scope — its target resource must live
+/// within that scope's subtree. This rejects e.g. `createOrganization` (targets
+/// `system`) in an organization- or project-scoped role, where it could never
+/// authorise anything.
+pub fn validate_role_permissions(permissions: &[String], scope: ScopeKind) -> DomainResult<()> {
     if permissions.is_empty() {
         return Err(DomainError::validation(
             "a role must have at least one permission",
         ));
     }
     for p in permissions {
-        if p != FULL_CONTROL && !is_known_permission(p) {
+        if p == FULL_CONTROL {
+            continue;
+        }
+        let Some(resource_type) = permission_resource_type(p) else {
             return Err(DomainError::validation(format!("unknown permission '{p}'")));
+        };
+        let home = resource_home_scope(resource_type);
+        if !scope.covers(home) {
+            return Err(DomainError::validation(format!(
+                "permission '{p}' targets a {resource_type} and is not usable in a {} role; \
+                 grant it in a role scoped at {} or broader",
+                scope.as_str(),
+                home.as_str()
+            )));
         }
     }
     Ok(())
@@ -181,7 +212,7 @@ where
         self.permission_service
             .check(caller, Permission::ManageRoles)
             .await?;
-        validate_role_permissions(&permissions)?;
+        validate_role_permissions(&permissions, scope)?;
         let role = Role::new_custom(name, description, scope, permissions);
         self.role_repo.create(&role).await?;
         self.policy_control.reload().await?;
@@ -200,14 +231,15 @@ where
         self.permission_service
             .check(caller, Permission::ManageRoles)
             .await?;
-        validate_role_permissions(&permissions)?;
         let mut role = self
             .role_repo
             .get(id)
             .await?
             .ok_or_else(|| DomainError::not_found("role", id))?;
         // A role's scope kind and builtin status are immutable; only its name,
-        // description and permission set can change.
+        // description and permission set can change. Validate the new set against
+        // the role's existing scope (loaded above).
+        validate_role_permissions(&permissions, role.scope)?;
         role.name = name;
         role.description = description;
         role.permissions = permissions;
@@ -307,15 +339,44 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{FULL_CONTROL, validate_role_permissions};
+    use super::{FULL_CONTROL, ScopeKind, validate_role_permissions};
 
     #[test]
     fn validate_role_permissions_accepts_keys_and_wildcard_rejects_others() {
-        assert!(validate_role_permissions(&["runPipeline".into(), "readJob".into()]).is_ok());
-        assert!(validate_role_permissions(&[FULL_CONTROL.into()]).is_ok());
+        // runPipeline/readJob target pipeline/job (home Project) — valid at System.
+        assert!(
+            validate_role_permissions(
+                &["runPipeline".into(), "readJob".into()],
+                ScopeKind::System
+            )
+            .is_ok()
+        );
+        assert!(validate_role_permissions(&[FULL_CONTROL.into()], ScopeKind::Project).is_ok());
         // Empty set and unknown keys are rejected.
-        assert!(validate_role_permissions(&[]).is_err());
-        assert!(validate_role_permissions(&["flyToTheMoon".into()]).is_err());
+        assert!(validate_role_permissions(&[], ScopeKind::System).is_err());
+        assert!(validate_role_permissions(&["flyToTheMoon".into()], ScopeKind::System).is_err());
+    }
+
+    #[test]
+    fn validate_role_permissions_enforces_scope_coherence() {
+        // createOrganization targets `system` → only usable in a System role.
+        assert!(validate_role_permissions(&["createOrganization".into()], ScopeKind::System).is_ok());
+        assert!(
+            validate_role_permissions(&["createOrganization".into()], ScopeKind::Organization)
+                .is_err()
+        );
+        assert!(
+            validate_role_permissions(&["createOrganization".into()], ScopeKind::Project).is_err()
+        );
+
+        // createProject targets `organization` (home Org) → Org/System, not Project.
+        assert!(validate_role_permissions(&["createProject".into()], ScopeKind::Organization).is_ok());
+        assert!(validate_role_permissions(&["createProject".into()], ScopeKind::Project).is_err());
+
+        // runPipeline targets `pipeline` (home Project) → usable at every scope.
+        assert!(validate_role_permissions(&["runPipeline".into()], ScopeKind::Project).is_ok());
+        assert!(validate_role_permissions(&["runPipeline".into()], ScopeKind::Organization).is_ok());
+        assert!(validate_role_permissions(&["runPipeline".into()], ScopeKind::System).is_ok());
     }
 }
 

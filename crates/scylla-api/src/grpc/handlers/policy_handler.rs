@@ -1,9 +1,10 @@
 use crate::extract_auth_context;
-use crate::grpc::convert::{permission_from_key, resource_type_from_tag, ts};
+use crate::grpc::convert::{permission_from_key, resource_type_from_tag, scope_kind_to_proto, ts};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
     PermissionService, PolicyControl, PolicyDefinition, PolicyRepository, PolicyUseCases,
+    resource_home_scope,
 };
 use scylla_core::domain::entities::CedarPolicyId;
 use scylla_core::domain::errors::DomainError;
@@ -157,6 +158,7 @@ impl<
                 .map(|(key, resource_type)| AuthzAction {
                     permission: permission_from_key(key).map_or(0, |p| p as i32),
                     resource_type: resource_type_from_tag(resource_type) as i32,
+                    min_scope: scope_kind_to_proto(resource_home_scope(resource_type)) as i32,
                 })
                 .collect(),
             resource_types: resource_types

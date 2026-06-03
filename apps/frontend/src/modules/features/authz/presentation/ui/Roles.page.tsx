@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Scope } from '@/generated/permission.ts';
 import type { Permission, Role } from '@/generated/permission.ts';
 import { useRoles } from '@/modules/features/authz/presentation/hooks/use-roles.ts';
+import { useAuthzVocabulary } from '@/modules/features/authz/presentation/hooks/use-authz-vocabulary.ts';
 import {
   ALL_PERMISSIONS,
   ALL_SCOPES,
@@ -14,6 +15,8 @@ import {
 // borders. Surfaces the dynamic-role CRUD (RoleService) end to end.
 export const RolesPage = () => {
   const { roles, isLoading, isError, error, createRole, updateRole, deleteRole } = useRoles();
+  // Coherence oracle: which permissions actually do something at a given scope.
+  const { coherentAtScope } = useAuthzVocabulary();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -143,7 +146,12 @@ export const RolesPage = () => {
             <select
               value={scope}
               disabled={!!editingId}
-              onChange={e => setScope(Number(e.target.value) as Scope)}
+              onChange={e => {
+                const next = Number(e.target.value) as Scope;
+                setScope(next);
+                // Drop any now-incoherent picks so the role can't carry dead perms.
+                setSelected(prev => prev.filter(p => coherentAtScope(p, next)));
+              }}
             >
               {ALL_SCOPES.map(s => (
                 <option key={s} value={s}>
@@ -168,18 +176,29 @@ export const RolesPage = () => {
         {!fullControl && (
           <fieldset>
             <legend>Permissions ({selected.length} selected)</legend>
-            {ALL_PERMISSIONS.map(p => (
-              <div key={p}>
-                <label>
-                  <input
-                    type='checkbox'
-                    checked={selected.includes(p)}
-                    onChange={() => togglePermission(p)}
-                  />{' '}
-                  {permissionName(p)}
-                </label>
-              </div>
-            ))}
+            <p>
+              <small>
+                Greyed-out permissions are not coherent with the {scopeName(scope)} scope (their
+                target resource lives outside it), so they are disabled.
+              </small>
+            </p>
+            {ALL_PERMISSIONS.map(p => {
+              const ok = coherentAtScope(p, scope);
+              return (
+                <div key={p}>
+                  <label>
+                    <input
+                      type='checkbox'
+                      disabled={!ok}
+                      checked={ok && selected.includes(p)}
+                      onChange={() => togglePermission(p)}
+                    />{' '}
+                    {permissionName(p)}
+                    {ok ? '' : ' — n/a at this scope'}
+                  </label>
+                </div>
+              );
+            })}
           </fieldset>
         )}
 

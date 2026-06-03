@@ -358,6 +358,18 @@ pub fn is_known_permission(key: &str) -> bool {
     PERMISSION_CATALOG.iter().any(|(k, _)| *k == key)
 }
 
+/// The resource type tag a permission targets (a [`RESOURCE_TYPES`] entry), or
+/// `None` if `key` is not a known permission. Lets the authz layer place a
+/// permission within the scope hierarchy (e.g. to reject a `system`-targeted
+/// permission in an organization- or project-scoped role).
+#[must_use]
+pub fn permission_resource_type(key: &str) -> Option<&'static str> {
+    PERMISSION_CATALOG
+        .iter()
+        .find(|(k, _)| *k == key)
+        .map(|(_, rt)| *rt)
+}
+
 #[cfg(test)]
 mod catalog_tests {
     use super::{PERMISSION_CATALOG, RESOURCE_TYPES};

@@ -178,11 +178,17 @@ message ValidatePolicyResponse {
 
 message ListAuthzVocabularyRequest {}
 
-// One entry of the permission vocabulary: a permission and the resource type it
-// applies to.
+// One entry of the permission vocabulary: a permission, the resource type it
+// applies to, and the broadest scope at which it is coherent.
 message AuthzAction {
   Permission   permission    = 1;
   ResourceType resource_type = 2;
+  // The minimal (narrowest) scope a role may bind to and still have this
+  // permission do something — i.e. the scope whose subtree contains the target
+  // resource. The permission is usable in a role scoped at `min_scope` or any
+  // broader (ancestor) scope. Lets a client grey out incoherent permissions per
+  // role scope (e.g. createOrganization → SCOPE_SYSTEM only).
+  Scope        min_scope     = 3;
 }
 
 message ListAuthzVocabularyResponse {

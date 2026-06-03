@@ -87,6 +87,25 @@ impl ScopeKind {
             Self::Project => "project",
         }
     }
+
+    /// Containment depth in the scope hierarchy (System is broadest = 0).
+    fn depth(self) -> u8 {
+        match self {
+            Self::System => 0,
+            Self::Organization => 1,
+            Self::Project => 2,
+        }
+    }
+
+    /// Whether a grant at this scope covers resources whose home scope is
+    /// `inner` — true when this scope is `inner` or one of its ancestors
+    /// (System ⊃ Organization ⊃ Project). A grant authorises within its scope's
+    /// subtree, so a permission is usable in a role iff the role's scope covers
+    /// the permission's home scope.
+    #[must_use]
+    pub fn covers(self, inner: ScopeKind) -> bool {
+        self.depth() <= inner.depth()
+    }
 }
 
 /// Full-control admin role vs restricted machine-agent role. Used by the
