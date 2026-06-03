@@ -5,10 +5,13 @@ import { Button } from '@shadcn';
 import { Trash } from 'lucide-react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
+import { toast } from 'sonner';
 
 interface FeatureHeaderProps {
   count: number;
   label: string;
+  underLabel?: ReactNode;
   pluralLabel?: string;
   selectedCount?: number;
   onClearSelection?: () => void;
@@ -16,6 +19,7 @@ interface FeatureHeaderProps {
   onNew?: () => void;
   newLabel?: ReactNode;
   extraActions?: ReactNode;
+  onBack?: () => void;
 }
 
 export const FeatureHeader = ({
@@ -28,29 +32,40 @@ export const FeatureHeader = ({
   onNew,
   newLabel,
   extraActions,
+  onBack,
+  underLabel,
 }: FeatureHeaderProps) => {
   const displayLabel = count > 1 ? (pluralLabel ?? `${label}s`) : label;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleDelete = async () => {
     try {
-      await onDeleteSelection?.();
-    } finally {
       setDeleteDialogOpen(false);
+      await onDeleteSelection?.();
+      toast.success(`Successfully deleted ${selectedCount} ${label}s`);
+    } catch (error) {
+      toast.error(`Error while deletring jobs: ${error}`);
     }
   };
 
   return (
-    <div className={'flex flex-row items-center justify-between w-full'}>
-      <div className='flex items-baseline gap-2'>
-        <h1 className='text-3xl font-bold tracking-tight'>
-          <span className='text-primary'>{count}</span>{' '}
-          <span className='text-foreground'>{displayLabel}</span>
-        </h1>
-        <span className='text-sm text-muted-foreground font-medium'>
-          <Trans>in total</Trans>
-        </span>
+    <div className={'flex flex-row items-end justify-between w-full'}>
+      <div className={'flex flex-col gap-2'}>
+        <div className={'flex flex-row gap-4'}>
+          {onBack && <BackButton iconOnly onClick={onBack} />}
+          <div className='flex items-baseline gap-2'>
+            <h1 className='text-3xl font-bold tracking-tight'>
+              <span className='text-primary'>{count}</span>{' '}
+              <span className='text-foreground'>{displayLabel}</span>
+            </h1>
+            <span className='text-sm text-muted-foreground font-medium'>
+              <Trans>in total</Trans>
+            </span>
+          </div>
+        </div>
+        {underLabel && <>{underLabel}</>}
       </div>
+
       <div className={'flex items-center justify-end gap-2'}>
         {selectedCount > 0 && onClearSelection && (
           <Button variant={'outline'} onClick={onClearSelection}>
@@ -70,16 +85,14 @@ export const FeatureHeader = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p><Trans>Delete</Trans></p>
+              <p>
+                <Trans>Delete</Trans>
+              </p>
             </TooltipContent>
           </Tooltip>
         )}
         {extraActions}
-        {onNew && (
-          <Button onClick={onNew}>
-            {newLabel ?? <Trans>New {label}</Trans>}
-          </Button>
-        )}
+        {onNew && <Button onClick={onNew}>{newLabel ?? <Trans>New {label}</Trans>}</Button>}
       </div>
       {onDeleteSelection && (
         <ConfirmOperationAlertDialog

@@ -17,6 +17,7 @@ import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.
 import { WorkerDetailsPage } from '../../../../features/workers/presentation/ui/WorkerDetails.page.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
+import { CredentialsPage } from '@/modules/features/credentials/presentation/ui/Credentials.page.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -110,6 +111,13 @@ export const CoreRouter = createBrowserRouter([
                     },
                   },
                 ],
+              },
+              {
+                path: 'credentials',
+                element: <CredentialsPage />,
+                handle: {
+                  breadcrumb: () => 'Credentials',
+                },
               },
               {
                 path: 'users-admin',

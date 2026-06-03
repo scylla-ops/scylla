@@ -1,7 +1,7 @@
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { Trans } from '@lingui/react/macro';
-import { FeatureHeader, BackButton } from '@shared/presentation/ui';
+import { FeatureHeader } from '@shared/presentation/ui';
 import { useDeletePipeline } from '@/modules/features/pipeline/presentation/hooks/use-delete-pipeline.ts';
 
 interface PipelineDashboardHeaderProps {
@@ -25,7 +25,6 @@ export const PipelineDashboardHeader = ({
 
   return (
     <div className='flex items-center gap-4 w-full'>
-      <BackButton iconOnly onClick={onBack} />
       <FeatureHeader
         count={numberOfPipelines}
         label='Pipeline'
@@ -34,6 +33,7 @@ export const PipelineDashboardHeader = ({
         onDeleteSelection={handleDelete}
         onNew={goToCreatePipeline}
         newLabel={<Trans>New pipeline</Trans>}
+        onBack={onBack}
       />
     </div>
   );

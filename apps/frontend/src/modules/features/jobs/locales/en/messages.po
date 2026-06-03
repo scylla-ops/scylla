@@ -58,7 +58,7 @@ msgstr "Open logs"
 #~ msgid "OpenJobLog"
 #~ msgstr "OpenJobLog"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:69
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:67
 msgid "Refresh"
 msgstr "Refresh"
 

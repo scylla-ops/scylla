@@ -7,6 +7,7 @@ import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOper
 import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
 import { JobNodesList } from './JobNodesList';
 import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx';
+import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 
 type JobsTableProps = {
   jobs: Job[];
@@ -14,10 +15,9 @@ type JobsTableProps = {
 };
 
 export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
-  const selectJob = useJobsStore(state => state.selectJob);
-  const selectedJobIds = useJobsStore(state => state.selectedJobIds);
   const expandedJobId = useJobsStore(state => state.expandedJobId);
   const toggleExpand = useJobsStore(state => state.toggleExpand);
+  const { selectedIds, select } = useSelection('jobs');
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
@@ -57,9 +57,9 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
         columns={columns}
         data={jobs}
         alignCenter
-        onRowClick={row => selectJob(row.original.id)}
+        onRowClick={row => select(row.original.id)}
         getRowId={(row, index) => row.id || index.toString()}
-        isRowSelected={row => selectedJobIds.includes(row.id)}
+        isRowSelected={row => selectedIds.includes(row.id)}
         isRowExpanded={row => expandedJobId === row.id}
         expandedContent={row => (
           <JobNodesList
