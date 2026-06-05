@@ -1,5 +1,4 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import type { ColumnDef } from '@tanstack/react-table';
 import type { Credential, CredentialKind } from '@/modules/features/credentials/domain/models/credential.model.ts';
 import { Badge, Button } from '@shadcn';
 import { AlertTriangle, CheckCircle2, Clock3, KeyRound, Pencil, RotateCcw, Trash2 } from 'lucide-react';
@@ -47,7 +46,8 @@ export const HealthBadge = ({ credential }: { credential: Credential }) => {
 
 const columnHelper = createColumnHelper<Credential>();
 
-export const createCredentialsColumns = (): ColumnDef<Credential, unknown>[] => [
+// eslint-disable-next-line react-refresh/only-export-components
+export const createCredentialsColumns = () => [
   columnHelper.accessor('name', {
     header: 'Type & Name',
     cell: info => (
@@ -62,16 +62,16 @@ export const createCredentialsColumns = (): ColumnDef<Credential, unknown>[] => 
       </div>
     ),
     size: 300,
-  } as ColumnDef<Credential, unknown>),
+  }),
   columnHelper.accessor('kind', {
     header: 'Kind',
     cell: info => (
-      <Badge variant='outline' className={getKindBadgeClass(info.getValue())}>
-        {KIND_LABELS[info.getValue()]}
+      <Badge variant='outline' className={getKindBadgeClass(info.row.original.kind)}>
+        {KIND_LABELS[info.row.original.kind]}
       </Badge>
     ),
     size: 120,
-  } as ColumnDef<Credential, unknown>),
+  }),
   columnHelper.accessor('health', {
     header: 'Health / Usage',
     cell: info => (
@@ -81,12 +81,12 @@ export const createCredentialsColumns = (): ColumnDef<Credential, unknown>[] => 
       </div>
     ),
     size: 200,
-  } as ColumnDef<Credential, unknown>),
+  }),
   columnHelper.accessor('createdAtLabel', {
     header: 'Created',
-    cell: info => <span className='text-sm text-muted-foreground whitespace-nowrap'>{info.getValue()}</span>,
+    cell: info => <span className='text-sm text-muted-foreground whitespace-nowrap'>{info.row.original.createdAtLabel}</span>,
     size: 140,
-  } as ColumnDef<Credential, unknown>),
+  }),
   columnHelper.accessor('id', {
     header: 'Actions',
     cell: () => (
@@ -103,5 +103,5 @@ export const createCredentialsColumns = (): ColumnDef<Credential, unknown>[] => 
       </div>
     ),
     size: 120,
-  } as ColumnDef<Credential, unknown>),
+  }),
 ];
