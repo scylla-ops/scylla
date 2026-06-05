@@ -10,6 +10,7 @@ export const CredentialsList = ({ credentials }: CredentialsListProps) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const columns = createCredentialsColumns() as any;
 
-  return <DataTable columns={columns} data={credentials} getRowId={(row) => row.id} />;
+  return (
+    <DataTable columns={columns} data={credentials} getRowId={row => row.id} alignColumnsCenter />
+  );
 };
-

@@ -56,7 +56,6 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
       <DataTable
         columns={columns}
         data={jobs}
-        alignCenter
         onRowClick={row => select(row.original.id)}
         getRowId={(row, index) => row.id || index.toString()}
         isRowSelected={row => selectedIds.includes(row.id)}
@@ -69,6 +68,8 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
             onCollapse={() => toggleExpand(null)}
           />
         )}
+        alignColumnsCenter
+        alignRowsCenter
       />
       <ConfirmOperationAlertDialog
         open={deleteDialogOpen}

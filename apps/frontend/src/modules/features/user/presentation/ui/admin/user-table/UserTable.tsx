@@ -15,10 +15,11 @@ export const UserTable = ({ data, onView }: UserTableProps) => {
     <DataTable
       columns={createUserColumns({ onView })}
       data={data ?? []}
-      alignCenter
       onRowClick={row => select(row.original.userId)}
       getRowId={(row, index) => row.userId || index.toString()}
       isRowSelected={row => selectedIds.includes(row.userId)}
+      alignColumnsCenter
+      alignRowsCenter
     />
   );
 };
