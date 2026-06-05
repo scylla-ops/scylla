@@ -134,7 +134,7 @@ msgstr "Plus d'options"
 msgid "Name"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:36
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:35
 msgid "New pipeline"
 msgstr "Nouveau pipeline"
 

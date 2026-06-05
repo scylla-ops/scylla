@@ -30,7 +30,6 @@ msgid "Created"
 msgstr "Created"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:83
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:92
 msgid "Delete"
 msgstr "Delete"
 
@@ -58,7 +57,7 @@ msgstr "Open logs"
 #~ msgid "OpenJobLog"
 #~ msgstr "OpenJobLog"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:67
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:73
 msgid "Refresh"
 msgstr "Refresh"
 
