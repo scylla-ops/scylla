@@ -63,7 +63,7 @@ export const createCredentialsColumns = () => [
   columnHelper.accessor('name', {
     header: () => <Trans>Name</Trans>,
     cell: info => (
-      <div className={'w-full flex flex-row '}>
+      <div className={'w-fit flex flex-row '}>
         <div className={'flex flex-row gap-4 w-5/8'}>
           <div className='flex size-10 items-center justify-center rounded-lg bg-primary/10 shrink-0'>
             <KeyRound className='size-4 text-primary' />
@@ -77,7 +77,7 @@ export const createCredentialsColumns = () => [
         </div>
       </div>
     ),
-    size: 120,
+    size: 20,
   }),
   columnHelper.accessor('kind', {
     header: 'Kind',
@@ -88,21 +88,19 @@ export const createCredentialsColumns = () => [
         </Badge>
       </div>
     ),
-    size: 120,
+    size: 100,
   }),
   columnHelper.accessor('health', {
     header: 'Health / Usage',
     cell: info => (
       <div className={'w-full flex justify-center'}>
-        <div className='w-9/11 overflow-visible flex flex-col'>
-          <div className={'ml-8 w-full flex flex-col'}>
-            <HealthBadge credential={info.row.original} />
-            <p className='text-xs text-muted-foreground'>{info.row.original.lastUsageLabel}</p>
-          </div>
+        <div className='w-35 overflow-visible flex flex-col'>
+          <HealthBadge credential={info.row.original} />
+          <p className='text-xs text-muted-foreground'>{info.row.original.lastUsageLabel}</p>
         </div>
       </div>
     ),
-    size: 50,
+    size: 300,
   }),
   columnHelper.accessor('createdAtLabel', {
     header: 'Created',
@@ -113,7 +111,7 @@ export const createCredentialsColumns = () => [
         </span>
       </div>
     ),
-    size: 140,
+    size: 100,
   }),
   columnHelper.accessor('id', {
     header: 'Actions',
@@ -130,6 +128,6 @@ export const createCredentialsColumns = () => [
         </Button>
       </div>
     ),
-    size: 120,
+    size: 100,
   }),
 ];
