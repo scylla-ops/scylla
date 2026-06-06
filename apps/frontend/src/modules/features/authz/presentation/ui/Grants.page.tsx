@@ -10,6 +10,7 @@ import {
   permissionName,
   scopeName,
 } from '@/modules/features/authz/presentation/utils/authz-labels.ts';
+import { useAuthzVocabulary } from '@/modules/features/authz/presentation/hooks/use-authz-vocabulary.ts';
 
 type TargetType = 'role' | 'permission';
 
@@ -21,6 +22,7 @@ export const GrantsPage = () => {
   // dropdown is filtered to roles declared on the selected scope, and the grant
   // references a role by its id. (listRoles needs manageRoles — fine here.)
   const { roles } = useRoles();
+  const { coherentAtScope } = useAuthzVocabulary();
 
   const [userId, setUserId] = useState('');
   const [targetType, setTargetType] = useState<TargetType>('role');
@@ -30,6 +32,10 @@ export const GrantsPage = () => {
   const [scopeId, setScopeId] = useState('');
 
   const roleOptions = roles.filter(r => r.scope === scope);
+  // A single permission is grantable only where it is coherent with the scope —
+  // mirror the role editor so the picker can't offer one the backend rejects
+  // (e.g. createOrganization on a Project scope).
+  const permOptions = ALL_PERMISSIONS.filter(p => coherentAtScope(p, scope));
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -151,7 +157,7 @@ export const GrantsPage = () => {
                 value={permission}
                 onChange={e => setPermission(Number(e.target.value) as Permission)}
               >
-                {ALL_PERMISSIONS.map(p => (
+                {permOptions.map(p => (
                   <option key={p} value={p}>
                     {permissionName(p)}
                   </option>
@@ -167,8 +173,15 @@ export const GrantsPage = () => {
             <select
               value={scope}
               onChange={e => {
-                setScope(Number(e.target.value) as Scope);
+                const next = Number(e.target.value) as Scope;
+                setScope(next);
                 setRole('');
+                // Keep the single-permission pick coherent with the new scope.
+                setPermission(prev =>
+                  coherentAtScope(prev, next)
+                    ? prev
+                    : (ALL_PERMISSIONS.find(p => coherentAtScope(p, next)) ?? prev),
+                );
               }}
             >
               {ALL_SCOPES.map(s => (
