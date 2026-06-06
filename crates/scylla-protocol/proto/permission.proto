@@ -48,7 +48,7 @@ enum Permission {
   LIST_PIPELINES_BY_ORGANIZATION = 34;
   CREATE_JOB = 35;
   READ_JOB = 36;
-  WRITE_JOB = 37;
+  UPDATE_JOB = 37;
   DELETE_JOB = 38;
   LIST_JOBS = 39;
   LIST_JOBS_BY_PIPELINE = 40;
@@ -57,16 +57,19 @@ enum Permission {
   READ_JOB_LOGS = 43;
   WRITE_JOB_LOGS = 44;
   WRITE_JOB_STATUS = 45;
-  WRITE_JOB_LOG = 46;
+  APPEND_JOB_LOG = 46;
   CREATE_APP = 47;
   READ_APP = 48;
   DELETE_APP = 49;
   LIST_APPS_BY_ORGANIZATION = 50;
   CREATE_AGENT = 51;
   LIST_AGENTS = 52;
-  READ_AGENT = 53;
-  READ_AGENT_STATS = 54;
-  DELETE_AGENT = 55;
+  // 53 (READ_AGENT) and 55 (DELETE_AGENT) folded into READ_APP / DELETE_APP —
+  // an agent is a specialized app, so its read/delete reuse the App actions.
+  reserved 53, 55;
+  reserved "READ_AGENT", "DELETE_AGENT";
+  // Run stats of an app (an agent reports its job-execution stats this way).
+  READ_APP_STATS = 54;
   MANAGE_GRANTS = 56;
   MANAGE_ORG_GRANTS = 57;
   MANAGE_PROJECT_GRANTS = 58;

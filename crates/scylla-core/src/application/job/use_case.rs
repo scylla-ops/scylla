@@ -42,7 +42,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
     #[instrument(skip(self, caller, job))]
     pub async fn update(&self, caller: &CallerContext, job: &Job) -> DomainResult<Job> {
         self.permission_service
-            .check(caller, Permission::WriteJob(job.id().clone()))
+            .check(caller, Permission::UpdateJob(job.id().clone()))
             .await?;
         self.job_repo.update(job).await
     }
@@ -50,7 +50,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
     /// Apply a status event reported by an agent to its job and persist it.
     /// Gated by a single [`Permission::WriteJobStatus`] check (the agent role
     /// confers it); the load/update repo calls deliberately bypass per-step
-    /// Cedar so an agent needs only `writeJobStatus`, not `readJob`/`writeJob`.
+    /// Cedar so an agent needs only `writeJobStatus`, not `readJob`/`updateJob`.
     #[instrument(skip(self, caller), fields(job_id = %job_id))]
     pub async fn record_status(
         &self,

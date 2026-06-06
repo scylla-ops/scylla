@@ -97,7 +97,7 @@ Canonical roles (all stored in `grants`):
 | `system-admin` | System | full-control | everything, every scope (System is the root) |
 | `organization-admin` | Organization | full-control | all actions on the org + everything beneath |
 | `project-admin` | Project | full-control | all actions on the project + everything beneath |
-| `organization-agent` | Organization | restricted agent | `readPipeline`/`executeJob`/`writeJobStatus`/`writeJobLog` within the org |
+| `organization-agent` | Organization | restricted agent | `readPipeline`/`executeJob`/`writeJobStatus`/`appendJobLog` within the org |
 | `project-agent` | Project | restricted agent | same, within a project |
 
 **Implicit tiers (NOT named roles):** `system-member` (a plain user with no grant), `organization-member` / `project-member` (membership via the `user_organization` / `user_project` tables, granted read/operate access through ABAC policies). They follow the same naming vocabulary but are realized as membership/ABAC, not stored grants.

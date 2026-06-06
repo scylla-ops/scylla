@@ -283,11 +283,11 @@ INSERT INTO role_permissions (role_id, permission) VALUES
     ('organization-agent', 'readPipeline'),
     ('organization-agent', 'executeJob'),
     ('organization-agent', 'writeJobStatus'),
-    ('organization-agent', 'writeJobLog'),
+    ('organization-agent', 'appendJobLog'),
     ('project-agent',      'readPipeline'),
     ('project-agent',      'executeJob'),
     ('project-agent',      'writeJobStatus'),
-    ('project-agent',      'writeJobLog');
+    ('project-agent',      'appendJobLog');
 
 -- ── Seed: default-role slots ──────────────────────────────────────────────────
 -- Point each creation flow at its builtin admin role by default; rebindable.

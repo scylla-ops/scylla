@@ -542,7 +542,7 @@ mod tests {
                 "readPipeline",
                 "executeJob",
                 "writeJobStatus",
-                "writeJobLog",
+                "appendJobLog",
             ]
             .iter()
             .map(ToString::to_string)
@@ -979,9 +979,9 @@ mod tests {
         for perm in [
             Permission::CreateAgent(OrganizationId::new("o1")),
             Permission::ListAgents(OrganizationId::new("o1")),
-            Permission::ReadAgent(AppId::new("agent-1")),
-            Permission::ReadAgentStats(AppId::new("agent-1")),
-            Permission::DeleteAgent(AppId::new("agent-1")),
+            Permission::ReadApp(AppId::new("agent-1")),
+            Permission::ReadAppStats(AppId::new("agent-1")),
+            Permission::DeleteApp(AppId::new("agent-1")),
         ] {
             assert!(
                 svc.check(&caller, perm.clone()).await.is_ok(),
@@ -1017,7 +1017,7 @@ mod tests {
             "a user with no grant cannot list agents"
         );
         assert!(
-            svc.check(&caller, Permission::ReadAgentStats(AppId::new("agent-1")))
+            svc.check(&caller, Permission::ReadAppStats(AppId::new("agent-1")))
                 .await
                 .is_err(),
             "a user with no grant cannot read agent stats"

@@ -25,7 +25,7 @@ use tracing::warn;
 /// Persistent agent stream: an authenticated App opens it, receives job
 /// dispatches, and streams back status + log events. Presence in the registry
 /// is the open stream. Reports are persisted as the App principal, so the
-/// agent role's `writeJobStatus` / `writeJobLog` grants gate them via Cedar.
+/// agent role's `writeJobStatus` / `appendJobLog` grants gate them via Cedar.
 #[derive(Constructor)]
 pub struct AgentHandler<J, L, PS>
 where
@@ -65,7 +65,7 @@ impl<
         let (conn_id, dispatch_rx) = self.registry.register(&app_id);
 
         // Inbound reports run in the background; the App principal authorizes the
-        // persistence (writeJobStatus / writeJobLog) via its agent grant.
+        // persistence (writeJobStatus / appendJobLog) via its agent grant.
         tokio::spawn(read_reports(
             inbound,
             app_id.clone(),

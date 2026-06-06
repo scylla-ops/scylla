@@ -198,7 +198,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn get(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentView> {
         self.permission_service
-            .check(caller, Permission::ReadAgent(app_id.clone()))
+            .check(caller, Permission::ReadApp(app_id.clone()))
             .await?;
 
         let agent = self.agent_repo.find_by_app_id(&app_id).await?;
@@ -218,7 +218,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn stats(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentStats> {
         self.permission_service
-            .check(caller, Permission::ReadAgentStats(app_id.clone()))
+            .check(caller, Permission::ReadAppStats(app_id.clone()))
             .await?;
         self.agent_repo.agent_stats(&app_id).await
     }
@@ -226,7 +226,7 @@ where
     #[instrument(skip(self, caller), fields(app_id = %app_id))]
     pub async fn delete(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<()> {
         self.permission_service
-            .check(caller, Permission::DeleteAgent(app_id.clone()))
+            .check(caller, Permission::DeleteApp(app_id.clone()))
             .await?;
         // Drop the live stream first so a removed agent stops at once; the app
         // delete cascades the agents row + grants and nulls jobs.agent_app_id.

@@ -83,16 +83,17 @@ namespace Scylla {
         appliesTo { principal: [User, Service, App], resource: [Pipeline] };
 
     // ── Job-targeted ───────────────────────────────────────────────────
-    action "readJob", "writeJob", "deleteJob", "readJobLogs", "writeJobLogs"
+    action "readJob", "updateJob", "deleteJob", "readJobLogs", "writeJobLogs"
         appliesTo { principal: [User, Service], resource: [Job] };
-    // Job status / log writes are also grantable to agent Apps.
-    action "writeJobStatus", "writeJobLog"
+    // Status reports and log appends are also grantable to agent Apps. Kept
+    // distinct from the User/Service `updateJob` / `writeJobLogs` above so an
+    // agent gets ONLY these, never full job mutation or the recorder path.
+    action "writeJobStatus", "appendJobLog"
         appliesTo { principal: [User, Service, App], resource: [Job] };
 
     // ── App-targeted (manage a specific app within its org) ─────────────
-    // An agent is a specialized app, so agent introspection/management also
-    // targets the App resource (agent_app_id == app id).
-    action "readApp", "deleteApp",
-           "readAgent", "readAgentStats", "deleteAgent"
+    // An agent is a specialized app, so reading/deleting an agent and reading
+    // its run stats reuse these App-targeted actions (agent_app_id == app id).
+    action "readApp", "readAppStats", "deleteApp"
         appliesTo { principal: [User, Service], resource: [App] };
 }

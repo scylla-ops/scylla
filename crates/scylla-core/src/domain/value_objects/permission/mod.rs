@@ -64,30 +64,35 @@ pub enum Permission {
     // ── job ────────────────────────────────────────────────────────────
     CreateJob,
     ReadJob(JobId),
-    WriteJob(JobId),
+    UpdateJob(JobId),
     DeleteJob(JobId),
     ListJobs,
     ListJobsByPipeline(PipelineId),
     ListJobsByProject(ProjectId),
     ListJobsByOrganization(OrganizationId),
     ReadJobLogs(JobId),
+    /// Recorder path: create a job's log lines (User / Service only).
     WriteJobLogs(JobId),
-    /// An agent App reporting a job's status / appending its logs while it runs.
+    /// An agent App reporting a job's status while it runs.
     WriteJobStatus(JobId),
-    WriteJobLog(JobId),
+    /// An agent App appending a single log line over its stream — kept distinct
+    /// from the recorder's `WriteJobLogs` so an agent can't take that path.
+    AppendJobLog(JobId),
 
-    // ── app (machine principals) ───────────────────────────────────────
+    // ── app (machine principals; an agent is a specialized app) ────────
     CreateApp(OrganizationId),
     ReadApp(AppId),
+    /// Run stats of an app — how an agent's job-execution stats are read.
+    ReadAppStats(AppId),
     DeleteApp(AppId),
     ListAppsByOrganization(OrganizationId),
 
     // ── agent (specialized apps that run jobs) ─────────────────────────
+    // Reading, deleting and reading stats of an agent reuse the App-targeted
+    // permissions above (an agent IS an app); only provisioning and listing
+    // agents are agent-specific.
     CreateAgent(OrganizationId),
     ListAgents(OrganizationId),
-    ReadAgent(AppId),
-    ReadAgentStats(AppId),
-    DeleteAgent(AppId),
 
     // ── grants / policies / roles ──────────────────────────────────────
     /// System-scoped grant management (admin / service): manage any grant.
@@ -148,7 +153,7 @@ impl Permission {
 
             Self::CreateJob => "createJob",
             Self::ReadJob(_) => "readJob",
-            Self::WriteJob(_) => "writeJob",
+            Self::UpdateJob(_) => "updateJob",
             Self::DeleteJob(_) => "deleteJob",
             Self::ListJobs => "listJobs",
             Self::ListJobsByPipeline(_) => "listJobsByPipeline",
@@ -157,18 +162,16 @@ impl Permission {
             Self::ReadJobLogs(_) => "readJobLogs",
             Self::WriteJobLogs(_) => "writeJobLogs",
             Self::WriteJobStatus(_) => "writeJobStatus",
-            Self::WriteJobLog(_) => "writeJobLog",
+            Self::AppendJobLog(_) => "appendJobLog",
 
             Self::CreateApp(_) => "createApp",
             Self::ReadApp(_) => "readApp",
+            Self::ReadAppStats(_) => "readAppStats",
             Self::DeleteApp(_) => "deleteApp",
             Self::ListAppsByOrganization(_) => "listAppsByOrganization",
 
             Self::CreateAgent(_) => "createAgent",
             Self::ListAgents(_) => "listAgents",
-            Self::ReadAgent(_) => "readAgent",
-            Self::ReadAgentStats(_) => "readAgentStats",
-            Self::DeleteAgent(_) => "deleteAgent",
 
             // Distinct action ids per scope so the Cedar schema pins `appliesTo`
             // (System / Organization / Project) per action. A single shared
@@ -248,16 +251,14 @@ impl Permission {
 
             // Job-targeted
             Self::ReadJob(id)
-            | Self::WriteJob(id)
+            | Self::UpdateJob(id)
             | Self::DeleteJob(id)
             | Self::ReadJobLogs(id)
             | Self::WriteJobLogs(id)
             | Self::WriteJobStatus(id)
-            | Self::WriteJobLog(id) => ResourceRef::Job(id.clone()),
+            | Self::AppendJobLog(id) => ResourceRef::Job(id.clone()),
 
-            Self::ReadApp(id) | Self::DeleteApp(id) => ResourceRef::App(id.clone()),
-
-            Self::ReadAgent(id) | Self::ReadAgentStats(id) | Self::DeleteAgent(id) => {
+            Self::ReadApp(id) | Self::ReadAppStats(id) | Self::DeleteApp(id) => {
                 ResourceRef::App(id.clone())
             }
         }
@@ -340,7 +341,7 @@ fn catalog_variants() -> Vec<Permission> {
         // job
         Permission::CreateJob,
         Permission::ReadJob(job.clone()),
-        Permission::WriteJob(job.clone()),
+        Permission::UpdateJob(job.clone()),
         Permission::DeleteJob(job.clone()),
         Permission::ListJobs,
         Permission::ListJobsByPipeline(pipeline.clone()),
@@ -349,18 +350,16 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::ReadJobLogs(job.clone()),
         Permission::WriteJobLogs(job.clone()),
         Permission::WriteJobStatus(job.clone()),
-        Permission::WriteJobLog(job.clone()),
-        // app
+        Permission::AppendJobLog(job),
+        // app (an agent is a specialized app: its read/delete/stats live here)
         Permission::CreateApp(org.clone()),
         Permission::ReadApp(app.clone()),
-        Permission::DeleteApp(app.clone()),
+        Permission::ReadAppStats(app.clone()),
+        Permission::DeleteApp(app),
         Permission::ListAppsByOrganization(org.clone()),
         // agent
         Permission::CreateAgent(org.clone()),
         Permission::ListAgents(org.clone()),
-        Permission::ReadAgent(app.clone()),
-        Permission::ReadAgentStats(app.clone()),
-        Permission::DeleteAgent(app),
         // grants / policies / roles
         Permission::ManageGrants,
         Permission::ManageOrgGrants(org.clone()),
