@@ -21,7 +21,7 @@ pub(crate) fn euid(type_name: &str, id: &str) -> DomainResult<EntityUid> {
 /// an admin out of fixing policies (the recovery path itself). A forbid that
 /// touches one of these, or whose action scope is unconstrained, is rejected on
 /// write and skipped on load.
-pub(crate) const GUARDED_ACTIONS: &[&str] = &["managePolicies", "manageGrants"];
+pub(crate) const GUARDED_ACTIONS: &[&str] = &["managePolicies", "manageSystemGrants"];
 
 /// A runtime `forbid` is safe only if its action scope is concrete and excludes
 /// the guarded admin actions. An unconstrained (`Any`) action is a catch-all

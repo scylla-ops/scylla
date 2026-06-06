@@ -460,7 +460,7 @@ impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService
         if policy.effect() == Effect::Forbid && !forbid_is_safe(&policy) {
             return Err(DomainError::Validation(
                 "forbid must target a specific action and may not target \
-                 managePolicies / manageGrants / manageRoles (anti-lockout guard)"
+                 managePolicies / manageSystemGrants / manageRoles (anti-lockout guard)"
                     .to_string(),
             ));
         }

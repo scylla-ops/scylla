@@ -292,7 +292,7 @@ where
         principal: &Principal,
     ) -> DomainResult<Vec<EffectiveScope>> {
         self.permission_service
-            .check(caller, Permission::ManageGrants)
+            .check(caller, Permission::ManageSystemGrants)
             .await?;
 
         let role_perms: HashMap<String, Vec<String>> = self

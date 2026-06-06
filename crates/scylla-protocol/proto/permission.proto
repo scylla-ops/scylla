@@ -70,7 +70,7 @@ enum Permission {
   reserved "READ_AGENT", "DELETE_AGENT";
   // Run stats of an app (an agent reports its job-execution stats this way).
   READ_APP_STATS = 54;
-  MANAGE_GRANTS = 56;
+  MANAGE_SYSTEM_GRANTS = 56;
   MANAGE_ORG_GRANTS = 57;
   MANAGE_PROJECT_GRANTS = 58;
   MANAGE_POLICIES = 59;
@@ -201,7 +201,8 @@ message ListAuthzVocabularyResponse {
 
 // ── Scoped grants ────────────────────────────────────────────────────────
 // An explicit "user holds role within scope" assignment, linked as a Cedar
-// template instance. Applied live (hot-reload). Requires `manageGrants`.
+// template instance. Applied live (hot-reload). Requires the scope-appropriate
+// manage-grants permission (manageSystemGrants / manageOrgGrants / manageProjectGrants).
 
 service GrantService {
   rpc CreateGrant(CreateGrantRequest) returns (Grant);
@@ -288,7 +289,7 @@ service RoleService {
   rpc GetRole(GetRoleRequest)       returns (Role);
   // "What can this principal do" — the principal's resolved permissions grouped
   // by the scope each grant binds to. Backs a permission matrix. Requires
-  // `manageGrants`.
+  // `manageSystemGrants`.
   rpc GetEffectivePermissions(GetEffectivePermissionsRequest)
       returns (GetEffectivePermissionsResponse);
 }

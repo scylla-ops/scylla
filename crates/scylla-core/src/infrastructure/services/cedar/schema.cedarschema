@@ -40,13 +40,13 @@ namespace Scylla {
         appliesTo { principal: [User, Service], resource: [System] };
 
     // Grant management is scope-aware, one action per scope so `appliesTo` pins
-    // the resource type: a system admin manages any grant (`manageGrants` on
-    // System); an org/project admin manages grants within their scope
+    // the resource type: a system admin manages any grant (`manageSystemGrants`
+    // on System); an org/project admin manages grants within their scope
     // (`manageOrgGrants` on Organization / `manageProjectGrants` on Project).
     // Cedar `resource in ?resource` on the role template confines each admin to
     // its own subtree, so an org admin cannot touch another org's grants
-    // (anti-escalation).
-    action "manageGrants"
+    // (anti-escalation). The UI presents the three as one "manage grants".
+    action "manageSystemGrants"
         appliesTo { principal: [User, Service], resource: [System] };
     action "manageOrgGrants"
         appliesTo { principal: [User, Service], resource: [Organization] };

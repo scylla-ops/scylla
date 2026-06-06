@@ -370,7 +370,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
     /// (anti-escalation is enforced by Cedar, not by trusting the caller).
     fn manage_perm(scope: &Scope) -> Permission {
         match scope {
-            Scope::System => Permission::ManageGrants,
+            Scope::System => Permission::ManageSystemGrants,
             Scope::Organization(id) => Permission::ManageOrgGrants(id.clone()),
             Scope::Project(id) => Permission::ManageProjectGrants(id.clone()),
         }
@@ -380,7 +380,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
     #[instrument(skip(self, caller))]
     pub async fn list(&self, caller: &CallerContext) -> DomainResult<Vec<Grant>> {
         self.permission_service
-            .check(caller, Permission::ManageGrants)
+            .check(caller, Permission::ManageSystemGrants)
             .await?;
         self.grant_repo.list_all().await
     }
@@ -512,7 +512,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         // can probe arbitrary ids; the subsequent delete is then a no-op.
         let perm = grant
             .as_ref()
-            .map_or(Permission::ManageGrants, |g| Self::manage_perm(&g.scope));
+            .map_or(Permission::ManageSystemGrants, |g| Self::manage_perm(&g.scope));
         self.permission_service.check(caller, perm).await?;
 
         // Last-owner guard: a scope must always retain at least one *human* owner.

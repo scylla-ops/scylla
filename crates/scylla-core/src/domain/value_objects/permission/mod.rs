@@ -95,8 +95,12 @@ pub enum Permission {
     ListAgents(OrganizationId),
 
     // ── grants / policies / roles ──────────────────────────────────────
+    // One grant-management permission per scope (`manage<Scope>Grants`); the
+    // UI presents them as a single "manage grants" concept. They stay separate
+    // because each pins a different Cedar resource type (the anti-escalation
+    // fence) — see the comment on `key()` below.
     /// System-scoped grant management (admin / service): manage any grant.
-    ManageGrants,
+    ManageSystemGrants,
     /// Manage grants whose scope is this organization (org-admins). Cedar
     /// hierarchy bounds it to the org and the projects beneath it, so it cannot
     /// be used to touch grants in another org (anti-escalation).
@@ -175,9 +179,10 @@ impl Permission {
 
             // Distinct action ids per scope so the Cedar schema pins `appliesTo`
             // (System / Organization / Project) per action. A single shared
-            // "manageGrants" would let one over-broad permit on it authorize all
-            // three scopes (scope load-bearing only via the resource arm).
-            Self::ManageGrants => "manageGrants",
+            // action would let one over-broad permit on it authorize all three
+            // scopes (scope load-bearing only via the resource arm), so the
+            // split is the anti-escalation fence — uniform `manage<Scope>Grants`.
+            Self::ManageSystemGrants => "manageSystemGrants",
             Self::ManageOrgGrants(_) => "manageOrgGrants",
             Self::ManageProjectGrants(_) => "manageProjectGrants",
             Self::ManagePolicies => "managePolicies",
@@ -200,7 +205,7 @@ impl Permission {
             | Self::ListPipelines
             | Self::CreateJob
             | Self::ListJobs
-            | Self::ManageGrants
+            | Self::ManageSystemGrants
             | Self::ManagePolicies
             | Self::ManageRoles => ResourceRef::System,
 
@@ -361,7 +366,7 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::CreateAgent(org.clone()),
         Permission::ListAgents(org.clone()),
         // grants / policies / roles
-        Permission::ManageGrants,
+        Permission::ManageSystemGrants,
         Permission::ManageOrgGrants(org.clone()),
         Permission::ManageProjectGrants(project),
         Permission::ManagePolicies,
