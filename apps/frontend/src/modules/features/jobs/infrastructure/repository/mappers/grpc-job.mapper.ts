@@ -34,6 +34,8 @@ export class GrpcJobMapper {
       nodeExecutions: job.nodeExecutions.map(GrpcJobMapper.nodeExecutionToDomain),
       createdAt: timestampToIso(job.createdAt),
       updatedAt: timestampToIso(job.updatedAt),
+      startedAt: timestampToIsoOpt(job.startedAt),
+      finishedAt: timestampToIsoOpt(job.finishedAt),
     };
   }
 
