@@ -37,10 +37,23 @@ message JobDispatch {
 }
 
 message AgentNode {
-  common.NodeId          node_id = 1;
-  repeated common.NodeId deps    = 2;
-  string                 command = 3;
-  repeated string        args    = 4;
+  common.NodeId          node_id     = 1;
+  repeated common.NodeId deps        = 2;
+  string                 working_dir = 3; // relative to the job workspace; "" = workspace root
+  repeated ResolvedEnv   env         = 4; // env overlay, secrets already resolved
+  oneof step {
+    common.ExecStep   exec   = 5;
+    common.ScriptStep script = 6;
+  }
+}
+
+// A fully-resolved environment variable handed to the agent: any secret
+// reference has already been looked up control-plane-side. `masked` marks a
+// value that originated from a secret so the agent can scrub it from logs.
+message ResolvedEnv {
+  string key    = 1;
+  string value  = 2;
+  bool   masked = 3;
 }
 
 // Mirrors the domain JobEvent: a kind plus the fields relevant to that kind.

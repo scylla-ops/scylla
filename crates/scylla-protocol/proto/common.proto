@@ -38,6 +38,30 @@ message NodeId { string value = 1; }
 // An email address. Validated (RFC-5322-ish) and stored lowercased on write.
 message Email { string value = 1; }
 
+// How a ScriptStep's script is interpreted. The agent runs the script through
+// the named shell with fail-fast semantics. SHELL_UNSPECIFIED is treated as sh.
+enum Shell {
+  SHELL_UNSPECIFIED = 0; // treated as SHELL_SH
+  SHELL_SH          = 1; // POSIX /bin/sh — always present in the agent image
+  SHELL_BASH        = 2; // /bin/bash — requires bash in the agent base image
+}
+
+// A direct process execution: `command` is resolved via PATH and `args` is a
+// literal argv vector (never word-split). No shell is involved, so nothing is
+// interpolated — deterministic and injection-proof.
+message ExecStep {
+  string command = 1;
+  repeated string args = 2;
+}
+
+// A shell script run via the chosen shell. The whole (possibly multi-line)
+// script is the unit of execution; the shell parses quoting, pipes, globs,
+// redirects and `$VAR` expansion.
+message ScriptStep {
+  string script = 1;
+  Shell  shell  = 2;
+}
+
 // Pagination request parameters
 message PaginationRequest {
   // Page number (1-indexed, defaults to 1)

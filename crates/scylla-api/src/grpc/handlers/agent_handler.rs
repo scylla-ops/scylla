@@ -8,11 +8,11 @@ use scylla_core::application::{
 use scylla_core::application::{JobDispatch, JobEvent};
 use scylla_core::domain::entities::{AppId, JobId, JobLog};
 use scylla_core::domain::value_objects::job::LogStream;
-use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_core::domain::value_objects::pipeline::{NodeId, Shell, Step};
 use scylla_core::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use scylla_protocol::services::agent::{
-    AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, JobEventKind, agent_down,
-    agent_service_server::AgentService, agent_up,
+    AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, JobEventKind, ResolvedEnv,
+    agent_down, agent_node, agent_service_server::AgentService, agent_up,
 };
 use scylla_protocol::services::common;
 use std::pin::Pin;
@@ -216,8 +216,22 @@ fn dispatch_to_proto(dispatch: &JobDispatch) -> AgentDown {
                     value: d.to_string(),
                 })
                 .collect(),
-            command: n.command().to_string(),
-            args: n.args().to_vec(),
+            working_dir: n
+                .working_dir()
+                .map(|wd| wd.as_str().to_string())
+                .unwrap_or_default(),
+            // Phase A: only literal env values exist (secret refs are rejected at
+            // create time), so nothing is masked yet.
+            env: n
+                .env()
+                .iter()
+                .map(|ev| ResolvedEnv {
+                    key: ev.key().to_string(),
+                    value: ev.value().to_string(),
+                    masked: false,
+                })
+                .collect(),
+            step: Some(step_to_proto(n.step())),
         })
         .collect();
     AgentDown {
@@ -230,6 +244,22 @@ fn dispatch_to_proto(dispatch: &JobDispatch) -> AgentDown {
             }),
             nodes,
         })),
+    }
+}
+
+fn step_to_proto(step: &Step) -> agent_node::Step {
+    match step {
+        Step::Exec { command, args } => agent_node::Step::Exec(common::ExecStep {
+            command: command.clone(),
+            args: args.clone(),
+        }),
+        Step::Script { script, shell } => agent_node::Step::Script(common::ScriptStep {
+            script: script.clone(),
+            shell: match shell {
+                Shell::Sh => common::Shell::Sh,
+                Shell::Bash => common::Shell::Bash,
+            } as i32,
+        }),
     }
 }
 

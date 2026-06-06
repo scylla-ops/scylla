@@ -8,6 +8,7 @@ import { DeletableEdge } from './DeletableEdge.tsx';
 import { EDGE_COLOR, DEFAULT_EDGE_STYLE, type PipelineNodeData, START_NODE_ID } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import { useBlueprintState } from '@/modules/features/pipeline/presentation/hooks/use-blueprint-state.ts';
+import type { NodeFormValue } from './StepNodeFormDialog.tsx';
 
 const nodeTypes = { pipelineStep: PipelineStepNode, startNode: StartNode };
 const edgeTypes = { deletable: DeletableEdge };
@@ -18,8 +19,8 @@ const defaultEdgeOptions = {
 };
 
 export interface BlueprintCanvasHandle {
-  addNode: (nodeId: string, command: string, args: string[]) => void;
-  editNode: (originalId: string, newNodeId: string, command: string, args: string[]) => void;
+  addNode: (nodeId: string, value: NodeFormValue) => void;
+  editNode: (originalId: string, newNodeId: string, value: NodeFormValue) => void;
 }
 
 interface BlueprintCanvasProps {

@@ -8,9 +8,10 @@ use tonic::{Code, Request};
 use tracing::{error, info, warn};
 
 use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir};
 use scylla_protocol::services::agent::agent_service_client::AgentServiceClient;
-use scylla_protocol::services::agent::{AgentDown, AgentNode, AgentUp, agent_down};
+use scylla_protocol::services::agent::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
+use scylla_protocol::services::common;
 use scylla_protocol::services::app::IssueTokenRequest;
 use scylla_protocol::services::app::app_auth_service_client::AppAuthServiceClient;
 
@@ -165,7 +166,12 @@ impl Agent {
                                 continue;
                             }
                         };
-                        let executor = Executor::new(up_tx.clone(), job_id.clone());
+                        let executor = Executor::new(
+                            up_tx.clone(),
+                            job_id.clone(),
+                            self.config.workspace_root.clone(),
+                            self.config.keep_workspace,
+                        );
                         // V1: sequential — finish the job before accepting the next.
                         if let Err(e) = executor.run(nodes).await {
                             warn!(%job_id, error = %e, "job execution failed");
@@ -223,7 +229,35 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                 .iter()
                 .map(|d| NodeId::new(&d.value).map_err(|e| e.to_string()))
                 .collect::<Result<Vec<_>, _>>()?;
-            PipelineNode::new(id, deps, n.command, n.args).map_err(|e| e.to_string())
+            let working_dir = match n.working_dir.trim() {
+                "" => None,
+                s => Some(WorkingDir::new(s).map_err(|e| e.to_string())?),
+            };
+            let env = n
+                .env
+                .into_iter()
+                .map(|e| {
+                    let key = EnvKey::new(&e.key).map_err(|err| err.to_string())?;
+                    Ok::<_, String>(EnvVar::new(key, e.value))
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let step = match n.step {
+                Some(agent_node::Step::Exec(e)) => {
+                    Step::exec(e.command, e.args).map_err(|err| err.to_string())?
+                }
+                Some(agent_node::Step::Script(s)) => {
+                    Step::script(s.script, shell_from_proto(s.shell)).map_err(|err| err.to_string())?
+                }
+                None => return Err("dispatch node is missing its step".to_string()),
+            };
+            Ok(PipelineNode::new(id, deps, step, working_dir, env))
         })
         .collect()
+}
+
+fn shell_from_proto(raw: i32) -> Shell {
+    match common::Shell::try_from(raw).unwrap_or_default() {
+        common::Shell::Bash => Shell::Bash,
+        common::Shell::Sh | common::Shell::Unspecified => Shell::Sh,
+    }
 }

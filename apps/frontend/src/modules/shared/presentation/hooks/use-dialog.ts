@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 export interface DialogState<T = void> {
   isOpen: boolean;
   data: T | null;
-  open: T extends void ? () => void : (data: T) => void;
+  open: [T] extends [void] ? () => void : (data: T) => void;
   close: () => void;
 }
 

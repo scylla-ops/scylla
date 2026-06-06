@@ -12,6 +12,11 @@ export const PipelineStepNode = ({ id, data, selected }: NodeProps<PipelineNodeD
     deleteElements({ nodes: [{ id }] });
   };
 
+  const scriptPreview =
+    data.kind === 'script'
+      ? (data.script.split('\n').find(line => line.trim() !== '') ?? '')
+      : '';
+
   return (
     <Card
       className={`w-[260px] p-0 overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105 hover:border-primary hover:shadow-lg ${selected ? 'ring-2 ring-primary shadow-lg scale-105' : 'shadow-sm'}`}
@@ -37,15 +42,28 @@ export const PipelineStepNode = ({ id, data, selected }: NodeProps<PipelineNodeD
       </div>
 
       <div className='px-3 py-2 space-y-1'>
-        <div className='flex items-center gap-1.5'>
-          <span className='text-xs text-muted-foreground'>cmd:</span>
-          <code className='text-xs font-mono bg-muted px-1.5 py-0.5 rounded'>{data.command}</code>
-        </div>
-        {data.args.length > 0 && (
+        {data.kind === 'exec' ? (
+          <>
+            <div className='flex items-center gap-1.5'>
+              <span className='text-xs text-muted-foreground'>cmd:</span>
+              <code className='text-xs font-mono bg-muted px-1.5 py-0.5 rounded'>{data.command}</code>
+            </div>
+            {data.args.length > 0 && (
+              <div className='flex items-center gap-1.5'>
+                <span className='text-xs text-muted-foreground'>args:</span>
+                <code className='text-xs font-mono bg-muted px-1.5 py-0.5 rounded truncate max-w-[180px]'>
+                  {data.args.join(' ')}
+                </code>
+              </div>
+            )}
+          </>
+        ) : (
           <div className='flex items-center gap-1.5'>
-            <span className='text-xs text-muted-foreground'>args:</span>
+            <span className='text-[10px] font-semibold uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded'>
+              {data.shell}
+            </span>
             <code className='text-xs font-mono bg-muted px-1.5 py-0.5 rounded truncate max-w-[180px]'>
-              {data.args.join(' ')}
+              {scriptPreview}
             </code>
           </div>
         )}

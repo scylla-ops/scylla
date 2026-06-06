@@ -9,13 +9,15 @@ use scylla_core::application::{
     PipelineRepository, PipelineUseCases, ProjectRepository,
 };
 use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
-use scylla_core::domain::value_objects::pipeline::{NodeId, PipelineName};
+use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, PipelineName, Shell, Step, WorkingDir};
+use scylla_protocol::services::common;
 use scylla_protocol::services::job::JobResponse;
 use scylla_protocol::services::pipeline::{
-    CreatePipelineRequest, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest,
-    ListOrganizationPipelinesRequest, ListPipelinesRequest, ListPipelinesResponse,
-    ListProjectPipelinesRequest, PipelineResponse, PipelineSummary, RunPipelineRequest,
-    UpdatePipelineRequest, pipeline_service_server::PipelineService,
+    CreatePipelineRequest, DeletePipelineRequest, DeletePipelineResponse, EnvVar as ProtoEnvVar,
+    GetPipelineRequest, ListOrganizationPipelinesRequest, ListPipelinesRequest,
+    ListPipelinesResponse, ListProjectPipelinesRequest, PipelineNode as ProtoPipelineNode,
+    PipelineResponse, PipelineSummary, RunPipelineRequest, UpdatePipelineRequest, env_var,
+    pipeline_node, pipeline_service_server::PipelineService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -72,16 +74,7 @@ impl<
         let nodes: Vec<PipelineNode> = req
             .nodes
             .into_iter()
-            .map(|n| {
-                let node_id = NodeId::new(&required(n.node_id, "node_id")?)
-                    .map_err(domain_error_to_status)?;
-                let deps: Vec<NodeId> = n
-                    .deps
-                    .into_iter()
-                    .map(|d| NodeId::new(&d.value).map_err(domain_error_to_status))
-                    .collect::<Result<_, _>>()?;
-                PipelineNode::new(node_id, deps, n.command, n.args).map_err(domain_error_to_status)
-            })
+            .map(proto_node_to_domain)
             .collect::<Result<_, _>>()?;
 
         let pipeline = self
@@ -130,17 +123,7 @@ impl<
             let parsed: Vec<PipelineNode> = req
                 .nodes
                 .into_iter()
-                .map(|n| {
-                    let node_id = NodeId::new(&required(n.node_id, "node_id")?)
-                        .map_err(domain_error_to_status)?;
-                    let deps: Vec<NodeId> = n
-                        .deps
-                        .into_iter()
-                        .map(|d| NodeId::new(&d.value).map_err(domain_error_to_status))
-                        .collect::<Result<_, _>>()?;
-                    PipelineNode::new(node_id, deps, n.command, n.args)
-                        .map_err(domain_error_to_status)
-                })
+                .map(proto_node_to_domain)
                 .collect::<Result<_, _>>()?;
             Some(parsed)
         };
@@ -279,5 +262,64 @@ impl<
         }
 
         Ok(Response::new(job_to_proto(&job)))
+    }
+}
+
+/// Convert a wire `PipelineNode` into the validated domain node. Returns a
+/// `Status` (not a `DomainError`) so callers can `?` it directly inside a gRPC
+/// handler.
+fn proto_node_to_domain(n: ProtoPipelineNode) -> Result<PipelineNode, Status> {
+    let node_id = NodeId::new(&required(n.node_id, "node_id")?).map_err(domain_error_to_status)?;
+    let deps: Vec<NodeId> = n
+        .deps
+        .into_iter()
+        .map(|d| NodeId::new(&d.value).map_err(domain_error_to_status))
+        .collect::<Result<_, _>>()?;
+    let working_dir = match n.working_dir.trim() {
+        "" => None,
+        s => Some(WorkingDir::new(s).map_err(domain_error_to_status)?),
+    };
+    let env = n
+        .env
+        .into_iter()
+        .map(proto_env_to_domain)
+        .collect::<Result<_, _>>()?;
+    let step = match n.step {
+        Some(pipeline_node::Step::Exec(e)) => {
+            Step::exec(e.command, e.args).map_err(domain_error_to_status)?
+        }
+        Some(pipeline_node::Step::Script(s)) => {
+            Step::script(s.script, proto_shell(s.shell)).map_err(domain_error_to_status)?
+        }
+        None => {
+            return Err(Status::invalid_argument(
+                "pipeline node is missing its step (exec or script)",
+            ));
+        }
+    };
+    Ok(PipelineNode::new(node_id, deps, step, working_dir, env))
+}
+
+/// Map a wire env var to the domain. Secret references are accepted on the wire
+/// but not yet resolvable, so they are rejected with `UNIMPLEMENTED` until the
+/// secret store lands.
+fn proto_env_to_domain(e: ProtoEnvVar) -> Result<EnvVar, Status> {
+    let key = EnvKey::new(&e.key).map_err(domain_error_to_status)?;
+    match e.source {
+        Some(env_var::Source::Value(v)) => Ok(EnvVar::new(key, v)),
+        Some(env_var::Source::SecretRef(_)) => Err(Status::unimplemented(
+            "secret references are not yet supported; use an inline value",
+        )),
+        None => Err(Status::invalid_argument(format!(
+            "env var `{}` has no value",
+            e.key
+        ))),
+    }
+}
+
+fn proto_shell(raw: i32) -> Shell {
+    match common::Shell::try_from(raw).unwrap_or_default() {
+        common::Shell::Bash => Shell::Bash,
+        common::Shell::Sh | common::Shell::Unspecified => Shell::Sh,
     }
 }

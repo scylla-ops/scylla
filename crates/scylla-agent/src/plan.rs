@@ -113,16 +113,16 @@ impl<'a> DagPlan<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_core::domain::value_objects::pipeline::NodeId;
+    use scylla_core::domain::value_objects::pipeline::{NodeId, Step};
 
     fn node(id: &str, deps: &[&str]) -> PipelineNode {
         PipelineNode::new(
             NodeId::new(id).unwrap(),
             deps.iter().map(|d| NodeId::new(*d).unwrap()).collect(),
-            "echo".into(),
+            Step::exec("echo".into(), vec![]).unwrap(),
+            None,
             vec![],
         )
-        .unwrap()
     }
 
     #[test]

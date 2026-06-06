@@ -5,10 +5,10 @@ use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
 use crate::domain::entities::{Pipeline, PipelineId, PipelineNode, Project, ProjectId};
-use crate::domain::value_objects::pipeline::{NodeId, PipelineName};
+use crate::domain::value_objects::pipeline::{NodeId, PipelineName, Step};
 
-/// Build a single pipeline node with the given id and deps. Defaults to
-/// `echo` with one positional arg (the node id) — non-empty by Pipeline rules.
+/// Build a single pipeline node with the given id and deps. Defaults to an
+/// `echo <id>` exec step — non-empty by Pipeline rules.
 #[must_use]
 pub fn node(id: &str, deps: &[&str]) -> PipelineNode {
     PipelineNode::new(
@@ -16,10 +16,10 @@ pub fn node(id: &str, deps: &[&str]) -> PipelineNode {
         deps.iter()
             .map(|d| NodeId::new(*d).expect("test dep id invalid"))
             .collect(),
-        "echo".into(),
-        vec![id.into()],
+        Step::exec("echo".into(), vec![id.into()]).expect("test step invalid"),
+        None,
+        vec![],
     )
-    .expect("test pipeline node invalid")
 }
 
 pub struct PipelineBuilder;

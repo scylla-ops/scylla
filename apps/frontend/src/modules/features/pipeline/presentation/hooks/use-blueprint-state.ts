@@ -16,6 +16,7 @@ import {
   START_NODE_ID,
   stepsToFlow,
 } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
+import type { NodeFormValue } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx';
 
 interface UseBlueprintStateParams {
   steps: PipelineStep[];
@@ -122,14 +123,14 @@ export function useBlueprintState({ steps, pipelineName, onStepsChange }: UseBlu
 
   // ── Add node handler ──
   const handleAddNode = useCallback(
-    (nodeId: string, command: string, args: string[]) => {
+    (nodeId: string, value: NodeFormValue) => {
       setNodes(currentNodes => {
         const finalId = generateUniqueNodeId(nodeId, new Set(currentNodes.map(n => n.id)));
         const newNode: Node = {
           id: finalId,
           type: 'pipelineStep',
           position: { x: 400 + Math.random() * 200, y: Math.random() * 300 },
-          data: { id: finalId, command, args, deps: [] } satisfies PipelineNodeData,
+          data: { id: finalId, deps: [], ...value } satisfies PipelineNodeData,
         };
         const updatedNodes = [...currentNodes, newNode];
         setEdges(currentEdges => {
@@ -144,12 +145,12 @@ export function useBlueprintState({ steps, pipelineName, onStepsChange }: UseBlu
 
   // ── Edit node handler ──
   const handleEditNode = useCallback(
-    (originalId: string, newNodeId: string, command: string, args: string[]) => {
+    (originalId: string, newNodeId: string, value: NodeFormValue) => {
       setNodes(currentNodes => {
         const finalId = generateUniqueNodeId(newNodeId, new Set(currentNodes.map(n => n.id)), originalId);
         const updatedNodes = currentNodes.map(node => {
           if (node.id === originalId) {
-            return { ...node, id: finalId, data: { id: finalId, command, args, deps: [] } satisfies PipelineNodeData };
+            return { ...node, id: finalId, data: { id: finalId, deps: [], ...value } satisfies PipelineNodeData };
           }
           const data = node.data as PipelineNodeData;
           if (data.deps?.includes(originalId)) {

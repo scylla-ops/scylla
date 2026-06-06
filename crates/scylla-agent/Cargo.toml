@@ -30,5 +30,11 @@ tracing-subscriber = { workspace = true }
 # time
 chrono = { workspace = true }
 
+# unix process-group signalling (kill the shell's children, not just the shell).
+# Agents run on Linux; this is absent on other targets where the kill code is
+# compiled out.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [lints]
 workspace = true

@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Parser)]
 #[command(name = "scylla-agent", about = "Scylla pipeline execution agent")]
@@ -37,4 +38,18 @@ pub struct AgentConfig {
     /// Seconds to wait between (re)connection attempts.
     #[arg(long, env = "SCYLLA_RECONNECT_BACKOFF_SECS", default_value_t = 3, value_parser = clap::value_parser!(u64).range(1..))]
     pub reconnect_backoff_secs: u64,
+
+    /// Root directory under which each job is given its own workspace
+    /// (`<root>/<job_id>`). All nodes of a job share that directory, so build
+    /// artifacts flow to downstream nodes; it is removed when the job ends.
+    #[arg(
+        long,
+        env = "SCYLLA_WORKSPACE_ROOT",
+        default_value = "/var/lib/scylla/workspaces"
+    )]
+    pub workspace_root: PathBuf,
+
+    /// Keep the per-job workspace on disk after the job finishes (debugging).
+    #[arg(long, env = "SCYLLA_KEEP_WORKSPACE", default_value_t = false)]
+    pub keep_workspace: bool,
 }

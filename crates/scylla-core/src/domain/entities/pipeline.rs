@@ -1,7 +1,7 @@
 use crate::domain::clock;
 use crate::domain::entities::{PipelineId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::pipeline::{NodeId, PipelineName};
+use crate::domain::value_objects::pipeline::{EnvVar, NodeId, PipelineName, Step, WorkingDir};
 use chrono::{DateTime, Utc};
 use std::collections::{BTreeSet, HashMap, HashSet};
 
@@ -9,26 +9,36 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 pub struct PipelineNode {
     id: NodeId,
     deps: Vec<NodeId>,
-    command: String,
-    args: Vec<String>,
+    /// Working directory for the step, relative to the per-job workspace root.
+    /// `None` runs in the workspace root.
+    #[serde(default)]
+    working_dir: Option<WorkingDir>,
+    /// Node-scoped environment overlay (literal values).
+    #[serde(default)]
+    env: Vec<EnvVar>,
+    /// What the node runs: a direct exec or a shell script.
+    step: Step,
 }
 
 impl PipelineNode {
+    /// Assemble a node. The `step`, `working_dir`, and `env` are already
+    /// validated by their own constructors/types, so this only wires them
+    /// together; DAG-level checks live in [`Pipeline::create`].
+    #[must_use]
     pub fn new(
         id: NodeId,
         deps: Vec<NodeId>,
-        command: String,
-        args: Vec<String>,
-    ) -> DomainResult<Self> {
-        if command.trim().is_empty() {
-            return Err(DomainError::validation("Action command cannot be empty"));
-        }
-        Ok(Self {
+        step: Step,
+        working_dir: Option<WorkingDir>,
+        env: Vec<EnvVar>,
+    ) -> Self {
+        Self {
             id,
             deps,
-            command,
-            args,
-        })
+            working_dir,
+            env,
+            step,
+        }
     }
 
     #[must_use]
@@ -42,13 +52,18 @@ impl PipelineNode {
     }
 
     #[must_use]
-    pub fn command(&self) -> &str {
-        &self.command
+    pub fn step(&self) -> &Step {
+        &self.step
     }
 
     #[must_use]
-    pub fn args(&self) -> &[String] {
-        &self.args
+    pub fn working_dir(&self) -> Option<&WorkingDir> {
+        self.working_dir.as_ref()
+    }
+
+    #[must_use]
+    pub fn env(&self) -> &[EnvVar] {
+        &self.env
     }
 }
 
@@ -301,6 +316,7 @@ impl Pipeline {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::value_objects::pipeline::Step;
 
     fn node_id(s: &str) -> NodeId {
         NodeId::new(s).unwrap()
@@ -318,10 +334,10 @@ mod tests {
         PipelineNode::new(
             node_id(id),
             deps.iter().map(|d| node_id(d)).collect(),
-            "echo".into(),
+            Step::exec("echo".into(), vec![]).unwrap(),
+            None,
             vec![],
         )
-        .unwrap()
     }
 
     #[test]
@@ -433,6 +449,6 @@ mod tests {
 
     #[test]
     fn rejects_empty_action_command() {
-        assert!(PipelineNode::new(node_id("a"), vec![], "   ".into(), vec![]).is_err());
+        assert!(Step::exec("   ".into(), vec![]).is_err());
     }
 }

@@ -345,13 +345,14 @@ mod tests {
     }
 
     fn action(id: &str, deps: &[&str]) -> crate::domain::entities::PipelineNode {
+        use crate::domain::value_objects::pipeline::Step;
         crate::domain::entities::PipelineNode::new(
             node_id(id),
             deps.iter().map(|d| node_id(d)).collect(),
-            "echo".into(),
+            Step::exec("echo".into(), vec![]).unwrap(),
+            None,
             vec![],
         )
-        .unwrap()
     }
 
     // --- Creation ---

@@ -1,8 +1,10 @@
 use crate::grpc::convert::{ts, wrap};
 use scylla_core::domain::entities::{Pipeline, PipelineNode as DomainPipelineNode};
-use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_core::domain::value_objects::pipeline::{EnvVar as DomainEnvVar, NodeId, Shell, Step};
 use scylla_protocol::services::common;
-use scylla_protocol::services::pipeline::{PipelineNode, PipelineResponse, PipelineSummary};
+use scylla_protocol::services::pipeline::{
+    EnvVar, PipelineNode, PipelineResponse, PipelineSummary, env_var, pipeline_node,
+};
 
 pub fn pipeline_to_proto(pipeline: &Pipeline) -> PipelineResponse {
     PipelineResponse {
@@ -40,7 +42,38 @@ pub fn pipeline_node_to_proto(node: &DomainPipelineNode) -> PipelineNode {
                 value: d.to_string(),
             })
             .collect(),
-        command: node.command().to_string(),
-        args: node.args().to_vec(),
+        working_dir: node
+            .working_dir()
+            .map(|wd| wd.as_str().to_string())
+            .unwrap_or_default(),
+        env: node.env().iter().map(env_to_proto).collect(),
+        step: Some(step_to_proto(node.step())),
+    }
+}
+
+fn env_to_proto(ev: &DomainEnvVar) -> EnvVar {
+    EnvVar {
+        key: ev.key().to_string(),
+        source: Some(env_var::Source::Value(ev.value().to_string())),
+    }
+}
+
+fn step_to_proto(step: &Step) -> pipeline_node::Step {
+    match step {
+        Step::Exec { command, args } => pipeline_node::Step::Exec(common::ExecStep {
+            command: command.clone(),
+            args: args.clone(),
+        }),
+        Step::Script { script, shell } => pipeline_node::Step::Script(common::ScriptStep {
+            script: script.clone(),
+            shell: shell_to_proto(*shell) as i32,
+        }),
+    }
+}
+
+fn shell_to_proto(shell: Shell) -> common::Shell {
+    match shell {
+        Shell::Sh => common::Shell::Sh,
+        Shell::Bash => common::Shell::Bash,
     }
 }

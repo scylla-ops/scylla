@@ -33,6 +33,12 @@ pub enum ExecutionError {
     #[error("failed to spawn command: {0}")]
     Spawn(#[source] std::io::Error),
 
+    #[error("workspace I/O error: {0}")]
+    Workspace(#[source] std::io::Error),
+
+    #[error("node {node_id} working directory escaped the job workspace")]
+    WorkspaceEscape { node_id: String },
+
     #[error("failed to publish status: {0}")]
     Publish(String),
 

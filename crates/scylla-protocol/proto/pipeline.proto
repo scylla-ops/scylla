@@ -22,10 +22,25 @@ message RunPipelineRequest {
 }
 
 message PipelineNode {
-  common.NodeId node_id = 1;
-  repeated common.NodeId deps = 2;
-  string command = 3;
-  repeated string args = 4;
+  common.NodeId          node_id     = 1;
+  repeated common.NodeId deps        = 2;
+  string                 working_dir = 3; // relative to the job workspace; "" = workspace root
+  repeated EnvVar        env         = 4; // node-scoped environment overlay
+  oneof step {
+    common.ExecStep   exec   = 5; // argv, no shell — deterministic, injection-proof
+    common.ScriptStep script = 6; // multi-line shell script — the ergonomic default
+  }
+}
+
+// One environment variable for a node. The value is either an inline literal
+// or a reference to a stored secret, resolved control-plane-side at dispatch
+// time (the agent never sees the secret store).
+message EnvVar {
+  string key = 1;
+  oneof source {
+    string value      = 2; // inline literal
+    string secret_ref = 3; // key of a stored secret to resolve at dispatch
+  }
 }
 
 message CreatePipelineRequest {

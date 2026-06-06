@@ -10,12 +10,28 @@ export interface PipelineMetadata extends PipelineIdentity {
   updatedAt: string;
 }
 
-export interface PipelineStep {
+export type Shell = 'sh' | 'bash';
+
+interface PipelineStepBase {
   id: string;
   deps: string[];
+  workingDir?: string;
+  env: Record<string, string>;
+}
+
+export interface ExecPipelineStep extends PipelineStepBase {
+  kind: 'exec';
   command: string;
   args: string[];
 }
+
+export interface ScriptPipelineStep extends PipelineStepBase {
+  kind: 'script';
+  script: string;
+  shell: Shell;
+}
+
+export type PipelineStep = ExecPipelineStep | ScriptPipelineStep;
 
 export interface Pipeline extends PipelineIdentity {
   nodes: PipelineStep[];
