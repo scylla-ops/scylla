@@ -16,6 +16,7 @@ use chrono::{DateTime, Utc};
 use derive_more::Constructor;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::{instrument, warn};
 
 /// Label given to an agent's initial secret, created alongside the agent.
@@ -27,34 +28,61 @@ pub enum DispatchOutcome {
     NoAgentAvailable,
 }
 
-/// Chooses a connected agent App and hands it a job. Selection is pure Cedar:
-/// an agent is eligible iff `check(App, ExecuteJob(pipeline))` passes — i.e. it
-/// holds an agent grant covering the pipeline's org/project. No ad-hoc routing.
-#[derive(Constructor)]
+/// Chooses a connected agent App and hands it a job. Eligibility is pure Cedar
+/// (`check(App, ExecuteJob(pipeline))` — the agent holds a grant covering the
+/// pipeline's org/project); among the eligible agents, jobs are spread
+/// round-robin so two equally-authorized agents share the load instead of the
+/// first one taking every job. No ad-hoc routing.
 pub struct DispatchUseCases<W: AgentDispatch, PS: PermissionService> {
     registry: Arc<W>,
     permission_service: Arc<PS>,
+    /// Rotating start offset into `connected()`: each dispatch begins its scan
+    /// one agent further along, so consecutive jobs land on different agents.
+    /// Wraps freely — only the offset's relative position matters.
+    next: AtomicUsize,
 }
 
 impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
-    /// Dispatch a pipeline's job to the first connected agent authorized to
-    /// execute it. Best-effort: if none is connected+authorized the job stays
-    /// pending (`NoAgentAvailable`) rather than failing the run.
+    #[must_use]
+    pub fn new(registry: Arc<W>, permission_service: Arc<PS>) -> Self {
+        Self {
+            registry,
+            permission_service,
+            next: AtomicUsize::new(0),
+        }
+    }
+
+    /// Dispatch a pipeline's job to a connected agent authorized to execute it,
+    /// rotating the starting point each call so eligible agents share the load.
+    /// Best-effort: if none is connected+authorized the job stays pending
+    /// (`NoAgentAvailable`) rather than failing the run.
     #[instrument(skip(self, dispatch), fields(pipeline_id = %pipeline_id, job_id = %dispatch.job_id))]
     pub async fn dispatch_job(
         &self,
         pipeline_id: &PipelineId,
         dispatch: &JobDispatch,
     ) -> DomainResult<DispatchOutcome> {
-        for app_id in self.registry.connected() {
+        let agents = self.registry.connected();
+        if agents.is_empty() {
+            warn!(pipeline_id = %pipeline_id, "no connected agent; job left pending");
+            return Ok(DispatchOutcome::NoAgentAvailable);
+        }
+
+        // Round-robin: scan from a rotating offset so consecutive dispatches
+        // don't all hit `connected()`'s first entry. The first *eligible* agent
+        // in that rotated order wins.
+        let start = self.next.fetch_add(1, Ordering::Relaxed);
+        let n = agents.len();
+        for i in 0..n {
+            let app_id = &agents[start.wrapping_add(i) % n];
             let caller = CallerContext::App(app_id.clone());
             match self
                 .permission_service
                 .check(&caller, Permission::ExecuteJob(pipeline_id.clone()))
                 .await
             {
-                Ok(()) => match self.registry.dispatch(&app_id, dispatch).await {
-                    Ok(()) => return Ok(DispatchOutcome::Dispatched(app_id)),
+                Ok(()) => match self.registry.dispatch(app_id, dispatch).await {
+                    Ok(()) => return Ok(DispatchOutcome::Dispatched(app_id.clone())),
                     // The agent disconnected since `connected()` snapshotted
                     // (check-then-act race) or its queue is gone — try the next
                     // candidate rather than failing the whole run.
@@ -277,6 +305,15 @@ mod tests {
         }
     }
 
+    struct StubPermsAll;
+
+    #[async_trait]
+    impl PermissionService for StubPermsAll {
+        async fn check(&self, _caller: &CallerContext, _perm: Permission) -> DomainResult<()> {
+            Ok(())
+        }
+    }
+
     fn dispatch() -> JobDispatch {
         JobDispatch {
             job_id: "j1".to_string(),
@@ -300,6 +337,37 @@ mod tests {
 
         assert!(matches!(outcome, DispatchOutcome::Dispatched(id) if id.as_str() == "app-ok"));
         assert_eq!(registry.dispatched.lock().unwrap().as_slice(), ["app-ok"]);
+    }
+
+    #[tokio::test]
+    async fn spreads_jobs_round_robin_across_authorized_agents() {
+        // Two equally-authorized connected agents. Before the round-robin fix
+        // every job went to the first one and the second starved; now four
+        // dispatches must split two-and-two.
+        let registry = Arc::new(StubRegistry {
+            connected: vec![AppId::new("app-a"), AppId::new("app-b")],
+            dispatched: Mutex::new(vec![]),
+        });
+        let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPermsAll));
+
+        for _ in 0..4 {
+            uc.dispatch_job(&PipelineId::new("pl1"), &dispatch())
+                .await
+                .unwrap();
+        }
+
+        let dispatched = registry.dispatched.lock().unwrap().clone();
+        assert_eq!(dispatched.len(), 4);
+        assert_eq!(
+            dispatched.iter().filter(|x| x.as_str() == "app-a").count(),
+            2,
+            "app-a should get half the jobs"
+        );
+        assert_eq!(
+            dispatched.iter().filter(|x| x.as_str() == "app-b").count(),
+            2,
+            "app-b should get half the jobs (no longer starved)"
+        );
     }
 
     #[tokio::test]
