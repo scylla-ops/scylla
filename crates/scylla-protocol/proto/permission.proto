@@ -60,21 +60,17 @@ enum Permission {
   APPEND_JOB_LOG = 46;
   CREATE_APP = 47;
   READ_APP = 48;
-  DELETE_APP = 49;
-  LIST_APPS_BY_ORGANIZATION = 50;
-  CREATE_AGENT = 51;
-  LIST_AGENTS = 52;
-  // 53 (READ_AGENT) and 55 (DELETE_AGENT) folded into READ_APP / DELETE_APP —
-  // an agent is a specialized app, so its read/delete reuse the App actions.
-  reserved 53, 55;
-  reserved "READ_AGENT", "DELETE_AGENT";
   // Run stats of an app (an agent reports its job-execution stats this way).
-  READ_APP_STATS = 54;
-  MANAGE_SYSTEM_GRANTS = 56;
-  MANAGE_ORG_GRANTS = 57;
-  MANAGE_PROJECT_GRANTS = 58;
-  MANAGE_POLICIES = 59;
-  MANAGE_ROLES = 60;
+  READ_APP_STATS = 49;
+  DELETE_APP = 50;
+  LIST_APPS_BY_ORGANIZATION = 51;
+  CREATE_AGENT = 52;
+  LIST_AGENTS = 53;
+  MANAGE_SYSTEM_GRANTS = 54;
+  MANAGE_ORG_GRANTS = 55;
+  MANAGE_PROJECT_GRANTS = 56;
+  MANAGE_POLICIES = 57;
+  MANAGE_ROLES = 58;
 }
 
 // Where an authorization applies — the tenancy level. SYSTEM is the root of the
@@ -85,10 +81,6 @@ enum Scope {
   SCOPE_ORGANIZATION = 2;
   SCOPE_PROJECT = 3;
 }
-
-// (The standalone ResourceType enum was removed: a permission's resource type
-// is a pure function of the permission itself, so it never needs to travel on
-// the wire — the backend derives it from `Permission::resource()`.)
 
 // Whether a principal is a human user or a machine app.
 enum PrincipalKind {
@@ -173,23 +165,18 @@ message ValidatePolicyResponse {
 message ListAuthzVocabularyRequest {}
 
 // One entry of the permission vocabulary: a permission and the broadest scope at
-// which it is coherent. (resource_type was removed — it is derivable from the
-// permission and no client ever read it.)
+// which it is coherent.
 message AuthzAction {
-  reserved 2;                 // was resource_type (derivable from permission)
-  reserved "resource_type";
   Permission permission = 1;
   // The minimal (narrowest) scope a role may bind to and still have this
   // permission do something — i.e. the scope whose subtree contains the target
   // resource. The permission is usable in a role scoped at `min_scope` or any
   // broader (ancestor) scope. Lets a client grey out incoherent permissions per
   // role scope (e.g. createOrganization → SCOPE_SYSTEM only).
-  Scope      min_scope  = 3;
+  Scope      min_scope  = 2;
 }
 
 message ListAuthzVocabularyResponse {
-  reserved 2;                  // was resource_types (the standalone enum)
-  reserved "resource_types";
   repeated AuthzAction actions = 1;
 }
 
