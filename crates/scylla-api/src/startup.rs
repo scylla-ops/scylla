@@ -1,6 +1,7 @@
 use crate::config::CoreConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
+use tokio::sync::Notify;
 #[cfg(feature = "invitations")]
 use scylla_core::application::InvitationUseCases;
 #[cfg(feature = "oauth-github")]
@@ -10,8 +11,8 @@ use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases,
     DispatchUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases,
-    OrganizationUseCases, PipelineUseCases, PolicyUseCases, ProjectUseCases, RoleUseCases,
-    UserUseCases,
+    OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
+    RoleUseCases, UserUseCases,
 };
 #[cfg(feature = "mail")]
 use scylla_core::application::{Mailer, NoopMailer};
@@ -152,6 +153,8 @@ pub struct Services {
     pub agent_repo: Arc<PgAgentRepository>,
     pub dispatch_uc: SharedDispatchUc,
     pub agent_registry: Arc<InMemoryAgentRegistry>,
+    /// Poked by the agent handler on connect to wake the pending-job scheduler.
+    pub pending_signal: Arc<Notify>,
     pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
     pub role_uc: SharedRoleUc,
@@ -382,6 +385,29 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
     ));
 
+    // Pending-job scheduler: places jobs that were minted while no worker was
+    // connected. Woken by the agent handler on connect (`pending_signal`), on a
+    // periodic tick as a safety net, and once at boot to pick up a pre-restart
+    // backlog. Runs for the process lifetime.
+    let pending_signal = Arc::new(Notify::new());
+    {
+        let scheduler =
+            PendingJobScheduler::new(job_repo.clone(), pipeline_repo.clone(), dispatch_uc.clone());
+        let signal = pending_signal.clone();
+        tokio::spawn(async move {
+            scheduler.drain().await;
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(30));
+            tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tokio::select! {
+                    () = signal.notified() => {}
+                    _ = tick.tick() => {}
+                }
+                scheduler.drain().await;
+            }
+        });
+    }
+
     Ok(Services {
         db,
         auth_uc,
@@ -404,6 +430,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         agent_repo,
         dispatch_uc,
         agent_registry,
+        pending_signal,
         job_log_stream,
         grant_uc,
         role_uc,
@@ -561,6 +588,7 @@ where
         services.job_uc.clone(),
         services.job_log_uc.clone(),
         services.agent_repo.clone(),
+        services.pending_signal.clone(),
     );
     let agent_admin_handler = AgentAdminHandler::new(services.agent_uc.clone());
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());

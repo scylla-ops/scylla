@@ -24,7 +24,7 @@ pub mod user;
 
 pub use agent::{
     AgentDispatch, AgentRepository, AgentStats, AgentUseCases, AgentView, CreatedAgent,
-    DispatchOutcome, DispatchUseCases, JobDispatch,
+    DispatchOutcome, DispatchUseCases, JobDispatch, PendingJobScheduler,
 };
 pub use app::{
     AppCredentialRepository, AppRepository, AppTokenOutcome, AppTokenRepository, AppTokenUseCases,

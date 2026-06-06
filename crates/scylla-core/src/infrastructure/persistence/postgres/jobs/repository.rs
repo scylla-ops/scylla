@@ -44,6 +44,11 @@ impl JobRepository for PgJobRepository {
         queries::set_agent(&self.pool, job_id, app_id).await
     }
 
+    #[instrument(skip(self))]
+    async fn list_pending_unassigned(&self) -> DomainResult<Vec<Job>> {
+        queries::list_pending_unassigned(&self.pool).await
+    }
+
     #[instrument(skip(self), fields(job_id = %id))]
     async fn delete(&self, id: &JobId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
@@ -184,6 +189,31 @@ pub mod queries {
         .await
         .to_domain()?;
         Ok(())
+    }
+
+    /// Pending jobs with no agent yet — the backlog to (re)dispatch when a
+    /// worker connects. Oldest first so the queue drains FIFO.
+    pub async fn list_pending_unassigned<'e, E>(executor: E) -> DomainResult<Vec<Job>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let rows: Vec<JobRow> = sqlx::query_as!(
+            JobRow,
+            r#"
+            SELECT id, pipeline_id, status,
+                   node_executions AS "node_executions: Json<Vec<JobNode>>",
+                   agent_app_id,
+                   created_at, updated_at, started_at, finished_at
+            FROM jobs
+            WHERE status = $1 AND agent_app_id IS NULL
+            ORDER BY created_at ASC
+            "#,
+            JobStatus::Pending.as_str(),
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter().map(Job::try_from).collect()
     }
 
     pub async fn find_by_id<'e, E>(executor: E, id: &JobId) -> DomainResult<Job>

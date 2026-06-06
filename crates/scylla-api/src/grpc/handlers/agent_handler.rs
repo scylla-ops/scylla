@@ -16,6 +16,7 @@ use scylla_protocol::services::agent::{
 };
 use std::pin::Pin;
 use std::sync::Arc;
+use tokio::sync::Notify;
 use std::task::{Context, Poll};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::{Stream, StreamExt};
@@ -39,6 +40,9 @@ where
     log_use_cases: Arc<JobLogUseCases<L, PS>>,
     /// Durable agent presence: stamped on connect, each report, and disconnect.
     agent_repo: Arc<dyn AgentRepository>,
+    /// Poked when an agent connects so the pending-job scheduler re-dispatches
+    /// the backlog onto the freshly-available worker.
+    pending_signal: Arc<Notify>,
 }
 
 #[async_trait::async_trait]
@@ -63,6 +67,10 @@ impl<
 
         let inbound = request.into_inner();
         let (conn_id, dispatch_rx) = self.registry.register(&app_id);
+
+        // A new worker is available — nudge the scheduler to (re)dispatch any
+        // jobs left pending because nothing was connected when they were created.
+        self.pending_signal.notify_one();
 
         // Inbound reports run in the background; the App principal authorizes the
         // persistence (writeJobStatus / appendJobLog) via its agent grant.

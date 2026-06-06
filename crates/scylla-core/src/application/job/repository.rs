@@ -15,6 +15,11 @@ pub trait JobRepository {
     /// can't clobber concurrent status/node writes from the agent stream.
     async fn set_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()>;
 
+    /// Jobs minted but never handed to an agent (status `pending`, no
+    /// `agent_app_id`): the backlog to (re)dispatch when a worker connects.
+    /// Oldest first (FIFO); not paginated — the scheduler drains the whole set.
+    async fn list_pending_unassigned(&self) -> DomainResult<Vec<Job>>;
+
     async fn delete(&self, id: &JobId) -> DomainResult<()>;
 
     async fn list_all(
