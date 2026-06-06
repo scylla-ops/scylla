@@ -1,12 +1,14 @@
 # SaaS edition overlay. Use ON TOP of docker-compose.yaml to build/run the
-# control-plane from Dockerfile.saas (--features saas) instead of the default
-# PaaS image:
+# control-plane with `--features saas` instead of the default PaaS image. It
+# reuses the single ./Dockerfile and just flips the FEATURES build-arg (the base
+# compose already sets PACKAGE=scylla-control-plane):
 #
 #   docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d --build
 #
 # or via just: `just local-saas` then `just start-saas`. The base compose file
-# alone still builds the PaaS edition.
+# alone still builds the PaaS edition (FEATURES empty).
 services:
   scylla-control-plane:
     build:
-      dockerfile: Dockerfile.saas
+      args:
+        FEATURES: saas

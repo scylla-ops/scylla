@@ -25,7 +25,7 @@ default:
 local:
     docker compose build
 
-# Build the SaaS edition of the control-plane (Dockerfile.saas, --features saas)
+# Build the SaaS edition of the control-plane (single Dockerfile, FEATURES=saas)
 [group('dev')]
 local-saas:
     docker compose -f docker-compose.yaml -f docker-compose.saas.yaml build
