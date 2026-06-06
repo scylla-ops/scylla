@@ -17,6 +17,10 @@ import { messages as sharedMessages } from '@/locales/en/messages.ts';
 import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
 import { messages as appsMessages } from '@/modules/features/apps/locales/en/messages.ts';
 import { messages as agentsMessages } from '@/modules/features/agents/locales/en/messages.ts';
+import { messages as secretMessages } from '@/modules/features/secret/locales/en/messages.ts';
+import { messages as pipelineCreationMessages } from '@/modules/features/pipeline-creation/locales/en/messages.ts';
+import { messages as pipelineDashboardMessages } from '@/modules/features/pipeline-dashboard/locales/en/messages.ts';
+import { messages as userSettingsMessages } from '@/modules/features/user_settings/locales/en/messages.ts';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
@@ -33,6 +37,10 @@ i18n.load('en', {
   ...jobMessages,
   ...appsMessages,
   ...agentsMessages,
+  ...secretMessages,
+  ...pipelineCreationMessages,
+  ...pipelineDashboardMessages,
+  ...userSettingsMessages,
 });
 i18n.activate('en');
 
