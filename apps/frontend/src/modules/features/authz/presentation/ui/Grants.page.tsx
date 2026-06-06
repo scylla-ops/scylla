@@ -47,7 +47,7 @@ export const GrantsPage = () => {
   const grantTarget = (g: (typeof grants)[number]) =>
     g.permission != null && g.permission !== Permission.PERMISSION_UNSPECIFIED
       ? `permission: ${permissionName(g.permission)}`
-      : `role: ${g.role}`;
+      : `role: ${roles.find(r => r.id === g.role)?.name ?? g.role}`;
 
   return (
     <div style={{ height: '100%', overflow: 'auto', padding: 16 }}>

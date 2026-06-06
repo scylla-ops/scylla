@@ -81,7 +81,7 @@ export const RolesPage = () => {
             <tr>
               <th>Name / id</th>
               <th>Scope</th>
-              <th>Builtin</th>
+              <th>Origin</th>
               <th>Permissions</th>
               <th>Actions</th>
             </tr>
@@ -100,7 +100,7 @@ export const RolesPage = () => {
                   <small>{r.id}</small>
                 </td>
                 <td>{scopeName(r.scope)}</td>
-                <td>{r.builtin ? 'yes' : 'no'}</td>
+                <td>{r.builtin ? 'System' : 'Custom'}</td>
                 <td>
                   {r.fullControl
                     ? '* (full control)'

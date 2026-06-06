@@ -10,18 +10,34 @@ const realValues = <T extends Record<string, string | number>>(e: T): number[] =
 /** Every enforceable permission (closed catalog), minus the unspecified sentinel. */
 export const ALL_PERMISSIONS = realValues(Permission) as Permission[];
 
-/** Map a permission value to its catalog name, e.g. `RUN_PIPELINE`. */
-export const permissionName = (p: Permission): string => Permission[p] ?? String(p);
+/**
+ * Turn a proto enum's SCREAMING_SNAKE name into a human label: `RUN_PIPELINE` →
+ * "Run pipeline", `LIST_JOBS_BY_ORGANIZATION` → "List jobs by organization". An
+ * optional prefix (e.g. `SCOPE_`) is stripped first so `SCOPE_SYSTEM` → "System".
+ */
+const humanize = (name: string, prefix = ''): string => {
+  const s = (prefix && name.startsWith(prefix) ? name.slice(prefix.length) : name)
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+/** Human label for a permission, e.g. `RUN_PIPELINE` → "Run pipeline". */
+export const permissionName = (p: Permission): string =>
+  Permission[p] ? humanize(Permission[p]) : String(p);
 
 /** Grantable scope kinds (System / Organization / Project). */
 export const ALL_SCOPES = realValues(Scope) as Scope[];
 
-export const scopeName = (s: Scope): string => Scope[s] ?? String(s);
+export const scopeName = (s: Scope): string =>
+  Scope[s] ? humanize(Scope[s], 'SCOPE_') : String(s);
 
 /** Principal kinds for the effective-permissions lookup. */
 export const ALL_PRINCIPAL_KINDS = realValues(PrincipalKind) as PrincipalKind[];
 
-export const principalKindName = (k: PrincipalKind): string => PrincipalKind[k] ?? String(k);
+export const principalKindName = (k: PrincipalKind): string =>
+  PrincipalKind[k] ? humanize(PrincipalKind[k], 'PRINCIPAL_KIND_') : String(k);
 
 /**
  * Pull the most useful message out of a thrown error. The data source wraps
