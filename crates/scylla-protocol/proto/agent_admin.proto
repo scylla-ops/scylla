@@ -6,7 +6,7 @@ import "common.proto";
 import "google/protobuf/timestamp.proto";
 
 // Management + introspection of Agents — specialized Apps that run jobs.
-// Creating a agent provisions an App credential under the hood (the secret is
+// Creating an agent provisions an App credential under the hood (the secret is
 // returned exactly once) plus its agent grant. Distinct from the streaming
 // `agent.AgentService` (the agent ↔ control-plane job stream): this service is
 // the unary control surface used by the dashboard. Authorization is org-scoped:
@@ -19,7 +19,7 @@ service AgentAdminService {
   rpc DeleteAgent(DeleteAgentRequest)     returns (DeleteAgentResponse);
 }
 
-// A agent: its backing app identity plus live presence and durable last-seen.
+// An agent: its backing app identity plus live presence and durable last-seen.
 // The id is the agent's app id (== jobs.agent_app_id).
 message AgentView {
   common.AppId          id              = 1;
@@ -35,7 +35,7 @@ message AgentView {
   google.protobuf.Timestamp last_seen = 8;
 }
 
-// Aggregate run stats for a agent, derived from the jobs it executed.
+// Aggregate run stats for an agent, derived from the jobs it executed.
 message AgentStats {
   int64  total       = 1;
   int64  pending     = 2;

@@ -1,10 +1,12 @@
 use crate::extract_auth_context;
-use crate::grpc::convert::{permission_from_key, permission_key, required, wrap};
+use crate::grpc::convert::{
+    permission_from_key, permission_key, required, scope_kind_from_proto, scope_kind_to_proto, wrap,
+};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
     Grant, GrantRepository, GrantTarget, GrantUseCases, GrantableRole, PermissionService,
-    PolicyControl, Principal, Scope, ScopeKind, grantable_roles,
+    PolicyControl, Principal, Scope, grantable_roles,
 };
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::role::name::RoleName;
@@ -116,27 +118,6 @@ impl<
                 .map(grantable_role_to_proto)
                 .collect(),
         }))
-    }
-}
-
-/// Map a proto `Scope` discriminant to the id-free domain `ScopeKind` (used to
-/// filter the assignable-role catalog).
-fn scope_kind_from_proto(kind: i32) -> Result<ScopeKind, Status> {
-    match ProtoScope::try_from(kind) {
-        Ok(ProtoScope::System) => Ok(ScopeKind::System),
-        Ok(ProtoScope::Organization) => Ok(ScopeKind::Organization),
-        Ok(ProtoScope::Project) => Ok(ScopeKind::Project),
-        Ok(ProtoScope::Unspecified) | Err(_) => {
-            Err(Status::invalid_argument("unknown or unspecified scope"))
-        }
-    }
-}
-
-fn scope_kind_to_proto(kind: ScopeKind) -> ProtoScope {
-    match kind {
-        ScopeKind::System => ProtoScope::System,
-        ScopeKind::Organization => ProtoScope::Organization,
-        ScopeKind::Project => ProtoScope::Project,
     }
 }
 

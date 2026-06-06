@@ -2,7 +2,7 @@ import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { AgentStats } from '@/modules/features/agents/domain/models/agent.model.ts';
 import type { AgentsRepository } from '@/modules/features/agents/domain/repository/agents.repository.ts';
 
-/** Use case: fetch the run stats of a agent. */
+/** Use case: fetch the run stats of an agent. */
 export class GetAgentStatsUseCase {
   constructor(private readonly repository: AgentsRepository) {}
 

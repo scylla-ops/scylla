@@ -54,7 +54,7 @@ pub enum Permission {
     UpdatePipeline(PipelineId),
     DeletePipeline(PipelineId),
     RunPipeline(PipelineId),
-    /// A agent App executing the jobs of a pipeline (distinct from a user
+    /// An agent App executing the jobs of a pipeline (distinct from a user
     /// triggering a run via `RunPipeline`).
     ExecuteJob(PipelineId),
     ListPipelines,
@@ -72,7 +72,7 @@ pub enum Permission {
     ListJobsByOrganization(OrganizationId),
     ReadJobLogs(JobId),
     WriteJobLogs(JobId),
-    /// A agent App reporting a job's status / appending its logs while it runs.
+    /// An agent App reporting a job's status / appending its logs while it runs.
     WriteJobStatus(JobId),
     WriteJobLog(JobId),
 

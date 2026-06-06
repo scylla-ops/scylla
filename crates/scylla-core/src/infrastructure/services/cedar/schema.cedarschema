@@ -90,7 +90,7 @@ namespace Scylla {
         appliesTo { principal: [User, Service, App], resource: [Job] };
 
     // ── App-targeted (manage a specific app within its org) ─────────────
-    // A agent is a specialized app, so agent introspection/management also
+    // An agent is a specialized app, so agent introspection/management also
     // targets the App resource (agent_app_id == app id).
     action "readApp", "deleteApp",
            "readAgent", "readAgentStats", "deleteAgent"

@@ -1,7 +1,7 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { AgentsRepository } from '@/modules/features/agents/domain/repository/agents.repository.ts';
 
-/** Use case: delete a agent (revokes its grants, disconnects its agent). */
+/** Use case: delete an agent (revokes its grants, disconnects its agent). */
 export class DeleteAgentUseCase {
   constructor(private readonly repository: AgentsRepository) {}
 

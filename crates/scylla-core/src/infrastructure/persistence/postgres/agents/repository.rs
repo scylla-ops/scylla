@@ -30,7 +30,7 @@ where
 }
 
 /// Persistence for the `agents` table — the 1:1 specialization marking an app
-/// as a agent. Run stats are derived from the `jobs` table, not stored here.
+/// as an agent. Run stats are derived from the `jobs` table, not stored here.
 #[derive(Clone)]
 pub struct PgAgentRepository {
     pool: PgPool,
@@ -88,7 +88,7 @@ impl AgentRepository for PgAgentRepository {
 
     #[instrument(skip(self), fields(app_id = %app_id))]
     async fn touch_last_seen(&self, app_id: &AppId, at: DateTime<Utc>) -> DomainResult<()> {
-        // Upsert so a agent connecting without a row (legacy / pre-migration)
+        // Upsert so an agent connecting without a row (legacy / pre-migration)
         // self-heals — presence must never depend on this table existing.
         sqlx::query!(
             r#"

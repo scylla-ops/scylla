@@ -829,7 +829,7 @@ mod tests {
 
     #[tokio::test]
     async fn agent_app_grant_allows_execute_job_in_scope_only() {
-        // A machine App with a agent grant on an org may execute jobs on a
+        // A machine App with an agent grant on an org may execute jobs on a
         // pipeline beneath it, but not management actions outside the agent set.
         let grant = Grant::new(
             Principal::App(AppId::new("agent-1")),
@@ -955,7 +955,7 @@ mod tests {
 
     #[tokio::test]
     async fn org_admin_manages_agents_in_its_org_only() {
-        // A agent is a specialized app, so agent actions target the org (create/
+        // An agent is a specialized app, so agent actions target the org (create/
         // list) or the App resource beneath it (read/stats/delete). An org-admin
         // grant covers all of them within its org via the role template, and
         // nothing outside it. Pure permission — no org-member broadening.

@@ -84,7 +84,7 @@ where
         );
 
         // A plain app is an identity only — no grant, no policy reload. It gains
-        // capabilities later through explicit grants (or becomes a agent). The
+        // capabilities later through explicit grants (or becomes an agent). The
         // initial secret is written in the same tx so it can authenticate.
         self.app_repo.create_app(&app, &credential).await?;
 

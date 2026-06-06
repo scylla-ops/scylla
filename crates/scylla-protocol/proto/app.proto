@@ -6,7 +6,7 @@ import "common.proto";
 import "google/protobuf/timestamp.proto";
 
 // Management of machine Apps (agents / automations) owned by an organization.
-// An App authenticates with an app token and acts under a agent grant on its
+// An App authenticates with an app token and acts under an agent grant on its
 // org. Creating one returns the plaintext secret exactly once — it is never
 // stored or retrievable again. Authorization is org-scoped: the caller must
 // hold the matching app permission on the target organization / app.

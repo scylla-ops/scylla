@@ -7,7 +7,7 @@ use async_trait::async_trait;
 ///
 /// A plain app is just an identity (`create_app`). A *agent* is a specialized
 /// app: `provision_agent` writes the app, its `agents` row and its agent
-/// grant atomically, so a agent is never left half-provisioned. Every creation
+/// grant atomically, so an agent is never left half-provisioned. Every creation
 /// path also writes the App's initial secret (`app_secrets`) in the same tx, so
 /// an App is never left without a usable credential.
 #[async_trait]

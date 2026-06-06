@@ -21,15 +21,15 @@ use tracing::{instrument, warn};
 /// Label given to an agent's initial secret, created alongside the agent.
 const DEFAULT_SECRET_LABEL: &str = "default";
 
-/// Result of trying to place a job on a agent.
+/// Result of trying to place a job on an agent.
 pub enum DispatchOutcome {
     Dispatched(AppId),
     NoAgentAvailable,
 }
 
 /// Chooses a connected agent App and hands it a job. Selection is pure Cedar:
-/// a agent is eligible iff `check(App, ExecuteJob(pipeline))` passes — i.e. it
-/// holds a agent grant covering the pipeline's org/project. No ad-hoc routing.
+/// an agent is eligible iff `check(App, ExecuteJob(pipeline))` passes — i.e. it
+/// holds an agent grant covering the pipeline's org/project. No ad-hoc routing.
 #[derive(Constructor)]
 pub struct DispatchUseCases<W: AgentDispatch, PS: PermissionService> {
     registry: Arc<W>,
@@ -86,7 +86,7 @@ pub struct CreatedAgent {
     pub secret: AppSecret,
 }
 
-/// Read model for a agent: its backing app identity, live connection state
+/// Read model for an agent: its backing app identity, live connection state
 /// (from the in-memory registry), and durable last-seen. `connected` and the
 /// registry are infra state, so this is a use-case DTO, not a domain entity.
 pub struct AgentView {
@@ -96,7 +96,7 @@ pub struct AgentView {
 }
 
 /// Org-scoped management + introspection of Agents (specialized apps that run
-/// jobs). Creating a agent provisions an app, its `agents` row and a agent
+/// jobs). Creating an agent provisions an app, its `agents` row and an agent
 /// grant on the org, then reloads the policy set so the grant is live at once.
 /// Every method is Cedar-gated.
 #[derive(Constructor)]

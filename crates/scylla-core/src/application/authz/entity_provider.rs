@@ -25,8 +25,8 @@ pub struct ResourceAncestors {
 
 /// Read-only port the Cedar adapter uses to materialise entities + relationships
 /// for an authorization request. Implemented in infra over the existing
-/// `user_roles` / `user_organization` / `user_project` tables and the
-/// pipeline→project→org foreign keys.
+/// `user_organization` / `user_project` tables and the pipeline→project→org
+/// foreign keys.
 #[async_trait]
 pub trait AuthzEntityProvider: Send + Sync {
     /// Roles + memberships for a user principal.

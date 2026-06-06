@@ -2,7 +2,7 @@ import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { CreatedAgent } from '@/modules/features/agents/domain/models/agent.model.ts';
 import type { AgentsRepository } from '@/modules/features/agents/domain/repository/agents.repository.ts';
 
-/** Use case: create a agent. Returns the one-time secret. */
+/** Use case: create an agent. Returns the one-time secret. */
 export class CreateAgentUseCase {
   constructor(private readonly repository: AgentsRepository) {}
 

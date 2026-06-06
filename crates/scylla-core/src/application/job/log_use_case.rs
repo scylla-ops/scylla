@@ -26,7 +26,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         self.repo.create(log).await
     }
 
-    /// Append a log line emitted by a agent over its stream. Gated by
+    /// Append a log line emitted by an agent over its stream. Gated by
     /// [`Permission::WriteJobLog`] — the action the agent role confers — so a
     /// agent can write logs without the broader `writeJobLogs` recorder grant.
     #[instrument(skip(self, caller, log))]

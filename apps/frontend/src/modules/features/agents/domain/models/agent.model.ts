@@ -15,7 +15,7 @@ export interface Agent {
 }
 
 /**
- * Aggregate run stats for a agent, derived from the jobs it executed.
+ * Aggregate run stats for an agent, derived from the jobs it executed.
  */
 export interface AgentStats {
   total: number;
