@@ -14,6 +14,7 @@ use scylla_protocol::services::agent::{
     AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, JobEventKind, agent_down,
     agent_service_server::AgentService, agent_up,
 };
+use scylla_protocol::services::common;
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::Notify;
@@ -125,10 +126,10 @@ async fn read_reports<J, L, PS>(
     while let Ok(Some(up)) = inbound.message().await {
         match up.payload {
             Some(agent_up::Payload::Status(status)) => {
-                let job_id = JobId::new(&status.job_id);
+                let job_id = JobId::new(status.job_id.clone().unwrap_or_default().value);
                 if let Some(event) = status_to_event(&status) {
                     if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
-                        warn!(app_id = %app_id, job_id = %status.job_id, error = %e, "failed to record job status");
+                        warn!(app_id = %app_id, job_id = %job_id, error = %e, "failed to record job status");
                     }
                     // A terminal job won't emit more log lines — evict its live
                     // channel so the per-job stream map can't grow without bound,
@@ -144,7 +145,7 @@ async fn read_reports<J, L, PS>(
             Some(agent_up::Payload::Log(line)) => {
                 if let Some(log) = log_line_to_domain(&line) {
                     if let Err(e) = log_use_cases.append(&caller, &log).await {
-                        warn!(app_id = %app_id, job_id = %line.job_id, error = %e, "failed to append job log");
+                        warn!(app_id = %app_id, job_id = %log.job_id(), error = %e, "failed to append job log");
                     } else {
                         log_stream.publish(log);
                     }
@@ -205,23 +206,35 @@ fn dispatch_to_proto(dispatch: &JobDispatch) -> AgentDown {
         .nodes
         .iter()
         .map(|n| AgentNode {
-            node_id: n.id().to_string(),
-            deps: n.deps().iter().map(ToString::to_string).collect(),
+            node_id: Some(common::NodeId {
+                value: n.id().to_string(),
+            }),
+            deps: n
+                .deps()
+                .iter()
+                .map(|d| common::NodeId {
+                    value: d.to_string(),
+                })
+                .collect(),
             command: n.command().to_string(),
             args: n.args().to_vec(),
         })
         .collect();
     AgentDown {
         payload: Some(agent_down::Payload::Dispatch(ProtoJobDispatch {
-            job_id: dispatch.job_id.clone(),
-            pipeline_id: dispatch.pipeline_id.clone(),
+            job_id: Some(common::JobId {
+                value: dispatch.job_id.clone(),
+            }),
+            pipeline_id: Some(common::PipelineId {
+                value: dispatch.pipeline_id.clone(),
+            }),
             nodes,
         })),
     }
 }
 
 fn status_to_event(status: &scylla_protocol::services::agent::JobStatus) -> Option<JobEvent> {
-    let node_id = || status.node_id.clone();
+    let node_id = || status.node_id.clone().unwrap_or_default().value;
     let error = || status.error.clone();
     Some(match status.kind() {
         JobEventKind::JobStarted => JobEvent::JobStarted,
@@ -238,14 +251,15 @@ fn status_to_event(status: &scylla_protocol::services::agent::JobStatus) -> Opti
 }
 
 fn log_line_to_domain(line: &scylla_protocol::services::agent::JobLogLine) -> Option<JobLog> {
-    let node_id = NodeId::new(&line.node_id)
-        .map_err(|e| warn!(node_id = %line.node_id, error = %e, "invalid node_id in agent log"))
+    let node_id_str = line.node_id.clone().unwrap_or_default().value;
+    let node_id = NodeId::new(&node_id_str)
+        .map_err(|e| warn!(node_id = %node_id_str, error = %e, "invalid node_id in agent log"))
         .ok()?;
     let stream = LogStream::new(&line.stream).unwrap_or(LogStream::Stdout);
     let timestamp = chrono::DateTime::parse_from_rfc3339(&line.timestamp)
         .map_or_else(|_| chrono::Utc::now(), |dt| dt.with_timezone(&chrono::Utc));
     Some(JobLog::new(
-        JobId::new(&line.job_id),
+        JobId::new(line.job_id.clone().unwrap_or_default().value),
         node_id,
         stream,
         line.line.clone(),

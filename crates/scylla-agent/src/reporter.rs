@@ -8,6 +8,7 @@
 
 use scylla_core::application::JobEvent;
 use scylla_protocol::services::agent::{AgentUp, JobEventKind, JobStatus, agent_up};
+use scylla_protocol::services::common;
 use tokio::sync::mpsc;
 
 use crate::error::ExecutionError;
@@ -51,9 +52,12 @@ fn job_event_to_status(job_id: &str, event: JobEvent) -> JobStatus {
         JobEvent::JobFailed { error } => (JobEventKind::JobFailed, String::new(), error),
     };
     JobStatus {
-        job_id: job_id.to_string(),
+        job_id: Some(common::JobId {
+            value: job_id.to_string(),
+        }),
         kind: kind as i32,
-        node_id,
+        // Empty node_id means a job-level event (no node) — send it unset.
+        node_id: (!node_id.is_empty()).then(|| common::NodeId { value: node_id }),
         error,
     }
 }

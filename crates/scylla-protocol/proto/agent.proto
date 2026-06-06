@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package agent;
 
+import "common.proto";
+
 // Persistent bidirectional stream between the control plane and a connected
 // agent App. The App authenticates with its bearer token (Authorization
 // metadata) and the interceptor resolves it to an App principal. While
@@ -29,24 +31,24 @@ message AgentUp {
 }
 
 message JobDispatch {
-  string job_id              = 1;
-  string pipeline_id         = 2;
-  repeated AgentNode nodes  = 3;
+  common.JobId       job_id      = 1;
+  common.PipelineId  pipeline_id = 2;
+  repeated AgentNode nodes       = 3;
 }
 
 message AgentNode {
-  string node_id       = 1;
-  repeated string deps = 2;
-  string command       = 3;
-  repeated string args = 4;
+  common.NodeId          node_id = 1;
+  repeated common.NodeId deps    = 2;
+  string                 command = 3;
+  repeated string        args    = 4;
 }
 
 // Mirrors the domain JobEvent: a kind plus the fields relevant to that kind.
 message JobStatus {
-  string       job_id  = 1;
-  JobEventKind kind    = 2;
-  string       node_id = 3; // set for NODE_* kinds
-  string       error   = 4; // set for *_FAILED kinds
+  common.JobId  job_id  = 1;
+  JobEventKind  kind    = 2;
+  common.NodeId node_id = 3; // set for NODE_* kinds
+  string        error   = 4; // set for *_FAILED kinds
 }
 
 enum JobEventKind {
@@ -60,9 +62,9 @@ enum JobEventKind {
 }
 
 message JobLogLine {
-  string job_id    = 1;
-  string node_id   = 2;
-  string stream    = 3; // "stdout" | "stderr"
-  string line      = 4;
-  string timestamp = 5; // RFC 3339
+  common.JobId  job_id    = 1;
+  common.NodeId node_id   = 2;
+  string        stream    = 3; // "stdout" | "stderr"
+  string        line      = 4;
+  string        timestamp = 5; // RFC 3339
 }

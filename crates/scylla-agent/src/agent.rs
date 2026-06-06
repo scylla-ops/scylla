@@ -150,23 +150,25 @@ impl Agent {
             match inbound.message().await {
                 Ok(Some(down)) => match down.payload {
                     Some(agent_down::Payload::Dispatch(dispatch)) => {
+                        let job_id = dispatch.job_id.unwrap_or_default().value;
+                        let pipeline_id = dispatch.pipeline_id.unwrap_or_default().value;
                         info!(
-                            job_id = %dispatch.job_id,
-                            pipeline_id = %dispatch.pipeline_id,
+                            %job_id,
+                            %pipeline_id,
                             nodes = dispatch.nodes.len(),
                             "received job"
                         );
                         let nodes = match to_domain_nodes(dispatch.nodes) {
                             Ok(nodes) => nodes,
                             Err(e) => {
-                                warn!(job_id = %dispatch.job_id, error = %e, "invalid dispatch nodes, skipping");
+                                warn!(%job_id, error = %e, "invalid dispatch nodes, skipping");
                                 continue;
                             }
                         };
-                        let executor = Executor::new(up_tx.clone(), dispatch.job_id.clone());
+                        let executor = Executor::new(up_tx.clone(), job_id.clone());
                         // V1: sequential — finish the job before accepting the next.
                         if let Err(e) = executor.run(nodes).await {
-                            warn!(job_id = %dispatch.job_id, error = %e, "job execution failed");
+                            warn!(%job_id, error = %e, "job execution failed");
                         }
                     }
                     None => {}
@@ -215,11 +217,11 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
     nodes
         .into_iter()
         .map(|n| {
-            let id = NodeId::new(&n.node_id).map_err(|e| e.to_string())?;
+            let id = NodeId::new(&n.node_id.unwrap_or_default().value).map_err(|e| e.to_string())?;
             let deps = n
                 .deps
                 .iter()
-                .map(|d| NodeId::new(d).map_err(|e| e.to_string()))
+                .map(|d| NodeId::new(&d.value).map_err(|e| e.to_string()))
                 .collect::<Result<Vec<_>, _>>()?;
             PipelineNode::new(id, deps, n.command, n.args).map_err(|e| e.to_string())
         })

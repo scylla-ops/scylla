@@ -20,6 +20,7 @@ use scylla_core::application::JobEvent;
 use scylla_core::domain::entities::PipelineNode;
 use scylla_core::domain::value_objects::job::LogStream;
 use scylla_protocol::services::agent::{AgentUp, JobLogLine, agent_up};
+use scylla_protocol::services::common;
 
 use crate::error::ExecutionError;
 use crate::plan::DagPlan;
@@ -300,8 +301,12 @@ async fn publish_log_line(
     line: String,
 ) -> bool {
     let log = JobLogLine {
-        job_id: job_id.to_string(),
-        node_id: node_id.to_string(),
+        job_id: Some(common::JobId {
+            value: job_id.to_string(),
+        }),
+        node_id: Some(common::NodeId {
+            value: node_id.to_string(),
+        }),
         stream: stream.as_str().to_string(),
         line,
         timestamp: Utc::now().to_rfc3339(),
