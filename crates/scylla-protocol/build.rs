@@ -17,6 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "project.proto",
         "permission.proto",
         "pipeline.proto",
+        "secret.proto",
         "job.proto",
         "app.proto",
         "agent.proto",

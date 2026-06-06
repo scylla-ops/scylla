@@ -10,6 +10,8 @@ pub use db::{DatabaseConfig, close_db, init_db};
 
 pub use messaging::{InMemoryAgentRegistry, InMemoryJobLogStream};
 
+pub use services::ChaChaSecretCipher;
+
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAgentRepository;
 #[cfg(feature = "postgres")]
@@ -36,6 +38,8 @@ pub use persistence::postgres::PgPipelineRepository;
 pub use persistence::postgres::PgPolicyRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgProjectRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgSecretRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgSessionRepository;
 #[cfg(feature = "postgres")]

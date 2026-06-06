@@ -71,6 +71,9 @@ enum Permission {
   MANAGE_PROJECT_GRANTS = 56;
   MANAGE_POLICIES = 57;
   MANAGE_ROLES = 58;
+  CREATE_SECRET = 59;
+  LIST_SECRETS = 60;
+  DELETE_SECRET = 61;
 }
 
 // Where an authorization applies — the tenancy level. SYSTEM is the root of the

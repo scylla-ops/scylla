@@ -30,6 +30,18 @@ pub struct CoreConfig {
     /// OAuth providers for the `oauth-github` feature.
     #[serde(default)]
     pub oauth: OauthConfig,
+
+    /// Project-secret encryption. When absent, the secret store is disabled and
+    /// secret operations error with a clear message.
+    #[serde(default)]
+    pub secrets: Option<SecretsConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SecretsConfig {
+    /// Master key for project-secret AEAD encryption, as 64 hex chars (32 bytes).
+    /// Keep it out of source control in real deployments (inject at deploy time).
+    pub master_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

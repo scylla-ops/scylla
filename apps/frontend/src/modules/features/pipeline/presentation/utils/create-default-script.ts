@@ -11,7 +11,7 @@ export const createDefaultScript = (projectId: string) =>
           shell: 'sh',
           script: 'echo "Welcome to Scylla!"',
           workingDir: '',
-          env: {},
+          env: [],
         },
         {
           id: 'example',
@@ -20,7 +20,7 @@ export const createDefaultScript = (projectId: string) =>
           shell: 'sh',
           script: 'echo "This is an example pipeline."',
           workingDir: '',
-          env: {},
+          env: [],
         },
       ],
     },

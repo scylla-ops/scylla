@@ -206,32 +206,25 @@ fn dispatch_to_proto(dispatch: &JobDispatch) -> AgentDown {
         .nodes
         .iter()
         .map(|n| AgentNode {
-            node_id: Some(common::NodeId {
-                value: n.id().to_string(),
-            }),
+            node_id: Some(common::NodeId { value: n.id.clone() }),
             deps: n
-                .deps()
+                .deps
                 .iter()
-                .map(|d| common::NodeId {
-                    value: d.to_string(),
-                })
+                .map(|d| common::NodeId { value: d.clone() })
                 .collect(),
-            working_dir: n
-                .working_dir()
-                .map(|wd| wd.as_str().to_string())
-                .unwrap_or_default(),
-            // Phase A: only literal env values exist (secret refs are rejected at
-            // create time), so nothing is masked yet.
+            working_dir: n.working_dir.clone().unwrap_or_default(),
+            // Env is already resolved (secret refs decrypted) with `masked` set
+            // for secret-sourced values so the agent can scrub them from logs.
             env: n
-                .env()
+                .env
                 .iter()
                 .map(|ev| ResolvedEnv {
-                    key: ev.key().to_string(),
-                    value: ev.value().to_string(),
-                    masked: false,
+                    key: ev.key.clone(),
+                    value: ev.value.clone(),
+                    masked: ev.masked,
                 })
                 .collect(),
-            step: Some(step_to_proto(n.step())),
+            step: Some(step_to_proto(&n.step)),
         })
         .collect();
     AgentDown {

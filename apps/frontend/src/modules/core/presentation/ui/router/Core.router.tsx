@@ -13,6 +13,7 @@ import UserSettingsPage from '@/modules/features/user/presentation/ui/settings/U
 import { DashboardPipelinePage } from '@/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx';
 import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx';
 import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
+import { SecretsPage } from '@/modules/features/secret/presentation/ui/Secrets.page.tsx';
 import { AppsPage } from '@/modules/features/apps/presentation/ui/Apps.page.tsx';
 import { AppDetailsPage } from '@/modules/features/apps/presentation/ui/AppDetails.page.tsx';
 import { AgentsPage } from '@/modules/features/agents/presentation/ui/Agents.page.tsx';
@@ -87,6 +88,13 @@ export const CoreRouter = createBrowserRouter([
                         handle: {
                           breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
                             `Pipeline #${pipelineName} - Jobs`,
+                        },
+                      },
+                      {
+                        path: 'secrets',
+                        element: <SecretsPage />,
+                        handle: {
+                          breadcrumb: () => `Secrets`,
                         },
                       },
                     ],

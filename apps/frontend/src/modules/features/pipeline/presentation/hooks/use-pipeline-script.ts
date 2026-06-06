@@ -1,9 +1,34 @@
 import { useCallback, useMemo } from 'react';
 import { useScriptStore } from '@/modules/features/pipeline/presentation/stores/use-script.store.ts';
-import type { PipelineStep, Shell } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type {
+  EnvEntry,
+  PipelineStep,
+  Shell,
+} from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 function parseShell(value: unknown): Shell {
   return value === 'bash' ? 'bash' : 'sh';
+}
+
+/** Parse the JSON `env` array into typed EnvEntry[], tolerating partial input. */
+function parseEnv(value: unknown): EnvEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw): EnvEntry => {
+    const e = (raw ?? {}) as Record<string, unknown>;
+    const key = typeof e.key === 'string' ? e.key : '';
+    if (e.kind === 'secret' || typeof e.secretRef === 'string') {
+      return { key, kind: 'secret', secretRef: typeof e.secretRef === 'string' ? e.secretRef : '' };
+    }
+    return { key, kind: 'literal', value: typeof e.value === 'string' ? e.value : '' };
+  });
+}
+
+function serializeEnv(env: EnvEntry[]): Record<string, unknown>[] {
+  return env.map(e =>
+    e.kind === 'secret'
+      ? { key: e.key, kind: 'secret', secretRef: e.secretRef }
+      : { key: e.key, kind: 'literal', value: e.value },
+  );
 }
 
 function parseNode(n: Record<string, unknown>): PipelineStep {
@@ -11,23 +36,34 @@ function parseNode(n: Record<string, unknown>): PipelineStep {
     id: (n.id as string) ?? '',
     deps: (n.deps as string[]) ?? [],
     workingDir: typeof n.workingDir === 'string' ? n.workingDir : undefined,
-    env: (n.env as Record<string, string>) ?? {},
+    env: parseEnv(n.env),
   };
 
   const hasCommand = typeof n.command === 'string';
   const hasScript = typeof n.script === 'string';
-  const kind = n.kind === 'script' || n.kind === 'exec'
-    ? n.kind
-    : hasCommand
-      ? 'exec'
-      : hasScript
-        ? 'script'
-        : 'exec';
+  const kind =
+    n.kind === 'script' || n.kind === 'exec'
+      ? n.kind
+      : hasCommand
+        ? 'exec'
+        : hasScript
+          ? 'script'
+          : 'exec';
 
   if (kind === 'script') {
-    return { ...base, kind: 'script', script: (n.script as string) ?? '', shell: parseShell(n.shell) };
+    return {
+      ...base,
+      kind: 'script',
+      script: (n.script as string) ?? '',
+      shell: parseShell(n.shell),
+    };
   }
-  return { ...base, kind: 'exec', command: (n.command as string) ?? '', args: (n.args as string[]) ?? [] };
+  return {
+    ...base,
+    kind: 'exec',
+    command: (n.command as string) ?? '',
+    args: (n.args as string[]) ?? [],
+  };
 }
 
 function serializeNode(s: PipelineStep): Record<string, unknown> {
@@ -35,7 +71,7 @@ function serializeNode(s: PipelineStep): Record<string, unknown> {
     id: s.id,
     deps: s.deps,
     workingDir: s.workingDir ?? '',
-    env: s.env,
+    env: serializeEnv(s.env),
   };
   if (s.kind === 'script') {
     return { ...base, kind: 'script', shell: s.shell, script: s.script };
@@ -106,4 +142,3 @@ export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = 
     handleNameChange,
   };
 }
-

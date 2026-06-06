@@ -9,6 +9,7 @@
 //! Status and log events are sent as `AgentUp` messages on the agent stream.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use chrono::Utc;
 use tokio::fs;
@@ -39,6 +40,8 @@ pub struct Executor {
     workspace_root: PathBuf,
     /// When true, the per-job workspace is left on disk after the run (debug).
     keep_workspace: bool,
+    /// Secret-sourced values to redact from every log line before it is emitted.
+    masked_values: Arc<Vec<String>>,
 }
 
 impl Executor {
@@ -47,12 +50,14 @@ impl Executor {
         job_id: String,
         workspace_root: PathBuf,
         keep_workspace: bool,
+        masked_values: Vec<String>,
     ) -> Self {
         Self {
             up_tx,
             job_id,
             workspace_root,
             keep_workspace,
+            masked_values: Arc::new(masked_values),
         }
     }
 
@@ -175,9 +180,10 @@ impl Executor {
             let token = cancel.clone();
             let id = node_id.to_string();
             let workspace = workspace.to_path_buf();
+            let masked = self.masked_values.clone();
 
             running.spawn(async move {
-                let result = run_node(&id, &spec, &tx, &job_id, &workspace, token).await;
+                let result = run_node(&id, &spec, &tx, &job_id, &workspace, &masked, token).await;
                 (id, result)
             });
         }
@@ -240,6 +246,7 @@ async fn run_node(
     up_tx: &mpsc::Sender<AgentUp>,
     job_id: &str,
     workspace: &Path,
+    masked: &Arc<Vec<String>>,
     cancel: CancellationToken,
 ) -> Result<(), ExecutionError> {
     // Resolve and create the working directory inside the workspace.
@@ -254,6 +261,7 @@ async fn run_node(
             node_id,
             LogStream::Stderr,
             format!("failed to create working directory: {e}"),
+            masked,
         )
         .await;
         return Err(ExecutionError::Workspace(e));
@@ -278,6 +286,7 @@ async fn run_node(
                 node_id,
                 LogStream::Stderr,
                 format!("failed to prepare step: {e}"),
+                masked,
             )
             .await;
             return Err(e);
@@ -302,6 +311,7 @@ async fn run_node(
                 node_id,
                 LogStream::Stderr,
                 format!("failed to spawn `{program}`: {e}"),
+                masked,
             )
             .await;
             return Err(ExecutionError::Spawn(e));
@@ -318,6 +328,7 @@ async fn run_node(
         node_id.to_string(),
         job_id.to_string(),
         up_tx.clone(),
+        masked.clone(),
     );
     let stderr_handle = spawn_log_streamer(
         child.stderr.take().expect("stderr was piped"),
@@ -325,6 +336,7 @@ async fn run_node(
         node_id.to_string(),
         job_id.to_string(),
         up_tx.clone(),
+        masked.clone(),
     );
 
     let wait_outcome: Result<(), ExecutionError> = tokio::select! {
@@ -414,9 +426,12 @@ fn configure_env(
         }
     }
     command.env("TERM", "dumb");
-    // User-supplied node env overlays the allowlist.
+    // User-supplied node env overlays the allowlist. The agent only ever sees
+    // resolved literals (secret refs are resolved control-plane-side).
     for ev in spec.env() {
-        command.env(ev.key(), ev.value());
+        if let Some(value) = ev.literal_value() {
+            command.env(ev.key(), value);
+        }
     }
     // Reserved context, injected last so it is authoritative.
     command.env("CI", "true");
@@ -444,6 +459,7 @@ fn set_process_group(_command: &mut Command) {}
 
 /// Signal an entire process group by its (positive) group id. No-op on non-unix.
 #[cfg(unix)]
+#[allow(unsafe_code)]
 fn signal_group(pgid: Option<i32>, signal: Signal) {
     if let Some(pgid) = pgid {
         let sig = match signal {
@@ -487,6 +503,7 @@ fn spawn_log_streamer<R>(
     node_id: String,
     job_id: String,
     up_tx: mpsc::Sender<AgentUp>,
+    masked: Arc<Vec<String>>,
 ) -> tokio::task::JoinHandle<()>
 where
     R: tokio::io::AsyncRead + Unpin + Send + 'static,
@@ -494,11 +511,21 @@ where
     tokio::spawn(async move {
         let mut lines = BufReader::new(reader).lines();
         while let Ok(Some(line)) = lines.next_line().await {
-            if !publish_log_line(&up_tx, &job_id, &node_id, stream, line).await {
+            if !publish_log_line(&up_tx, &job_id, &node_id, stream, line, &masked).await {
                 break;
             }
         }
     })
+}
+
+/// Replace any secret-sourced value with `***` so secrets don't leak into logs.
+fn redact(mut line: String, masked: &[String]) -> String {
+    for secret in masked {
+        if !secret.is_empty() {
+            line = line.replace(secret.as_str(), "***");
+        }
+    }
+    line
 }
 
 /// Send a single log line as a `AgentUp`. Returns `false` if the channel is
@@ -509,7 +536,9 @@ async fn publish_log_line(
     node_id: &str,
     stream: LogStream,
     line: String,
+    masked: &[String],
 ) -> bool {
+    let line = redact(line, masked);
     let log = JobLogLine {
         job_id: Some(common::JobId {
             value: job_id.to_string(),

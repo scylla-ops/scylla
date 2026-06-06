@@ -31,6 +31,9 @@ pub mod services {
     pub mod pipeline {
         tonic::include_proto!("pipeline");
     }
+    pub mod secret {
+        tonic::include_proto!("secret");
+    }
     pub mod job {
         tonic::include_proto!("job");
     }

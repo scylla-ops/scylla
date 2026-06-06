@@ -10,9 +10,9 @@ use scylla_core::application::OAuthUseCases;
 use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases,
-    DispatchUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases, JobUseCases,
-    OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
-    RoleUseCases, UserUseCases,
+    DispatchSecretResolver, DispatchUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases,
+    JobUseCases, OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases,
+    ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, UserUseCases,
 };
 #[cfg(feature = "mail")]
 use scylla_core::application::{Mailer, NoopMailer};
@@ -32,9 +32,10 @@ use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, InMemoryAgentRegistry, InMemoryJobLogStream,
     PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
     PgAuditLog, PgAuthzEntityProvider, PgDefaultRoleBindingRepository, PgGrantRepository,
-    PgJobLogRepository, PgJobRepository, PgOrganizationRepository, PgPipelineRepository,
-    PgPolicyRepository, PgProjectRepository, PgRoleRepository, PgSessionRepository,
-    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
+    ChaChaSecretCipher, PgJobLogRepository, PgJobRepository, PgOrganizationRepository,
+    PgPipelineRepository, PgPolicyRepository, PgProjectRepository, PgRoleRepository,
+    PgSecretRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
+    PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
@@ -104,6 +105,7 @@ pub type SharedPipelineUc = Arc<
     PipelineUseCases<PgPipelineRepository, PgProjectRepository, PgJobRepository, PermissionChecker>,
 >;
 pub type SharedJobUc = Arc<JobUseCases<PgJobRepository, PermissionChecker>>;
+pub type SharedSecretUc = Arc<SecretUseCases<PgSecretRepository, PermissionChecker>>;
 pub type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
 pub type SharedJobLogStreamUc =
     Arc<JobLogStreamUseCase<PgJobLogRepository, InMemoryJobLogStream, PermissionChecker>>;
@@ -144,6 +146,7 @@ pub struct Services {
     pub org_uc: SharedOrgUc,
     pub project_uc: SharedProjectUc,
     pub pipeline_uc: SharedPipelineUc,
+    pub secret_uc: SharedSecretUc,
     pub job_uc: SharedJobUc,
     pub job_log_uc: SharedJobLogUc,
     pub job_log_stream_uc: SharedJobLogStreamUc,
@@ -174,6 +177,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let org_repo = Arc::new(PgOrganizationRepository::new(db.clone()));
     let project_repo = Arc::new(PgProjectRepository::new(db.clone()));
     let pipeline_repo = Arc::new(PgPipelineRepository::new(db.clone()));
+    let secret_repo = Arc::new(PgSecretRepository::new(db.clone()));
     let job_repo = Arc::new(PgJobRepository::new(db.clone()));
     let job_log_repo = Arc::new(PgJobLogRepository::new(db.clone()));
     let app_repo = Arc::new(PgAppRepository::new(db.clone()));
@@ -192,6 +196,16 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
     let policy_repo = Arc::new(PgPolicyRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
+
+    // Project-secret encryption. Disabled (errors on use) when no master key is
+    // configured; the rest of the server still boots.
+    let secret_cipher: Arc<dyn SecretCipher> = Arc::new(ChaChaSecretCipher::from_hex_key(
+        config.secrets.as_ref().map(|s| s.master_key.as_str()),
+    )?);
+    let secret_resolver: Arc<dyn SecretResolver> = Arc::new(DispatchSecretResolver::new(
+        secret_repo.clone(),
+        secret_cipher.clone(),
+    ));
 
     // Persistent audit trail; writes happen out-of-band on a background task.
     let audit_log: Arc<dyn AuditLog> = Arc::new(PgAuditLog::new(db.clone()));
@@ -255,11 +269,17 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
         default_role_repo.clone(),
     ));
+    let secret_uc = Arc::new(SecretUseCases::new(
+        secret_repo.clone(),
+        secret_cipher.clone(),
+        permission_checker.clone(),
+    ));
     let pipeline_uc = Arc::new(PipelineUseCases::new(
         pipeline_repo.clone(),
         project_repo.clone(),
         job_repo.clone(),
         permission_checker.clone(),
+        secret_resolver.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(
         job_repo.clone(),
@@ -391,8 +411,12 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     // backlog. Runs for the process lifetime.
     let pending_signal = Arc::new(Notify::new());
     {
-        let scheduler =
-            PendingJobScheduler::new(job_repo.clone(), pipeline_repo.clone(), dispatch_uc.clone());
+        let scheduler = PendingJobScheduler::new(
+            job_repo.clone(),
+            pipeline_repo.clone(),
+            dispatch_uc.clone(),
+            secret_resolver.clone(),
+        );
         let signal = pending_signal.clone();
         tokio::spawn(async move {
             scheduler.drain().await;
@@ -421,6 +445,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         org_uc,
         project_uc,
         pipeline_uc,
+        secret_uc,
         job_uc,
         job_log_uc,
         job_log_stream_uc,
@@ -537,7 +562,7 @@ where
     use crate::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler,
         GrantHandler, JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler,
-        ProjectHandler, RoleHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        ProjectHandler, RoleHandler, SecretHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     #[cfg(feature = "invitations")]
     use scylla_protocol::services::invitation::{
@@ -561,6 +586,7 @@ where
         permission::role_service_server::RoleServiceServer,
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
+        secret::secret_service_server::SecretServiceServer,
         user::user_service_server::UserServiceServer,
     };
     use tonic::transport::Server;
@@ -581,6 +607,7 @@ where
         services.job_log_stream_uc.clone(),
     );
     let app_handler = AppHandler::new(services.app_uc.clone());
+    let secret_handler = SecretHandler::new(services.secret_uc.clone());
     let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
     let agent_handler = AgentHandler::new(
         services.agent_registry.clone(),
@@ -659,6 +686,10 @@ where
         .layer(auth_interceptor.clone())
         .service(AppServiceServer::new(app_handler));
 
+    let secret_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(SecretServiceServer::new(secret_handler));
+
     // Authenticated agent stream (app token). Presence = the open stream.
     let agent_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -700,6 +731,7 @@ where
         .add_service(org_service)
         .add_service(project_service)
         .add_service(pipeline_service)
+        .add_service(secret_service)
         .add_service(job_service)
         .add_service(app_service)
         .add_service(agent_service)

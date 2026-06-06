@@ -91,6 +91,22 @@ CREATE TABLE pipelines (
 CREATE INDEX pipelines_created_at_idx ON pipelines (created_at DESC);
 CREATE INDEX pipelines_project_id_idx ON pipelines (project_id);
 
+-- ── Project secrets ───────────────────────────────────────────────────────────
+-- Reversible-encrypted values referenced from pipeline node env vars. The value
+-- is AEAD ciphertext (nonce || ciphertext || tag); plaintext is decrypted only
+-- at dispatch time and never returned by the API.
+CREATE TABLE project_secrets (
+    id              TEXT        PRIMARY KEY,
+    project_id      TEXT        NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
+    name            TEXT        NOT NULL,
+    description     TEXT        NOT NULL DEFAULT '',
+    encrypted_value BYTEA       NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL,
+    updated_at      TIMESTAMPTZ NOT NULL,
+    UNIQUE (project_id, name)
+);
+CREATE INDEX project_secrets_project_id_idx ON project_secrets (project_id);
+
 -- ── Apps (machine principals) & agents ────────────────────────────────────────
 
 CREATE TABLE apps (

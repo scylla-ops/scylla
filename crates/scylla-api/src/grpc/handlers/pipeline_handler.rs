@@ -10,6 +10,7 @@ use scylla_core::application::{
 };
 use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
 use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, PipelineName, Shell, Step, WorkingDir};
+use scylla_core::domain::value_objects::secret::SecretName;
 use scylla_protocol::services::common;
 use scylla_protocol::services::job::JobResponse;
 use scylla_protocol::services::pipeline::{
@@ -300,16 +301,16 @@ fn proto_node_to_domain(n: ProtoPipelineNode) -> Result<PipelineNode, Status> {
     Ok(PipelineNode::new(node_id, deps, step, working_dir, env))
 }
 
-/// Map a wire env var to the domain. Secret references are accepted on the wire
-/// but not yet resolvable, so they are rejected with `UNIMPLEMENTED` until the
-/// secret store lands.
+/// Map a wire env var to the domain: either an inline literal or a reference to
+/// a project secret (resolved + decrypted at dispatch time).
 fn proto_env_to_domain(e: ProtoEnvVar) -> Result<EnvVar, Status> {
     let key = EnvKey::new(&e.key).map_err(domain_error_to_status)?;
     match e.source {
-        Some(env_var::Source::Value(v)) => Ok(EnvVar::new(key, v)),
-        Some(env_var::Source::SecretRef(_)) => Err(Status::unimplemented(
-            "secret references are not yet supported; use an inline value",
-        )),
+        Some(env_var::Source::Value(v)) => Ok(EnvVar::literal(key, v)),
+        Some(env_var::Source::SecretRef(name)) => {
+            let secret = SecretName::new(&name).map_err(domain_error_to_status)?;
+            Ok(EnvVar::secret(key, secret))
+        }
         None => Err(Status::invalid_argument(format!(
             "env var `{}` has no value",
             e.key

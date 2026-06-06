@@ -41,6 +41,10 @@ export default defineConfig({
       include: ['src/modules/features/agents/'],
     },
     {
+      path: '<rootDir>/src/modules/features/secret/locales/{locale}/messages',
+      include: ['src/modules/features/secret/'],
+    },
+    {
       path: '<rootDir>/src/locales/{locale}/messages',
       include: ['src/modules/shared/', 'src/modules/layout/', 'src/modules/core/'],
     },

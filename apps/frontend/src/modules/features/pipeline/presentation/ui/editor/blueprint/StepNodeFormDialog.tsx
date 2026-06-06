@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Button,
   Dialog,
@@ -18,12 +19,16 @@ import {
 import { Plus, Trash2 } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@shared/presentation/utils';
-import type { Shell } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type {
+  EnvEntry,
+  Shell,
+} from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
+import { useSecrets } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 
 export type NodeFormValue =
-  | { kind: 'exec'; command: string; args: string[]; workingDir?: string; env: Record<string, string> }
-  | { kind: 'script'; script: string; shell: Shell; workingDir?: string; env: Record<string, string> };
+  | { kind: 'exec'; command: string; args: string[]; workingDir?: string; env: EnvEntry[] }
+  | { kind: 'script'; script: string; shell: Shell; workingDir?: string; env: EnvEntry[] };
 
 interface StepNodeFormDialogProps {
   open: boolean;
@@ -34,16 +39,33 @@ interface StepNodeFormDialogProps {
   onEdit: (originalId: string, nodeId: string, value: NodeFormValue) => void;
 }
 
+/** UI row keeping both a literal value and a secret ref so toggling kind never loses input. */
 interface EnvRow {
   key: string;
+  kind: 'literal' | 'secret';
   value: string;
+  secretRef: string;
 }
 
 const TEXTAREA_CLASS =
   'border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full min-h-32 rounded-md border bg-transparent px-3 py-2 font-mono text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]';
 
+function rowFromEntry(entry: EnvEntry): EnvRow {
+  return entry.kind === 'secret'
+    ? { key: entry.key, kind: 'secret', value: '', secretRef: entry.secretRef }
+    : { key: entry.key, kind: 'literal', value: entry.value, secretRef: '' };
+}
+
+function entryFromRow(row: EnvRow): EnvEntry {
+  return row.kind === 'secret'
+    ? { key: row.key, kind: 'secret', secretRef: row.secretRef }
+    : { key: row.key, kind: 'literal', value: row.value };
+}
+
 export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onEdit }: StepNodeFormDialogProps) {
   const { t } = useLingui();
+  const { projectId } = useParams();
+  const { secrets } = useSecrets(projectId ?? '');
   const isEditMode = !!editingNode;
 
   const [nodeId, setNodeId] = useState('');
@@ -66,7 +88,7 @@ export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onE
     setCommand(node?.kind === 'exec' ? node.command : '');
     setArgs(node?.kind === 'exec' ? [...node.args] : []);
     setWorkingDir(node?.workingDir ?? '');
-    setEnvRows(node ? Object.entries(node.env).map(([key, value]) => ({ key, value })) : []);
+    setEnvRows(node ? node.env.map(rowFromEntry) : []);
   }, [open, editingNode]);
 
   const updateArg = (index: number, value: string) =>
@@ -76,18 +98,17 @@ export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onE
 
   const updateEnv = (index: number, patch: Partial<EnvRow>) =>
     setEnvRows(prev => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
-  const addEnv = () => setEnvRows(prev => [...prev, { key: '', value: '' }]);
+  const addEnv = () =>
+    setEnvRows(prev => [...prev, { key: '', kind: 'literal', value: '', secretRef: '' }]);
   const removeEnv = (index: number) => setEnvRows(prev => prev.filter((_, i) => i !== index));
 
   const handleSubmit = () => {
     const trimmedId = nodeId.trim();
     if (!trimmedId) return;
 
-    const env: Record<string, string> = {};
-    for (const row of envRows) {
-      const key = row.key.trim();
-      if (key) env[key] = row.value;
-    }
+    const env: EnvEntry[] = envRows
+      .filter(row => row.key.trim())
+      .map(row => entryFromRow({ ...row, key: row.key.trim() }));
     const wd = workingDir.trim() ? workingDir.trim() : undefined;
 
     let value: NodeFormValue;
@@ -271,12 +292,60 @@ export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onE
                     value={row.key}
                     onChange={e => updateEnv(index, { key: e.target.value })}
                     placeholder={t`KEY`}
+                    className='flex-1'
                   />
-                  <Input
-                    value={row.value}
-                    onChange={e => updateEnv(index, { value: e.target.value })}
-                    placeholder={t`value`}
-                  />
+                  <Select
+                    value={row.kind}
+                    onValueChange={v => updateEnv(index, { kind: v as EnvRow['kind'] })}
+                  >
+                    <SelectTrigger className='w-28 shrink-0'>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='literal'>
+                        <Trans>Literal</Trans>
+                      </SelectItem>
+                      <SelectItem value='secret'>
+                        <Trans>Secret</Trans>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {row.kind === 'secret' ? (
+                    secrets.length > 0 || row.secretRef ? (
+                      <Select
+                        value={row.secretRef}
+                        onValueChange={v => updateEnv(index, { secretRef: v })}
+                      >
+                        <SelectTrigger className='flex-1'>
+                          <SelectValue placeholder={t`Reference a secret`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {row.secretRef && !secrets.some(s => s.name === row.secretRef) && (
+                            <SelectItem value={row.secretRef}>{row.secretRef}</SelectItem>
+                          )}
+                          {secrets.map(secret => (
+                            <SelectItem key={secret.id} value={secret.name}>
+                              {secret.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={row.secretRef}
+                        onChange={e => updateEnv(index, { secretRef: e.target.value })}
+                        placeholder={t`secret name`}
+                        className='flex-1'
+                      />
+                    )
+                  ) : (
+                    <Input
+                      value={row.value}
+                      onChange={e => updateEnv(index, { value: e.target.value })}
+                      placeholder={t`value`}
+                      className='flex-1'
+                    />
+                  )}
                   <Button
                     type='button'
                     variant='ghost'

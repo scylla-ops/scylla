@@ -159,6 +159,15 @@ impl Agent {
                             nodes = dispatch.nodes.len(),
                             "received job"
                         );
+                        // Collect secret-sourced values to scrub from logs before
+                        // the nodes are consumed by `to_domain_nodes`.
+                        let masked_values: Vec<String> = dispatch
+                            .nodes
+                            .iter()
+                            .flat_map(|n| &n.env)
+                            .filter(|e| e.masked && !e.value.is_empty())
+                            .map(|e| e.value.clone())
+                            .collect();
                         let nodes = match to_domain_nodes(dispatch.nodes) {
                             Ok(nodes) => nodes,
                             Err(e) => {
@@ -171,6 +180,7 @@ impl Agent {
                             job_id.clone(),
                             self.config.workspace_root.clone(),
                             self.config.keep_workspace,
+                            masked_values,
                         );
                         // V1: sequential — finish the job before accepting the next.
                         if let Err(e) = executor.run(nodes).await {
@@ -237,8 +247,10 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                 .env
                 .into_iter()
                 .map(|e| {
+                    // The agent only ever receives already-resolved literals
+                    // (secret refs are resolved control-plane-side at dispatch).
                     let key = EnvKey::new(&e.key).map_err(|err| err.to_string())?;
-                    Ok::<_, String>(EnvVar::new(key, e.value))
+                    Ok::<_, String>(EnvVar::literal(key, e.value))
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             let step = match n.step {

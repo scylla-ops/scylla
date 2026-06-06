@@ -1,6 +1,7 @@
 use crate::application::caller::CallerContext;
 use crate::application::{
     JobDispatch, JobRepository, PermissionService, PipelineRepository, ProjectRepository,
+    SecretResolver,
 };
 use crate::domain::entities::{
     AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
@@ -24,6 +25,7 @@ pub struct PipelineUseCases<
     project_repo: Arc<PR>,
     job_repo: Arc<J>,
     permission_service: Arc<PS>,
+    secret_resolver: Arc<dyn SecretResolver>,
 }
 
 impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: PermissionService>
@@ -158,10 +160,15 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         let pipeline = self.pipeline_repo.find_by_id(pipeline_id).await?;
         let job = Job::create_from_pipeline(&pipeline);
         let job = self.job_repo.create(&job).await?;
+        // Resolve secret-ref env vars (decrypt) into the dispatch payload.
+        let nodes = self
+            .secret_resolver
+            .resolve(pipeline.project_id(), pipeline.nodes())
+            .await?;
         let dispatch = JobDispatch {
             job_id: job.id().to_string(),
             pipeline_id: pipeline.id().to_string(),
-            nodes: pipeline.nodes().to_vec(),
+            nodes,
         };
         Ok((job, dispatch))
     }

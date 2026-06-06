@@ -19,6 +19,7 @@ pub mod authz;
 pub mod pipeline;
 pub mod project;
 pub mod quota;
+pub mod secret;
 pub mod signup;
 pub mod user;
 
@@ -56,5 +57,8 @@ pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganiz
 pub use pipeline::{PipelineRepository, PipelineUseCases};
 pub use project::{ProjectRepository, ProjectUseCases, UserProjectRepository};
 pub use quota::Quotas;
+pub use secret::{
+    DispatchSecretResolver, SecretCipher, SecretRepository, SecretResolver, SecretUseCases,
+};
 pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
 pub use user::{UserRepository, UserUseCases};

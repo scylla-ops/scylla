@@ -4,6 +4,7 @@ use crate::application::agent::use_case::{DispatchOutcome, DispatchUseCases};
 use crate::application::authz::service::PermissionService;
 use crate::application::job::repository::JobRepository;
 use crate::application::pipeline::repository::PipelineRepository;
+use crate::application::secret::SecretResolver;
 use std::sync::Arc;
 use tracing::{info, instrument, warn};
 
@@ -25,6 +26,7 @@ where
     job_repo: Arc<J>,
     pipeline_repo: Arc<P>,
     dispatch_uc: Arc<DispatchUseCases<W, PS>>,
+    secret_resolver: Arc<dyn SecretResolver>,
 }
 
 impl<J, P, W, PS> PendingJobScheduler<J, P, W, PS>
@@ -39,11 +41,13 @@ where
         job_repo: Arc<J>,
         pipeline_repo: Arc<P>,
         dispatch_uc: Arc<DispatchUseCases<W, PS>>,
+        secret_resolver: Arc<dyn SecretResolver>,
     ) -> Self {
         Self {
             job_repo,
             pipeline_repo,
             dispatch_uc,
+            secret_resolver,
         }
     }
 
@@ -75,10 +79,21 @@ where
                     continue;
                 }
             };
+            let nodes = match self
+                .secret_resolver
+                .resolve(pipeline.project_id(), pipeline.nodes())
+                .await
+            {
+                Ok(nodes) => nodes,
+                Err(e) => {
+                    warn!(job_id = %job.id(), error = %e, "pending-job drain: secret resolution failed; skipping");
+                    continue;
+                }
+            };
             let dispatch = JobDispatch {
                 job_id: job.id().to_string(),
                 pipeline_id: pipeline.id().to_string(),
-                nodes: pipeline.nodes().to_vec(),
+                nodes,
             };
             match self.dispatch_uc.dispatch_job(pipeline.id(), &dispatch).await {
                 Ok(DispatchOutcome::Dispatched(app_id)) => {
@@ -105,8 +120,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::agent::dispatch::DispatchNode;
     use crate::application::caller::CallerContext;
-    use crate::domain::entities::{AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, ProjectId};
+    use crate::domain::entities::{
+        AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
+    };
     use crate::domain::errors::DomainResult;
     use crate::domain::value_objects::permission::Permission;
     use crate::domain::value_objects::{PaginatedResult, PaginationParams};
@@ -245,6 +263,30 @@ mod tests {
         }
     }
 
+    /// Resolver stub: maps nodes to dispatch nodes, literal env only (test
+    /// pipelines reference no secrets).
+    struct StubResolver;
+
+    #[async_trait]
+    impl SecretResolver for StubResolver {
+        async fn resolve(
+            &self,
+            _project_id: &ProjectId,
+            nodes: &[PipelineNode],
+        ) -> DomainResult<Vec<DispatchNode>> {
+            Ok(nodes
+                .iter()
+                .map(|n| DispatchNode {
+                    id: n.id().to_string(),
+                    deps: n.deps().iter().map(|d| d.to_string()).collect(),
+                    working_dir: n.working_dir().map(|w| w.as_str().to_string()),
+                    step: n.step().clone(),
+                    env: vec![],
+                })
+                .collect())
+        }
+    }
+
     fn a_pipeline() -> Pipeline {
         pipeline(&project(&org("o"), "p"))
     }
@@ -267,6 +309,7 @@ mod tests {
             jobs.clone(),
             Arc::new(StubPipelines { pipeline: pl }),
             dispatch_uc,
+            Arc::new(StubResolver),
         );
 
         assert_eq!(scheduler.drain().await, 1, "the one pending job is dispatched");
@@ -290,6 +333,7 @@ mod tests {
                 pipeline: a_pipeline(),
             }),
             dispatch_uc,
+            Arc::new(StubResolver),
         );
 
         assert_eq!(scheduler.drain().await, 0);

@@ -20,6 +20,7 @@ pub mod project_handler;
 #[cfg(feature = "signup")]
 pub mod registration_handler;
 pub mod role_handler;
+pub mod secret_handler;
 pub mod user_handler;
 
 pub use agent_admin_handler::AgentAdminHandler;
@@ -41,4 +42,5 @@ pub use project_handler::ProjectHandler;
 #[cfg(feature = "signup")]
 pub use registration_handler::RegistrationHandler;
 pub use role_handler::RoleHandler;
+pub use secret_handler::SecretHandler;
 pub use user_handler::UserHandler;

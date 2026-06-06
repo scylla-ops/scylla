@@ -30,6 +30,8 @@ message AppId { string value = 1; }
 message AppSecretId { string value = 1; }
 // Identifies an organization invitation.
 message InvitationId { string value = 1; }
+// Identifies a project secret.
+message SecretId { string value = 1; }
 // Identifies one node within a pipeline. NOT a ULID: a caller-supplied id,
 // unique within its pipeline, lowercase ASCII alphanumeric plus `-`/`_`, ≤128
 // chars.

@@ -61,6 +61,13 @@ pub enum Permission {
     ListPipelinesByProject(ProjectId),
     ListPipelinesByOrganization(OrganizationId),
 
+    // ── secret (project-scoped) ────────────────────────────────────────
+    // Manage a project's secrets. Create/list/delete are gated at the project
+    // scope; secret values are never read back, only referenced from pipelines.
+    CreateSecret(ProjectId),
+    ListSecrets(ProjectId),
+    DeleteSecret(ProjectId),
+
     // ── job ────────────────────────────────────────────────────────────
     CreateJob,
     ReadJob(JobId),
@@ -155,6 +162,10 @@ impl Permission {
             Self::ListPipelinesByProject(_) => "listPipelinesByProject",
             Self::ListPipelinesByOrganization(_) => "listPipelinesByOrganization",
 
+            Self::CreateSecret(_) => "createSecret",
+            Self::ListSecrets(_) => "listSecrets",
+            Self::DeleteSecret(_) => "deleteSecret",
+
             Self::CreateJob => "createJob",
             Self::ReadJob(_) => "readJob",
             Self::UpdateJob(_) => "updateJob",
@@ -244,6 +255,9 @@ impl Permission {
             | Self::CreatePipeline(id)
             | Self::ListPipelinesByProject(id)
             | Self::ListJobsByProject(id)
+            | Self::CreateSecret(id)
+            | Self::ListSecrets(id)
+            | Self::DeleteSecret(id)
             | Self::ManageProjectGrants(id) => ResourceRef::Project(id.clone()),
 
             // Pipeline-targeted
@@ -343,6 +357,10 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::ListPipelines,
         Permission::ListPipelinesByProject(project.clone()),
         Permission::ListPipelinesByOrganization(org.clone()),
+        // secret
+        Permission::CreateSecret(project.clone()),
+        Permission::ListSecrets(project.clone()),
+        Permission::DeleteSecret(project.clone()),
         // job
         Permission::CreateJob,
         Permission::ReadJob(job.clone()),

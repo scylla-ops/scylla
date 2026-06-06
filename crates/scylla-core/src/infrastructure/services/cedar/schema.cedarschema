@@ -71,7 +71,8 @@ namespace Scylla {
     action "readProject", "updateProject", "deleteProject",
            "listProjectMembers", "addProjectMember", "removeProjectMember",
            "createPipeline",
-           "listPipelinesByProject", "listJobsByProject"
+           "listPipelinesByProject", "listJobsByProject",
+           "createSecret", "listSecrets", "deleteSecret"
         appliesTo { principal: [User, Service], resource: [Project] };
 
     // ── Pipeline-targeted ──────────────────────────────────────────────

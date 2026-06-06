@@ -36,6 +36,7 @@ impl_wrapper!(
     common::AppSecretId,
     common::InvitationId,
     common::NodeId,
+    common::SecretId,
     common::Email,
 );
 

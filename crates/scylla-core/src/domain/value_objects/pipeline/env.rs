@@ -1,4 +1,5 @@
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::value_objects::secret::SecretName;
 use nutype::nutype;
 use serde::{Deserialize, Serialize};
 
@@ -54,19 +55,41 @@ impl EnvKey {
     }
 }
 
-/// A single environment variable applied to a node, with an inline literal
-/// value. (Secret references are resolved control-plane-side and never reach
-/// this domain type.)
+/// Where a node env var's value comes from: an inline literal, or a reference to
+/// a project secret (resolved + decrypted control-plane-side at dispatch).
+/// Externally tagged so the persisted JSONB is self-describing:
+/// `{"literal":"x"}` / `{"secret":"DB_PASSWORD"}`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EnvSource {
+    Literal(String),
+    Secret(SecretName),
+}
+
+/// A single environment variable applied to a node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EnvVar {
     key: EnvKey,
-    value: String,
+    source: EnvSource,
 }
 
 impl EnvVar {
+    /// An env var with an inline literal value.
     #[must_use]
-    pub fn new(key: EnvKey, value: String) -> Self {
-        Self { key, value }
+    pub fn literal(key: EnvKey, value: String) -> Self {
+        Self {
+            key,
+            source: EnvSource::Literal(value),
+        }
+    }
+
+    /// An env var whose value is resolved from a project secret at dispatch.
+    #[must_use]
+    pub fn secret(key: EnvKey, secret: SecretName) -> Self {
+        Self {
+            key,
+            source: EnvSource::Secret(secret),
+        }
     }
 
     #[must_use]
@@ -75,8 +98,19 @@ impl EnvVar {
     }
 
     #[must_use]
-    pub fn value(&self) -> &str {
-        &self.value
+    pub fn source(&self) -> &EnvSource {
+        &self.source
+    }
+
+    /// The inline literal value, or `None` if this var references a secret.
+    /// Convenience for consumers (e.g. the agent) that only ever see resolved
+    /// literals.
+    #[must_use]
+    pub fn literal_value(&self) -> Option<&str> {
+        match &self.source {
+            EnvSource::Literal(v) => Some(v),
+            EnvSource::Secret(_) => None,
+        }
     }
 }
 

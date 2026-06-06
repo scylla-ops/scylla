@@ -1,9 +1,11 @@
 import type {
+  EnvEntry,
   Pipeline,
   PipelineMetadata,
   PipelineStep,
 } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import type {
+  EnvVar,
   ListPipelinesResponse,
   PipelineNode,
   PipelineResponse,
@@ -22,15 +24,33 @@ function shellToProto(s: 'sh' | 'bash'): Shell {
   return s === 'bash' ? Shell.BASH : Shell.SH;
 }
 
+/** proto EnvVar -> domain EnvEntry (a secret ref or an inline literal). */
+function envVarToDomain(e: EnvVar): EnvEntry {
+  if (e.source.oneofKind === 'secretRef') {
+    return { key: e.key, kind: 'secret', secretRef: e.source.secretRef };
+  }
+  return {
+    key: e.key,
+    kind: 'literal',
+    value: e.source.oneofKind === 'value' ? e.source.value : '',
+  };
+}
+
+/** domain EnvEntry -> proto EnvVar. */
+function envVarFromDomain(entry: EnvEntry): EnvVar {
+  if (entry.kind === 'secret') {
+    return { key: entry.key, source: { oneofKind: 'secretRef', secretRef: entry.secretRef } };
+  }
+  return { key: entry.key, source: { oneofKind: 'value', value: entry.value } };
+}
+
 export class GrpcPipelineMapper {
   private static nodeToDomain(node: PipelineNode): PipelineStep {
     const base = {
       id: idValue(node.nodeId),
       deps: node.deps.map(idValue),
       ...(node.workingDir ? { workingDir: node.workingDir } : {}),
-      env: Object.fromEntries(
-        node.env.map(e => [e.key, e.source.oneofKind === 'value' ? e.source.value : '']),
-      ),
+      env: node.env.map(envVarToDomain),
     };
 
     const step = node.step;
@@ -58,10 +78,7 @@ export class GrpcPipelineMapper {
       nodeId: wrapId(step.id),
       deps: step.deps.map(wrapId),
       workingDir: step.workingDir ?? '',
-      env: Object.entries(step.env).map(([key, value]) => ({
-        key,
-        source: { oneofKind: 'value', value },
-      })),
+      env: step.env.map(envVarFromDomain),
       step:
         step.kind === 'script'
           ? {

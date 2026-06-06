@@ -1,6 +1,8 @@
 use crate::grpc::convert::{ts, wrap};
 use scylla_core::domain::entities::{Pipeline, PipelineNode as DomainPipelineNode};
-use scylla_core::domain::value_objects::pipeline::{EnvVar as DomainEnvVar, NodeId, Shell, Step};
+use scylla_core::domain::value_objects::pipeline::{
+    EnvSource, EnvVar as DomainEnvVar, NodeId, Shell, Step,
+};
 use scylla_protocol::services::common;
 use scylla_protocol::services::pipeline::{
     EnvVar, PipelineNode, PipelineResponse, PipelineSummary, env_var, pipeline_node,
@@ -52,9 +54,13 @@ pub fn pipeline_node_to_proto(node: &DomainPipelineNode) -> PipelineNode {
 }
 
 fn env_to_proto(ev: &DomainEnvVar) -> EnvVar {
+    let source = match ev.source() {
+        EnvSource::Literal(v) => env_var::Source::Value(v.clone()),
+        EnvSource::Secret(name) => env_var::Source::SecretRef(name.as_str().to_string()),
+    };
     EnvVar {
         key: ev.key().to_string(),
-        source: Some(env_var::Source::Value(ev.value().to_string())),
+        source: Some(source),
     }
 }
 
