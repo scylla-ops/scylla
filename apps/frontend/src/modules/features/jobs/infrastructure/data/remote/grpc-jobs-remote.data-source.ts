@@ -53,15 +53,13 @@ export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListJobLogsResponse>> {
     return Result.tryAsync<ListJobLogsResponse>(async () => {
-      const rep = (
+      return (
         await this._jobClient.listJobLogs({
           jobId: wrapId(jobId),
           nodeId: wrapIdOpt(nodeId),
           pagination,
         })
       ).response;
-      console.log('[gRPC getLogs] Response:', rep);
-      return rep;
     }, 'Error fetching job logs');
   }
 
