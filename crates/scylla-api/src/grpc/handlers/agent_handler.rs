@@ -2,7 +2,7 @@ use crate::extract_auth_context;
 use derive_more::Constructor;
 use scylla_core::application::caller::CallerContext;
 use scylla_core::application::{
-    AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
+    AgentDispatch, AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
     PermissionService,
 };
 use scylla_core::application::{JobDispatch, JobEvent};
@@ -123,9 +123,12 @@ async fn read_reports<J, L, PS>(
                         warn!(app_id = %app_id, job_id = %status.job_id, error = %e, "failed to record job status");
                     }
                     // A terminal job won't emit more log lines — evict its live
-                    // channel so the per-job stream map can't grow without bound.
+                    // channel so the per-job stream map can't grow without bound,
+                    // and free the agent's load slot so least-loaded dispatch can
+                    // hand it the next job.
                     if matches!(event, JobEvent::JobCompleted | JobEvent::JobFailed { .. }) {
                         log_stream.close(job_id.as_str());
+                        registry.release(&app_id);
                     }
                 }
                 touch_last_seen(&agent_repo, &app_id).await;

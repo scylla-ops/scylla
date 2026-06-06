@@ -645,6 +645,10 @@ mod tests {
                 .unwrap()
                 .push(app_id.as_str().to_string());
         }
+        fn in_flight(&self, _app_id: &AppId) -> usize {
+            0
+        }
+        fn release(&self, _app_id: &AppId) {}
     }
 
     fn use_cases(

@@ -20,4 +20,13 @@ pub trait AgentDispatch: Send + Sync {
     /// agent stops immediately instead of finishing its job. No-op if the app
     /// is not connected.
     fn disconnect(&self, app_id: &AppId);
+
+    /// Jobs dispatched to `app_id` that have not yet reported a terminal status
+    /// — the agent's current load. `0` for an unknown/disconnected app. Drives
+    /// least-loaded selection so jobs land on the idlest eligible agent.
+    fn in_flight(&self, app_id: &AppId) -> usize;
+
+    /// Mark one job on `app_id` as settled (terminal status reported), freeing a
+    /// load slot. Saturating — never underflows, so a stray release is harmless.
+    fn release(&self, app_id: &AppId);
 }

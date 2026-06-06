@@ -26,9 +26,17 @@ const DISPATCH_QUEUE: usize = 64;
 /// panicking: the map is plain data with no invariant a panicking thread could
 /// corrupt, and a poisoned panic would otherwise take down agent dispatch for
 /// the whole instance in a cascade.
+/// One live agent connection: its monotonic id, the dispatch channel sender, and
+/// the count of jobs dispatched to it but not yet reported terminal (its load).
+struct Conn {
+    conn_id: u64,
+    tx: mpsc::Sender<JobDispatch>,
+    in_flight: u32,
+}
+
 #[derive(Default)]
 pub struct InMemoryAgentRegistry {
-    agents: Mutex<HashMap<String, (u64, mpsc::Sender<JobDispatch>)>>,
+    agents: Mutex<HashMap<String, Conn>>,
     next_conn: AtomicU64,
 }
 
@@ -49,7 +57,14 @@ impl InMemoryAgentRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if map
-            .insert(app_id.as_str().to_string(), (conn_id, tx))
+            .insert(
+                app_id.as_str().to_string(),
+                Conn {
+                    conn_id,
+                    tx,
+                    in_flight: 0,
+                },
+            )
             .is_some()
         {
             warn!(app_id = %app_id, "agent reconnected; replacing previous stream");
@@ -77,7 +92,7 @@ impl InMemoryAgentRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if map
             .get(app_id.as_str())
-            .is_some_and(|(id, _)| *id == conn_id)
+            .is_some_and(|c| c.conn_id == conn_id)
         {
             map.remove(app_id.as_str());
         }
@@ -96,18 +111,29 @@ impl AgentDispatch for InMemoryAgentRegistry {
     }
 
     async fn dispatch(&self, app_id: &AppId, dispatch: &JobDispatch) -> DomainResult<()> {
-        // Clone the sender out of the lock so the await never holds it.
-        let sender = self
-            .agents
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get(app_id.as_str())
-            .map(|(_, tx)| tx.clone());
+        // Clone the sender out of the lock (so the await never holds it) and
+        // optimistically count the job as in-flight in the same critical section.
+        // A failed send rolls the count back via `release`.
+        let sender = {
+            let mut map = self
+                .agents
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            map.get_mut(app_id.as_str()).map(|c| {
+                c.in_flight += 1;
+                c.tx.clone()
+            })
+        };
         match sender {
-            Some(tx) => tx
-                .send(dispatch.clone())
-                .await
-                .map_err(|_| DomainError::infrastructure(format!("agent {app_id} stream closed"))),
+            Some(tx) => match tx.send(dispatch.clone()).await {
+                Ok(()) => Ok(()),
+                Err(_) => {
+                    self.release(app_id);
+                    Err(DomainError::infrastructure(format!(
+                        "agent {app_id} stream closed"
+                    )))
+                }
+            },
             None => Err(DomainError::infrastructure(format!(
                 "agent {app_id} not connected"
             ))),
@@ -116,7 +142,27 @@ impl AgentDispatch for InMemoryAgentRegistry {
 
     fn disconnect(&self, app_id: &AppId) {
         // Dropping the stored sender ends the agent's down-stream, which closes
-        // the RPC and stops the agent.
+        // the RPC and stops the agent. Removing the entry also clears its
+        // in-flight count, so a reconnect starts fresh.
         self.unregister(app_id);
+    }
+
+    fn in_flight(&self, app_id: &AppId) -> usize {
+        self.agents
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(app_id.as_str())
+            .map_or(0, |c| c.in_flight as usize)
+    }
+
+    fn release(&self, app_id: &AppId) {
+        if let Some(c) = self
+            .agents
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get_mut(app_id.as_str())
+        {
+            c.in_flight = c.in_flight.saturating_sub(1);
+        }
     }
 }

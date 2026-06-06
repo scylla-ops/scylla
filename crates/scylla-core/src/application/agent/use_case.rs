@@ -68,13 +68,16 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
             return Ok(DispatchOutcome::NoAgentAvailable);
         }
 
-        // Round-robin: scan from a rotating offset so consecutive dispatches
-        // don't all hit `connected()`'s first entry. The first *eligible* agent
-        // in that rotated order wins.
+        // Least-loaded: try agents idlest-first (fewest in-flight jobs), and
+        // rotate among equally-idle agents by a per-dispatch offset so they
+        // still take turns. The first *eligible* agent in that order wins, so a
+        // busy or unauthorized agent is skipped for an idle authorized one.
         let start = self.next.fetch_add(1, Ordering::Relaxed);
         let n = agents.len();
-        for i in 0..n {
-            let app_id = &agents[start.wrapping_add(i) % n];
+        let mut order: Vec<usize> = (0..n).collect();
+        order.sort_by_key(|&i| (self.registry.in_flight(&agents[i]), start.wrapping_add(i) % n));
+        for i in order {
+            let app_id = &agents[i];
             let caller = CallerContext::App(app_id.clone());
             match self
                 .permission_service
@@ -268,11 +271,30 @@ where
 mod tests {
     use super::*;
     use async_trait::async_trait;
+    use std::collections::HashMap;
     use std::sync::Mutex;
 
     struct StubRegistry {
         connected: Vec<AppId>,
         dispatched: Mutex<Vec<String>>,
+        loads: Mutex<HashMap<String, usize>>,
+    }
+
+    impl StubRegistry {
+        fn new(connected: Vec<AppId>) -> Self {
+            Self {
+                connected,
+                dispatched: Mutex::new(vec![]),
+                loads: Mutex::new(HashMap::new()),
+            }
+        }
+        fn with_loads(connected: Vec<AppId>, loads: HashMap<String, usize>) -> Self {
+            Self {
+                connected,
+                dispatched: Mutex::new(vec![]),
+                loads: Mutex::new(loads),
+            }
+        }
     }
 
     #[async_trait]
@@ -285,9 +307,23 @@ mod tests {
                 .lock()
                 .unwrap()
                 .push(app_id.as_str().to_string());
+            *self
+                .loads
+                .lock()
+                .unwrap()
+                .entry(app_id.as_str().to_string())
+                .or_insert(0) += 1;
             Ok(())
         }
         fn disconnect(&self, _app_id: &AppId) {}
+        fn in_flight(&self, app_id: &AppId) -> usize {
+            *self.loads.lock().unwrap().get(app_id.as_str()).unwrap_or(&0)
+        }
+        fn release(&self, app_id: &AppId) {
+            if let Some(v) = self.loads.lock().unwrap().get_mut(app_id.as_str()) {
+                *v = v.saturating_sub(1);
+            }
+        }
     }
 
     struct StubPerms {
@@ -324,10 +360,10 @@ mod tests {
 
     #[tokio::test]
     async fn dispatches_to_first_authorized_connected_agent() {
-        let registry = Arc::new(StubRegistry {
-            connected: vec![AppId::new("app-unauthorized"), AppId::new("app-ok")],
-            dispatched: Mutex::new(vec![]),
-        });
+        let registry = Arc::new(StubRegistry::new(vec![
+            AppId::new("app-unauthorized"),
+            AppId::new("app-ok"),
+        ]));
         let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPerms { allowed: "app-ok" }));
 
         let outcome = uc
@@ -344,10 +380,7 @@ mod tests {
         // Two equally-authorized connected agents. Before the round-robin fix
         // every job went to the first one and the second starved; now four
         // dispatches must split two-and-two.
-        let registry = Arc::new(StubRegistry {
-            connected: vec![AppId::new("app-a"), AppId::new("app-b")],
-            dispatched: Mutex::new(vec![]),
-        });
+        let registry = Arc::new(StubRegistry::new(vec![AppId::new("app-a"), AppId::new("app-b")]));
         let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPermsAll));
 
         for _ in 0..4 {
@@ -371,11 +404,27 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn picks_least_loaded_eligible_agent() {
+        // app-busy already has 3 in-flight jobs; app-idle has none. The next job
+        // must go to the idle one regardless of connection order.
+        let mut loads = HashMap::new();
+        loads.insert("app-busy".to_string(), 3);
+        let registry = Arc::new(StubRegistry::with_loads(
+            vec![AppId::new("app-busy"), AppId::new("app-idle")],
+            loads,
+        ));
+        let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPermsAll));
+
+        uc.dispatch_job(&PipelineId::new("pl1"), &dispatch())
+            .await
+            .unwrap();
+
+        assert_eq!(registry.dispatched.lock().unwrap().as_slice(), ["app-idle"]);
+    }
+
+    #[tokio::test]
     async fn no_agent_when_none_authorized() {
-        let registry = Arc::new(StubRegistry {
-            connected: vec![AppId::new("app-x")],
-            dispatched: Mutex::new(vec![]),
-        });
+        let registry = Arc::new(StubRegistry::new(vec![AppId::new("app-x")]));
         let uc = DispatchUseCases::new(registry, Arc::new(StubPerms { allowed: "nobody" }));
 
         let outcome = uc
