@@ -86,18 +86,9 @@ enum Scope {
   SCOPE_PROJECT = 3;
 }
 
-// The kind of entity a permission targets (the `Scylla::<Type>` a policy acts
-// on). Mirrors the backend resource types.
-enum ResourceType {
-  RESOURCE_TYPE_UNSPECIFIED = 0;
-  RESOURCE_TYPE_SYSTEM = 1;
-  RESOURCE_TYPE_USER = 2;
-  RESOURCE_TYPE_ORGANIZATION = 3;
-  RESOURCE_TYPE_PROJECT = 4;
-  RESOURCE_TYPE_PIPELINE = 5;
-  RESOURCE_TYPE_JOB = 6;
-  RESOURCE_TYPE_APP = 7;
-}
+// (The standalone ResourceType enum was removed: a permission's resource type
+// is a pure function of the permission itself, so it never needs to travel on
+// the wire — the backend derives it from `Permission::resource()`.)
 
 // Whether a principal is a human user or a machine app.
 enum PrincipalKind {
@@ -181,22 +172,25 @@ message ValidatePolicyResponse {
 
 message ListAuthzVocabularyRequest {}
 
-// One entry of the permission vocabulary: a permission, the resource type it
-// applies to, and the broadest scope at which it is coherent.
+// One entry of the permission vocabulary: a permission and the broadest scope at
+// which it is coherent. (resource_type was removed — it is derivable from the
+// permission and no client ever read it.)
 message AuthzAction {
-  Permission   permission    = 1;
-  ResourceType resource_type = 2;
+  reserved 2;                 // was resource_type (derivable from permission)
+  reserved "resource_type";
+  Permission permission = 1;
   // The minimal (narrowest) scope a role may bind to and still have this
   // permission do something — i.e. the scope whose subtree contains the target
   // resource. The permission is usable in a role scoped at `min_scope` or any
   // broader (ancestor) scope. Lets a client grey out incoherent permissions per
   // role scope (e.g. createOrganization → SCOPE_SYSTEM only).
-  Scope        min_scope     = 3;
+  Scope      min_scope  = 3;
 }
 
 message ListAuthzVocabularyResponse {
-  repeated AuthzAction  actions        = 1;
-  repeated ResourceType resource_types = 2;
+  reserved 2;                  // was resource_types (the standalone enum)
+  reserved "resource_types";
+  repeated AuthzAction actions = 1;
 }
 
 // ── Scoped grants ────────────────────────────────────────────────────────

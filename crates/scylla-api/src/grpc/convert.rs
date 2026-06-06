@@ -7,7 +7,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
 use scylla_core::application::{Scope, ScopeKind};
 use scylla_protocol::services::common;
-use scylla_protocol::services::permission::{Permission, ResourceType, Scope as ProtoScope};
+use scylla_protocol::services::permission::{Permission, Scope as ProtoScope};
 use tonic::Status;
 
 /// A proto wrapper message (`common.*Id` / `common.Email`) — a single `value`.
@@ -122,13 +122,6 @@ pub fn permission_from_key(key: &str) -> Option<Permission> {
     Permission::from_str_name(&screaming_snake(key))
 }
 
-/// The proto `ResourceType` for a resource-type tag (e.g. `"pipeline"` → `PIPELINE`).
-#[must_use]
-pub fn resource_type_from_tag(tag: &str) -> ResourceType {
-    ResourceType::from_str_name(&format!("RESOURCE_TYPE_{}", tag.to_ascii_uppercase()))
-        .unwrap_or(ResourceType::Unspecified)
-}
-
 /// Domain `ScopeKind` → proto `Scope`.
 #[must_use]
 pub fn scope_kind_to_proto(kind: ScopeKind) -> ProtoScope {
@@ -165,15 +158,14 @@ pub fn scope_kind_from_proto(kind: i32) -> Result<ScopeKind, Status> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_core::domain::value_objects::permission::{PERMISSION_CATALOG, RESOURCE_TYPES};
+    use scylla_core::domain::value_objects::permission::PERMISSION_CATALOG;
 
     #[test]
     fn permission_catalog_matches_proto_enum() {
-        // Every backend permission key round-trips through the proto enum, and
-        // every resource type maps to a concrete proto ResourceType. This is the
-        // single guard that the hand-written proto enum stays in sync with the
-        // code-owned catalog.
-        for (key, rt) in PERMISSION_CATALOG.iter() {
+        // Every backend permission key round-trips through the proto enum. This
+        // is the single guard that the hand-written proto enum stays a total
+        // mirror of the code-owned catalog.
+        for (key, _resource_type) in PERMISSION_CATALOG.iter() {
             let p = permission_from_key(key)
                 .unwrap_or_else(|| panic!("no proto Permission for catalog key '{key}'"));
             assert_eq!(
@@ -181,14 +173,6 @@ mod tests {
                 Some(*key),
                 "round-trip for {key}"
             );
-            assert_ne!(
-                resource_type_from_tag(rt),
-                ResourceType::Unspecified,
-                "no proto ResourceType for '{rt}'"
-            );
-        }
-        for rt in RESOURCE_TYPES {
-            assert_ne!(resource_type_from_tag(rt), ResourceType::Unspecified);
         }
     }
 }

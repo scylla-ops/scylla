@@ -3,7 +3,7 @@ use crate::application::caller::CallerContext;
 use crate::domain::clock;
 use crate::domain::entities::CedarPolicyId;
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::{PERMISSION_CATALOG, Permission, RESOURCE_TYPES};
+use crate::domain::value_objects::permission::{PERMISSION_CATALOG, Permission};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
@@ -73,22 +73,20 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
         self.policy_repo.list_all().await
     }
 
-    /// The authorization vocabulary a policy may reference: every action id with
-    /// the resource type it targets, plus the set of resource types. Static —
-    /// compiled into the binary, no DB. Gated by `ManagePolicies` like the rest
-    /// of policy administration.
+    /// The authorization vocabulary a policy may reference: every permission key
+    /// paired with the resource type it targets (used server-side only, to
+    /// compute each permission's coherent scope). Static — compiled into the
+    /// binary, no DB. Gated by `ManagePolicies` like the rest of policy
+    /// administration.
     #[instrument(skip(self, caller))]
     pub async fn authz_vocabulary(
         &self,
         caller: &CallerContext,
-    ) -> DomainResult<(
-        &'static [(&'static str, &'static str)],
-        &'static [&'static str],
-    )> {
+    ) -> DomainResult<&'static [(&'static str, &'static str)]> {
         self.permission_service
             .check(caller, Permission::ManagePolicies)
             .await?;
-        Ok((PERMISSION_CATALOG.as_slice(), RESOURCE_TYPES))
+        Ok(PERMISSION_CATALOG.as_slice())
     }
 
     /// Dry-run validation without persisting — backs a "check before save" UX.
