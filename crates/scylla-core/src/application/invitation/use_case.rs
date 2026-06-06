@@ -1,5 +1,6 @@
-use crate::application::authz::grant::{Grant, Principal, Scope, validate_role_for_scope};
+use crate::application::authz::grant::{Grant, Principal, Scope, validate_role_in_db};
 use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::role::RoleRepository;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::application::invitation::repository::InvitationRepository;
@@ -53,6 +54,9 @@ where
     hash_service: Arc<H>,
     session_repo: Arc<S>,
     policy_control: Arc<PC>,
+    /// Role catalog, for validating an invite's role against the DB — the same
+    /// check `CreateGrant` uses, so an invite can only carry a grantable role.
+    role_repo: Arc<dyn RoleRepository>,
 }
 
 impl<I, PS, O, U, H, S, PC> InvitationUseCases<I, PS, O, U, H, S, PC>
@@ -83,7 +87,12 @@ where
         // An invite mints an Organization-scoped grant on accept; reject a role
         // that isn't assignable on an org now, before persisting/emailing it.
         if let Some(role) = &role {
-            validate_role_for_scope(role, &Scope::Organization(organization_id.clone()))?;
+            validate_role_in_db(
+                &*self.role_repo,
+                role,
+                &Scope::Organization(organization_id.clone()),
+            )
+            .await?;
         }
 
         let org = self.org_repo.find_by_id(&organization_id).await?;

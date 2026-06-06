@@ -341,6 +341,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         hash_service.clone(),
         session_repo.clone(),
         permission_checker.clone(),
+        role_repo.clone(),
     ));
 
     // GitHub OAuth: only wired when the app is configured with credentials.

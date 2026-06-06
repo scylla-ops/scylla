@@ -7,7 +7,7 @@ pub mod service;
 pub use entity_provider::{AuthzEntityProvider, PrincipalAuthz, ResourceAncestors};
 pub use grant::{
     Grant, GrantRepository, GrantTarget, GrantUseCases, GrantableRole, Principal, RoleKind, Scope,
-    ScopeKind, grantable_roles, validate_permission_key, validate_role_for_scope,
+    ScopeKind, grantable_roles, validate_permission_key, validate_role_in_db,
 };
 pub use policy::{PolicyControl, PolicyDefinition, PolicyRepository, PolicyUseCases};
 pub use role::{

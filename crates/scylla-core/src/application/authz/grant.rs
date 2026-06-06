@@ -188,30 +188,29 @@ pub fn grantable_roles(filter: Option<ScopeKind>) -> Vec<GrantableRole> {
         .collect()
 }
 
-/// Validate a grant's (role, scope) pairing against [`GRANTABLE_ROLES`]. Rejects
-/// an unknown role name and a role used on the wrong scope kind (e.g. an
-/// `organization-admin` on a Project). Closes the free-form `RoleName` hole so a
-/// persisted grant can never name a role the Cedar adapter cannot link.
-pub fn validate_role_for_scope(role: &RoleName, scope: &Scope) -> DomainResult<()> {
-    let entry = GRANTABLE_ROLES
-        .iter()
-        .find(|r| r.name == role.as_str())
-        .ok_or_else(|| {
-            let names = GRANTABLE_ROLES
-                .iter()
-                .map(|r| r.name)
-                .collect::<Vec<_>>()
-                .join(", ");
-            DomainError::validation(format!(
-                "unknown role '{}'; assignable roles: {names}",
-                role.as_str()
-            ))
-        })?;
-    if entry.scope != scope.kind() {
+/// Validate a role grant against the DB role catalog: the role must exist
+/// (builtin *or* custom) and declare the scope kind the grant binds to (so e.g.
+/// an `organization-admin` is rejected on a Project). The single role-grant
+/// validity check — shared by `CreateGrant` and the invitation flow — so "what
+/// can be granted" equals "what can be invited" by construction, and a persisted
+/// grant can never name a role the Cedar adapter cannot link. A role created
+/// through `RoleService` (builtin or custom) becomes grantable through the same
+/// path; the rest of the pipeline (anti-escalation expansion, Cedar emission)
+/// already resolves any role by id.
+pub async fn validate_role_in_db(
+    role_repo: &dyn RoleRepository,
+    role: &RoleName,
+    scope: &Scope,
+) -> DomainResult<()> {
+    let found = role_repo
+        .get(role.as_str())
+        .await?
+        .ok_or_else(|| DomainError::validation(format!("unknown role '{}'", role.as_str())))?;
+    if found.scope != scope.kind() {
         return Err(DomainError::validation(format!(
             "role '{}' is grantable only on {} scope, not {}",
             role.as_str(),
-            entry.scope.as_str(),
+            found.scope.as_str(),
             scope.kind().as_str()
         )));
     }
@@ -410,34 +409,14 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         // emittable into Cedar: a role grant names an existing role valid at its
         // scope; a permission grant names a known permission key.
         match &grant.target {
-            GrantTarget::Role(role) => self.validate_role_target(role, &grant.scope).await?,
+            GrantTarget::Role(role) => {
+                validate_role_in_db(&*self.role_repo, role, &grant.scope).await?;
+            }
             GrantTarget::Permission(key) => validate_permission_key(key)?,
         }
         self.check_no_escalation(caller, grant).await?;
         self.grant_repo.create(grant).await?;
         self.policy_control.reload().await
-    }
-
-    /// Validate a role grant against the DB role catalog: the role must exist
-    /// (builtin *or* custom) and declare the scope kind the grant binds to.
-    /// Supersedes the static, builtin-only [`validate_role_for_scope`] so a role
-    /// created through `RoleService` becomes grantable — the rest of the pipeline
-    /// (anti-escalation expansion via [`Self::target_keys`] and Cedar emission)
-    /// already resolves any role by id. Builtins live in the same table (id ==
-    /// key), so they validate through this path unchanged.
-    async fn validate_role_target(&self, role: &RoleName, scope: &Scope) -> DomainResult<()> {
-        let found = self.role_repo.get(role.as_str()).await?.ok_or_else(|| {
-            DomainError::validation(format!("unknown role '{}'", role.as_str()))
-        })?;
-        if found.scope != scope.kind() {
-            return Err(DomainError::validation(format!(
-                "role '{}' is grantable only on {} scope, not {}",
-                role.as_str(),
-                found.scope.as_str(),
-                scope.kind().as_str()
-            )));
-        }
-        Ok(())
     }
 
     /// Anti-escalation: a delegator may only confer permissions it already holds
@@ -702,32 +681,6 @@ mod tests {
         let system = grantable_roles(Some(ScopeKind::System));
         assert_eq!(system.len(), 1);
         assert_eq!(system[0].name, SYSTEM_ADMIN_ROLE);
-    }
-
-    #[test]
-    fn validate_role_for_scope_accepts_catalog_pairings_and_rejects_others() {
-        // Every catalog entry validates against a scope of its declared kind.
-        for r in GRANTABLE_ROLES {
-            let scope = match r.scope {
-                ScopeKind::System => Scope::System,
-                ScopeKind::Organization => Scope::Organization(OrganizationId::new("o1")),
-                ScopeKind::Project => Scope::Project(ProjectId::new("p1")),
-            };
-            validate_role_for_scope(&RoleName::new(r.name).unwrap(), &scope)
-                .unwrap_or_else(|_| panic!("{} must validate on its scope", r.name));
-        }
-        // Unknown role → rejected.
-        assert!(
-            validate_role_for_scope(&RoleName::new("wizard").unwrap(), &Scope::System).is_err()
-        );
-        // Right role, wrong scope kind → rejected.
-        assert!(
-            validate_role_for_scope(
-                &RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
-                &Scope::Project(ProjectId::new("p1")),
-            )
-            .is_err()
-        );
     }
 
     #[test]
