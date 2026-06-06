@@ -262,7 +262,9 @@ CREATE INDEX grants_principal_idx ON grants (principal_kind, principal_id);
 -- ON DELETE RESTRICT keeps a bound role from being deleted out from under the
 -- slot, so the pointer never dangles (rebind first, then delete).
 CREATE TABLE default_role_bindings (
-    slot    TEXT PRIMARY KEY,
+    -- Mirror of DefaultRoleSlot::as_str — a bad slot would silently never
+    -- resolve, so reject it at write time.
+    slot    TEXT PRIMARY KEY CHECK (slot IN ('org_creation', 'project_creation')),
     role_id TEXT NOT NULL REFERENCES roles (id) ON DELETE RESTRICT
 );
 

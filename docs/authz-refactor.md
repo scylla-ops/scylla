@@ -4,6 +4,15 @@ Status: **in progress** (started 2026-06-02, branch `poc`). This document is the
 reference for the multi-phase refactor of Scylla's authorization system. It
 records the target model, the locked decisions behind it, and the phased plan.
 
+> **v0.2 vocabulary simplification (2026-06-06).** A clarity pass landed on
+> `v0.2`: `resource_type` is now *derived* from the permission (no stored table,
+> no wire field — the standalone proto `ResourceType` enum is gone); verbs are
+> consistent (`updateJob`, the agent's `appendJobLog`); agent read/delete reuse
+> the App permissions; the grant-management trio is the uniform
+> `manage<Scope>Grants`. The per-scope `manage*Grants` / `list*By*` splits are
+> kept on purpose (Cedar `appliesTo` anti-escalation) and grouped in the UI.
+> `GLOSSARY.md` is the canonical vocabulary; some prose below predates this pass.
+
 The canonical word-by-word vocabulary lives in [`GLOSSARY.md`](../GLOSSARY.md)
 (section *Authorization*). This document explains the **model and the plan**; the
 glossary is the **dictionary**. Keep them in sync.

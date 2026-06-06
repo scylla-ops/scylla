@@ -109,6 +109,21 @@ pipeline. Closed, code-owned catalog: the `Permission` enum
 `Permission::key()` is its canonical id (`"runPipeline"`) — the value a role
 stores and the Cedar `Action::"…"` eid. A permission cannot be created at runtime
 (only the code that enforces it gives it meaning); **roles** are the dynamic part.
+The **resource type** a permission targets is *derived* (`Permission::resource()`
+→ `ResourceRef::kind()`), never stored or sent on the wire — `read_user` always
+targets a user, so naming it would be redundant.
+
+### Scope-pinned permission families (don't merge these)
+A few permissions encode a scope in their name on purpose — `manageSystemGrants`
+/ `manageOrgGrants` / `manageProjectGrants`, and the `list*` / `list*ByOrganization`
+/ `list*ByProject` / `list*ByPipeline` families. Each member is a **distinct Cedar
+action** with its own `appliesTo` resource type; that split is the anti-escalation
+fence (a single shared action would let one over-broad permit authorize every
+scope, and the ABAC member policies rely on the per-scope ids to confine listing
+to a tenant subtree). They look redundant but are **load-bearing — do not collapse
+them into one Cedar action.** The UI presents each family as a single concept (one
+"Manage grants", one "List jobs") with a scope selector; the split stays in the
+schema only.
 
 ### Role
 A named bundle of permissions bound to a scope kind, stored in the `roles` +
