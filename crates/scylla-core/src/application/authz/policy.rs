@@ -88,7 +88,7 @@ impl<R: PolicyRepository, PC: PolicyControl, PS: PermissionService> PolicyUseCas
         self.permission_service
             .check(caller, Permission::ManagePolicies)
             .await?;
-        Ok((PERMISSION_CATALOG, RESOURCE_TYPES))
+        Ok((PERMISSION_CATALOG.as_slice(), RESOURCE_TYPES))
     }
 
     /// Dry-run validation without persisting — backs a "check before save" UX.

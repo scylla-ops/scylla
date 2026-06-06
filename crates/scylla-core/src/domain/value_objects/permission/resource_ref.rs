@@ -16,17 +16,36 @@ pub enum ResourceRef {
     App(AppId),
 }
 
+impl ResourceRef {
+    /// The lowercase resource-type tag (`"system"`, `"user"`, …) — the kind
+    /// without the id. The single source for a permission's resource type (see
+    /// [`crate::domain::value_objects::permission::Permission::resource_type`])
+    /// and the audit `resource_kind`, so the tag can never drift from the variant.
+    #[must_use]
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::User(_) => "user",
+            Self::Organization(_) => "organization",
+            Self::Project(_) => "project",
+            Self::Pipeline(_) => "pipeline",
+            Self::Job(_) => "job",
+            Self::App(_) => "app",
+        }
+    }
+}
+
 /// Compact, human-readable label for audit logs (e.g. `pipeline:01h…`, `system`).
 impl std::fmt::Display for ResourceRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::System => write!(f, "system"),
-            Self::User(id) => write!(f, "user:{}", id.as_str()),
-            Self::Organization(id) => write!(f, "organization:{}", id.as_str()),
-            Self::Project(id) => write!(f, "project:{}", id.as_str()),
-            Self::Pipeline(id) => write!(f, "pipeline:{}", id.as_str()),
-            Self::Job(id) => write!(f, "job:{}", id.as_str()),
-            Self::App(id) => write!(f, "app:{}", id.as_str()),
+            Self::System => write!(f, "{}", self.kind()),
+            Self::User(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Organization(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Project(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Pipeline(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::Job(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
+            Self::App(id) => write!(f, "{}:{}", self.kind(), id.as_str()),
         }
     }
 }

@@ -173,7 +173,7 @@ mod tests {
         // every resource type maps to a concrete proto ResourceType. This is the
         // single guard that the hand-written proto enum stays in sync with the
         // code-owned catalog.
-        for (key, rt) in PERMISSION_CATALOG {
+        for (key, rt) in PERMISSION_CATALOG.iter() {
             let p = permission_from_key(key)
                 .unwrap_or_else(|| panic!("no proto Permission for catalog key '{key}'"));
             assert_eq!(

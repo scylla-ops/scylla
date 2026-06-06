@@ -3,6 +3,7 @@ pub mod resource_ref;
 pub use resource_ref::ResourceRef;
 
 use crate::domain::entities::{AppId, JobId, OrganizationId, PipelineId, ProjectId, UserId};
+use std::sync::LazyLock;
 
 /// Authorization intent: a named operation plus the concrete resource it acts
 /// on. This is the single vocabulary the application layer uses to ask "is the
@@ -261,6 +262,16 @@ impl Permission {
             }
         }
     }
+
+    /// The resource-type tag this permission targets (`"user"`, `"job"`, …),
+    /// derived from [`Self::resource`] so it can never drift from the actual
+    /// Cedar target. Lets the authz layer place a permission within the scope
+    /// hierarchy (e.g. reject a `system`-targeted permission in a project-scoped
+    /// role) without a hand-maintained `(key, resource_type)` table.
+    #[must_use]
+    pub fn resource_type(&self) -> &'static str {
+        self.resource().kind()
+    }
 }
 
 /// Every resource type a policy may target — the `Scylla::<Type>` entities, by
@@ -275,81 +286,102 @@ pub const RESOURCE_TYPES: &[&str] = &[
     "app",
 ];
 
+/// One sample of every [`Permission`] variant — the single enumeration of the
+/// catalog. Ids are placeholders: [`Permission::key`] and
+/// [`Permission::resource_type`] read only the variant, never the id value. The
+/// proto-sync test (`grpc::convert`) asserts this stays a total mirror of the
+/// gRPC `Permission` enum, so a forgotten variant is caught.
+fn catalog_variants() -> Vec<Permission> {
+    let user = UserId::new("_");
+    let org = OrganizationId::new("_");
+    let project = ProjectId::new("_");
+    let pipeline = PipelineId::new("_");
+    let job = JobId::new("_");
+    let app = AppId::new("_");
+    vec![
+        // user
+        Permission::CreateUser,
+        Permission::ReadUser(user.clone()),
+        Permission::UpdateUser(user.clone()),
+        Permission::DeleteUser(user.clone()),
+        Permission::ListUsers,
+        // organization
+        Permission::CreateOrganization,
+        Permission::ReadOrganization(org.clone()),
+        Permission::UpdateOrganization(org.clone()),
+        Permission::DeleteOrganization(org.clone()),
+        Permission::ListOrganizations,
+        Permission::ListOrganizationMembers(org.clone()),
+        Permission::AddOrganizationMember(org.clone()),
+        Permission::RemoveOrganizationMember(org.clone()),
+        Permission::ManageInvitations(org.clone()),
+        Permission::ListUserOrganizations(user.clone()),
+        // project
+        Permission::CreateProject(org.clone()),
+        Permission::ReadProject(project.clone()),
+        Permission::UpdateProject(project.clone()),
+        Permission::DeleteProject(project.clone()),
+        Permission::ListProjects,
+        Permission::ListProjectsByOrganization(org.clone()),
+        Permission::ListProjectMembers(project.clone()),
+        Permission::AddProjectMember(project.clone()),
+        Permission::RemoveProjectMember(project.clone()),
+        Permission::ListUserProjects(user.clone()),
+        // pipeline
+        Permission::CreatePipeline(project.clone()),
+        Permission::ReadPipeline(pipeline.clone()),
+        Permission::UpdatePipeline(pipeline.clone()),
+        Permission::DeletePipeline(pipeline.clone()),
+        Permission::RunPipeline(pipeline.clone()),
+        Permission::ExecuteJob(pipeline.clone()),
+        Permission::ListPipelines,
+        Permission::ListPipelinesByProject(project.clone()),
+        Permission::ListPipelinesByOrganization(org.clone()),
+        // job
+        Permission::CreateJob,
+        Permission::ReadJob(job.clone()),
+        Permission::WriteJob(job.clone()),
+        Permission::DeleteJob(job.clone()),
+        Permission::ListJobs,
+        Permission::ListJobsByPipeline(pipeline.clone()),
+        Permission::ListJobsByProject(project.clone()),
+        Permission::ListJobsByOrganization(org.clone()),
+        Permission::ReadJobLogs(job.clone()),
+        Permission::WriteJobLogs(job.clone()),
+        Permission::WriteJobStatus(job.clone()),
+        Permission::WriteJobLog(job.clone()),
+        // app
+        Permission::CreateApp(org.clone()),
+        Permission::ReadApp(app.clone()),
+        Permission::DeleteApp(app.clone()),
+        Permission::ListAppsByOrganization(org.clone()),
+        // agent
+        Permission::CreateAgent(org.clone()),
+        Permission::ListAgents(org.clone()),
+        Permission::ReadAgent(app.clone()),
+        Permission::ReadAgentStats(app.clone()),
+        Permission::DeleteAgent(app),
+        // grants / policies / roles
+        Permission::ManageGrants,
+        Permission::ManageOrgGrants(org.clone()),
+        Permission::ManageProjectGrants(project),
+        Permission::ManagePolicies,
+        Permission::ManageRoles,
+    ]
+}
+
 /// The full authorization vocabulary: every permission key paired with the
-/// resource type it targets. Drives `ListAuthzVocabulary` so a policy author sees what a
-/// `permit`/`forbid` may reference instead of guessing names. One row per
-/// [`Permission`] variant — keep in sync (the test below asserts every row's
-/// resource type is one of [`RESOURCE_TYPES`] and ids are unique).
-pub const PERMISSION_CATALOG: &[(&str, &str)] = &[
-    // user
-    ("createUser", "system"),
-    ("readUser", "user"),
-    ("updateUser", "user"),
-    ("deleteUser", "user"),
-    ("listUsers", "system"),
-    // organization
-    ("createOrganization", "system"),
-    ("readOrganization", "organization"),
-    ("updateOrganization", "organization"),
-    ("deleteOrganization", "organization"),
-    ("listOrganizations", "system"),
-    ("listOrganizationMembers", "organization"),
-    ("addOrganizationMember", "organization"),
-    ("removeOrganizationMember", "organization"),
-    ("manageInvitations", "organization"),
-    ("listUserOrganizations", "user"),
-    // project
-    ("createProject", "organization"),
-    ("readProject", "project"),
-    ("updateProject", "project"),
-    ("deleteProject", "project"),
-    ("listProjects", "system"),
-    ("listProjectsByOrganization", "organization"),
-    ("listProjectMembers", "project"),
-    ("addProjectMember", "project"),
-    ("removeProjectMember", "project"),
-    ("listUserProjects", "user"),
-    // pipeline
-    ("createPipeline", "project"),
-    ("readPipeline", "pipeline"),
-    ("updatePipeline", "pipeline"),
-    ("deletePipeline", "pipeline"),
-    ("runPipeline", "pipeline"),
-    ("executeJob", "pipeline"),
-    ("listPipelines", "system"),
-    ("listPipelinesByProject", "project"),
-    ("listPipelinesByOrganization", "organization"),
-    // job
-    ("createJob", "system"),
-    ("readJob", "job"),
-    ("writeJob", "job"),
-    ("deleteJob", "job"),
-    ("listJobs", "system"),
-    ("listJobsByPipeline", "pipeline"),
-    ("listJobsByProject", "project"),
-    ("listJobsByOrganization", "organization"),
-    ("readJobLogs", "job"),
-    ("writeJobLogs", "job"),
-    ("writeJobStatus", "job"),
-    ("writeJobLog", "job"),
-    // app
-    ("createApp", "organization"),
-    ("readApp", "app"),
-    ("deleteApp", "app"),
-    ("listAppsByOrganization", "organization"),
-    // agent
-    ("createAgent", "organization"),
-    ("listAgents", "organization"),
-    ("readAgent", "app"),
-    ("readAgentStats", "app"),
-    ("deleteAgent", "app"),
-    // grants / policies
-    ("manageGrants", "system"),
-    ("manageOrgGrants", "organization"),
-    ("manageProjectGrants", "project"),
-    ("managePolicies", "system"),
-    ("manageRoles", "system"),
-];
+/// resource type it targets. Drives `ListAuthzVocabulary` and grant/role
+/// validation. **Derived** from the [`Permission`] enum — `key()` gives the id,
+/// `resource_type()` the target type — so the resource type can never drift from
+/// the actual Cedar target (no hand-maintained second column). One row per
+/// [`catalog_variants`] entry.
+pub static PERMISSION_CATALOG: LazyLock<Vec<(&'static str, &'static str)>> = LazyLock::new(|| {
+    catalog_variants()
+        .iter()
+        .map(|p| (p.key(), p.resource_type()))
+        .collect()
+});
 
 /// Whether `key` is a permission the system knows (a [`PERMISSION_CATALOG`] key).
 /// Used to validate a direct permission grant before persisting it.
@@ -372,13 +404,13 @@ pub fn permission_resource_type(key: &str) -> Option<&'static str> {
 
 #[cfg(test)]
 mod catalog_tests {
-    use super::{PERMISSION_CATALOG, RESOURCE_TYPES};
+    use super::{PERMISSION_CATALOG, RESOURCE_TYPES, catalog_variants};
     use std::collections::HashSet;
 
     #[test]
     fn permission_catalog_is_consistent() {
         let mut keys = HashSet::new();
-        for (key, resource_type) in PERMISSION_CATALOG {
+        for (key, resource_type) in PERMISSION_CATALOG.iter() {
             assert!(
                 keys.insert(*key),
                 "duplicate permission key in catalog: {key}"
@@ -388,5 +420,7 @@ mod catalog_tests {
                 "permission {key} has unknown resource type {resource_type}",
             );
         }
+        // The derived catalog has exactly one row per enumerated variant.
+        assert_eq!(PERMISSION_CATALOG.len(), catalog_variants().len());
     }
 }
