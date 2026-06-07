@@ -14,7 +14,12 @@ interface PipelineBlueprintProps {
   onNameChange: (name: string) => void;
 }
 
-export const PipelineBlueprint = ({ steps, pipelineName, onStepsChange, onNameChange }: PipelineBlueprintProps) => {
+export const PipelineBlueprint = ({
+  steps,
+  pipelineName,
+  onStepsChange,
+  onNameChange,
+}: PipelineBlueprintProps) => {
   const canvasRef = useRef<BlueprintCanvasHandle>(null);
 
   const addStepDialog = useDialog();
@@ -27,7 +32,8 @@ export const PipelineBlueprint = ({ steps, pipelineName, onStepsChange, onNameCh
   );
 
   const handleEditNode = useCallback(
-    (originalId: string, nodeId: string, value: NodeFormValue) => canvasRef.current?.editNode(originalId, nodeId, value),
+    (originalId: string, nodeId: string, value: NodeFormValue) =>
+      canvasRef.current?.editNode(originalId, nodeId, value),
     [],
   );
 

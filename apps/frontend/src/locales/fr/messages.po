@@ -26,7 +26,7 @@ msgstr "Secret de l'agent"
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:59
+#: src/modules/core/presentation/ui/App.tsx:67
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
@@ -87,7 +87,7 @@ msgstr "Se déconnecter"
 msgid "New {label}"
 msgstr "Nouveau {label}"
 
-#: src/modules/core/presentation/ui/App.tsx:89
+#: src/modules/core/presentation/ui/App.tsx:97
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
@@ -104,8 +104,8 @@ msgstr "Lancer l'agent"
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:58
-#: src/modules/core/presentation/ui/App.tsx:88
+#: src/modules/core/presentation/ui/App.tsx:66
+#: src/modules/core/presentation/ui/App.tsx:96
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 

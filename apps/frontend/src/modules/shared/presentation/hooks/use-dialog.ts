@@ -23,4 +23,3 @@ export function useDialog<T = void>(): DialogState<T> {
 
   return { isOpen, data, open: open as DialogState<T>['open'], close };
 }
-

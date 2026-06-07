@@ -69,10 +69,7 @@ export function useBlueprintState({ steps, pipelineName, onStepsChange }: UseBlu
       if (connection.target === START_NODE_ID) return;
 
       setEdges(currentEdges => {
-        const updatedEdges = addEdge(
-          { ...connection, ...DEFAULT_EDGE_STYLE },
-          currentEdges,
-        );
+        const updatedEdges = addEdge({ ...connection, ...DEFAULT_EDGE_STYLE }, currentEdges);
         // Read latest nodes to emit change
         setNodes(currentNodes => {
           emitChange(currentNodes, updatedEdges);
@@ -147,29 +144,42 @@ export function useBlueprintState({ steps, pipelineName, onStepsChange }: UseBlu
   const handleEditNode = useCallback(
     (originalId: string, newNodeId: string, value: NodeFormValue) => {
       setNodes(currentNodes => {
-        const finalId = generateUniqueNodeId(newNodeId, new Set(currentNodes.map(n => n.id)), originalId);
+        const finalId = generateUniqueNodeId(
+          newNodeId,
+          new Set(currentNodes.map(n => n.id)),
+          originalId,
+        );
         const updatedNodes = currentNodes.map(node => {
           if (node.id === originalId) {
-            return { ...node, id: finalId, data: { id: finalId, deps: [], ...value } satisfies PipelineNodeData };
+            return {
+              ...node,
+              id: finalId,
+              data: { id: finalId, deps: [], ...value } satisfies PipelineNodeData,
+            };
           }
           const data = node.data as PipelineNodeData;
           if (data.deps?.includes(originalId)) {
-            return { ...node, data: { ...data, deps: data.deps.map(d => (d === originalId ? finalId : d)) } };
+            return {
+              ...node,
+              data: { ...data, deps: data.deps.map(d => (d === originalId ? finalId : d)) },
+            };
           }
           return node;
         });
 
         setEdges(currentEdges => {
-          const updatedEdges = originalId !== finalId
-            ? currentEdges.map(edge => ({
-                ...edge,
-                id: edge.source === originalId || edge.target === originalId
-                  ? `${edge.source === originalId ? finalId : edge.source}->${edge.target === originalId ? finalId : edge.target}`
-                  : edge.id,
-                source: edge.source === originalId ? finalId : edge.source,
-                target: edge.target === originalId ? finalId : edge.target,
-              }))
-            : currentEdges;
+          const updatedEdges =
+            originalId !== finalId
+              ? currentEdges.map(edge => ({
+                  ...edge,
+                  id:
+                    edge.source === originalId || edge.target === originalId
+                      ? `${edge.source === originalId ? finalId : edge.source}->${edge.target === originalId ? finalId : edge.target}`
+                      : edge.id,
+                  source: edge.source === originalId ? finalId : edge.source,
+                  target: edge.target === originalId ? finalId : edge.target,
+                }))
+              : currentEdges;
           emitChange(updatedNodes, updatedEdges);
           return updatedEdges;
         });
@@ -192,4 +202,3 @@ export function useBlueprintState({ steps, pipelineName, onStepsChange }: UseBlu
     handleEditNode,
   };
 }
-

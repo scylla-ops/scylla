@@ -19,10 +19,7 @@ import {
 import { Plus, Trash2 } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@shared/presentation/utils';
-import type {
-  EnvEntry,
-  Shell,
-} from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { EnvEntry, Shell } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import { useSecrets } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 
@@ -62,7 +59,13 @@ function entryFromRow(row: EnvRow): EnvEntry {
     : { key: row.key, kind: 'literal', value: row.value };
 }
 
-export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onEdit }: StepNodeFormDialogProps) {
+export function StepNodeFormDialog({
+  open,
+  onOpenChange,
+  editingNode,
+  onAdd,
+  onEdit,
+}: StepNodeFormDialogProps) {
   const { t } = useLingui();
   const { projectId } = useParams();
   const { secrets } = useSecrets(projectId ?? '');
@@ -139,12 +142,16 @@ export function StepNodeFormDialog({ open, onOpenChange, editingNode, onAdd, onE
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? <Trans>Edit node</Trans> : <Trans>Add a new node</Trans>}</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? <Trans>Edit node</Trans> : <Trans>Add a new node</Trans>}
+          </DialogTitle>
           <DialogDescription>
             {isEditMode ? (
               <Trans>Modify the node properties.</Trans>
             ) : (
-              <Trans>Define a new pipeline step. You can connect it to other nodes by dragging edges.</Trans>
+              <Trans>
+                Define a new pipeline step. You can connect it to other nodes by dragging edges.
+              </Trans>
             )}
           </DialogDescription>
         </DialogHeader>

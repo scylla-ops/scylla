@@ -85,9 +85,7 @@ export function sanitizeSteps(steps: PipelineStep[]): PipelineStep[] {
 
   return deduped.map(s => ({
     ...s,
-    deps: s.deps
-      .map(d => idMap.get(d) ?? d)
-      .filter(d => d !== s.id && validIds.has(d)),
+    deps: s.deps.map(d => idMap.get(d) ?? d).filter(d => d !== s.id && validIds.has(d)),
   }));
 }
 
@@ -181,7 +179,11 @@ export function flowToSteps(nodes: Node[], edges: Edge[]): PipelineStep[] {
  * Generate a unique node ID, avoiding collisions with existing IDs.
  * Optionally exclude one ID (useful when renaming a node).
  */
-export function generateUniqueNodeId(desired: string, existingIds: Set<string>, excludeId?: string): string {
+export function generateUniqueNodeId(
+  desired: string,
+  existingIds: Set<string>,
+  excludeId?: string,
+): string {
   const ids = new Set(existingIds);
   if (excludeId) ids.delete(excludeId);
   if (!ids.has(desired)) return desired;

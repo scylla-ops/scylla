@@ -13,9 +13,7 @@ export const PipelineStepNode = ({ id, data, selected }: NodeProps<PipelineNodeD
   };
 
   const scriptPreview =
-    data.kind === 'script'
-      ? (data.script.split('\n').find(line => line.trim() !== '') ?? '')
-      : '';
+    data.kind === 'script' ? (data.script.split('\n').find(line => line.trim() !== '') ?? '') : '';
 
   return (
     <Card
@@ -46,7 +44,9 @@ export const PipelineStepNode = ({ id, data, selected }: NodeProps<PipelineNodeD
           <>
             <div className='flex items-center gap-1.5'>
               <span className='text-xs text-muted-foreground'>cmd:</span>
-              <code className='text-xs font-mono bg-muted px-1.5 py-0.5 rounded'>{data.command}</code>
+              <code className='text-xs font-mono bg-muted px-1.5 py-0.5 rounded'>
+                {data.command}
+              </code>
             </div>
             {data.args.length > 0 && (
               <div className='flex items-center gap-1.5'>

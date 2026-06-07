@@ -5,7 +5,12 @@ import type { Node } from 'reactflow';
 import { PipelineStepNode } from './PipelineStepNode.tsx';
 import { StartNode } from './StartNode.tsx';
 import { DeletableEdge } from './DeletableEdge.tsx';
-import { EDGE_COLOR, DEFAULT_EDGE_STYLE, type PipelineNodeData, START_NODE_ID } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
+import {
+  EDGE_COLOR,
+  DEFAULT_EDGE_STYLE,
+  type PipelineNodeData,
+  START_NODE_ID,
+} from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import { useBlueprintState } from '@/modules/features/pipeline/presentation/hooks/use-blueprint-state.ts';
 import type { NodeFormValue } from './StepNodeFormDialog.tsx';
@@ -34,24 +39,36 @@ interface BlueprintCanvasProps {
 export const BlueprintCanvas = forwardRef<BlueprintCanvasHandle, BlueprintCanvasProps>(
   ({ steps, pipelineName, onStepsChange, onStartNodeDoubleClick, onStepNodeDoubleClick }, ref) => {
     const {
-      nodes, edges,
-      onNodesChange, onEdgesChange,
-      handleConnect, handleEdgesDelete, handleNodesDelete,
-      handleAddNode, handleEditNode,
+      nodes,
+      edges,
+      onNodesChange,
+      onEdgesChange,
+      handleConnect,
+      handleEdgesDelete,
+      handleNodesDelete,
+      handleAddNode,
+      handleEditNode,
     } = useBlueprintState({ steps, pipelineName, onStepsChange });
 
-    useImperativeHandle(ref, () => ({
-      addNode: handleAddNode,
-      editNode: handleEditNode,
-    }), [handleAddNode, handleEditNode]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        addNode: handleAddNode,
+        editNode: handleEditNode,
+      }),
+      [handleAddNode, handleEditNode],
+    );
 
-    const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
-      if (node.id === START_NODE_ID) {
-        onStartNodeDoubleClick();
-        return;
-      }
-      onStepNodeDoubleClick(node.data as PipelineNodeData);
-    }, [onStartNodeDoubleClick, onStepNodeDoubleClick]);
+    const handleNodeDoubleClick = useCallback(
+      (_event: React.MouseEvent, node: Node) => {
+        if (node.id === START_NODE_ID) {
+          onStartNodeDoubleClick();
+          return;
+        }
+        onStepNodeDoubleClick(node.data as PipelineNodeData);
+      },
+      [onStartNodeDoubleClick, onStepNodeDoubleClick],
+    );
 
     return (
       <ReactFlow
