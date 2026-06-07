@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:63
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:73
 msgid "Actions"
 msgstr ""
 
@@ -25,7 +25,7 @@ msgstr ""
 msgid "Copy ID"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:64
 msgid "Created"
 msgstr ""
 
@@ -34,11 +34,11 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:42
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:46
 msgid "Duration"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:28
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:32
 msgid "Job ID"
 msgstr ""
 
@@ -66,7 +66,7 @@ msgstr ""
 msgid "Run your pipeline to create the first job"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:21
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:25
 msgid "Status"
 msgstr ""
 
@@ -74,7 +74,7 @@ msgstr ""
 msgid "Streaming live output"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:35
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:39
 msgid "Timeline"
 msgstr ""
 

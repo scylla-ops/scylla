@@ -59,7 +59,39 @@ export class ScyllaResult<T> {
     if (this._value instanceof ScyllaError) {
       return new ScyllaResult<U>(this._value);
     } else {
-      return new ScyllaResult<U>(fn(this._value));
+      try {
+        return new ScyllaResult<U>(fn(this._value));
+      } catch (error) {
+        return new ScyllaResult<U>(new ScyllaError('Error mapping value', { cause: error }));
+      }
+    }
+  }
+
+  public flatMap<U>(fn: (value: T) => ScyllaResult<U>): ScyllaResult<U> {
+    if (this._value instanceof ScyllaError) {
+      return new ScyllaResult<U>(this._value);
+    }
+    try {
+      return fn(this._value);
+    } catch (error) {
+      return new ScyllaResult<U>(
+        new ScyllaError('Error during flatMap operation', { cause: error }),
+      );
+    }
+  }
+
+  public async flatMapAsync<U>(
+    fn: (value: T) => Promise<ScyllaResult<U>>,
+  ): Promise<ScyllaResult<U>> {
+    if (this._value instanceof ScyllaError) {
+      return new ScyllaResult<U>(this._value);
+    }
+    try {
+      return await fn(this._value);
+    } catch (error) {
+      return new ScyllaResult<U>(
+        new ScyllaError('Error during flatMapAsync operation', { cause: error }),
+      );
     }
   }
 
