@@ -1,6 +1,7 @@
 //! Forwards a domain `JobLogLiveStream` onto a bounded mpsc, exposed as a
-//! `ReceiverStream` for tonic. Back-pressure drops lines rather than blocking
-//! the upstream; the task exits cleanly when the client disconnects.
+//! `ReceiverStream` for tonic. Applies back-pressure (awaits a slot) rather than
+//! dropping lines, so the full history replay + live tail reach the client
+//! intact; the task exits cleanly when the client disconnects.
 
 use crate::grpc::mappers::{domain_error_to_status, job_log_to_proto};
 use futures_util::StreamExt;
@@ -9,7 +10,7 @@ use scylla_protocol::services::job::JobLogEvent;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
-use tracing::{info, warn};
+use tracing::info;
 
 const FORWARD_CHANNEL_CAPACITY: usize = 256;
 
@@ -34,13 +35,13 @@ async fn forward(mut stream: JobLogLiveStream, tx: mpsc::Sender<Result<JobLogEve
             item = stream.next() => match item {
                 Some(Ok(log)) => {
                     let evt = JobLogEvent { log: Some(job_log_to_proto(&log)) };
-                    match tx.try_send(Ok(evt)) {
-                        Ok(()) => forwarded += 1,
-                        Err(mpsc::error::TrySendError::Full(_)) => {
-                            warn!("log forwarder back-pressure: dropping line");
-                        }
-                        Err(mpsc::error::TrySendError::Closed(_)) => break,
+                    // Await a slot (back-pressure) instead of dropping: a noisy
+                    // job's full log must reach the client, not just the first
+                    // bufferful. If the client has gone, `send` errors -> stop.
+                    if tx.send(Ok(evt)).await.is_err() {
+                        break;
                     }
+                    forwarded += 1;
                 }
                 Some(Err(e)) => {
                     // Route through the central mapper: correct gRPC code per

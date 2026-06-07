@@ -8,7 +8,12 @@ use std::sync::Mutex;
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
 
-const CHANNEL_CAPACITY: usize = 256;
+/// Per-job live broadcast + bridge buffer. Sized to absorb a fast burst of log
+/// lines before a (possibly slow) reader drains them: beyond this a lagging
+/// subscriber drops lines, but the persisted snapshot replayed by
+/// `JobLogStreamUseCase` remains authoritative, so the view is still complete on
+/// (re)open. Generous because a noisy job can emit thousands of lines in a burst.
+const CHANNEL_CAPACITY: usize = 8192;
 
 /// In-process job-log fan-out that replaces the broker live-tail. The agent
 /// stream handler publishes each log line as it persists it; readers subscribe
