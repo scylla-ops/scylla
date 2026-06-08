@@ -22,6 +22,22 @@ export const calculateDuration = (createdAt: string, updatedAt: string): number 
 };
 
 /**
+ * Execution duration of a job/node in seconds: from when it actually started
+ * (a worker picked it up) to when it finished — NOT including the pending/queue
+ * wait. Returns null while still pending (not started); counts up to now while
+ * running.
+ */
+export const calculateExecutionDuration = (
+  startedAt?: string,
+  finishedAt?: string,
+): number | null => {
+  if (!startedAt) return null;
+  const start = new Date(startedAt).getTime();
+  const end = finishedAt ? new Date(finishedAt).getTime() : Date.now();
+  return Math.max(0, Math.floor((end - start) / 1000));
+};
+
+/**
  * Format duration in seconds to human-readable string
  * @param seconds - Duration in seconds
  * @returns Formatted string (e.g., "1m 12s", "45s", "2h 15m")

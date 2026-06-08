@@ -1,59 +1,55 @@
 use clap::Parser;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Parser)]
 #[command(name = "scylla-agent", about = "Scylla pipeline execution agent")]
 pub struct AgentConfig {
-    /// Hermes broker gRPC URL
-    #[arg(long, default_value = "http://127.0.0.1:50052")]
-    pub broker_url: String,
+    /// Control-plane gRPC URL (the agent stream + token endpoint).
+    #[arg(
+        long,
+        env = "SCYLLA_CONTROL_PLANE_URL",
+        default_value = "http://127.0.0.1:50051"
+    )]
+    pub control_plane_url: String,
 
-    /// Queue group name for load-balanced dispatch
-    #[arg(long, default_value = "agents")]
-    pub queue_group: String,
+    /// App identity. The agent authenticates as this App and acts under its
+    /// agent grant.
+    #[arg(long, env = "SCYLLA_APP_ID")]
+    pub app_id: String,
 
-    /// Subject to subscribe to for job dispatch
-    #[arg(long, default_value = "scylla.jobs.dispatch")]
-    pub dispatch_subject: String,
+    /// App secret, exchanged for a bearer token at startup.
+    #[arg(long, env = "SCYLLA_APP_SECRET")]
+    pub app_secret: String,
 
-    /// Persistent agent identifier. If absent, a fresh ulid is generated
-    /// (NOT recommended for production; set via env or flag to keep identity stable).
-    #[arg(long, env = "SCYLLA_AGENT_ID")]
-    pub agent_id: Option<String>,
-
-    /// Hostname reported to the registry. Defaults to the OS hostname.
-    #[arg(long, env = "SCYLLA_AGENT_HOSTNAME")]
-    pub hostname: Option<String>,
-
-    /// Heartbeat publish interval in seconds (must be >= 1).
-    #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u64).range(1..))]
-    pub heartbeat_interval_secs: u64,
-
-    /// Buffer size of the in-process channel feeding the broker publish stream.
-    /// Each pipeline node emits ~3 messages (NodeStarted, log line, NodeCompleted),
-    /// so a fast 100-node sequential chain can queue up several hundred entries
-    /// before the gRPC stream drains. Too small ⇒ executor stalls on `send().await`;
-    /// too big ⇒ memory bloat for nothing.
-    #[arg(long, default_value_t = 8192, value_parser = clap::value_parser!(u64).range(1..))]
+    /// Buffer size of the in-process channel feeding the agent up-stream.
+    /// Each node emits ~3 messages (NodeStarted, log lines, NodeCompleted), so a
+    /// fast sequential chain can queue several hundred before the stream drains.
+    /// Too small ⇒ the executor stalls on `send().await`; too big ⇒ memory bloat.
+    #[arg(long, default_value_t = 8192, value_parser = clap::value_parser!(u64).range(1..=1_048_576))]
     pub publish_buffer_size: u64,
-}
 
-impl AgentConfig {
-    /// Returns the configured agent id, generating a ulid as last-resort fallback.
-    #[must_use]
-    pub fn resolved_agent_id(&self) -> String {
-        self.agent_id
-            .clone()
-            .unwrap_or_else(|| ulid::Ulid::new().to_string().to_lowercase())
-    }
+    /// Max consecutive failed (re)connection attempts before the agent exits.
+    /// The counter resets after each successful connection, so this only trips
+    /// when the control plane is unreachable for a sustained stretch. `0` =
+    /// retry forever.
+    #[arg(long, env = "SCYLLA_MAX_RECONNECT_ATTEMPTS", default_value_t = 10)]
+    pub max_reconnect_attempts: u32,
 
-    /// Returns the configured hostname, falling back to the OS hostname or "unknown".
-    #[must_use]
-    pub fn resolved_hostname(&self) -> String {
-        self.hostname.clone().unwrap_or_else(|| {
-            hostname::get()
-                .ok()
-                .and_then(|h| h.into_string().ok())
-                .unwrap_or_else(|| "unknown".to_string())
-        })
-    }
+    /// Seconds to wait between (re)connection attempts.
+    #[arg(long, env = "SCYLLA_RECONNECT_BACKOFF_SECS", default_value_t = 3, value_parser = clap::value_parser!(u64).range(1..))]
+    pub reconnect_backoff_secs: u64,
+
+    /// Root directory under which each job is given its own workspace
+    /// (`<root>/<job_id>`). All nodes of a job share that directory, so build
+    /// artifacts flow to downstream nodes; it is removed when the job ends.
+    #[arg(
+        long,
+        env = "SCYLLA_WORKSPACE_ROOT",
+        default_value = "/var/lib/scylla/workspaces"
+    )]
+    pub workspace_root: PathBuf,
+
+    /// Keep the per-job workspace on disk after the job finishes (debugging).
+    #[arg(long, env = "SCYLLA_KEEP_WORKSPACE", default_value_t = false)]
+    pub keep_workspace: bool,
 }

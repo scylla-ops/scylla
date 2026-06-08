@@ -1,8 +1,19 @@
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
-import type { JobLogStream } from '@/modules/features/jobs/domain/models/job.model.ts';
 
+/**
+ * Subscribe to a job's logs as a single ordered stream: the backend replays the
+ * full persisted history (untruncated) and then appends live lines, so the view
+ * is complete regardless of when it is opened and stays live while the job runs.
+ * Pass `nodeId` to scope it to one node's logs.
+ *
+ * Lines are buffered and flushed to state on a timer rather than per-line: a
+ * noisy job emits thousands of lines in a burst, and a setState-per-line would
+ * both rebuild the whole string each time (O(n^2)) and stall the stream reader
+ * enough to lag the server-side broadcast (dropping lines). Buffering keeps the
+ * reader fast so nothing is dropped.
+ */
 export const useTailJobLogs = (jobId: string, nodeId?: string) => {
   const { tailJobLogs } = useDependencies().jobs;
 
@@ -10,73 +21,66 @@ export const useTailJobLogs = (jobId: string, nodeId?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<ScyllaError | null>(null);
-  const streamRef = useRef<JobLogStream | null>(null);
-  const activeJobIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!jobId) return;
 
-    if (activeJobIdRef.current === jobId) return;
+    let active = true;
+    const lines: string[] = [];
+    let dirty = false;
 
-    if (streamRef.current) {
-      streamRef.current.cancel();
-      streamRef.current = null;
-    }
-
-    activeJobIdRef.current = jobId;
     setLogString('');
     setIsLoading(true);
     setIsError(false);
     setError(null);
 
-    const result = tailJobLogs.execute(jobId, nodeId);
-
-    const stream = result.fold({
+    const stream = tailJobLogs.execute(jobId, nodeId).fold({
       onSuccess: value => value,
       onError: err => {
         setIsError(true);
         setError(err);
         setIsLoading(false);
-        activeJobIdRef.current = null;
         return null;
       },
     });
 
     if (!stream) return;
 
-    streamRef.current = stream;
+    const flush = () => {
+      if (dirty && active) {
+        dirty = false;
+        setLogString(lines.join('\n'));
+      }
+    };
+    const flushTimer = setInterval(flush, 150);
 
-    const consumeStream = async () => {
+    const consume = async () => {
       setIsLoading(false);
       try {
         for await (const entry of stream.logs) {
-          if (streamRef.current !== stream) break;
+          if (!active) break;
           entry.fold({
             onSuccess: log => {
-              setLogString(prev => (prev ? prev + '\n' + log.line : log.line));
+              lines.push(log.line);
+              dirty = true;
             },
-            onError: err => {
-              err.log();
-            },
+            onError: err => err.log(),
           });
         }
       } catch {
-        // Stream cancelled
+        // Stream cancelled — expected on cleanup.
       }
+      flush(); // final flush so the last lines aren't lost between ticks
     };
 
-    consumeStream();
-  }, [jobId, tailJobLogs]);
+    consume();
 
-  useEffect(() => {
     return () => {
-      if (streamRef.current) {
-        streamRef.current.cancel();
-        streamRef.current = null;
-        activeJobIdRef.current = null;
-      }
+      active = false;
+      clearInterval(flushTimer);
+      stream.cancel();
     };
-  }, []);
+  }, [jobId, nodeId, tailJobLogs]);
 
   return { logString, isLoading, isError, error };
 };

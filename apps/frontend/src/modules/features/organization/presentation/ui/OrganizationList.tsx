@@ -12,6 +12,7 @@ import { useDeleteOrganization } from '@/modules/features/organization/presentat
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 import { Trans } from '@lingui/react/macro';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
+import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
@@ -24,7 +25,9 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
   const navigate = useNavigate();
   const deleteOrganization = useDeleteOrganization();
 
-  const [editOrg, setEditOrg] = useState<{ id: string; name: string; description?: string } | null>(null);
+  const [editOrg, setEditOrg] = useState<{ id: string; name: string; description?: string } | null>(
+    null,
+  );
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
 
   const onDeleteOrganization = useCallback(async () => {
@@ -35,12 +38,24 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
 
     if (deleteOrgId !== currentOrganizationId) return;
 
-    const otherOrganization = organizations?.find(org => org.organizationId !== deleteOrgId);
-    setOrganization(otherOrganization?.organizationId ?? null, otherOrganization?.name ?? null);
+    const otherOrganization = organizations?.find(
+      org => idValue(org.organizationId) !== deleteOrgId,
+    );
+    setOrganization(
+      otherOrganization ? idValue(otherOrganization.organizationId) : null,
+      otherOrganization?.name ?? null,
+    );
     if (otherOrganization) {
       navigate(`/${slugifyOrgName(otherOrganization.name)}/projects`);
     }
-  }, [deleteOrgId, deleteOrganization, currentOrganizationId, organizations, setOrganization, navigate]);
+  }, [
+    deleteOrgId,
+    deleteOrganization,
+    currentOrganizationId,
+    organizations,
+    setOrganization,
+    navigate,
+  ]);
 
   if (!organizations)
     return (
@@ -61,37 +76,45 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
       {organizations.map(organisation => (
         <Wrapper
           className={'group hover:bg-slate-50 transition-colors'}
-          key={organisation.organizationId}
+          key={idValue(organisation.organizationId)}
           onSelect={() => {
-            setOrganization(organisation.organizationId, organisation.name);
+            setOrganization(idValue(organisation.organizationId), organisation.name);
             navigate(`/${slugifyOrgName(organisation.name)}/projects`);
           }}
         >
           <div className='flex items-center w-full'>
             <div className='flex-1 min-w-0'>
-              <ContextItem name={organisation.name} description={organisation.description} icon={Building2} />
+              <ContextItem
+                name={organisation.name}
+                description={organisation.description}
+                icon={Building2}
+              />
             </div>
             <div className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
               <IconButton
-                    icon={Pencil}
-                    tooltip={<Trans>Edit</Trans>}
-                    onClick={e => {
-                      e.stopPropagation();
-                      setEditOrg({ id: organisation.organizationId, name: organisation.name, description: organisation.description });
-                    }}
-                    className='h-7 w-7'
-                    iconClassName='h-3.5 w-3.5'
-                  />
-                  <IconButton
-                    icon={Trash}
-                    tooltip={<Trans>Delete</Trans>}
-                    onClick={e => {
-                      e.stopPropagation();
-                      setDeleteOrgId(organisation.organizationId);
-                    }}
-                    className='h-7 w-7 hover:text-destructive hover:bg-destructive/10'
-                    iconClassName='h-3.5 w-3.5'
-                  />
+                icon={Pencil}
+                tooltip={<Trans>Edit</Trans>}
+                onClick={e => {
+                  e.stopPropagation();
+                  setEditOrg({
+                    id: idValue(organisation.organizationId),
+                    name: organisation.name,
+                    description: organisation.description,
+                  });
+                }}
+                className='h-7 w-7'
+                iconClassName='h-3.5 w-3.5'
+              />
+              <IconButton
+                icon={Trash}
+                tooltip={<Trans>Delete</Trans>}
+                onClick={e => {
+                  e.stopPropagation();
+                  setDeleteOrgId(idValue(organisation.organizationId));
+                }}
+                className='h-7 w-7 hover:text-destructive hover:bg-destructive/10'
+                iconClassName='h-3.5 w-3.5'
+              />
             </div>
           </div>
         </Wrapper>

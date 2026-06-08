@@ -1,45 +1,35 @@
 mod ids;
 
-#[cfg(feature = "agents")]
 mod agent;
-#[cfg(feature = "jobs")]
+mod app;
+mod app_credential;
+mod app_token;
+mod invitation;
 mod job;
-#[cfg(feature = "jobs")]
 mod job_log;
-#[cfg(feature = "organizations")]
 mod organization;
-#[cfg(feature = "pipelines")]
 mod pipeline;
-#[cfg(feature = "projects")]
 mod project;
-#[cfg(feature = "auth")]
+mod secret;
 mod session;
-#[cfg(feature = "users")]
 mod user;
-#[cfg(feature = "organizations")]
 mod user_organization;
-#[cfg(feature = "projects")]
 mod user_project;
 
 pub use ids::*;
 
-#[cfg(feature = "agents")]
 pub use agent::*;
-#[cfg(feature = "jobs")]
+pub use app::*;
+pub use app_credential::*;
+pub use app_token::*;
+pub use invitation::*;
 pub use job::*;
-#[cfg(feature = "jobs")]
 pub use job_log::*;
-#[cfg(feature = "organizations")]
 pub use organization::*;
-#[cfg(feature = "pipelines")]
 pub use pipeline::*;
-#[cfg(feature = "projects")]
 pub use project::*;
-#[cfg(feature = "auth")]
+pub use secret::*;
 pub use session::*;
-#[cfg(feature = "users")]
 pub use user::*;
-#[cfg(feature = "organizations")]
 pub use user_organization::*;
-#[cfg(feature = "projects")]
 pub use user_project::*;

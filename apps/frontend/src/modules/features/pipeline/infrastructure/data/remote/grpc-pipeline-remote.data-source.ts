@@ -12,6 +12,7 @@ import {
   type PaginationParams,
 } from '@shared/domain/models/pagination.model.ts';
 import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
+import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
@@ -22,13 +23,12 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
 
   public async deleteById(id: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync<void>(async () => {
-      await this._pipelineClient.deletePipeline({ pipelineId: id });
+      await this._pipelineClient.deletePipeline({ pipelineId: wrapId(id) });
     }, 'Error deleting pipeline');
   }
 
   public async create(request: CreatePipelineRequest): Promise<ScyllaResult<void>> {
     return await ScyllaResult.tryAsync<void>(async () => {
-
       await this._pipelineClient.createPipeline(request);
     }, 'Failed to create pipeline.');
   }
@@ -42,7 +42,7 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
       async () =>
         (
           await this._pipelineClient.listProjectPipelines({
-            projectId,
+            projectId: wrapId(projectId),
             pagination: pagination ?? { page: 1, pageSize: DEFAULT_PAGE_SIZE },
           })
         ).response,
@@ -52,20 +52,20 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
 
   public async getById(id: string): Promise<ScyllaResult<PipelineResponse>> {
     return ScyllaResult.tryAsync<PipelineResponse>(async () => {
-      return (await this._pipelineClient.getPipeline({ pipelineId: id })).response;
+      return (await this._pipelineClient.getPipeline({ pipelineId: wrapId(id) })).response;
     }, 'Error getting pipeline');
   }
 
   public async run(id: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync<void>(async () => {
-      await this._pipelineClient.runPipeline({ pipelineId: id });
+      await this._pipelineClient.runPipeline({ pipelineId: wrapId(id) });
     }, 'Error running pipeline');
   }
 
   public async update(id: string, nodes: PipelineNode[], name?: string) {
     return ScyllaResult.tryAsync<PipelineResponse>(async () => {
       return await this._pipelineClient.updatePipeline({
-        pipelineId: id,
+        pipelineId: wrapId(id),
         nodes: nodes,
         name: name,
       }).response;

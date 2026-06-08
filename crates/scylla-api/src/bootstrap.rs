@@ -1,48 +1,56 @@
 use crate::config::BootstrapConfig;
-use anyhow::{Context, Result};
-use scylla_core::application::UserUseCases;
+use crate::error::BootstrapError;
+use scylla_core::application::authz::grant::SYSTEM_ADMIN_ROLE;
+use scylla_core::application::authz::policy::PolicyControl;
+use scylla_core::application::{
+    BootstrapUseCases, GrantRepository, HashService, PermissionService, UserRepository,
+};
 use scylla_core::domain::errors::DomainError;
-use scylla_core::domain::value_objects::permission::policy::Policy;
-use scylla_core::domain::value_objects::user::{Password, Username};
+use scylla_core::domain::value_objects::role::name::RoleName;
+use scylla_core::domain::value_objects::user::{Email, Password, Username};
 
-pub async fn bootstrap_admin<
-    U: scylla_core::application::ports::UserRepository,
-    H: scylla_core::application::ports::HashService,
-    P: scylla_core::application::ports::PermissionService,
->(
-    user_uc: &UserUseCases<U, H>,
-    permission_service: &mut P,
-    bootstrap: &BootstrapConfig,
-) -> Result<()> {
-    let username = Username::new(&bootstrap.username).context("Invalid bootstrap username")?;
-    let password = Password::new(&bootstrap.password).context("Invalid bootstrap password")?;
-
-    match user_uc.create(username, password).await {
-        Ok(user) => {
-            tracing::info!(
-                "Bootstrap user '{}' created (id: {})",
-                bootstrap.username,
-                user.id()
-            );
-
-            permission_service
-                .add_policy(user.id().clone(), Policy::absolute())
-                .await
-                .context("Failed to add admin permissions for bootstrap user")?;
-
-            tracing::info!(
-                "Admin permissions granted to bootstrap user '{}'",
-                bootstrap.username
-            );
-        }
-        Err(DomainError::Conflict(_)) => {
-            tracing::debug!(
-                "Bootstrap user '{}' already exists, skipping",
-                bootstrap.username
-            );
-        }
-        Err(e) => return Err(e).context("Failed to bootstrap admin user"),
+/// Validate the on-disk bootstrap config into domain value objects and run the
+/// [`BootstrapUseCases`]. Orchestration (create-or-fetch user, assign role)
+/// lives in the use case; this shim is only the config → VO adapter at the API
+/// boundary.
+pub async fn bootstrap_admin<U, H, PS, G, PC>(
+    bootstrap_uc: &BootstrapUseCases<U, H, PS, G, PC>,
+    cfg: &BootstrapConfig,
+) -> Result<(), BootstrapError>
+where
+    U: UserRepository,
+    H: HashService,
+    PS: PermissionService,
+    G: GrantRepository,
+    PC: PolicyControl,
+{
+    // Loudly flag the well-known dev default so it can't silently ship to a real
+    // deployment. The credential is `BootstrapConfig::default()` (admin/admin123).
+    if cfg.username == "admin" && cfg.password == "admin123" {
+        tracing::warn!(
+            "Bootstrapping the admin account with the DEFAULT credentials (admin/admin123). \
+             Change `bootstrap.password` before exposing this instance — these are public."
+        );
     }
 
-    Ok(())
+    let username = Username::new(&cfg.username).map_err(BootstrapError::InvalidUsername)?;
+    let password = Password::new(&cfg.password).map_err(BootstrapError::InvalidPassword)?;
+    let email = cfg
+        .email
+        .as_deref()
+        .map(Email::new)
+        .transpose()
+        .map_err(BootstrapError::InvalidEmail)?;
+    let role = RoleName::new(SYSTEM_ADMIN_ROLE).map_err(BootstrapError::GrantPermission)?;
+
+    bootstrap_uc
+        .bootstrap_admin(username, email, password, role)
+        .await
+        .map_err(|e| match e {
+            // Permission service refused — service policy or role-step denial.
+            DomainError::Forbidden(_) => BootstrapError::GrantPermission(e),
+            // Everything else (validation, conflict resolution, infrastructure)
+            // happened around the user-creation / fetch flow.
+            _ => BootstrapError::CreateUser(e),
+        })
 }

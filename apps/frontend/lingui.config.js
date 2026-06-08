@@ -33,8 +33,16 @@ export default defineConfig({
       include: ['src/modules/features/organization/'],
     },
     {
-      path: '<rootDir>/src/modules/features/workers/locales/{locale}/messages',
-      include: ['src/modules/features/workers/'],
+      path: '<rootDir>/src/modules/features/apps/locales/{locale}/messages',
+      include: ['src/modules/features/apps/'],
+    },
+    {
+      path: '<rootDir>/src/modules/features/agents/locales/{locale}/messages',
+      include: ['src/modules/features/agents/'],
+    },
+    {
+      path: '<rootDir>/src/modules/features/secret/locales/{locale}/messages',
+      include: ['src/modules/features/secret/'],
     },
     {
       path: '<rootDir>/src/locales/{locale}/messages',

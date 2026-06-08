@@ -9,6 +9,7 @@ import type {
   PipelineStep,
 } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import { GrpcPipelineMapper } from '@/modules/features/pipeline/infrastructure/repository/mappers/grpc-pipeline.mapper.ts';
+import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class DefaultPipelineRepository implements PipelineRepository {
   constructor(private readonly remoteDataSource: PipelineRemoteDataSource) {}
@@ -33,7 +34,7 @@ export class DefaultPipelineRepository implements PipelineRepository {
   public async create(pipeline: Omit<Pipeline, 'id'>): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.create({
       name: pipeline.name,
-      projectId: pipeline.projectId,
+      projectId: wrapId(pipeline.projectId),
       nodes: pipeline.nodes.map(GrpcPipelineMapper.nodeFromDomain),
     });
   }

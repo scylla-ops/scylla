@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id FROM grants",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "principal_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "principal_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "target_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "target",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "scope_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "scope_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "fb727b229770da02aebdf0f042b5b08f5acd46e147912765aa643d75f1a63936"
+}

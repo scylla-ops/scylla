@@ -1,5 +1,6 @@
-use crate::application::ports::HashService;
+use crate::application::HashService;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::value_objects::app::{AppSecret, AppSecretHash};
 use crate::domain::value_objects::user::{Password, PasswordHash};
 use argon2::{
     Argon2,
@@ -44,6 +45,30 @@ impl HashService for Argon2HashService {
 
         Ok(argon2
             .verify_password(password.as_str().as_bytes(), &parsed_hash)
+            .is_ok())
+    }
+
+    #[instrument(skip(self, secret))]
+    async fn hash_secret(&self, secret: &AppSecret) -> DomainResult<AppSecretHash> {
+        let argon2 = self.argon2.clone();
+        let secret = secret.clone();
+        let hash = argon2
+            .hash_password(secret.as_str().as_bytes())
+            .map_err(|e| DomainError::internal(format!("Failed to hash app secret: {e}")))?;
+
+        AppSecretHash::new(hash.to_string())
+    }
+
+    #[instrument(skip(self, secret, hash))]
+    async fn verify_secret(&self, secret: &AppSecret, hash: &AppSecretHash) -> DomainResult<bool> {
+        let argon2 = self.argon2.clone();
+        let secret = secret.clone();
+        let hash = hash.as_str().to_string();
+        let parsed_hash = Argon2PasswordHash::new(&hash)
+            .map_err(|e| DomainError::internal(format!("Failed to parse hash: {e}")))?;
+
+        Ok(argon2
+            .verify_password(secret.as_str().as_bytes(), &parsed_hash)
             .is_ok())
     }
 }

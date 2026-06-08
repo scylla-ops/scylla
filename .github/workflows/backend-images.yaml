@@ -22,9 +22,36 @@ on:
 
 env:
   IMAGE_PREFIX: godlyjaaaaj
-  ALL_SERVICES: '["scylla-api","scylla-broker","scylla-agent","scylla-recorder"]'
+  ALL_SERVICES: '["scylla-control-plane","scylla-agent"]'
 
 jobs:
+  verify-sqlx-cache:
+    name: Verify .sqlx/ cache is up to date
+    if: github.ref == 'refs/heads/back-end'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: scylla
+          POSTGRES_PASSWORD: scylla
+          POSTGRES_DB: scylla
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scylla"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://scylla:scylla@localhost:5432/scylla
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres --locked
+      - name: Verify offline query cache
+        run: cargo sqlx prepare --check --workspace -- --tests
+
   detect-changes:
     name: Detect changed services
     if: github.ref == 'refs/heads/back-end'
@@ -42,16 +69,15 @@ jobs:
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'Dockerfile'
+              - 'migrations/**'
+              - '.sqlx/**'
               - 'crates/scylla-core/**'
               - 'crates/scylla-protocol/**'
-            api:
+            control-plane:
               - 'crates/scylla-api/**'
-            broker:
-              - 'crates/scylla-broker/**'
+              - 'crates/scylla-control-plane/**'
             agent:
               - 'crates/scylla-agent/**'
-            recorder:
-              - 'crates/scylla-recorder/**'
 
       - id: compose
         run: |
@@ -60,10 +86,8 @@ jobs:
             exit 0
           fi
           svcs=()
-          [[ "${{ steps.filter.outputs.api }}"      == "true" ]] && svcs+=('"scylla-api"')
-          [[ "${{ steps.filter.outputs.broker }}"   == "true" ]] && svcs+=('"scylla-broker"')
-          [[ "${{ steps.filter.outputs.agent }}"    == "true" ]] && svcs+=('"scylla-agent"')
-          [[ "${{ steps.filter.outputs.recorder }}" == "true" ]] && svcs+=('"scylla-recorder"')
+          [[ "${{ steps.filter.outputs.control-plane }}" == "true" ]] && svcs+=('"scylla-control-plane"')
+          [[ "${{ steps.filter.outputs.agent }}"         == "true" ]] && svcs+=('"scylla-agent"')
           if [[ ${#svcs[@]} -eq 0 ]]; then
             echo 'list=[]' >> "$GITHUB_OUTPUT"
           else
@@ -71,9 +95,41 @@ jobs:
             echo "list=[${svcs[*]}]" >> "$GITHUB_OUTPUT"
           fi
 
+  cook-deps:
+    name: Cook workspace deps (${{ matrix.platform.arch }})
+    needs: detect-changes
+    if: github.ref == 'refs/heads/back-end' && needs.detect-changes.outputs.services != '[]'
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { arch: amd64, runner: blacksmith-4vcpu-ubuntu-2404,       docker: linux/amd64 }
+          - { arch: arm64, runner: blacksmith-4vcpu-ubuntu-2404-arm, docker: linux/arm64 }
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: useblacksmith/setup-docker-builder@v1
+
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          target: deps
+          platforms: ${{ matrix.platform.docker }}
+          push: false
+          provenance: false
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/scylla-deps:buildcache-${{ matrix.platform.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/scylla-deps:buildcache-${{ matrix.platform.arch }},mode=max,image-manifest=true,oci-mediatypes=true
+
   build:
     name: Build ${{ matrix.service }} (${{ matrix.platform.arch }})
-    needs: detect-changes
+    needs: [detect-changes, cook-deps]
     if: github.ref == 'refs/heads/back-end' && needs.detect-changes.outputs.services != '[]'
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -105,7 +161,9 @@ jobs:
             PACKAGE=${{ matrix.service }}
             CARGO_BUILD_JOBS=2
           outputs: type=image,name=${{ env.IMAGE_PREFIX }}/${{ matrix.service }},push-by-digest=true,name-canonical=true
-          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE_PREFIX }}/scylla-deps:buildcache-${{ matrix.platform.arch }}
+            type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }}
           cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:buildcache-${{ matrix.platform.arch }},mode=max,image-manifest=true,oci-mediatypes=true
 
       - name: Export digest
@@ -166,7 +224,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
+        service: [scylla-control-plane, scylla-agent]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -213,7 +271,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [scylla-api, scylla-broker, scylla-agent, scylla-recorder]
+        service: [scylla-control-plane, scylla-agent]
     steps:
       - uses: actions/checkout@v6
         with:

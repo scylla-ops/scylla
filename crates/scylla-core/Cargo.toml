@@ -4,31 +4,40 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"]
+default = ["postgres", "hash", "permission"]
 
-# database backends
-surrealdb = ["dep:surrealdb-types", "dep:surrealdb"]
-
-# domain features
-users = []
-auth = ["users"]
-organizations = ["users"]
-projects = ["users"]
-pipelines = ["projects"]
-jobs = ["pipelines"]
-agents = []
+# database backend
+postgres = ["dep:sqlx"]
 
 # infrastructure services
-hash = ["dep:argon2", "users"]
-permission = ["dep:casbin", "dep:surreal-casbin-adapter"]
+hash = ["dep:argon2"]
+permission = ["dep:cedar-policy", "postgres"]
+
+# ── SaaS edition gating ────────────────────────────────────────────────
+# `saas` is the umbrella enabling every hosted-only feature; PaaS builds omit
+# it. Each granular feature gates its module/use-case via `#[cfg(feature=…)]`,
+# so the PaaS/SaaS difference is visible in the Rust source. The umbrella grows
+# as features land (mail / invitations / oauth-github added in later phases).
+saas = ["signup", "metering", "agent-org-scope", "mail", "invitations", "oauth-github"]
+signup = []
+metering = []
+agent-org-scope = []
+mail = ["dep:lettre"]
+invitations = ["mail"]   # an invitation sends an email
+oauth-github = ["dep:oauth2", "dep:reqwest"]
+
+# Exposes `test_support` builders / seeders to downstream test crates. Off by
+# default; turned on via dev-dependencies in `scylla-api` etc.
+test-utils = []
 
 [dependencies]
 # domain
 async-trait.workspace = true
 thiserror.workspace = true
-anyhow.workspace = true
 derive_more.workspace = true
-chrono.workspace = true
+nutype.workspace = true
+bon.workspace = true
+chrono = { workspace = true, features = ["serde"] }
 ulid.workspace = true
 
 # application
@@ -39,31 +48,26 @@ tracing.workspace = true
 futures-core.workspace = true
 futures-util.workspace = true
 
-# infrastructure (surrealdb feature-gated)
-surrealdb = { workspace = true, optional = true, features = ["kv-mem", "kv-rocksdb", "protocol-ws"] }
-surrealdb-types = { workspace = true, optional = true }
+# infrastructure (postgres feature-gated)
+sqlx = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
+humantime-serde.workspace = true
 
-# messaging (used by infrastructure/messaging when feature "jobs" is enabled)
-hermes-broker-client.workspace = true
+# messaging: gRPC types for the in-process agent stream + live-tail
 tonic.workspace = true
 
 # infrastructure optional services
 argon2 = { workspace = true, optional = true }
-casbin = { workspace = true, optional = true }
-surreal-casbin-adapter = { workspace = true, optional = true }
+chacha20poly1305 = { workspace = true }
+cedar-policy = { workspace = true, optional = true }
+lettre = { workspace = true, optional = true }
+oauth2 = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
 
-[lints.rust]
-unsafe_code = "warn"
-
-[lints.clippy]
-all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
-missing_errors_doc = "allow"
-missing_panics_doc = "allow"
-module_name_repetitions = "allow"
-struct_field_names = "allow"
+[lints]
+workspace = true
 
 [dev-dependencies]
-surrealdb = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true, features = ["test-util"] }

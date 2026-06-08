@@ -14,6 +14,10 @@ export interface Job {
   nodeExecutions: JobNodeExecution[];
   createdAt: string;
   updatedAt: string;
+  /** When execution actually began (a worker picked it up). Unset while pending. */
+  startedAt?: string;
+  /** When execution finished. Unset while pending/running. */
+  finishedAt?: string;
 }
 
 export interface JobLog {

@@ -5,7 +5,10 @@ import { OrganizationModule } from '@/modules/features/organization/di/organizat
 import { ProjectModule } from '@/modules/features/project/di/project.module.ts';
 import { JobsModule } from '@/modules/features/jobs/di/jobs.module.ts';
 import { UserModule } from '@/modules/features/user/di/user.module.ts';
-import { WorkersModule } from '@/modules/features/workers/di/workers.module.ts';
+import { AppsModule } from '@/modules/features/apps/di/apps.module.ts';
+import { AgentsModule } from '@/modules/features/agents/di/agents.module.ts';
+import { AuthzModule } from '@/modules/features/authz/di/authz.module.ts';
+import { SecretModule } from '@/modules/features/secret/di/secret.module.ts';
 
 export const dependencies = {
   login: LoginModule.domain,
@@ -15,7 +18,10 @@ export const dependencies = {
   project: ProjectModule.domain,
   user: UserModule.domain,
   jobs: JobsModule.domain,
-  workers: WorkersModule.domain,
+  apps: AppsModule.domain,
+  agents: AgentsModule.domain,
+  authz: AuthzModule.domain,
+  secret: SecretModule.domain,
 };
 
 export type Dependencies = typeof dependencies;

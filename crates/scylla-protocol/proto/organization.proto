@@ -3,6 +3,7 @@ syntax = "proto3";
 package organization;
 
 import "common.proto";
+import "google/protobuf/timestamp.proto";
 
 service OrganizationService {
   // Create an organization
@@ -50,28 +51,31 @@ message CreateOrganizationRequest {
   optional string description = 2;
 }
 
-message GetOrganizationRequest { string organization_id = 1; }
+message GetOrganizationRequest { common.OrganizationId organization_id = 1; }
 
 message UpdateOrganizationRequest {
-  string organization_id = 1;
+  common.OrganizationId organization_id = 1;
   optional string name = 2;
   optional string description = 3;
 }
 
+// A single organization.
 message OrganizationResponse {
-  string organization_id = 1;
+  common.OrganizationId organization_id = 1;
   string name = 2;
   string description = 3;
   bool is_active = 4;
-  string created_at = 5;
-  string updated_at = 6;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
 }
 
-message ToggleOrganizationActiveRequest { string organization_id = 1; }
+message ToggleOrganizationActiveRequest {
+  common.OrganizationId organization_id = 1;
+}
 
 message ToggleOrganizationActiveResponse {}
 
-message DeleteOrganizationRequest { string organization_id = 1; }
+message DeleteOrganizationRequest { common.OrganizationId organization_id = 1; }
 
 message DeleteOrganizationResponse {}
 
@@ -85,12 +89,12 @@ message ListOrganizationsResponse {
 }
 
 message ListOrganizationUsersRequest {
-  string organization_id = 1;
+  common.OrganizationId organization_id = 1;
   optional common.PaginationRequest pagination = 2;
 }
 
 message OrganizationUserInfoResponse {
-  string user_id = 1;
+  common.UserId user_id = 1;
   string username = 2;
 }
 
@@ -100,7 +104,7 @@ message ListOrganizationUsersResponse {
 }
 
 message ListUserOrganizationsRequest {
-  string user_id = 1;
+  common.UserId user_id = 1;
   optional common.PaginationRequest pagination = 2;
 }
 
@@ -110,15 +114,15 @@ message ListUserOrganizationsResponse {
 }
 
 message AddUserToOrganizationRequest {
-  string user_id = 1;
-  string organization_id = 2;
+  common.UserId user_id = 1;
+  common.OrganizationId organization_id = 2;
 }
 
 message AddUserToOrganizationResponse {}
 
 message RemoveUserFromOrganizationRequest {
-  string user_id = 1;
-  string organization_id = 2;
+  common.UserId user_id = 1;
+  common.OrganizationId organization_id = 2;
 }
 
 message RemoveUserFromOrganizationResponse {}

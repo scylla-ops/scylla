@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package agent_admin;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Management + introspection of Agents — specialized Apps that run jobs.
+// Creating an agent provisions an App credential under the hood (the secret is
+// returned exactly once) plus its agent grant. Distinct from the streaming
+// `agent.AgentService` (the agent ↔ control-plane job stream): this service is
+// the unary control surface used by the dashboard. Authorization is org-scoped:
+// the caller must hold the matching agent permission on the org / agent.
+service AgentAdminService {
+  rpc CreateAgent(CreateAgentRequest)     returns (CreatedAgent);
+  rpc ListAgents(ListAgentsRequest)       returns (ListAgentsResponse);
+  rpc GetAgent(GetAgentRequest)           returns (AgentView);
+  rpc GetAgentStats(GetAgentStatsRequest) returns (AgentStats);
+  rpc DeleteAgent(DeleteAgentRequest)     returns (DeleteAgentResponse);
+}
+
+// An agent: its backing app identity plus live presence and durable last-seen.
+// The id is the agent's app id (== jobs.agent_app_id).
+message AgentView {
+  common.AppId          id              = 1;
+  common.OrganizationId organization_id = 2;
+  string name            = 3;
+  bool   is_active       = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  // True while an agent currently holds an open agent stream for this agent.
+  // Derived live from the agent registry, not stored.
+  bool   connected       = 7;
+  // Last activity timestamp; unset if the agent has never connected.
+  google.protobuf.Timestamp last_seen = 8;
+}
+
+// Aggregate run stats for an agent, derived from the jobs it executed.
+message AgentStats {
+  int64  total       = 1;
+  int64  pending     = 2;
+  int64  running     = 3;
+  int64  completed   = 4;
+  int64  failed      = 5;
+  int64  cancelled   = 6;
+  google.protobuf.Timestamp last_run_at = 7;
+}
+
+message CreateAgentRequest {
+  common.OrganizationId organization_id = 1;
+  string name            = 2;
+}
+
+// The newly created agent plus its plaintext secret, shown exactly once.
+message CreatedAgent {
+  AgentView agent = 1;
+  string     secret = 2;
+}
+
+message ListAgentsRequest {
+  common.OrganizationId organization_id = 1;
+}
+
+message ListAgentsResponse {
+  repeated AgentView agents = 1;
+}
+
+message GetAgentRequest {
+  common.AppId id = 1;
+}
+
+message GetAgentStatsRequest {
+  common.AppId id = 1;
+}
+
+message DeleteAgentRequest {
+  common.AppId id = 1;
+}
+
+message DeleteAgentResponse {
+  bool deleted = 1;
+}

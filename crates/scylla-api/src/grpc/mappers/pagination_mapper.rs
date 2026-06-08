@@ -19,8 +19,8 @@ pub fn proto_to_domain_pagination(
 
 pub fn domain_to_proto_metadata(metadata: &PaginationMetadata) -> ProtoPaginationMetadata {
     ProtoPaginationMetadata {
-        // clamp to u32::MAX to prevent overflow
-        total_count: std::cmp::min(metadata.total_count(), u32::MAX as u64) as u32,
+        // saturate at u32::MAX rather than truncating
+        total_count: u32::try_from(metadata.total_count()).unwrap_or(u32::MAX),
         page: metadata.page(),
         page_size: metadata.page_size(),
         total_pages: metadata.total_pages(),

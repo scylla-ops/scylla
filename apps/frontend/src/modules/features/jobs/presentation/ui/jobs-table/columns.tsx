@@ -4,7 +4,11 @@ import { JobStatus } from './JobStatus';
 import { JobTimeline } from './JobTimeline';
 import { JobActions } from './JobActions';
 import { JobIdCell } from './JobIdCell';
-import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';
+import {
+  calculateExecutionDuration,
+  formatDuration,
+  getRelativeTime,
+} from '@shared/utils/date-utils.ts';
 import { Trans } from '@lingui/react/macro';
 
 type JobColumnMeta = {
@@ -41,9 +45,15 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<Job>[] {
       id: 'duration',
       header: () => <Trans>Duration</Trans>,
       cell: ({ row }) => {
-        const duration = calculateDuration(row.original.createdAt, row.original.updatedAt);
+        // Execution time (started -> finished), excluding the pending/queue wait.
+        const duration = calculateExecutionDuration(
+          row.original.startedAt,
+          row.original.finishedAt,
+        );
         return (
-          <span className='text-sm font-medium whitespace-nowrap'>{formatDuration(duration)}</span>
+          <span className='text-sm font-medium whitespace-nowrap'>
+            {duration === null ? '-' : formatDuration(duration)}
+          </span>
         );
       },
       size: 100,

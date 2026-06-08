@@ -23,6 +23,16 @@ export class ScyllaError extends Error {
     return this.cause instanceof Error && this.cause.message.includes('fetch');
   }
 
+  /** The requested resource doesn't exist (gRPC NOT_FOUND). */
+  public isNotFound(): boolean {
+    return this.getCode() === 'NOT_FOUND';
+  }
+
+  /** The caller isn't allowed to see this resource (gRPC PERMISSION_DENIED). */
+  public isForbidden(): boolean {
+    return this.getCode() === 'PERMISSION_DENIED';
+  }
+
   public log(): void {
     console.warn(`>[${this.constructor.name}]:`, this.message);
     if (this.cause) {

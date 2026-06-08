@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
+import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 /**
  * Synchronizes the :organizationSlug URL param with the Zustand context store.
@@ -22,8 +23,8 @@ export const OrganizationSyncWrapper = () => {
     const org = organizations.find(o => slugifyOrgName(o.name) === organizationSlug);
 
     if (org) {
-      if (org.organizationId !== currentOrgId) {
-        setOrganization(org.organizationId, org.name);
+      if (idValue(org.organizationId) !== currentOrgId) {
+        setOrganization(idValue(org.organizationId), org.name);
       }
     } else {
       // Slug doesn't match any org — fallback to first available
@@ -33,7 +34,7 @@ export const OrganizationSyncWrapper = () => {
         navigate(`/${slugifyOrgName(fallback.name)}/projects`, {
           replace: true,
         });
-        setOrganization(fallback.organizationId, fallback.name);
+        setOrganization(idValue(fallback.organizationId), fallback.name);
       }
     }
   }, [organizationSlug, isLoading, organizations, currentOrgId, setOrganization, navigate]);

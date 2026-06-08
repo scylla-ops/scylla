@@ -1,59 +1,44 @@
 services:
-  surrealdb-init:
-    image: busybox
-    container_name: scylla-surrealdb-init
-    command: ["sh", "-c", "chown -R 65532:65532 /data"]
-    volumes:
-      - surrealdb_data:/data
-
-  surrealdb:
-    image: surrealdb/surrealdb:v3
-    container_name: scylla-surrealdb
-    command: start --user root --pass root rocksdb:/data/srdb.db
+  postgres:
+    image: postgres:18-alpine
+    container_name: scylla-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scylla}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scylla}
+      POSTGRES_DB: ${POSTGRES_DB:-scylla}
     ports:
-      - "8000:8000"
+      - "5432:5432"
     volumes:
-      - surrealdb_data:/data
-    depends_on:
-      surrealdb-init:
-        condition: service_completed_successfully
+      # PG 18+ stores data under /var/lib/postgresql/<major>/ — mounting the
+      # parent dir keeps `pg_upgrade --link` viable when moving to PG 19+.
+      - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD", "/surreal", "isready"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scylla} -d ${POSTGRES_DB:-scylla}"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-  scylla-broker:
-    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-broker:${VERSION:-latest}
+  scylla-control-plane:
+    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-control-plane:${VERSION:-latest}
     build:
       context: .
       args:
-        PACKAGE: scylla-broker
-    container_name: scylla-broker
-    ports:
-      - "50052:50052"
-    environment:
-      RUST_LOG: info
-
-  scylla-api:
-    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-api:${VERSION:-latest}
-    build:
-      context: .
-      args:
-        PACKAGE: scylla-api
-    container_name: scylla-api
+        PACKAGE: scylla-control-plane
+    container_name: scylla-control-plane
+    # 50051 = gRPC API (user APIs, app token exchange, and the agent worker
+    # stream). Agents connect here — there is no separate broker port.
     ports:
       - "50051:50051"
     environment:
       RUST_LOG: info
+      # Override DatabaseConfig.url via env so secrets stay out of the image.
+      DATABASE_URL: postgres://${POSTGRES_USER:-scylla}:${POSTGRES_PASSWORD:-scylla}@postgres:5432/${POSTGRES_DB:-scylla}
     command: ["--config", "/app/config/docker.toml"]
     volumes:
-      - ./crates/scylla-api/config:/app/config:ro
+      - ./crates/scylla-control-plane/config:/app/config:ro
     depends_on:
-      surrealdb:
+      postgres:
         condition: service_healthy
-      scylla-broker:
-        condition: service_started
 
   scylla-frontend:
     image: ${DOCKER_USER:-godlyjaaaaj}/scylla-frontend:${VERSION:-latest}
@@ -66,7 +51,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      scylla-api:
+      scylla-control-plane:
         condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost/healthz"]
@@ -74,49 +59,11 @@ services:
       timeout: 3s
       retries: 3
 
-  scylla-recorder:
-    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-recorder:${VERSION:-latest}
-    build:
-      context: .
-      args:
-        PACKAGE: scylla-recorder
-    container_name: scylla-recorder
-    environment:
-      RUST_LOG: info
-    command:
-      - "--broker-url"
-      - "http://scylla-broker:50052"
-      - "--db-url"
-      - "ws://surrealdb:8000"
-      - "--db-namespace"
-      - "scylla"
-      - "--db-database"
-      - "core"
-      - "--db-username"
-      - "root"
-      - "--db-password"
-      - "root"
-    depends_on:
-      surrealdb:
-        condition: service_healthy
-      scylla-broker:
-        condition: service_started
-
-  scylla-agent:
-    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-agent:${VERSION:-latest}
-    build:
-      context: .
-      args:
-        PACKAGE: scylla-agent
-    container_name: scylla-agent
-    environment:
-      RUST_LOG: info
-    command:
-      - "--broker-url"
-      - "http://scylla-broker:50052"
-    depends_on:
-      scylla-broker:
-        condition: service_started
+  # Agents are NOT part of this stack. An agent is an "App" created in the UI;
+  # the UI then hands you a `docker run .../scylla-agent --control-plane-url ...
+  # --app-id <id> --app-secret <secret>` command to run it wherever you like
+  # (its credentials only exist after the App is created, so it cannot be wired
+  # ahead of time here).
 
 volumes:
-  surrealdb_data:
+  postgres_data:
