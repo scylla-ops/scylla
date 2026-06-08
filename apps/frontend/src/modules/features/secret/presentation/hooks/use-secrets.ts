@@ -70,6 +70,7 @@ export const useDeleteSecret = (projectId: string) => {
     mutationFn: async (secretId: string) => (await deleteSecret.execute(secretId)).unwrap(),
     onSuccess: () => {
       toast.success('Secret deleted');
+
       queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, projectId] });
     },
     onError: error => toast.error(secretErrorMessage(error)),

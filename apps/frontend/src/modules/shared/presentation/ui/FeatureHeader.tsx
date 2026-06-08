@@ -9,10 +9,10 @@ import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
 import { toast } from 'sonner';
 
 interface FeatureHeaderProps {
-  count: number;
-  label: string;
+  count?: number;
+  label: ReactNode;
   underLabel?: ReactNode;
-  pluralLabel?: string;
+  pluralLabel?: ReactNode;
   selectedCount?: number;
   onClearSelection?: () => void;
   onDeleteSelection?: () => Promise<void> | void;
@@ -35,7 +35,7 @@ export const FeatureHeader = ({
   onBack,
   underLabel,
 }: FeatureHeaderProps) => {
-  const displayLabel = count > 1 ? (pluralLabel ?? `${label}s`) : label;
+  const displayLabel = count && count > 1 ? (pluralLabel ?? label) : label;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleDelete = async () => {
@@ -55,12 +55,14 @@ export const FeatureHeader = ({
           {onBack && <BackButton iconOnly onClick={onBack} />}
           <div className='flex items-baseline gap-2'>
             <h1 className='text-3xl font-bold tracking-tight'>
-              <span className='text-primary'>{count}</span>{' '}
+              {count !== undefined && <span className='text-primary mr-2 '>{count}</span>}
               <span className='text-foreground'>{displayLabel}</span>
             </h1>
-            <span className='text-sm text-muted-foreground font-medium'>
-              <Trans>in total</Trans>
-            </span>
+            {count !== undefined && (
+              <span className='text-sm text-muted-foreground font-medium'>
+                <Trans>in total</Trans>
+              </span>
+            )}
           </div>
         </div>
         {underLabel && <>{underLabel}</>}

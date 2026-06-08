@@ -1,7 +1,15 @@
 import { LayoutGrid, List } from 'lucide-react';
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn';
-import type { CredentialKind } from '@/modules/features/credentials/domain/models/credential.model.ts';
-import type { CredentialsView } from '@/modules/features/credentials/presentation/hooks/use-credentials.ts';
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@shadcn';
+import type { CredentialKind } from '@/modules/features/secret/domain/models/credential.model.ts';
+import type { CredentialsView } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 
 interface CredentialsFiltersProps {
   search: string;
@@ -12,7 +20,7 @@ interface CredentialsFiltersProps {
   onViewChange: (view: CredentialsView) => void;
 }
 
-export const CredentialsFilters = ({
+export const SecretFilters = ({
   search,
   onSearchChange,
   kindFilter,
@@ -29,7 +37,10 @@ export const CredentialsFilters = ({
         className='h-10 flex-1 rounded-lg'
       />
 
-      <Select value={kindFilter} onValueChange={value => onKindFilterChange(value as 'ALL' | CredentialKind)}>
+      <Select
+        value={kindFilter}
+        onValueChange={value => onKindFilterChange(value as 'ALL' | CredentialKind)}
+      >
         <SelectTrigger className='h-10 w-full rounded-lg md:w-auto md:min-w-35'>
           <SelectValue placeholder='All kinds' />
         </SelectTrigger>

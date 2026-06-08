@@ -9,7 +9,7 @@ interface CredentialsPaginationProps {
   onPageChange: (page: number) => void;
 }
 
-export const CredentialsPagination = ({
+export const SecretPagination = ({
   page,
   totalPages,
   totalItems,
@@ -22,7 +22,8 @@ export const CredentialsPagination = ({
   return (
     <div className='rounded-xl border border-border/60 bg-card px-4 py-3 flex items-center justify-between gap-4'>
       <p className='text-sm text-muted-foreground'>
-        Showing <span className='font-semibold'>{firstItem}</span>-<span className='font-semibold'>{lastItem}</span> of{' '}
+        Showing <span className='font-semibold'>{firstItem}</span>-
+        <span className='font-semibold'>{lastItem}</span> of{' '}
         <span className='font-semibold'>{totalItems}</span> credentials
       </p>
       <div className='flex items-center gap-2'>
@@ -53,4 +54,3 @@ export const CredentialsPagination = ({
     </div>
   );
 };
-

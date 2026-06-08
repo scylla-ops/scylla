@@ -46,8 +46,8 @@ const useNavSections = (): NavSectionModel[] => {
           icon: HardDriveIcon,
         },
         {
-          title: 'Credentials',
-          url: `${prefix}/credentials`,
+          title: 'Secrets',
+          url: `${prefix}/secrets`,
           icon: KeyRound,
         },
         {

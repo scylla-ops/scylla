@@ -1,6 +1,9 @@
 import { KeyRound, AlertTriangle, CheckCircle2, Clock3 } from 'lucide-react';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@shadcn';
-import type { Credential, CredentialKind } from '@/modules/features/credentials/domain/models/credential.model.ts';
+import type {
+  Credential,
+  CredentialKind,
+} from '@/modules/features/secret/domain/models/credential.model.ts';
 
 interface CredentialsGridProps {
   credentials: Credential[];
@@ -47,7 +50,7 @@ const HealthBadge = ({ credential }: { credential: Credential }) => {
   );
 };
 
-export const CredentialsGrid = ({ credentials }: CredentialsGridProps) => {
+export const SecretGrid = ({ credentials }: CredentialsGridProps) => {
   return (
     <div className='w-full h-full overflow-y-auto'>
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
@@ -61,17 +64,24 @@ export const CredentialsGrid = ({ credentials }: CredentialsGridProps) => {
                   </div>
                   <span className='truncate text-base'>{credential.name}</span>
                 </div>
-                <Badge variant='outline' className={`${getKindBadgeClass(credential.kind)} text-xs shrink-0`}>
+                <Badge
+                  variant='outline'
+                  className={`${getKindBadgeClass(credential.kind)} text-xs shrink-0`}
+                >
                   {KIND_LABELS[credential.kind]}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className='space-y-3 flex-1 flex flex-col justify-between'>
               <div className='space-y-2 text-sm'>
-                <p className='font-mono text-xs text-muted-foreground truncate'>ID: {credential.externalId}</p>
+                <p className='font-mono text-xs text-muted-foreground truncate'>
+                  ID: {credential.externalId}
+                </p>
                 <HealthBadge credential={credential} />
                 <p className='text-muted-foreground text-xs'>{credential.lastUsageLabel}</p>
-                <p className='text-muted-foreground text-xs'>Created: {credential.createdAtLabel}</p>
+                <p className='text-muted-foreground text-xs'>
+                  Created: {credential.createdAtLabel}
+                </p>
               </div>
             </CardContent>
           </Card>

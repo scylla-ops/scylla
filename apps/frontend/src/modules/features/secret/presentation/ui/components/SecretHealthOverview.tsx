@@ -5,7 +5,7 @@ interface CredentialsHealthOverviewProps {
   warningCount: number;
 }
 
-export const CredentialsHealthOverview = ({ warningCount }: CredentialsHealthOverviewProps) => {
+export const SecretHealthOverview = ({ warningCount }: CredentialsHealthOverviewProps) => {
   return (
     <div className='grid gap-4 md:grid-cols-3'>
       <Card className='rounded-2xl border-blue-200/40 bg-blue-500/5 py-3 gap-2'>

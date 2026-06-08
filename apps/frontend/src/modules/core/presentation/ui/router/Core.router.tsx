@@ -15,7 +15,7 @@ import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/u
 import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
-import { CredentialsPage } from '@/modules/features/credentials/presentation/ui/Credentials.page.tsx';
+import { SecretPage } from '@/modules/features/secret/presentation/ui/Secret.page.tsx';
 import { AgentsPage } from '@/modules/features/agents/presentation/ui/Agents.page.tsx';
 import { AgentDetailsPage } from '@/modules/features/agents/presentation/ui/AgentDetails.page.tsx';
 import { RolesPage } from '@/modules/features/permission/presentation/ui/Roles.page.tsx';
@@ -62,6 +62,13 @@ export const CoreRouter = createBrowserRouter([
                       {
                         index: true,
                         element: <DashboardPipelinePage />,
+                      },
+                      {
+                        path: 'secrets',
+                        element: <SecretPage />,
+                        handle: {
+                          breadcrumb: () => 'Secrets',
+                        },
                       },
                       {
                         path: 'create',
@@ -112,13 +119,6 @@ export const CoreRouter = createBrowserRouter([
                     },
                   },
                 ],
-              },
-              {
-                path: 'credentials',
-                element: <CredentialsPage />,
-                handle: {
-                  breadcrumb: () => 'Credentials',
-                },
               },
               {
                 path: 'roles',
