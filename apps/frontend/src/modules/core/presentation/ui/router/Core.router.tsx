@@ -13,11 +13,12 @@ import UserSettingsPage from '@/modules/features/user/presentation/ui/settings/U
 import { DashboardPipelinePage } from '@/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx';
 import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx';
 import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
-import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.page.tsx';
-import { WorkerDetailsPage } from '../../../../features/workers/presentation/ui/WorkerDetails.page.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
 import { CredentialsPage } from '@/modules/features/credentials/presentation/ui/Credentials.page.tsx';
+import { AgentsPage } from '@/modules/features/agents/presentation/ui/Agents.page.tsx';
+import { AgentDetailsPage } from '@/modules/features/agents/presentation/ui/AgentDetails.page.tsx';
+import { RolesPage } from '@/modules/features/permission/presentation/ui/Roles.page.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -94,20 +95,20 @@ export const CoreRouter = createBrowserRouter([
                 element: <MarketplacePage />,
               },
               {
-                path: 'workers',
+                path: 'agents',
                 children: [
                   {
                     index: true,
-                    element: <WorkersPage />,
+                    element: <AgentsPage />,
                     handle: {
-                      breadcrumb: () => 'Workers',
+                      breadcrumb: () => 'Agents',
                     },
                   },
                   {
-                    path: ':workerId',
-                    element: <WorkerDetailsPage />,
+                    path: ':agentId',
+                    element: <AgentDetailsPage />,
                     handle: {
-                      breadcrumb: () => 'Worker details',
+                      breadcrumb: () => 'Agent details',
                     },
                   },
                 ],
@@ -118,6 +119,10 @@ export const CoreRouter = createBrowserRouter([
                 handle: {
                   breadcrumb: () => 'Credentials',
                 },
+              },
+              {
+                path: 'roles',
+                element: <RolesPage />,
               },
               {
                 path: 'users-admin',

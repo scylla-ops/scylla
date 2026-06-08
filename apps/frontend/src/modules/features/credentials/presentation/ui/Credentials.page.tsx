@@ -25,7 +25,7 @@ export const CredentialsPage = () => {
   } = useCredentials();
 
   return (
-    <div className='flex flex-col gap-4 w-full min-h-full p-2'>
+    <div className='flex flex-col gap-4 w-full min-h-full'>
       <CredentialsHeader
         activeCount={healthCount.healthy + healthCount.warning + healthCount.warning}
         onAddCredential={() => {}}

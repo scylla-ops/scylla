@@ -65,42 +65,45 @@ export const AgentDetailsPage = () => {
   const seenLabel = agent.lastSeen ? getRelativeTime(agent.lastSeen) : null;
 
   return (
-    <div className='space-y-4 p-4'>
-      <BackButton />
-
+    <div className='w-full h-full flex flex-col gap-4'>
       {/* Header — no ULID here; it lives in the identity strip as a link. */}
-      <div className='flex items-start justify-between gap-3'>
-        <div className='flex items-center gap-3'>
-          <span
-            className={cn(
-              'relative flex h-14 w-14 items-center justify-center rounded-lg bg-success/10',
-              online ? 'border border-success' : 'border-2 border-destructive',
-            )}
-          >
-            <Cpu className={cn('h-7 w-7', online ? 'text-success' : 'text-destructive')} />
-            <span className='absolute -bottom-1 -right-1 flex h-3.5 w-3.5' aria-hidden>
-              {online && (
-                <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70' />
-              )}
+      <div className={'flex flex-row gap-2'}>
+        <BackButton iconOnly />
+        <div className={'flex flex-row justify-between w-full '}>
+          <div className='flex items-start justify-between gap-3'>
+            <div className='flex items-center gap-3'>
               <span
                 className={cn(
-                  'relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-card',
-                  online ? 'bg-success' : 'bg-destructive',
+                  'relative flex h-14 w-14 items-center justify-center rounded-lg bg-success/10',
+                  online ? 'border border-success' : 'border-2 border-destructive',
                 )}
-              />
-            </span>
-          </span>
-          <div>
-            <h1 className='text-xl font-semibold'>{agent.name}</h1>
-            <p className='font-mono text-xs text-muted-foreground'>
-              {online ? <Trans>online</Trans> : <Trans>offline</Trans>}
-              {seenLabel && (
-                <>
-                  {' · '}
-                  {online ? <Trans>seen</Trans> : <Trans>down</Trans>} {seenLabel}
-                </>
-              )}
-            </p>
+              >
+                <Cpu className={cn('h-7 w-7', online ? 'text-success' : 'text-destructive')} />
+                <span className='absolute -bottom-1 -right-1 flex h-3.5 w-3.5' aria-hidden>
+                  {online && (
+                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70' />
+                  )}
+                  <span
+                    className={cn(
+                      'relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-card',
+                      online ? 'bg-success' : 'bg-destructive',
+                    )}
+                  />
+                </span>
+              </span>
+              <div>
+                <h1 className='text-xl font-semibold'>{agent.name}</h1>
+                <p className='font-mono text-xs text-muted-foreground'>
+                  {online ? <Trans>online</Trans> : <Trans>offline</Trans>}
+                  {seenLabel && (
+                    <>
+                      {' · '}
+                      {online ? <Trans>seen</Trans> : <Trans>down</Trans>} {seenLabel}
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         <div className='flex items-center gap-2'>

@@ -6,6 +6,7 @@ import {
   WorkflowIcon,
   HardDriveIcon,
   KeyRound,
+  ShieldIcon,
 } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
@@ -40,19 +41,19 @@ const useNavSections = (): NavSectionModel[] => {
           icon: WorkflowIcon,
         },
         {
-          title: 'Marketplace',
-          url: `${prefix}/marketplace`,
-          icon: ShoppingCartIcon,
-        },
-        {
-          title: 'Workers',
-          url: `${prefix}/workers`,
+          title: 'Agents',
+          url: `${prefix}/agents`,
           icon: HardDriveIcon,
         },
         {
           title: 'Credentials',
           url: `${prefix}/credentials`,
           icon: KeyRound,
+        },
+        {
+          title: 'Marketplace',
+          url: `${prefix}/marketplace`,
+          icon: ShoppingCartIcon,
         },
       ],
     },
@@ -63,6 +64,11 @@ const useNavSections = (): NavSectionModel[] => {
           title: 'Users',
           url: `${prefix}/users-admin`,
           icon: UsersIcon,
+        },
+        {
+          title: 'Roles',
+          url: `${prefix}/roles`,
+          icon: ShieldIcon,
         },
       ],
     },

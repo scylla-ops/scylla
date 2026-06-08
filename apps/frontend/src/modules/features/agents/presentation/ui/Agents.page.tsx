@@ -48,38 +48,41 @@ export const AgentsPage = () => {
   if (isError) return <ErrorState message='Error loading agents' />;
 
   return (
-    <div className='flex flex-col w-full h-full overflow-hidden'>
-      <div className='px-2 pt-2'>
-        <p className='mb-1 font-mono text-xs uppercase tracking-wider text-muted-foreground'>
-          <Trans>Service</Trans>
-        </p>
-        <FeatureHeader count={agents.length} label='Agent' onNew={() => setCreateOpen(true)} />
-        {!isLoading && agents.length > 0 && (
-          <p className='mt-1 flex items-center gap-3 font-mono text-xs text-muted-foreground'>
-            <span className='flex items-center gap-1.5'>
-              <span className='h-2 w-2 rounded-full bg-success' />
-              {onlineCount} <Trans>online</Trans>
-            </span>
-            <span className='flex items-center gap-1.5'>
-              <span className='h-2 w-2 rounded-full bg-destructive' />
-              {agents.length - onlineCount} <Trans>offline</Trans>
-            </span>
-            <span className='text-muted-foreground/70'>
-              · {runningTotal} <Trans>running</Trans> · {completedTotal}{' '}
-              <Trans>completed total</Trans>
-            </span>
-          </p>
-        )}
-      </div>
+    <div className='flex flex-col gap-4 w-full h-full overflow-hidden'>
+      <FeatureHeader
+        count={agents.length}
+        label='Agent'
+        onNew={() => setCreateOpen(true)}
+        underLabel={
+          <>
+            {!isLoading && agents.length > 0 && (
+              <p className='mt-1 flex items-center gap-3 font-mono text-xs text-muted-foreground'>
+                <span className='flex items-center gap-1.5'>
+                  <span className='h-2 w-2 rounded-full bg-success' />
+                  {onlineCount} <Trans>online</Trans>
+                </span>
+                <span className='flex items-center gap-1.5'>
+                  <span className='h-2 w-2 rounded-full bg-destructive' />
+                  {agents.length - onlineCount} <Trans>offline</Trans>
+                </span>
+                <span className='text-muted-foreground/70'>
+                  · {runningTotal} <Trans>running</Trans> · {completedTotal}{' '}
+                  <Trans>completed total</Trans>
+                </span>
+              </p>
+            )}
+          </>
+        }
+      />
 
       {isLoading ? (
-        <div className='grid gap-3 p-2 sm:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className='h-40 w-full rounded-xl' />
           ))}
         </div>
       ) : agents.length === 0 ? (
-        <div className='flex flex-1 items-center justify-center p-6'>
+        <div className='flex flex-1 items-center justify-center'>
           <Card className='flex max-w-sm flex-col items-center gap-3 p-8 text-center'>
             <span className='relative flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-muted-foreground/40 bg-muted/30'>
               <Cpu className='h-6 w-6 text-muted-foreground' />

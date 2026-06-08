@@ -6,7 +6,7 @@ export const RolesPage = () => {
 
   return (
     <div>
-      <RolesHeader />
+      <RolesHeader count={roles.length} />
       Table
     </div>
   );
