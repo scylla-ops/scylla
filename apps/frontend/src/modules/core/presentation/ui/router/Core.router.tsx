@@ -13,13 +13,11 @@ import UserSettingsPage from '@/modules/features/user/presentation/ui/settings/U
 import { DashboardPipelinePage } from '@/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx';
 import { PipelineCreationPage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx';
 import { PipelineUpdatePage } from '@/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx';
-import { SecretsPage } from '@/modules/features/secret/presentation/ui/Secrets.page.tsx';
-import { AppsPage } from '@/modules/features/apps/presentation/ui/Apps.page.tsx';
-import { AppDetailsPage } from '@/modules/features/apps/presentation/ui/AppDetails.page.tsx';
-import { AgentsPage } from '@/modules/features/agents/presentation/ui/Agents.page.tsx';
-import { AgentDetailsPage } from '@/modules/features/agents/presentation/ui/AgentDetails.page.tsx';
+import { WorkersPage } from '@/modules/features/workers/presentation/ui/Workers.page.tsx';
+import { WorkerDetailsPage } from '../../../../features/workers/presentation/ui/WorkerDetails.page.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
+import { CredentialsPage } from '@/modules/features/credentials/presentation/ui/Credentials.page.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -87,13 +85,6 @@ export const CoreRouter = createBrowserRouter([
                             `Pipeline #${pipelineName} - Jobs`,
                         },
                       },
-                      {
-                        path: 'secrets',
-                        element: <SecretsPage />,
-                        handle: {
-                          breadcrumb: () => `Secrets`,
-                        },
-                      },
                     ],
                   },
                 ],
@@ -103,42 +94,30 @@ export const CoreRouter = createBrowserRouter([
                 element: <MarketplacePage />,
               },
               {
-                path: 'apps',
+                path: 'workers',
                 children: [
                   {
                     index: true,
-                    element: <AppsPage />,
+                    element: <WorkersPage />,
                     handle: {
-                      breadcrumb: () => 'Apps',
+                      breadcrumb: () => 'Workers',
                     },
                   },
                   {
-                    path: ':appId',
-                    element: <AppDetailsPage />,
+                    path: ':workerId',
+                    element: <WorkerDetailsPage />,
                     handle: {
-                      breadcrumb: () => 'App details',
+                      breadcrumb: () => 'Worker details',
                     },
                   },
                 ],
               },
               {
-                path: 'agents',
-                children: [
-                  {
-                    index: true,
-                    element: <AgentsPage />,
-                    handle: {
-                      breadcrumb: () => 'Agents',
-                    },
-                  },
-                  {
-                    path: ':agentId',
-                    element: <AgentDetailsPage />,
-                    handle: {
-                      breadcrumb: () => 'Agent details',
-                    },
-                  },
-                ],
+                path: 'credentials',
+                element: <CredentialsPage />,
+                handle: {
+                  breadcrumb: () => 'Credentials',
+                },
               },
               {
                 path: 'users-admin',
