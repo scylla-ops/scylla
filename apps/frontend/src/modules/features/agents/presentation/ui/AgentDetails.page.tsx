@@ -8,7 +8,6 @@ import {
 import { AgentIdLink } from '@/modules/features/agents/presentation/ui/components/AgentIdLink.tsx';
 import { LiveNowCard } from '@/modules/features/agents/presentation/ui/components/LiveNowCard.tsx';
 import { OutcomesChart } from '@/modules/features/agents/presentation/ui/components/OutcomesChart.tsx';
-import { AgentLogs } from '@/modules/features/agents/presentation/ui/components/AgentLogs.tsx';
 import { mockLiveJobs } from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
 import { BackButton } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
@@ -182,8 +181,7 @@ export const AgentDetailsPage = () => {
         </div>
       </div>
 
-      {/* Logs */}
-      <AgentLogs agentId={agent.id} agentName={agent.name} />
+      {/* Logs  here (not functionnal yet, need plug to backend */}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
