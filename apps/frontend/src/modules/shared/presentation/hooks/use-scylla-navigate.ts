@@ -54,8 +54,6 @@ export const useScyllaNavigate = () => {
     navigate(`${getOrgPrefix()}${path.startsWith('/') ? path : `/${path}`}`);
   };
 
-  const goBack = () => navigate(-1);
-
   return {
     navigate,
     goToEditPipeline,
