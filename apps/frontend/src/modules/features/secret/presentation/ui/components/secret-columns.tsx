@@ -55,7 +55,11 @@ export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) =>
     cell: info => (
       <div className='flex items-center justify-center gap-1 shrink-0'>
         <Button
-          onClick={() => onDelete(info.row.original.id)}
+          onClick={e => {
+            e.stopPropagation();
+            e.preventDefault();
+            onDelete(info.row.original.id);
+          }}
           type='button'
           variant='ghost'
           size='icon'

@@ -19,6 +19,7 @@ export const SecretPage = () => {
   return (
     <div className='flex flex-col gap-4 w-full min-h-full'>
       <SecretHeader
+        projectId={projectId}
         activeCount={secrets.length}
         onAddSecret={() => {
           setCreateIsDialogOpen(true);

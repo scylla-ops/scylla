@@ -5,7 +5,6 @@ import {
   UsersIcon,
   WorkflowIcon,
   HardDriveIcon,
-  KeyRound,
   ShieldIcon,
 } from 'lucide-react';
 
@@ -44,11 +43,6 @@ const useNavSections = (): NavSectionModel[] => {
           title: 'Agents',
           url: `${prefix}/agents`,
           icon: HardDriveIcon,
-        },
-        {
-          title: 'Secrets',
-          url: `${prefix}/secrets`,
-          icon: KeyRound,
         },
         {
           title: 'Marketplace',
