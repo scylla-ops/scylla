@@ -5,7 +5,7 @@ import type {
 } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import {
   type Permission,
-  PermissionScope,
+  type PermissionScope,
 } from '@/modules/features/permission/domain/models/permission.model.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import { Permission, PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import { type Permission, PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
 
 const VOCAB_QUERY_KEY = 'authz-vocabulary';
 

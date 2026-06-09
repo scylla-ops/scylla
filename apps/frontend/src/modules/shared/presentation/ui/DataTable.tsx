@@ -77,7 +77,7 @@ export function DataTable<TData, TValue>({
             >
               {headerGroup.headers.map(header => {
                 const align = (header.column.columnDef.meta?.align ??
-                  (alignColumnsCenter ? 'center' : 'left')) as ColumnAlign;
+                  (alignColumnsCenter ? 'center' : 'left'));
                 return (
                   <TableHead
                     key={header.id}
@@ -124,7 +124,7 @@ export function DataTable<TData, TValue>({
                     {row.getVisibleCells().map((cell, index) => {
                       const header = table.getHeaderGroups()[0].headers[index];
                       const align = (cell.column.columnDef.meta?.align ??
-                        (alignRowsCenter ? 'center' : 'left')) as ColumnAlign;
+                        (alignRowsCenter ? 'center' : 'left'));
                       return (
                         <TableCell
                           key={cell.id}

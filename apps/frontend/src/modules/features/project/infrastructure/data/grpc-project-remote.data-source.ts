@@ -1,4 +1,4 @@
-import { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { ProjectServiceClient } from '@/generated/project.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';

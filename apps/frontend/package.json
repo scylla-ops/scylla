@@ -6,13 +6,14 @@
   "packageManager": "pnpm@11.1.2",
   "scripts": {
     "dev": "pnpm run prebuild && vite",
-    "build": "pnpm run prebuild && vite build",
+    "build": "pnpm run typecheck && pnpm run prebuild && vite build",
     "typecheck": "tsc -b",
     "prebuild": "pnpm run gen-proto && pnpm run extract && pnpm run compile",
     "gen-proto": "node scripts/gen-proto.mjs",
     "extract": "lingui extract",
     "compile": "lingui compile --typescript",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,16 +1,16 @@
-import { type Permission, Scope } from '@/generated/permission.ts';
+import { type Permission, type Scope } from '@/generated/permission.ts';
 import {
   type Permission as PermissionDomain,
-  PermissionScope,
+  type PermissionScope,
 } from '@/modules/features/permission/domain/models/permission.model.ts';
 
 export class GrpcPermissionMapper {
   public static toDomain(permission: Permission): PermissionDomain {
-    return permission as unknown as PermissionDomain;
+    return permission;
   }
 
   public static toGrpc(permission: PermissionDomain): Permission {
-    return permission as unknown as Permission;
+    return permission;
   }
 
   public static scopeToDomain(scope: Scope): PermissionScope {

@@ -59,7 +59,7 @@ export class DefaultPermissionRepository implements PermissionRepository {
     // Domain and gRPC PrincipalKind enums share identical numeric values.
     return (
       await this._dataSource.getEffectivePermissions(
-        principalKind as unknown as GrpcPrincipalKind,
+        principalKind,
         principalId,
       )
     ).map(GrpcEffectivePermissionsMapper.toDomain);

@@ -121,7 +121,7 @@ export const AppsPage = () => {
           onClose={() => {
             const id = created.app.id;
             setCreated(null);
-            navigate(id);
+            void navigate(id);
           }}
         />
       )}

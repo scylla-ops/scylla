@@ -73,7 +73,7 @@ export const useTailJobLogs = (jobId: string, nodeId?: string) => {
       flush(); // final flush so the last lines aren't lost between ticks
     };
 
-    consume();
+    void consume();
 
     return () => {
       active = false;

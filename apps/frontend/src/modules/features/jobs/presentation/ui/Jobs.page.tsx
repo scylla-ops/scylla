@@ -13,7 +13,7 @@ export const JobsPage = () => {
     usePipelinesJobs(pipelineId || '');
 
   const handleBack = () => {
-    navigate(-1);
+    void navigate(-1);
   };
 
   if (!pipelineId) {

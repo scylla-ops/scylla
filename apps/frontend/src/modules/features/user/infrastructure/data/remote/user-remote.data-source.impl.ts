@@ -1,4 +1,4 @@
-import { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListUsersResponse, UserResponse, UpdateUserRequest } from '@/generated/user.ts';
 import { UserServiceClient } from '@/generated/user.client.ts';

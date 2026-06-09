@@ -28,7 +28,7 @@ export const SecretPage = () => {
       <div className='overflow-hidden'>
         <SecretList secrets={secrets} projectId={projectId} />
         <CreateSecretDialog
-          projectId={projectId!}
+          projectId={projectId}
           isOpen={isCreateDialogOpen}
           setOpen={setCreateIsDialogOpen}
         />

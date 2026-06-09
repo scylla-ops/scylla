@@ -9,7 +9,7 @@ const columnHelper = createColumnHelper<Secret>();
 interface SecretColumnsMetadata {
   onDelete: (id: string) => void;
 }
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) => [
   columnHelper.accessor('name', {
     header: () => <Trans>Name</Trans>,

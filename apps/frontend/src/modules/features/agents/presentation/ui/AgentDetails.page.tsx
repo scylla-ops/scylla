@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
-import { Cpu, ExternalLink } from 'lucide-react';
+import { Cpu } from 'lucide-react';
 import { cn } from '@shared/presentation/utils';
 import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { Trans } from '@lingui/react/macro';
@@ -107,12 +107,6 @@ export const AgentDetailsPage = () => {
           </div>
         </div>
         <div className='flex items-center gap-2'>
-          <Button variant='outline' disabled title='Coming soon'>
-            <Trans>Rename</Trans>
-          </Button>
-          <Button variant='outline' disabled title='Coming soon'>
-            <Trans>Logs</Trans> <ExternalLink className='ml-1 h-3 w-3' />
-          </Button>
           <Button variant='destructive' onClick={() => setConfirmDelete(true)}>
             <Trans>Delete</Trans>
           </Button>
@@ -202,12 +196,16 @@ export const AgentDetailsPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmDelete(false)}>
               <Trans>Cancel</Trans>
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                deleteAgent.mutate(agent.id, { onSuccess: () => navigate('..') });
+                deleteAgent.mutate(agent.id, {
+                  onSuccess: () => {
+                    void navigate('..');
+                  },
+                });
                 setConfirmDelete(false);
               }}
             >

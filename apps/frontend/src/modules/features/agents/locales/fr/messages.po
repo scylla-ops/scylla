@@ -13,15 +13,15 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:136
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:130
 msgid "active"
 msgstr "actif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:133
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:127
 msgid "Active"
 msgstr "Actif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:126
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:120
 msgid "Agent ID"
 msgstr "ID de l'agent"
 
@@ -29,7 +29,7 @@ msgstr "ID de l'agent"
 msgid "An agent runs jobs. Create one to get credentials, then start the agent — it'll pull jobs and report back."
 msgstr "Un agent exécute des jobs. Créez-en un pour obtenir des identifiants, puis démarrez l'agent — il récupérera les jobs et fera ses retours."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:206
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:200
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:158
 msgid "Cancel"
 msgstr "Annuler"
@@ -63,18 +63,18 @@ msgstr "Créez votre premier agent"
 msgid "created"
 msgstr "créé le"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:142
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:136
 msgid "Created"
 msgstr "Créé le"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:117
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:214
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:212
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:166
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:97
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:198
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:192
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:150
 msgid "Delete agent?"
 msgstr "Supprimer l'agent ?"
@@ -104,15 +104,15 @@ msgstr "Obtenez des identifiants pour connecter un agent."
 msgid "idle — no jobs"
 msgstr "inactif — aucun job"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:136
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:130
 msgid "inactive"
 msgstr "inactif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:159
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:153
 msgid "Job stats"
 msgstr "Stats des jobs"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:167
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:161
 msgid "last run"
 msgstr "dernière exécution"
 
@@ -120,7 +120,6 @@ msgstr "dernière exécution"
 msgid "lines"
 msgstr "lignes"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:114
 #: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:32
 msgid "Logs"
 msgstr "Logs"
@@ -183,8 +182,8 @@ msgid "queue empty"
 msgstr "file vide"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
-msgid "Rename"
-msgstr "Renommer"
+#~ msgid "Rename"
+#~ msgstr "Renommer"
 
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:69
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:163
@@ -213,16 +212,16 @@ msgstr "vu"
 #~ msgid "Service"
 #~ msgstr "Service"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:163
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:157
 msgid "since"
 msgstr "depuis"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:201
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:195
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:153
 msgid "This revokes the agent's grants and disconnects it. Cannot be undone."
 msgstr "Cela révoque les autorisations de l'agent et le déconnecte. Irréversible."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:149
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:143
 msgid "Updated"
 msgstr "Mis à jour le"
 

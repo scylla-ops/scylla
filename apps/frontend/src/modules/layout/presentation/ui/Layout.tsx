@@ -81,7 +81,7 @@ export const Layout = () => {
                           onSuccess: data => {
                             const orgId = idValue(data?.organizationId);
                             setOrganization(orgId, name);
-                            navigate(`/${slugifyOrgName(name)}/users/me`);
+                            void navigate(`/${slugifyOrgName(name)}/users/me`);
                           },
                         },
                       );
