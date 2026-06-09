@@ -3,7 +3,7 @@ import { Badge, Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import type {
   Credential,
   CredentialKind,
-} from '@/modules/features/secret/domain/models/credential.model.ts';
+} from '@/modules/features/secret/domain/entities/credential.model.ts';
 
 interface CredentialsGridProps {
   credentials: Credential[];

@@ -4,8 +4,8 @@ import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-tran
 import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 import type {
   CreateSecretInput,
-  Secret,
-} from '@/modules/features/secret/domain/models/secret.model.ts';
+  SecretEntity,
+} from '@/modules/features/secret/domain/entities/secret.entity.ts';
 import type { SecretRemoteDataSource } from '@/modules/features/secret/infrastructure/repository/data-sources/secret-remote.data-source.ts';
 import { GrpcSecretMapper } from '@/modules/features/secret/infrastructure/repository/mappers/grpc-secret.mapper.ts';
 
@@ -16,8 +16,8 @@ export class GrpcSecretRemoteDataSource implements SecretRemoteDataSource {
     this._secretClient = new SecretServiceClient(transport.getTransport());
   }
 
-  public async listByProjectId(projectId: string): Promise<ScyllaResult<Secret[]>> {
-    return ScyllaResult.tryAsync<Secret[]>(async () => {
+  public async listByProjectId(projectId: string): Promise<ScyllaResult<SecretEntity[]>> {
+    return ScyllaResult.tryAsync<SecretEntity[]>(async () => {
       const response = await this._secretClient.listSecrets({
         projectId: wrapId(projectId),
       }).response;
@@ -25,8 +25,8 @@ export class GrpcSecretRemoteDataSource implements SecretRemoteDataSource {
     }, 'Error listing secrets');
   }
 
-  public async create(input: CreateSecretInput): Promise<ScyllaResult<Secret>> {
-    return ScyllaResult.tryAsync<Secret>(async () => {
+  public async create(input: CreateSecretInput): Promise<ScyllaResult<SecretEntity>> {
+    return ScyllaResult.tryAsync<SecretEntity>(async () => {
       const response = await this._secretClient.createSecret({
         projectId: wrapId(input.projectId),
         name: input.name,

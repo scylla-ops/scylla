@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@shadcn';
-import type { CredentialKind } from '@/modules/features/secret/domain/models/credential.model.ts';
+import type { CredentialKind } from '@/modules/features/secret/domain/entities/credential.model.ts';
 import type { CredentialsView } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 
 interface CredentialsFiltersProps {

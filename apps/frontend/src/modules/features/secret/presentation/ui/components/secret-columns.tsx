@@ -2,14 +2,14 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Button } from '@shadcn';
 import { KeyRound, Trash2 } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import type { Secret } from '@/modules/features/secret/domain/models/secret.model.ts';
+import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
 
-const columnHelper = createColumnHelper<Secret>();
+const columnHelper = createColumnHelper<SecretEntity>();
 
 interface SecretColumnsMetadata {
   onDelete: (id: string) => void;
 }
- 
+
 export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) => [
   columnHelper.accessor('name', {
     header: () => <Trans>Name</Trans>,

@@ -2,7 +2,7 @@
  * Domain model for a project-scoped secret. Metadata only — the plaintext value
  * is write-only and is never returned by the API, so it never lives here.
  */
-export interface Secret {
+export interface SecretEntity {
   id: string;
   projectId: string;
   name: string;

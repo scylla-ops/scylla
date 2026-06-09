@@ -1,8 +1,8 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   CreateSecretInput,
-  Secret,
-} from '@/modules/features/secret/domain/models/secret.model.ts';
+  SecretEntity,
+} from '@/modules/features/secret/domain/entities/secret.entity.ts';
 import type { SecretRepository } from '@/modules/features/secret/domain/repository/secret.repository.ts';
 import type { SecretRemoteDataSource } from '@/modules/features/secret/infrastructure/repository/data-sources/secret-remote.data-source.ts';
 
@@ -10,11 +10,11 @@ import type { SecretRemoteDataSource } from '@/modules/features/secret/infrastru
 export class DefaultSecretRepository implements SecretRepository {
   constructor(private readonly remoteDataSource: SecretRemoteDataSource) {}
 
-  public listByProjectId(projectId: string): Promise<ScyllaResult<Secret[]>> {
+  public listByProjectId(projectId: string): Promise<ScyllaResult<SecretEntity[]>> {
     return this.remoteDataSource.listByProjectId(projectId);
   }
 
-  public create(input: CreateSecretInput): Promise<ScyllaResult<Secret>> {
+  public create(input: CreateSecretInput): Promise<ScyllaResult<SecretEntity>> {
     return this.remoteDataSource.create(input);
   }
 
