@@ -1,17 +1,5 @@
 import * as React from 'react';
-import {
-  Building2,
-  ShoppingCartIcon,
-  UsersIcon,
-  WorkflowIcon,
-  HardDriveIcon,
-  FolderKanbanIcon,
-  CpuIcon,
-  ServerIcon,
-  ShieldIcon,
-  KeyRoundIcon,
-  ListChecksIcon,
-} from 'lucide-react';
+import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon, HardDriveIcon } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {
@@ -37,72 +25,32 @@ const useNavSections = (): NavSectionModel[] => {
 
   return [
     {
-      // Organization scope (Org → Project → Pipeline → Job; App ∈ Org).
-      title: 'Organization',
+      title: 'Main',
       items: [
         {
-          title: 'Workspace',
+          title: 'Projects',
+          url: `${prefix}/projects`,
           icon: WorkflowIcon,
-          items: [
-            {
-              title: 'Projects',
-              url: `${prefix}/projects`,
-              icon: FolderKanbanIcon,
-            },
-            {
-              title: 'Marketplace',
-              url: `${prefix}/marketplace`,
-              icon: ShoppingCartIcon,
-            },
-          ],
         },
         {
-          title: 'Service',
-          icon: ServerIcon,
-          items: [
-            {
-              title: 'Apps',
-              url: `${prefix}/apps`,
-              icon: HardDriveIcon,
-            },
-            {
-              title: 'Agents',
-              url: `${prefix}/agents`,
-              icon: CpuIcon,
-            },
-          ],
+          title: 'Agents',
+          url: `${prefix}/agents`,
+          icon: HardDriveIcon,
+        },
+        {
+          title: 'Marketplace',
+          url: `${prefix}/marketplace`,
+          icon: ShoppingCartIcon,
         },
       ],
     },
     {
-      // Global administration (system scope).
-      title: 'Administration',
+      title: 'Admin',
       items: [
         {
           title: 'Users',
           url: `${prefix}/users-admin`,
           icon: UsersIcon,
-        },
-        {
-          title: 'Authorization',
-          icon: ShieldIcon,
-          items: [
-            {
-              title: 'Roles',
-              url: `${prefix}/roles`,
-              icon: ShieldIcon,
-            },
-            {
-              title: 'Grants',
-              url: `${prefix}/grants`,
-              icon: KeyRoundIcon,
-            },
-            {
-              title: 'Permissions',
-              url: `${prefix}/permissions`,
-              icon: ListChecksIcon,
-            },
-          ],
         },
       ],
     },

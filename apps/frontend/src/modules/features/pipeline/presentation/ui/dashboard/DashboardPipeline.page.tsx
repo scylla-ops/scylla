@@ -27,7 +27,7 @@ export const DashboardPipelinePage = () => {
   const handleBack = () => navigate('/projects');
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full p-4'>
+    <div className='flex flex-col gap-4 w-full h-full'>
       <PipelineDashboardHeader
         numberOfPipelines={paginationInfo?.totalCount ?? pipelines.items.length}
         onBack={handleBack}

@@ -60,8 +60,8 @@ export function useApps() {
       });
     },
     onSuccess: (_data, { appId }) => {
-      queryClient.invalidateQueries({ queryKey: [APPS_QUERY_KEY, organizationId] });
-      queryClient.invalidateQueries({ queryKey: [APPS_QUERY_KEY, 'detail', appId] });
+      void queryClient.invalidateQueries({ queryKey: [APPS_QUERY_KEY, organizationId] });
+      void queryClient.invalidateQueries({ queryKey: [APPS_QUERY_KEY, 'detail', appId] });
     },
   });
 

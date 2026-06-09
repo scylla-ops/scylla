@@ -22,6 +22,10 @@ import { cn } from '@shared/presentation/utils';
 import type { EnvEntry, Shell } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import { useSecrets } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
+import ReactCodeMirror from '@uiw/react-codemirror';
+import { shell as shellLang } from '@codemirror/legacy-modes/mode/shell';
+import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
+import { StreamLanguage } from '@codemirror/language';
 
 export type NodeFormValue =
   | { kind: 'exec'; command: string; args: string[]; workingDir?: string; env: EnvEntry[] }
@@ -43,9 +47,6 @@ interface EnvRow {
   value: string;
   secretRef: string;
 }
-
-const TEXTAREA_CLASS =
-  'border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full min-h-32 rounded-md border bg-transparent px-3 py-2 font-mono text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]';
 
 function rowFromEntry(entry: EnvEntry): EnvRow {
   return entry.kind === 'secret'
@@ -205,13 +206,14 @@ export function StepNodeFormDialog({
                 <Label htmlFor='node-script'>
                   <Trans>Script</Trans>
                 </Label>
-                <textarea
+
+                <ReactCodeMirror
                   id='node-script'
                   value={script}
-                  onChange={e => setScript(e.target.value)}
+                  onChange={value => setScript(value)}
                   placeholder={'cd crates/api\ncargo build --release'}
-                  className={TEXTAREA_CLASS}
                   spellCheck={false}
+                  extensions={[StreamLanguage.define(shellLang), codeMirrorTheme]}
                 />
               </div>
               <div className='space-y-2'>

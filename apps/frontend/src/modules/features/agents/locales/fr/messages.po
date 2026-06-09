@@ -13,24 +13,24 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:133
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:130
 msgid "active"
 msgstr "actif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:130
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:127
 msgid "Active"
 msgstr "Actif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:123
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:120
 msgid "Agent ID"
 msgstr "ID de l'agent"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:92
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:95
 msgid "An agent runs jobs. Create one to get credentials, then start the agent — it'll pull jobs and report back."
 msgstr "Un agent exécute des jobs. Créez-en un pour obtenir des identifiants, puis démarrez l'agent — il récupérera les jobs et fera ses retours."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:203
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:155
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:200
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:158
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -43,7 +43,7 @@ msgstr "annulé"
 msgid "completed"
 msgstr "terminé"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:69
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:70
 msgid "completed total"
 msgstr "terminés au total"
 
@@ -51,11 +51,11 @@ msgstr "terminés au total"
 msgid "Copy id"
 msgstr "Copier l'id"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:125
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:128
 msgid "Create & reveal secret →"
 msgstr "Créer & révéler le secret →"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:98
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:101
 msgid "Create your first agent"
 msgstr "Créez votre premier agent"
 
@@ -63,23 +63,23 @@ msgstr "Créez votre premier agent"
 msgid "created"
 msgstr "créé le"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:139
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:136
 msgid "Created"
 msgstr "Créé le"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:114
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:211
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:163
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:212
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:166
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:97
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:195
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:147
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:192
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:150
 msgid "Delete agent?"
 msgstr "Supprimer l'agent ?"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:100
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:101
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:124
 msgid "down"
 msgstr "hors ligne"
@@ -96,7 +96,7 @@ msgstr "filtre"
 msgid "finished"
 msgstr "terminés"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:122
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:125
 msgid "Get credentials to connect an agent."
 msgstr "Obtenez des identifiants pour connecter un agent."
 
@@ -104,15 +104,15 @@ msgstr "Obtenez des identifiants pour connecter un agent."
 msgid "idle — no jobs"
 msgstr "inactif — aucun job"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:133
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:130
 msgid "inactive"
 msgstr "inactif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:156
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:153
 msgid "Job stats"
 msgstr "Stats des jobs"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:164
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:161
 msgid "last run"
 msgstr "dernière exécution"
 
@@ -120,7 +120,6 @@ msgstr "dernière exécution"
 msgid "lines"
 msgstr "lignes"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
 #: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:32
 msgid "Logs"
 msgstr "Logs"
@@ -137,12 +136,12 @@ msgstr "Nom"
 msgid "never connected"
 msgstr "jamais connecté"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:113
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:121
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:116
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:124
 msgid "New Agent"
 msgstr "Nouvel agent"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:89
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:92
 msgid "No agents connected"
 msgstr "Aucun agent connecté"
 
@@ -150,14 +149,14 @@ msgstr "Aucun agent connecté"
 msgid "no runs yet · waiting for first job"
 msgstr "aucune exécution · en attente du premier job"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:96
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:65
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:97
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:66
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:113
 msgid "offline"
 msgstr "hors ligne"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:96
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:61
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:97
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:62
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:108
 msgid "online"
 msgstr "en ligne"
@@ -182,11 +181,11 @@ msgstr "aperçu · flux de logs agent pas encore branché"
 msgid "queue empty"
 msgstr "file vide"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:108
-msgid "Rename"
-msgstr "Renommer"
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
+#~ msgid "Rename"
+#~ msgstr "Renommer"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:68
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:69
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:163
 #: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:91
 msgid "running"
@@ -204,25 +203,25 @@ msgstr "exécutions · dernière heure"
 msgid "sample"
 msgstr "exemple"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:100
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:101
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:120
 msgid "seen"
 msgstr "vu"
 
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:54
-msgid "Service"
-msgstr "Service"
+#~ msgid "Service"
+#~ msgstr "Service"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:160
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:157
 msgid "since"
 msgstr "depuis"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:198
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:150
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:195
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:153
 msgid "This revokes the agent's grants and disconnects it. Cannot be undone."
 msgstr "Cela révoque les autorisations de l'agent et le déconnecte. Irréversible."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:146
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:143
 msgid "Updated"
 msgstr "Mis à jour le"
 

@@ -1,10 +1,10 @@
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { Trans } from '@lingui/react/macro';
-import { KeyRound } from 'lucide-react';
-import { Button } from '@shadcn';
-import { FeatureHeader, BackButton } from '@shared/presentation/ui';
+import { FeatureHeader } from '@shared/presentation/ui';
 import { useDeletePipeline } from '@/modules/features/pipeline/presentation/hooks/use-delete-pipeline.ts';
+import { Button } from '@shadcn';
+import { KeyIcon } from 'lucide-react';
 
 interface PipelineDashboardHeaderProps {
   numberOfPipelines: number;
@@ -27,19 +27,19 @@ export const PipelineDashboardHeader = ({
 
   return (
     <div className='flex items-center gap-4 w-full'>
-      <BackButton iconOnly onClick={onBack} />
       <FeatureHeader
         count={numberOfPipelines}
-        label='Pipeline'
+        label={'Pipeline'}
         selectedCount={selectedIds.length}
         onClearSelection={clearSelection}
         onDeleteSelection={handleDelete}
         onNew={goToCreatePipeline}
         newLabel={<Trans>New pipeline</Trans>}
+        onBack={onBack}
         extraActions={
-          <Button variant='outline' onClick={() => goToSubRoute('secrets')}>
-            <KeyRound className='size-4' />
-            <Trans>Secrets</Trans>
+          <Button variant={'outline'} onClick={() => goToSubRoute('secrets')}>
+            <KeyIcon className={'text-primary'} />
+            Secrets
           </Button>
         }
       />

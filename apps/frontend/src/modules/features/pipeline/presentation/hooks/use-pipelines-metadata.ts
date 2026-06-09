@@ -21,7 +21,7 @@ export const usePipelinesMetadata = (projectId: string) => {
   });
 
   useEffect(() => {
-    updatePaginationInfo(data?.pagination as PaginationInfo | undefined);
+    updatePaginationInfo(data?.pagination);
   }, [data, updatePaginationInfo]);
 
   return {

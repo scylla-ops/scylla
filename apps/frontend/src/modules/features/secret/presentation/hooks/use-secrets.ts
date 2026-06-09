@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
-import type { Secret } from '@/modules/features/secret/domain/models/secret.model.ts';
+import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
 
 const SECRETS_QUERY_KEY = 'secrets';
 
@@ -23,7 +23,7 @@ function secretErrorMessage(error: unknown): string {
 export const useSecrets = (projectId: string) => {
   const { listSecrets } = useDependencies().secret;
 
-  const { data, isLoading, isError, error } = useQuery<Secret[], ScyllaError>({
+  const { data, isLoading, isError, error } = useQuery<SecretEntity[], ScyllaError>({
     queryKey: [SECRETS_QUERY_KEY, projectId],
     enabled: !!projectId,
     queryFn: async () => (await listSecrets.execute(projectId)).unwrap(),
@@ -69,7 +69,6 @@ export const useDeleteSecret = (projectId: string) => {
   return useMutation({
     mutationFn: async (secretId: string) => (await deleteSecret.execute(secretId)).unwrap(),
     onSuccess: () => {
-      toast.success('Secret deleted');
       queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, projectId] });
     },
     onError: error => toast.error(secretErrorMessage(error)),

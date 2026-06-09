@@ -13,7 +13,7 @@ export const useLogin = () => {
       return result.unwrap();
     },
     onSuccess: () => {
-      navigate('/', { replace: true });
+      void navigate('/', { replace: true });
     },
   });
 };

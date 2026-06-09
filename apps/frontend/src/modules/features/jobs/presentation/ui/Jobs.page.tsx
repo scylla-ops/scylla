@@ -13,7 +13,7 @@ export const JobsPage = () => {
     usePipelinesJobs(pipelineId || '');
 
   const handleBack = () => {
-    navigate(-1);
+    void navigate(-1);
   };
 
   if (!pipelineId) {
@@ -29,7 +29,7 @@ export const JobsPage = () => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full p-2'>
+    <div className='flex flex-col gap-4 w-full h-full'>
       <JobsHeader
         numberOfJobs={paginationInfo?.totalCount ?? jobs.length}
         pipelineId={pipelineId}

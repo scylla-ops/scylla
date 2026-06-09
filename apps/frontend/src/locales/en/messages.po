@@ -26,7 +26,7 @@ msgstr "Agent secret"
 msgid "An error occurred"
 msgstr "An error occurred"
 
-#: src/modules/core/presentation/ui/App.tsx:67
+#: src/modules/core/presentation/ui/App.tsx:61
 msgid "An unexpected error occurred"
 msgstr "An unexpected error occurred"
 
@@ -43,7 +43,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:57
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:74
 msgid "Clear"
 msgstr "Clear"
 
@@ -63,7 +63,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:73
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:91
 msgid "Delete"
 msgstr "Delete"
 
@@ -87,7 +87,7 @@ msgstr "Error"
 msgid "I've copied it — close"
 msgstr "I've copied it — close"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:51
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:63
 msgid "in total"
 msgstr "in total"
 
@@ -99,16 +99,16 @@ msgstr "Log out"
 #~ msgid "Main"
 #~ msgstr "Main"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:80
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:97
 msgid "New {label}"
 msgstr "New {label}"
 
-#: src/modules/core/presentation/ui/App.tsx:97
+#: src/modules/core/presentation/ui/App.tsx:91
 msgid "Operation failed"
 msgstr "Operation failed"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:121
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:125
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:69
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:73
 msgid "Organization"
 msgstr "Organization"
 
@@ -120,12 +120,12 @@ msgstr "Organization"
 msgid "Run the agent"
 msgstr "Run the agent"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:124
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:72
 msgid "Select Organization"
 msgstr "Select Organization"
 
-#: src/modules/core/presentation/ui/App.tsx:66
-#: src/modules/core/presentation/ui/App.tsx:96
+#: src/modules/core/presentation/ui/App.tsx:60
+#: src/modules/core/presentation/ui/App.tsx:90
 msgid "Server unreachable"
 msgstr "Server unreachable"
 

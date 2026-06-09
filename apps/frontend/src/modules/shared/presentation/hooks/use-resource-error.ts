@@ -27,7 +27,7 @@ export function useResourceError({ error, redirectTo, notFoundMessage }: UseReso
   useEffect(() => {
     if (notFound) {
       toast.error(notFoundMessage);
-      navigate(redirectTo, { replace: true });
+      void navigate(redirectTo, { replace: true });
     }
   }, [notFound, notFoundMessage, redirectTo, navigate]);
 

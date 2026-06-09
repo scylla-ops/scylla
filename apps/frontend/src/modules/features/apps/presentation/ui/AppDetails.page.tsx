@@ -155,7 +155,7 @@ export const AppDetailsPage = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                deleteApp.mutate(app.id, { onSuccess: () => navigate('..') });
+                deleteApp.mutate(app.id, { onSuccess: () => void navigate('..') });
                 setConfirmDelete(false);
               }}
             >
