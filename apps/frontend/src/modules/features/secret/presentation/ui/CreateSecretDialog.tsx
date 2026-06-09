@@ -7,6 +7,8 @@ interface CreateSecretDialogProps {
   isOpen: boolean;
   setOpen: (open: boolean) => void;
   projectId: string;
+  name?: string;
+  description?: string;
 }
 
 export const CreateSecretDialog = ({ projectId, isOpen, setOpen }: CreateSecretDialogProps) => {

@@ -1,6 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Button } from '@shadcn';
-import { KeyRound, Pencil, Trash2 } from 'lucide-react';
+import { KeyRound, Trash2 } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import type { Secret } from '@/modules/features/secret/domain/models/secret.model.ts';
 
@@ -54,9 +54,6 @@ export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) =>
     header: 'Actions',
     cell: info => (
       <div className='flex items-center justify-center gap-1 shrink-0'>
-        <Button type='button' variant='ghost' size='icon' className='size-8'>
-          <Pencil className='size-4' />
-        </Button>
         <Button
           onClick={() => onDelete(info.row.original.id)}
           type='button'
