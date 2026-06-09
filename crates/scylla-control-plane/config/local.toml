@@ -1,0 +1,31 @@
+[grpc]
+address = "127.0.0.1:50051"
+
+[database]
+url = "postgres://scylla:scylla@127.0.0.1:5432/scylla"
+max_connections = 8
+min_connections = 1
+acquire_timeout = "30s"
+run_migrations = true
+
+[cors]
+allow_origins = ["*"]
+allow_headers = [
+    "content-type",
+    "authorization",
+    "x-grpc-web",
+    "x-user-agent"
+]
+expose_headers = [
+    "grpc-status",
+    "grpc-message",
+    "grpc-status-details-bin"
+]
+
+[bootstrap]
+username = "admin"
+password = "admin123"
+
+[secrets]
+# Dev-only master key for project-secret encryption. Replace + inject at deploy.
+master_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

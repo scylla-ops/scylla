@@ -1,7 +1,7 @@
-import { CheckCircle2, DiamondMinusIcon, Loader2, XCircle } from 'lucide-react';
+import { Ban, CheckCircle2, DiamondMinusIcon, Loader2, SkipForward, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-export type StatusKey = 'pending' | 'running' | 'completed' | 'failed';
+export type StatusKey = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled';
 
 export interface StatusConfig {
   label: string;
@@ -55,6 +55,26 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     barHoverClassName: 'hover:bg-red-500 hover:scale-y-110',
     dotClassName: 'bg-red-500',
     textClassName: 'text-red-600',
+  },
+  skipped: {
+    label: 'Skipped',
+    variant: 'outline',
+    icon: SkipForward,
+    iconClassName: 'text-zinc-500',
+    barClassName: 'bg-zinc-400/70',
+    barHoverClassName: 'hover:bg-zinc-500 hover:scale-y-110',
+    dotClassName: 'bg-zinc-500',
+    textClassName: 'text-zinc-600',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    variant: 'outline',
+    icon: Ban,
+    iconClassName: 'text-amber-500',
+    barClassName: 'bg-amber-400/80',
+    barHoverClassName: 'hover:bg-amber-500 hover:scale-y-110',
+    dotClassName: 'bg-amber-500',
+    textClassName: 'text-amber-600',
   },
 };
 

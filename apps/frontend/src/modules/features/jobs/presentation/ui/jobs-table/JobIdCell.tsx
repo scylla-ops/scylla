@@ -10,7 +10,7 @@ export function JobIdCell({ job }: { job: Job }) {
 
   const handleCopyJobId = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(job.id);
+    void navigator.clipboard.writeText(job.id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -9,7 +9,7 @@ export const useDeleteJobs = (pipelineId?: string) => {
     mutationFn: async (jobId: string) => (await deleteJob.execute(jobId)).unwrap(),
     onSuccess: () => {
       if (pipelineId) {
-        queryClient.invalidateQueries({ queryKey: ['jobs', 'pipeline', pipelineId] });
+        void queryClient.invalidateQueries({ queryKey: ['jobs', 'pipeline', pipelineId] });
       }
     },
   });

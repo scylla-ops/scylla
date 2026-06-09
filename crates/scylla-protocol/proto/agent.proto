@@ -4,36 +4,80 @@ package agent;
 
 import "common.proto";
 
+// Persistent bidirectional stream between the control plane and a connected
+// agent App. The App authenticates with its bearer token (Authorization
+// metadata) and the interceptor resolves it to an App principal. While
+// connected it receives JobDispatch messages and streams back job status and
+// log events. Presence is the open stream itself — no heartbeats.
+// `Open` (not `Connect`) because tonic's generated client already has a
+// `connect(endpoint)` constructor — a `Connect` RPC would collide with it.
 service AgentService {
-  rpc GetAgent(GetAgentRequest) returns (AgentResponse);
-  rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
-  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  rpc Open(stream AgentUp) returns (stream AgentDown);
 }
 
-message AgentResponse {
-  string agent_id = 1;
-  string hostname = 2;
-  string status = 3;
-  string last_seen_at = 4;
-  string created_at = 5;
-  string updated_at = 6;
+// Server -> agent.
+message AgentDown {
+  oneof payload {
+    JobDispatch dispatch = 1;
+  }
 }
 
-message GetAgentRequest {
-  string agent_id = 1;
+// Agent -> server.
+message AgentUp {
+  oneof payload {
+    JobStatus  status = 1;
+    JobLogLine log    = 2;
+  }
 }
 
-message DeleteAgentRequest {
-  string agent_id = 1;
+message JobDispatch {
+  common.JobId       job_id      = 1;
+  common.PipelineId  pipeline_id = 2;
+  repeated AgentNode nodes       = 3;
 }
 
-message DeleteAgentResponse {}
-
-message ListAgentsRequest {
-  optional common.PaginationRequest pagination = 1;
+message AgentNode {
+  common.NodeId          node_id     = 1;
+  repeated common.NodeId deps        = 2;
+  string                 working_dir = 3; // relative to the job workspace; "" = workspace root
+  repeated ResolvedEnv   env         = 4; // env overlay, secrets already resolved
+  oneof step {
+    common.ExecStep   exec   = 5;
+    common.ScriptStep script = 6;
+  }
 }
 
-message ListAgentsResponse {
-  repeated AgentResponse agents = 1;
-  common.PaginationMetadata pagination = 2;
+// A fully-resolved environment variable handed to the agent: any secret
+// reference has already been looked up control-plane-side. `masked` marks a
+// value that originated from a secret so the agent can scrub it from logs.
+message ResolvedEnv {
+  string key    = 1;
+  string value  = 2;
+  bool   masked = 3;
+}
+
+// Mirrors the domain JobEvent: a kind plus the fields relevant to that kind.
+message JobStatus {
+  common.JobId  job_id  = 1;
+  JobEventKind  kind    = 2;
+  common.NodeId node_id = 3; // set for NODE_* kinds
+  string        error   = 4; // set for *_FAILED kinds
+}
+
+enum JobEventKind {
+  JOB_STARTED    = 0;
+  NODE_STARTED   = 1;
+  NODE_COMPLETED = 2;
+  NODE_FAILED    = 3;
+  NODE_SKIPPED   = 4;
+  JOB_COMPLETED  = 5;
+  JOB_FAILED     = 6;
+}
+
+message JobLogLine {
+  common.JobId  job_id    = 1;
+  common.NodeId node_id   = 2;
+  string        stream    = 3; // "stdout" | "stderr"
+  string        line      = 4;
+  string        timestamp = 5; // RFC 3339
 }

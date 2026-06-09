@@ -44,7 +44,8 @@ interface DataTableProps<TData, TValue> {
   isRowSelected?: (row: TData) => boolean;
   expandedContent?: (row: Row<TData>) => React.ReactNode;
   isRowExpanded?: (row: TData) => boolean;
-  alignCenter?: boolean;
+  alignColumnsCenter?: boolean;
+  alignRowsCenter?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -55,7 +56,8 @@ export function DataTable<TData, TValue>({
   isRowSelected,
   expandedContent,
   isRowExpanded,
-  alignCenter = false,
+  alignRowsCenter = false,
+  alignColumnsCenter = false,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -74,7 +76,8 @@ export function DataTable<TData, TValue>({
               className='hover:bg-transparent border-b border-slate-200'
             >
               {headerGroup.headers.map(header => {
-                const align = (header.column.columnDef.meta?.align ?? (alignCenter ? 'center' : 'left')) as ColumnAlign;
+                const align = (header.column.columnDef.meta?.align ??
+                  (alignColumnsCenter ? 'center' : 'left'));
                 return (
                   <TableHead
                     key={header.id}
@@ -111,14 +114,17 @@ export function DataTable<TData, TValue>({
                     data-state={isSelected ? 'selected' : undefined}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      'border-b border-slate-100 transition-all duration-200',
-                      onRowClick && 'cursor-pointer hover:bg-slate-50 hover:shadow-sm',
-                      isSelected && 'bg-blue-50 hover:bg-blue-100 border-blue-200',
+                      'border-b border-slate-100 transition-colors duration-150',
+                      onRowClick && 'cursor-pointer',
+                      onRowClick && !isSelected && 'hover:bg-slate-50',
+                      isSelected &&
+                        '[&>td]:bg-primary/6 [&>td:first-child]:border-l-[3px] [&>td:first-child]:border-l-primary hover:bg-primary/9',
                     )}
                   >
                     {row.getVisibleCells().map((cell, index) => {
                       const header = table.getHeaderGroups()[0].headers[index];
-                      const align = (cell.column.columnDef.meta?.align ?? (alignCenter ? 'center' : 'left')) as ColumnAlign;
+                      const align = (cell.column.columnDef.meta?.align ??
+                        (alignRowsCenter ? 'center' : 'left'));
                       return (
                         <TableCell
                           key={cell.id}

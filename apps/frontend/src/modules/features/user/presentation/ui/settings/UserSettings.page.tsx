@@ -14,7 +14,7 @@ export const UserSettingsPage = () => {
   const { goBack } = useScyllaNavigate();
 
   return (
-    <div className='flex flex-col gap-4 w-full p-2'>
+    <div className='flex flex-col gap-4 w-full'>
       <div className='flex items-center gap-4'>
         <BackButton iconOnly onClick={() => goBack()} />
         <h1 className='text-3xl font-bold'>

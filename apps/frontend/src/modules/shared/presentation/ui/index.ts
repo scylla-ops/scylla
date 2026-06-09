@@ -6,3 +6,4 @@ export * from './FeatureHeader.tsx';
 export * from './BackButton.tsx';
 export * from './FormDialog.tsx';
 export * from './IconButton.tsx';
+export * from './SecretRevealDialog.tsx';

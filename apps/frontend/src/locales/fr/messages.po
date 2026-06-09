@@ -14,17 +14,25 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: section.title
-#: src/modules/layout/presentation/ui/NavMain.tsx:24
+#: src/modules/layout/presentation/ui/NavMain.tsx:83
 msgid "{0}"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:104
+msgid "Agent secret"
 msgstr ""
 
 #: src/modules/shared/presentation/ui/ErrorState.tsx:12
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:56
+#: src/modules/core/presentation/ui/App.tsx:61
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:104
+msgid "App secret"
+msgstr ""
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:34
 msgid "Are you absolutely sure?"
@@ -35,8 +43,12 @@ msgstr "En êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:57
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:74
 msgid "Clear"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:115
+msgid "click to reveal"
 msgstr ""
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
@@ -51,7 +63,7 @@ msgstr ""
 msgid "Creating..."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:73
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:91
 msgid "Delete"
 msgstr ""
 
@@ -71,7 +83,11 @@ msgstr ""
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:51
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:153
+msgid "I've copied it — close"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:63
 msgid "in total"
 msgstr ""
 
@@ -83,11 +99,11 @@ msgstr "Se déconnecter"
 #~ msgid "Main"
 #~ msgstr "Principal"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:80
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:97
 msgid "New {label}"
 msgstr ""
 
-#: src/modules/core/presentation/ui/App.tsx:86
+#: src/modules/core/presentation/ui/App.tsx:91
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
@@ -100,12 +116,16 @@ msgstr "Organisation"
 #~ msgid "Organization name"
 #~ msgstr ""
 
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:129
+msgid "Run the agent"
+msgstr ""
+
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:72
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:55
-#: src/modules/core/presentation/ui/App.tsx:85
+#: src/modules/core/presentation/ui/App.tsx:60
+#: src/modules/core/presentation/ui/App.tsx:90
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 
@@ -117,10 +137,26 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:67
+#: src/modules/layout/presentation/ui/Layout.tsx:68
 msgid "To get started, please create your first organization."
 msgstr ""
 
-#: src/modules/layout/presentation/ui/Layout.tsx:64
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:133
+msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:79
+msgid "We don't store this. Copy it now — closing this dialog deletes it forever."
+msgstr ""
+
+#: src/modules/layout/presentation/ui/Layout.tsx:65
 msgid "Welcome to Scylla!"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:144
+msgid "You won't see this secret again."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:75
+msgid "Your secret · shown once"
 msgstr ""

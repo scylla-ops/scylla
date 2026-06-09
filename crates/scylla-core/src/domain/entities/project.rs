@@ -1,13 +1,11 @@
+use crate::domain::clock;
 use crate::domain::entities::{OrganizationId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
 use chrono::{DateTime, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// Project domain entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Project {
     id: ProjectId,
     name: ProjectName,
@@ -19,12 +17,33 @@ pub struct Project {
 }
 
 impl Project {
+    #[must_use]
+    pub fn from_persistence(
+        id: ProjectId,
+        name: ProjectName,
+        description: Option<ProjectDescription>,
+        organization_id: OrganizationId,
+        is_active: bool,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            description,
+            organization_id,
+            is_active,
+            created_at,
+            updated_at,
+        }
+    }
+
     pub fn create(
         name: ProjectName,
         description: Option<ProjectDescription>,
         organization_id: OrganizationId,
     ) -> DomainResult<Self> {
-        let now = Utc::now();
+        let now = clock::now();
         Ok(Self {
             id: ProjectId::generate(),
             name,
@@ -38,7 +57,7 @@ impl Project {
 
     pub fn update_name(&mut self, name: ProjectName) -> DomainResult<()> {
         self.name = name;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -47,13 +66,13 @@ impl Project {
         description: Option<ProjectDescription>,
     ) -> DomainResult<()> {
         self.description = description;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
     pub fn toggle_active(&mut self) -> DomainResult<()> {
         self.is_active = !self.is_active;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -62,7 +81,7 @@ impl Project {
             return Err(DomainError::business_rule("Project is already inactive"));
         }
         self.is_active = false;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -71,7 +90,7 @@ impl Project {
             return Err(DomainError::business_rule("Project is already active"));
         }
         self.is_active = true;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 

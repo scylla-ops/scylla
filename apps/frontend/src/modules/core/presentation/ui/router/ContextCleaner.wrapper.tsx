@@ -26,7 +26,7 @@ export const ContextCleanerWrapper = () => {
       setProject(null, null);
       setPipeline(null, null);
       const slug = organizationName ? slugifyOrgName(organizationName) : '';
-      navigate(slug ? `/${slug}/projects` : '/', { replace: true });
+      void navigate(slug ? `/${slug}/projects` : '/', { replace: true });
       return;
     }
 

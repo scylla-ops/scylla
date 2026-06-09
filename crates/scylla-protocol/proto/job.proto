@@ -3,6 +3,7 @@ syntax = "proto3";
 package job;
 
 import "common.proto";
+import "google/protobuf/timestamp.proto";
 
 service JobService {
   rpc GetJob(GetJobRequest) returns (JobResponse);
@@ -16,29 +17,29 @@ service JobService {
 }
 
 message JobNodeResponse {
-  string node_id = 1;
+  common.NodeId node_id = 1;
   string state = 2;
-  optional string started_at = 3;
-  optional string finished_at = 4;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Timestamp finished_at = 4;
 }
 
 message JobResponse {
-  string job_id = 1;
-  string pipeline_id = 2;
+  common.JobId job_id = 1;
+  common.PipelineId pipeline_id = 2;
   string status = 3;
   repeated JobNodeResponse node_executions = 4;
-  string created_at = 5;
-  string updated_at = 6;
-  optional string started_at = 7;
-  optional string finished_at = 8;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp finished_at = 8;
 }
 
 message GetJobRequest {
-  string job_id = 1;
+  common.JobId job_id = 1;
 }
 
 message DeleteJobRequest {
-  string job_id = 1;
+  common.JobId job_id = 1;
 }
 
 message DeleteJobResponse {}
@@ -53,32 +54,32 @@ message ListJobsResponse {
 }
 
 message ListPipelineJobsRequest {
-  string pipeline_id = 1;
+  common.PipelineId pipeline_id = 1;
   optional common.PaginationRequest pagination = 2;
 }
 
 message ListProjectJobsRequest {
-  string project_id = 1;
+  common.ProjectId project_id = 1;
   optional common.PaginationRequest pagination = 2;
 }
 
 message ListOrganizationJobsRequest {
-  string organization_id = 1;
+  common.OrganizationId organization_id = 1;
   optional common.PaginationRequest pagination = 2;
 }
 
 message JobLogEntry {
-  string id = 1;
-  string job_id = 2;
-  string node_id = 3;
+  common.JobLogId id = 1;
+  common.JobId job_id = 2;
+  common.NodeId node_id = 3;
   string stream = 4;
   string line = 5;
-  string timestamp = 6;
+  google.protobuf.Timestamp timestamp = 6;
 }
 
 message ListJobLogsRequest {
-  string job_id = 1;
-  optional string node_id = 2;
+  common.JobId job_id = 1;
+  optional common.NodeId node_id = 2;
   optional common.PaginationRequest pagination = 3;
 }
 
@@ -88,8 +89,8 @@ message ListJobLogsResponse {
 }
 
 message TailJobLogsRequest {
-  string job_id = 1;
-  optional string node_id = 2;
+  common.JobId job_id = 1;
+  optional common.NodeId node_id = 2;
 }
 
 message JobLogEvent {

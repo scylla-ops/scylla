@@ -1,19 +1,34 @@
-use crate::domain::entities::{JobId, Pipeline, PipelineId};
+use crate::domain::clock;
+use crate::domain::entities::{AppId, JobId, Pipeline, PipelineId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::job::{JobStatus, NodeState};
 use crate::domain::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobNode {
     node_id: NodeId,
     state: NodeState,
     started_at: Option<DateTime<Utc>>,
     finished_at: Option<DateTime<Utc>>,
+}
+
+impl JobNode {
+    #[must_use]
+    pub fn from_persistence(
+        node_id: NodeId,
+        state: NodeState,
+        started_at: Option<DateTime<Utc>>,
+        finished_at: Option<DateTime<Utc>>,
+    ) -> Self {
+        Self {
+            node_id,
+            state,
+            started_at,
+            finished_at,
+        }
+    }
 }
 
 impl JobNode {
@@ -49,12 +64,14 @@ impl JobNode {
 }
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Job {
     id: JobId,
     pipeline_id: PipelineId,
     status: JobStatus,
     node_executions: Vec<JobNode>,
+    /// The agent (app) that executed this job, set at dispatch. `None` while
+    /// pending / never dispatched.
+    agent_app_id: Option<AppId>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     started_at: Option<DateTime<Utc>>,
@@ -62,9 +79,35 @@ pub struct Job {
 }
 
 impl Job {
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn from_persistence(
+        id: JobId,
+        pipeline_id: PipelineId,
+        status: JobStatus,
+        node_executions: Vec<JobNode>,
+        agent_app_id: Option<AppId>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+        started_at: Option<DateTime<Utc>>,
+        finished_at: Option<DateTime<Utc>>,
+    ) -> Self {
+        Self {
+            id,
+            pipeline_id,
+            status,
+            node_executions,
+            agent_app_id,
+            created_at,
+            updated_at,
+            started_at,
+            finished_at,
+        }
+    }
+
     #[must_use]
     pub fn create_from_pipeline(pipeline: &Pipeline) -> Self {
-        let now = Utc::now();
+        let now = clock::now();
 
         let node_executions: Vec<JobNode> = pipeline
             .nodes()
@@ -77,6 +120,7 @@ impl Job {
             pipeline_id: pipeline.id().clone(),
             status: JobStatus::Pending,
             node_executions,
+            agent_app_id: None,
             created_at: now,
             updated_at: now,
             started_at: None,
@@ -84,10 +128,16 @@ impl Job {
         }
     }
 
+    /// Record which agent (app) was handed this job at dispatch.
+    pub fn assign_agent(&mut self, app_id: AppId) {
+        self.agent_app_id = Some(app_id);
+        self.updated_at = clock::now();
+    }
+
     pub fn update_status(&mut self, new_status: JobStatus) -> DomainResult<()> {
         self.status.transition_to(&new_status)?;
         self.status = new_status;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -137,7 +187,7 @@ impl Job {
 
         exec.state = NodeState::Running;
         exec.started_at = Some(started_at);
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -149,7 +199,7 @@ impl Job {
     ) -> DomainResult<()> {
         if !state.is_terminal() {
             return Err(DomainError::business_rule(
-                "Final state must be terminal (completed, failed, or cancelled)",
+                "Final state must be terminal (completed, failed, cancelled, or skipped)",
             ));
         }
 
@@ -165,7 +215,32 @@ impl Job {
 
         exec.state = state;
         exec.finished_at = Some(finished_at);
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
+        Ok(())
+    }
+
+    /// Mark a node as skipped from either Pending or Running.
+    ///
+    /// Used when an upstream failure invalidates this node's execution.
+    /// Unlike `apply_node_finished`, this accepts Pending nodes that never started.
+    pub fn apply_node_skipped(
+        &mut self,
+        node_id: &NodeId,
+        finished_at: DateTime<Utc>,
+    ) -> DomainResult<()> {
+        let exec = self
+            .find_execution_mut(node_id)
+            .ok_or_else(|| DomainError::validation(format!("Node not found: {node_id}")))?;
+
+        if exec.state.is_terminal() {
+            return Err(DomainError::business_rule(
+                "Cannot skip a node already in terminal state",
+            ));
+        }
+
+        exec.state = NodeState::Skipped;
+        exec.finished_at = Some(finished_at);
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -225,6 +300,11 @@ impl Job {
     }
 
     #[must_use]
+    pub fn agent_app_id(&self) -> Option<&AppId> {
+        self.agent_app_id.as_ref()
+    }
+
+    #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
     }
@@ -265,13 +345,14 @@ mod tests {
     }
 
     fn action(id: &str, deps: &[&str]) -> crate::domain::entities::PipelineNode {
+        use crate::domain::value_objects::pipeline::Step;
         crate::domain::entities::PipelineNode::new(
             node_id(id),
             deps.iter().map(|d| node_id(d)).collect(),
-            "echo".into(),
+            Step::exec("echo".into(), vec![]).unwrap(),
+            None,
             vec![],
         )
-        .unwrap()
     }
 
     // --- Creation ---
@@ -324,7 +405,7 @@ mod tests {
         let mut job = Job::create_from_pipeline(&pipeline);
 
         job.start().unwrap();
-        job.apply_node_started(&node_id("a"), Utc::now()).unwrap();
+        job.apply_node_started(&node_id("a"), clock::now()).unwrap();
         job.cancel().unwrap();
 
         assert_eq!(job.status(), JobStatus::Cancelled);
@@ -345,7 +426,7 @@ mod tests {
         let pipeline = make_pipeline(vec![action("a", &[])]);
         let mut job = Job::create_from_pipeline(&pipeline);
 
-        let now = Utc::now();
+        let now = clock::now();
         job.apply_node_started(&node_id("a"), now).unwrap();
 
         let exec = job.find_execution(&node_id("a")).unwrap();
@@ -358,7 +439,7 @@ mod tests {
         let pipeline = make_pipeline(vec![action("a", &[])]);
         let mut job = Job::create_from_pipeline(&pipeline);
 
-        let now = Utc::now();
+        let now = clock::now();
         job.apply_node_started(&node_id("a"), now).unwrap();
         job.apply_node_finished(&node_id("a"), NodeState::Completed, now)
             .unwrap();
@@ -381,11 +462,11 @@ mod tests {
         assert!(!job.logs_readable_for(&node_id("ghost")));
 
         // Running node → logs visible.
-        job.apply_node_started(&node_id("a"), Utc::now()).unwrap();
+        job.apply_node_started(&node_id("a"), clock::now()).unwrap();
         assert!(job.logs_readable_for(&node_id("a")));
 
         // Completed node → still visible.
-        job.apply_node_finished(&node_id("a"), NodeState::Completed, Utc::now())
+        job.apply_node_finished(&node_id("a"), NodeState::Completed, clock::now())
             .unwrap();
         assert!(job.logs_readable_for(&node_id("a")));
 
@@ -399,7 +480,7 @@ mod tests {
         let mut job = Job::create_from_pipeline(&pipeline);
 
         assert!(
-            job.apply_node_finished(&node_id("a"), NodeState::Completed, Utc::now())
+            job.apply_node_finished(&node_id("a"), NodeState::Completed, clock::now())
                 .is_err()
         );
     }
@@ -409,7 +490,46 @@ mod tests {
         let pipeline = make_pipeline(vec![action("a", &[])]);
         let mut job = Job::create_from_pipeline(&pipeline);
 
-        assert!(job.apply_node_started(&node_id("z"), Utc::now()).is_err());
+        assert!(job.apply_node_started(&node_id("z"), clock::now()).is_err());
+    }
+
+    #[test]
+    fn apply_node_skipped_from_pending() {
+        let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        job.apply_node_skipped(&node_id("b"), clock::now()).unwrap();
+
+        let exec = job.find_execution(&node_id("b")).unwrap();
+        assert_eq!(exec.state(), NodeState::Skipped);
+        assert!(exec.finished_at().is_some());
+    }
+
+    #[test]
+    fn apply_node_skipped_from_running() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        job.apply_node_started(&node_id("a"), clock::now()).unwrap();
+        job.apply_node_skipped(&node_id("a"), clock::now()).unwrap();
+
+        assert_eq!(
+            job.find_execution(&node_id("a")).unwrap().state(),
+            NodeState::Skipped
+        );
+    }
+
+    #[test]
+    fn cannot_skip_terminal_node() {
+        let pipeline = make_pipeline(vec![action("a", &[])]);
+        let mut job = Job::create_from_pipeline(&pipeline);
+
+        let now = clock::now();
+        job.apply_node_started(&node_id("a"), now).unwrap();
+        job.apply_node_finished(&node_id("a"), NodeState::Completed, now)
+            .unwrap();
+
+        assert!(job.apply_node_skipped(&node_id("a"), now).is_err());
     }
 
     #[test]

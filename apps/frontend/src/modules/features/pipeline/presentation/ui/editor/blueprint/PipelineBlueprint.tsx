@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { BlueprintToolbar } from './BlueprintToolbar.tsx';
 import { BlueprintCanvas, type BlueprintCanvasHandle } from './BlueprintCanvas.tsx';
-import { StepNodeFormDialog } from './StepNodeFormDialog.tsx';
+import { StepNodeFormDialog, type NodeFormValue } from './StepNodeFormDialog.tsx';
 import { StartNodeFormDialog } from './StartNodeFormDialog.tsx';
 import { type PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
@@ -14,7 +14,12 @@ interface PipelineBlueprintProps {
   onNameChange: (name: string) => void;
 }
 
-export const PipelineBlueprint = ({ steps, pipelineName, onStepsChange, onNameChange }: PipelineBlueprintProps) => {
+export const PipelineBlueprint = ({
+  steps,
+  pipelineName,
+  onStepsChange,
+  onNameChange,
+}: PipelineBlueprintProps) => {
   const canvasRef = useRef<BlueprintCanvasHandle>(null);
 
   const addStepDialog = useDialog();
@@ -22,12 +27,13 @@ export const PipelineBlueprint = ({ steps, pipelineName, onStepsChange, onNameCh
   const editStartDialog = useDialog();
 
   const handleAddNode = useCallback(
-    (nodeId: string, command: string, args: string[]) => canvasRef.current?.addNode(nodeId, command, args),
+    (nodeId: string, value: NodeFormValue) => canvasRef.current?.addNode(nodeId, value),
     [],
   );
 
   const handleEditNode = useCallback(
-    (originalId: string, nodeId: string, command: string, args: string[]) => canvasRef.current?.editNode(originalId, nodeId, command, args),
+    (originalId: string, nodeId: string, value: NodeFormValue) =>
+      canvasRef.current?.editNode(originalId, nodeId, value),
     [],
   );
 

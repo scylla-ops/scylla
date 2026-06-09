@@ -1,13 +1,18 @@
+use crate::grpc::convert::{ts, wrap};
 use scylla_core::domain::entities::User;
+use scylla_protocol::services::common;
 use scylla_protocol::services::user::UserResponse;
 
 pub fn user_to_proto(user: &User) -> UserResponse {
     UserResponse {
-        user_id: user.id().to_string(),
+        user_id: wrap(user.id().to_string()),
         username: user.username().to_string(),
         is_active: user.is_active(),
-        created_at: user.created_at().to_rfc3339(),
-        updated_at: user.updated_at().to_rfc3339(),
+        created_at: ts(user.created_at()),
+        updated_at: ts(user.updated_at()),
+        email: user.email().map(|e| common::Email {
+            value: e.as_str().to_string(),
+        }),
     }
 }
 
@@ -20,14 +25,15 @@ mod tests {
     fn user_to_proto_maps_all_fields() {
         let user = User::create(
             Username::new("alice").unwrap(),
+            None,
             PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def").unwrap(),
         );
 
         let proto = user_to_proto(&user);
         assert_eq!(proto.username, "alice");
         assert!(proto.is_active);
-        assert!(!proto.user_id.is_empty());
-        assert!(!proto.created_at.is_empty());
-        assert!(!proto.updated_at.is_empty());
+        assert!(!proto.user_id.unwrap().value.is_empty());
+        assert!(proto.created_at.is_some());
+        assert!(proto.updated_at.is_some());
     }
 }

@@ -36,7 +36,7 @@ export const UserAdminPage = () => {
   if (isError) return <ErrorState message='Error loading users' />;
 
   return (
-    <div className={'flex flex-col gap-4 w-full p-2'}>
+    <div className={'flex flex-col gap-4 w-full'}>
       <FeatureHeader
         count={users?.items?.length ?? 0}
         label='User'

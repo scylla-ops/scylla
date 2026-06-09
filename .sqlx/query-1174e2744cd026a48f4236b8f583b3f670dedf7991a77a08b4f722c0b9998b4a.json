@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE default_role_bindings SET role_id = 'custom-1' WHERE slot = 'org_creation'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "1174e2744cd026a48f4236b8f583b3f670dedf7991a77a08b4f722c0b9998b4a"
+}

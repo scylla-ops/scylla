@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package config;
+
+// Public, unauthenticated capability discovery. The frontend calls this at boot
+// to learn which optional features the server was compiled with, so it can
+// show/hide UI (register button, GitHub login, etc.). Each flag mirrors a cargo
+// feature on the server.
+service ConfigService {
+  rpc GetServerConfig(GetServerConfigRequest) returns (ServerConfigResponse);
+}
+
+message GetServerConfigRequest {}
+
+message ServerConfigResponse {
+  bool signup_enabled = 1;
+  bool invitations_enabled = 2;
+  bool oauth_github_enabled = 3;  
+  bool metering_enabled = 4;
+  bool mail_enabled = 5;
+  bool agent_org_scope_enabled = 6;
+}

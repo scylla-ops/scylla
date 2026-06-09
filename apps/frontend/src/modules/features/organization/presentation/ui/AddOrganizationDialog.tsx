@@ -6,6 +6,7 @@ import { createOrganizationItems } from '@/modules/features/organization/present
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useNavigate } from 'react-router-dom';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
+import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 interface AddOrganizationDialogProps {
   open: boolean;
@@ -30,8 +31,9 @@ export function AddOrganizationDialog({
     createOrganization.mutate(
       { name, description: description?.trim() || undefined },
       {
-        onSuccess: (data) => {
-          const orgId = data?.organizationId ?? createOrganization.data?.organizationId ?? '';
+        onSuccess: data => {
+          const orgId =
+            idValue(data?.organizationId) || idValue(createOrganization.data?.organizationId);
           setOpen(false);
           setOrganization(orgId, name);
           navigate(`/${slugifyOrgName(name)}/projects`);
