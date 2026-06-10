@@ -33,6 +33,9 @@ Prebuilt images are published for both `linux/amd64` and `linux/arm64` — Docke
 
 One command pulls the prebuilt images and starts the stack (control plane, PostgreSQL, frontend). Agents are added afterward from the UI — see below:
 
+> [!WARNING]
+> Coming from an earlier beta? Wipe the previous stack first with `just clean` — it removes the old containers, volumes, and locally-built images, which are not compatible across betas.
+
 ```sh
 git clone https://github.com/scylla-ops/scylla.git
 cd scylla
