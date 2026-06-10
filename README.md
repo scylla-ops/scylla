@@ -39,10 +39,15 @@ One command pulls the prebuilt images and starts the stack (control plane, Postg
 ```sh
 git clone https://github.com/scylla-ops/scylla.git
 cd scylla
-just up
+just up-saas
 # or, without just:
-docker compose pull && docker compose up -d
+docker compose -f docker-compose.yaml -f docker-compose.saas.yaml pull
+docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d
 ```
+
+The beta ships the SaaS (multi-tenant) edition — that's what `just up-saas`
+pulls. `just up` starts the single-tenant PaaS edition instead; its prebuilt
+images are refreshed less often during the beta.
 
 First boot creates the `admin` user automatically.
 
@@ -55,7 +60,8 @@ Open **http://localhost:8080/** and sign in:
 
 | `just`        | `docker compose`                  | What it does                                  |
 |---------------|-----------------------------------|-----------------------------------------------|
-| `just up`     | `docker compose pull && up -d`    | Pull latest images and start (or refresh) the stack |
+| `just up-saas` | same, with the two SaaS overlay `-f` files | Pull and start (or refresh) the SaaS beta stack |
+| `just up`     | `docker compose pull && up -d`    | Pull and start the single-tenant PaaS stack   |
 | `just down`   | `docker compose down`             | Stop the stack                                |
 | `just clean`  | `docker compose down -v --rmi local --remove-orphans` | Stop and wipe volumes + local images |
 | `just logs [svc]` | `docker compose logs -f [svc]` | Follow logs (all services or one)            |
