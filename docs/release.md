@@ -37,6 +37,12 @@ VERSION=0.3.0 just release-backend    # PaaS edition (control-plane + agent) —
 the SaaS beta. The agent and frontend images have no edition split — the same
 images serve both.
 
+Deployment consumes the same variables: the SaaS compose overlay points the
+control-plane at `:${VERSION:-latest}-saas`, so `just up-saas` (or
+`VERSION=0.3.0 just up-saas`) pulls exactly what the matching `just release`
+pushed. The base compose alone stays on the PaaS `:latest` — refresh it with
+`just release-backend` when needed.
+
 Knobs (env vars, also read from `.env`): `DOCKER_USER` (default
 `godlyjaaaaj`), `VERSION` (default `latest`), `VITE_API_URL` (baked into the
 frontend assets at build time, default `http://localhost:50051`), `BUILDER`

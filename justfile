@@ -51,6 +51,13 @@ up:
     docker compose pull
     docker compose up -d
 
+# Pull the released SaaS images and start the stack
+[group('dev')]
+[no-exit-message]
+up-saas:
+    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml pull
+    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d
+
 # Stop all services
 [group('dev')]
 [no-exit-message]
