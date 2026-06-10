@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   useAgent,
@@ -6,9 +6,7 @@ import {
   useAgentStats,
 } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
 import { AgentIdLink } from '@/modules/features/agents/presentation/ui/components/AgentIdLink.tsx';
-import { LiveNowCard } from '@/modules/features/agents/presentation/ui/components/LiveNowCard.tsx';
 import { OutcomesChart } from '@/modules/features/agents/presentation/ui/components/OutcomesChart.tsx';
-import { mockLiveJobs } from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
 import { BackButton } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { useResourceError } from '@shared/presentation/hooks/use-resource-error.ts';
@@ -51,11 +49,6 @@ export const AgentDetailsPage = () => {
   });
 
   const online = agent?.connected ?? false;
-
-  const liveJobs = useMemo(
-    () => mockLiveJobs(agent?.id ?? '', stats?.running ?? -1, online),
-    [agent?.id, stats?.running, online],
-  );
 
   if (redirecting) return null;
   if (isLoading) return <Skeleton className='m-4 h-72 rounded-xl' />;
@@ -165,7 +158,6 @@ export const AgentDetailsPage = () => {
         </div>
 
         <div className='grid gap-3 lg:grid-cols-[380px_1fr]'>
-          <LiveNowCard jobs={liveJobs} />
           {stats ? (
             <OutcomesChart
               agentId={agent.id}

@@ -3,7 +3,6 @@ import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { usePagination } from '@shared/presentation/hooks/use-pagination.ts';
 import { useEffect } from 'react';
-import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 

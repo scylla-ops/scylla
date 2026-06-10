@@ -24,6 +24,9 @@ export const MarketItemList = ({ items, filter }: MarketItemListProps) => {
               descrption={item.descrption}
             />
           );
+        else {
+          return <></>;
+        }
       })}
     </div>
   );

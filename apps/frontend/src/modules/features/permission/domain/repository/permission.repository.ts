@@ -4,7 +4,10 @@ import type {
   PermissionScope,
   PrincipalKind,
 } from '@/modules/features/permission/domain/models/permission.model.ts';
-import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
+import type {
+  RoleCreationData,
+  RoleEntity,
+} from '@/modules/features/permission/domain/entities/role.entity.ts';
 import type { GrantEntity } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/permission/domain/entities/grantable-role.entity.ts';
 import type { EffectivePermissionsEntity } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
@@ -34,7 +37,7 @@ export interface PermissionRepository {
   // ── Roles (dynamic catalog) ────────────────────────────────────────────────
   listRoles(): Promise<ScyllaResult<RoleEntity[]>>;
   getRole(id: string): Promise<ScyllaResult<RoleEntity>>;
-  createRole(role: RoleEntity): Promise<ScyllaResult<RoleEntity>>;
+  createRole(role: RoleCreationData): Promise<ScyllaResult<RoleEntity>>;
   updateRole(role: RoleEntity): Promise<ScyllaResult<RoleEntity>>;
   deleteRole(id: string): Promise<ScyllaResult<boolean>>;
 

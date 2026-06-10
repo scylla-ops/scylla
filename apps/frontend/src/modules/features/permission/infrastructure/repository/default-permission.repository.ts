@@ -1,9 +1,15 @@
 import type { PermissionRepository } from '@/modules/features/permission/domain/repository/permission.repository.ts';
 import type { CreateGrantInput } from '@/modules/features/permission/domain/repository/permission.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { PrincipalKind, PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import type {
+  PrincipalKind,
+  PermissionScope,
+} from '@/modules/features/permission/domain/models/permission.model.ts';
 import type { GrpcPermissionRemoteDataSource } from '@/modules/features/permission/infrastructure/data/grpc-permission-remote.data-source.ts';
-import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
+import type {
+  RoleCreationData,
+  RoleEntity,
+} from '@/modules/features/permission/domain/entities/role.entity.ts';
 import type { GrantEntity } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/permission/domain/entities/grantable-role.entity.ts';
 import type { EffectivePermissionsEntity } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
@@ -14,8 +20,6 @@ import { GrpcGrantableRoleMapper } from '@/modules/features/permission/infrastru
 import { GrpcEffectivePermissionsMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-effective-permissions.mapper.ts';
 import { GrpcAuthzVocabularyMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-authz-vocabulary.mapper.ts';
 import { GrpcPermissionMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-permission.mapper.ts';
-import type { PrincipalKind as GrpcPrincipalKind } from '@/generated/permission.ts';
-
 export class DefaultPermissionRepository implements PermissionRepository {
   constructor(private readonly _dataSource: GrpcPermissionRemoteDataSource) {}
 
@@ -31,7 +35,7 @@ export class DefaultPermissionRepository implements PermissionRepository {
     return (await this._dataSource.getRoleById(id)).map(GrpcRoleMapper.toDomain);
   }
 
-  public async createRole(role: RoleEntity): Promise<ScyllaResult<RoleEntity>> {
+  public async createRole(role: RoleCreationData): Promise<ScyllaResult<RoleEntity>> {
     return (await this._dataSource.createRole(GrpcRoleMapper.toGrpcCreateRequest(role))).map(
       GrpcRoleMapper.toDomain,
     );
@@ -57,12 +61,9 @@ export class DefaultPermissionRepository implements PermissionRepository {
     principalId: string,
   ): Promise<ScyllaResult<EffectivePermissionsEntity>> {
     // Domain and gRPC PrincipalKind enums share identical numeric values.
-    return (
-      await this._dataSource.getEffectivePermissions(
-        principalKind,
-        principalId,
-      )
-    ).map(GrpcEffectivePermissionsMapper.toDomain);
+    return (await this._dataSource.getEffectivePermissions(principalKind, principalId)).map(
+      GrpcEffectivePermissionsMapper.toDomain,
+    );
   }
 
   // ── Grants ─────────────────────────────────────────────────────────────────
