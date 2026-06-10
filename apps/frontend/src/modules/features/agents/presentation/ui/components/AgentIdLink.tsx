@@ -1,4 +1,3 @@
-import { Link, useParams } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@shared/presentation/utils';
 
@@ -17,12 +16,10 @@ interface AgentIdLinkProps {
  * nothing — copying lives in the agent card ellipsis menu / App detail.
  */
 export const AgentIdLink = ({ id, truncate, chip = false, className }: AgentIdLinkProps) => {
-  const { organizationSlug } = useParams<{ organizationSlug: string }>();
   const label = truncate && id.length > truncate ? `${id.slice(0, truncate)}…` : id;
 
   return (
-    <Link
-      to={`/${organizationSlug}/apps/${id}`}
+    <p
       onClick={e => e.stopPropagation()}
       title={id}
       className={cn(
@@ -35,6 +32,6 @@ export const AgentIdLink = ({ id, truncate, chip = false, className }: AgentIdLi
     >
       <span className='truncate'>{label}</span>
       <ArrowUpRight className='h-2.5 w-2.5 shrink-0 opacity-55 transition-colors group-hover:text-success group-hover:opacity-100' />
-    </Link>
+    </p>
   );
 };
