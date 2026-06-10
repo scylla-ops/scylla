@@ -2,11 +2,13 @@ set dotenv-load
 set quiet
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
-DOCKER_USER := env("DOCKER_USER", "godlyjaaaaj")
-VERSION     := env("VERSION", "latest")
-cache_repo  := DOCKER_USER + "/scylla-cache"
+DOCKER_USER  := env("DOCKER_USER", "godlyjaaaaj")
+VERSION      := env("VERSION", "latest")
+VITE_API_URL := env("VITE_API_URL", "http://localhost:50051")
+DATABASE_URL := env("DATABASE_URL", "postgres://scylla:scylla@localhost:5432/scylla")
+BUILDER      := env("BUILDER", "scylla-builder")
 
-platform := env("PLATFORM", "linux/amd64")
+platforms := "linux/amd64,linux/arm64"
 
 # -- Aliases --
 alias u := up
@@ -18,14 +20,14 @@ alias l := logs
 default:
     @just --list
 
-# -- Dev --
+# -- Dev (local stack) --
 
 # Build all services for local dev (native arch, PaaS edition)
 [group('dev')]
 local:
     docker compose build
 
-# Build the SaaS edition of the control-plane (single Dockerfile, FEATURES=saas)
+# Build the SaaS edition of the control-plane (FEATURES=saas)
 [group('dev')]
 local-saas:
     docker compose -f docker-compose.yaml -f docker-compose.saas.yaml build
@@ -42,65 +44,10 @@ start:
 start-saas:
     docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d
 
-# -- Database (sqlx) --
-
-DATABASE_URL := env("DATABASE_URL", "postgres://scylla:scylla@localhost:5432/scylla")
-
-# Start only the Postgres dev DB (for running migrations / tests locally)
-[group('db')]
-db-up:
-    docker compose up -d postgres
-
-# Tail Postgres logs
-[group('db')]
-db-logs:
-    docker compose logs -f postgres
-
-# Apply pending migrations against $DATABASE_URL (uses sqlx-cli)
-[group('db')]
-db-migrate:
-    DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate run --source migrations
-
-# Revert the most recent migration
-[group('db')]
-db-revert:
-    DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate revert --source migrations
-
-# Regenerate the offline query cache (commit the resulting .sqlx/ dir)
-[group('db')]
-db-prepare:
-    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace -- --tests
-
-# Verify .sqlx/ is up-to-date (used in CI)
-[group('db')]
-db-prepare-check:
-    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace --check -- --tests
-
-# Drop & recreate the local Postgres dev volume (DESTRUCTIVE)
-[group('db')]
-[confirm("Drop scylla-postgres data volume?")]
-db-reset:
-    docker compose rm -sfv postgres
-    docker volume rm scylla_postgres_data || true
-    docker compose up -d postgres
-
-# Start all services (pulls latest images, runs detached)
+# Pull latest images and start the stack
 [group('dev')]
 [no-exit-message]
 up:
-    docker compose pull
-    docker compose up -d
-
-# Pull latest images without (re)starting containers
-[group('dev')]
-[no-exit-message]
-pull:
-    docker compose pull
-
-# Refresh a running stack: pull latest images and recreate containers
-[group('dev')]
-[no-exit-message]
-update:
     docker compose pull
     docker compose up -d
 
@@ -110,7 +57,7 @@ update:
 down:
     docker compose down
 
-# Show service logs (all or specific: just logs scylla-api)
+# Show service logs (all or specific: just logs scylla-control-plane)
 [group('dev')]
 [no-exit-message]
 logs *svc:
@@ -128,32 +75,101 @@ status:
 clean:
     docker compose down --rmi local --volumes --remove-orphans
 
-# -- Registry --
+# -- Database (sqlx) --
 
-# Build & push a single service (e.g. just push scylla-api)
-[group('registry')]
-[no-exit-message]
-push svc: (_build-push svc)
+# Start only the Postgres dev DB (for running migrations / tests locally)
+[group('db')]
+db-up:
+    docker compose up -d postgres
 
-# Build & push all services
-[group('registry')]
+# Apply pending migrations against $DATABASE_URL (uses sqlx-cli)
+[group('db')]
+db-migrate:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate run --source migrations
+
+# Revert the most recent migration
+[group('db')]
+db-revert:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate revert --source migrations
+
+# Regenerate the offline query cache (commit the resulting .sqlx/ dir)
+[group('db')]
+db-prepare:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace -- --tests
+
+# Verify .sqlx/ is up-to-date
+[group('db')]
+db-prepare-check:
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace --check -- --tests
+
+# Drop & recreate the local Postgres dev volume (DESTRUCTIVE)
+[group('db')]
+[confirm("Drop scylla-postgres data volume?")]
+db-reset:
+    docker compose rm -sfv postgres
+    docker volume rm scylla_postgres_data || true
+    docker compose up -d postgres
+
+# -- Release (manual multi-arch build & push to Docker Hub) --
+#
+# Plain buildx: the same Dockerfiles as local dev, built for amd64 + arm64 and
+# pushed with their multi-arch manifest. The non-native platform builds under
+# emulation, so a full release is slow — but it is one command, reproducible
+# anywhere Docker runs, and needs no host toolchain.
+#
+#   just release-setup            # once per machine (+ docker login)
+#   VERSION=0.3.0 just release    # SaaS stack: control-plane SaaS + agent + frontend
+
+# One-time: create the multi-arch buildx builder
+[group('release')]
+release-setup:
+    docker buildx inspect {{BUILDER}} >/dev/null 2>&1 || docker buildx create --name {{BUILDER}} --driver docker-container --bootstrap
+    @echo "✓ buildx builder '{{BUILDER}}' ready (remember: docker login)"
+
+# The PaaS control-plane is NOT part of `release` for now (use release-backend).
+# Build & push the SaaS stack: control-plane SaaS + agent + frontend
+[group('release')]
 [no-exit-message]
-push-all: (_info) (_build-push "scylla-control-plane") (_build-push "scylla-agent")
+release: release-saas (release-svc "scylla-agent") release-frontend
+
+# Build & push the backend services (PaaS edition — not part of `release`)
+[group('release')]
+[no-exit-message]
+release-backend: (release-svc "scylla-control-plane") (release-svc "scylla-agent")
+
+# Build & push one backend service (e.g. just release-svc scylla-agent)
+[group('release')]
+[no-exit-message]
+release-svc pkg: _info
+    docker buildx build --builder {{BUILDER}} --platform {{platforms}} \
+        --build-arg PACKAGE={{pkg}} \
+        -t {{DOCKER_USER}}/{{pkg}}:{{VERSION}} \
+        -t {{DOCKER_USER}}/{{pkg}}:latest \
+        --push .
+
+# Build & push the SaaS control-plane (tags :<version>-saas and :saas)
+[group('release')]
+[no-exit-message]
+release-saas: _info
+    docker buildx build --builder {{BUILDER}} --platform {{platforms}} \
+        --build-arg PACKAGE=scylla-control-plane \
+        --build-arg FEATURES=saas \
+        -t {{DOCKER_USER}}/scylla-control-plane:{{VERSION}}-saas \
+        -t {{DOCKER_USER}}/scylla-control-plane:saas \
+        --push .
+
+# Build & push the frontend (VITE_API_URL is baked into the assets)
+[group('release')]
+[no-exit-message]
+release-frontend: _info
+    docker buildx build --builder {{BUILDER}} --platform {{platforms}} \
+        -f apps/frontend/Dockerfile \
+        --build-arg VITE_API_URL={{VITE_API_URL}} \
+        -t {{DOCKER_USER}}/scylla-frontend:{{VERSION}} \
+        -t {{DOCKER_USER}}/scylla-frontend:latest \
+        --push .
 
 [private]
 [no-exit-message]
 _info:
-    @echo "══ user={{DOCKER_USER}} version={{VERSION}} platform={{platform}} ══"
-
-[private]
-[no-exit-message]
-_build-push svc:
-    @echo "══ Building {{svc}} ══"
-    docker buildx build \
-        --platform {{platform}} \
-        --build-arg PACKAGE={{svc}} \
-        --cache-from type=registry,ref={{cache_repo}}:{{svc}} \
-        --cache-to type=registry,ref={{cache_repo}}:{{svc}},mode=max \
-        -t {{DOCKER_USER}}/{{svc}}:{{VERSION}} \
-        -t {{DOCKER_USER}}/{{svc}}:latest \
-        --push .
+    @echo "══ user={{DOCKER_USER}} version={{VERSION}} platforms={{platforms}} ══"

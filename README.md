@@ -103,3 +103,4 @@ just local
 ## Further reading
 
 - [Glossary](GLOSSARY.md) — every Scylla-specific term, grouped by topic.
+- [Releasing images](docs/release.md) — how the multi-arch Docker images are built and pushed to Docker Hub (manual, via `just release`).
