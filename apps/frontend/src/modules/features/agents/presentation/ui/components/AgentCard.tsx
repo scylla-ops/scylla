@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 import { Copy, Cpu, MoreHorizontal, Trash } from 'lucide-react';
@@ -11,11 +10,6 @@ import {
 } from '@shadcn/dropdown-menu.tsx';
 import type { Agent } from '@/modules/features/agents/domain/models/agent.model.ts';
 import { AgentIdLink } from '@/modules/features/agents/presentation/ui/components/AgentIdLink.tsx';
-import { Sparkline } from '@/modules/features/agents/presentation/ui/components/Sparkline.tsx';
-import {
-  mockCardStats,
-  mockSparkline,
-} from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
 import { cn } from '@shared/presentation/utils';
 import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { toast } from 'sonner';
@@ -27,14 +21,6 @@ interface AgentCardProps {
 
 export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
   const navigate = useNavigate();
-  const cardStats = useMemo(
-    () => mockCardStats(agent.id, agent.connected),
-    [agent.id, agent.connected],
-  );
-  const sparkData = useMemo(
-    () => mockSparkline(agent.id, agent.connected),
-    [agent.id, agent.connected],
-  );
 
   const copyId = async () => {
     await navigator.clipboard.writeText(agent.id);
@@ -129,28 +115,6 @@ export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
             )}
           </span>
         </div>
-
-        {/* stats strip */}
-        {cardStats.hasRuns ? (
-          <div className='mt-3 flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2'>
-            <div className='min-w-0'>
-              <p className='font-mono text-[10px] uppercase tracking-wide text-muted-foreground'>
-                <Trans>runs · last hour</Trans>
-              </p>
-              <Sparkline data={sparkData} width={150} height={20} label='runs in the last hour' />
-            </div>
-            <div className='text-right'>
-              <p className='font-mono text-[10px] uppercase tracking-wide text-muted-foreground'>
-                <Trans>completed</Trans>
-              </p>
-              <p className='font-mono text-sm font-semibold'>{cardStats.completed}</p>
-            </div>
-          </div>
-        ) : (
-          <div className='mt-3 rounded-md bg-muted/50 px-3 py-2 text-center text-xs text-muted-foreground'>
-            <Trans>no runs yet · waiting for first job</Trans>
-          </div>
-        )}
       </CardContent>
 
       <div className='flex items-center justify-between border-t border-dashed px-4 py-2.5'>
@@ -158,11 +122,6 @@ export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
           <Trans>created</Trans> {formatDate(agent.createdAt)}
         </span>
         <div className='flex items-center gap-2'>
-          {cardStats.running > 0 && (
-            <span className='font-mono text-xs font-semibold text-success'>
-              {cardStats.running} <Trans>running</Trans>
-            </span>
-          )}
           <Button
             variant='ghost'
             size='icon'

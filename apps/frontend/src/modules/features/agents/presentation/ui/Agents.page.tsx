@@ -138,7 +138,7 @@ export const AgentsPage = () => {
           onClose={() => {
             const id = created.agent.id;
             setCreated(null);
-            navigate(id);
+            void navigate(id);
           }}
         />
       )}
