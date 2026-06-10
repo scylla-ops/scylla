@@ -52,9 +52,7 @@ Open **http://localhost:8080/** and sign in:
 
 | `just`        | `docker compose`                  | What it does                                  |
 |---------------|-----------------------------------|-----------------------------------------------|
-| `just up`     | `docker compose pull && up -d`    | Pull latest images and start the stack        |
-| `just pull`   | `docker compose pull`             | Refresh images without (re)starting           |
-| `just update` | `docker compose pull && up -d`    | Pull and recreate containers on a running stack |
+| `just up`     | `docker compose pull && up -d`    | Pull latest images and start (or refresh) the stack |
 | `just down`   | `docker compose down`             | Stop the stack                                |
 | `just clean`  | `docker compose down -v --rmi local --remove-orphans` | Stop and wipe volumes + local images |
 | `just logs [svc]` | `docker compose logs -f [svc]` | Follow logs (all services or one)            |
