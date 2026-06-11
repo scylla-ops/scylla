@@ -92,15 +92,17 @@ db-migrate:
 db-revert:
     DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate revert --source migrations
 
-# Regenerate the offline query cache (commit the resulting .sqlx/ dir)
+# Regenerate the offline query cache (commit the resulting .sqlx/ dir).
+# --all-features so feature-gated queries (saas, invitations, oauth…) stay in
+# the cache — without it a regen would silently break the SaaS offline build.
 [group('db')]
 db-prepare:
-    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace -- --tests
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace -- --all-features --tests
 
 # Verify .sqlx/ is up-to-date
 [group('db')]
 db-prepare-check:
-    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace --check -- --tests
+    DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace --check -- --all-features --tests
 
 # Drop & recreate the local Postgres dev volume (DESTRUCTIVE)
 [group('db')]
