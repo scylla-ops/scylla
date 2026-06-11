@@ -125,7 +125,36 @@ impl AgentRepository for PgAgentRepository {
         .fetch_one(&self.pool)
         .await
         .to_domain()?;
+        // Per-day outcome series for the chart. 30 days bounds the scan; the
+        // UI derives its 7d/14d windows from the same data.
+        let daily = sqlx::query!(
+            r#"
+            SELECT
+                date_trunc('day', created_at)                AS "day!",
+                COUNT(*) FILTER (WHERE status = 'completed') AS "completed!",
+                COUNT(*) FILTER (WHERE status = 'failed')    AS "failed!",
+                COUNT(*) FILTER (WHERE status = 'cancelled') AS "cancelled!"
+            FROM jobs
+            WHERE agent_app_id = $1
+              AND created_at >= NOW() - INTERVAL '30 days'
+            GROUP BY 1
+            ORDER BY 1
+            "#,
+            app_id.as_str(),
+        )
+        .fetch_all(&self.pool)
+        .await
+        .to_domain()?
+        .into_iter()
+        .map(|r| crate::application::agent::repository::DailyOutcome {
+            day: r.day,
+            completed: r.completed,
+            failed: r.failed,
+            cancelled: r.cancelled,
+        })
+        .collect();
         Ok(AgentStats {
+            daily,
             total: rec.total,
             pending: rec.pending,
             running: rec.running,

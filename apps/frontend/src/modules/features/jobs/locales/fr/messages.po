@@ -45,7 +45,7 @@ msgstr ""
 msgid "Job Logs"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:49
 msgid "No jobs found"
 msgstr ""
 
@@ -57,11 +57,15 @@ msgstr ""
 #~ msgid "OpenJobLog"
 #~ msgstr ""
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:26
+msgid "queued — waiting for an agent"
+msgstr "en file — en attente d'un agent"
+
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:73
 msgid "Refresh"
 msgstr ""
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:50
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:52
 msgid "Run your pipeline to create the first job"
 msgstr ""
 

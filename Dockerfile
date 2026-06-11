@@ -68,8 +68,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libssl3 && \
     rm -rf /var/lib/apt/lists/*
 
+# The agent's default --workspace-root lives under /var/lib/scylla. Bake the
+# directory in with the right owner so a named volume mounted there inherits
+# appuser ownership (Docker copies ownership from the image path on first
+# mount) — without it the agent gets a root-owned dir and fails on permission.
 RUN groupadd --gid 10001 appuser && \
-    useradd --uid 10001 --gid appuser --no-create-home appuser
+    useradd --uid 10001 --gid appuser --no-create-home appuser && \
+    mkdir -p /var/lib/scylla/workspaces && \
+    chown -R appuser:appuser /var/lib/scylla
 
 WORKDIR /app
 USER appuser

@@ -18,9 +18,19 @@ msgstr ""
 msgid "{0}"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:104
-msgid "Agent secret"
-msgstr ""
+#. placeholder {0}: entity.name
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:85
+msgid "{0} credentials"
+msgstr "Identifiants de {0}"
+
+#. placeholder {0}: entity.name
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:83
+msgid "{0} is ready"
+msgstr "{0} est prêt"
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:101
+#~ msgid "Agent secret"
+#~ msgstr ""
 
 #: src/modules/shared/presentation/ui/ErrorState.tsx:12
 msgid "An error occurred"
@@ -30,9 +40,9 @@ msgstr "Une erreur est survenue"
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:104
-msgid "App secret"
-msgstr ""
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:101
+#~ msgid "App secret"
+#~ msgstr ""
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:34
 msgid "Are you absolutely sure?"
@@ -47,13 +57,21 @@ msgstr "Annuler"
 msgid "Clear"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:115
-msgid "click to reveal"
-msgstr ""
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:112
+#~ msgid "click to reveal"
+#~ msgstr ""
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
 msgid "Continue"
 msgstr "Continuer"
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:92
+msgid "Copy the secret below — it is shown only once."
+msgstr "Copiez le secret ci-dessous — il n'est affiché qu'une seule fois."
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:106
+msgid "Copy your secret"
+msgstr "Copiez votre secret"
 
 #: src/modules/shared/presentation/ui/FormDialog.tsx:66
 msgid "Create"
@@ -71,6 +89,10 @@ msgstr ""
 #~ msgid "Description"
 #~ msgstr ""
 
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:179
+msgid "Done"
+msgstr "Terminé"
+
 #: src/modules/layout/presentation/ui/Layout.tsx:16
 #~ msgid "e.g., My Organization"
 #~ msgstr ""
@@ -83,9 +105,17 @@ msgstr ""
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:153
-msgid "I've copied it — close"
-msgstr ""
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:59
+msgid "From source"
+msgstr "Depuis les sources"
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:82
+#~ msgid "host.docker.internal reaches this machine from inside the container (Docker Desktop). On Linux, add --network host and keep localhost. The named volume holds the per-job workspaces."
+#~ msgstr "host.docker.internal pointe vers cette machine depuis l'intérieur du conteneur (Docker Desktop). Sous Linux, ajoutez --network host et gardez localhost. Le volume nommé contient les espaces de travail des jobs."
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:145
+#~ msgid "I've copied it — close"
+#~ msgstr ""
 
 #: src/modules/shared/presentation/ui/FeatureHeader.tsx:63
 msgid "in total"
@@ -103,6 +133,10 @@ msgstr "Se déconnecter"
 msgid "New {label}"
 msgstr ""
 
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:30
+msgid "No agent connected — queued jobs are waiting for one."
+msgstr "Aucun agent connecté — les jobs en file attendent qu'un agent arrive."
+
 #: src/modules/core/presentation/ui/App.tsx:91
 msgid "Operation failed"
 msgstr "L'opération a échoué"
@@ -116,9 +150,57 @@ msgstr "Organisation"
 #~ msgid "Organization name"
 #~ msgstr ""
 
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:82
+#~ msgid "Paste it in a terminal: the worker starts in the foreground, its logs show up right there, and Ctrl-C stops it. host.docker.internal is simply this machine seen from inside Docker (on Linux, use localhost with --network host)."
+#~ msgstr "Collez-la dans un terminal : le worker démarre au premier plan, ses logs s'affichent directement, et Ctrl-C l'arrête. host.docker.internal désigne simplement cette machine vue depuis Docker (sous Linux, utilisez localhost avec --network host)."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:116
+msgid "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
+msgstr "Remplacez APP_SECRET par le secret révélé à la création de cet agent — il ne peut pas être affiché à nouveau. Perdu ? Supprimez cet agent et créez-en un nouveau."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:107
+msgid "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
+msgstr "Remplacez CONTROL_PLANE_URL par l'adresse à laquelle votre agent joint le control plane — par exemple http://localhost:50051 sur la même machine, ou http://host.docker.internal:50051 depuis Docker."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:107
+#~ msgid "Replace CONTROL_PLANE_URL with the address your worker reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
+#~ msgstr "Remplacez CONTROL_PLANE_URL par l'adresse à laquelle votre worker joint le control plane — par exemple http://localhost:50051 sur la même machine, ou http://host.docker.internal:50051 depuis Docker."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:75
+msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
+msgstr "Nécessite la toolchain Rust, depuis un clone du <0>repo scylla</0> (crate scylla-agent). L'agent tourne au premier plan et Ctrl-C l'arrête."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:75
+#~ msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The worker runs in the foreground and Ctrl-C stops it."
+#~ msgstr "Nécessite la toolchain Rust, depuis un clone du <0>repo scylla</0> (crate scylla-agent). Le worker tourne au premier plan et Ctrl-C l'arrête."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:75
+#~ msgid "Requires the Rust toolchain, from a clone of the scylla repo. The worker runs in the foreground and Ctrl-C stops it."
+#~ msgstr "Nécessite la toolchain Rust, depuis un clone du repo scylla. Le worker tourne au premier plan et Ctrl-C l'arrête."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:98
+#~ msgid "Requires the Rust toolchain. The agent creates the workspace directory at startup and fails fast if it isn't writable."
+#~ msgstr "Nécessite la toolchain Rust. L'agent crée le répertoire de travail au démarrage et s'arrête immédiatement s'il n'est pas accessible en écriture."
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:131
+msgid "Reveal"
+msgstr "Révéler"
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:72
+msgid "Run from a repo checkout"
+msgstr "Lancer depuis un clone du repo"
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:95
+#~ msgid "Run from a repo checkout (dev)"
+#~ msgstr "Lancer depuis un clone du dépôt (dev)"
+
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:129
-msgid "Run the agent"
-msgstr ""
+#~ msgid "Run the agent"
+#~ msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:95
+msgid "Run with Docker"
+msgstr "Lancer avec Docker"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:72
 msgid "Select Organization"
@@ -129,9 +211,37 @@ msgstr "Sélectionner une organisation"
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:37
+#~ msgid "Set up a worker"
+#~ msgstr "Configurer un worker"
+
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:37
+msgid "Set up an agent"
+msgstr "Configurer un agent"
+
 #: src/modules/shared/presentation/ui/Pagination.tsx:81
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Affichage de {start}-{end} sur {totalCount}"
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:108
+msgid "shown once"
+msgstr "affiché une seule fois"
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:151
+msgid "Start your agent"
+msgstr "Lancez votre agent"
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:151
+#~ msgid "Start your worker"
+#~ msgstr "Lancez votre worker"
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:98
+msgid "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:98
+#~ msgid "The worker starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
+#~ msgstr "Le worker démarre au premier plan : ses logs s'affichent directement dans le terminal et Ctrl-C l'arrête."
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
 msgid "This action cannot be undone."
@@ -141,22 +251,26 @@ msgstr "Cette action est irréversible."
 msgid "To get started, please create your first organization."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:133
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:90
+msgid "Two steps and it picks up jobs."
+msgstr "Deux étapes et il prendra des jobs."
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:159
 msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:79
-msgid "We don't store this. Copy it now — closing this dialog deletes it forever."
-msgstr ""
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:76
+#~ msgid "We don't store this. Copy it now — closing this dialog deletes it forever."
+#~ msgstr ""
 
 #: src/modules/layout/presentation/ui/Layout.tsx:65
 msgid "Welcome to Scylla!"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:144
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:170
 msgid "You won't see this secret again."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:75
-msgid "Your secret · shown once"
-msgstr ""
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:72
+#~ msgid "Your secret · shown once"
+#~ msgstr ""

@@ -22,6 +22,8 @@ import {
 import type { FormChange } from '@shared/presentation/models/scylla-form.model.ts';
 import { Cpu, Plus } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { toast } from 'sonner';
+import { ScyllaError } from '@shared/utils/scylla-result.ts';
 
 export const AgentsPage = () => {
   const { agents, isLoading, isError, createAgent, deleteAgent } = useAgents();
@@ -37,6 +39,14 @@ export const AgentsPage = () => {
       onSuccess: data => {
         setCreateOpen(false);
         setCreated(data);
+      },
+      // The dialog stays open so the name can be fixed in place.
+      onError: err => {
+        if (err instanceof ScyllaError && err.isAlreadyExists()) {
+          toast.error(`An agent named "${name.trim()}" already exists in this organization. Pick another name.`);
+        } else {
+          toast.error('Failed to create the agent. Please try again.');
+        }
       },
     });
   };

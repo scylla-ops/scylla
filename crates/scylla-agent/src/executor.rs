@@ -67,21 +67,24 @@ impl Executor {
     /// build node's output is visible to a downstream test node), then removes
     /// it on completion unless `keep_workspace` is set.
     pub async fn run(&self, nodes: Vec<PipelineNode>) -> Result<(), ExecutionError> {
-        let workspace = self.workspace_root.join(&self.job_id);
-        fs::create_dir_all(&workspace)
-            .await
-            .map_err(ExecutionError::Workspace)?;
-        // Canonicalize once so per-node working-dir prefix checks compare against
-        // the resolved path (defeats symlink escapes).
-        let workspace = fs::canonicalize(&workspace)
-            .await
-            .map_err(ExecutionError::Workspace)?;
-
+        // The reporter starts BEFORE any workspace I/O. The job is already
+        // assigned to this agent on the control plane, and the pending-job
+        // scheduler only redispatches unassigned jobs — so a failure that
+        // escaped without a terminal event (e.g. an unwritable
+        // --workspace-root) used to strand the job in `pending` forever. With
+        // the reporter up first, even workspace allocation failures surface
+        // as JobStarted → JobFailed carrying the underlying cause.
         let publisher = StatusPublisher::new(self.up_tx.clone(), self.job_id.clone());
         let mut reporter = JobReporter::start(publisher.clone()).await?;
         let cancel = CancellationToken::new();
 
-        let outcome = self.execute(&nodes, &publisher, &cancel, &workspace).await;
+        let (workspace, outcome) = match self.prepare_workspace().await {
+            Ok(ws) => {
+                let outcome = self.execute(&nodes, &publisher, &cancel, &ws).await;
+                (Some(ws), outcome)
+            }
+            Err(e) => (None, Err(e)),
+        };
 
         match &outcome {
             Ok(()) => reporter.commit_success(),
@@ -90,13 +93,31 @@ impl Executor {
         let finalize = reporter.finalize().await;
 
         // Always attempt cleanup, even if finalize or the run failed.
-        if !self.keep_workspace {
-            if let Err(e) = fs::remove_dir_all(&workspace).await {
-                warn!(error = %e, workspace = %workspace.display(), "failed to remove job workspace");
-            }
+        if !self.keep_workspace
+            && let Some(ws) = &workspace
+            && let Err(e) = fs::remove_dir_all(ws).await
+        {
+            warn!(error = %e, workspace = %ws.display(), "failed to remove job workspace");
         }
         finalize?;
         outcome
+    }
+
+    /// Create and canonicalize this job's shared workspace directory. The
+    /// io::Error is re-wrapped with the offending path — a bare "permission
+    /// denied" in the job's failure message is not actionable.
+    async fn prepare_workspace(&self) -> Result<PathBuf, ExecutionError> {
+        let workspace = self.workspace_root.join(&self.job_id);
+        let with_path = |e: std::io::Error| {
+            ExecutionError::Workspace(std::io::Error::new(
+                e.kind(),
+                format!("{}: {e}", workspace.display()),
+            ))
+        };
+        fs::create_dir_all(&workspace).await.map_err(with_path)?;
+        // Canonicalize once so per-node working-dir prefix checks compare against
+        // the resolved path (defeats symlink escapes).
+        fs::canonicalize(&workspace).await.map_err(with_path)
     }
 
     async fn execute(
@@ -561,4 +582,51 @@ async fn publish_log_line(
         return false;
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use scylla_protocol::services::agent::JobEventKind;
+
+    /// Regression: a workspace root that cannot be created (the bug was a
+    /// missing/unwritable --workspace-root) must still bracket the job with
+    /// JobStarted → JobFailed on the up-stream, carrying the offending path.
+    /// Before the fix the executor returned before the reporter existed and
+    /// the control plane never heard about the job again.
+    #[tokio::test]
+    async fn workspace_failure_still_reports_started_and_failed() {
+        // A root nested under a regular FILE can never be created.
+        let blocker =
+            std::env::temp_dir().join(format!("scylla-exec-test-{}", std::process::id()));
+        tokio::fs::write(&blocker, b"x").await.unwrap();
+        let root = blocker.join("ws");
+
+        let (tx, mut rx) = mpsc::channel(16);
+        let exec = Executor::new(tx, "job-1".into(), root, false, vec![]);
+        let result = exec.run(vec![]).await;
+        let _ = tokio::fs::remove_file(&blocker).await;
+        assert!(result.is_err(), "workspace creation must fail");
+
+        let mut statuses = vec![];
+        while let Ok(msg) = rx.try_recv() {
+            if let Some(agent_up::Payload::Status(s)) = msg.payload {
+                statuses.push(s);
+            }
+        }
+        let kinds: Vec<i32> = statuses.iter().map(|s| s.kind).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                JobEventKind::JobStarted as i32,
+                JobEventKind::JobFailed as i32
+            ],
+            "a workspace failure must still produce exactly one terminal event"
+        );
+        assert!(
+            statuses[1].error.contains("scylla-exec-test"),
+            "the failure message must carry the offending path, got: {}",
+            statuses[1].error
+        );
+    }
 }

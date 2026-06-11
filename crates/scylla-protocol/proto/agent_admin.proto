@@ -44,6 +44,17 @@ message AgentStats {
   int64  failed      = 5;
   int64  cancelled   = 6;
   google.protobuf.Timestamp last_run_at = 7;
+  // Finished jobs per day over the last 30 days, oldest first. Days with no
+  // finished job are absent — consumers zero-fill the gaps.
+  repeated DailyOutcome daily = 8;
+}
+
+// One day of finished-job outcomes for an agent.
+message DailyOutcome {
+  google.protobuf.Timestamp day = 1;
+  int64 completed = 2;
+  int64 failed    = 3;
+  int64 cancelled = 4;
 }
 
 message CreateAgentRequest {

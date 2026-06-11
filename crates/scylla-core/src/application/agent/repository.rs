@@ -14,6 +14,18 @@ pub struct AgentStats {
     pub failed: i64,
     pub cancelled: i64,
     pub last_run_at: Option<DateTime<Utc>>,
+    /// Finished jobs per day over the last 30 days, oldest first. Days with
+    /// no finished job are absent — consumers zero-fill the gaps.
+    pub daily: Vec<DailyOutcome>,
+}
+
+/// One day of finished-job outcomes for an agent.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DailyOutcome {
+    pub day: DateTime<Utc>,
+    pub completed: i64,
+    pub failed: i64,
+    pub cancelled: i64,
 }
 
 /// Persistence for the `agents` table — the 1:1 specialization of an app that

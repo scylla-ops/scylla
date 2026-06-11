@@ -25,6 +25,16 @@ export interface AgentStats {
   failed: number;
   cancelled: number;
   lastRunAt: string;
+  /** Finished jobs per day (last 30 days, oldest first); gap days absent. */
+  daily: DailyOutcome[];
+}
+
+/** One day of finished-job outcomes (day is an ISO date-time string). */
+export interface DailyOutcome {
+  day: string;
+  completed: number;
+  failed: number;
+  cancelled: number;
 }
 
 /**
