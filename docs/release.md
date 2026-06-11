@@ -53,7 +53,7 @@ frontend assets at build time, default `http://localhost:50051`), `BUILDER`
 | Recipe | Image | Tags |
 |---|---|---|
 | `release-backend` | `$DOCKER_USER/scylla-control-plane`, `…/scylla-agent` | `:$VERSION`, `:latest` |
-| `release-saas` | `$DOCKER_USER/scylla-control-plane` | `:$VERSION-saas`, `:saas` |
+| `release-saas` | `$DOCKER_USER/scylla-control-plane` | `:$VERSION-saas`, `:latest-saas`, `:saas` |
 | `release-frontend` | `$DOCKER_USER/scylla-frontend` | `:$VERSION`, `:latest` |
 
 ## Notes
