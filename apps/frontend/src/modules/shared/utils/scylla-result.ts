@@ -33,6 +33,11 @@ export class ScyllaError extends Error {
     return this.getCode() === 'PERMISSION_DENIED';
   }
 
+  /** A unique constraint was hit, e.g. a name already taken (gRPC ALREADY_EXISTS). */
+  public isAlreadyExists(): boolean {
+    return this.getCode() === 'ALREADY_EXISTS';
+  }
+
   public log(): void {
     console.warn(`>[${this.constructor.name}]:`, this.message);
     if (this.cause) {
