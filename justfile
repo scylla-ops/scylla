@@ -155,6 +155,7 @@ release-saas: _info
         --build-arg PACKAGE=scylla-control-plane \
         --build-arg FEATURES=saas \
         -t {{DOCKER_USER}}/scylla-control-plane:{{VERSION}}-saas \
+        -t {{DOCKER_USER}}/scylla-control-plane:latest-saas \
         -t {{DOCKER_USER}}/scylla-control-plane:saas \
         --push .
 
