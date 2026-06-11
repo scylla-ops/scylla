@@ -60,10 +60,10 @@ services:
       retries: 3
 
   # Agents are NOT part of this stack. An agent is an "App" created in the UI;
-  # the UI then hands you a `docker run .../scylla-agent --control-plane-url ...
-  # --app-id <id> --app-secret <secret>` command to run it wherever you like
-  # (its credentials only exist after the App is created, so it cannot be wired
-  # ahead of time here).
+  # the UI then shows ready-to-paste run commands (docker run with a workspace
+  # volume, or cargo run from a checkout) with the app id and one-time secret
+  # filled in. Credentials only exist after the App is created, so an agent
+  # cannot be wired ahead of time here.
 
 volumes:
   postgres_data:
