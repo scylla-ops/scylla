@@ -7,7 +7,7 @@ import {
 } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
 import { AgentIdLink } from '@/modules/features/agents/presentation/ui/components/AgentIdLink.tsx';
 import { OutcomesChart } from '@/modules/features/agents/presentation/ui/components/OutcomesChart.tsx';
-import { BackButton } from '@shared/presentation/ui';
+import { AgentRunInstructions, BackButton } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { useResourceError } from '@shared/presentation/hooks/use-resource-error.ts';
 import { Badge, Button } from '@shadcn';
@@ -160,7 +160,7 @@ export const AgentDetailsPage = () => {
         <div className='grid gap-3 lg:grid-cols-[380px_1fr]'>
           {stats ? (
             <OutcomesChart
-              agentId={agent.id}
+              daily={stats.daily}
               aggregate={{
                 completed: stats.completed,
                 failed: stats.failed,
@@ -170,6 +170,21 @@ export const AgentDetailsPage = () => {
           ) : (
             <Skeleton className='h-64 w-full rounded-xl' />
           )}
+        </div>
+      </div>
+
+      {/* How to start a worker for this agent */}
+      <div>
+        <div className='mb-2 flex items-baseline gap-2'>
+          <h2 className='text-lg font-semibold'>
+            <Trans>Run this worker</Trans>
+          </h2>
+          <span className='font-mono text-xs text-muted-foreground'>
+            <Trans>connects as this agent's app id</Trans>
+          </span>
+        </div>
+        <div className='max-w-3xl'>
+          <AgentRunInstructions appId={agent.id} />
         </div>
       </div>
 

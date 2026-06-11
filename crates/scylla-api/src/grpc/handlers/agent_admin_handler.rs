@@ -10,6 +10,7 @@ use scylla_core::domain::entities::{AppId, OrganizationId};
 use scylla_core::domain::value_objects::app::AppName;
 use scylla_protocol::services::agent_admin::{
     AgentStats as ProtoAgentStats, AgentView as ProtoAgentView, CreateAgentRequest,
+    DailyOutcome as ProtoDailyOutcome,
     CreatedAgent as ProtoCreatedAgent, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest,
     GetAgentStatsRequest, ListAgentsRequest, ListAgentsResponse,
     agent_admin_service_server::AgentAdminService,
@@ -156,5 +157,15 @@ fn stats_to_proto(s: &AgentStats) -> ProtoAgentStats {
         failed: s.failed,
         cancelled: s.cancelled,
         last_run_at: s.last_run_at.and_then(ts),
+        daily: s
+            .daily
+            .iter()
+            .map(|d| ProtoDailyOutcome {
+                day: ts(d.day),
+                completed: d.completed,
+                failed: d.failed,
+                cancelled: d.cancelled,
+            })
+            .collect(),
     }
 }

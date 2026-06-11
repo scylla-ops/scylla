@@ -29,6 +29,12 @@ export class GrpcAgentMapper {
       failed: Number(s.failed),
       cancelled: Number(s.cancelled),
       lastRunAt: timestampToIso(s.lastRunAt),
+      daily: s.daily.map(d => ({
+        day: timestampToIso(d.day),
+        completed: Number(d.completed),
+        failed: Number(d.failed),
+        cancelled: Number(d.cancelled),
+      })),
     };
   }
 }
