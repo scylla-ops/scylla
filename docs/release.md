@@ -38,8 +38,8 @@ the SaaS beta. The agent and frontend images have no edition split — the same
 images serve both.
 
 Deployment consumes the same variables: the SaaS compose overlay points the
-control-plane at `:${VERSION:-latest}-saas`, so `just up-saas` (or
-`VERSION=0.3.0 just up-saas`) pulls exactly what the matching `just release`
+control-plane at `:${VERSION:-latest}-saas`, so `just up` (or
+`VERSION=0.3.0 just up`) pulls exactly what the matching `just release`
 pushed. The base compose alone stays on the PaaS `:latest` — refresh it with
 `just release-backend` when needed.
 
