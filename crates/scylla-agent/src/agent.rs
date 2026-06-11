@@ -18,6 +18,8 @@ use scylla_protocol::services::app::app_auth_service_client::AppAuthServiceClien
 use crate::config::AgentConfig;
 use crate::error::AgentError;
 use crate::executor::Executor;
+use crate::reporter::StatusPublisher;
+use scylla_core::application::JobEvent;
 
 pub struct Agent {
     config: AgentConfig,
@@ -171,7 +173,22 @@ impl Agent {
                         let nodes = match to_domain_nodes(dispatch.nodes) {
                             Ok(nodes) => nodes,
                             Err(e) => {
-                                warn!(%job_id, error = %e, "invalid dispatch nodes, skipping");
+                                // Silently skipping would strand the job in
+                                // `pending` forever (it is already assigned to
+                                // this agent) — fail it upstream instead.
+                                warn!(%job_id, error = %e, "invalid dispatch nodes, failing job");
+                                let publisher =
+                                    StatusPublisher::new(up_tx.clone(), job_id.clone());
+                                if let Err(pe) = publisher.emit(JobEvent::JobStarted).await {
+                                    warn!(%job_id, error = %pe, "failed to report job start");
+                                } else if let Err(pe) = publisher
+                                    .emit(JobEvent::JobFailed {
+                                        error: format!("invalid dispatch: {e}"),
+                                    })
+                                    .await
+                                {
+                                    warn!(%job_id, error = %pe, "failed to report job failure");
+                                }
                                 continue;
                             }
                         };
@@ -184,7 +201,10 @@ impl Agent {
                         );
                         // V1: sequential — finish the job before accepting the next.
                         if let Err(e) = executor.run(nodes).await {
-                            warn!(%job_id, error = %e, "job execution failed");
+                            // The JobReporter inside run() already pushed the
+                            // terminal JobFailed upstream — this log is local
+                            // operator context only.
+                            error!(%job_id, error = %e, "job execution failed");
                         }
                     }
                     None => {}
