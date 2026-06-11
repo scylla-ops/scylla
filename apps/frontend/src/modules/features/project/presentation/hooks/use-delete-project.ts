@@ -12,7 +12,5 @@ export const useDeleteProject = () => {
       toast.success('Project deleted');
       return queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
-    onError: () => toast.error('Failed to delete project'),
   });
 };
-

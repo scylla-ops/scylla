@@ -73,7 +73,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
           if (selectedOrganization) {
             setOrganization(organizationId, selectedOrganization.name);
           }
-          navigate('/projects');
+          void navigate('/projects');
         },
       },
     );

@@ -1,23 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import { ScyllaError } from '@shared/utils/scylla-result.ts';
+import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
 
 const SECRETS_QUERY_KEY = 'secrets';
-
-/**
- * Surface the most useful message from a failed secret call. The data source
- * wraps gRPC failures in a ScyllaError whose `cause` is the underlying RpcError —
- * that cause carries the real backend message (e.g. "secret store not
- * configured" or a duplicate-name conflict), so prefer it for the toast.
- */
-function secretErrorMessage(error: unknown): string {
-  if (error instanceof ScyllaError && error.cause instanceof Error) {
-    return error.cause.message;
-  }
-  return error instanceof Error ? error.message : 'Une erreur est survenue';
-}
 
 /** List a project's secrets (metadata only — never a value). */
 export const useSecrets = (projectId: string) => {
@@ -55,9 +42,8 @@ export const useCreateSecret = (projectId: string) => {
       ).unwrap(),
     onSuccess: () => {
       toast.success('Secret created');
-      queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, projectId] });
+      void queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, projectId] });
     },
-    onError: error => toast.error(secretErrorMessage(error)),
   });
 };
 
@@ -69,8 +55,7 @@ export const useDeleteSecret = (projectId: string) => {
   return useMutation({
     mutationFn: async (secretId: string) => (await deleteSecret.execute(secretId)).unwrap(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, projectId] });
+      void queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, projectId] });
     },
-    onError: error => toast.error(secretErrorMessage(error)),
   });
 };

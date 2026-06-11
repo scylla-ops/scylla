@@ -42,9 +42,10 @@ export const FeatureHeader = ({
     try {
       setDeleteDialogOpen(false);
       await onDeleteSelection?.();
-      toast.success(`Successfully deleted ${selectedCount} ${label}s`);
-    } catch (error) {
-      toast.error(`Error while deletring jobs: ${error}`);
+      const itemLabel = typeof label === 'string' ? label : 'item';
+      toast.success(`Successfully deleted ${selectedCount} ${itemLabel}s`);
+    } catch {
+      // Toast shown by the global MutationCache onError handler.
     }
   };
 
