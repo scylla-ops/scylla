@@ -148,7 +148,7 @@ export const SecretRevealDialog = ({
                 )}
               >
                 <p className='mb-2 mt-0.5 text-[13px] font-medium'>
-                  <Trans>Start your worker</Trans>
+                  <Trans>Start your agent</Trans>
                 </p>
                 {revealed && <AgentRunInstructions appId={entity.id} secret={secret} />}
               </div>

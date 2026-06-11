@@ -82,7 +82,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
               >
                 the scylla repo
               </a>{' '}
-              (crate scylla-agent). The worker runs in the foreground and Ctrl-C stops it.
+              (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it.
             </Trans>
           </p>
         </TabsContent>
@@ -96,7 +96,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
           />
           <p className='text-xs text-muted-foreground'>
             <Trans>
-              The worker starts in the foreground: its logs show up right in the terminal and Ctrl-C
+              The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C
               stops it.
             </Trans>
           </p>
@@ -105,7 +105,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
 
       <p className='text-xs text-muted-foreground'>
         <Trans>
-          Replace CONTROL_PLANE_URL with the address your worker reaches the control plane at — for
+          Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for
           example http://localhost:50051 on the same machine, or http://host.docker.internal:50051
           from inside Docker.
         </Trans>

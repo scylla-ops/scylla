@@ -5,6 +5,7 @@ import { JobsTable } from '@/modules/features/jobs/presentation/ui/jobs-table';
 import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Pagination } from '@shared/presentation/ui/Pagination.tsx';
+import { NoAgentsBanner } from '@shared/presentation/ui/NoAgentsBanner.tsx';
 
 export const JobsPage = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
@@ -36,6 +37,7 @@ export const JobsPage = () => {
         onRefresh={() => refetch()}
         onBack={handleBack}
       />
+      <NoAgentsBanner hasPendingJobs={jobs.some(j => j.status === 'pending')} />
       <div className='flex-1 min-h-0 overflow-auto'>
         <div className={'relative'}>
           {jobs.length > 0 ? (

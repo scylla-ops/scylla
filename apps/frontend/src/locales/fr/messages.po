@@ -133,6 +133,10 @@ msgstr "Se déconnecter"
 msgid "New {label}"
 msgstr ""
 
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:30
+msgid "No agent connected — queued jobs are waiting for one."
+msgstr "Aucun agent connecté — les jobs en file attendent qu'un agent arrive."
+
 #: src/modules/core/presentation/ui/App.tsx:91
 msgid "Operation failed"
 msgstr "L'opération a échoué"
@@ -155,12 +159,20 @@ msgid "Replace APP_SECRET with the secret revealed when this agent was created �
 msgstr "Remplacez APP_SECRET par le secret révélé à la création de cet agent — il ne peut pas être affiché à nouveau. Perdu ? Supprimez cet agent et créez-en un nouveau."
 
 #: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:107
-msgid "Replace CONTROL_PLANE_URL with the address your worker reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
-msgstr "Remplacez CONTROL_PLANE_URL par l'adresse à laquelle votre worker joint le control plane — par exemple http://localhost:50051 sur la même machine, ou http://host.docker.internal:50051 depuis Docker."
+msgid "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
+msgstr "Remplacez CONTROL_PLANE_URL par l'adresse à laquelle votre agent joint le control plane — par exemple http://localhost:50051 sur la même machine, ou http://host.docker.internal:50051 depuis Docker."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:107
+#~ msgid "Replace CONTROL_PLANE_URL with the address your worker reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
+#~ msgstr "Remplacez CONTROL_PLANE_URL par l'adresse à laquelle votre worker joint le control plane — par exemple http://localhost:50051 sur la même machine, ou http://host.docker.internal:50051 depuis Docker."
 
 #: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:75
-msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The worker runs in the foreground and Ctrl-C stops it."
-msgstr "Nécessite la toolchain Rust, depuis un clone du <0>repo scylla</0> (crate scylla-agent). Le worker tourne au premier plan et Ctrl-C l'arrête."
+msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
+msgstr "Nécessite la toolchain Rust, depuis un clone du <0>repo scylla</0> (crate scylla-agent). L'agent tourne au premier plan et Ctrl-C l'arrête."
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:75
+#~ msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The worker runs in the foreground and Ctrl-C stops it."
+#~ msgstr "Nécessite la toolchain Rust, depuis un clone du <0>repo scylla</0> (crate scylla-agent). Le worker tourne au premier plan et Ctrl-C l'arrête."
 
 #: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:75
 #~ msgid "Requires the Rust toolchain, from a clone of the scylla repo. The worker runs in the foreground and Ctrl-C stops it."
@@ -199,6 +211,14 @@ msgstr "Sélectionner une organisation"
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:37
+#~ msgid "Set up a worker"
+#~ msgstr "Configurer un worker"
+
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:37
+msgid "Set up an agent"
+msgstr "Configurer un agent"
+
 #: src/modules/shared/presentation/ui/Pagination.tsx:81
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Affichage de {start}-{end} sur {totalCount}"
@@ -208,12 +228,20 @@ msgid "shown once"
 msgstr "affiché une seule fois"
 
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:151
-msgid "Start your worker"
-msgstr "Lancez votre worker"
+msgid "Start your agent"
+msgstr "Lancez votre agent"
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:151
+#~ msgid "Start your worker"
+#~ msgstr "Lancez votre worker"
 
 #: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:98
-msgid "The worker starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
-msgstr "Le worker démarre au premier plan : ses logs s'affichent directement dans le terminal et Ctrl-C l'arrête."
+msgid "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:98
+#~ msgid "The worker starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
+#~ msgstr "Le worker démarre au premier plan : ses logs s'affichent directement dans le terminal et Ctrl-C l'arrête."
 
 #: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
 msgid "This action cannot be undone."

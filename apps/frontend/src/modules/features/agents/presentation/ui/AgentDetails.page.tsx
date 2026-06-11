@@ -177,7 +177,7 @@ export const AgentDetailsPage = () => {
       <div>
         <div className='mb-2 flex items-baseline gap-2'>
           <h2 className='text-lg font-semibold'>
-            <Trans>Run this worker</Trans>
+            <Trans>Run this agent</Trans>
           </h2>
           <span className='font-mono text-xs text-muted-foreground'>
             <Trans>connects as this agent's app id</Trans>

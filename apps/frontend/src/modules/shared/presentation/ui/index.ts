@@ -8,3 +8,4 @@ export * from './FormDialog.tsx';
 export * from './IconButton.tsx';
 export * from './SecretRevealDialog.tsx';
 export * from './AgentRunInstructions.tsx';
+export * from './NoAgentsBanner.tsx';

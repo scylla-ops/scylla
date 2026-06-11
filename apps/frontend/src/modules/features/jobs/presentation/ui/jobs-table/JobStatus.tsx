@@ -1,6 +1,7 @@
 import { Badge } from '@shadcn';
 import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
+import { Trans } from '@lingui/react/macro';
 
 type JobStatusProps = {
   job: Job;
@@ -20,7 +21,13 @@ export const JobStatus = ({ job }: JobStatusProps) => {
         <Badge variant={config.variant} className='w-fit'>
           {config.label}
         </Badge>
-        <span className='text-xs text-slate-500 truncate'>{job.pipelineId}</span>
+        {job.status === 'pending' ? (
+          <span className='text-xs text-slate-500 truncate'>
+            <Trans>queued — waiting for an agent</Trans>
+          </span>
+        ) : (
+          <span className='text-xs text-slate-500 truncate'>{job.pipelineId}</span>
+        )}
       </div>
     </div>
   );
