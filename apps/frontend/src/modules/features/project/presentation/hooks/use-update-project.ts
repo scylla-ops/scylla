@@ -7,13 +7,18 @@ export const useUpdateProject = () => {
   const { updateProject } = useDependencies().project;
 
   return useMutation({
-    mutationFn: async ({ projectId, name, description }: { projectId: string; name?: string; description?: string }) =>
-      (await updateProject.execute(projectId, name, description)).unwrap(),
+    mutationFn: async ({
+      projectId,
+      name,
+      description,
+    }: {
+      projectId: string;
+      name?: string;
+      description?: string;
+    }) => (await updateProject.execute(projectId, name, description)).unwrap(),
     onSuccess: () => {
       toast.success('Project updated');
       return queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
-    onError: () => toast.error('Failed to update project'),
   });
 };
-

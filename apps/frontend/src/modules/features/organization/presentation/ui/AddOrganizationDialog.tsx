@@ -36,7 +36,7 @@ export function AddOrganizationDialog({
             idValue(data?.organizationId) || idValue(createOrganization.data?.organizationId);
           setOpen(false);
           setOrganization(orgId, name);
-          navigate(`/${slugifyOrgName(name)}/projects`);
+          void navigate(`/${slugifyOrgName(name)}/projects`);
         },
       },
     );

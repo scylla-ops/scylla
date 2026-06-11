@@ -19,6 +19,5 @@ export const useCreatePipeline = () => {
         goToProject({ id: currentProject.id, name: currentProject.name });
       }
     },
-    onError: error => toast.error(error.message),
   });
 };

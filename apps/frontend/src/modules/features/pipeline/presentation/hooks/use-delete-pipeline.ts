@@ -10,7 +10,7 @@ export const useDeletePipeline = () => {
     mutationFn: async (pipelineId: string) => (await deletePipeline.execute(pipelineId)).unwrap(),
     onSuccess: () => {
       toast.success('Pipeline deleted');
-      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+      void queryClient.invalidateQueries({ queryKey: ['pipelines'] });
     },
   });
 };

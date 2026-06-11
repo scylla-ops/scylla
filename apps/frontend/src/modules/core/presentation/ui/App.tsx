@@ -3,7 +3,6 @@ import { CoreRouter } from '@core/presentation/ui/router/Core.router.tsx';
 import { StrictMode } from 'react';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
-import { t } from '@lingui/core/macro';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
 import { CapabilitiesProvider } from '@core/presentation/providers/Capabilities.provider.tsx';
@@ -56,16 +55,12 @@ const queryClient = new QueryClient({
 
         error.log();
 
-        const message = error.isNetworkError()
-          ? t`Server unreachable`
-          : error.message || t`An unexpected error occurred`;
-
         if (error.isNetworkError()) {
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
 
-        toast.error(message);
+        toast.error(error.userMessage());
       } else {
         console.error('Non-Scylla Error:', error);
       }
@@ -86,11 +81,7 @@ const queryClient = new QueryClient({
 
         error.log();
 
-        const message = error.isNetworkError()
-          ? t`Server unreachable`
-          : error.message || t`Operation failed`;
-
-        toast.error(message);
+        toast.error(error.userMessage());
       } else {
         console.error('Mutation Error (Non-Scylla):', error);
       }

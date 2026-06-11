@@ -22,13 +22,12 @@ export const useUpdatePipeline = () => {
     mutationFn: async ({ id, nodes, name }: EditPipelineParams) =>
       (await updatePipeline.execute(id, nodes, name)).unwrap(),
     onSuccess: data => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['pipelines', data.projectId],
       });
-      queryClient.invalidateQueries({ queryKey: ['pipeline', data.id] });
+      void queryClient.invalidateQueries({ queryKey: ['pipeline', data.id] });
       toast.success('Pipeline edited');
       if (project.name && project.id) goToProject({ id: project.id, name: project.name });
     },
-    onError: () => toast.error('Failed to edit pipeline'),
   });
 };
