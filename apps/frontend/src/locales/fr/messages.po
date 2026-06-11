@@ -36,7 +36,7 @@ msgstr "{0} est prêt"
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:61
+#: src/modules/shared/utils/scylla-result.ts:68
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
@@ -53,7 +53,7 @@ msgstr "En êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:74
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:77
 msgid "Clear"
 msgstr ""
 
@@ -81,7 +81,7 @@ msgstr ""
 msgid "Creating..."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:94
 msgid "Delete"
 msgstr ""
 
@@ -117,7 +117,7 @@ msgstr "Depuis les sources"
 #~ msgid "I've copied it — close"
 #~ msgstr ""
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:63
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:66
 msgid "in total"
 msgstr ""
 
@@ -129,7 +129,7 @@ msgstr "Se déconnecter"
 #~ msgid "Main"
 #~ msgstr "Principal"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:97
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:100
 msgid "New {label}"
 msgstr ""
 
@@ -138,8 +138,8 @@ msgid "No agent connected — queued jobs are waiting for one."
 msgstr "Aucun agent connecté — les jobs en file attendent qu'un agent arrive."
 
 #: src/modules/core/presentation/ui/App.tsx:91
-msgid "Operation failed"
-msgstr "L'opération a échoué"
+#~ msgid "Operation failed"
+#~ msgstr "L'opération a échoué"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:69
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:73
@@ -206,8 +206,7 @@ msgstr "Lancer avec Docker"
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:60
-#: src/modules/core/presentation/ui/App.tsx:90
+#: src/modules/shared/utils/scylla-result.ts:56
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 
@@ -266,6 +265,10 @@ msgstr ""
 #: src/modules/layout/presentation/ui/Layout.tsx:65
 msgid "Welcome to Scylla!"
 msgstr ""
+
+#: src/modules/shared/utils/scylla-result.ts:66
+msgid "You don't have permission to perform this action"
+msgstr "Vous n'avez pas la permission d'effectuer cette action"
 
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:170
 msgid "You won't see this secret again."

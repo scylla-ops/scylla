@@ -61,7 +61,7 @@ msgstr "Open logs"
 msgid "queued — waiting for an agent"
 msgstr "queued — waiting for an agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:73
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:72
 msgid "Refresh"
 msgstr "Refresh"
 

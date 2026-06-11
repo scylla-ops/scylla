@@ -7,13 +7,18 @@ export const useUpdateOrganization = () => {
   const { updateOrganization } = useDependencies().organization;
 
   return useMutation({
-    mutationFn: async ({ organizationId, name, description }: { organizationId: string; name?: string; description?: string }) =>
-      (await updateOrganization.execute(organizationId, name, description)).unwrap(),
+    mutationFn: async ({
+      organizationId,
+      name,
+      description,
+    }: {
+      organizationId: string;
+      name?: string;
+      description?: string;
+    }) => (await updateOrganization.execute(organizationId, name, description)).unwrap(),
     onSuccess: () => {
       toast.success('Organization updated');
       return queryClient.invalidateQueries({ queryKey: ['organizations'] });
     },
-    onError: () => toast.error('Failed to update organization'),
   });
 };
-

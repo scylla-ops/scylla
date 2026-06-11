@@ -61,7 +61,7 @@ msgstr ""
 msgid "queued — waiting for an agent"
 msgstr "en file — en attente d'un agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:73
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:72
 msgid "Refresh"
 msgstr ""
 

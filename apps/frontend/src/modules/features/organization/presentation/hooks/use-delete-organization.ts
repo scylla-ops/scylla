@@ -13,7 +13,5 @@ export const useDeleteOrganization = () => {
       toast.success('Organization deleted');
       return queryClient.invalidateQueries({ queryKey: ['organizations'] });
     },
-    onError: () => toast.error('Failed to delete organization'),
   });
 };
-
