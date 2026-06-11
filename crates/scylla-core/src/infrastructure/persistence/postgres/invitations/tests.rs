@@ -48,6 +48,7 @@ async fn use_cases(
         Arc::new(Argon2HashService::new()),
         Arc::new(PgSessionRepository::new(pool.clone())),
         permission,
+        Arc::new(PgRoleRepository::new(pool.clone())),
     )
 }
 
