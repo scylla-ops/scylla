@@ -161,3 +161,27 @@
     transform: scaleY(1.05);
   }
 }
+
+/* One-time secret reveal: blurred + unselectable until the user opts in. */
+.secret-blur {
+  filter: blur(5px);
+  user-select: none;
+  transition: filter 200ms ease;
+}
+.secret-shown {
+  filter: none;
+  user-select: text;
+  transition: filter 200ms ease;
+}
+
+/* Accessibility: kill decorative motion when the user asks for less of it. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
+  .secret-blur,
+  .secret-shown {
+    transition: none !important;
+  }
+}

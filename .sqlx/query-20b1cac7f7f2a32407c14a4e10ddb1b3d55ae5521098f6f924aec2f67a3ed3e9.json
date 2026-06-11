@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM default_role_bindings WHERE slot = 'org_creation'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "20b1cac7f7f2a32407c14a4e10ddb1b3d55ae5521098f6f924aec2f67a3ed3e9"
+}

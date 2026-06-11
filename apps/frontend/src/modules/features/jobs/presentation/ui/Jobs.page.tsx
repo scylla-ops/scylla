@@ -5,6 +5,7 @@ import { JobsTable } from '@/modules/features/jobs/presentation/ui/jobs-table';
 import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Pagination } from '@shared/presentation/ui/Pagination.tsx';
+import { NoAgentsBanner } from '@shared/presentation/ui/NoAgentsBanner.tsx';
 
 export const JobsPage = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
@@ -13,7 +14,7 @@ export const JobsPage = () => {
     usePipelinesJobs(pipelineId || '');
 
   const handleBack = () => {
-    navigate(-1);
+    void navigate(-1);
   };
 
   if (!pipelineId) {
@@ -29,13 +30,14 @@ export const JobsPage = () => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full p-2'>
+    <div className='flex flex-col gap-4 w-full h-full'>
       <JobsHeader
         numberOfJobs={paginationInfo?.totalCount ?? jobs.length}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
         onBack={handleBack}
       />
+      <NoAgentsBanner hasPendingJobs={jobs.some(j => j.status === 'pending')} />
       <div className='flex-1 min-h-0 overflow-auto'>
         <div className={'relative'}>
           {jobs.length > 0 ? (

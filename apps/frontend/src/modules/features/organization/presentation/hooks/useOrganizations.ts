@@ -3,15 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 
 export const useOrganizations = () => {
-  const { getOrganizations } = useDependencies().organization;
+  // Member-scoped: orgs the current user belongs to. Non-admins are denied the
+  // global listOrganizations, so the switcher must use listUserOrganizations.
+  const { getUserOrganizations } = useDependencies().organization;
 
   const {
     data: organizations,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => (await getOrganizations.execute()).unwrap(),
+    queryKey: ['organizations', 'mine'],
+    queryFn: async () => (await getUserOrganizations.execute()).unwrap(),
     staleTime: 1000 * 60 * 5, // 5 minutes TODO: change
   });
 

@@ -32,7 +32,12 @@ const calculateDuration = (startedAt?: string, finishedAt?: string): string => {
  * Display a detailed list of node executions when a job is expanded.
  * Each node can be expanded to show its logs inline (like GitHub Actions).
  */
-export const JobNodesList = ({ jobId, nodeExecutions, isExpanded, onCollapse }: JobNodesListProps) => {
+export const JobNodesList = ({
+  jobId,
+  nodeExecutions,
+  isExpanded,
+  onCollapse,
+}: JobNodesListProps) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const toggleNode = (nodeId: string) => {
@@ -56,11 +61,7 @@ export const JobNodesList = ({ jobId, nodeExecutions, isExpanded, onCollapse }: 
         >
           <div className='mt-4 px-4 pb-4 border-t pt-4'>
             <h4 className='text-sm font-semibold mb-3 flex items-center gap-2'>
-              <IconButton
-                icon={ChevronDown}
-                tooltip='Collapse'
-                onClick={onCollapse}
-              />
+              <IconButton icon={ChevronDown} tooltip='Collapse' onClick={onCollapse} />
               Node Executions ({nodeExecutions.length})
             </h4>
             <div className='space-y-1'>
@@ -79,7 +80,10 @@ export const JobNodesList = ({ jobId, nodeExecutions, isExpanded, onCollapse }: 
                         e.stopPropagation();
                         toggleNode(nodeId);
                       }}
-                      className='w-full flex items-center justify-between p-3 h-auto bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer rounded-none'
+                      // hover:scale-100 neutralizes the Button base's
+                      // hover:scale-108 — a zoom reads fine on small buttons
+                      // but is jarring on a full-width row.
+                      className='w-full flex items-center justify-between p-3 h-auto bg-slate-50 hover:bg-slate-100 hover:scale-100 transition-colors cursor-pointer rounded-none'
                     >
                       <div className='flex items-center gap-3'>
                         {isNodeExpanded ? (

@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@shadcn';
 import { ArrowLeft } from 'lucide-react';
 
@@ -14,6 +15,7 @@ export const BackButton = ({
   className = '',
   ...props
 }: BackButtonProps) => {
+  const navigate = useNavigate();
   const buttonClassName = iconOnly
     ? `h-8 w-8 ${className}`.trim()
     : `flex items-center gap-2 ${className}`.trim();
@@ -21,6 +23,7 @@ export const BackButton = ({
   return (
     <Button
       {...props}
+      onClick={props.onClick ?? (() => navigate(-1))}
       variant={props.variant ?? 'ghost'}
       size={iconOnly ? 'icon' : props.size}
       className={buttonClassName}

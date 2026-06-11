@@ -33,14 +33,14 @@ const useNavSections = (): NavSectionModel[] => {
           icon: WorkflowIcon,
         },
         {
+          title: 'Agents',
+          url: `${prefix}/agents`,
+          icon: HardDriveIcon,
+        },
+        {
           title: 'Marketplace',
           url: `${prefix}/marketplace`,
           icon: ShoppingCartIcon,
-        },
-        {
-          title: 'Workers',
-          url: `${prefix}/workers`,
-          icon: HardDriveIcon,
         },
       ],
     },

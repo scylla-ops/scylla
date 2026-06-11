@@ -19,6 +19,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
+import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 export const Layout = () => {
   const { organizations, isLoading } = useOrganizations();
@@ -77,10 +78,10 @@ export const Layout = () => {
                       createOrganization.mutate(
                         { name, description: description || '' },
                         {
-                          onSuccess: (data) => {
-                            const orgId = data?.organizationId ?? '';
+                          onSuccess: data => {
+                            const orgId = idValue(data?.organizationId);
                             setOrganization(orgId, name);
-                            navigate(`/${slugifyOrgName(name)}/users/me`);
+                            void navigate(`/${slugifyOrgName(name)}/users/me`);
                           },
                         },
                       );
@@ -101,7 +102,7 @@ export const Layout = () => {
       <AppSidebar />
       <SidebarInset className='flex flex-col flex-1 min-w-0 border border-sidebar-border bg-background overflow-hidden'>
         <TopBar />
-        <div className='flex-1 min-h-0 overflow-hidden'>
+        <div className='p-4 flex-1 min-h-0 overflow-hidden'>
           <AnimatedOutlet />
         </div>
       </SidebarInset>

@@ -1,0 +1,42 @@
+[package]
+name = "scylla-control-plane"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "scylla-control-plane"
+path = "src/main.rs"
+
+[features]
+default = []
+# Build the SaaS edition: `cargo build -p scylla-control-plane --features saas`.
+saas = ["scylla-api/saas", "scylla-core/saas"]
+signup = ["scylla-api/signup", "scylla-core/signup"]
+metering = ["scylla-api/metering", "scylla-core/metering"]
+agent-org-scope = ["scylla-api/agent-org-scope", "scylla-core/agent-org-scope"]
+mail = ["scylla-api/mail", "scylla-core/mail"]
+invitations = ["scylla-api/invitations", "scylla-core/invitations"]
+oauth-github = ["scylla-api/oauth-github", "scylla-core/oauth-github"]
+
+[dependencies]
+# workspace subsystems composed in-process
+scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
+scylla-api = { path = "../scylla-api" }
+
+# async runtime + cancellation
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+
+# config + cli + tracing
+serde = { workspace = true }
+toml = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# error
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

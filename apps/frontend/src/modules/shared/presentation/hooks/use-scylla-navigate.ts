@@ -18,40 +18,39 @@ export const useScyllaNavigate = () => {
   const goToSubRoute = (subPath: string, options = {}) => {
     const base = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
     const cleanSubPath = subPath.startsWith('/') ? subPath.slice(1) : subPath;
-
-    navigate(`${base}/${cleanSubPath}`, options);
+    void navigate(`${base}/${cleanSubPath}`, options);
   };
 
   const goToProject = (project: Project) => {
-    navigate(`${getOrgPrefix()}/projects/${project.id}`);
+    void navigate(`${getOrgPrefix()}/projects/${project.id}`);
     setProject(project.id, project.name);
   };
 
   const goToCreatePipeline = () => {
-    navigate(`${getOrgPrefix()}/projects/${useContextStore.getState().project.id}/create`);
+    void navigate(`${getOrgPrefix()}/projects/${useContextStore.getState().project.id}/create`);
   };
 
   const goToEditPipeline = (id: string, name: string) => {
-    navigate(`${getOrgPrefix()}/projects/${useContextStore.getState().project.id}/edit/${id}`);
+    void navigate(`${getOrgPrefix()}/projects/${useContextStore.getState().project.id}/edit/${id}`);
     setPipeline(id, name);
   };
 
   const goToJobs = (pipeline: PipelineIdentity) => {
     const projectId = useContextStore.getState().project.id;
-    navigate(`${getOrgPrefix()}/projects/${projectId}/pipelines/${pipeline.id}/jobs`);
+    void navigate(`${getOrgPrefix()}/projects/${projectId}/pipelines/${pipeline.id}/jobs`);
     setPipeline(pipeline.id, pipeline.name);
   };
 
   const goToUserSettings = (userId?: string) => {
-    navigate(`${getOrgPrefix()}/users/${userId || 'me'}`, { replace: true });
+    void navigate(`${getOrgPrefix()}/users/${userId || 'me'}`, { replace: true });
   };
 
-  const goToWorkerDetails = (workerId: string) => {
-    navigate(`${getOrgPrefix()}/workers/${workerId}`);
+  const goToAgentDetails = (agentId: string) => {
+    void navigate(`${getOrgPrefix()}/agents/${agentId}`);
   };
 
   const goToOrgRoute = (path: string) => {
-    navigate(`${getOrgPrefix()}${path.startsWith('/') ? path : `/${path}`}`);
+    void navigate(`${getOrgPrefix()}${path.startsWith('/') ? path : `/${path}`}`);
   };
 
   return {
@@ -61,8 +60,8 @@ export const useScyllaNavigate = () => {
     goToSubRoute,
     goToCreatePipeline,
     goToJobs,
-    goToWorkerDetails,
-    goBack: () => navigate(-1),
+    goToAgentDetails,
+    goBack: () => void navigate(-1),
     goToProject,
     goToOrgRoute,
   };

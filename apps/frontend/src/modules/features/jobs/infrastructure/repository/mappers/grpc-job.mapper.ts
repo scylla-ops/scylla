@@ -14,25 +14,28 @@ import type {
 import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { JobLogsTailHandleRepo } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
+import { idValue, timestampToIso, timestampToIsoOpt } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class GrpcJobMapper {
   private static nodeExecutionToDomain(node: JobNodeResponse): JobNodeExecution {
     return {
-      id: node.nodeId,
+      id: idValue(node.nodeId),
       state: node.state,
-      startedAt: node.startedAt,
-      finishedAt: node.finishedAt,
+      startedAt: timestampToIsoOpt(node.startedAt),
+      finishedAt: timestampToIsoOpt(node.finishedAt),
     };
   }
 
   static toDomain(job: JobResponse): Job {
     return {
-      id: job.jobId,
-      pipelineId: job.pipelineId,
+      id: idValue(job.jobId),
+      pipelineId: idValue(job.pipelineId),
       status: job.status,
       nodeExecutions: job.nodeExecutions.map(GrpcJobMapper.nodeExecutionToDomain),
-      createdAt: job.createdAt,
-      updatedAt: job.updatedAt,
+      createdAt: timestampToIso(job.createdAt),
+      updatedAt: timestampToIso(job.updatedAt),
+      startedAt: timestampToIsoOpt(job.startedAt),
+      finishedAt: timestampToIsoOpt(job.finishedAt),
     };
   }
 
@@ -45,12 +48,12 @@ export class GrpcJobMapper {
 
   static logEntryToDomain(entry: JobLogEntry): JobLog {
     return {
-      id: entry.id,
-      jobId: entry.jobId,
-      nodeId: entry.nodeId,
+      id: idValue(entry.id),
+      jobId: idValue(entry.jobId),
+      nodeId: idValue(entry.nodeId),
       stream: entry.stream,
       line: entry.line,
-      timestamp: entry.timestamp,
+      timestamp: timestampToIso(entry.timestamp),
     };
   }
 

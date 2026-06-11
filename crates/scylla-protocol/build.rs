@@ -7,14 +7,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let protos = [
         "common.proto",
+        "config.proto",
         "user.proto",
         "auth.proto",
+        "registration.proto",
+        "invitation.proto",
+        "oauth.proto",
         "organization.proto",
         "project.proto",
         "permission.proto",
         "pipeline.proto",
+        "secret.proto",
         "job.proto",
+        "app.proto",
         "agent.proto",
+        "agent_admin.proto",
     ]
     .map(|f| proto_dir.join(f));
 

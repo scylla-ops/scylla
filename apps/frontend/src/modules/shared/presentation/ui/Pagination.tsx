@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import type { PaginationInfo } from '@/modules/shared/domain/types/Pagination.ts';
+import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
 import {
   Pagination as PaginationRoot,
   PaginationContent,
@@ -78,7 +78,9 @@ export const Pagination = ({ paginationInfo, onPageChange, className }: Paginati
       </PaginationRoot>
 
       <p className='text-sm text-muted-foreground'>
-        <Trans>Showing {start}-{end} of {totalCount}</Trans>
+        <Trans>
+          Showing {start}-{end} of {totalCount}
+        </Trans>
       </p>
     </div>
   );

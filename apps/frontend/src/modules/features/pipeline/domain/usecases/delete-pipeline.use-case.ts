@@ -1,4 +1,4 @@
-import type { PipelineRepository } from '@/modules/features/pipeline-dashboard/domain/repository/pipeline.repository.ts';
+import type { PipelineRepository } from '@/modules/features/pipeline/domain/repository/pipeline.repository.ts';
 
 export class DeletePipelineUseCase {
   constructor(private readonly _repository: PipelineRepository) {}

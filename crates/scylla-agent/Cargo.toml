@@ -4,23 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# broker
-hermes-broker-proto = { workspace = true }
-hermes-broker-client = { workspace = true }
-
-# domain types (shared broker messages, no surrealdb)
-scylla-core = { workspace = true, default-features = false, features = ["jobs", "agents"] }
+# domain types (no db backend) + gRPC contract
+scylla-core = { workspace = true, default-features = false }
+scylla-protocol = { workspace = true }
 
 # async
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
+tokio-util = { workspace = true }
 
 # grpc
 tonic = { workspace = true }
-
-# serialization
-serde = { workspace = true }
-serde_json = { workspace = true }
 
 # cli
 clap = { workspace = true, features = ["env"] }
@@ -36,6 +30,11 @@ tracing-subscriber = { workspace = true }
 # time
 chrono = { workspace = true }
 
-# identity
-ulid = { workspace = true }
-hostname = "0.4"
+# unix process-group signalling (kill the shell's children, not just the shell).
+# Agents run on Linux; this is absent on other targets where the kill code is
+# compiled out.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[lints]
+workspace = true

@@ -1,42 +1,71 @@
-#[cfg(feature = "surrealdb")]
+#[cfg(feature = "postgres")]
 pub mod db;
 pub mod messaging;
-#[cfg(feature = "surrealdb")]
+#[cfg(feature = "postgres")]
 pub mod persistence;
 pub mod services;
 
-#[cfg(test)]
-pub(crate) mod test_utils;
+#[cfg(feature = "postgres")]
+pub use db::{DatabaseConfig, close_db, init_db};
 
-#[cfg(feature = "surrealdb")]
-pub use db::{DatabaseConfig, Db, close_db, init_db};
+pub use messaging::{InMemoryAgentRegistry, InMemoryJobLogStream};
 
-#[cfg(feature = "jobs")]
-pub use messaging::HermesJobLogStream;
+pub use services::ChaChaSecretCipher;
 
-#[cfg(all(feature = "surrealdb", feature = "agents"))]
-pub use persistence::surrealdb::SurrealAgentRepository;
-#[cfg(all(feature = "surrealdb", feature = "jobs"))]
-pub use persistence::surrealdb::SurrealJobLogRepository;
-#[cfg(all(feature = "surrealdb", feature = "jobs"))]
-pub use persistence::surrealdb::SurrealJobRepository;
-#[cfg(all(feature = "surrealdb", feature = "organizations"))]
-pub use persistence::surrealdb::SurrealOrganizationRepository;
-#[cfg(all(feature = "surrealdb", feature = "pipelines"))]
-pub use persistence::surrealdb::SurrealPipelineRepository;
-#[cfg(all(feature = "surrealdb", feature = "projects"))]
-pub use persistence::surrealdb::SurrealProjectRepository;
-#[cfg(all(feature = "surrealdb", feature = "auth"))]
-pub use persistence::surrealdb::SurrealSessionRepository;
-#[cfg(all(feature = "surrealdb", feature = "organizations"))]
-pub use persistence::surrealdb::SurrealUserOrganizationRepository;
-#[cfg(all(feature = "surrealdb", feature = "projects"))]
-pub use persistence::surrealdb::SurrealUserProjectRepository;
-#[cfg(all(feature = "surrealdb", feature = "users"))]
-pub use persistence::surrealdb::SurrealUserRepository;
-
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAgentRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAppCredentialRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAppRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAppTokenRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAuditLog;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgAuthzEntityProvider;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgGrantRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgJobLogRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgJobRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgOrganizationRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgPipelineRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgPolicyRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgProjectRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgSecretRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgSessionRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgSignupRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgUserOrganizationRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgUserProjectRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgUserRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::{PgDefaultRoleBindingRepository, PgRoleRepository};
+#[cfg(feature = "postgres")]
 #[cfg(feature = "hash")]
 pub use services::Argon2HashService;
 
 #[cfg(feature = "permission")]
-pub use services::CasbinPermissionService;
+pub use services::CedarPermissionService;
+
+#[cfg(feature = "mail")]
+pub use services::LettreMailer;
+
+#[cfg(feature = "invitations")]
+pub use persistence::postgres::PgInvitationRepository;
+
+#[cfg(feature = "oauth-github")]
+pub use persistence::postgres::PgOAuthIdentityRepository;
+#[cfg(feature = "oauth-github")]
+pub use services::GitHubOAuthProvider;

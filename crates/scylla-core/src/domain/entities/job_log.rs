@@ -1,13 +1,10 @@
+use crate::domain::clock;
 use crate::domain::entities::{JobId, JobLogId};
 use crate::domain::value_objects::job::LogStream;
 use crate::domain::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
 
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
-
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct JobLog {
     id: JobLogId,
     job_id: JobId,
@@ -19,6 +16,27 @@ pub struct JobLog {
 }
 
 impl JobLog {
+    #[must_use]
+    pub fn from_persistence(
+        id: JobLogId,
+        job_id: JobId,
+        node_id: NodeId,
+        stream: LogStream,
+        line: String,
+        timestamp: DateTime<Utc>,
+        created_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            job_id,
+            node_id,
+            stream,
+            line,
+            timestamp,
+            created_at,
+        }
+    }
+
     #[must_use]
     pub fn new(
         job_id: JobId,
@@ -34,7 +52,7 @@ impl JobLog {
             stream,
             line,
             timestamp,
-            created_at: Utc::now(),
+            created_at: clock::now(),
         }
     }
 

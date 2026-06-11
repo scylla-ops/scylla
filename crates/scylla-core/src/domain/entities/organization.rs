@@ -1,13 +1,11 @@
+use crate::domain::clock;
 use crate::domain::entities::ids::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use chrono::{DateTime, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// Organization domain entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct Organization {
     id: OrganizationId,
     name: OrganizationName,
@@ -18,11 +16,30 @@ pub struct Organization {
 }
 
 impl Organization {
+    #[must_use]
+    pub fn from_persistence(
+        id: OrganizationId,
+        name: OrganizationName,
+        description: Option<OrganizationDescription>,
+        is_active: bool,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            description,
+            is_active,
+            created_at,
+            updated_at,
+        }
+    }
+
     pub fn create(
         name: OrganizationName,
         description: Option<OrganizationDescription>,
     ) -> DomainResult<Self> {
-        let now = Utc::now();
+        let now = clock::now();
         Ok(Self {
             id: OrganizationId::generate(),
             name,
@@ -35,7 +52,7 @@ impl Organization {
 
     pub fn update_name(&mut self, name: OrganizationName) -> DomainResult<()> {
         self.name = name;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -44,13 +61,13 @@ impl Organization {
         description: Option<OrganizationDescription>,
     ) -> DomainResult<()> {
         self.description = description;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
     pub fn toggle_active(&mut self) -> DomainResult<()> {
         self.is_active = !self.is_active;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -61,7 +78,7 @@ impl Organization {
             ));
         }
         self.is_active = false;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -70,7 +87,7 @@ impl Organization {
             return Err(DomainError::business_rule("Organization is already active"));
         }
         self.is_active = true;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 

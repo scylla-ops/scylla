@@ -10,6 +10,7 @@ import {
 } from '@shared/presentation/models/scylla-form.model.ts';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -31,7 +32,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       type: FormItemType.Select,
       options: (organizations ?? []).map(org => ({
         label: org.name,
-        value: org.organizationId,
+        value: idValue(org.organizationId),
       })),
     },
     {
@@ -60,7 +61,9 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       return;
     }
 
-    const selectedOrganization = organizations?.find(org => org.organizationId === organizationId);
+    const selectedOrganization = organizations?.find(
+      org => idValue(org.organizationId) === organizationId,
+    );
 
     createProject.mutate(
       { name, organizationId, description: description?.trim() || undefined },

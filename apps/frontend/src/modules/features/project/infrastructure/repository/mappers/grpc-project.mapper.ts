@@ -4,11 +4,12 @@ import type {
 } from '@/modules/features/project/domain/models/project.model.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
 import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
+import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class GrpcProjectMapper {
   static toDomain(grpcProject: ProjectResponse): Project {
     return {
-      id: grpcProject.projectId,
+      id: idValue(grpcProject.projectId),
       name: grpcProject.name,
       description: grpcProject.description,
     };

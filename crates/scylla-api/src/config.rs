@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use crate::error::ConfigError;
 use scylla_core::infrastructure::DatabaseConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -18,10 +18,60 @@ pub struct CoreConfig {
     pub cors: CorsConfig,
 
     #[serde(default)]
-    pub broker: BrokerConfig,
+    pub bootstrap: Option<BootstrapConfig>,
 
     #[serde(default)]
-    pub bootstrap: Option<BootstrapConfig>,
+    pub metering: MeteringConfig,
+
+    /// SMTP settings for the `mail` feature. When absent, a no-op mailer is used.
+    #[serde(default)]
+    pub mail: Option<MailConfig>,
+
+    /// OAuth providers for the `oauth-github` feature.
+    #[serde(default)]
+    pub oauth: OauthConfig,
+
+    /// Project-secret encryption. When absent, the secret store is disabled and
+    /// secret operations error with a clear message.
+    #[serde(default)]
+    pub secrets: Option<SecretsConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SecretsConfig {
+    /// Master key for project-secret AEAD encryption, as 64 hex chars (32 bytes).
+    /// Keep it out of source control in real deployments (inject at deploy time).
+    pub master_key: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct OauthConfig {
+    /// GitHub OAuth app credentials. When absent, the OAuth service is not
+    /// registered even in an `oauth-github` build.
+    #[serde(default)]
+    pub github: Option<GitHubOauthConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GitHubOauthConfig {
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_uri: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MailConfig {
+    pub host: String,
+    #[serde(default = "default_smtp_port")]
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    /// Sender, e.g. `"Scylla <no-reply@scylla.dev>"` or `"no-reply@scylla.dev"`.
+    pub from: String,
+}
+
+fn default_smtp_port() -> u16 {
+    465
 }
 
 #[cfg(feature = "grpc")]
@@ -84,6 +134,10 @@ pub struct BootstrapConfig {
     pub username: String,
 
     pub password: String,
+
+    /// Optional email for the bootstrap admin, enabling email login for it.
+    #[serde(default)]
+    pub email: Option<String>,
 }
 
 impl Default for BootstrapConfig {
@@ -91,19 +145,27 @@ impl Default for BootstrapConfig {
         Self {
             username: "admin".to_string(),
             password: "admin123".to_string(),
+            email: None,
         }
     }
 }
 
+/// Per-organization quotas (SaaS `metering` feature). Parsed in every edition;
+/// only read when the server is built with `metering`.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct BrokerConfig {
-    pub url: String,
+pub struct MeteringConfig {
+    #[serde(default = "default_max_projects_per_org")]
+    pub max_projects_per_org: u64,
 }
 
-impl Default for BrokerConfig {
+fn default_max_projects_per_org() -> u64 {
+    100
+}
+
+impl Default for MeteringConfig {
     fn default() -> Self {
         Self {
-            url: "http://127.0.0.1:50052".to_string(),
+            max_projects_per_org: default_max_projects_per_org(),
         }
     }
 }
@@ -134,12 +196,13 @@ impl Default for CorsConfig {
 }
 
 impl CoreConfig {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let content = fs::read_to_string(&path)
-            .with_context(|| format!("Failed to read config file: {:?}", path.as_ref()))?;
-        let config: CoreConfig =
-            toml::from_str(&content).with_context(|| "Failed to parse TOML config")?;
-        Ok(config)
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
+        let path_ref = path.as_ref();
+        let content = fs::read_to_string(path_ref).map_err(|source| ConfigError::ReadFile {
+            path: path_ref.to_path_buf(),
+            source,
+        })?;
+        Ok(toml::from_str(&content)?)
     }
 
     pub fn print_example() {

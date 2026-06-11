@@ -1,12 +1,7 @@
 import type { Node, Edge, MarkerType } from 'reactflow';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
-export interface PipelineNodeData {
-  id: string;
-  command: string;
-  args: string[];
-  deps: string[];
-}
+export type PipelineNodeData = PipelineStep;
 
 export interface StartNodeData {
   name: string;
@@ -90,9 +85,7 @@ export function sanitizeSteps(steps: PipelineStep[]): PipelineStep[] {
 
   return deduped.map(s => ({
     ...s,
-    deps: s.deps
-      .map(d => idMap.get(d) ?? d)
-      .filter(d => d !== s.id && validIds.has(d)),
+    deps: s.deps.map(d => idMap.get(d) ?? d).filter(d => d !== s.id && validIds.has(d)),
   }));
 }
 
@@ -133,12 +126,7 @@ export function stepsToFlow(
         x: START_NODE_OFFSET + depth * (NODE_WIDTH + HORIZONTAL_GAP),
         y: indexInGroup * (NODE_HEIGHT + VERTICAL_GAP),
       },
-      data: {
-        id: step.id,
-        command: step.command,
-        args: step.args,
-        deps: step.deps,
-      },
+      data: step,
     };
   });
 
@@ -174,12 +162,16 @@ export function flowToSteps(nodes: Node[], edges: Edge[]): PipelineStep[] {
       const incomingDeps = edges
         .filter(e => e.target === node.id && e.source !== START_NODE_ID)
         .map(e => e.source);
-      return {
+      const base = {
         id: data.id,
         deps: incomingDeps,
-        command: data.command,
-        args: data.args,
+        workingDir: data.workingDir,
+        env: data.env,
       };
+      if (data.kind === 'script') {
+        return { ...base, kind: 'script', script: data.script, shell: data.shell };
+      }
+      return { ...base, kind: 'exec', command: data.command, args: data.args };
     });
 }
 
@@ -187,7 +179,11 @@ export function flowToSteps(nodes: Node[], edges: Edge[]): PipelineStep[] {
  * Generate a unique node ID, avoiding collisions with existing IDs.
  * Optionally exclude one ID (useful when renaming a node).
  */
-export function generateUniqueNodeId(desired: string, existingIds: Set<string>, excludeId?: string): string {
+export function generateUniqueNodeId(
+  desired: string,
+  existingIds: Set<string>,
+  excludeId?: string,
+): string {
   const ids = new Set(existingIds);
   if (excludeId) ids.delete(excludeId);
   if (!ids.has(desired)) return desired;

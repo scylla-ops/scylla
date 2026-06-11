@@ -19,6 +19,9 @@ pub enum DomainError {
     #[error("Conflict: {0}")]
     Conflict(String),
 
+    #[error("Quota exceeded: {0}")]
+    QuotaExceeded(String),
+
     #[error("Infrastructure error: {0}")]
     Infrastructure(String),
 
@@ -57,6 +60,10 @@ impl DomainError {
         Self::Conflict(message.into())
     }
 
+    pub fn quota_exceeded(message: impl Into<String>) -> Self {
+        Self::QuotaExceeded(message.into())
+    }
+
     pub fn infrastructure(message: impl Into<String>) -> Self {
         Self::Infrastructure(message.into())
     }
@@ -64,11 +71,12 @@ impl DomainError {
     pub fn internal(message: impl Into<String>) -> Self {
         Self::Internal(message.into())
     }
-}
 
-// Conversion from anyhow::Error to DomainError for infrastructure layer
-impl From<anyhow::Error> for DomainError {
-    fn from(err: anyhow::Error) -> Self {
-        DomainError::Infrastructure(err.to_string())
+    /// True for [`DomainError::NotFound`]. Lets callers distinguish "row absent"
+    /// (often a normal control-flow branch — e.g. try the next auth principal)
+    /// from genuine failures (infrastructure, conflict) that must be surfaced.
+    #[must_use]
+    pub fn is_not_found(&self) -> bool {
+        matches!(self, Self::NotFound { .. })
     }
 }

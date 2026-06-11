@@ -13,9 +13,20 @@ grpc = [
     "dep:scylla-protocol",
 ]
 
+# ── SaaS edition gating ────────────────────────────────────────────────
+# Mirrors scylla-core's taxonomy and forwards each granular feature down. The
+# api-level flags gate conditional gRPC service registration in `run_grpc`.
+saas = ["signup", "metering", "agent-org-scope", "mail", "invitations", "oauth-github"]
+signup = ["scylla-core/signup"]
+metering = ["scylla-core/metering"]
+agent-org-scope = ["scylla-core/agent-org-scope"]
+mail = ["scylla-core/mail"]
+invitations = ["scylla-core/invitations"]
+oauth-github = ["scylla-core/oauth-github"]
+
 [dependencies]
 # shared
-scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
 tokio.workspace = true
 async-trait.workspace = true
 tower.workspace = true
@@ -23,24 +34,18 @@ tower-http.workspace = true
 http.workspace = true
 serde.workspace = true
 toml.workspace = true
-clap.workspace = true
-anyhow.workspace = true
 chrono.workspace = true
+prost-types.workspace = true
 tracing.workspace = true
-tracing-subscriber.workspace = true
 derive_more.workspace = true
-surreal-casbin-adapter.workspace = true
-log.workspace = true
+thiserror.workspace = true
 
-# broker
-hermes-broker-client = { workspace = true }
 tokio-stream = { workspace = true }
 futures-util.workspace = true
 serde_json.workspace = true
 
-# database (for live queries in handlers)
-surrealdb.workspace = true
-surrealdb-types.workspace = true
+# database
+sqlx.workspace = true
 
 # grpc-only (optional)
 tonic = { workspace = true, optional = true }
@@ -55,5 +60,7 @@ tonic = { workspace = true }
 scylla-protocol = { workspace = true }
 tokio-stream = { workspace = true }
 tonic-async-interceptor = { workspace = true }
-surreal-casbin-adapter = { workspace = true }
-scylla-core = { workspace = true, features = ["surrealdb", "users", "auth", "organizations", "projects", "pipelines", "jobs", "agents", "hash", "permission"] }
+scylla-core = { workspace = true, features = ["postgres", "hash", "permission", "test-utils"] }
+
+[lints]
+workspace = true

@@ -1,16 +1,16 @@
 use crate::domain::errors::{DomainError, DomainResult};
+use serde::{Deserialize, Serialize};
 use std::fmt;
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum NodeState {
     Pending,
     Running,
     Completed,
     Failed,
     Cancelled,
+    Skipped,
 }
 
 impl NodeState {
@@ -24,6 +24,7 @@ impl NodeState {
             "completed" => Ok(Self::Completed),
             "failed" => Ok(Self::Failed),
             "cancelled" => Ok(Self::Cancelled),
+            "skipped" => Ok(Self::Skipped),
             _ => Err(DomainError::validation(format!(
                 "Invalid node execution state: {value}"
             ))),
@@ -38,12 +39,16 @@ impl NodeState {
             Self::Completed => "completed",
             Self::Failed => "failed",
             Self::Cancelled => "cancelled",
+            Self::Skipped => "skipped",
         }
     }
 
     #[must_use]
     pub fn is_terminal(&self) -> bool {
-        matches!(self, Self::Completed | Self::Failed | Self::Cancelled)
+        matches!(
+            self,
+            Self::Completed | Self::Failed | Self::Cancelled | Self::Skipped
+        )
     }
 }
 

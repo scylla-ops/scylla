@@ -1,16 +1,17 @@
+use crate::domain::clock;
 use crate::domain::entities::UserId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::user::{PasswordHash, Username};
+use crate::domain::value_objects::user::{Email, PasswordHash, Username};
 use chrono::{DateTime, Utc};
-#[cfg(feature = "surrealdb")]
-use surrealdb_types::SurrealValue;
 
 /// User domain entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "surrealdb", derive(SurrealValue))]
 pub struct User {
     id: UserId,
     username: Username,
+    /// Optional so legacy/username-only accounts remain valid; required at
+    /// signup and used for email login, mail and OAuth linking.
+    email: Option<Email>,
     password_hash: PasswordHash,
     is_active: bool,
     created_at: DateTime<Utc>,
@@ -18,12 +19,36 @@ pub struct User {
 }
 
 impl User {
+    /// Reconstitute a `User` from persistent storage. Skips creation-time
+    /// invariants — the caller is the trusted repository layer.
     #[must_use]
-    pub fn create(username: Username, password_hash: PasswordHash) -> Self {
-        let now = Utc::now();
+    pub fn from_persistence(
+        id: UserId,
+        username: Username,
+        email: Option<Email>,
+        password_hash: PasswordHash,
+        is_active: bool,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            username,
+            email,
+            password_hash,
+            is_active,
+            created_at,
+            updated_at,
+        }
+    }
+
+    #[must_use]
+    pub fn create(username: Username, email: Option<Email>, password_hash: PasswordHash) -> Self {
+        let now = clock::now();
         Self {
             id: UserId::generate(),
             username,
+            email,
             password_hash,
             is_active: true,
             created_at: now,
@@ -33,13 +58,18 @@ impl User {
 
     pub fn update_username(&mut self, username: Username) -> DomainResult<()> {
         self.username = username;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
+    }
+
+    pub fn set_email(&mut self, email: Option<Email>) {
+        self.email = email;
+        self.updated_at = clock::now();
     }
 
     pub fn update_password_hash(&mut self, password_hash: PasswordHash) {
         self.password_hash = password_hash;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
     }
 
     pub fn deactivate(&mut self) -> DomainResult<()> {
@@ -47,7 +77,7 @@ impl User {
             return Err(DomainError::business_rule("User is already inactive"));
         }
         self.is_active = false;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -56,7 +86,7 @@ impl User {
             return Err(DomainError::business_rule("User is already active"));
         }
         self.is_active = true;
-        self.updated_at = Utc::now();
+        self.updated_at = clock::now();
         Ok(())
     }
 
@@ -68,6 +98,11 @@ impl User {
     #[must_use]
     pub fn username(&self) -> &Username {
         &self.username
+    }
+
+    #[must_use]
+    pub fn email(&self) -> Option<&Email> {
+        self.email.as_ref()
     }
 
     #[must_use]

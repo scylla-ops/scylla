@@ -1,18 +1,19 @@
-import { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListUsersResponse, UserResponse, UpdateUserRequest } from '@/generated/user.ts';
 import { UserServiceClient } from '@/generated/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
-import { PermissionServiceClient } from '@/generated/permission.client.ts';
-import { Act, ResourceType, ScopeType } from '@/generated/permission.ts';
+import { GrantServiceClient } from '@/generated/permission.client.ts';
+import { Scope } from '@/generated/permission.ts';
+import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
 
 export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   private readonly _userClient: UserServiceClient;
-  private readonly _permissionsClient: PermissionServiceClient;
+  private readonly _grantClient: GrantServiceClient;
 
   constructor(transport: CoreGrpcTransport) {
     this._userClient = new UserServiceClient(transport.getTransport());
-    this._permissionsClient = new PermissionServiceClient(transport.getTransport());
+    this._grantClient = new GrantServiceClient(transport.getTransport());
   }
 
   public async getAll(): Promise<ScyllaResult<ListUsersResponse>> {
@@ -24,7 +25,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
   public async getById(userId: string): Promise<ScyllaResult<UserResponse>> {
     return ScyllaResult.tryAsync<UserResponse>(
-      async () => await this._userClient.getUser({ userId }).response,
+      async () => await this._userClient.getUser({ userId: wrapId(userId) }).response,
       'Error fetching user',
     );
   }
@@ -33,12 +34,14 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
     return ScyllaResult.tryAsync<UserResponse>(async () => {
       const user = await this._userClient.createUser({ username, password }).response;
 
-      // Temporary: grant all permissions to the new user until permissions system is finalized
-      await this._permissionsClient.addPolicy({
-        subject: user.userId,
-        scope: { type: ScopeType.SCOPE_ALL },
-        resource: { type: ResourceType.RESOURCE_ALL },
-        act: Act.ALL,
+      // Temporary: grant full access to the new user via a System-scoped
+      // `system-admin` grant until the permissions system is finalized (a grant
+      // on the System root confers control over the whole tenancy tree).
+      await this._grantClient.createGrant({
+        userId: user.userId,
+        role: 'system-admin',
+        scope: Scope.SYSTEM,
+        scopeId: '',
       }).response;
 
       return user;
@@ -54,7 +57,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
   public async delete(userId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync<void>(async () => {
-      await this._userClient.deleteUser({ userId }).response;
+      await this._userClient.deleteUser({ userId: wrapId(userId) }).response;
     }, 'Failed to delete user.');
   }
 }
