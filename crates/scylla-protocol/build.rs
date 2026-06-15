@@ -7,7 +7,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let protos = [
         "common.proto",
-        "config.proto",
         "user.proto",
         "auth.proto",
         "registration.proto",

@@ -18,11 +18,9 @@ pub mod audit;
 pub mod authz;
 pub mod cedar_policies;
 pub mod grants;
-#[cfg(feature = "invitations")]
 pub mod invitations;
 pub mod job_logs;
 pub mod jobs;
-#[cfg(feature = "oauth-github")]
 pub mod oauth_identities;
 pub mod organizations;
 pub mod pipelines;
@@ -45,11 +43,9 @@ pub use audit::PgAuditLog;
 pub use authz::PgAuthzEntityProvider;
 pub use cedar_policies::PgPolicyRepository;
 pub use grants::PgGrantRepository;
-#[cfg(feature = "invitations")]
 pub use invitations::PgInvitationRepository;
 pub use job_logs::PgJobLogRepository;
 pub use jobs::PgJobRepository;
-#[cfg(feature = "oauth-github")]
 pub use oauth_identities::PgOAuthIdentityRepository;
 pub use organizations::PgOrganizationRepository;
 pub use pipelines::PgPipelineRepository;

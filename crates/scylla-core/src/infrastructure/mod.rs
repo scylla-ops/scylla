@@ -59,13 +59,11 @@ pub use services::Argon2HashService;
 #[cfg(feature = "permission")]
 pub use services::CedarPermissionService;
 
-#[cfg(feature = "mail")]
 pub use services::LettreMailer;
 
-#[cfg(feature = "invitations")]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgInvitationRepository;
 
-#[cfg(feature = "oauth-github")]
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgOAuthIdentityRepository;
-#[cfg(feature = "oauth-github")]
 pub use services::GitHubOAuthProvider;
