@@ -1,6 +1,8 @@
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/presentation/utils/toast.ts';
+import { useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { JOBS_QUERY_KEY } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-jobs.ts';
 import { useAgents } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
@@ -13,6 +15,7 @@ export const useRunPipeline = () => {
   const { agents } = useAgents();
   const navigate = useNavigate();
   const orgName = useContextStore(state => state.organization.name);
+  const { i18n } = useLingui();
 
   return useMutation({
     mutationFn: async (pipelineId: string) => (await runPipeline.execute(pipelineId)).unwrap(),
@@ -21,14 +24,14 @@ export const useRunPipeline = () => {
       // But with no connected agent it won't start, so say it up front
       // instead of letting the user stare at a pending spinner.
       if (!agents.some(a => a.connected)) {
-        toast.warning('Job queued — no agent connected', {
+        toast.warning(i18n._(ToastMessages.PIPELINE_JOB_QUEUED_WARNING), {
           action: {
             label: 'Agents',
             onClick: () => void navigate(`${orgName ? `/${slugifyOrgName(orgName)}` : ''}/agents`),
           },
         });
       } else {
-        toast.success(`Pipeline ran`);
+        toast.success(i18n._(ToastMessages.PIPELINE_RUN));
       }
       void queryClient.invalidateQueries({ queryKey: JOBS_QUERY_KEY(pipelineId), exact: true });
     },

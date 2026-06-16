@@ -28,6 +28,10 @@ msgstr "{0} credentials"
 msgid "{0} is ready"
 msgstr "{0} is ready"
 
+#: src/modules/shared/utils/toast-messages.ts:44
+msgid "Agent id copied"
+msgstr "Agent id copied"
+
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:101
 #~ msgid "Agent secret"
 #~ msgstr "Agent secret"
@@ -39,6 +43,10 @@ msgstr "An error occurred"
 #: src/modules/shared/utils/scylla-result.ts:68
 msgid "An unexpected error occurred"
 msgstr "An unexpected error occurred"
+
+#: src/modules/shared/utils/toast-messages.ts:48
+msgid "App id copied"
+msgstr "App id copied"
 
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:101
 #~ msgid "App secret"
@@ -53,7 +61,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:77
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:75
 msgid "Clear"
 msgstr "Clear"
 
@@ -65,6 +73,10 @@ msgstr "Clear"
 msgid "Continue"
 msgstr "Continue"
 
+#: src/modules/shared/utils/toast-messages.ts:55
+msgid "Copied"
+msgstr "Copied"
+
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:92
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copy the secret below — it is shown only once."
@@ -72,6 +84,10 @@ msgstr "Copy the secret below — it is shown only once."
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:106
 msgid "Copy your secret"
 msgstr "Copy your secret"
+
+#: src/modules/shared/utils/toast-messages.ts:45
+msgid "Could not copy — select the id manually"
+msgstr "Could not copy — select the id manually"
 
 #: src/modules/shared/presentation/ui/FormDialog.tsx:66
 msgid "Create"
@@ -81,7 +97,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:94
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:92
 msgid "Delete"
 msgstr "Delete"
 
@@ -117,9 +133,13 @@ msgstr "From source"
 #~ msgid "I've copied it — close"
 #~ msgstr "I've copied it — close"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:66
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:64
 msgid "in total"
 msgstr "in total"
+
+#: src/modules/shared/utils/toast-messages.ts:41
+msgid "Job queued — no agent connected"
+msgstr "Job queued — no agent connected"
 
 #: src/modules/layout/presentation/ui/NavUser.tsx:100
 msgid "Log out"
@@ -129,7 +149,7 @@ msgstr "Log out"
 #~ msgid "Main"
 #~ msgstr "Main"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:100
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:98
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -146,13 +166,57 @@ msgstr "No agent connected — queued jobs are waiting for one."
 msgid "Organization"
 msgstr "Organization"
 
+#: src/modules/shared/utils/toast-messages.ts:26
+msgid "Organization created"
+msgstr "Organization created"
+
+#: src/modules/shared/utils/toast-messages.ts:27
+msgid "Organization deleted"
+msgstr "Organization deleted"
+
 #: src/modules/layout/presentation/ui/Layout.tsx:15
 #~ msgid "Organization name"
 #~ msgstr "Organization name"
 
+#: src/modules/shared/utils/toast-messages.ts:28
+msgid "Organization updated"
+msgstr "Organization updated"
+
 #: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:82
 #~ msgid "Paste it in a terminal: the worker starts in the foreground, its logs show up right there, and Ctrl-C stops it. host.docker.internal is simply this machine seen from inside Docker (on Linux, use localhost with --network host)."
 #~ msgstr "Paste it in a terminal: the worker starts in the foreground, its logs show up right there, and Ctrl-C stops it. host.docker.internal is simply this machine seen from inside Docker (on Linux, use localhost with --network host)."
+
+#: src/modules/shared/utils/toast-messages.ts:37
+msgid "Pipeline created"
+msgstr "Pipeline created"
+
+#: src/modules/shared/utils/toast-messages.ts:38
+msgid "Pipeline deleted"
+msgstr "Pipeline deleted"
+
+#: src/modules/shared/utils/toast-messages.ts:39
+msgid "Pipeline edited"
+msgstr "Pipeline edited"
+
+#: src/modules/shared/utils/toast-messages.ts:40
+msgid "Pipeline ran"
+msgstr "Pipeline ran"
+
+#: src/modules/shared/utils/toast-messages.ts:31
+msgid "Project created"
+msgstr "Project created"
+
+#: src/modules/shared/utils/toast-messages.ts:32
+msgid "Project deleted"
+msgstr "Project deleted"
+
+#: src/modules/shared/utils/toast-messages.ts:34
+msgid "Project name is required and you must select an organization."
+msgstr "Project name is required and you must select an organization."
+
+#: src/modules/shared/utils/toast-messages.ts:33
+msgid "Project updated"
+msgstr "Project updated"
 
 #: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:116
 msgid "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
@@ -201,6 +265,14 @@ msgstr "Run from a repo checkout"
 #: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:95
 msgid "Run with Docker"
 msgstr "Run with Docker"
+
+#: src/modules/shared/utils/toast-messages.ts:51
+msgid "Secret created"
+msgstr "Secret created"
+
+#: src/modules/shared/utils/toast-messages.ts:52
+msgid "Secret deleted"
+msgstr "Secret deleted"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:72
 msgid "Select Organization"
@@ -258,6 +330,22 @@ msgstr "Two steps and it picks up jobs."
 msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
 msgstr "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
 
+#: src/modules/shared/utils/toast-messages.ts:19
+msgid "User created"
+msgstr "User created"
+
+#: src/modules/shared/utils/toast-messages.ts:20
+msgid "User deleted"
+msgstr "User deleted"
+
+#: src/modules/shared/utils/toast-messages.ts:21
+msgid "User information updated"
+msgstr "User information updated"
+
+#: src/modules/shared/utils/toast-messages.ts:23
+msgid "Username and password are required."
+msgstr "Username and password are required."
+
 #: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:76
 #~ msgid "We don't store this. Copy it now — closing this dialog deletes it forever."
 #~ msgstr "We don't store this. Copy it now — closing this dialog deletes it forever."
@@ -265,6 +353,10 @@ msgstr "Use these credentials (id + secret) to authenticate an automation agains
 #: src/modules/layout/presentation/ui/Layout.tsx:65
 msgid "Welcome to Scylla!"
 msgstr "Welcome to Scylla!"
+
+#: src/modules/shared/utils/toast-messages.ts:22
+msgid "You cannot delete your own account."
+msgstr "You cannot delete your own account."
 
 #: src/modules/shared/utils/scylla-result.ts:66
 msgid "You don't have permission to perform this action"
