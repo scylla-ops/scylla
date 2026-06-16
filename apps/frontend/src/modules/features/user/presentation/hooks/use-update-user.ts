@@ -12,7 +12,7 @@ export const useUpdateUser = () => {
       return result.unwrap();
     },
     onSuccess: (_, variables) => {
-      toast.success('User information updated successfully');
+      toast.success('User information updated');
       void queryClient.invalidateQueries({
         queryKey: ['user', variables.userId],
       });

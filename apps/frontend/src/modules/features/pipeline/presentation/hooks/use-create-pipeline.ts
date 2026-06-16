@@ -14,7 +14,7 @@ export const useCreatePipeline = () => {
     mutationFn: async (pipeline: Omit<Pipeline, 'id'>) =>
       (await createPipeline.execute(pipeline)).unwrap(),
     onSuccess: () => {
-      toast.success('Pipeline created successfully');
+      toast.success('Pipeline created');
       if (currentProject.name && currentProject.id) {
         goToProject({ id: currentProject.id, name: currentProject.name });
       }
