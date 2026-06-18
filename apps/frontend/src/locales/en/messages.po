@@ -53,7 +53,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:77
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:75
 msgid "Clear"
 msgstr "Clear"
 
@@ -81,7 +81,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:94
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:92
 msgid "Delete"
 msgstr "Delete"
 
@@ -117,7 +117,7 @@ msgstr "From source"
 #~ msgid "I've copied it — close"
 #~ msgstr "I've copied it — close"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:66
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:64
 msgid "in total"
 msgstr "in total"
 
@@ -129,7 +129,7 @@ msgstr "Log out"
 #~ msgid "Main"
 #~ msgstr "Main"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:100
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:98
 msgid "New {label}"
 msgstr "New {label}"
 
