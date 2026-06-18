@@ -12,10 +12,9 @@ interface JobsHeaderProps {
   numberOfJobs: number;
   pipelineId: string;
   onRefresh: () => void;
-  onBack: () => void;
 }
 
-export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh, onBack }: JobsHeaderProps) => {
+export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh }: JobsHeaderProps) => {
   const deleteJob = useDeleteJobs(pipelineId);
   const { selectedIds, clearSelection } = useSelection('jobs');
 
@@ -41,7 +40,6 @@ export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh, onBack }: Jobs
         count={numberOfJobs}
         label={'Job'}
         pluralLabel={'Jobs'}
-        onBack={onBack}
         newLabel={'Run'}
         onNew={handleRunPipeline}
         selectedCount={selectedIds.length}

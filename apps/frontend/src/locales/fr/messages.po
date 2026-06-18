@@ -36,7 +36,7 @@ msgstr "{0} est prêt"
 msgid "An error occurred"
 msgstr "Une erreur est survenue"
 
-#: src/modules/core/presentation/ui/App.tsx:61
+#: src/modules/core/presentation/ui/App.tsx:60
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue est survenue"
 
@@ -53,7 +53,7 @@ msgstr "En êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:74
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:70
 msgid "Clear"
 msgstr ""
 
@@ -81,7 +81,7 @@ msgstr ""
 msgid "Creating..."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:87
 msgid "Delete"
 msgstr ""
 
@@ -117,7 +117,7 @@ msgstr "Depuis les sources"
 #~ msgid "I've copied it — close"
 #~ msgstr ""
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:63
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:59
 msgid "in total"
 msgstr ""
 
@@ -129,7 +129,7 @@ msgstr "Se déconnecter"
 #~ msgid "Main"
 #~ msgstr "Principal"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:97
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:93
 msgid "New {label}"
 msgstr ""
 
@@ -137,7 +137,7 @@ msgstr ""
 msgid "No agent connected — queued jobs are waiting for one."
 msgstr "Aucun agent connecté — les jobs en file attendent qu'un agent arrive."
 
-#: src/modules/core/presentation/ui/App.tsx:91
+#: src/modules/core/presentation/ui/App.tsx:90
 msgid "Operation failed"
 msgstr "L'opération a échoué"
 
@@ -206,8 +206,8 @@ msgstr "Lancer avec Docker"
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/core/presentation/ui/App.tsx:60
-#: src/modules/core/presentation/ui/App.tsx:90
+#: src/modules/core/presentation/ui/App.tsx:59
+#: src/modules/core/presentation/ui/App.tsx:89
 msgid "Server unreachable"
 msgstr "Serveur inaccessible"
 

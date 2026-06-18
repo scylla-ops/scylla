@@ -13,9 +13,9 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:61
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:77
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:113
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:58
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:74
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:110
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:56
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:90
 msgid "active"
@@ -37,7 +37,7 @@ msgstr "Add a credential for this app."
 #~ msgid "App created"
 #~ msgstr "App created"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:96
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:93
 msgid "App ID"
 msgstr "App ID"
 
@@ -45,7 +45,7 @@ msgstr "App ID"
 #~ msgid "App name"
 #~ msgstr "App name"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:132
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:129
 msgid "Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead."
 msgstr "Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead."
 
@@ -53,7 +53,7 @@ msgstr "Apps are credentials, not processes. There's nothing to monitor here —
 msgid "Apps are machine credentials. Create one to let an automation authenticate against the Scylla API."
 msgstr "Apps are machine credentials. Create one to let an automation authenticate against the Scylla API."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:154
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:151
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:141
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:163
 msgid "Cancel"
@@ -98,7 +98,7 @@ msgstr "Create your first app"
 msgid "created"
 msgstr "created"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:119
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:116
 msgid "Created"
 msgstr "Created"
 
@@ -106,14 +106,14 @@ msgstr "Created"
 msgid "Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret."
 msgstr "Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:83
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:162
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:80
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:159
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:149
 #: src/modules/features/apps/presentation/ui/components/AppCard.tsx:62
 msgid "Delete"
 msgstr "Delete"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:146
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:143
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:133
 msgid "Delete app?"
 msgstr "Delete app?"
@@ -134,9 +134,9 @@ msgstr "disabled"
 msgid "Get credentials to authenticate."
 msgstr "Get credentials to authenticate."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:61
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:77
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:113
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:58
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:74
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:110
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:57
 #: src/modules/features/apps/presentation/ui/components/AppCard.tsx:70
 msgid "inactive"
@@ -146,7 +146,7 @@ msgstr "inactive"
 msgid "Label"
 msgstr "Label"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:65
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:62
 msgid "Machine credential · no runtime presence"
 msgstr "Machine credential · no runtime presence"
 
@@ -154,7 +154,7 @@ msgstr "Machine credential · no runtime presence"
 msgid "my-build-runner"
 msgstr "my-build-runner"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:103
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:100
 #: src/modules/features/apps/presentation/utils/create-app-form-items.ts:7
 msgid "Name"
 msgstr "Name"
@@ -191,7 +191,7 @@ msgstr "No secrets. Create one so this app can authenticate."
 #~ msgid "online"
 #~ msgstr "online"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:80
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:77
 msgid "Rename"
 msgstr "Rename"
 
@@ -219,7 +219,7 @@ msgstr "Secrets"
 msgid "Service"
 msgstr "Service"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:109
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:106
 msgid "Status"
 msgstr "Status"
 
@@ -227,7 +227,7 @@ msgstr "Status"
 msgid "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
 msgstr "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:149
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:146
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:136
 msgid "This revokes the app's credentials. Cannot be undone."
 msgstr "This revokes the app's credentials. Cannot be undone."
@@ -236,6 +236,6 @@ msgstr "This revokes the app's credentials. Cannot be undone."
 #~ msgid "This revokes the app's grants and disconnects its agent. Cannot be undone."
 #~ msgstr "This revokes the app's grants and disconnects its agent. Cannot be undone."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:125
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:122
 msgid "Updated"
 msgstr "Updated"

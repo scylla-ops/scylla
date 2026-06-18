@@ -36,7 +36,7 @@ msgstr "{0} is ready"
 msgid "An error occurred"
 msgstr "An error occurred"
 
-#: src/modules/core/presentation/ui/App.tsx:61
+#: src/modules/core/presentation/ui/App.tsx:60
 msgid "An unexpected error occurred"
 msgstr "An unexpected error occurred"
 
@@ -53,7 +53,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:74
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:70
 msgid "Clear"
 msgstr "Clear"
 
@@ -81,7 +81,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:87
 msgid "Delete"
 msgstr "Delete"
 
@@ -117,7 +117,7 @@ msgstr "From source"
 #~ msgid "I've copied it — close"
 #~ msgstr "I've copied it — close"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:63
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:59
 msgid "in total"
 msgstr "in total"
 
@@ -129,7 +129,7 @@ msgstr "Log out"
 #~ msgid "Main"
 #~ msgstr "Main"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:97
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:93
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -137,7 +137,7 @@ msgstr "New {label}"
 msgid "No agent connected — queued jobs are waiting for one."
 msgstr "No agent connected — queued jobs are waiting for one."
 
-#: src/modules/core/presentation/ui/App.tsx:91
+#: src/modules/core/presentation/ui/App.tsx:90
 msgid "Operation failed"
 msgstr "Operation failed"
 
@@ -206,8 +206,8 @@ msgstr "Run with Docker"
 msgid "Select Organization"
 msgstr "Select Organization"
 
-#: src/modules/core/presentation/ui/App.tsx:60
-#: src/modules/core/presentation/ui/App.tsx:90
+#: src/modules/core/presentation/ui/App.tsx:59
+#: src/modules/core/presentation/ui/App.tsx:89
 msgid "Server unreachable"
 msgstr "Server unreachable"
 
