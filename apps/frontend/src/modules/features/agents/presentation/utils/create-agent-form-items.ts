@@ -8,6 +8,6 @@ export const createAgentItems = (): FormItem[] => [
     placeholder: t`my-build-runner`,
     type: FormItemType.Input,
     inputType: 'text',
-    pattern: '^[a-z0-9][a-z0-9-]{0,63}$',
+    pattern: '^[a-zA-Z0-9][a-zA-Z0-9-]{0,63}$',
   },
 ];
