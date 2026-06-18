@@ -21,6 +21,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const { t } = useLingui();
   const navigate = useNavigate();
   const setOrganization = useContextStore(state => state.setOrganization);
+  const currentOrganization = useContextStore(state => state.organization);
   const createProject = useCreateProject();
   const { organizations } = useOrganizations();
 
@@ -30,6 +31,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       label: t`Organization`,
       placeholder: t`Select an organization`,
       type: FormItemType.Select,
+      defaultValue: currentOrganization.id ?? undefined,
       options: (organizations ?? []).map(org => ({
         label: org.name,
         value: idValue(org.organizationId),
