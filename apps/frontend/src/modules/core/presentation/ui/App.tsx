@@ -12,7 +12,8 @@ import { messages as pipelineMessages } from '@/modules/features/pipeline/locale
 import { messages as marketplaceMessages } from '@/modules/features/marketplace/locales/en/messages.ts';
 import { messages as organizationMessages } from '@/modules/features/organization/locales/en/messages.ts';
 import { messages as userMessages } from '@/modules/features/user/locales/en/messages.ts';
-import { messages as sharedMessages } from '@/locales/en/messages.ts';
+import { messages as sharedMessages } from '@/modules/shared/locales/en/messages.ts';
+import { messages as layoutMessages } from '@/modules/layout/locales/en/messages.ts';
 import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
 import { messages as appsMessages } from '@/modules/features/apps/locales/en/messages.ts';
 import { messages as agentsMessages } from '@/modules/features/agents/locales/en/messages.ts';
@@ -32,6 +33,7 @@ i18n.load('en', {
   ...sharedMessages,
   ...jobMessages,
   ...appsMessages,
+  ...layoutMessages,
   ...agentsMessages,
   ...secretMessages,
 });

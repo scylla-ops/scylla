@@ -45,8 +45,16 @@ export default defineConfig({
       include: ['src/modules/features/secret/'],
     },
     {
-      path: '<rootDir>/src/locales/{locale}/messages',
-      include: ['src/modules/shared/', 'src/modules/layout/', 'src/modules/core/'],
+      path: '<rootDir>/src/modules/core/locales/{locale}/messages',
+      include: ['src/modules/core/'],
+    },
+    {
+      path: '<rootDir>/src/modules/shared/locales/{locale}/messages',
+      include: ['src/modules/shared/'],
+    },
+    {
+      path: '<rootDir>/src/modules/layout/locales/{locale}/messages',
+      include: ['src/modules/layout/'],
     },
   ],
   compileNamespace: 'default',
