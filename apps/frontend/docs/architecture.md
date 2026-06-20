@@ -46,12 +46,16 @@ The application is organized into **independent modules** in `src/modules/`:
 src/modules/
 ├── core/           → Infrastructure, DI wiring, routing, auth guard
 ├── features/       → Feature modules (business functionality)
+│   ├── agents/
+│   ├── apps/
 │   ├── jobs/
 │   ├── login/
 │   ├── marketplace/
 │   ├── organization/
+│   ├── permission/   (exposed in DI as `authz`)
 │   ├── pipeline/
 │   ├── project/
+│   ├── secret/
 │   └── user/
 ├── layout/         → App shell (sidebar, topbar, breadcrumbs, context selector)
 └── shared/         → Reusable components, hooks, stores, utilities
@@ -73,15 +77,21 @@ Global infrastructure and app-level concerns:
 
 Each feature follows an identical layered structure (see §3).
 
-| Module | Description |
-|--------|-------------|
-| `login` | Authentication (login flow) |
-| `organization` | Organization CRUD |
-| `project` | Project CRUD |
-| `pipeline` | Pipeline dashboard, creation/editing, charts |
-| `jobs` | Job list per pipeline |
-| `user` | User admin (CRUD + permissions), user settings |
-| `marketplace` | Component marketplace |
+| Module | DI key | Description |
+|--------|--------|-------------|
+| `login` | `login` | Authentication (login flow) |
+| `organization` | `organization` | Organization CRUD |
+| `project` | `project` | Project CRUD |
+| `pipeline` | `pipeline` | Pipeline dashboard, creation/editing, charts |
+| `jobs` | `jobs` | Job list per pipeline (+ logs, tail) |
+| `user` | `user` | User admin (CRUD), user settings |
+| `permission` | `authz` | Roles, grants, effective permissions, authz vocabulary |
+| `secret` | `secret` | Project-scoped secrets (metadata; value is write-only) |
+| `apps` | `apps` | Machine principals / API credentials |
+| `agents` | `agents` | Agents (workers that pick up jobs) |
+| `marketplace` | `marketplace` | Component marketplace |
+
+> The DI key is how the module is reached in hooks (`useDependencies().<key>`). It usually matches the folder name — the exception is `permission`, exposed as `authz`.
 
 ### 2.3 Layout Module
 
@@ -119,7 +129,8 @@ feature/
 ├── domain/                      → Pure business logic
 │   ├── usecases/
 │   ├── repository/              → Repository interfaces
-│   └── models/                  → Domain models (optional)
+│   ├── entities/                → Domain entities ({Name}Entity, identity objects)
+│   └── models/                  → Value objects / enums (no identity)
 ├── infrastructure/              → Technical implementations
 │   ├── repository/
 │   │   ├── feature.repository.ts        → Repository implementation
@@ -143,7 +154,8 @@ feature/
 
 - **Use Cases**: Single-responsibility classes that call repository methods
 - **Repository Interfaces**: Abstract contracts — no knowledge of gRPC or HTTP
-- **Models**: Domain types, independent from proto-generated types
+- **Entities** (`domain/entities/*.entity.ts`): identity-bearing business objects, independent from proto-generated types
+- **Models** (`domain/models/*.model.ts`): value objects, enums, and shared primitives that have no identity of their own
 
 ```typescript
 export class GetUsersUseCase {
@@ -151,6 +163,58 @@ export class GetUsersUseCase {
   execute = () => this._repository.getAll();
 }
 ```
+
+#### Entities vs. Models
+
+The domain layer separates two kinds of types. Both are pure and proto-independent, but they answer different questions:
+
+| | **Entity** (`entities/*.entity.ts`) | **Model** (`models/*.model.ts`) |
+|---|---|---|
+| Question | "What *thing* does this feature own?" | "What *values* describe those things?" |
+| Identity | Yes — has an `id` (or a stable key) | No — interchangeable by value |
+| Examples | `SecretEntity`, `RoleEntity`, `GrantEntity`, `EffectivePermissionsEntity` | `Permission`, `PermissionScope`, `PrincipalKind` (enums) |
+| Naming | `{Name}Entity` | plain PascalCase (often an enum) |
+| One file per | aggregate / entity | cohesive group of value objects |
+
+An entity file is the home for everything that revolves around that entity, not just the read shape:
+
+```typescript
+// secret.entity.ts — read shape (metadata only; the value is write-only)
+export interface SecretEntity {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ...plus the input shapes that belong to it
+export interface CreateSecretInput {
+  projectId: string;
+  name: string;
+  value: string; // write-only, sent once, never returned
+  description: string;
+}
+```
+
+Entities may also carry **pure domain behavior** (validation, transformations) — still no framework or transport imports:
+
+```typescript
+// role.entity.ts
+export const updateRole = (role: RoleEntity, changes: Partial<RoleEntity>): RoleEntity => {
+  if (changes.name !== undefined && changes.name.trim() === '') {
+    throw new Error('Role name cannot be empty');
+  }
+  return { ...role, ...changes, id: role.id };
+};
+```
+
+Value-object **models** are shared across entities and use cases — e.g. `permission.model.ts` exports the `Permission`, `PermissionScope`, and `PrincipalKind` enums that `RoleEntity`, `GrantEntity`, and `EffectivePermissionsEntity` all reference.
+
+> **Historical note:** older modules (`jobs`, `pipeline`, `user`) predate this split and keep their entities in `models/*.model.ts` (e.g. `Job`, `Pipeline`, `User`). The `entities/` vs `models/` separation was introduced with the newer modules (`secret`, `permission`) and is the convention going forward. When a feature has both a clear entity and supporting value objects, prefer the split.
+
+Mappers convert proto → entity (one `Grpc{Entity}Mapper` per entity, e.g. `GrpcSecretMapper.toDomain` returns a `SecretEntity`).
 
 ### 3.2 Infrastructure Layer
 
@@ -309,22 +373,28 @@ Maintains local page/pageSize state, merges with server-returned `totalCount`/`t
 
 ## 6. Routing
 
-Centralized in `Core.router.tsx` using React Router v7:
+Centralized in `Core.router.tsx` using React Router v7. Authenticated routes are nested under an **organization slug** segment; `OrganizationRedirectWrapper` sends `/` to the active org and `OrganizationSyncWrapper` keeps the context store in sync with `:organizationSlug`.
 
 | Route | Page | Auth |
 |-------|------|------|
 | `/login` | Login | Public |
-| `/projects` | Project list | Protected |
-| `/projects/:projectId` | Pipeline dashboard | Protected |
-| `/projects/:projectId/create` | Pipeline creation | Protected |
-| `/projects/:projectId/edit/:pipelineId` | Pipeline editing | Protected |
-| `/projects/:projectId/pipelines/:pipelineId/jobs` | Jobs list | Protected |
-| `/marketplace` | Marketplace | Protected |
-| `/users` | User admin | Protected |
-| `/users/me` | User settings | Protected |
-| `*` | Redirect to `/users/me` | — |
+| `/` | Redirect to active org slug (`OrganizationRedirectWrapper`) | Protected |
+| `/:organizationSlug/projects` | Project list | Protected |
+| `/:organizationSlug/projects/:projectId` | Pipeline dashboard | Protected |
+| `/:organizationSlug/projects/:projectId/secrets` | Secrets | Protected |
+| `/:organizationSlug/projects/:projectId/create` | Pipeline creation | Protected |
+| `/:organizationSlug/projects/:projectId/edit/:pipelineId` | Pipeline editing | Protected |
+| `/:organizationSlug/projects/:projectId/pipelines/:pipelineId/jobs` | Jobs list | Protected |
+| `/:organizationSlug/marketplace` | Marketplace | Protected |
+| `/:organizationSlug/agents` | Agents list | Protected |
+| `/:organizationSlug/agents/:agentId` | Agent details | Protected |
+| `/:organizationSlug/users-admin` | User admin | Protected |
+| `/:organizationSlug/users` | User admin | Protected |
+| `/:organizationSlug/users/:userId` | User settings | Protected |
+| `/:organizationSlug/users/me` | User settings | Protected |
+| `*` | Redirect to `/login` | — |
 
-All protected routes are wrapped by `AuthGuard` and `Layout`.
+All protected routes are wrapped by `AuthGuard` and `Layout`. The `:projectId` subtree is additionally wrapped by `ContextCleanerWrapper` (clears stale project/pipeline context). Breadcrumbs come from each route's `handle.breadcrumb`.
 
 ---
 
