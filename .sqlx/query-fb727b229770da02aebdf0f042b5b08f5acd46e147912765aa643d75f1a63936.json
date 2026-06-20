@@ -6,37 +6,79 @@
       {
         "ordinal": 0,
         "name": "id",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grants",
+            "name": "id"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "principal_kind",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grants",
+            "name": "principal_kind"
+          }
+        }
       },
       {
         "ordinal": 2,
         "name": "principal_id",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grants",
+            "name": "principal_id"
+          }
+        }
       },
       {
         "ordinal": 3,
         "name": "target_kind",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grants",
+            "name": "target_kind"
+          }
+        }
       },
       {
         "ordinal": 4,
         "name": "target",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grants",
+            "name": "target"
+          }
+        }
       },
       {
         "ordinal": 5,
         "name": "scope_kind",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grants",
+            "name": "scope_kind"
+          }
+        }
       },
       {
         "ordinal": 6,
         "name": "scope_id",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grants",
+            "name": "scope_id"
+          }
+        }
       }
     ],
     "parameters": {
