@@ -4,9 +4,6 @@ pub mod services {
     pub mod common {
         tonic::include_proto!("common");
     }
-    pub mod config {
-        tonic::include_proto!("config");
-    }
     pub mod auth {
         tonic::include_proto!("auth");
     }
@@ -48,6 +45,9 @@ pub mod services {
     }
     pub mod agent_admin {
         tonic::include_proto!("agent_admin");
+    }
+    pub mod trigger {
+        tonic::include_proto!("trigger");
     }
 
     pub const FILE_DESCRIPTOR_SET: &[u8] =

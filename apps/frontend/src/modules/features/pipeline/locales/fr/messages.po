@@ -27,20 +27,20 @@ msgstr ""
 msgid "Add a new node"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:272
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:275
 msgid "Add argument"
 msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/BlueprintToolbar.tsx:14
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:381
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:384
 msgid "Add Node"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:370
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:373
 msgid "Add variable"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:250
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:253
 msgid "Arguments"
 msgstr ""
 
@@ -61,7 +61,7 @@ msgstr ""
 msgid "Blueprint"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:378
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:381
 msgid "Cancel"
 msgstr ""
 
@@ -70,7 +70,7 @@ msgstr ""
 #~ msgstr "Effacer"
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:198
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:239
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:242
 msgid "Command"
 msgstr ""
 
@@ -91,11 +91,11 @@ msgid "Define a new pipeline step. You can connect it to other nodes by dragging
 msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:79
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:112
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:106
 msgid "Duplicate"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:258
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:261
 msgid "e.g., --release"
 msgstr ""
 
@@ -107,7 +107,7 @@ msgstr ""
 #~ msgid "e.g., build --release"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:245
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:248
 msgid "e.g., cargo"
 msgstr ""
 
@@ -123,7 +123,7 @@ msgstr "Modifier"
 msgid "Edit node"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:295
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:298
 msgid "Environment variables"
 msgstr ""
 
@@ -138,7 +138,7 @@ msgstr ""
 #~ msgid "in total"
 #~ msgstr "au total"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:303
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:306
 msgid "KEY"
 msgstr ""
 
@@ -146,7 +146,7 @@ msgstr ""
 msgid "Last Run"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:315
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:318
 msgid "Literal"
 msgstr ""
 
@@ -159,7 +159,7 @@ msgid "Modify the node properties."
 msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:90
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:127
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:115
 msgid "More options"
 msgstr "Plus d'options"
 
@@ -197,11 +197,11 @@ msgstr ""
 #~ msgid "Pipeline Status"
 #~ msgstr "État de la pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:329
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:332
 msgid "Reference a secret"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:288
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:291
 msgid "relative to the job workspace"
 msgstr ""
 
@@ -211,7 +211,7 @@ msgid "Run"
 msgstr "Exécuter"
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:42
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:381
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:384
 msgid "Save"
 msgstr ""
 
@@ -224,11 +224,11 @@ msgstr ""
 msgid "Scripting"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:318
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:321
 msgid "Secret"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:346
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:349
 msgid "secret name"
 msgstr ""
 
@@ -240,7 +240,7 @@ msgstr ""
 msgid "Set the name of the pipeline."
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:221
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:224
 msgid "Shell"
 msgstr ""
 
@@ -253,14 +253,14 @@ msgstr ""
 #~ msgid "This feature will be available soon"
 #~ msgstr "Cette fonctionnalité sera bientôt disponible"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:354
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:357
 msgid "value"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:119
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:109
 msgid "View Jobs"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:282
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:285
 msgid "Working directory"
 msgstr ""

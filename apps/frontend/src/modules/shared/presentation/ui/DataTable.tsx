@@ -76,8 +76,8 @@ export function DataTable<TData, TValue>({
               className='hover:bg-transparent border-b border-slate-200'
             >
               {headerGroup.headers.map(header => {
-                const align = (header.column.columnDef.meta?.align ??
-                  (alignColumnsCenter ? 'center' : 'left'));
+                const align =
+                  header.column.columnDef.meta?.align ?? (alignColumnsCenter ? 'center' : 'left');
                 return (
                   <TableHead
                     key={header.id}
@@ -114,7 +114,7 @@ export function DataTable<TData, TValue>({
                     data-state={isSelected ? 'selected' : undefined}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      'border-b border-slate-100 transition-colors duration-150',
+                      'border-b [&>td:first-child]:border-l-[3px] border-slate-100 [&>td:first-child]:border-l-transparent transition-colors duration-150',
                       onRowClick && 'cursor-pointer',
                       onRowClick && !isSelected && 'hover:bg-slate-50',
                       isSelected &&
@@ -123,8 +123,8 @@ export function DataTable<TData, TValue>({
                   >
                     {row.getVisibleCells().map((cell, index) => {
                       const header = table.getHeaderGroups()[0].headers[index];
-                      const align = (cell.column.columnDef.meta?.align ??
-                        (alignRowsCenter ? 'center' : 'left'));
+                      const align =
+                        cell.column.columnDef.meta?.align ?? (alignRowsCenter ? 'center' : 'left');
                       return (
                         <TableCell
                           key={cell.id}

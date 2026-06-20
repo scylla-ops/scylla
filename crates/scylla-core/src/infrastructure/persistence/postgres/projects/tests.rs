@@ -30,11 +30,11 @@ async fn count_by_organization_reflects_inserts(pool: PgPool) {
     assert_eq!(repo.count_by_organization(org.id()).await.unwrap(), 2);
 }
 
-/// The `metering` feature must cap projects per org. Uses a Service caller to
+/// Project creation must cap projects per org. Uses a Service caller to
 /// bypass Cedar and isolate the quota check.
-#[cfg(all(feature = "metering", feature = "permission"))]
+#[cfg(feature = "permission")]
 #[sqlx::test(migrations = "../../migrations")]
-async fn project_quota_enforced_when_metering_on(pool: PgPool) {
+async fn project_quota_enforced(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;
     use crate::application::caller::CallerContext;
     use crate::application::{ProjectUseCases, Quotas, ServiceIdentity};

@@ -3,11 +3,9 @@ pub mod audit;
 pub mod auth;
 pub mod bootstrap;
 pub mod caller;
-#[cfg(feature = "invitations")]
 pub mod invitation;
 pub mod job;
 pub mod mail;
-#[cfg(feature = "oauth-github")]
 pub mod oauth;
 pub mod organization;
 // The `PermissionService` trait carries no heavy deps (no cedar, no sqlx) and is
@@ -21,6 +19,7 @@ pub mod project;
 pub mod quota;
 pub mod secret;
 pub mod signup;
+pub mod trigger;
 pub mod user;
 
 pub use agent::{
@@ -42,14 +41,12 @@ pub use authz::{
 };
 pub use bootstrap::BootstrapUseCases;
 pub use caller::{CallerContext, ServiceIdentity};
-#[cfg(feature = "invitations")]
 pub use invitation::{AcceptOutcome, InvitationRepository, InvitationUseCases};
 pub use job::{
     JobEvent, JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase,
     JobLogUseCases, JobRepository, JobUseCases,
 };
 pub use mail::{Mailer, NoopMailer};
-#[cfg(feature = "oauth-github")]
 pub use oauth::{
     OAuthIdentityRepository, OAuthOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo,
 };
@@ -61,4 +58,5 @@ pub use secret::{
     DispatchSecretResolver, SecretCipher, SecretRepository, SecretResolver, SecretUseCases,
 };
 pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
+pub use trigger::{TriggerFireUseCases, TriggerRepository, TriggerUseCases};
 pub use user::{UserRepository, UserUseCases};

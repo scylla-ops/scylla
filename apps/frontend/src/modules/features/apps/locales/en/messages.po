@@ -68,7 +68,7 @@ msgstr "ci-runner"
 #~ msgid "Copy"
 #~ msgstr "Copy"
 
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:58
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:61
 msgid "Copy id"
 msgstr "Copy id"
 
@@ -93,7 +93,7 @@ msgstr "Create & reveal secret →"
 msgid "Create your first app"
 msgstr "Create your first app"
 
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:77
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:80
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:99
 msgid "created"
 msgstr "created"
@@ -109,7 +109,7 @@ msgstr "Credentials to authenticate this app. Disable cuts active sessions insta
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:83
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:162
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:149
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:62
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:65
 msgid "Delete"
 msgstr "Delete"
 
@@ -138,7 +138,7 @@ msgstr "Get credentials to authenticate."
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:77
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:113
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:57
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:70
+#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:73
 msgid "inactive"
 msgstr "inactive"
 

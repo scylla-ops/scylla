@@ -862,6 +862,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn trigger_runner_app_grant_allows_run_pipeline_in_scope() {
+        // The per-org trigger-runner App holds a direct `runPipeline` grant at
+        // org scope. This is the load-bearing authz path for triggers: it must
+        // authorize firing any pipeline beneath the org — which only links/
+        // typechecks because the schema widened `runPipeline` to allow App
+        // principals. The runner must NOT thereby gain trigger management.
+        let grant = Grant::with_permission(
+            Principal::App(AppId::new("trigger-runner-1")),
+            "runPipeline",
+            Scope::Organization(OrganizationId::new("o1")),
+        );
+        let svc = service(
+            PrincipalAuthz::default(),
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::App(AppId::new("trigger-runner-1"));
+        assert!(
+            svc.check(&caller, Permission::RunPipeline(PipelineId::new("pl1")))
+                .await
+                .is_ok(),
+            "trigger-runner App must run pipelines within its granted org",
+        );
+        assert!(
+            svc.check(&caller, Permission::ManageTriggers(PipelineId::new("pl1")))
+                .await
+                .is_err(),
+            "runner App holds only runPipeline, never manageTriggers",
+        );
+    }
+
+    #[tokio::test]
     async fn direct_permission_grant_allows_only_that_action_in_scope() {
         // "Alice may runPipeline within Org A" — a single permission granted
         // directly (additive to any roles). She may run pipelines beneath the org
