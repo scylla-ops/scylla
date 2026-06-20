@@ -58,5 +58,5 @@ pub use secret::{
     DispatchSecretResolver, SecretCipher, SecretRepository, SecretResolver, SecretUseCases,
 };
 pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
-pub use trigger::TriggerRepository;
+pub use trigger::{TriggerRepository, TriggerUseCases};
 pub use user::{UserRepository, UserUseCases};
