@@ -55,6 +55,7 @@ impl JobBuilder {
             pipeline_id,
             status,
             node_executions,
+            Vec::new(),
             None,
             now,
             updated_at.unwrap_or(now),

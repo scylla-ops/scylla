@@ -119,6 +119,7 @@ struct JobRow {
     pipeline_id: String,
     status: String,
     node_executions: Json<Vec<JobNode>>,
+    inputs: Json<Vec<(String, String)>>,
     agent_app_id: Option<String>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -135,6 +136,7 @@ impl TryFrom<JobRow> for Job {
             PipelineId::new(r.pipeline_id),
             status,
             r.node_executions.0,
+            r.inputs.0,
             r.agent_app_id.map(AppId::new),
             r.created_at,
             r.updated_at,
@@ -153,15 +155,17 @@ pub mod queries {
         E: PgExecutor<'e>,
     {
         let nodes = Json(job.node_executions().to_vec());
+        let inputs = Json(job.inputs().to_vec());
         sqlx::query!(
             r#"
-            INSERT INTO jobs (id, pipeline_id, status, node_executions, agent_app_id, created_at, updated_at, started_at, finished_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO jobs (id, pipeline_id, status, node_executions, inputs, agent_app_id, created_at, updated_at, started_at, finished_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             "#,
             job.id().as_str(),
             job.pipeline_id().as_str(),
             job.status().as_str(),
             nodes as _,
+            inputs as _,
             job.agent_app_id().map(AppId::as_str),
             job.created_at(),
             job.updated_at(),
@@ -202,6 +206,7 @@ pub mod queries {
             r#"
             SELECT id, pipeline_id, status,
                    node_executions AS "node_executions: Json<Vec<JobNode>>",
+                   inputs AS "inputs: Json<Vec<(String, String)>>",
                    agent_app_id,
                    created_at, updated_at, started_at, finished_at
             FROM jobs
@@ -225,6 +230,7 @@ pub mod queries {
             r#"
             SELECT id, pipeline_id, status,
                    node_executions AS "node_executions: Json<Vec<JobNode>>",
+                   inputs AS "inputs: Json<Vec<(String, String)>>",
                    agent_app_id,
                    created_at, updated_at, started_at, finished_at
             FROM jobs
@@ -344,6 +350,7 @@ pub mod queries {
                 r#"
                 SELECT id, pipeline_id, status,
                        node_executions AS "node_executions: Json<Vec<JobNode>>",
+                       inputs AS "inputs: Json<Vec<(String, String)>>",
                        agent_app_id,
                        created_at, updated_at, started_at, finished_at
                 FROM jobs
@@ -361,6 +368,7 @@ pub mod queries {
                 r#"
                 SELECT id, pipeline_id, status,
                        node_executions AS "node_executions: Json<Vec<JobNode>>",
+                       inputs AS "inputs: Json<Vec<(String, String)>>",
                        agent_app_id,
                        created_at, updated_at, started_at, finished_at
                 FROM jobs
@@ -380,6 +388,7 @@ pub mod queries {
                 r#"
                 SELECT j.id, j.pipeline_id, j.status,
                        j.node_executions AS "node_executions: Json<Vec<JobNode>>",
+                       j.inputs AS "inputs: Json<Vec<(String, String)>>",
                        j.agent_app_id,
                        j.created_at, j.updated_at, j.started_at, j.finished_at
                 FROM jobs j
@@ -400,6 +409,7 @@ pub mod queries {
                 r#"
                 SELECT j.id, j.pipeline_id, j.status,
                        j.node_executions AS "node_executions: Json<Vec<JobNode>>",
+                       j.inputs AS "inputs: Json<Vec<(String, String)>>",
                        j.agent_app_id,
                        j.created_at, j.updated_at, j.started_at, j.finished_at
                 FROM jobs j

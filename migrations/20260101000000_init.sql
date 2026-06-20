@@ -200,6 +200,11 @@ CREATE TABLE jobs (
     pipeline_id     TEXT        NOT NULL REFERENCES pipelines (id) ON DELETE CASCADE,
     status          TEXT        NOT NULL,
     node_executions JSONB       NOT NULL,
+    -- Trigger-supplied literal env overlaid on every node at dispatch (e.g.
+    -- GIT_COMMIT). Persisted so the run dispatches identically whether placed
+    -- immediately or retried later by the pending-job scheduler. Literals only —
+    -- never secrets.
+    inputs          JSONB       NOT NULL DEFAULT '[]',
     agent_app_id    TEXT        REFERENCES agents (app_id) ON DELETE SET NULL,
     created_at      TIMESTAMPTZ NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL,
