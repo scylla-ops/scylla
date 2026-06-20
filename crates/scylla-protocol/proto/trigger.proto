@@ -99,7 +99,8 @@ message DeleteTriggerResponse { bool deleted = 1; }
 
 // Remplace les champs éditables (name, spec de source, inputs). `enabled` se gère
 // via SetTriggerEnabled. Le KIND de source est immuable — pour passer de cron à
-// webhook, supprimer et recréer.
+// webhook, supprimer et recréer. Le bloc `source` est REQUIS et doit conserver
+// le même kind que l'existant ; le handler rejette une requête sans source.
 message UpdateTriggerRequest {
   common.TriggerId trigger_id = 1;
   optional string  name       = 2;
