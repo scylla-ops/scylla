@@ -51,6 +51,9 @@ scylla-core = { path = "crates/scylla-core", default-features = false }
 thiserror = "2.0.18"
 anyhow = "1.0.102"
 chrono = "0.4"
+# 5-field Vixie cron parsing + next-occurrence computation (UTC), chrono-native.
+# Lives behind the CronSchedule application port; the domain stays library-free.
+croner = "3"
 ulid = "1.2.1"
 uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }

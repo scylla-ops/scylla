@@ -4,15 +4,16 @@ use http::{HeaderName, HeaderValue, Method};
 use tokio::sync::Notify;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases,
-    DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
+    CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
     JobLogStreamUseCase, JobLogUseCases, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
     OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
     RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases,
-    TriggerFireUseCases, TriggerUseCases, UserUseCases,
+    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::LettreMailer;
 use scylla_core::infrastructure::{
-    Argon2HashService, CedarPermissionService, ChaChaSecretCipher, GitHubOAuthProvider,
+    Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
+    GitHubOAuthProvider,
     InMemoryAgentRegistry, InMemoryJobLogStream, PgAgentRepository, PgAppCredentialRepository,
     PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
     PgDefaultRoleBindingRepository, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
@@ -408,6 +409,26 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         pipeline_uc.clone(),
         dispatch_uc.clone(),
     ));
+
+    // Cron firing engine: each tick seeds first-occurrences for new cron triggers
+    // and fires the due ones (each as the org's trigger-runner App, through the
+    // one RunPipeline check). Like the pending-job scheduler it is detached for
+    // the process lifetime; the first interval tick fires immediately, so a
+    // pre-restart backlog is picked up at boot. A 15s tick bounds firing latency
+    // to well under cron's one-minute granularity without busy-polling.
+    {
+        let cron_schedule: Arc<dyn CronSchedule> = Arc::new(CronScheduleService::new());
+        let firing: Arc<dyn TriggerFiring> = trigger_fire_uc.clone();
+        let scheduler = TriggerCronScheduler::new(trigger_repo.clone(), firing, cron_schedule);
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(15));
+            tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tick.tick().await;
+                scheduler.tick().await;
+            }
+        });
+    }
 
     // Pending-job scheduler: places jobs that were minted while no worker was
     // connected. Woken by the agent handler on connect (`pending_signal`), on a

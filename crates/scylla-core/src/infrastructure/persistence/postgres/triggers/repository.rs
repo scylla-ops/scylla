@@ -47,6 +47,74 @@ impl TriggerRepository for PgTriggerRepository {
     async fn list_by_pipeline(&self, pipeline_id: &PipelineId) -> DomainResult<Vec<Trigger>> {
         queries::list_by_pipeline(&self.pool, pipeline_id).await
     }
+
+    #[instrument(skip(self))]
+    async fn list_unscheduled_cron(&self) -> DomainResult<Vec<Trigger>> {
+        queries::list_unscheduled_cron(&self.pool).await
+    }
+
+    #[instrument(skip(self, compute_next), fields(now = %now, limit))]
+    async fn claim_due_cron(
+        &self,
+        now: DateTime<Utc>,
+        limit: i64,
+        compute_next: &(dyn for<'a> Fn(&'a Trigger) -> DomainResult<DateTime<Utc>> + Sync),
+    ) -> DomainResult<Vec<Trigger>> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+
+        // Lock the due rows; SKIP LOCKED so a concurrent pass/instance never waits
+        // on or double-claims the same trigger.
+        let rows: Vec<TriggerRow> = sqlx::query_as!(
+            TriggerRow,
+            r#"
+            SELECT id, pipeline_id, name,
+                   source AS "source: Json<TriggerSource>",
+                   inputs AS "inputs: Json<Vec<TriggerInput>>",
+                   enabled, next_fire_at, last_fired_at, last_status, created_at, updated_at
+            FROM pipeline_triggers
+            WHERE enabled
+              AND kind = 'cron'
+              AND next_fire_at IS NOT NULL
+              AND next_fire_at <= $1
+            ORDER BY next_fire_at
+            LIMIT $2
+            FOR UPDATE SKIP LOCKED
+            "#,
+            now,
+            limit,
+        )
+        .fetch_all(&mut *tx)
+        .await
+        .to_domain()?;
+
+        let mut claimed = Vec::with_capacity(rows.len());
+        for row in rows {
+            let trigger = Trigger::try_from(row)?;
+            // Advance to the next occurrence in the same tx so this occurrence is
+            // consumed exactly once. A trigger whose expression won't compute is
+            // left as-is and excluded (it was seeded valid, so this is defensive).
+            let Ok(next) = compute_next(&trigger) else {
+                continue;
+            };
+            sqlx::query!(
+                r#"
+                UPDATE pipeline_triggers
+                SET next_fire_at = $2, updated_at = $3
+                WHERE id = $1
+                "#,
+                trigger.id().as_str(),
+                next,
+                now,
+            )
+            .execute(&mut *tx)
+            .await
+            .to_domain()?;
+            claimed.push(trigger);
+        }
+
+        tx.commit().await.to_domain()?;
+        Ok(claimed)
+    }
 }
 
 /// Row shape for `SELECT ... FROM pipeline_triggers`. The denormalized `kind`
@@ -215,6 +283,29 @@ pub mod queries {
             ORDER BY created_at
             "#,
             pipeline_id.as_str(),
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter().map(Trigger::try_from).collect()
+    }
+
+    /// Enabled cron triggers with no `next_fire_at` yet — the scheduler seeds them.
+    pub async fn list_unscheduled_cron<'e, E>(executor: E) -> DomainResult<Vec<Trigger>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let rows: Vec<TriggerRow> = sqlx::query_as!(
+            TriggerRow,
+            r#"
+            SELECT id, pipeline_id, name,
+                   source AS "source: Json<TriggerSource>",
+                   inputs AS "inputs: Json<Vec<TriggerInput>>",
+                   enabled, next_fire_at, last_fired_at, last_status, created_at, updated_at
+            FROM pipeline_triggers
+            WHERE enabled AND kind = 'cron' AND next_fire_at IS NULL
+            ORDER BY created_at
+            "#,
         )
         .fetch_all(executor)
         .await

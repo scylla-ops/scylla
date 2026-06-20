@@ -11,6 +11,7 @@ pub use db::{DatabaseConfig, close_db, init_db};
 pub use messaging::{InMemoryAgentRegistry, InMemoryJobLogStream};
 
 pub use services::ChaChaSecretCipher;
+pub use services::CronScheduleService;
 
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgAgentRepository;

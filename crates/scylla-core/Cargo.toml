@@ -28,6 +28,7 @@ chrono = { workspace = true, features = ["serde"] }
 ulid.workspace = true
 
 # application
+croner.workspace = true
 uuid.workspace = true
 tokio.workspace = true
 tokio-stream.workspace = true
