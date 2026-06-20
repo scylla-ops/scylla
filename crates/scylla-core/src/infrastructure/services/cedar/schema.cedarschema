@@ -76,11 +76,12 @@ namespace Scylla {
         appliesTo { principal: [User, Service], resource: [Project] };
 
     // ── Pipeline-targeted ──────────────────────────────────────────────
-    action "updatePipeline", "deletePipeline", "runPipeline",
+    action "updatePipeline", "deletePipeline", "manageTriggers",
            "listJobsByPipeline"
         appliesTo { principal: [User, Service], resource: [Pipeline] };
-    // Also grantable to agent Apps (read the pipeline, execute its jobs).
-    action "readPipeline", "executeJob"
+    // Also grantable to Apps: agents read the pipeline + execute its jobs; a
+    // trigger-runner App runs the pipeline (runPipeline) when a trigger fires.
+    action "readPipeline", "executeJob", "runPipeline"
         appliesTo { principal: [User, Service, App], resource: [Pipeline] };
 
     // ── Job-targeted ───────────────────────────────────────────────────

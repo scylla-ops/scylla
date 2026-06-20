@@ -57,6 +57,10 @@ pub enum Permission {
     /// An agent App executing the jobs of a pipeline (distinct from a user
     /// triggering a run via `RunPipeline`).
     ExecuteJob(PipelineId),
+    /// Manage a pipeline's triggers (create / update / delete / enable). Pipeline-
+    /// scoped like `UpdatePipeline`; firing itself is gated separately by
+    /// `RunPipeline`, so managing triggers does not by itself confer run rights.
+    ManageTriggers(PipelineId),
     ListPipelines,
     ListPipelinesByProject(ProjectId),
     ListPipelinesByOrganization(OrganizationId),
@@ -158,6 +162,7 @@ impl Permission {
             Self::DeletePipeline(_) => "deletePipeline",
             Self::RunPipeline(_) => "runPipeline",
             Self::ExecuteJob(_) => "executeJob",
+            Self::ManageTriggers(_) => "manageTriggers",
             Self::ListPipelines => "listPipelines",
             Self::ListPipelinesByProject(_) => "listPipelinesByProject",
             Self::ListPipelinesByOrganization(_) => "listPipelinesByOrganization",
@@ -266,6 +271,7 @@ impl Permission {
             | Self::DeletePipeline(id)
             | Self::RunPipeline(id)
             | Self::ExecuteJob(id)
+            | Self::ManageTriggers(id)
             | Self::ListJobsByPipeline(id) => ResourceRef::Pipeline(id.clone()),
 
             // Job-targeted
@@ -354,6 +360,7 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::DeletePipeline(pipeline.clone()),
         Permission::RunPipeline(pipeline.clone()),
         Permission::ExecuteJob(pipeline.clone()),
+        Permission::ManageTriggers(pipeline.clone()),
         Permission::ListPipelines,
         Permission::ListPipelinesByProject(project.clone()),
         Permission::ListPipelinesByOrganization(org.clone()),
