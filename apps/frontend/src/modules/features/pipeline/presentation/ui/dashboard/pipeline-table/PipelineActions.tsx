@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@shadcn/dropdown-menu.tsx';
-import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2 } from 'lucide-react';
+import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2, Copy } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
@@ -14,6 +14,7 @@ import { IconButton } from '@shared/presentation/ui';
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
   onEdit: (e: SyntheticEvent) => void;
+  onDuplicate: (e: SyntheticEvent) => void;
   onViewJobs?: (e: SyntheticEvent) => void;
   onMore?: (e: SyntheticEvent) => void;
   isRunning?: boolean;
@@ -26,6 +27,7 @@ type PipelineActionsProps = {
 export const PipelineActions = ({
   onRun,
   onEdit,
+  onDuplicate,
   onViewJobs,
   onMore,
   isRunning,
@@ -72,6 +74,10 @@ export const PipelineActions = ({
               <EditIcon className='w-4 h-4 mr-2' />
               <Trans>Edit</Trans>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDuplicate}>
+              <Copy className='w-4 h-4 mr-2' />
+              <Trans>Duplicate</Trans>
+            </DropdownMenuItem>
             {onViewJobs && (
               <DropdownMenuItem onClick={onViewJobs}>
                 <ListChecks className='w-4 h-4 mr-2' />
@@ -95,18 +101,12 @@ export const PipelineActions = ({
             iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
           />
 
-          <IconButton
-            icon={EditIcon}
-            tooltip={'Edit pipeline'}
-            onClick={onEdit}
-          />
+          <IconButton icon={EditIcon} tooltip={'Edit pipeline'} onClick={onEdit} />
+
+          <IconButton icon={Copy} tooltip={<Trans>Duplicate</Trans>} onClick={onDuplicate} />
 
           {onViewJobs && (
-            <IconButton
-              icon={ListChecks}
-              tooltip={<Trans>View Jobs</Trans>}
-              onClick={onViewJobs}
-            />
+            <IconButton icon={ListChecks} tooltip={<Trans>View Jobs</Trans>} onClick={onViewJobs} />
           )}
 
           {onMore && (

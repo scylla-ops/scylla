@@ -10,6 +10,7 @@ import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineMetadata) => void;
+  onDuplicate: (pipeline: PipelineMetadata) => void;
   onViewJobs: (pipeline: PipelineMetadata) => void;
 
   runningPipelines: Set<string>;
@@ -66,6 +67,10 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         onEdit={e => {
           e.stopPropagation();
           meta.onEdit(row.original);
+        }}
+        onDuplicate={e => {
+          e.stopPropagation();
+          meta.onDuplicate(row.original);
         }}
         onViewJobs={e => {
           e.stopPropagation();
