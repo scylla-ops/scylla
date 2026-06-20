@@ -9,9 +9,20 @@ use chrono::{DateTime, Utc};
 /// global, kind-scoped reads at the bottom.
 #[async_trait]
 pub trait TriggerRepository {
-    async fn create(&self, trigger: &Trigger) -> DomainResult<Trigger>;
+    /// Persist a new trigger. `webhook_secret_enc` is the AEAD-encrypted HMAC
+    /// signing secret for webhook triggers (written to a column that normal reads
+    /// never select); `None` for cron.
+    async fn create(
+        &self,
+        trigger: &Trigger,
+        webhook_secret_enc: Option<&[u8]>,
+    ) -> DomainResult<Trigger>;
 
     async fn find_by_id(&self, id: &TriggerId) -> DomainResult<Trigger>;
+
+    /// The AEAD-encrypted webhook signing secret for `id`, or `None` when the
+    /// trigger has none (cron, or never set). Read only on the ingress path.
+    async fn webhook_secret(&self, id: &TriggerId) -> DomainResult<Option<Vec<u8>>>;
 
     async fn update(&self, trigger: &Trigger) -> DomainResult<Trigger>;
 

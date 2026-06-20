@@ -2,6 +2,7 @@ pub mod bootstrap;
 pub mod config;
 pub mod error;
 pub mod startup;
+pub mod webhook;
 
 #[cfg(feature = "grpc")]
 pub mod grpc;
@@ -20,6 +21,6 @@ pub use config::{BootstrapConfig, CoreConfig, CorsConfig};
 pub use error::{BootstrapError, ConfigError, StartupError};
 pub use startup::{
     Services, SharedAuthUc, SharedGrantUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc,
-    SharedOrgUc, SharedPipelineUc, SharedProjectUc, SharedUserUc, build_cors_layer, init_services,
-    run_grpc, shutdown_signal,
+    SharedOrgUc, SharedPipelineUc, SharedProjectUc, SharedUserUc, SharedWebhookIngressUc,
+    build_cors_layer, init_services, run_grpc, run_webhook, shutdown_signal,
 };

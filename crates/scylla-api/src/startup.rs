@@ -8,7 +8,8 @@ use scylla_core::application::{
     JobLogStreamUseCase, JobLogUseCases, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
     OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
     RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases,
-    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
+    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases,
+    WebhookIngressUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::LettreMailer;
 use scylla_core::infrastructure::{
@@ -19,11 +20,12 @@ use scylla_core::infrastructure::{
     PgDefaultRoleBindingRepository, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
     PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
     PgPolicyRepository, PgProjectRepository, PgRoleRepository, PgSecretRepository,
-    PgSessionRepository, PgSignupRepository, PgTriggerRepository, PgUserOrganizationRepository,
-    PgUserProjectRepository, PgUserRepository,
+    PgSessionRepository, PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
+    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 
@@ -134,6 +136,8 @@ pub type SharedTriggerFireUc = Arc<
         InMemoryAgentRegistry,
     >,
 >;
+pub type SharedWebhookIngressUc =
+    Arc<WebhookIngressUseCases<PgTriggerRepository, PgTriggerDeliveryRepository>>;
 
 // ── Services container ─────────────────────────────────────────────────
 
@@ -149,6 +153,7 @@ pub struct Services {
     pub pipeline_uc: SharedPipelineUc,
     pub trigger_uc: SharedTriggerUc,
     pub trigger_fire_uc: SharedTriggerFireUc,
+    pub webhook_ingress_uc: SharedWebhookIngressUc,
     pub secret_uc: SharedSecretUc,
     pub job_uc: SharedJobUc,
     pub job_log_uc: SharedJobLogUc,
@@ -392,6 +397,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     ));
 
     let trigger_repo = Arc::new(PgTriggerRepository::new(db.clone()));
+    let trigger_delivery_repo = Arc::new(PgTriggerDeliveryRepository::new(db.clone()));
     let trigger_uc = Arc::new(TriggerUseCases::new(
         trigger_repo.clone(),
         pipeline_repo.clone(),
@@ -400,6 +406,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         hash_service.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
+        secret_cipher.clone(),
     ));
     let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(
         trigger_repo.clone(),
@@ -408,6 +415,14 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         app_repo.clone(),
         pipeline_uc.clone(),
         dispatch_uc.clone(),
+    ));
+    // Webhook ingress: shares the trigger-runner fire path; firing is the
+    // TriggerFiring trait object the cron scheduler also uses.
+    let webhook_ingress_uc = Arc::new(WebhookIngressUseCases::new(
+        trigger_repo.clone(),
+        trigger_delivery_repo.clone(),
+        secret_cipher.clone(),
+        trigger_fire_uc.clone() as Arc<dyn TriggerFiring>,
     ));
 
     // Cron firing engine: each tick seeds first-occurrences for new cron triggers
@@ -469,6 +484,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         pipeline_uc,
         trigger_uc,
         trigger_fire_uc,
+        webhook_ingress_uc,
         secret_uc,
         job_uc,
         job_log_uc,
@@ -616,8 +632,14 @@ where
     let project_handler = ProjectHandler::new(services.project_uc.clone());
     let pipeline_handler =
         PipelineHandler::new(services.pipeline_uc.clone(), services.dispatch_uc.clone());
-    let trigger_handler =
-        TriggerHandler::new(services.trigger_uc.clone(), services.trigger_fire_uc.clone());
+    let trigger_handler = TriggerHandler::new(
+        services.trigger_uc.clone(),
+        services.trigger_fire_uc.clone(),
+        config
+            .webhook
+            .as_ref()
+            .and_then(|w| w.public_base_url.clone()),
+    );
     let job_handler = JobHandler::new(
         services.job_uc.clone(),
         services.job_log_uc.clone(),
@@ -775,5 +797,30 @@ where
         .serve_with_shutdown(config.grpc.address, shutdown)
         .await?;
 
+    Ok(())
+}
+
+// ── Webhook ingress HTTP server ────────────────────────────────────────────
+
+/// Serve the inbound-webhook HTTP API on its own port until `shutdown` resolves.
+/// Separate from the gRPC server: a public, unauthenticated-at-the-edge surface
+/// (requests are authenticated per-trigger by HMAC inside the handler).
+pub async fn run_webhook<F>(
+    address: SocketAddr,
+    ingress: SharedWebhookIngressUc,
+    shutdown: F,
+) -> Result<(), StartupError>
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    let app = crate::webhook::router(ingress);
+    let listener = tokio::net::TcpListener::bind(address)
+        .await
+        .map_err(|e| StartupError::Webhook(format!("bind {address}: {e}")))?;
+    tracing::info!("webhook ingress listening on {address}");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown)
+        .await
+        .map_err(|e| StartupError::Webhook(e.to_string()))?;
     Ok(())
 }

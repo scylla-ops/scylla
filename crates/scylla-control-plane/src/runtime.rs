@@ -22,6 +22,19 @@ pub async fn run(config: ControlPlaneConfig) -> Result<()> {
         signal_token.cancel();
     });
 
+    // ── Webhook ingress (separate HTTP port, optional) ─────────────────
+    // Runs concurrently with the gRPC server and shuts down on the same token.
+    let webhook_handle = config.api.webhook.clone().map(|wh| {
+        let ingress = services.webhook_ingress_uc.clone();
+        let wh_token = token.clone();
+        tokio::spawn(async move {
+            scylla_api::run_webhook(wh.address, ingress, async move {
+                wh_token.cancelled().await;
+            })
+            .await
+        })
+    });
+
     // ── API gRPC server (blocks until token cancelled) ─────────────────
     let api_token = token.clone();
     let api_result = scylla_api::run_grpc(&config.api, &services, async move {
@@ -30,6 +43,14 @@ pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     .await;
 
     token.cancel();
+
+    if let Some(handle) = webhook_handle {
+        match handle.await {
+            Ok(Ok(())) => {}
+            Ok(Err(e)) => info!(error = %e, "webhook server stopped with error"),
+            Err(e) => info!(error = %e, "webhook server task join error"),
+        }
+    }
 
     info!("closing database pool");
     scylla_core::infrastructure::close_db(&db_pool).await;

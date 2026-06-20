@@ -23,14 +23,23 @@ impl PgTriggerRepository {
 
 #[async_trait]
 impl TriggerRepository for PgTriggerRepository {
-    #[instrument(skip(self, trigger), fields(trigger_id = %trigger.id()))]
-    async fn create(&self, trigger: &Trigger) -> DomainResult<Trigger> {
-        queries::create(&self.pool, trigger).await
+    #[instrument(skip(self, trigger, webhook_secret_enc), fields(trigger_id = %trigger.id()))]
+    async fn create(
+        &self,
+        trigger: &Trigger,
+        webhook_secret_enc: Option<&[u8]>,
+    ) -> DomainResult<Trigger> {
+        queries::create(&self.pool, trigger, webhook_secret_enc).await
     }
 
     #[instrument(skip(self), fields(trigger_id = %id))]
     async fn find_by_id(&self, id: &TriggerId) -> DomainResult<Trigger> {
         queries::find_by_id(&self.pool, id).await
+    }
+
+    #[instrument(skip(self), fields(trigger_id = %id))]
+    async fn webhook_secret(&self, id: &TriggerId) -> DomainResult<Option<Vec<u8>>> {
+        queries::webhook_secret(&self.pool, id).await
     }
 
     #[instrument(skip(self, trigger), fields(trigger_id = %trigger.id()))]
@@ -159,7 +168,11 @@ impl TryFrom<TriggerRow> for Trigger {
 pub mod queries {
     use super::*;
 
-    pub async fn create<'e, E>(executor: E, trigger: &Trigger) -> DomainResult<Trigger>
+    pub async fn create<'e, E>(
+        executor: E,
+        trigger: &Trigger,
+        webhook_secret_enc: Option<&[u8]>,
+    ) -> DomainResult<Trigger>
     where
         E: PgExecutor<'e>,
     {
@@ -169,8 +182,9 @@ pub mod queries {
             r#"
             INSERT INTO pipeline_triggers
                 (id, pipeline_id, name, kind, source, inputs, enabled,
-                 next_fire_at, last_fired_at, last_status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                 next_fire_at, last_fired_at, last_status, webhook_secret_enc,
+                 created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             "#,
             trigger.id().as_str(),
             trigger.pipeline_id().as_str(),
@@ -182,6 +196,7 @@ pub mod queries {
             trigger.next_fire_at(),
             trigger.last_fired_at(),
             trigger.last_status(),
+            webhook_secret_enc,
             trigger.created_at(),
             trigger.updated_at(),
         )
@@ -189,6 +204,25 @@ pub mod queries {
         .await
         .to_domain()?;
         Ok(trigger.clone())
+    }
+
+    /// Read just the encrypted webhook secret (ingress path); normal reads never
+    /// select this column.
+    pub async fn webhook_secret<'e, E>(
+        executor: E,
+        id: &TriggerId,
+    ) -> DomainResult<Option<Vec<u8>>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let row = sqlx::query!(
+            r#"SELECT webhook_secret_enc FROM pipeline_triggers WHERE id = $1"#,
+            id.as_str(),
+        )
+        .fetch_optional(executor)
+        .await
+        .to_domain()?;
+        Ok(row.and_then(|r| r.webhook_secret_enc))
     }
 
     pub async fn find_by_id<'e, E>(executor: E, id: &TriggerId) -> DomainResult<Trigger>

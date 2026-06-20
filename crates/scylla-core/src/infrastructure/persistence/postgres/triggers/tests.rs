@@ -34,7 +34,7 @@ async fn cron_trigger_round_trips_with_inputs(pool: PgPool) {
         vec![TriggerInput::literal(EnvKey::new("RUN_MODE").unwrap(), "nightly")],
     )
     .unwrap();
-    repo.create(&trigger).await.unwrap();
+    repo.create(&trigger, None).await.unwrap();
 
     let found = repo.find_by_id(trigger.id()).await.unwrap();
     assert_eq!(found.name().as_str(), "nightly");
@@ -58,7 +58,7 @@ async fn webhook_trigger_round_trips_with_json_pointer(pool: PgPool) {
         vec![TriggerInput::json_pointer(EnvKey::new("GIT_COMMIT").unwrap(), "/after").unwrap()],
     )
     .unwrap();
-    repo.create(&trigger).await.unwrap();
+    repo.create(&trigger, None).await.unwrap();
 
     let found = repo.find_by_id(trigger.id()).await.unwrap();
     match found.source() {
@@ -81,9 +81,9 @@ async fn list_by_pipeline_filters(pool: PgPool) {
     pipelines.create(&pb).await.unwrap();
     let repo = PgTriggerRepository::new(pool);
 
-    repo.create(&cron_trigger(&pa, "a")).await.unwrap();
-    repo.create(&cron_trigger(&pa, "b")).await.unwrap();
-    repo.create(&cron_trigger(&pb, "c")).await.unwrap();
+    repo.create(&cron_trigger(&pa, "a"), None).await.unwrap();
+    repo.create(&cron_trigger(&pa, "b"), None).await.unwrap();
+    repo.create(&cron_trigger(&pb, "c"), None).await.unwrap();
 
     assert_eq!(repo.list_by_pipeline(pa.id()).await.unwrap().len(), 2);
     assert_eq!(repo.list_by_pipeline(pb.id()).await.unwrap().len(), 1);
@@ -95,7 +95,7 @@ async fn update_persists_changes(pool: PgPool) {
     let repo = PgTriggerRepository::new(pool);
 
     let mut trigger = cron_trigger(&pipeline, "nightly");
-    repo.create(&trigger).await.unwrap();
+    repo.create(&trigger, None).await.unwrap();
 
     trigger
         .update(
@@ -120,7 +120,7 @@ async fn set_enabled_persists(pool: PgPool) {
     let repo = PgTriggerRepository::new(pool);
 
     let mut trigger = cron_trigger(&pipeline, "nightly");
-    repo.create(&trigger).await.unwrap();
+    repo.create(&trigger, None).await.unwrap();
 
     trigger.set_enabled(false);
     repo.update(&trigger).await.unwrap();
@@ -133,8 +133,8 @@ async fn duplicate_name_in_pipeline_conflicts(pool: PgPool) {
     let (_, _, pipeline) = seed_org_project_pipeline(&pool, "dup").await;
     let repo = PgTriggerRepository::new(pool);
 
-    repo.create(&cron_trigger(&pipeline, "dup")).await.unwrap();
-    let err = repo.create(&cron_trigger(&pipeline, "dup")).await;
+    repo.create(&cron_trigger(&pipeline, "dup"), None).await.unwrap();
+    let err = repo.create(&cron_trigger(&pipeline, "dup"), None).await;
     assert!(matches!(err, Err(DomainError::Conflict(_))), "{err:?}");
 }
 
@@ -144,7 +144,7 @@ async fn cascade_pipeline_delete_removes_triggers(pool: PgPool) {
     let repo = PgTriggerRepository::new(pool.clone());
 
     let trigger = cron_trigger(&pipeline, "x");
-    repo.create(&trigger).await.unwrap();
+    repo.create(&trigger, None).await.unwrap();
 
     PgPipelineRepository::new(pool)
         .delete(pipeline.id())
@@ -163,7 +163,7 @@ async fn delete_then_find_returns_not_found(pool: PgPool) {
     let repo = PgTriggerRepository::new(pool);
 
     let trigger = cron_trigger(&pipeline, "x");
-    repo.create(&trigger).await.unwrap();
+    repo.create(&trigger, None).await.unwrap();
 
     repo.delete(trigger.id()).await.unwrap();
     assert!(matches!(
@@ -184,7 +184,7 @@ async fn cron_trigger_at(
     if let Some(next) = next_fire_at {
         trigger.set_next_fire_at(Some(next));
     }
-    repo.create(&trigger).await.unwrap();
+    repo.create(&trigger, None).await.unwrap();
     trigger
 }
 
@@ -201,7 +201,7 @@ async fn list_unscheduled_cron_selects_only_enabled_cron_without_next_fire(pool:
     // Ineligible: disabled.
     let mut disabled = cron_trigger(&pipeline, "disabled");
     disabled.set_enabled(false);
-    repo.create(&disabled).await.unwrap();
+    repo.create(&disabled, None).await.unwrap();
     // Ineligible: webhook kind.
     let webhook = Trigger::create(
         pipeline.id().clone(),
@@ -210,7 +210,7 @@ async fn list_unscheduled_cron_selects_only_enabled_cron_without_next_fire(pool:
         vec![],
     )
     .unwrap();
-    repo.create(&webhook).await.unwrap();
+    repo.create(&webhook, None).await.unwrap();
 
     let unscheduled = repo.list_unscheduled_cron().await.unwrap();
     assert_eq!(unscheduled.len(), 1);
@@ -233,7 +233,7 @@ async fn claim_due_cron_claims_due_advances_and_excludes_others(pool: PgPool) {
     let mut disabled = cron_trigger(&pipeline, "off");
     disabled.set_enabled(false);
     disabled.set_next_fire_at(Some(past));
-    repo.create(&disabled).await.unwrap();
+    repo.create(&disabled, None).await.unwrap();
 
     let compute = |_t: &Trigger| -> DomainResult<DateTime<Utc>> { Ok(advanced) };
 

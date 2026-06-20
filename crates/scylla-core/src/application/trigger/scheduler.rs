@@ -191,10 +191,13 @@ mod tests {
                 .push((trigger.id().to_string(), trigger.next_fire_at()));
             Ok(trigger.clone())
         }
-        async fn create(&self, _: &Trigger) -> DomainResult<Trigger> {
+        async fn create(&self, _: &Trigger, _: Option<&[u8]>) -> DomainResult<Trigger> {
             unimplemented!()
         }
         async fn find_by_id(&self, _: &TriggerId) -> DomainResult<Trigger> {
+            unimplemented!()
+        }
+        async fn webhook_secret(&self, _: &TriggerId) -> DomainResult<Option<Vec<u8>>> {
             unimplemented!()
         }
         async fn delete(&self, _: &TriggerId) -> DomainResult<()> {

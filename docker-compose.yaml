@@ -27,8 +27,10 @@ services:
     container_name: scylla-control-plane
     # 50051 = gRPC API (user APIs, app token exchange, and the agent worker
     # stream). Agents connect here — there is no separate broker port.
+    # 8088 = inbound webhook ingress (POST /webhooks/{trigger_id}).
     ports:
       - "50051:50051"
+      - "8088:8088"
     environment:
       RUST_LOG: info
       # Override DatabaseConfig.url via env so secrets stay out of the image.

@@ -1,7 +1,7 @@
 use crate::application::caller::CallerContext;
 use crate::application::{
     AppRepository, Grant, HashService, PermissionService, PipelineRepository, PolicyControl,
-    Principal, ProjectRepository, Scope, TriggerRepository,
+    Principal, ProjectRepository, Scope, SecretCipher, TriggerRepository,
 };
 use crate::domain::entities::{App, AppCredential, OrganizationId, PipelineId, Trigger, TriggerId};
 use crate::domain::errors::{DomainError, DomainResult};
@@ -11,6 +11,7 @@ use crate::domain::value_objects::trigger::{TriggerInput, TriggerName, TriggerSo
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
+use uuid::Uuid;
 
 /// Name of the per-organization machine App that pipeline runs fire as. One is
 /// lazily provisioned per org on first trigger creation; it holds a single
@@ -27,6 +28,9 @@ const RUN_PIPELINE_PERMISSION_KEY: &str = "runPipeline";
 /// caller (anti-escalation: you cannot set up a trigger that runs a pipeline you
 /// could not run yourself). Firing is handled separately (the firing engine /
 /// FireTrigger), all converging on the unchanged `PipelineUseCases::run`.
+// The derived `new` takes one arg per collaborator (8 with the cipher); that is
+// the composition-root wiring, not a call-site ergonomics problem.
+#[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct TriggerUseCases<T, P, PR, A, H, PC, PS>
 where
@@ -45,6 +49,10 @@ where
     hash_service: Arc<H>,
     policy_control: Arc<PC>,
     permission_service: Arc<PS>,
+    /// AEAD cipher for the webhook signing secret at rest (same master key as
+    /// project secrets). HMAC verification needs the plaintext back, so the secret
+    /// is encrypted-reversible, never one-way hashed.
+    cipher: Arc<dyn SecretCipher>,
 }
 
 impl<T, P, PR, A, H, PC, PS> TriggerUseCases<T, P, PR, A, H, PC, PS>
@@ -57,6 +65,10 @@ where
     PC: PolicyControl,
     PS: PermissionService,
 {
+    /// Create a trigger. For a webhook source a fresh HMAC signing secret is
+    /// generated, encrypted at rest, and returned ONCE as the second tuple element
+    /// (the caller surfaces it to the user; it is never readable again). Cron
+    /// triggers return `None`.
     #[instrument(skip(self, caller, source, inputs), fields(pipeline_id = %pipeline_id, name = %name))]
     pub async fn create(
         &self,
@@ -65,7 +77,7 @@ where
         name: TriggerName,
         source: TriggerSource,
         inputs: Vec<TriggerInput>,
-    ) -> DomainResult<Trigger> {
+    ) -> DomainResult<(Trigger, Option<String>)> {
         self.permission_service
             .check(caller, Permission::ManageTriggers(pipeline_id.clone()))
             .await?;
@@ -82,7 +94,23 @@ where
         self.ensure_runner_app(project.organization_id()).await?;
 
         let trigger = Trigger::create(pipeline_id, name, source, inputs)?;
-        self.trigger_repo.create(&trigger).await
+
+        // Webhook triggers carry a generated signing secret (encrypted at rest,
+        // plaintext returned once); cron triggers carry none.
+        let (secret_plaintext, secret_enc) = match trigger.source() {
+            TriggerSource::Webhook(_) => {
+                let plaintext = generate_webhook_secret();
+                let enc = self.cipher.encrypt(&plaintext)?;
+                (Some(plaintext), Some(enc))
+            }
+            TriggerSource::Cron(_) => (None, None),
+        };
+
+        let stored = self
+            .trigger_repo
+            .create(&trigger, secret_enc.as_deref())
+            .await?;
+        Ok((stored, secret_plaintext))
     }
 
     #[instrument(skip(self, caller), fields(trigger_id = %trigger_id))]
@@ -192,6 +220,12 @@ where
             Err(e) => Err(e),
         }
     }
+}
+
+/// A fresh 256-bit webhook signing secret, hex-encoded (64 chars). High-entropy;
+/// returned to the user once and stored only encrypted.
+fn generate_webhook_secret() -> String {
+    format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple())
 }
 
 #[cfg(test)]
