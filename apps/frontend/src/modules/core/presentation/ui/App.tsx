@@ -5,14 +5,14 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
-import { CapabilitiesProvider } from '@core/presentation/providers/Capabilities.provider.tsx';
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
 import { messages as projectMessages } from '@/modules/features/project/locales/en/messages.ts';
 import { messages as pipelineMessages } from '@/modules/features/pipeline/locales/en/messages.ts';
 import { messages as marketplaceMessages } from '@/modules/features/marketplace/locales/en/messages.ts';
 import { messages as organizationMessages } from '@/modules/features/organization/locales/en/messages.ts';
 import { messages as userMessages } from '@/modules/features/user/locales/en/messages.ts';
-import { messages as sharedMessages } from '@/locales/en/messages.ts';
+import { messages as sharedMessages } from '@/modules/shared/locales/en/messages.ts';
+import { messages as layoutMessages } from '@/modules/layout/locales/en/messages.ts';
 import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
 import { messages as appsMessages } from '@/modules/features/apps/locales/en/messages.ts';
 import { messages as agentsMessages } from '@/modules/features/agents/locales/en/messages.ts';
@@ -32,6 +32,7 @@ i18n.load('en', {
   ...sharedMessages,
   ...jobMessages,
   ...appsMessages,
+  ...layoutMessages,
   ...agentsMessages,
   ...secretMessages,
 });
@@ -94,12 +95,10 @@ function App() {
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <CapabilitiesProvider>
-            <DependenciesProvider>
-              <RouterProvider router={CoreRouter} />
-              <Toaster />
-            </DependenciesProvider>
-          </CapabilitiesProvider>
+          <DependenciesProvider>
+            <RouterProvider router={CoreRouter} />
+            <Toaster />
+          </DependenciesProvider>
         </QueryClientProvider>
       </I18nProvider>
     </StrictMode>

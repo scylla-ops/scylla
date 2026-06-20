@@ -43,7 +43,7 @@ export const FeatureHeader = ({
       setDeleteDialogOpen(false);
       await onDeleteSelection?.();
       const itemLabel = typeof label === 'string' ? label : 'item';
-      toast.success(`Successfully deleted ${selectedCount} ${itemLabel}s`);
+      toast.success(`${selectedCount} ${itemLabel}s deleted`);
     } catch {
       // Toast shown by the global MutationCache onError handler.
     }

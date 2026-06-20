@@ -1,5 +1,7 @@
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { cn } from '@shared/presentation/utils';
 
 interface AgentIdLinkProps {
@@ -18,17 +20,18 @@ interface AgentIdLinkProps {
  */
 export const AgentIdLink = ({ id, truncate, chip = false, className }: AgentIdLinkProps) => {
   const label = truncate && id.length > truncate ? `${id.slice(0, truncate)}…` : id;
+  const { i18n } = useLingui();
 
   const copyId = async (e: React.MouseEvent) => {
     // Cards navigate on click — copying must not also open the agent.
     e.stopPropagation();
     try {
       await navigator.clipboard.writeText(id);
-      toast.success('Agent id copied');
+      toast.success(i18n._(ToastMessages.AGENT_ID_COPIED));
     } catch {
       // Clipboard can be denied (permissions, non-secure context) — say so
       // instead of failing silently.
-      toast.error('Could not copy — select the id manually');
+      toast.error(i18n._(ToastMessages.AGENT_ID_COPY_ERROR));
     }
   };
 

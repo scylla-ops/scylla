@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
+import { useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
 
@@ -29,6 +31,7 @@ export const useSecrets = (projectId: string) => {
 export const useCreateSecret = (projectId: string) => {
   const { createSecret } = useDependencies().secret;
   const queryClient = useQueryClient();
+  const { i18n } = useLingui();
 
   return useMutation({
     mutationFn: async (input: { name: string; value: string; description: string }) =>
@@ -41,7 +44,7 @@ export const useCreateSecret = (projectId: string) => {
         })
       ).unwrap(),
     onSuccess: () => {
-      toast.success('Secret created');
+      toast.success(i18n._(ToastMessages.SECRET_CREATE));
       void queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, projectId] });
     },
   });

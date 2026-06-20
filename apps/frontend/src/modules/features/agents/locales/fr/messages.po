@@ -50,7 +50,7 @@ msgstr "terminés au total"
 msgid "connects as this agent's app id"
 msgstr "se connecte avec l'app id de cet agent"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:79
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:82
 msgid "Copy id"
 msgstr "Copier l'id"
 
@@ -62,7 +62,7 @@ msgstr "Créer & révéler le secret →"
 msgid "Create your first agent"
 msgstr "Créez votre premier agent"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:122
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:125
 msgid "created"
 msgstr "créé le"
 
@@ -73,7 +73,7 @@ msgstr "Créé le"
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:103
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:217
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:168
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:83
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:86
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -83,7 +83,7 @@ msgid "Delete agent?"
 msgstr "Supprimer l'agent ?"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:93
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:110
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:113
 msgid "down"
 msgstr "hors ligne"
 
@@ -135,7 +135,7 @@ msgstr "my-build-runner"
 msgid "Name"
 msgstr "Nom"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:114
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:117
 msgid "never connected"
 msgstr "jamais connecté"
 
@@ -158,13 +158,13 @@ msgstr "Aucun job terminé sur cette période."
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:89
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:68
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:99
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:102
 msgid "offline"
 msgstr "hors ligne"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:89
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:64
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:94
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:97
 msgid "online"
 msgstr "en ligne"
 
@@ -222,7 +222,7 @@ msgid "sample"
 msgstr "exemple"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:93
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:106
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:109
 msgid "seen"
 msgstr "vu"
 

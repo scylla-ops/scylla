@@ -41,13 +41,9 @@ git clone https://github.com/scylla-ops/scylla.git
 cd scylla
 just up
 # or, without just:
-docker compose -f docker-compose.yaml -f docker-compose.saas.yaml pull
-docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d
+docker compose pull
+docker compose up -d
 ```
-
-The beta ships the SaaS (multi-tenant) edition — that's what `just up`
-pulls. The single-tenant PaaS edition is still buildable (`just local`), but
-its prebuilt images are refreshed less often during the beta.
 
 First boot creates the `admin` user automatically.
 
@@ -60,7 +56,7 @@ Open **http://localhost:8080/** and sign in:
 
 | `just`        | `docker compose`                  | What it does                                  |
 |---------------|-----------------------------------|-----------------------------------------------|
-| `just up`     | `compose -f … -f …saas… pull && up -d` | Pull and start (or refresh) the beta stack |
+| `just up`     | `docker compose pull && up -d`    | Pull and start (or refresh) the beta stack    |
 | `just down`   | `docker compose down`             | Stop the stack                                |
 | `just clean`  | `docker compose down -v --rmi local --remove-orphans` | Stop and wipe volumes + local images |
 | `just logs [svc]` | `docker compose logs -f [svc]` | Follow logs (all services or one)            |

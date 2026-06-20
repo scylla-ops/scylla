@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { Check, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { cn } from '@shared/presentation/utils';
 
 type CodeSnippetVariant = 'default' | 'dark' | 'warning';
@@ -58,17 +60,18 @@ export const CodeSnippet = ({
   multiline = false,
   blurred = false,
   overlay,
-  copyToast = 'Copied',
+  copyToast,
   className,
 }: CodeSnippetProps) => {
   const [copied, setCopied] = React.useState(false);
   const styles = VARIANT[variant];
+  const { i18n } = useLingui();
 
   const copy = async () => {
     if (blurred) return;
     await navigator.clipboard.writeText(value);
     setCopied(true);
-    toast.success(copyToast);
+    toast.success(copyToast ?? i18n._(ToastMessages.COPIED));
     setTimeout(() => setCopied(false), 1500);
   };
 

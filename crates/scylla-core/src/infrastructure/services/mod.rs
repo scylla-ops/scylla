@@ -5,9 +5,7 @@ pub mod chacha_secret_cipher;
 pub(crate) mod cedar_authz;
 #[cfg(feature = "permission")]
 pub mod cedar_permission_service;
-#[cfg(feature = "oauth-github")]
 pub mod github_oauth_provider;
-#[cfg(feature = "mail")]
 pub mod lettre_mailer;
 
 #[cfg(feature = "hash")]
@@ -15,7 +13,5 @@ pub use argon2_hash_service::Argon2HashService;
 pub use chacha_secret_cipher::ChaChaSecretCipher;
 #[cfg(feature = "permission")]
 pub use cedar_permission_service::CedarPermissionService;
-#[cfg(feature = "oauth-github")]
 pub use github_oauth_provider::GitHubOAuthProvider;
-#[cfg(feature = "mail")]
 pub use lettre_mailer::LettreMailer;

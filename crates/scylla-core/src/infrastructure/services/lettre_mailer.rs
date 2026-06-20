@@ -7,8 +7,7 @@ use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
-/// SMTP mailer over an implicitly-TLS relay (port from config). Behind the
-/// `mail` feature so PaaS builds don't pull in `lettre`.
+/// SMTP mailer over an implicitly-TLS relay (port from config).
 pub struct LettreMailer {
     transport: AsyncSmtpTransport<Tokio1Executor>,
     from: Mailbox,

@@ -207,14 +207,17 @@ export function StepNodeFormDialog({
                   <Trans>Script</Trans>
                 </Label>
 
-                <ReactCodeMirror
-                  id='node-script'
-                  value={script}
-                  onChange={value => setScript(value)}
-                  placeholder={'cd crates/api\ncargo build --release'}
-                  spellCheck={false}
-                  extensions={[StreamLanguage.define(shellLang), codeMirrorTheme]}
-                />
+                <div className={'h-full w-full overflow-auto p-2'}>
+                  <ReactCodeMirror
+                    id='node-script'
+                    className={'max-h-64 w-full'}
+                    value={script}
+                    onChange={value => setScript(value)}
+                    placeholder={'cd crates/api\ncargo build --release'}
+                    spellCheck={false}
+                    extensions={[StreamLanguage.define(shellLang), codeMirrorTheme]}
+                  />
+                </div>
               </div>
               <div className='space-y-2'>
                 <Label htmlFor='node-shell'>

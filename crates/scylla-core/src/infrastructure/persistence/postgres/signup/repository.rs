@@ -45,7 +45,6 @@ impl SignupRepository for PgSignupRepository {
         Ok(())
     }
 
-    #[cfg(feature = "oauth-github")]
     #[instrument(skip(self, user, organization, grant), fields(user_id = %user.id(), org_id = %organization.id(), provider))]
     async fn provision_account_with_identity(
         &self,

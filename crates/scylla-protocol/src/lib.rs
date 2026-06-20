@@ -4,9 +4,6 @@ pub mod services {
     pub mod common {
         tonic::include_proto!("common");
     }
-    pub mod config {
-        tonic::include_proto!("config");
-    }
     pub mod auth {
         tonic::include_proto!("auth");
     }

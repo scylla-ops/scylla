@@ -4,16 +4,10 @@ pub mod mappers;
 pub mod middleware;
 pub mod streaming;
 
-#[cfg(feature = "invitations")]
-pub use handlers::InvitationHandler;
-#[cfg(feature = "oauth-github")]
-pub use handlers::OAuthHandler;
-#[cfg(feature = "signup")]
-pub use handlers::RegistrationHandler;
 pub use handlers::{
-    AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler,
-    GrantHandler, JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler, ProjectHandler,
-    RoleHandler, SecretHandler, UserHandler,
+    AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
+    InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
+    PolicyHandler, ProjectHandler, RegistrationHandler, RoleHandler, SecretHandler, UserHandler,
 };
 pub use mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_to_proto, organization_to_proto,

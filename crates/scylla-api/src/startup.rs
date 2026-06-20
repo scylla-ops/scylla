@@ -2,39 +2,22 @@ use crate::config::CoreConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
 use tokio::sync::Notify;
-#[cfg(feature = "invitations")]
-use scylla_core::application::InvitationUseCases;
-#[cfg(feature = "oauth-github")]
-use scylla_core::application::OAuthUseCases;
-#[cfg(feature = "signup")]
-use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases,
-    DispatchSecretResolver, DispatchUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases,
-    JobUseCases, OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases,
-    ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, UserUseCases,
+    DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
+    JobLogStreamUseCase, JobLogUseCases, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
+    OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
+    RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases, UserUseCases,
 };
-#[cfg(feature = "mail")]
-use scylla_core::application::{Mailer, NoopMailer};
-#[cfg(feature = "mail")]
 use scylla_core::infrastructure::LettreMailer;
-#[cfg(feature = "invitations")]
-use scylla_core::infrastructure::PgInvitationRepository;
-#[cfg(feature = "oauth-github")]
-use scylla_core::infrastructure::{GitHubOAuthProvider, PgOAuthIdentityRepository};
-// PgSignupRepository (core, always compiled) backs both signup and OAuth account
-// provisioning, so it's imported whenever either feature is on.
-#[cfg(all(not(feature = "signup"), feature = "oauth-github"))]
-use scylla_core::infrastructure::PgSignupRepository;
-#[cfg(feature = "signup")]
-use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
-    Argon2HashService, CedarPermissionService, InMemoryAgentRegistry, InMemoryJobLogStream,
-    PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
-    PgAuditLog, PgAuthzEntityProvider, PgDefaultRoleBindingRepository, PgGrantRepository,
-    ChaChaSecretCipher, PgJobLogRepository, PgJobRepository, PgOrganizationRepository,
-    PgPipelineRepository, PgPolicyRepository, PgProjectRepository, PgRoleRepository,
-    PgSecretRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
+    Argon2HashService, CedarPermissionService, ChaChaSecretCipher, GitHubOAuthProvider,
+    InMemoryAgentRegistry, InMemoryJobLogStream, PgAgentRepository, PgAppCredentialRepository,
+    PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
+    PgDefaultRoleBindingRepository, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
+    PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
+    PgPolicyRepository, PgProjectRepository, PgRoleRepository, PgSecretRepository,
+    PgSessionRepository, PgSignupRepository, PgUserOrganizationRepository, PgUserProjectRepository,
     PgUserRepository,
 };
 use sqlx::PgPool;
@@ -54,11 +37,9 @@ pub type SharedPolicyUc =
     Arc<PolicyUseCases<PgPolicyRepository, PermissionChecker, PermissionChecker>>;
 
 pub type SharedAuthUc = Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
-#[cfg(feature = "signup")]
 pub type SharedSignupUc = Arc<
     SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
 >;
-#[cfg(feature = "invitations")]
 pub type SharedInvitationUc = Arc<
     InvitationUseCases<
         PgInvitationRepository,
@@ -70,7 +51,6 @@ pub type SharedInvitationUc = Arc<
         PermissionChecker,
     >,
 >;
-#[cfg(feature = "oauth-github")]
 pub type SharedOAuthUc = Arc<
     OAuthUseCases<
         GitHubOAuthProvider,
@@ -136,11 +116,8 @@ pub type SharedAgentUc = Arc<
 pub struct Services {
     pub db: PgPool,
     pub auth_uc: SharedAuthUc,
-    #[cfg(feature = "signup")]
     pub signup_uc: SharedSignupUc,
-    #[cfg(feature = "invitations")]
     pub invitation_uc: SharedInvitationUc,
-    #[cfg(feature = "oauth-github")]
     pub oauth_uc: Option<SharedOAuthUc>,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
@@ -165,7 +142,6 @@ pub struct Services {
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
-    #[cfg(feature = "mail")]
     pub mailer: Arc<dyn Mailer>,
 }
 
@@ -185,9 +161,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let app_token_repo = Arc::new(PgAppTokenRepository::new(db.clone()));
     let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
-    #[cfg(any(feature = "signup", feature = "oauth-github"))]
     let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
-    #[cfg(feature = "invitations")]
     let invite_repo = Arc::new(PgInvitationRepository::new(db.clone()));
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
@@ -227,7 +201,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo.clone(),
         hash_service.clone(),
     ));
-    #[cfg(feature = "signup")]
     let signup_uc = Arc::new(SignupUseCases::new(
         signup_repo.clone(),
         session_repo.clone(),
@@ -248,7 +221,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
         default_role_repo.clone(),
     ));
-    #[cfg(feature = "metering")]
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
         user_project_repo.clone(),
@@ -259,15 +231,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         scylla_core::application::Quotas {
             max_projects_per_org: config.metering.max_projects_per_org,
         },
-    ));
-    #[cfg(not(feature = "metering"))]
-    let project_uc = Arc::new(ProjectUseCases::new(
-        project_repo.clone(),
-        user_project_repo.clone(),
-        user_repo.clone(),
-        permission_checker.clone(),
-        permission_checker.clone(),
-        default_role_repo.clone(),
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),
@@ -339,7 +302,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     }
 
     // Mailer: real SMTP when configured, else a no-op (logs only).
-    #[cfg(feature = "mail")]
     let mailer: Arc<dyn Mailer> = match &config.mail {
         Some(m) => Arc::new(
             LettreMailer::new(
@@ -354,7 +316,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         None => Arc::new(NoopMailer),
     };
 
-    #[cfg(feature = "invitations")]
     let invitation_uc = Arc::new(InvitationUseCases::new(
         invite_repo.clone(),
         permission_checker.clone(),
@@ -368,7 +329,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     ));
 
     // GitHub OAuth: only wired when the app is configured with credentials.
-    #[cfg(feature = "oauth-github")]
     let oauth_uc = match &config.oauth.github {
         Some(gh) => {
             let provider = GitHubOAuthProvider::new(
@@ -435,11 +395,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     Ok(Services {
         db,
         auth_uc,
-        #[cfg(feature = "signup")]
         signup_uc,
-        #[cfg(feature = "invitations")]
         invitation_uc,
-        #[cfg(feature = "oauth-github")]
         oauth_uc,
         user_uc,
         org_uc,
@@ -463,7 +420,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker,
         session_repo,
         app_token_repo,
-        #[cfg(feature = "mail")]
         mailer,
     })
 }
@@ -553,32 +509,23 @@ pub async fn run_grpc<F>(
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    #[cfg(feature = "invitations")]
-    use crate::grpc::InvitationHandler;
-    #[cfg(feature = "oauth-github")]
-    use crate::grpc::OAuthHandler;
-    #[cfg(feature = "signup")]
-    use crate::grpc::RegistrationHandler;
     use crate::grpc::{
-        AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler,
-        GrantHandler, JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler,
-        ProjectHandler, RoleHandler, SecretHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
+        InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
+        PolicyHandler, ProjectHandler, RegistrationHandler, RoleHandler, SecretHandler, UserHandler,
+        auth_interceptor::AuthInterceptor,
     };
-    #[cfg(feature = "invitations")]
     use scylla_protocol::services::invitation::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
         invitation_service_server::InvitationServiceServer,
     };
-    #[cfg(feature = "oauth-github")]
     use scylla_protocol::services::oauth::oauth_service_server::OauthServiceServer;
-    #[cfg(feature = "signup")]
     use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
         agent_admin::agent_admin_service_server::AgentAdminServiceServer,
         app::app_auth_service_server::AppAuthServiceServer,
         app::app_service_server::AppServiceServer, auth::auth_service_server::AuthServiceServer,
-        config::config_service_server::ConfigServiceServer,
         job::job_service_server::JobServiceServer,
         organization::organization_service_server::OrganizationServiceServer,
         permission::grant_service_server::GrantServiceServer,
@@ -621,7 +568,6 @@ where
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
-    #[cfg(feature = "invitations")]
     let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(
@@ -639,24 +585,18 @@ where
 
     let auth_service = AuthServiceServer::new(auth_handler);
 
-    // Public capability discovery — no auth interceptor, like auth/login.
-    let config_service = ConfigServiceServer::new(ConfigHandler);
-
     // Public app credential exchange — the secret is the credential, so no
     // interceptor; it mints the bearer token apps use on every other call.
     let app_auth_service = AppAuthServiceServer::new(app_auth_handler);
 
-    // Public self-service signup — only present in SaaS (`signup` feature) builds.
-    #[cfg(feature = "signup")]
+    // Public self-service signup.
     let registration_service =
         RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
 
     // Public invitation acceptance — the token is the credential, so no interceptor.
-    #[cfg(feature = "invitations")]
     let invitation_accept_service = InvitationAcceptServiceServer::new(invitation_handler.clone());
 
     // Public GitHub OAuth — present only when configured with credentials.
-    #[cfg(feature = "oauth-github")]
     let oauth_service = services
         .oauth_uc
         .as_ref()
@@ -713,7 +653,6 @@ where
         .service(RoleServiceServer::new(role_handler));
 
     // Authenticated invitation management (org-admins).
-    #[cfg(feature = "invitations")]
     let invitation_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(InvitationServiceServer::new(invitation_handler));
@@ -725,7 +664,6 @@ where
         .layer(GrpcWebLayer::new())
         .add_service(reflection)
         .add_service(auth_service)
-        .add_service(config_service)
         .add_service(app_auth_service)
         .add_service(user_service)
         .add_service(org_service)
@@ -738,16 +676,12 @@ where
         .add_service(agent_admin_service)
         .add_service(policy_service)
         .add_service(grant_service)
-        .add_service(role_service);
-
-    // SaaS-only services, registered behind their cargo feature.
-    #[cfg(feature = "signup")]
-    let router = router.add_service(registration_service);
-    #[cfg(feature = "invitations")]
-    let router = router
+        .add_service(role_service)
+        .add_service(registration_service)
         .add_service(invitation_service)
         .add_service(invitation_accept_service);
-    #[cfg(feature = "oauth-github")]
+
+    // GitHub OAuth is only registered when configured with credentials.
     let router = match oauth_service {
         Some(svc) => router.add_service(svc),
         None => router,

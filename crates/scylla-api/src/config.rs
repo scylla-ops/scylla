@@ -23,11 +23,11 @@ pub struct CoreConfig {
     #[serde(default)]
     pub metering: MeteringConfig,
 
-    /// SMTP settings for the `mail` feature. When absent, a no-op mailer is used.
+    /// SMTP settings. When absent, a no-op mailer is used.
     #[serde(default)]
     pub mail: Option<MailConfig>,
 
-    /// OAuth providers for the `oauth-github` feature.
+    /// OAuth providers.
     #[serde(default)]
     pub oauth: OauthConfig,
 
@@ -47,7 +47,7 @@ pub struct SecretsConfig {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct OauthConfig {
     /// GitHub OAuth app credentials. When absent, the OAuth service is not
-    /// registered even in an `oauth-github` build.
+    /// registered.
     #[serde(default)]
     pub github: Option<GitHubOauthConfig>,
 }
@@ -150,8 +150,7 @@ impl Default for BootstrapConfig {
     }
 }
 
-/// Per-organization quotas (SaaS `metering` feature). Parsed in every edition;
-/// only read when the server is built with `metering`.
+/// Per-organization quotas, enforced on resource creation.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MeteringConfig {
     #[serde(default = "default_max_projects_per_org")]

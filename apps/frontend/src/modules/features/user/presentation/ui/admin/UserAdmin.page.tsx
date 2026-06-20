@@ -9,20 +9,21 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
   const { selectedIds, clearSelection } = useSelection('users');
   const deleteUser = useDeleteUser();
   const [openDialog, setOpenDialog] = useState(false);
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
 
   const { goToUserSettings } = useScyllaNavigate();
 
   const handleDelete = async () => {
     const currentUserId = localStorage.getItem('userId');
     if (currentUserId && selectedIds.includes(currentUserId)) {
-      toast.error(t`You cannot delete your own account.`);
+      toast.error(i18n._(ToastMessages.USER_DELETE_OWN_ACCOUNT_ERROR));
       return;
     }
 
