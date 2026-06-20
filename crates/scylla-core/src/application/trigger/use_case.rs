@@ -17,7 +17,7 @@ use tracing::instrument;
 /// `runPipeline` permission grant at org scope (NOT the agent role, which only
 /// confers `executeJob`). It is used in-process as `CallerContext::App`, never
 /// via a token, so its credential is provisioned only to keep the App invariant.
-const TRIGGER_RUNNER_APP_NAME: &str = "trigger-runner";
+pub(crate) const TRIGGER_RUNNER_APP_NAME: &str = "trigger-runner";
 const RUNNER_SECRET_LABEL: &str = "default";
 /// Must equal `Permission::RunPipeline(_).key()` — asserted in tests.
 const RUN_PIPELINE_PERMISSION_KEY: &str = "runPipeline";
