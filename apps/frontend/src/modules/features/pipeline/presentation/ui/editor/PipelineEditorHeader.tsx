@@ -5,9 +5,10 @@ import { Trans } from '@lingui/react/macro';
 interface PipelineCreationTopbarProps {
   onSubmit: () => void;
   submitLabel: string;
+  isPending?: boolean;
 }
 
-export const PipelineEditorHeader = ({ onSubmit, submitLabel }: PipelineCreationTopbarProps) => {
+export const PipelineEditorHeader = ({ onSubmit, submitLabel, isPending }: PipelineCreationTopbarProps) => {
   return (
     <div className={'flex justify-between w-full'}>
       <TabsList>
@@ -18,7 +19,7 @@ export const PipelineEditorHeader = ({ onSubmit, submitLabel }: PipelineCreation
           <Trans>Blueprint</Trans>
         </TabsTrigger>
       </TabsList>
-      <Button onClick={onSubmit}>
+      <Button onClick={onSubmit} disabled={isPending}>
         <Trans>{submitLabel}</Trans>
       </Button>
     </div>

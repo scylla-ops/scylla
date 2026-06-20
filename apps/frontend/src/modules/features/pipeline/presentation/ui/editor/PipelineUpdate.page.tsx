@@ -48,7 +48,7 @@ export const PipelineUpdatePage = () => {
       <Tabs key={'editor'} defaultValue={'blueprint'} className={'h-full flex flex-col gap-4'}>
         <div className='flex items-center justify-between gap-4'>
           <BackButton iconOnly onClick={() => goBack()} />
-          <PipelineEditorHeader onSubmit={handleUpdate} submitLabel='Edit' />
+          <PipelineEditorHeader onSubmit={handleUpdate} submitLabel='Edit' isPending={updatePipeline.isPending} />
         </div>
         <TabsContent value='scripting' className={'h-full'} forceMount>
           <Card className={'h-full p-0'}>

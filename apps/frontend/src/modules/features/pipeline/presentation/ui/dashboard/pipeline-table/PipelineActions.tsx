@@ -18,6 +18,7 @@ type PipelineActionsProps = {
   onViewJobs?: (e: SyntheticEvent) => void;
   onMore?: (e: SyntheticEvent) => void;
   isRunning?: boolean;
+  isDuplicating?: boolean;
 };
 
 /**
@@ -31,6 +32,7 @@ export const PipelineActions = ({
   onViewJobs,
   onMore,
   isRunning,
+  isDuplicating,
 }: PipelineActionsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
@@ -98,12 +100,19 @@ export const PipelineActions = ({
             icon={isRunning ? Loader2 : PlayIcon}
             tooltip={<Trans>Run</Trans>}
             onClick={onRun}
+            disabled={isRunning}
             iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
           />
 
           <IconButton icon={EditIcon} tooltip={'Edit pipeline'} onClick={onEdit} />
 
-          <IconButton icon={Copy} tooltip={<Trans>Duplicate</Trans>} onClick={onDuplicate} />
+          <IconButton
+            icon={isDuplicating ? Loader2 : Copy}
+            tooltip={<Trans>Duplicate</Trans>}
+            onClick={onDuplicate}
+            disabled={isDuplicating}
+            iconClassName={isDuplicating ? 'animate-spin' : undefined}
+          />
 
           {onViewJobs && (
             <IconButton icon={ListChecks} tooltip={<Trans>View Jobs</Trans>} onClick={onViewJobs} />

@@ -52,6 +52,7 @@ export const PipelineTable = ({
       goToJobs(pipeline);
     },
     runningPipelines: runningPipelines,
+    duplicatingPipelineId: duplicatePipeline.isPending ? duplicatePipeline.variables : undefined,
     jobsByPipelineId,
     isJobsLoading: isJobsLoading,
     isJobsError: isJobsError,
