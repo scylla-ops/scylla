@@ -21,22 +21,11 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const { t } = useLingui();
   const navigate = useNavigate();
   const setOrganization = useContextStore(state => state.setOrganization);
-  const currentOrganization = useContextStore(state => state.organization);
+  const organizationId = useContextStore(state => state.organization.id);
   const createProject = useCreateProject();
   const { organizations } = useOrganizations();
 
   const items: FormItem[] = [
-    {
-      id: 'organizationId',
-      label: t`Organization`,
-      placeholder: t`Select an organization`,
-      type: FormItemType.Select,
-      defaultValue: currentOrganization.id ?? undefined,
-      options: (organizations ?? []).map(org => ({
-        label: org.name,
-        value: idValue(org.organizationId),
-      })),
-    },
     {
       id: 'name',
       label: t`Project name`,
@@ -55,7 +44,6 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
-    const organizationId = values.find(v => v.id === 'organizationId')?.value;
     const description = values.find(v => v.id === 'description')?.value;
 
     if (!name?.trim() || !organizationId) {
