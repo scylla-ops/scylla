@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+
 /** Class to represent errors in the application.
  * @extends Error
  * **/
@@ -36,6 +38,35 @@ export class ScyllaError extends Error {
   /** A unique constraint was hit, e.g. a name already taken (gRPC ALREADY_EXISTS). */
   public isAlreadyExists(): boolean {
     return this.getCode() === 'ALREADY_EXISTS';
+  }
+
+  /** Message carried by the underlying cause (the gRPC status message), if any. */
+  private causeMessage(): string | undefined {
+    return this.cause instanceof Error && this.cause.message ? this.cause.message : undefined;
+  }
+
+  /**
+   * The single message meant for end users. The backend message is surfaced
+   * only for codes where it is actionable by the user (validation, conflicts,
+   * quotas...); other codes fall back to this error's own wrapper message so
+   * internal details never reach a toast.
+   */
+  public userMessage(): string {
+    if (this.isNetworkError()) {
+      return t`Server unreachable`;
+    }
+    switch (this.getCode()) {
+      case 'INVALID_ARGUMENT':
+      case 'FAILED_PRECONDITION':
+      case 'ALREADY_EXISTS':
+      case 'RESOURCE_EXHAUSTED':
+      case 'NOT_FOUND':
+        return this.causeMessage() ?? this.message;
+      case 'PERMISSION_DENIED':
+        return t`You don't have permission to perform this action`;
+      default:
+        return this.message || t`An unexpected error occurred`;
+    }
   }
 
   public log(): void {

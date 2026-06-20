@@ -11,6 +11,8 @@ import {
 import type { App } from '@/modules/features/apps/domain/models/app.model.ts';
 import { formatDate } from '@shared/utils/date-utils.ts';
 import { toast } from 'sonner';
+import { useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 interface AppCardProps {
   app: App;
@@ -19,10 +21,11 @@ interface AppCardProps {
 
 export const AppCard = ({ app, onRequestDelete }: AppCardProps) => {
   const navigate = useNavigate();
+  const { i18n } = useLingui();
 
   const copyId = async () => {
     await navigator.clipboard.writeText(app.id);
-    toast.success('App id copied');
+    toast.success(i18n._(ToastMessages.APP_ID_COPIED));
   };
 
   return (
