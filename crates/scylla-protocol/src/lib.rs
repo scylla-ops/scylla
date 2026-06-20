@@ -46,6 +46,9 @@ pub mod services {
     pub mod agent_admin {
         tonic::include_proto!("agent_admin");
     }
+    pub mod trigger {
+        tonic::include_proto!("trigger");
+    }
 
     pub const FILE_DESCRIPTOR_SET: &[u8] =
         tonic::include_file_descriptor_set!("services_descriptor");

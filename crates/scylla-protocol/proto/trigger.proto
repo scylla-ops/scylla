@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package trigger;
+
+import "common.proto";
+import "job.proto";
+import "google/protobuf/timestamp.proto";
+
+// Triggers — les façons de lancer un run SANS qu'un humain clique "Run". Un
+// trigger est un initiateur stocké, lié à UN pipeline ; quand il se déclenche il
+// passe par le même chemin qu'un run manuel (un seul check runPipeline, un Job
+// minté, le même dispatch agent) — c'est une nouvelle *source*, jamais un
+// nouveau chemin d'exécution. Un pipeline peut avoir plusieurs triggers.
+//
+// v0.3 livre deux sources :
+//   • cron    — déclenche selon un planning (UTC).
+//   • webhook — déclenche quand un système externe POST sur l'URL du hook,
+//               authentifié par une signature HMAC-SHA256 du corps brut.
+// (poll — déclenche sur changement détecté — est en v0.4, ajouté comme nouvel
+// arm `source`.)
+//
+// Le run s'exécute comme un principal machine dédié, scopé à l'org (un App ne
+// portant que runPipeline) — jamais comme l'humain créateur, jamais comme un
+// service système. Créer un trigger exige donc aussi que l'appelant puisse lui-
+// même lancer le pipeline (pas de blanchiment d'autorité).
+//
+// Tous les RPC sont gardés par `manageTriggers` sur le pipeline cible.
+service TriggerService {
+  rpc CreateTrigger(CreateTriggerRequest)               returns (CreatedTrigger);
+  rpc GetTrigger(GetTriggerRequest)                     returns (TriggerView);
+  rpc UpdateTrigger(UpdateTriggerRequest)               returns (TriggerView);
+  rpc DeleteTrigger(DeleteTriggerRequest)               returns (DeleteTriggerResponse);
+  rpc ListPipelineTriggers(ListPipelineTriggersRequest) returns (ListTriggersResponse);
+  // Active/désactive sans supprimer (un trigger désactivé ne tire jamais et,
+  // pour un webhook, son URL renvoie un 404 opaque).
+  rpc SetTriggerEnabled(SetTriggerEnabledRequest)       returns (TriggerView);
+  // Déclenche immédiatement, en court-circuitant planning/signature — pour
+  // tester. Minte et dispatch un Job exactement comme un vrai tir. Exige
+  // runPipeline.
+  rpc FireTriggerNow(FireTriggerNowRequest)             returns (job.JobResponse);
+}
+
+// ── Specs de source ────────────────────────────────────────────────────────
+
+// Planning cron. `expression` est une expression cron 5 champs (min heure jour
+// mois jour-semaine), évaluée en UTC. Les plannings sous la minute sont rejetés ;
+// l'intervalle minimum est imposé côté serveur.
+message CronSpec {
+  string expression = 1; // ex. "0 9 * * 1-5" — 09:00 UTC en semaine
+}
+
+// Source webhook. Le secret de signature est généré par Scylla à la création et
+// renvoyé exactement une fois (voir CreatedTrigger.webhook_secret) ; il est
+// stocké chiffré (jamais en hash à sens unique — la vérification HMAC a besoin
+// de la valeur) et n'est plus jamais renvoyé. Les émetteurs signent le corps
+// brut en HMAC-SHA256 et passent la signature dans l'en-tête configuré.
+message WebhookSpec {
+  // En-tête portant la signature HMAC-SHA256 (hex) du corps brut. Vide = en-tête
+  // Scylla par défaut ; mettre "X-Hub-Signature-256" pour GitHub.
+  string signature_header = 1;
+}
+
+// Inputs statiques / dérivés du payload, injectés dans le run comme env littéral
+// (non masqué), fusionnés après résolution des secrets. `literal` = constante ;
+// `json_pointer` = extraction d'une valeur du payload webhook (RFC 6901),
+// allowlistée par trigger — jamais un splat body→env, et une valeur ne peut
+// jamais nommer un secret.
+message TriggerInput {
+  string key = 1;
+  oneof source {
+    string literal      = 2;
+    string json_pointer = 3; // webhook uniquement, ex. "/after"
+  }
+}
+
+// ── CRUD ───────────────────────────────────────────────────────────────────
+
+message CreateTriggerRequest {
+  common.PipelineId pipeline_id = 1;
+  string            name        = 2;
+  oneof source {
+    CronSpec    cron    = 3;
+    WebhookSpec webhook = 4;
+  }
+  repeated TriggerInput inputs = 5;
+}
+
+// Le trigger créé plus, pour un webhook, son secret de signature montré une fois.
+message CreatedTrigger {
+  TriggerView trigger        = 1;
+  // Renseigné seulement pour un webhook — le secret HMAC en clair. À copier dans
+  // la config webhook de l'émetteur maintenant ; non récupérable ensuite.
+  string      webhook_secret = 2;
+}
+
+message GetTriggerRequest    { common.TriggerId trigger_id = 1; }
+message DeleteTriggerRequest  { common.TriggerId trigger_id = 1; }
+message DeleteTriggerResponse { bool deleted = 1; }
+
+// Remplace les champs éditables (name, spec de source, inputs). `enabled` se gère
+// via SetTriggerEnabled. Le KIND de source est immuable — pour passer de cron à
+// webhook, supprimer et recréer.
+message UpdateTriggerRequest {
+  common.TriggerId trigger_id = 1;
+  optional string  name       = 2;
+  oneof source {
+    CronSpec    cron    = 3;
+    WebhookSpec webhook = 4;
+  }
+  repeated TriggerInput inputs = 5;
+}
+
+message ListPipelineTriggersRequest { common.PipelineId pipeline_id = 1; }
+message ListTriggersResponse        { repeated TriggerView triggers = 1; }
+
+message SetTriggerEnabledRequest {
+  common.TriggerId trigger_id = 1;
+  bool             enabled    = 2;
+}
+
+message FireTriggerNowRequest { common.TriggerId trigger_id = 1; }
+
+// ── Modèle de lecture ──────────────────────────────────────────────────────
+
+message TriggerView {
+  common.TriggerId  trigger_id  = 1;
+  common.PipelineId pipeline_id = 2;
+  string            name        = 3;
+  oneof source {
+    CronSpec    cron    = 4;
+    WebhookSpec webhook = 5;
+  }
+  repeated TriggerInput inputs  = 6;
+  bool              enabled     = 7;
+  // Webhook uniquement : l'URL publique où POSTer. Dérivée de la config serveur.
+  string            webhook_url = 8;
+  // Cron uniquement : prochaine occurrence due (UTC).
+  google.protobuf.Timestamp next_fire_at  = 9;
+  // Dernier résultat de tir, pour l'observabilité. Vide avant le 1er tir.
+  google.protobuf.Timestamp last_fired_at = 10;
+  string                    last_status   = 11; // "" | "ok" | "error: ..."
+  google.protobuf.Timestamp created_at    = 12;
+  google.protobuf.Timestamp updated_at    = 13;
+}
