@@ -627,7 +627,15 @@ where
 
     tracing::info!("gRPC server listening on {}", config.grpc.address);
 
-    let reflection = tonic_reflection::server::Builder::configure()
+    // Expose BOTH reflection variants so any client works: v1 (current spec) and
+    // v1alpha (older clients — grpcurl defaults, some MCP/reflection bridges).
+    // They are distinct gRPC services (grpc.reflection.v1[alpha].ServerReflection),
+    // so they coexist on the same server without a route clash.
+    let reflection_v1 = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .map_err(|e| StartupError::Reflection(e.to_string()))?;
+    let reflection_v1alpha = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
         .build_v1alpha()
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
@@ -715,7 +723,8 @@ where
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
         .layer(GrpcWebLayer::new())
-        .add_service(reflection)
+        .add_service(reflection_v1)
+        .add_service(reflection_v1alpha)
         .add_service(auth_service)
         .add_service(app_auth_service)
         .add_service(user_service)
