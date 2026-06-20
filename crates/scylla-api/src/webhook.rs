@@ -23,7 +23,6 @@ pub type Ingress = WebhookIngressUseCases<PgTriggerRepository, PgTriggerDelivery
 const DELIVERY_HEADERS: [&str; 2] = ["X-Scylla-Delivery", "X-GitHub-Delivery"];
 
 /// Build the webhook router. One route: `POST /webhooks/{trigger_id}`.
-#[must_use]
 pub fn router(ingress: Arc<Ingress>) -> Router {
     Router::new()
         .route("/webhooks/{trigger_id}", post(handle))

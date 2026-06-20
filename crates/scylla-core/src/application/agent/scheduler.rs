@@ -278,7 +278,7 @@ mod tests {
                 .iter()
                 .map(|n| DispatchNode {
                     id: n.id().to_string(),
-                    deps: n.deps().iter().map(|d| d.to_string()).collect(),
+                    deps: n.deps().iter().map(ToString::to_string).collect(),
                     working_dir: n.working_dir().map(|w| w.as_str().to_string()),
                     step: n.step().clone(),
                     env: vec![],
