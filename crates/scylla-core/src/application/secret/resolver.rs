@@ -55,7 +55,7 @@ where
         // Only hit the secret store if at least one node references a secret.
         let needs_secrets = nodes
             .iter()
-            .flat_map(|n| n.env())
+            .flat_map(PipelineNode::env)
             .any(|e| matches!(e.source(), EnvSource::Secret(_)));
 
         let by_name: HashMap<String, Vec<u8>> = if needs_secrets {
@@ -94,7 +94,7 @@ where
             }
             out.push(DispatchNode {
                 id: node.id().to_string(),
-                deps: node.deps().iter().map(|d| d.to_string()).collect(),
+                deps: node.deps().iter().map(ToString::to_string).collect(),
                 working_dir: node.working_dir().map(|w| w.as_str().to_string()),
                 step: node.step().clone(),
                 env,

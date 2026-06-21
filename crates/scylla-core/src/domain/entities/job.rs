@@ -69,6 +69,10 @@ pub struct Job {
     pipeline_id: PipelineId,
     status: JobStatus,
     node_executions: Vec<JobNode>,
+    /// Trigger-supplied literal env (`(key, value)`) overlaid on every node at
+    /// dispatch. Empty for a plain run. Persisted with the job so the dispatch is
+    /// identical whether placed immediately or retried by the pending scheduler.
+    inputs: Vec<(String, String)>,
     /// The agent (app) that executed this job, set at dispatch. `None` while
     /// pending / never dispatched.
     agent_app_id: Option<AppId>,
@@ -86,6 +90,7 @@ impl Job {
         pipeline_id: PipelineId,
         status: JobStatus,
         node_executions: Vec<JobNode>,
+        inputs: Vec<(String, String)>,
         agent_app_id: Option<AppId>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
@@ -97,6 +102,7 @@ impl Job {
             pipeline_id,
             status,
             node_executions,
+            inputs,
             agent_app_id,
             created_at,
             updated_at,
@@ -120,12 +126,21 @@ impl Job {
             pipeline_id: pipeline.id().clone(),
             status: JobStatus::Pending,
             node_executions,
+            inputs: Vec::new(),
             agent_app_id: None,
             created_at: now,
             updated_at: now,
             started_at: None,
             finished_at: None,
         }
+    }
+
+    /// Attach trigger-supplied literal inputs (builder style). These are overlaid
+    /// on every node at dispatch and persisted with the job.
+    #[must_use]
+    pub fn with_inputs(mut self, inputs: Vec<(String, String)>) -> Self {
+        self.inputs = inputs;
+        self
     }
 
     /// Record which agent (app) was handed this job at dispatch.
@@ -297,6 +312,12 @@ impl Job {
     #[must_use]
     pub fn node_executions(&self) -> &[JobNode] {
         &self.node_executions
+    }
+
+    /// Trigger-supplied literal env overlaid on every node at dispatch.
+    #[must_use]
+    pub fn inputs(&self) -> &[(String, String)] {
+        &self.inputs
     }
 
     #[must_use]

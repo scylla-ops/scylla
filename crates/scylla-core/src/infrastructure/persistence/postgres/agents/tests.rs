@@ -146,6 +146,7 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
             pipeline.id().clone(),
             status,
             vec![],
+            vec![],
             Some(app.id().clone()),
             now,
             now,

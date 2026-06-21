@@ -125,15 +125,10 @@ impl AgentDispatch for InMemoryAgentRegistry {
             })
         };
         match sender {
-            Some(tx) => match tx.send(dispatch.clone()).await {
-                Ok(()) => Ok(()),
-                Err(_) => {
-                    self.release(app_id);
-                    Err(DomainError::infrastructure(format!(
-                        "agent {app_id} stream closed"
-                    )))
-                }
-            },
+            Some(tx) => tx.send(dispatch.clone()).await.map_err(|_| {
+                self.release(app_id);
+                DomainError::infrastructure(format!("agent {app_id} stream closed"))
+            }),
             None => Err(DomainError::infrastructure(format!(
                 "agent {app_id} not connected"
             ))),

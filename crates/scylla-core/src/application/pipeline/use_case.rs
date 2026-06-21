@@ -1,4 +1,4 @@
-use crate::application::agent::dispatch::{DispatchEnv, DispatchNode};
+use crate::application::agent::dispatch::assemble_dispatch;
 use crate::application::caller::CallerContext;
 use crate::application::{
     JobDispatch, JobRepository, PermissionService, PipelineRepository, ProjectRepository,
@@ -12,7 +12,6 @@ use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::pipeline::PipelineName;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use derive_more::Constructor;
-use std::collections::HashSet;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -174,19 +173,12 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
             .await?;
 
         let pipeline = self.pipeline_repo.find_by_id(pipeline_id).await?;
-        let job = Job::create_from_pipeline(&pipeline);
+        // The job IS the run: it carries its inputs, so the dispatch can be
+        // (re)assembled identically whether placed now or retried later.
+        let job = Job::create_from_pipeline(&pipeline).with_inputs(inputs.to_vec());
         let job = self.job_repo.create(&job).await?;
-        // Resolve secret-ref env vars (decrypt), then overlay trigger inputs.
-        let nodes = self
-            .secret_resolver
-            .resolve(pipeline.project_id(), pipeline.nodes())
-            .await?;
-        let nodes = apply_inputs(nodes, inputs);
-        let dispatch = JobDispatch {
-            job_id: job.id().to_string(),
-            pipeline_id: pipeline.id().to_string(),
-            nodes,
-        };
+        let dispatch =
+            assemble_dispatch(&*self.pipeline_repo, &*self.secret_resolver, &job).await?;
         Ok((job, dispatch))
     }
 
@@ -199,89 +191,3 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
     }
 }
 
-/// Overlay trigger-supplied `inputs` onto each dispatch node as literal
-/// (unmasked) env. Applied after secret resolution; a node's own env wins on a
-/// key collision, so a trigger can add context (e.g. `GIT_COMMIT`) but never
-/// override or shadow what the pipeline defined.
-fn apply_inputs(mut nodes: Vec<DispatchNode>, inputs: &[(String, String)]) -> Vec<DispatchNode> {
-    if inputs.is_empty() {
-        return nodes;
-    }
-    for node in &mut nodes {
-        let existing: HashSet<String> = node.env.iter().map(|e| e.key.clone()).collect();
-        for (key, value) in inputs {
-            if !existing.contains(key) {
-                node.env.push(DispatchEnv {
-                    key: key.clone(),
-                    value: value.clone(),
-                    masked: false,
-                });
-            }
-        }
-    }
-    nodes
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain::value_objects::pipeline::Step;
-
-    fn node(env: &[(&str, &str)]) -> DispatchNode {
-        DispatchNode {
-            id: "n".to_string(),
-            deps: vec![],
-            working_dir: None,
-            step: Step::exec("echo".to_string(), vec![]).unwrap(),
-            env: env
-                .iter()
-                .map(|(k, v)| DispatchEnv {
-                    key: (*k).to_string(),
-                    value: (*v).to_string(),
-                    masked: false,
-                })
-                .collect(),
-        }
-    }
-
-    fn env_of(n: &DispatchNode, key: &str) -> Option<String> {
-        n.env.iter().find(|e| e.key == key).map(|e| e.value.clone())
-    }
-
-    #[test]
-    fn empty_inputs_is_noop() {
-        let nodes = apply_inputs(vec![node(&[("A", "1")])], &[]);
-        assert_eq!(nodes[0].env.len(), 1);
-    }
-
-    #[test]
-    fn inputs_added_as_unmasked_env() {
-        let nodes = apply_inputs(
-            vec![node(&[])],
-            &[("GIT_COMMIT".to_string(), "abc".to_string())],
-        );
-        let e = nodes[0].env.iter().find(|e| e.key == "GIT_COMMIT").unwrap();
-        assert_eq!(e.value, "abc");
-        assert!(!e.masked, "trigger inputs are unmasked literals");
-    }
-
-    #[test]
-    fn node_env_wins_on_collision() {
-        let nodes = apply_inputs(
-            vec![node(&[("MODE", "node")])],
-            &[("MODE".to_string(), "trigger".to_string())],
-        );
-        assert_eq!(env_of(&nodes[0], "MODE").as_deref(), Some("node"));
-        assert_eq!(nodes[0].env.iter().filter(|e| e.key == "MODE").count(), 1);
-    }
-
-    #[test]
-    fn inputs_applied_to_all_nodes() {
-        let nodes = apply_inputs(
-            vec![node(&[]), node(&[("X", "1")])],
-            &[("RUN_MODE".to_string(), "nightly".to_string())],
-        );
-        assert_eq!(env_of(&nodes[0], "RUN_MODE").as_deref(), Some("nightly"));
-        assert_eq!(env_of(&nodes[1], "RUN_MODE").as_deref(), Some("nightly"));
-    }
-}

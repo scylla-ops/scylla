@@ -19,7 +19,7 @@ msgstr ""
 msgid "{submitLabel}"
 msgstr "{submitLabel}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:59
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:60
 msgid "Actions"
 msgstr "Actions"
 
@@ -78,7 +78,7 @@ msgstr "Command"
 #~ msgid "Create"
 #~ msgstr "Create"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:48
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:51
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
@@ -89,6 +89,11 @@ msgstr "Creation:"
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:153
 msgid "Define a new pipeline step. You can connect it to other nodes by dragging edges."
 msgstr "Define a new pipeline step. You can connect it to other nodes by dragging edges."
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:79
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:106
+msgid "Duplicate"
+msgstr "Duplicate"
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:261
 msgid "e.g., --release"
@@ -110,7 +115,7 @@ msgstr "e.g., cargo"
 msgid "e.g., my-pipeline"
 msgstr "e.g., my-pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:73
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:75
 msgid "Edit"
 msgstr "Edit"
 
@@ -125,7 +130,7 @@ msgstr "Environment variables"
 #~ msgid "Failed to fetch pipeline stats"
 #~ msgstr "Failed to fetch pipeline stats"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:34
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:35
 msgid "History"
 msgstr "History"
 
@@ -137,7 +142,7 @@ msgstr "History"
 msgid "KEY"
 msgstr "KEY"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:50
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:51
 msgid "Last Run"
 msgstr "Last Run"
 
@@ -153,7 +158,7 @@ msgstr "Literal"
 msgid "Modify the node properties."
 msgstr "Modify the node properties."
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:84
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:90
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:115
 msgid "More options"
 msgstr "More options"
@@ -162,11 +167,11 @@ msgstr "More options"
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:33
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:37
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:45
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:48
 msgid "No pipeline found"
 msgstr "No pipeline found"
 
@@ -200,8 +205,8 @@ msgstr "Reference a secret"
 msgid "relative to the job workspace"
 msgstr "relative to the job workspace"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:69
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:93
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:71
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:99
 msgid "Run"
 msgstr "Run"
 
@@ -227,7 +232,7 @@ msgstr "Secret"
 msgid "secret name"
 msgstr "secret name"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:36
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:40
 msgid "Select a project first"
 msgstr "Select a project first"
 
@@ -239,7 +244,7 @@ msgstr "Set the name of the pipeline."
 msgid "Shell"
 msgstr "Shell"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:25
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:26
 msgid "Status"
 msgstr "Status"
 
@@ -252,7 +257,7 @@ msgstr "Status"
 msgid "value"
 msgstr "value"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:107
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:109
 msgid "View Jobs"
 msgstr "View Jobs"
 

@@ -35,6 +35,22 @@ pub struct CoreConfig {
     /// secret operations error with a clear message.
     #[serde(default)]
     pub secrets: Option<SecretsConfig>,
+
+    /// Inbound webhook ingress (a separate HTTP listener). When absent, no
+    /// webhook server is started and webhook triggers can only be fired manually.
+    #[serde(default)]
+    pub webhook: Option<WebhookConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WebhookConfig {
+    /// Address the webhook HTTP server binds to, e.g. `0.0.0.0:8088`.
+    pub address: SocketAddr,
+
+    /// Public base URL advertised in `TriggerView.webhook_url`, e.g.
+    /// `https://hooks.example.com`. When absent, `webhook_url` is left empty.
+    #[serde(default)]
+    pub public_base_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
