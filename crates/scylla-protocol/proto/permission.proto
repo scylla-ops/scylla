@@ -74,6 +74,7 @@ enum Permission {
   CREATE_SECRET = 59;
   LIST_SECRETS = 60;
   DELETE_SECRET = 61;
+  MANAGE_TRIGGERS = 62;
 }
 
 // Where an authorization applies — the tenancy level. SYSTEM is the root of the

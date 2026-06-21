@@ -45,6 +45,8 @@ pub use persistence::postgres::PgSessionRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgSignupRepository;
 #[cfg(feature = "postgres")]
+pub use persistence::postgres::PgTriggerRepository;
+#[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserOrganizationRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserProjectRepository;

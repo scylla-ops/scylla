@@ -28,13 +28,17 @@ export const PipelineTable = ({
   const columns = createPipelineColumns({
     onRun: pipelineId => {
       setRunningPipelines(prev => new Set(prev).add(pipelineId));
-      mutateAsync(pipelineId).finally(() => {
-        setRunningPipelines(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(pipelineId);
-          return newSet;
+      mutateAsync(pipelineId)
+        .finally(() => {
+          setRunningPipelines(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(pipelineId);
+            return newSet;
+          });
+        })
+        .catch(() => {
+          // Toast shown by the global MutationCache onError handler.
         });
-      });
     },
     onEdit: pipeline => {
       goToEditPipeline(pipeline.id, pipeline.name);

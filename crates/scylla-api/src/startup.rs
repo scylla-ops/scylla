@@ -7,7 +7,8 @@ use scylla_core::application::{
     DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
     JobLogStreamUseCase, JobLogUseCases, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
     OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
-    RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases, UserUseCases,
+    RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases,
+    TriggerFireUseCases, TriggerUseCases, UserUseCases,
 };
 use scylla_core::infrastructure::LettreMailer;
 use scylla_core::infrastructure::{
@@ -17,8 +18,8 @@ use scylla_core::infrastructure::{
     PgDefaultRoleBindingRepository, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
     PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
     PgPolicyRepository, PgProjectRepository, PgRoleRepository, PgSecretRepository,
-    PgSessionRepository, PgSignupRepository, PgUserOrganizationRepository, PgUserProjectRepository,
-    PgUserRepository,
+    PgSessionRepository, PgSignupRepository, PgTriggerRepository, PgUserOrganizationRepository,
+    PgUserProjectRepository, PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
@@ -110,6 +111,28 @@ pub type SharedAgentUc = Arc<
         PermissionChecker,
     >,
 >;
+pub type SharedTriggerUc = Arc<
+    TriggerUseCases<
+        PgTriggerRepository,
+        PgPipelineRepository,
+        PgProjectRepository,
+        PgAppRepository,
+        Argon2HashService,
+        PermissionChecker,
+        PermissionChecker,
+    >,
+>;
+pub type SharedTriggerFireUc = Arc<
+    TriggerFireUseCases<
+        PgTriggerRepository,
+        PgPipelineRepository,
+        PgProjectRepository,
+        PgAppRepository,
+        PgJobRepository,
+        PermissionChecker,
+        InMemoryAgentRegistry,
+    >,
+>;
 
 // ── Services container ─────────────────────────────────────────────────
 
@@ -123,6 +146,8 @@ pub struct Services {
     pub org_uc: SharedOrgUc,
     pub project_uc: SharedProjectUc,
     pub pipeline_uc: SharedPipelineUc,
+    pub trigger_uc: SharedTriggerUc,
+    pub trigger_fire_uc: SharedTriggerFireUc,
     pub secret_uc: SharedSecretUc,
     pub job_uc: SharedJobUc,
     pub job_log_uc: SharedJobLogUc,
@@ -365,6 +390,25 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
     ));
 
+    let trigger_repo = Arc::new(PgTriggerRepository::new(db.clone()));
+    let trigger_uc = Arc::new(TriggerUseCases::new(
+        trigger_repo.clone(),
+        pipeline_repo.clone(),
+        project_repo.clone(),
+        app_repo.clone(),
+        hash_service.clone(),
+        permission_checker.clone(),
+        permission_checker.clone(),
+    ));
+    let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(
+        trigger_repo.clone(),
+        pipeline_repo.clone(),
+        project_repo.clone(),
+        app_repo.clone(),
+        pipeline_uc.clone(),
+        dispatch_uc.clone(),
+    ));
+
     // Pending-job scheduler: places jobs that were minted while no worker was
     // connected. Woken by the agent handler on connect (`pending_signal`), on a
     // periodic tick as a safety net, and once at boot to pick up a pre-restart
@@ -402,6 +446,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         org_uc,
         project_uc,
         pipeline_uc,
+        trigger_uc,
+        trigger_fire_uc,
         secret_uc,
         job_uc,
         job_log_uc,
@@ -512,8 +558,8 @@ where
     use crate::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
         InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
-        PolicyHandler, ProjectHandler, RegistrationHandler, RoleHandler, SecretHandler, UserHandler,
-        auth_interceptor::AuthInterceptor,
+        PolicyHandler, ProjectHandler, RegistrationHandler, RoleHandler, SecretHandler,
+        TriggerHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
     use scylla_protocol::services::invitation::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
@@ -534,6 +580,7 @@ where
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         secret::secret_service_server::SecretServiceServer,
+        trigger::trigger_service_server::TriggerServiceServer,
         user::user_service_server::UserServiceServer,
     };
     use tonic::transport::Server;
@@ -548,6 +595,8 @@ where
     let project_handler = ProjectHandler::new(services.project_uc.clone());
     let pipeline_handler =
         PipelineHandler::new(services.pipeline_uc.clone(), services.dispatch_uc.clone());
+    let trigger_handler =
+        TriggerHandler::new(services.trigger_uc.clone(), services.trigger_fire_uc.clone());
     let job_handler = JobHandler::new(
         services.job_uc.clone(),
         services.job_log_uc.clone(),
@@ -578,7 +627,15 @@ where
 
     tracing::info!("gRPC server listening on {}", config.grpc.address);
 
-    let reflection = tonic_reflection::server::Builder::configure()
+    // Expose BOTH reflection variants so any client works: v1 (current spec) and
+    // v1alpha (older clients — grpcurl defaults, some MCP/reflection bridges).
+    // They are distinct gRPC services (grpc.reflection.v1[alpha].ServerReflection),
+    // so they coexist on the same server without a route clash.
+    let reflection_v1 = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .map_err(|e| StartupError::Reflection(e.to_string()))?;
+    let reflection_v1alpha = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
         .build_v1alpha()
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
@@ -617,6 +674,10 @@ where
     let pipeline_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(PipelineServiceServer::new(pipeline_handler));
+
+    let trigger_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(TriggerServiceServer::new(trigger_handler));
 
     let job_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -662,13 +723,15 @@ where
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
         .layer(GrpcWebLayer::new())
-        .add_service(reflection)
+        .add_service(reflection_v1)
+        .add_service(reflection_v1alpha)
         .add_service(auth_service)
         .add_service(app_auth_service)
         .add_service(user_service)
         .add_service(org_service)
         .add_service(project_service)
         .add_service(pipeline_service)
+        .add_service(trigger_service)
         .add_service(secret_service)
         .add_service(job_service)
         .add_service(app_service)

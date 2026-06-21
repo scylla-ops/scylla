@@ -6,7 +6,6 @@ import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useRunPipeline } from '@/modules/features/pipeline/presentation/hooks/use-run-pipeline.ts';
-import { toast } from 'sonner';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
@@ -23,8 +22,8 @@ export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh }: JobsHeaderPr
   const handleRunPipeline = async () => {
     try {
       await runPipeline.mutateAsync(pipelineId);
-    } catch (error) {
-      toast.error(`Failed to run pipeline: ${error}`);
+    } catch {
+      // Toast shown by the global MutationCache onError handler.
     }
   };
 

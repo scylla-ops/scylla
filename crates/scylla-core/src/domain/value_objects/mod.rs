@@ -8,6 +8,7 @@ pub mod pipeline;
 pub mod project;
 pub mod role;
 pub mod secret;
+pub mod trigger;
 pub mod user;
 
 pub use pagination::{PaginatedResult, PaginationMetadata, PaginationParams};

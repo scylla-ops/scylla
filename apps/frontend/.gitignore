@@ -26,5 +26,5 @@ bun.lockb
 *.sw?
 
 src/modules/**/messages.ts
-
+src/generated/**/messages.ts
 src/generated

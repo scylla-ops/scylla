@@ -1,0 +1,247 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-06-20 14:19+0900\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+
+#. placeholder {0}: entity.name
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:85
+msgid "{0} credentials"
+msgstr ""
+
+#. placeholder {0}: entity.name
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:83
+msgid "{0} is ready"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:44
+msgid "Agent id copied"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/ErrorState.tsx:12
+msgid "An error occurred"
+msgstr ""
+
+#: src/modules/shared/utils/scylla-result.ts:68
+msgid "An unexpected error occurred"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:48
+msgid "App id copied"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:34
+msgid "Are you absolutely sure?"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:39
+#: src/modules/shared/presentation/ui/FormDialog.tsx:60
+msgid "Cancel"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:75
+msgid "Clear"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:42
+msgid "Continue"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:55
+msgid "Copied"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:92
+msgid "Copy the secret below — it is shown only once."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:106
+msgid "Copy your secret"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:45
+msgid "Could not copy — select the id manually"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FormDialog.tsx:66
+msgid "Create"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FormDialog.tsx:65
+msgid "Creating..."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:92
+msgid "Delete"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:179
+msgid "Done"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/ErrorState.tsx:11
+msgid "Error"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:59
+msgid "From source"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:64
+msgid "in total"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:41
+msgid "Job queued — no agent connected"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:98
+msgid "New {label}"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:30
+msgid "No agent connected — queued jobs are waiting for one."
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:26
+msgid "Organization created"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:27
+msgid "Organization deleted"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:28
+msgid "Organization updated"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:37
+msgid "Pipeline created"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:38
+msgid "Pipeline deleted"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:39
+msgid "Pipeline edited"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:40
+msgid "Pipeline ran"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:31
+msgid "Project created"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:32
+msgid "Project deleted"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:34
+msgid "Project name is required and you must select an organization."
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:33
+msgid "Project updated"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:116
+msgid "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:107
+msgid "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:75
+msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:131
+msgid "Reveal"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:72
+msgid "Run from a repo checkout"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:95
+msgid "Run with Docker"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:51
+msgid "Secret created"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:52
+msgid "Secret deleted"
+msgstr ""
+
+#: src/modules/shared/utils/scylla-result.ts:56
+msgid "Server unreachable"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/NoAgentsBanner.tsx:37
+msgid "Set up an agent"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/Pagination.tsx:81
+msgid "Showing {start}-{end} of {totalCount}"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:108
+msgid "shown once"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:151
+msgid "Start your agent"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/AgentRunInstructions.tsx:98
+msgid "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/ConfirmOperationAlertDialog.tsx:35
+msgid "This action cannot be undone."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:90
+msgid "Two steps and it picks up jobs."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:159
+msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:19
+msgid "User created"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:20
+msgid "User deleted"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:21
+msgid "User information updated"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:23
+msgid "Username and password are required."
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:22
+msgid "You cannot delete your own account."
+msgstr ""
+
+#: src/modules/shared/utils/scylla-result.ts:66
+msgid "You don't have permission to perform this action"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/SecretRevealDialog.tsx:170
+msgid "You won't see this secret again."
+msgstr ""

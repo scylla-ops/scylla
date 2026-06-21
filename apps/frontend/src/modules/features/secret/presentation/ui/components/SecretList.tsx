@@ -4,6 +4,8 @@ import type { SecretEntity } from '@/modules/features/secret/domain/entities/sec
 import { useDeleteSecret } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
+import { useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
 import { useState } from 'react';
 
@@ -15,13 +17,14 @@ interface CredentialsListProps {
 export const SecretList = ({ secrets, projectId }: CredentialsListProps) => {
   const deleteSecret = useDeleteSecret(projectId);
   const { selectedIds, select } = useSelection('secrets');
+  const { i18n } = useLingui();
 
   const [selectedSecretId, setSelectedSecretId] = useState<string | null>(null);
 
   const handleDelete = (secretId: string) => {
     deleteSecret.mutate(secretId, {
       onSuccess: () => {
-        toast.success('Secret deleted');
+        toast.success(i18n._(ToastMessages.SECRET_DELETE));
       },
     });
   };

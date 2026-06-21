@@ -25,11 +25,11 @@ msgstr ""
 #~ msgid "Back"
 #~ msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:53
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
 msgid "Create a new user"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:57
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:58
 msgid "Create User"
 msgstr ""
 
@@ -37,15 +37,15 @@ msgstr ""
 msgid "Created at"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:25
 msgid "e.g., john.doe"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:31
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:32
 msgid "Enter a password"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:55
 msgid "Enter a username and password for the new user."
 msgstr ""
 
@@ -64,11 +64,11 @@ msgstr ""
 msgid "Manage your account details."
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:47
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:48
 msgid "New user"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:30
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:31
 msgid "Password"
 msgstr ""
 
@@ -91,18 +91,18 @@ msgstr ""
 msgid "User settings"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:23
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
 msgid "Username"
 msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
-msgid "Username and password are required."
-msgstr ""
+#~ msgid "Username and password are required."
+#~ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "View"
 msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
-msgid "You cannot delete your own account."
-msgstr ""
+#~ msgid "You cannot delete your own account."
+#~ msgstr ""
