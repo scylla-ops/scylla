@@ -48,7 +48,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:75
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:71
 msgid "Clear"
 msgstr "Clear"
 
@@ -80,7 +80,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:92
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:88
 msgid "Delete"
 msgstr "Delete"
 
@@ -96,7 +96,7 @@ msgstr "Error"
 msgid "From source"
 msgstr "From source"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:64
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:60
 msgid "in total"
 msgstr "in total"
 
@@ -104,7 +104,7 @@ msgstr "in total"
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
-#: src/modules/shared/presentation/ui/FeatureHeader.tsx:98
+#: src/modules/shared/presentation/ui/FeatureHeader.tsx:94
 msgid "New {label}"
 msgstr "New {label}"
 

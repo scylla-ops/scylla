@@ -57,7 +57,7 @@ fn job_event_to_status(job_id: &str, event: JobEvent) -> JobStatus {
         }),
         kind: kind as i32,
         // Empty node_id means a job-level event (no node) — send it unset.
-        node_id: (!node_id.is_empty()).then(|| common::NodeId { value: node_id }),
+        node_id: (!node_id.is_empty()).then_some(common::NodeId { value: node_id }),
         error,
     }
 }

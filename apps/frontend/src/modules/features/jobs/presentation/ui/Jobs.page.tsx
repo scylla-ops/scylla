@@ -1,6 +1,6 @@
 import { usePipelinesJobs } from '@/modules/features/jobs/presentation/hooks/use-pipelines-jobs.ts';
 import { JobsHeader } from '@/modules/features/jobs/presentation/ui/JobsHeader.tsx';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { JobsTable } from '@/modules/features/jobs/presentation/ui/jobs-table';
 import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
@@ -9,13 +9,8 @@ import { NoAgentsBanner } from '@shared/presentation/ui/NoAgentsBanner.tsx';
 
 export const JobsPage = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
-  const navigate = useNavigate();
   const { isLoading, jobs, isError, errorMessage, refetch, paginationInfo, setPage } =
     usePipelinesJobs(pipelineId || '');
-
-  const handleBack = () => {
-    void navigate(-1);
-  };
 
   if (!pipelineId) {
     return <ErrorState message='Pipeline ID is missing' />;
@@ -35,7 +30,6 @@ export const JobsPage = () => {
         numberOfJobs={paginationInfo?.totalCount ?? jobs.length}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
-        onBack={handleBack}
       />
       <NoAgentsBanner hasPendingJobs={jobs.some(j => j.status === 'pending')} />
       <div className='flex-1 min-h-0 overflow-auto'>

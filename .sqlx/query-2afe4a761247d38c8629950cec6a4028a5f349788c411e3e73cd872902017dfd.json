@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, pipeline_id, status,\n                   node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                   agent_app_id,\n                   created_at, updated_at, started_at, finished_at\n            FROM jobs\n            WHERE id = $1\n            ",
+  "query": "\n            SELECT id, pipeline_id, status,\n                   node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                   inputs AS \"inputs: Json<Vec<(String, String)>>\",\n                   agent_app_id,\n                   created_at, updated_at, started_at, finished_at\n            FROM jobs\n            WHERE status = $1 AND agent_app_id IS NULL\n            ORDER BY created_at ASC\n            ",
   "describe": {
     "columns": [
       {
@@ -49,6 +49,17 @@
       },
       {
         "ordinal": 4,
+        "name": "inputs: Json<Vec<(String, String)>>",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "jobs",
+            "name": "inputs"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
         "name": "agent_app_id",
         "type_info": "Text",
         "origin": {
@@ -59,7 +70,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "started_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -92,7 +103,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "finished_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -113,6 +124,7 @@
       false,
       false,
       false,
+      false,
       true,
       false,
       false,
@@ -120,5 +132,5 @@
       true
     ]
   },
-  "hash": "03149818195bdde3e10fab1a06df2e5b7b875e5b21bb740e232a93f1e79ad953"
+  "hash": "2afe4a761247d38c8629950cec6a4028a5f349788c411e3e73cd872902017dfd"
 }

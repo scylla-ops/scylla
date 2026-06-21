@@ -108,6 +108,11 @@ CREATE TABLE pipeline_triggers (
     next_fire_at  TIMESTAMPTZ,
     last_fired_at TIMESTAMPTZ,
     last_status   TEXT,
+    -- Webhook triggers only: the HMAC signing secret, AEAD-encrypted (nonce||ct)
+    -- with the control-plane master key. NULL for cron. Verification needs the
+    -- plaintext, so it is encrypted-reversible, never one-way hashed. Never leaves
+    -- the server except through the ingress verify path.
+    webhook_secret_enc BYTEA,
     created_at    TIMESTAMPTZ NOT NULL,
     updated_at    TIMESTAMPTZ NOT NULL,
     UNIQUE (pipeline_id, name)
@@ -116,6 +121,17 @@ CREATE INDEX pipeline_triggers_pipeline_id_idx ON pipeline_triggers (pipeline_id
 -- Engine due-scan (cron): tiny partial index, shaped for FOR UPDATE SKIP LOCKED.
 CREATE INDEX pipeline_triggers_due_idx ON pipeline_triggers (next_fire_at)
     WHERE enabled AND next_fire_at IS NOT NULL;
+
+-- Inbound webhook deliveries, for replay dedupe. A delivery is identified by the
+-- sender's id (or, absent one, the request signature); a repeat (trigger_id,
+-- delivery_id) is a replay and is accepted but not re-fired. Cascade-deleted with
+-- the trigger.
+CREATE TABLE trigger_deliveries (
+    trigger_id  TEXT        NOT NULL REFERENCES pipeline_triggers (id) ON DELETE CASCADE,
+    delivery_id TEXT        NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (trigger_id, delivery_id)
+);
 
 -- ── Project secrets ───────────────────────────────────────────────────────────
 -- Reversible-encrypted values referenced from pipeline node env vars. The value
@@ -184,6 +200,11 @@ CREATE TABLE jobs (
     pipeline_id     TEXT        NOT NULL REFERENCES pipelines (id) ON DELETE CASCADE,
     status          TEXT        NOT NULL,
     node_executions JSONB       NOT NULL,
+    -- Trigger-supplied literal env overlaid on every node at dispatch (e.g.
+    -- GIT_COMMIT). Persisted so the run dispatches identically whether placed
+    -- immediately or retried later by the pending-job scheduler. Literals only —
+    -- never secrets.
+    inputs          JSONB       NOT NULL DEFAULT '[]',
     agent_app_id    TEXT        REFERENCES agents (app_id) ON DELETE SET NULL,
     created_at      TIMESTAMPTZ NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL,

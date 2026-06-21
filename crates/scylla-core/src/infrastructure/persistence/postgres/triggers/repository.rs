@@ -23,14 +23,23 @@ impl PgTriggerRepository {
 
 #[async_trait]
 impl TriggerRepository for PgTriggerRepository {
-    #[instrument(skip(self, trigger), fields(trigger_id = %trigger.id()))]
-    async fn create(&self, trigger: &Trigger) -> DomainResult<Trigger> {
-        queries::create(&self.pool, trigger).await
+    #[instrument(skip(self, trigger, webhook_secret_enc), fields(trigger_id = %trigger.id()))]
+    async fn create(
+        &self,
+        trigger: &Trigger,
+        webhook_secret_enc: Option<&[u8]>,
+    ) -> DomainResult<Trigger> {
+        queries::create(&self.pool, trigger, webhook_secret_enc).await
     }
 
     #[instrument(skip(self), fields(trigger_id = %id))]
     async fn find_by_id(&self, id: &TriggerId) -> DomainResult<Trigger> {
         queries::find_by_id(&self.pool, id).await
+    }
+
+    #[instrument(skip(self), fields(trigger_id = %id))]
+    async fn webhook_secret(&self, id: &TriggerId) -> DomainResult<Option<Vec<u8>>> {
+        queries::webhook_secret(&self.pool, id).await
     }
 
     #[instrument(skip(self, trigger), fields(trigger_id = %trigger.id()))]
@@ -46,6 +55,74 @@ impl TriggerRepository for PgTriggerRepository {
     #[instrument(skip(self), fields(pipeline_id = %pipeline_id))]
     async fn list_by_pipeline(&self, pipeline_id: &PipelineId) -> DomainResult<Vec<Trigger>> {
         queries::list_by_pipeline(&self.pool, pipeline_id).await
+    }
+
+    #[instrument(skip(self))]
+    async fn list_unscheduled_cron(&self) -> DomainResult<Vec<Trigger>> {
+        queries::list_unscheduled_cron(&self.pool).await
+    }
+
+    #[instrument(skip(self, compute_next), fields(now = %now, limit))]
+    async fn claim_due_cron(
+        &self,
+        now: DateTime<Utc>,
+        limit: i64,
+        compute_next: &(dyn for<'a> Fn(&'a Trigger) -> DomainResult<DateTime<Utc>> + Sync),
+    ) -> DomainResult<Vec<Trigger>> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+
+        // Lock the due rows; SKIP LOCKED so a concurrent pass/instance never waits
+        // on or double-claims the same trigger.
+        let rows: Vec<TriggerRow> = sqlx::query_as!(
+            TriggerRow,
+            r#"
+            SELECT id, pipeline_id, name,
+                   source AS "source: Json<TriggerSource>",
+                   inputs AS "inputs: Json<Vec<TriggerInput>>",
+                   enabled, next_fire_at, last_fired_at, last_status, created_at, updated_at
+            FROM pipeline_triggers
+            WHERE enabled
+              AND kind = 'cron'
+              AND next_fire_at IS NOT NULL
+              AND next_fire_at <= $1
+            ORDER BY next_fire_at
+            LIMIT $2
+            FOR UPDATE SKIP LOCKED
+            "#,
+            now,
+            limit,
+        )
+        .fetch_all(&mut *tx)
+        .await
+        .to_domain()?;
+
+        let mut claimed = Vec::with_capacity(rows.len());
+        for row in rows {
+            let trigger = Trigger::try_from(row)?;
+            // Advance to the next occurrence in the same tx so this occurrence is
+            // consumed exactly once. A trigger whose expression won't compute is
+            // left as-is and excluded (it was seeded valid, so this is defensive).
+            let Ok(next) = compute_next(&trigger) else {
+                continue;
+            };
+            sqlx::query!(
+                r#"
+                UPDATE pipeline_triggers
+                SET next_fire_at = $2, updated_at = $3
+                WHERE id = $1
+                "#,
+                trigger.id().as_str(),
+                next,
+                now,
+            )
+            .execute(&mut *tx)
+            .await
+            .to_domain()?;
+            claimed.push(trigger);
+        }
+
+        tx.commit().await.to_domain()?;
+        Ok(claimed)
     }
 }
 
@@ -91,7 +168,11 @@ impl TryFrom<TriggerRow> for Trigger {
 pub mod queries {
     use super::*;
 
-    pub async fn create<'e, E>(executor: E, trigger: &Trigger) -> DomainResult<Trigger>
+    pub async fn create<'e, E>(
+        executor: E,
+        trigger: &Trigger,
+        webhook_secret_enc: Option<&[u8]>,
+    ) -> DomainResult<Trigger>
     where
         E: PgExecutor<'e>,
     {
@@ -101,8 +182,9 @@ pub mod queries {
             r#"
             INSERT INTO pipeline_triggers
                 (id, pipeline_id, name, kind, source, inputs, enabled,
-                 next_fire_at, last_fired_at, last_status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                 next_fire_at, last_fired_at, last_status, webhook_secret_enc,
+                 created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             "#,
             trigger.id().as_str(),
             trigger.pipeline_id().as_str(),
@@ -114,6 +196,7 @@ pub mod queries {
             trigger.next_fire_at(),
             trigger.last_fired_at(),
             trigger.last_status(),
+            webhook_secret_enc,
             trigger.created_at(),
             trigger.updated_at(),
         )
@@ -121,6 +204,25 @@ pub mod queries {
         .await
         .to_domain()?;
         Ok(trigger.clone())
+    }
+
+    /// Read just the encrypted webhook secret (ingress path); normal reads never
+    /// select this column.
+    pub async fn webhook_secret<'e, E>(
+        executor: E,
+        id: &TriggerId,
+    ) -> DomainResult<Option<Vec<u8>>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let row = sqlx::query!(
+            r#"SELECT webhook_secret_enc FROM pipeline_triggers WHERE id = $1"#,
+            id.as_str(),
+        )
+        .fetch_optional(executor)
+        .await
+        .to_domain()?;
+        Ok(row.and_then(|r| r.webhook_secret_enc))
     }
 
     pub async fn find_by_id<'e, E>(executor: E, id: &TriggerId) -> DomainResult<Trigger>
@@ -215,6 +317,29 @@ pub mod queries {
             ORDER BY created_at
             "#,
             pipeline_id.as_str(),
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter().map(Trigger::try_from).collect()
+    }
+
+    /// Enabled cron triggers with no `next_fire_at` yet — the scheduler seeds them.
+    pub async fn list_unscheduled_cron<'e, E>(executor: E) -> DomainResult<Vec<Trigger>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let rows: Vec<TriggerRow> = sqlx::query_as!(
+            TriggerRow,
+            r#"
+            SELECT id, pipeline_id, name,
+                   source AS "source: Json<TriggerSource>",
+                   inputs AS "inputs: Json<Vec<TriggerInput>>",
+                   enabled, next_fire_at, last_fired_at, last_status, created_at, updated_at
+            FROM pipeline_triggers
+            WHERE enabled AND kind = 'cron' AND next_fire_at IS NULL
+            ORDER BY created_at
+            "#,
         )
         .fetch_all(executor)
         .await

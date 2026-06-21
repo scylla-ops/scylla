@@ -9,6 +9,7 @@ import {
   formatDuration,
   getRelativeTime,
 } from '@shared/utils/date-utils.ts';
+import { useNow } from '@shared/presentation/hooks/use-now.ts';
 import { Trans } from '@lingui/react/macro';
 
 type JobColumnMeta = {
@@ -16,6 +17,19 @@ type JobColumnMeta = {
   onDelete: (jobId: string) => void;
   onView: (jobId: string) => void;
   onOpenJobLog: (jobId: string) => void;
+};
+
+const JobDurationCell = ({ job }: { job: Job }) => {
+  const isLive = job.status === 'running' || job.status === 'pending';
+  useNow(isLive);
+
+  const duration = calculateExecutionDuration(job.startedAt, job.finishedAt);
+
+  return (
+    <span className='text-sm font-medium whitespace-nowrap'>
+      {duration === null ? '-' : formatDuration(duration)}
+    </span>
+  );
 };
 
 export function createJobColumns(meta: JobColumnMeta): ColumnDef<Job>[] {
@@ -44,18 +58,7 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<Job>[] {
     {
       id: 'duration',
       header: () => <Trans>Duration</Trans>,
-      cell: ({ row }) => {
-        // Execution time (started -> finished), excluding the pending/queue wait.
-        const duration = calculateExecutionDuration(
-          row.original.startedAt,
-          row.original.finishedAt,
-        );
-        return (
-          <span className='text-sm font-medium whitespace-nowrap'>
-            {duration === null ? '-' : formatDuration(duration)}
-          </span>
-        );
-      },
+      cell: ({ row }) => <JobDurationCell job={row.original} />,
       size: 100,
       minSize: 80,
     },

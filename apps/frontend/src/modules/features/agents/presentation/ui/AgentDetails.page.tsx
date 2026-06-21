@@ -7,7 +7,7 @@ import {
 } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
 import { AgentIdLink } from '@/modules/features/agents/presentation/ui/components/AgentIdLink.tsx';
 import { OutcomesChart } from '@/modules/features/agents/presentation/ui/components/OutcomesChart.tsx';
-import { AgentRunInstructions, BackButton } from '@shared/presentation/ui';
+import { AgentRunInstructions } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { useResourceError } from '@shared/presentation/hooks/use-resource-error.ts';
 import { Badge, Button } from '@shadcn';
@@ -60,7 +60,6 @@ export const AgentDetailsPage = () => {
     <div className='w-full h-full flex flex-col gap-4'>
       {/* Header — no ULID here; it lives in the identity strip as a link. */}
       <div className={'flex flex-row gap-2'}>
-        <BackButton iconOnly />
         <div className={'flex flex-row justify-between w-full '}>
           <div className='flex items-start justify-between gap-3'>
             <div className='flex items-center gap-3'>
