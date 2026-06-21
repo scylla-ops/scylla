@@ -1,5 +1,4 @@
 import { useCreateProject } from '@/modules/features/project/presentation/hooks/useCreateProject.ts';
-import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
@@ -11,7 +10,6 @@ import {
 } from '@shared/presentation/models/scylla-form.model.ts';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -21,10 +19,8 @@ interface AddProjectDialogProps {
 export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const { t, i18n } = useLingui();
   const navigate = useNavigate();
-  const setOrganization = useContextStore(state => state.setOrganization);
   const organizationId = useContextStore(state => state.organization.id);
   const createProject = useCreateProject();
-  const { organizations } = useOrganizations();
 
   const items: FormItem[] = [
     {
@@ -52,18 +48,11 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       return;
     }
 
-    const selectedOrganization = organizations?.find(
-      org => idValue(org.organizationId) === organizationId,
-    );
-
     createProject.mutate(
       { name, organizationId, description: description?.trim() || undefined },
       {
         onSuccess: () => {
           setOpen(false);
-          if (selectedOrganization) {
-            setOrganization(organizationId, selectedOrganization.name);
-          }
           void navigate('/projects');
         },
       },
