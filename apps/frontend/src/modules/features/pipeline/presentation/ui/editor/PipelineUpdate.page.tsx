@@ -12,14 +12,10 @@ import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
 import { PipelineBlueprint } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/PipelineBlueprint.tsx';
 import { usePipelineScript } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-script.ts';
-import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-
 export const PipelineUpdatePage = () => {
   const { pipelineId } = useParams();
   const { pipeline, isLoading, isError } = usePipeline(pipelineId ?? '');
   const updatePipeline = useUpdatePipeline();
-  const { goBack } = useScyllaNavigate();
 
   const { script, setScript, pipelineName, steps, handleStepsChange, handleNameChange } =
     usePipelineScript();
@@ -47,7 +43,6 @@ export const PipelineUpdatePage = () => {
     <div className='flex h-full flex-col gap-4'>
       <Tabs key={'editor'} defaultValue={'blueprint'} className={'h-full flex flex-col gap-4'}>
         <div className='flex items-center justify-between gap-4'>
-          <BackButton iconOnly onClick={() => goBack()} />
           <PipelineEditorHeader onSubmit={handleUpdate} submitLabel='Edit' />
         </div>
         <TabsContent value='scripting' className={'h-full'} forceMount>

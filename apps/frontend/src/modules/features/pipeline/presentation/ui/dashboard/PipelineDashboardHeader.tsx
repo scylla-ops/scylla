@@ -8,13 +8,9 @@ import { KeyIcon } from 'lucide-react';
 
 interface PipelineDashboardHeaderProps {
   numberOfPipelines: number;
-  onBack: () => void;
 }
 
-export const PipelineDashboardHeader = ({
-  numberOfPipelines,
-  onBack,
-}: PipelineDashboardHeaderProps) => {
+export const PipelineDashboardHeader = ({ numberOfPipelines }: PipelineDashboardHeaderProps) => {
   const { goToCreatePipeline, goToSubRoute } = useScyllaNavigate();
   const deletePipeline = useDeletePipeline();
   const { selectedIds, clearSelection } = useSelection('pipelines');
@@ -35,7 +31,6 @@ export const PipelineDashboardHeader = ({
         onDeleteSelection={handleDelete}
         onNew={goToCreatePipeline}
         newLabel={<Trans>New pipeline</Trans>}
-        onBack={onBack}
         extraActions={
           <Button variant={'outline'} onClick={() => goToSubRoute('secrets')}>
             <KeyIcon className={'text-primary'} />

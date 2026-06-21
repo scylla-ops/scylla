@@ -1,5 +1,4 @@
 import { FeatureHeader } from '@shared/presentation/ui';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useDeleteSecret } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 
@@ -10,7 +9,6 @@ interface CredentialsHeaderProps {
 }
 
 export const SecretHeader = ({ activeCount, onAddSecret, projectId }: CredentialsHeaderProps) => {
-  const { goBack } = useScyllaNavigate();
   const { clearSelection, selectedIds } = useSelection('secrets');
   const deleteSecret = useDeleteSecret(projectId);
 
@@ -19,7 +17,6 @@ export const SecretHeader = ({ activeCount, onAddSecret, projectId }: Credential
   };
   return (
     <FeatureHeader
-      onBack={goBack}
       count={activeCount}
       label={'Secret'}
       pluralLabel={'Secrets'}

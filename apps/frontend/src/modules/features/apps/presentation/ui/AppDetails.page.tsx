@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp, useApps } from '@/modules/features/apps/presentation/hooks/use-apps.ts';
 import { AppSecretsCard } from '@/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx';
-import { BackButton } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
 import { useResourceError } from '@shared/presentation/hooks/use-resource-error.ts';
 import { Badge, Button, Card, CardContent } from '@shadcn';
@@ -47,8 +46,6 @@ export const AppDetailsPage = () => {
 
   return (
     <div className='space-y-4 p-4'>
-      <BackButton />
-
       <div className='flex items-start justify-between gap-3'>
         <div className='flex items-center gap-3'>
           <span className='flex h-12 w-12 items-center justify-center rounded-lg border border-success/30 bg-success/10'>
