@@ -41,6 +41,12 @@ export const useScyllaNavigate = () => {
     setPipeline(pipeline.id, pipeline.name);
   };
 
+  const goToTriggers = (pipeline: PipelineIdentity) => {
+    const projectId = useContextStore.getState().project.id;
+    void navigate(`${getOrgPrefix()}/projects/${projectId}/pipelines/${pipeline.id}/triggers`);
+    setPipeline(pipeline.id, pipeline.name);
+  };
+
   const goToUserSettings = (userId?: string) => {
     void navigate(`${getOrgPrefix()}/users/${userId || 'me'}`, { replace: true });
   };
@@ -60,6 +66,7 @@ export const useScyllaNavigate = () => {
     goToSubRoute,
     goToCreatePipeline,
     goToJobs,
+    goToTriggers,
     goToAgentDetails,
     goBack: () => void navigate(-1),
     goToProject,

@@ -8,6 +8,7 @@ import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.
 import type { BreadcrumbParams } from '@core/presentation/models/route-handle.model.ts';
 import { ContextCleanerWrapper } from './ContextCleaner.wrapper.tsx';
 import { JobsPage } from '@/modules/features/jobs/presentation/ui/Jobs.page.tsx';
+import { TriggersPage } from '@/modules/features/triggers/presentation/ui/Triggers.page.tsx';
 import { UserAdminPage } from '@/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx';
 import UserSettingsPage from '@/modules/features/user/presentation/ui/settings/UserSettings.page.tsx';
 import { DashboardPipelinePage } from '@/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx';
@@ -90,6 +91,14 @@ export const CoreRouter = createBrowserRouter([
                         handle: {
                           breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
                             `Pipeline #${pipelineName} - Jobs`,
+                        },
+                      },
+                      {
+                        path: 'pipelines/:pipelineId/triggers',
+                        element: <TriggersPage />,
+                        handle: {
+                          breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
+                            `Pipeline #${pipelineName} - Triggers`,
                         },
                       },
                     ],

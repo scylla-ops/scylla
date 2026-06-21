@@ -19,7 +19,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export const Layout = () => {
   const { organizations, isLoading } = useOrganizations();

@@ -16,7 +16,7 @@ export const UserAdminPage = () => {
   const { selectedIds, clearSelection } = useSelection('users');
   const deleteUser = useDeleteUser();
   const [openDialog, setOpenDialog] = useState(false);
-  const { t, i18n } = useLingui();
+  const { i18n } = useLingui();
 
   const { goToUserSettings } = useScyllaNavigate();
 

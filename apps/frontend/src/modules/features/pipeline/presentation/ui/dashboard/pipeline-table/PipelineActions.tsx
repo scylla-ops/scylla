@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@shadcn/dropdown-menu.tsx';
-import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2, Copy } from 'lucide-react';
+import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2, Copy, Zap } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
@@ -16,6 +16,7 @@ type PipelineActionsProps = {
   onEdit: (e: SyntheticEvent) => void;
   onDuplicate: (e: SyntheticEvent) => void;
   onViewJobs?: (e: SyntheticEvent) => void;
+  onViewTriggers?: (e: SyntheticEvent) => void;
   onMore?: (e: SyntheticEvent) => void;
   isRunning?: boolean;
 };
@@ -29,6 +30,7 @@ export const PipelineActions = ({
   onEdit,
   onDuplicate,
   onViewJobs,
+  onViewTriggers,
   onMore,
   isRunning,
 }: PipelineActionsProps) => {
@@ -84,6 +86,12 @@ export const PipelineActions = ({
                 View Jobs
               </DropdownMenuItem>
             )}
+            {onViewTriggers && (
+              <DropdownMenuItem onClick={onViewTriggers}>
+                <Zap className='w-4 h-4 mr-2' />
+                <Trans>Triggers</Trans>
+              </DropdownMenuItem>
+            )}
             {onMore && (
               <DropdownMenuItem onClick={onMore}>
                 <MoreHorizontal className='w-4 h-4 mr-2' />
@@ -107,6 +115,10 @@ export const PipelineActions = ({
 
           {onViewJobs && (
             <IconButton icon={ListChecks} tooltip={<Trans>View Jobs</Trans>} onClick={onViewJobs} />
+          )}
+
+          {onViewTriggers && (
+            <IconButton icon={Zap} tooltip={<Trans>Triggers</Trans>} onClick={onViewTriggers} />
           )}
 
           {onMore && (

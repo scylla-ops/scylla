@@ -1,6 +1,6 @@
 import type { App as ProtoApp, AppSecret as ProtoAppSecret } from '@/generated/app.ts';
 import type { App, AppSecret } from '@/modules/features/apps/domain/models/app.model.ts';
-import { idValue, timestampToIso } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
 /** Maps gRPC App messages to the domain App model. */
 export class GrpcAppMapper {

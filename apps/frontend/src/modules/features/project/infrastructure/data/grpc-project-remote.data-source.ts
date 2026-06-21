@@ -8,7 +8,7 @@ import {
   type PaginationParams,
 } from '@shared/domain/models/pagination.model.ts';
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   private readonly _projectClient: ProjectServiceClient;
