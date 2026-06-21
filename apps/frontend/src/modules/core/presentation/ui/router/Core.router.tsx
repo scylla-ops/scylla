@@ -129,11 +129,10 @@ export const CoreRouter = createBrowserRouter([
                 ],
               },
               {
-                path: 'users-admin',
-                element: <UserAdminPage />,
-              },
-              {
                 path: 'users',
+                handle: {
+                  breadcrumb: () => 'Users',
+                },
                 children: [
                   {
                     index: true,
@@ -142,10 +141,9 @@ export const CoreRouter = createBrowserRouter([
                   {
                     path: ':userId',
                     element: <UserSettingsPage />,
-                  },
-                  {
-                    path: 'me',
-                    element: <UserSettingsPage />,
+                    handle: {
+                      breadcrumb: ({ userId }: BreadcrumbParams) => `User #${userId} - Detail`,
+                    },
                   },
                 ],
               },

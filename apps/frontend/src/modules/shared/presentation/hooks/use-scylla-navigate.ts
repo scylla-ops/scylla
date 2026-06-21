@@ -47,8 +47,8 @@ export const useScyllaNavigate = () => {
     setPipeline(pipeline.id, pipeline.name);
   };
 
-  const goToUserSettings = (userId?: string) => {
-    void navigate(`${getOrgPrefix()}/users/${userId || 'me'}`, { replace: true });
+  const goToUserSettings = (userId: string) => {
+    void navigate(`${getOrgPrefix()}/users/${userId}`, { replace: true });
   };
 
   const goToAgentDetails = (agentId: string) => {

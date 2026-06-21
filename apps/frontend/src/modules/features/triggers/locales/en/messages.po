@@ -49,6 +49,14 @@ msgstr "at minute"
 msgid "Cancel"
 msgstr "Cancel"
 
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
+msgid "Copied!"
+msgstr "Copied!"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
+msgid "Copy url"
+msgstr "Copy url"
+
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:207
 msgid "Create"
 msgstr "Create"
