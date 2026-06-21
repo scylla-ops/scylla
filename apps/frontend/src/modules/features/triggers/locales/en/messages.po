@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:261
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
 msgid "5-field cron (min hour day month weekday), evaluated in UTC."
 msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
 
@@ -21,7 +21,7 @@ msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
 #~ msgid "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
 #~ msgstr "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:108
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:110
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "A trigger starts a run of this pipeline automatically."
 
@@ -45,11 +45,11 @@ msgstr "at"
 msgid "at minute"
 msgstr "at minute"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:198
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:204
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:201
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:207
 msgid "Create"
 msgstr "Create"
 
@@ -77,7 +77,7 @@ msgstr "disabled — URL returns 404"
 msgid "Edit"
 msgstr "Edit"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:105
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:107
 msgid "Edit trigger"
 msgstr "Edit trigger"
 
@@ -105,7 +105,7 @@ msgstr "Every hour"
 msgid "Fire now"
 msgstr "Fire now"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:179
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:183
 msgid "Header carrying the HMAC signature. Leave empty for the Scylla default."
 msgstr "Header carrying the HMAC signature. Leave empty for the Scylla default."
 
@@ -125,7 +125,7 @@ msgstr "Literal"
 msgid "Monthly"
 msgstr "Monthly"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:115
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:117
 #: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:22
 msgid "Name"
 msgstr "Name"
@@ -134,7 +134,7 @@ msgstr "Name"
 msgid "Never fired"
 msgstr "Never fired"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:105
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:107
 msgid "New trigger"
 msgstr "New trigger"
 
@@ -162,7 +162,7 @@ msgstr "On a day of the month"
 msgid "On chosen days"
 msgstr "On chosen days"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:227
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:225
 msgid "on day"
 msgstr "on day"
 
@@ -170,15 +170,15 @@ msgstr "on day"
 msgid "Optional values injected into the run as environment variables."
 msgstr "Optional values injected into the run as environment variables."
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:201
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:207
 msgid "Save"
 msgstr "Save"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:157
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:159
 msgid "Schedule"
 msgstr "Schedule"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:170
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:174
 msgid "Signature header"
 msgstr "Signature header"
 
@@ -190,12 +190,12 @@ msgstr "Source"
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:128
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:140
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:130
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:142
 msgid "Type"
 msgstr "Type"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:133
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:135
 msgid "Type can't be changed — delete and recreate to switch."
 msgstr "Type can't be changed — delete and recreate to switch."
 
