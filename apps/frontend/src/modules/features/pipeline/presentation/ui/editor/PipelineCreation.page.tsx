@@ -20,18 +20,48 @@ export const PipelineCreationPage = () => {
   const createPipeline = useCreatePipeline();
   const { goBack } = useScyllaNavigate();
 
-  const { script, setScript, pipelineName, steps, handleStepsChange, handleNameChange } =
-    usePipelineScript({ projectId });
+  const {
+    script,
+    setScript,
+    setInitialScript,
+    pipelineName,
+    steps,
+    isDirty,
+    handleStepsChange,
+    handleNameChange,
+  } = usePipelineScript({ projectId });
 
   useEffect(() => {
-    if (projectId) {
-      setScript(createDefaultScript(projectId));
-    }
-  }, [projectId, setScript]);
+    if (!projectId) return;
+
+    const nextScript = createDefaultScript(projectId);
+    setScript(nextScript);
+    setInitialScript(nextScript);
+  }, [projectId, setInitialScript, setScript]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const handleCreate = () => {
     if (!projectId) return;
     createPipeline.mutate({ name: pipelineName, projectId, nodes: steps });
+  };
+
+  const handleBack = () => {
+    if (isDirty && !window.confirm('You have unsaved changes. Leave this page?')) {
+      return;
+    }
+
+    goBack();
   };
 
   if (!projectId)
@@ -45,8 +75,13 @@ export const PipelineCreationPage = () => {
     <div className='flex h-full flex-col gap-4'>
       <Tabs key={'editor'} defaultValue={'blueprint'} className={'h-full flex flex-col gap-4'}>
         <div className='flex items-center justify-between gap-4'>
-          <BackButton iconOnly onClick={() => goBack()} />
-          <PipelineEditorHeader onSubmit={handleCreate} submitLabel='Create' />
+          <BackButton iconOnly onClick={handleBack} />
+          <PipelineEditorHeader
+            onSubmit={handleCreate}
+            submitLabel={<Trans>Create pipeline</Trans>}
+            isDirty={isDirty}
+            isSaving={createPipeline.isPending}
+          />
         </div>
         <TabsContent value='scripting' className={'h-full'} forceMount>
           <Card className={'h-full p-0'}>

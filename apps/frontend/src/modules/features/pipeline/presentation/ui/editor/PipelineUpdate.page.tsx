@@ -5,6 +5,7 @@ import { Card } from '@shadcn';
 import { json } from '@codemirror/legacy-modes/mode/javascript';
 import { useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { Trans } from '@lingui/react/macro';
 import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx';
 import { usePipeline } from '@/modules/features/pipeline/presentation/hooks/use-pipeline.ts';
 import { useUpdatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-update-pipeline.ts';
@@ -21,24 +22,55 @@ export const PipelineUpdatePage = () => {
   const updatePipeline = useUpdatePipeline();
   const { goBack } = useScyllaNavigate();
 
-  const { script, setScript, pipelineName, steps, handleStepsChange, handleNameChange } =
-    usePipelineScript();
+  const {
+    script,
+    setScript,
+    setInitialScript,
+    pipelineName,
+    steps,
+    isDirty,
+    handleStepsChange,
+    handleNameChange,
+  } = usePipelineScript();
 
   useEffect(() => {
-    if (pipeline) {
-      const scriptObj = {
-        name: pipeline.name,
-        projectId: pipeline.projectId,
-        nodes: pipeline.nodes,
-      };
-      setScript(JSON.stringify(scriptObj, null, 2));
-    }
-  }, [pipeline, setScript]);
+    if (!pipeline) return;
+
+    const scriptObj = {
+      name: pipeline.name,
+      projectId: pipeline.projectId,
+      nodes: pipeline.nodes,
+    };
+    const nextScript = JSON.stringify(scriptObj, null, 2);
+
+    setScript(nextScript);
+    setInitialScript(nextScript);
+  }, [pipeline, setInitialScript, setScript]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const handleUpdate = useCallback(() => {
     if (!pipelineId) return;
     updatePipeline.mutate({ id: pipelineId, nodes: steps, name: pipelineName });
   }, [pipelineId, steps, pipelineName, updatePipeline]);
+
+  const handleBack = () => {
+    if (isDirty && !window.confirm('You have unsaved changes. Leave this page?')) {
+      return;
+    }
+
+    goBack();
+  };
 
   if (isLoading) return <>Loading...</>;
   if (isError) return <ErrorState message='Failed to load pipeline' />;
@@ -47,8 +79,13 @@ export const PipelineUpdatePage = () => {
     <div className='flex h-full flex-col gap-4'>
       <Tabs key={'editor'} defaultValue={'blueprint'} className={'h-full flex flex-col gap-4'}>
         <div className='flex items-center justify-between gap-4'>
-          <BackButton iconOnly onClick={() => goBack()} />
-          <PipelineEditorHeader onSubmit={handleUpdate} submitLabel='Edit' />
+          <BackButton iconOnly onClick={handleBack} />
+          <PipelineEditorHeader
+            onSubmit={handleUpdate}
+            submitLabel={<Trans>Save changes</Trans>}
+            isDirty={isDirty}
+            isSaving={updatePipeline.isPending}
+          />
         </div>
         <TabsContent value='scripting' className={'h-full'} forceMount>
           <Card className={'h-full p-0'}>

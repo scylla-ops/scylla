@@ -85,7 +85,7 @@ interface UsePipelineScriptParams {
 }
 
 export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = {}) {
-  const { script, setScript } = useScriptStore(state => state);
+  const { script, setScript, initialScript, setInitialScript } = useScriptStore(state => state);
 
   const pipelineName: string = useMemo(() => {
     try {
@@ -103,6 +103,8 @@ export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = 
       return [];
     }
   }, [script]);
+
+  const isDirty = useMemo(() => script !== initialScript, [script, initialScript]);
 
   const handleStepsChange = useCallback(
     (newSteps: PipelineStep[]) => {
@@ -136,8 +138,10 @@ export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = 
   return {
     script,
     setScript,
+    setInitialScript,
     pipelineName,
     steps,
+    isDirty,
     handleStepsChange,
     handleNameChange,
   };
