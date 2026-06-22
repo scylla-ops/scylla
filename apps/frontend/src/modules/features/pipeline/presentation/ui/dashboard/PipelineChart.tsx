@@ -1,6 +1,6 @@
 import { cn } from '@shared/presentation/utils';
 import { Skeleton } from '@shadcn/skeleton.tsx';
-import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/StatusBar.tsx';
+import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';
 import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';

@@ -12,9 +12,9 @@ import {
 } from '@shadcn/dialog.tsx';
 import { CodeSnippet } from '@shadcn/code-snippet.tsx';
 import { cn } from '@shared/presentation/utils';
-import { AgentRunInstructions } from './AgentRunInstructions.tsx';
+import { AgentRunInstructions } from '@shared/presentation/ui/data-display/AgentRunInstructions.tsx';
 
-export type SecretEntityKind = 'app' | 'agent';
+export type SecretEntityKind = 'app' | 'agent' | 'webhook';
 
 interface SecretRevealDialogProps {
   open: boolean;
@@ -67,6 +67,7 @@ export const SecretRevealDialog = ({
   }, [revealed]);
 
   const hasRunStep = entityKind === 'agent';
+  const isWebhook = entityKind === 'webhook';
 
   return (
     <Dialog open={open}>
@@ -81,6 +82,8 @@ export const SecretRevealDialog = ({
           <DialogTitle className='text-[15px]'>
             {hasRunStep ? (
               <Trans>{entity.name} is ready</Trans>
+            ) : isWebhook ? (
+              <Trans>{entity.name} webhook secret</Trans>
             ) : (
               <Trans>{entity.name} credentials</Trans>
             )}
@@ -156,10 +159,16 @@ export const SecretRevealDialog = ({
           ) : (
             revealed && (
               <p className='pl-9 text-xs text-muted-foreground'>
-                <Trans>
-                  Use these credentials (id + secret) to authenticate an automation against the
-                  Scylla API.
-                </Trans>
+                {isWebhook ? (
+                  <Trans>
+                    Add this signing secret to your webhook sender's HMAC configuration.
+                  </Trans>
+                ) : (
+                  <Trans>
+                    Use these credentials (id + secret) to authenticate an automation against the
+                    Scylla API.
+                  </Trans>
+                )}
               </p>
             )
           )}

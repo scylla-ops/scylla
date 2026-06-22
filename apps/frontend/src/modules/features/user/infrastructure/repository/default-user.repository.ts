@@ -4,7 +4,7 @@ import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { User } from '@/modules/features/user/domain/models/user.model.ts';
 import { GrpcUserMapper } from '@/modules/features/user/infrastructure/repository/mappers/grpc-user.mapper.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class DefaultUserRepository implements UserRepository {
   constructor(private readonly _remoteDataSource: UserRemoteDataSource) {}

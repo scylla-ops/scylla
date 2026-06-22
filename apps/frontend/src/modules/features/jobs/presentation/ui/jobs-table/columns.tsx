@@ -19,6 +19,7 @@ type JobColumnMeta = {
   onOpenJobLog: (jobId: string) => void;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 const JobDurationCell = ({ job }: { job: Job }) => {
   const isLive = job.status === 'running' || job.status === 'pending';
   useNow(isLive);

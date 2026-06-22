@@ -3,7 +3,7 @@ import type { ListUsersResponse, UserResponse } from '@/generated/user.ts';
 import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
 import type { User } from '@/modules/features/user/domain/models/user.model.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
-import { idValue, timestampToIso } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class GrpcUserMapper {
   static toDomain(user: UserResponse): User {

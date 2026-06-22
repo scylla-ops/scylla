@@ -12,7 +12,7 @@ import {
   type PaginationParams,
 } from '@shared/domain/models/pagination.model.ts';
 import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;

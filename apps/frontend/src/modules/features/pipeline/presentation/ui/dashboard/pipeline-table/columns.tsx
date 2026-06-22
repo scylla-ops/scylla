@@ -12,6 +12,7 @@ type PipelineColumnMeta = {
   onEdit: (pipeline: PipelineMetadata) => void;
   onDuplicate: (pipeline: PipelineMetadata) => void;
   onViewJobs: (pipeline: PipelineMetadata) => void;
+  onViewTriggers: (pipeline: PipelineMetadata) => void;
 
   runningPipelines: Set<string>;
 
@@ -75,6 +76,10 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         onViewJobs={e => {
           e.stopPropagation();
           meta.onViewJobs(row.original);
+        }}
+        onViewTriggers={e => {
+          e.stopPropagation();
+          meta.onViewTriggers(row.original);
         }}
         isRunning={meta.runningPipelines.has(row.original.id)}
       />

@@ -5,7 +5,7 @@ import { createAppItems } from '@/modules/features/apps/presentation/utils/creat
 import { AppCard } from '@/modules/features/apps/presentation/ui/components/AppCard.tsx';
 import type { CreatedApp } from '@/modules/features/apps/domain/models/app.model.ts';
 import { FeatureHeader, FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Button, Card } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';
 import {

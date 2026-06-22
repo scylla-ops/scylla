@@ -14,7 +14,11 @@ import type {
 import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { JobLogsTailHandleRepo } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
-import { idValue, timestampToIso, timestampToIsoOpt } from '@core/infrastructure/grpc/wrappers.ts';
+import {
+  idValue,
+  timestampToIso,
+  timestampToIsoOpt,
+} from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class GrpcJobMapper {
   private static nodeExecutionToDomain(node: JobNodeResponse): JobNodeExecution {

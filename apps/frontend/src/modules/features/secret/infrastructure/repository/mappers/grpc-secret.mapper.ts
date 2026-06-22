@@ -1,6 +1,6 @@
 import type { Secret as ProtoSecret } from '@/generated/secret.ts';
 import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
-import { idValue, timestampToIso } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
 /** Maps gRPC Secret messages to the domain Secret model (never carries a value). */
 export class GrpcSecretMapper {

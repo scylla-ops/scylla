@@ -51,6 +51,14 @@ export const ToastMessages = {
   SECRET_CREATE: msg`Secret created`,
   SECRET_DELETE: msg`Secret deleted`,
 
+  // Triggers
+  TRIGGER_CREATE: msg`Trigger created`,
+  TRIGGER_UPDATE: msg`Trigger updated`,
+  TRIGGER_DELETE: msg`Trigger deleted`,
+  TRIGGER_ENABLED: msg`Trigger enabled`,
+  TRIGGER_DISABLED: msg`Trigger disabled`,
+  TRIGGER_FIRED: msg`Trigger fired — run started`,
+
   // Shared
   COPIED: msg`Copied`,
 } as const satisfies Record<string, MessageDescriptor>;
