@@ -18,12 +18,12 @@ msgid "••••••••"
 msgstr "••••••••"
 
 #: src/modules/features/login/presentation/ui/LoginForm.tsx:22
-msgid "Email"
-msgstr "E-mail"
+msgid "Username"
+msgstr "Nom d'utilisateur"
 
 #: src/modules/features/login/presentation/ui/Login.page.tsx:40
-msgid "Enter your email below to login to your account"
-msgstr "Entrez votre e-mail ci-dessous pour vous connecter à votre compte"
+msgid "Enter your username below to login to your account"
+msgstr "Entrez votre nom d'utilisateur ci-dessous pour vous connecter à votre compte"
 
 #: src/modules/features/login/presentation/ui/LoginForm.tsx:46
 msgid "Login"
@@ -38,5 +38,5 @@ msgid "Password"
 msgstr "Mot de passe"
 
 #: src/modules/features/login/presentation/ui/LoginForm.tsx:28
-msgid "you@example.com"
-msgstr "vous@exemple.com"
+msgid "username"
+msgstr "nom d'utilisateur"

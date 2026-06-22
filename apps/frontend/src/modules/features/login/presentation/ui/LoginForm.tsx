@@ -10,28 +10,32 @@ type LoginFormProps = {
 //TODO: use ScyllaForm instead of this
 export const LoginForm = ({ handleSubmit }: LoginFormProps) => {
   const { t } = useLingui();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   return (
     <form
-      onSubmit={e => handleSubmit(e, email, password)}
+      onSubmit={e => handleSubmit(e, username, password)}
       className='flex flex-col gap-4 w-auto mx-auto'
     >
       <div>
-        <Label htmlFor='email'><Trans>Email</Trans></Label>
+        <Label htmlFor='username'>
+          <Trans>Username</Trans>
+        </Label>
         <Input
-          id='email'
+          id='username'
           type='text'
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder={t`you@example.com`}
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          placeholder={t`username`}
           required
         />
       </div>
 
       <div>
-        <Label htmlFor='password'><Trans>Password</Trans></Label>
+        <Label htmlFor='password'>
+          <Trans>Password</Trans>
+        </Label>
         <Input
           id='password'
           type='password'
