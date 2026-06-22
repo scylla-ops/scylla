@@ -2,7 +2,7 @@ pub mod bootstrap;
 pub mod config;
 pub mod error;
 pub mod startup;
-pub mod webhook;
+pub mod rest;
 
 #[cfg(feature = "grpc")]
 pub mod grpc;

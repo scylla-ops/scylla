@@ -817,7 +817,7 @@ pub async fn run_webhook<F>(
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    let app = crate::webhook::router(ingress);
+    let app = crate::rest::webhook::router(ingress);
     let listener = tokio::net::TcpListener::bind(address)
         .await
         .map_err(|e| StartupError::Webhook(format!("bind {address}: {e}")))?;
