@@ -1,7 +1,7 @@
 use crate::application::JobRepository;
 use crate::domain::entities::{AppId, Job, JobId, JobNode, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::job::JobStatus;
+use crate::domain::value_objects::job::{JobOrigin, JobStatus};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -120,6 +120,7 @@ struct JobRow {
     status: String,
     node_executions: Json<Vec<JobNode>>,
     inputs: Json<Vec<(String, String)>>,
+    origin: Json<JobOrigin>,
     agent_app_id: Option<String>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -137,6 +138,7 @@ impl TryFrom<JobRow> for Job {
             status,
             r.node_executions.0,
             r.inputs.0,
+            r.origin.0,
             r.agent_app_id.map(AppId::new),
             r.created_at,
             r.updated_at,
@@ -156,16 +158,18 @@ pub mod queries {
     {
         let nodes = Json(job.node_executions().to_vec());
         let inputs = Json(job.inputs().to_vec());
+        let origin = Json(job.origin().clone());
         sqlx::query!(
             r#"
-            INSERT INTO jobs (id, pipeline_id, status, node_executions, inputs, agent_app_id, created_at, updated_at, started_at, finished_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            INSERT INTO jobs (id, pipeline_id, status, node_executions, inputs, origin, agent_app_id, created_at, updated_at, started_at, finished_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             "#,
             job.id().as_str(),
             job.pipeline_id().as_str(),
             job.status().as_str(),
             nodes as _,
             inputs as _,
+            origin as _,
             job.agent_app_id().map(AppId::as_str),
             job.created_at(),
             job.updated_at(),
@@ -207,6 +211,7 @@ pub mod queries {
             SELECT id, pipeline_id, status,
                    node_executions AS "node_executions: Json<Vec<JobNode>>",
                    inputs AS "inputs: Json<Vec<(String, String)>>",
+                   origin AS "origin: Json<JobOrigin>",
                    agent_app_id,
                    created_at, updated_at, started_at, finished_at
             FROM jobs
@@ -231,6 +236,7 @@ pub mod queries {
             SELECT id, pipeline_id, status,
                    node_executions AS "node_executions: Json<Vec<JobNode>>",
                    inputs AS "inputs: Json<Vec<(String, String)>>",
+                   origin AS "origin: Json<JobOrigin>",
                    agent_app_id,
                    created_at, updated_at, started_at, finished_at
             FROM jobs
@@ -351,6 +357,7 @@ pub mod queries {
                 SELECT id, pipeline_id, status,
                        node_executions AS "node_executions: Json<Vec<JobNode>>",
                        inputs AS "inputs: Json<Vec<(String, String)>>",
+                       origin AS "origin: Json<JobOrigin>",
                        agent_app_id,
                        created_at, updated_at, started_at, finished_at
                 FROM jobs
@@ -369,6 +376,7 @@ pub mod queries {
                 SELECT id, pipeline_id, status,
                        node_executions AS "node_executions: Json<Vec<JobNode>>",
                        inputs AS "inputs: Json<Vec<(String, String)>>",
+                       origin AS "origin: Json<JobOrigin>",
                        agent_app_id,
                        created_at, updated_at, started_at, finished_at
                 FROM jobs
@@ -389,6 +397,7 @@ pub mod queries {
                 SELECT j.id, j.pipeline_id, j.status,
                        j.node_executions AS "node_executions: Json<Vec<JobNode>>",
                        j.inputs AS "inputs: Json<Vec<(String, String)>>",
+                       j.origin AS "origin: Json<JobOrigin>",
                        j.agent_app_id,
                        j.created_at, j.updated_at, j.started_at, j.finished_at
                 FROM jobs j
@@ -410,6 +419,7 @@ pub mod queries {
                 SELECT j.id, j.pipeline_id, j.status,
                        j.node_executions AS "node_executions: Json<Vec<JobNode>>",
                        j.inputs AS "inputs: Json<Vec<(String, String)>>",
+                       j.origin AS "origin: Json<JobOrigin>",
                        j.agent_app_id,
                        j.created_at, j.updated_at, j.started_at, j.finished_at
                 FROM jobs j

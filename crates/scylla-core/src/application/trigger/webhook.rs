@@ -144,7 +144,7 @@ where
         let payload: Option<serde_json::Value> = serde_json::from_slice(raw_body).ok();
         let job = self
             .firing
-            .fire(trigger_id, payload.as_ref())
+            .fire(trigger_id, payload.as_ref(), delivery_id)
             .await
             .map_err(WebhookError::Internal)?;
         Ok(IngestOutcome::Fired(job.id().clone()))

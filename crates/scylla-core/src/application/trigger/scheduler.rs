@@ -109,7 +109,7 @@ where
 
         let mut fired = 0usize;
         for trigger in due {
-            match self.firing.fire(trigger.id(), None).await {
+            match self.firing.fire(trigger.id(), None, None).await {
                 Ok(job) => {
                     info!(trigger_id = %trigger.id(), job_id = %job.id(), "cron trigger fired");
                     fired += 1;
@@ -208,6 +208,7 @@ mod tests {
             &self,
             trigger_id: &TriggerId,
             _payload: Option<&serde_json::Value>,
+            _delivery_id: Option<&str>,
         ) -> DomainResult<Job> {
             self.fired.lock().unwrap().push(trigger_id.to_string());
             if self.fail.contains(&trigger_id.to_string()) {

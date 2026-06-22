@@ -50,7 +50,7 @@ macro_rules! impl_sqlx_for_id {
 /// the `EntityId` marker, and `sqlx` integration (under the `postgres` feature).
 macro_rules! define_id {
     ($name:ident) => {
-        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $name(String);
 
         impl $name {

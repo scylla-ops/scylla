@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT id, pipeline_id, status,\n                       node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       inputs AS \"inputs: Json<Vec<(String, String)>>\",\n                       agent_app_id,\n                       created_at, updated_at, started_at, finished_at\n                FROM jobs\n                ORDER BY created_at DESC\n                LIMIT $1 OFFSET $2\n                ",
+  "query": "\n            SELECT id, pipeline_id, status,\n                   node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                   inputs AS \"inputs: Json<Vec<(String, String)>>\",\n                   origin AS \"origin: Json<JobOrigin>\",\n                   agent_app_id,\n                   created_at, updated_at, started_at, finished_at\n            FROM jobs\n            WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,17 @@
       },
       {
         "ordinal": 5,
+        "name": "origin: Json<JobOrigin>",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "jobs",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
         "name": "agent_app_id",
         "type_info": "Text",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -92,7 +103,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "started_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -103,7 +114,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "finished_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -116,11 +127,11 @@
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8"
+        "Text"
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -133,5 +144,5 @@
       true
     ]
   },
-  "hash": "ffb1d4b64f0ef3ba8f24a7b292678900c4a0f5ddf509822b2530e2f68d281e80"
+  "hash": "a03b8ace4123ce31e3c0be37ff83ed2561789e2a65004307a3501a51f7060875"
 }

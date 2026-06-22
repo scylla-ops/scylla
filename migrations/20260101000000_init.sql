@@ -205,6 +205,10 @@ CREATE TABLE jobs (
     -- immediately or retried later by the pending-job scheduler. Literals only —
     -- never secrets.
     inputs          JSONB       NOT NULL DEFAULT '[]',
+    -- Provenance of the run, a serialized JobOrigin tagged by `kind`: human / app
+    -- (a direct RunPipeline call) or cron / webhook (a trigger fired). Required at
+    -- insert, immutable thereafter — every job is attributable.
+    origin          JSONB       NOT NULL,
     agent_app_id    TEXT        REFERENCES agents (app_id) ON DELETE SET NULL,
     created_at      TIMESTAMPTZ NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL,

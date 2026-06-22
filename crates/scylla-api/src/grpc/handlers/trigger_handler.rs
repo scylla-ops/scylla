@@ -219,7 +219,7 @@ where
         // is authorized as the org's runner App inside the use case.
         let job = self
             .fire_uc
-            .fire(&id, None)
+            .fire(&id, None, None)
             .await
             .map_err(domain_error_to_status)?;
 

@@ -147,6 +147,9 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
             status,
             vec![],
             vec![],
+            crate::domain::value_objects::job::JobOrigin::App {
+                app_id: app.id().clone(),
+            },
             Some(app.id().clone()),
             now,
             now,
@@ -183,7 +186,12 @@ async fn deleting_agent_keeps_jobs_and_nulls_attribution(pool: PgPool) {
         .await
         .unwrap();
 
-    let mut job = Job::create_from_pipeline(&pipeline);
+    let mut job = Job::create_from_pipeline(
+        &pipeline,
+        crate::domain::value_objects::job::JobOrigin::App {
+            app_id: app.id().clone(),
+        },
+    );
     job.assign_agent(app.id().clone());
     let job = job_repo.create(&job).await.unwrap();
 

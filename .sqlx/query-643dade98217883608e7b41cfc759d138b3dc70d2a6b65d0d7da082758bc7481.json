@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT j.id, j.pipeline_id, j.status,\n                       j.node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       j.inputs AS \"inputs: Json<Vec<(String, String)>>\",\n                       j.agent_app_id,\n                       j.created_at, j.updated_at, j.started_at, j.finished_at\n                FROM jobs j\n                JOIN pipelines p ON p.id = j.pipeline_id\n                JOIN projects pr ON pr.id = p.project_id\n                WHERE pr.organization_id = $1\n                ORDER BY j.created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
+  "query": "\n                SELECT id, pipeline_id, status,\n                       node_executions AS \"node_executions: Json<Vec<JobNode>>\",\n                       inputs AS \"inputs: Json<Vec<(String, String)>>\",\n                       origin AS \"origin: Json<JobOrigin>\",\n                       agent_app_id,\n                       created_at, updated_at, started_at, finished_at\n                FROM jobs\n                WHERE pipeline_id = $1\n                ORDER BY created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,17 @@
       },
       {
         "ordinal": 5,
+        "name": "origin: Json<JobOrigin>",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "jobs",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
         "name": "agent_app_id",
         "type_info": "Text",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -92,7 +103,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "started_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -103,7 +114,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "finished_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -127,6 +138,7 @@
       false,
       false,
       false,
+      false,
       true,
       false,
       false,
@@ -134,5 +146,5 @@
       true
     ]
   },
-  "hash": "0e7449edaf777060600ed042de03d0280f3c11afacefd5bc736f29fe0a9b3ba2"
+  "hash": "643dade98217883608e7b41cfc759d138b3dc70d2a6b65d0d7da082758bc7481"
 }
