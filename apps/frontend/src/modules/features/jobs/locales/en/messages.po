@@ -18,10 +18,10 @@ msgid "Actions"
 msgstr "Actions"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
-msgid "Copied!"
-msgstr "Copied!"
+#~ msgid "Copied!"
+#~ msgstr "Copied!"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:6
 msgid "Copy ID"
 msgstr "Copy ID"
 
@@ -45,7 +45,7 @@ msgstr "Job ID"
 msgid "Job Logs"
 msgstr "Job Logs"
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:43
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:44
 msgid "No jobs found"
 msgstr "No jobs found"
 
@@ -61,11 +61,11 @@ msgstr "Open logs"
 msgid "queued — waiting for an agent"
 msgstr "queued — waiting for an agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:70
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:65
 msgid "Refresh"
 msgstr "Refresh"
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:46
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 

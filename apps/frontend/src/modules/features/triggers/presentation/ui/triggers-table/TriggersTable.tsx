@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { DataTable } from '@shared/presentation/ui/DataTable.tsx';
-import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { DataTable } from '@shared/presentation/ui/data-display/DataTable.tsx';
+import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';

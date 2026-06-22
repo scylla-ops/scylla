@@ -12,7 +12,7 @@ import {
 } from '@shadcn/dialog.tsx';
 import { CodeSnippet } from '@shadcn/code-snippet.tsx';
 import { cn } from '@shared/presentation/utils';
-import { AgentRunInstructions } from './AgentRunInstructions.tsx';
+import { AgentRunInstructions } from '@shared/presentation/ui/data-display/AgentRunInstructions.tsx';
 
 export type SecretEntityKind = 'app' | 'agent' | 'webhook';
 

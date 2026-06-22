@@ -78,7 +78,7 @@ msgstr "Command"
 #~ msgid "Create"
 #~ msgstr "Create"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:47
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:48
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
@@ -167,11 +167,11 @@ msgstr "More options"
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:33
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:31
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:44
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:45
 msgid "No pipeline found"
 msgstr "No pipeline found"
 

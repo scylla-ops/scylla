@@ -2,18 +2,19 @@ import { UserTable } from '@/modules/features/user/presentation/ui/admin/user-ta
 import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
 import { useDeleteUser } from '@/modules/features/user/presentation/hooks/use-delete-user.ts';
 import { FeatureHeader } from '@shared/presentation/ui';
-import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
+import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { AddUserDialog } from '@/modules/features/user/presentation/ui/admin/AddUserDialog.tsx';
 import { useState } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
-  const { selectedIds, clearSelection } = useSelection('users');
+  const userIds = users?.items?.map(user => user.userId) ?? [];
+  const { selectedIds, clearSelection, headerProps } = useFeatureSelection('users', userIds);
   const deleteUser = useDeleteUser();
   const [openDialog, setOpenDialog] = useState(false);
   const { i18n } = useLingui();
@@ -41,8 +42,7 @@ export const UserAdminPage = () => {
       <FeatureHeader
         count={users?.items?.length ?? 0}
         label='User'
-        selectedCount={selectedIds.length}
-        onClearSelection={clearSelection}
+        {...headerProps}
         onDeleteSelection={handleDelete}
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}

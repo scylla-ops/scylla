@@ -1,11 +1,6 @@
-// Composants UI partagés réutilisables
-export * from './ListCard.tsx';
-export * from './status-indicator';
-export * from './DataTable.tsx';
-export * from './FeatureHeader.tsx';
-export * from './BackButton.tsx';
-export * from './FormDialog.tsx';
-export * from './IconButton.tsx';
-export * from './SecretRevealDialog.tsx';
-export * from './AgentRunInstructions.tsx';
-export * from './NoAgentsBanner.tsx';
+// Shared reusable UI components, grouped by purpose.
+export * from './data-display';
+export * from './feedback';
+export * from './forms';
+export * from './controls';
+export * from './layout';

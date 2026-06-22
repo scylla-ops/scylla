@@ -10,7 +10,7 @@ import {
 } from '@shadcn/dialog.tsx';
 import { Trans } from '@lingui/react/macro';
 import type { FormChange, FormItem } from '@shared/presentation/models/scylla-form.model.ts';
-import { ScyllaForm } from '@shared/presentation/ui/ScyllaForm.tsx';
+import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 
 interface FormDialogProps {
   open: boolean;

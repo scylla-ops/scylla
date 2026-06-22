@@ -8,7 +8,7 @@ import {
 import { AgentIdLink } from '@/modules/features/agents/presentation/ui/components/AgentIdLink.tsx';
 import { OutcomesChart } from '@/modules/features/agents/presentation/ui/components/OutcomesChart.tsx';
 import { AgentRunInstructions } from '@shared/presentation/ui';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { useResourceError } from '@shared/presentation/hooks/use-resource-error.ts';
 import { Badge, Button } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';

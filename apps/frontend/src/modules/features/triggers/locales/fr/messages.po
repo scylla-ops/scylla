@@ -29,7 +29,7 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:77
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr ""
 
@@ -50,10 +50,10 @@ msgid "Cancel"
 msgstr ""
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
-msgid "Copied!"
-msgstr ""
+#~ msgid "Copied!"
+#~ msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:26
 msgid "Copy url"
 msgstr ""
 
@@ -154,7 +154,7 @@ msgstr ""
 msgid "next scheduled run (UTC)"
 msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:74
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:75
 msgid "No triggers yet"
 msgstr ""
 

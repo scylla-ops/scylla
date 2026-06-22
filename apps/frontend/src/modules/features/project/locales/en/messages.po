@@ -62,7 +62,7 @@ msgstr "Enter a name for your new project and select the organization it belongs
 #~ msgid "in total"
 #~ msgstr "in total"
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:32
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:27
 msgid "New project"
 msgstr "New project"
 

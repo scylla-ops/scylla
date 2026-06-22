@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
-import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { SecretRevealDialog } from '@shared/presentation/ui';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { usePipelineTriggers } from '@/modules/features/triggers/presentation/hooks/use-pipeline-triggers.ts';
@@ -53,6 +53,7 @@ export const TriggersPage = () => {
     <div className='flex flex-col gap-4 w-full min-h-full'>
       <TriggersHeader
         count={triggers.length}
+        triggerIds={triggers.map(trigger => trigger.id)}
         pipelineId={pipelineId}
         onNew={() => setCreateOpen(true)}
       />

@@ -2,10 +2,10 @@ import { usePipelinesJobs } from '@/modules/features/jobs/presentation/hooks/use
 import { JobsHeader } from '@/modules/features/jobs/presentation/ui/JobsHeader.tsx';
 import { useParams } from 'react-router-dom';
 import { JobsTable } from '@/modules/features/jobs/presentation/ui/jobs-table';
-import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
-import { Pagination } from '@shared/presentation/ui/Pagination.tsx';
-import { NoAgentsBanner } from '@shared/presentation/ui/NoAgentsBanner.tsx';
+import { Pagination } from '@shared/presentation/ui/data-display/Pagination.tsx';
+import { NoAgentsBanner } from '@shared/presentation/ui/feedback/NoAgentsBanner.tsx';
 
 export const JobsPage = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
@@ -28,6 +28,7 @@ export const JobsPage = () => {
     <div className='flex flex-col gap-4 w-full h-full'>
       <JobsHeader
         numberOfJobs={paginationInfo?.totalCount ?? jobs.length}
+        jobIds={jobs.map(job => job.id)}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
       />

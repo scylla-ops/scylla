@@ -4,18 +4,21 @@ import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-de
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
-import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
+import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { useRunPipeline } from '@/modules/features/pipeline/presentation/hooks/use-run-pipeline.ts';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
+  jobIds: string[];
   pipelineId: string;
   onRefresh: () => void;
 }
 
-export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh }: JobsHeaderProps) => {
+export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: JobsHeaderProps) => {
   const deleteJob = useDeleteJobs(pipelineId);
-  const { selectedIds, clearSelection } = useSelection('jobs');
+  const { headerProps } = useFeatureSelection('jobs', jobIds, {
+    deleteItem: id => deleteJob.mutateAsync(id),
+  });
 
   const runPipeline = useRunPipeline();
 
@@ -27,12 +30,6 @@ export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh }: JobsHeaderPr
     }
   };
 
-  const handleDelete = async () => {
-    const promises = selectedIds.map(id => deleteJob.mutateAsync(id));
-    await Promise.allSettled(promises);
-    clearSelection();
-  };
-
   return (
     <div className={'flex flex-col gap-3'}>
       <FeatureHeader
@@ -41,9 +38,7 @@ export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh }: JobsHeaderPr
         pluralLabel={'Jobs'}
         newLabel={'Run'}
         onNew={handleRunPipeline}
-        selectedCount={selectedIds.length}
-        onClearSelection={clearSelection}
-        onDeleteSelection={handleDelete}
+        {...headerProps}
         underLabel={
           <div className={'flex items-center justify-between'}>
             <div className='flex items-baseline gap-2'>

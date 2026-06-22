@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp, useApps } from '@/modules/features/apps/presentation/hooks/use-apps.ts';
 import { AppSecretsCard } from '@/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { useResourceError } from '@shared/presentation/hooks/use-resource-error.ts';
 import { Badge, Button, Card, CardContent } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';

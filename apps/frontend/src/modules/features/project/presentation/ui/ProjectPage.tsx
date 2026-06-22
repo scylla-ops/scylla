@@ -2,8 +2,8 @@ import { useProjects } from '@/modules/features/project/presentation/hooks/usePr
 import ProjectCard from '@/modules/features/project/presentation/ui/ProjectCard.tsx';
 import { ProjectHeader } from '@/modules/features/project/presentation/ui/ProjectHeader.tsx';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { Pagination } from '@/modules/shared/presentation/ui/Pagination.tsx';
-import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { Pagination } from '@/modules/shared/presentation/ui/data-display/Pagination.tsx';
+import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 
 export const ProjectPage = () => {
@@ -35,7 +35,10 @@ export const ProjectPage = () => {
 
   return (
     <div className='flex flex-col gap-4 w-full min-h-full'>
-      <ProjectHeader numberOfProjects={paginationInfo?.totalCount ?? projects.length} />
+      <ProjectHeader
+        numberOfProjects={paginationInfo?.totalCount ?? projects.length}
+        projectIds={projects.map(project => project.id)}
+      />
       <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
         {projects.map(project => (
           <ProjectCard key={project.id} project={project} />

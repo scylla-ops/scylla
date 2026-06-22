@@ -1,4 +1,4 @@
-import { DataTable } from '@shared/presentation/ui/DataTable.tsx';
+import { DataTable } from '@shared/presentation/ui/data-display/DataTable.tsx';
 import { createPipelineColumns } from './columns.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { useRunPipeline } from '../../../hooks/use-run-pipeline.ts';
