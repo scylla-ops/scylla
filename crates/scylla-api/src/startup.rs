@@ -398,6 +398,9 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
 
     let trigger_repo = Arc::new(PgTriggerRepository::new(db.clone()));
     let trigger_delivery_repo = Arc::new(PgTriggerDeliveryRepository::new(db.clone()));
+    // One cron-schedule service, shared by the trigger CRUD (anchors next_fire_at
+    // on create/update/re-enable) and the firing scheduler (seed + claim).
+    let cron_schedule: Arc<dyn CronSchedule> = Arc::new(CronScheduleService::new());
     let trigger_uc = Arc::new(TriggerUseCases::new(
         trigger_repo.clone(),
         pipeline_repo.clone(),
@@ -407,6 +410,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
         permission_checker.clone(),
         secret_cipher.clone(),
+        cron_schedule.clone(),
     ));
     let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(
         trigger_repo.clone(),
@@ -432,9 +436,9 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     // pre-restart backlog is picked up at boot. A 15s tick bounds firing latency
     // to well under cron's one-minute granularity without busy-polling.
     {
-        let cron_schedule: Arc<dyn CronSchedule> = Arc::new(CronScheduleService::new());
         let firing: Arc<dyn TriggerFiring> = trigger_fire_uc.clone();
-        let scheduler = TriggerCronScheduler::new(trigger_repo.clone(), firing, cron_schedule);
+        let scheduler =
+            TriggerCronScheduler::new(trigger_repo.clone(), firing, cron_schedule.clone());
         tokio::spawn(async move {
             let mut tick = tokio::time::interval(std::time::Duration::from_secs(15));
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);

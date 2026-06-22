@@ -61,6 +61,6 @@ pub use signup::{SignupOutcome, SignupRepository, SignupUseCases};
 pub use trigger::{
     CronSchedule, DEFAULT_SIGNATURE_HEADER, IngestOutcome, TriggerCronScheduler,
     TriggerDeliveryRepository, TriggerFireUseCases, TriggerFiring, TriggerRepository,
-    TriggerUseCases, WebhookError, WebhookIngressUseCases,
+    TriggerUseCases, WebhookError, WebhookIngressUseCases, next_fire_time,
 };
 pub use user::{UserRepository, UserUseCases};

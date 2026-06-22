@@ -1,10 +1,9 @@
 use crate::application::trigger::fire::TriggerFiring;
-use crate::application::trigger::schedule::CronSchedule;
+use crate::application::trigger::schedule::{CronSchedule, next_fire_time};
 use crate::application::trigger::repository::TriggerRepository;
 use crate::domain::clock;
 use crate::domain::entities::Trigger;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::trigger::TriggerSource;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tracing::{info, instrument, warn};
@@ -69,20 +68,17 @@ where
             }
         };
         for mut trigger in unscheduled {
-            // Own the expression so the immutable borrow on `trigger` is released
-            // before we mutate it in the Ok arm.
-            let Some(expr) = cron_expression(&trigger).map(str::to_owned) else {
-                continue;
-            };
-            match self.schedule.next_after(&expr, clock::now()) {
-                Ok(next) => {
+            match next_fire_time(&trigger, &*self.schedule, clock::now()) {
+                Ok(Some(next)) => {
                     trigger.set_next_fire_at(Some(next));
                     if let Err(e) = self.trigger_repo.update(&trigger).await {
                         warn!(trigger_id = %trigger.id(), error = %e, "cron seed: could not persist next_fire_at");
                     }
                 }
+                // Not a cron source — never happens (the query is cron-only).
+                Ok(None) => {}
                 Err(e) => {
-                    warn!(trigger_id = %trigger.id(), expression = %expr, error = %e, "cron seed: invalid expression; trigger will not fire");
+                    warn!(trigger_id = %trigger.id(), error = %e, "cron seed: invalid expression; trigger will not fire");
                 }
             }
         }
@@ -95,9 +91,8 @@ where
         // regardless of the repository type `T`.
         let schedule = self.schedule.clone();
         let compute_next = move |trigger: &Trigger| -> DomainResult<DateTime<Utc>> {
-            let expr = cron_expression(trigger)
-                .ok_or_else(|| DomainError::internal("non-cron trigger reached the cron claim"))?;
-            schedule.next_after(expr, now)
+            next_fire_time(trigger, &*schedule, now)?
+                .ok_or_else(|| DomainError::internal("non-cron trigger reached the cron claim"))
         };
 
         let due = match self
@@ -131,14 +126,6 @@ where
             info!(fired, "cron scheduler fired due triggers");
         }
         fired
-    }
-}
-
-/// The cron expression of a cron-sourced trigger, or `None` for other kinds.
-fn cron_expression(trigger: &Trigger) -> Option<&str> {
-    match trigger.source() {
-        TriggerSource::Cron(spec) => Some(spec.expression()),
-        TriggerSource::Webhook(_) => None,
     }
 }
 
@@ -318,7 +305,7 @@ mod tests {
     #[tokio::test]
     async fn webhook_trigger_is_never_seeded_as_cron() {
         // A webhook trigger should never appear in the cron seed/claim sets, but
-        // if one did, `cron_expression` returns None and it is skipped silently.
+        // if one did, `next_fire_time` returns None and it is skipped silently.
         let webhook = Trigger::create(
             PipelineId::new("p"),
             TriggerName::new("hook").unwrap(),
