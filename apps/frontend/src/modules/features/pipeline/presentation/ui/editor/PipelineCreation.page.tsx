@@ -24,12 +24,12 @@ export const PipelineCreationPage = () => {
   return (
     <div className='flex h-full flex-col gap-4'>
       <PipelineEditor
+        mode='create'
         submitLabel='Create'
         projectId={projectId}
         initialScript={initialScript}
-        onSubmit={({ name, steps }) =>
-          createPipeline.mutate({ name, projectId, nodes: steps })
-        }
+        onSubmit={({ name, steps }) => createPipeline.mutate({ name, projectId, nodes: steps })}
+        isSubmitPending={createPipeline.isPending}
       />
     </div>
   );

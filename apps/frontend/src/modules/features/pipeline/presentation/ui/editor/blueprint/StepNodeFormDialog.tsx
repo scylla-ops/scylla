@@ -148,10 +148,11 @@ export function StepNodeFormDialog({
           </DialogTitle>
           <DialogDescription>
             {isEditMode ? (
-              <Trans>Modify the node properties.</Trans>
+              <Trans>Update the step details and dependencies.</Trans>
             ) : (
               <Trans>
-                Define a new pipeline step. You can connect it to other nodes by dragging edges.
+                Define a new pipeline step with a unique ID and clear inputs for the command or
+                script it should run.
               </Trans>
             )}
           </DialogDescription>
@@ -167,7 +168,7 @@ export function StepNodeFormDialog({
               id='node-id'
               value={nodeId}
               onChange={e => setNodeId(e.target.value)}
-              placeholder={t`e.g., build`}
+              placeholder={t`e.g., build-step`}
             />
           </div>
 
@@ -245,7 +246,7 @@ export function StepNodeFormDialog({
                   id='node-command'
                   value={command}
                   onChange={e => setCommand(e.target.value)}
-                  placeholder={t`e.g., cargo`}
+                  placeholder={t`e.g., cargo build && cargo test`}
                 />
               </div>
               <div className='space-y-2'>
@@ -288,7 +289,7 @@ export function StepNodeFormDialog({
               id='node-working-dir'
               value={workingDir}
               onChange={e => setWorkingDir(e.target.value)}
-              placeholder={t`relative to the job workspace`}
+              placeholder={t`e.g., ./services/api or /workspace`}
             />
           </div>
 

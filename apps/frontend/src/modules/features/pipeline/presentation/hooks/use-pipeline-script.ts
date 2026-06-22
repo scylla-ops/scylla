@@ -85,7 +85,7 @@ interface UsePipelineScriptParams {
 }
 
 export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = {}) {
-  const { script, setScript } = useScriptStore(state => state);
+  const { script, setScript, initialScript, setInitialScript } = useScriptStore(state => state);
 
   /** Single source of truth for parsing: derive everything else from this. */
   const { parsed, parseError } = useMemo(() => {
@@ -107,6 +107,8 @@ export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = 
     return nodes.map(n => parseNode(n));
   }, [parsed]);
 
+  const isDirty = useMemo(() => script !== initialScript, [script, initialScript]);
+
   const handleStepsChange = useCallback(
     (newSteps: PipelineStep[]) => {
       const nodes = newSteps.map(serializeNode);
@@ -127,10 +129,12 @@ export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = 
   return {
     script,
     setScript,
+    setInitialScript,
     pipelineName,
     steps,
     isValid,
     parseError,
+    isDirty,
     handleStepsChange,
     handleNameChange,
   };

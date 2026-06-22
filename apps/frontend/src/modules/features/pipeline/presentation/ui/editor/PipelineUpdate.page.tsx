@@ -28,12 +28,14 @@ export const PipelineUpdatePage = () => {
   return (
     <div className='flex h-full flex-col gap-4 overflow-hidden'>
       <PipelineEditor
+        mode='edit'
         submitLabel='Save'
         projectId={pipeline?.projectId}
         initialScript={initialScript}
         onSubmit={({ name, steps }) =>
           pipelineId && updatePipeline.mutate({ id: pipelineId, name, nodes: steps })
         }
+        isSubmitPending={updatePipeline.isPending}
       />
     </div>
   );

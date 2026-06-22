@@ -15,21 +15,28 @@ import { usePipelineScript } from '@/modules/features/pipeline/presentation/hook
 import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 
 interface PipelineEditorProps {
+  /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
+  mode: 'create' | 'edit';
   /** Label for the submit button (e.g. "Create" / "Save"). */
   submitLabel: string;
   /** Called with the parsed pipeline when the user submits a valid script. */
   onSubmit: (values: { name: string; steps: PipelineStep[] }) => void;
+
   /** Initial script to load into the editor once available (default or fetched). */
   initialScript?: string;
   /** Project id, used as fallback when serializing blueprint edits. */
   projectId?: string;
+
+  isSubmitPending?: boolean;
 }
 
 export const PipelineEditor = ({
+  mode,
   submitLabel,
   onSubmit,
   initialScript,
   projectId,
+  isSubmitPending = false,
 }: PipelineEditorProps) => {
   const {
     script,
@@ -38,31 +45,48 @@ export const PipelineEditor = ({
     steps,
     isValid,
     parseError,
+    setInitialScript,
+    isDirty,
     handleStepsChange,
     handleNameChange,
   } = usePipelineScript({ projectId });
 
   useEffect(() => {
-    if (initialScript) setScript(initialScript);
-  }, [initialScript, setScript]);
+    if (initialScript) {
+      setInitialScript(initialScript);
+      setScript(initialScript);
+    }
+  }, [initialScript, setInitialScript, setScript]);
 
   const handleSubmit = () => {
     if (!isValid) return;
     onSubmit({ name: pipelineName, steps });
   };
 
+  //todo: confirmation also if user navigate using breadcrumb (need refactor of the breadcrumb system (using a store?) )
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
   return (
-    <Tabs
-      key='editor'
-      defaultValue='blueprint'
-      className='flex h-full flex-col gap-4 overflow-hidden'
-    >
+    <Tabs key='editor' defaultValue='blueprint' className='flex h-full flex-col gap-4'>
       <div className='flex w-full items-center justify-between gap-4'>
         <PipelineEditorHeader
           onSubmit={handleSubmit}
           submitLabel={submitLabel}
+          mode={mode}
           submitDisabled={!isValid}
           blueprintDisabled={!isValid}
+          isDirty={isDirty}
+          isSaving={isSubmitPending}
         />
       </div>
       <TabsContent value='scripting' className='h-full overflow-hidden' forceMount>
