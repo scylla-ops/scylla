@@ -138,8 +138,7 @@ msgstr "History"
 #~ msgid "in total"
 #~ msgstr "in total"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:75
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:76
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx:86
 msgid "Invalid JSON"
 msgstr "Invalid JSON"
 
@@ -237,7 +236,7 @@ msgstr "Secret"
 msgid "secret name"
 msgstr "secret name"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:45
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:20
 msgid "Select a project first"
 msgstr "Select a project first"
 

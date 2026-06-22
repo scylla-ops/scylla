@@ -5,9 +5,11 @@ import { useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Tabs, TabsContent } from '@shadcn/tabs.tsx';
 import { Card } from '@shadcn';
-import { cn } from '@shared/presentation/utils';
 import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx';
-import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
+import {
+  codeMirrorTheme,
+  codeMirrorErrorTheme,
+} from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
 import { PipelineBlueprint } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/PipelineBlueprint.tsx';
 import { usePipelineScript } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-script.ts';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
@@ -66,13 +68,16 @@ export const PipelineEditor = ({
       <TabsContent value='scripting' className='h-full overflow-hidden' forceMount>
         <div className='flex h-full flex-col gap-2'>
           <div className={'overflow-auto p-2'}>
-            <Card className={cn('min-h-0 flex-1 p-0', parseError && 'ring-destructive ring-2')}>
+            <Card className='min-h-0 flex-1 p-0'>
               <ReactCodeMirror
                 value={script}
                 onChange={setScript}
                 className='h-full'
                 height='100%'
-                extensions={[StreamLanguage.define(json), codeMirrorTheme]}
+                extensions={[
+                  StreamLanguage.define(json),
+                  parseError ? codeMirrorErrorTheme : codeMirrorTheme,
+                ]}
               />
             </Card>
           </div>
