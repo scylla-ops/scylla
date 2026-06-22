@@ -10,6 +10,7 @@ import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
+import { ScyllaError } from '@shared/utils/scylla-result.ts';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
@@ -24,8 +25,9 @@ export const UserAdminPage = () => {
   const handleDelete = async () => {
     const currentUserId = localStorage.getItem('userId');
     if (currentUserId && selectedIds.includes(currentUserId)) {
-      toast.error(i18n._(ToastMessages.USER_DELETE_OWN_ACCOUNT_ERROR));
-      return;
+      const errorMessage = i18n._(ToastMessages.USER_DELETE_OWN_ACCOUNT_ERROR);
+      toast.error(errorMessage);
+      throw new ScyllaError(errorMessage);
     }
 
     const promises = selectedIds.map(id => deleteUser.mutateAsync(id));
