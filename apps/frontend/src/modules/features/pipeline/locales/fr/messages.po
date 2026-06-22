@@ -15,7 +15,7 @@ msgstr ""
 #~ msgid "{0}"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:22
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:31
 msgid "{submitLabel}"
 msgstr ""
 
@@ -57,7 +57,7 @@ msgstr ""
 #~ msgid "Back"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:18
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:27
 msgid "Blueprint"
 msgstr ""
 
@@ -137,6 +137,10 @@ msgstr ""
 #: src/modules/features/pipeline-dashboard/presentation/ui/PipelineDashboardHeader.tsx:45
 #~ msgid "in total"
 #~ msgstr "au total"
+
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx:86
+msgid "Invalid JSON"
+msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:306
 msgid "KEY"
@@ -220,7 +224,7 @@ msgstr ""
 msgid "Script"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:15
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:24
 msgid "Scripting"
 msgstr ""
 
@@ -232,7 +236,7 @@ msgstr ""
 msgid "secret name"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:36
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:20
 msgid "Select a project first"
 msgstr ""
 
