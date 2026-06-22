@@ -1,21 +1,16 @@
 import { usePipelinesJobs } from '@/modules/features/jobs/presentation/hooks/use-pipelines-jobs.ts';
 import { JobsHeader } from '@/modules/features/jobs/presentation/ui/JobsHeader.tsx';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { JobsTable } from '@/modules/features/jobs/presentation/ui/jobs-table';
-import { ErrorState } from '@/modules/shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
-import { Pagination } from '@shared/presentation/ui/Pagination.tsx';
-import { NoAgentsBanner } from '@shared/presentation/ui/NoAgentsBanner.tsx';
+import { Pagination } from '@shared/presentation/ui/data-display/Pagination.tsx';
+import { NoAgentsBanner } from '@shared/presentation/ui/feedback/NoAgentsBanner.tsx';
 
 export const JobsPage = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
-  const navigate = useNavigate();
   const { isLoading, jobs, isError, errorMessage, refetch, paginationInfo, setPage } =
     usePipelinesJobs(pipelineId || '');
-
-  const handleBack = () => {
-    void navigate(-1);
-  };
 
   if (!pipelineId) {
     return <ErrorState message='Pipeline ID is missing' />;
@@ -33,9 +28,9 @@ export const JobsPage = () => {
     <div className='flex flex-col gap-4 w-full h-full'>
       <JobsHeader
         numberOfJobs={paginationInfo?.totalCount ?? jobs.length}
+        jobIds={jobs.map(job => job.id)}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
-        onBack={handleBack}
       />
       <NoAgentsBanner hasPendingJobs={jobs.some(j => j.status === 'pending')} />
       <div className='flex-1 min-h-0 overflow-auto'>

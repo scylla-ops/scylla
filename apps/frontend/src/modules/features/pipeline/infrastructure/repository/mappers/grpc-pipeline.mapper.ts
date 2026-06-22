@@ -14,7 +14,7 @@ import type {
 import { Shell } from '@/generated/common.ts';
 import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
-import { idValue, timestampToIso, wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue, timestampToIso, wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 function shellFromProto(s: Shell): 'sh' | 'bash' {
   return s === Shell.BASH ? 'bash' : 'sh';

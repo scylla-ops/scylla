@@ -1,7 +1,8 @@
-import { DataTable } from '@shared/presentation/ui/DataTable.tsx';
+import { DataTable } from '@shared/presentation/ui/data-display/DataTable.tsx';
 import { createPipelineColumns } from './columns.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { useRunPipeline } from '../../../hooks/use-run-pipeline.ts';
+import { useDuplicatePipeline } from '../../../hooks/use-duplicate-pipeline.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useState } from 'react';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
@@ -21,8 +22,9 @@ export const PipelineTable = ({
   isJobsError,
 }: PipelineTableProps) => {
   const { selectedIds, select } = useSelection('pipelines');
-  const { goToEditPipeline, goToJobs } = useScyllaNavigate();
+  const { goToEditPipeline, goToJobs, goToTriggers } = useScyllaNavigate();
   const { mutateAsync } = useRunPipeline();
+  const duplicatePipeline = useDuplicatePipeline();
   const [runningPipelines, setRunningPipelines] = useState<Set<string>>(new Set());
 
   const columns = createPipelineColumns({
@@ -43,8 +45,14 @@ export const PipelineTable = ({
     onEdit: pipeline => {
       goToEditPipeline(pipeline.id, pipeline.name);
     },
+    onDuplicate: pipeline => {
+      duplicatePipeline.mutate(pipeline.id);
+    },
     onViewJobs: pipeline => {
       goToJobs(pipeline);
+    },
+    onViewTriggers: pipeline => {
+      goToTriggers(pipeline);
     },
     runningPipelines: runningPipelines,
     jobsByPipelineId,

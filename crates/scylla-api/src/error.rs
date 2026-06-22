@@ -46,4 +46,6 @@ pub enum StartupError {
     Reflection(String),
     #[error("gRPC serve: {0}")]
     Serve(#[from] tonic::transport::Error),
+    #[error("webhook server: {0}")]
+    Webhook(String),
 }

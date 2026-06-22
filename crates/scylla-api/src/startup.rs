@@ -2,43 +2,30 @@ use crate::config::CoreConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
 use tokio::sync::Notify;
-#[cfg(feature = "invitations")]
-use scylla_core::application::InvitationUseCases;
-#[cfg(feature = "oauth-github")]
-use scylla_core::application::OAuthUseCases;
-#[cfg(feature = "signup")]
-use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases,
-    DispatchSecretResolver, DispatchUseCases, GrantUseCases, JobLogStreamUseCase, JobLogUseCases,
-    JobUseCases, OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases,
-    ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, UserUseCases,
+    CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
+    JobLogStreamUseCase, JobLogUseCases, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
+    OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
+    RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases,
+    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases,
+    WebhookIngressUseCases, UserUseCases,
 };
-#[cfg(feature = "mail")]
-use scylla_core::application::{Mailer, NoopMailer};
-#[cfg(feature = "mail")]
 use scylla_core::infrastructure::LettreMailer;
-#[cfg(feature = "invitations")]
-use scylla_core::infrastructure::PgInvitationRepository;
-#[cfg(feature = "oauth-github")]
-use scylla_core::infrastructure::{GitHubOAuthProvider, PgOAuthIdentityRepository};
-// PgSignupRepository (core, always compiled) backs both signup and OAuth account
-// provisioning, so it's imported whenever either feature is on.
-#[cfg(all(not(feature = "signup"), feature = "oauth-github"))]
-use scylla_core::infrastructure::PgSignupRepository;
-#[cfg(feature = "signup")]
-use scylla_core::infrastructure::PgSignupRepository;
 use scylla_core::infrastructure::{
-    Argon2HashService, CedarPermissionService, InMemoryAgentRegistry, InMemoryJobLogStream,
-    PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
-    PgAuditLog, PgAuthzEntityProvider, PgDefaultRoleBindingRepository, PgGrantRepository,
-    ChaChaSecretCipher, PgJobLogRepository, PgJobRepository, PgOrganizationRepository,
-    PgPipelineRepository, PgPolicyRepository, PgProjectRepository, PgRoleRepository,
-    PgSecretRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserProjectRepository,
-    PgUserRepository,
+    Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
+    GitHubOAuthProvider,
+    InMemoryAgentRegistry, InMemoryJobLogStream, PgAgentRepository, PgAppCredentialRepository,
+    PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
+    PgDefaultRoleBindingRepository, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
+    PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
+    PgPolicyRepository, PgProjectRepository, PgRoleRepository, PgSecretRepository,
+    PgSessionRepository, PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
+    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 
@@ -54,11 +41,9 @@ pub type SharedPolicyUc =
     Arc<PolicyUseCases<PgPolicyRepository, PermissionChecker, PermissionChecker>>;
 
 pub type SharedAuthUc = Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
-#[cfg(feature = "signup")]
 pub type SharedSignupUc = Arc<
     SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
 >;
-#[cfg(feature = "invitations")]
 pub type SharedInvitationUc = Arc<
     InvitationUseCases<
         PgInvitationRepository,
@@ -70,7 +55,6 @@ pub type SharedInvitationUc = Arc<
         PermissionChecker,
     >,
 >;
-#[cfg(feature = "oauth-github")]
 pub type SharedOAuthUc = Arc<
     OAuthUseCases<
         GitHubOAuthProvider,
@@ -130,22 +114,46 @@ pub type SharedAgentUc = Arc<
         PermissionChecker,
     >,
 >;
+pub type SharedTriggerUc = Arc<
+    TriggerUseCases<
+        PgTriggerRepository,
+        PgPipelineRepository,
+        PgProjectRepository,
+        PgAppRepository,
+        Argon2HashService,
+        PermissionChecker,
+        PermissionChecker,
+    >,
+>;
+pub type SharedTriggerFireUc = Arc<
+    TriggerFireUseCases<
+        PgTriggerRepository,
+        PgPipelineRepository,
+        PgProjectRepository,
+        PgAppRepository,
+        PgJobRepository,
+        PermissionChecker,
+        InMemoryAgentRegistry,
+    >,
+>;
+pub type SharedWebhookIngressUc =
+    Arc<WebhookIngressUseCases<PgTriggerRepository, PgTriggerDeliveryRepository>>;
 
 // ── Services container ─────────────────────────────────────────────────
 
 pub struct Services {
     pub db: PgPool,
     pub auth_uc: SharedAuthUc,
-    #[cfg(feature = "signup")]
     pub signup_uc: SharedSignupUc,
-    #[cfg(feature = "invitations")]
     pub invitation_uc: SharedInvitationUc,
-    #[cfg(feature = "oauth-github")]
     pub oauth_uc: Option<SharedOAuthUc>,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
     pub project_uc: SharedProjectUc,
     pub pipeline_uc: SharedPipelineUc,
+    pub trigger_uc: SharedTriggerUc,
+    pub trigger_fire_uc: SharedTriggerFireUc,
+    pub webhook_ingress_uc: SharedWebhookIngressUc,
     pub secret_uc: SharedSecretUc,
     pub job_uc: SharedJobUc,
     pub job_log_uc: SharedJobLogUc,
@@ -165,7 +173,6 @@ pub struct Services {
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
-    #[cfg(feature = "mail")]
     pub mailer: Arc<dyn Mailer>,
 }
 
@@ -185,9 +192,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let app_token_repo = Arc::new(PgAppTokenRepository::new(db.clone()));
     let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
     let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
-    #[cfg(any(feature = "signup", feature = "oauth-github"))]
     let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
-    #[cfg(feature = "invitations")]
     let invite_repo = Arc::new(PgInvitationRepository::new(db.clone()));
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
@@ -227,7 +232,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo.clone(),
         hash_service.clone(),
     ));
-    #[cfg(feature = "signup")]
     let signup_uc = Arc::new(SignupUseCases::new(
         signup_repo.clone(),
         session_repo.clone(),
@@ -248,7 +252,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
         default_role_repo.clone(),
     ));
-    #[cfg(feature = "metering")]
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
         user_project_repo.clone(),
@@ -259,15 +262,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         scylla_core::application::Quotas {
             max_projects_per_org: config.metering.max_projects_per_org,
         },
-    ));
-    #[cfg(not(feature = "metering"))]
-    let project_uc = Arc::new(ProjectUseCases::new(
-        project_repo.clone(),
-        user_project_repo.clone(),
-        user_repo.clone(),
-        permission_checker.clone(),
-        permission_checker.clone(),
-        default_role_repo.clone(),
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),
@@ -339,7 +333,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     }
 
     // Mailer: real SMTP when configured, else a no-op (logs only).
-    #[cfg(feature = "mail")]
     let mailer: Arc<dyn Mailer> = match &config.mail {
         Some(m) => Arc::new(
             LettreMailer::new(
@@ -354,7 +347,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         None => Arc::new(NoopMailer),
     };
 
-    #[cfg(feature = "invitations")]
     let invitation_uc = Arc::new(InvitationUseCases::new(
         invite_repo.clone(),
         permission_checker.clone(),
@@ -368,7 +360,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     ));
 
     // GitHub OAuth: only wired when the app is configured with credentials.
-    #[cfg(feature = "oauth-github")]
     let oauth_uc = match &config.oauth.github {
         Some(gh) => {
             let provider = GitHubOAuthProvider::new(
@@ -405,6 +396,55 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
     ));
 
+    let trigger_repo = Arc::new(PgTriggerRepository::new(db.clone()));
+    let trigger_delivery_repo = Arc::new(PgTriggerDeliveryRepository::new(db.clone()));
+    let trigger_uc = Arc::new(TriggerUseCases::new(
+        trigger_repo.clone(),
+        pipeline_repo.clone(),
+        project_repo.clone(),
+        app_repo.clone(),
+        hash_service.clone(),
+        permission_checker.clone(),
+        permission_checker.clone(),
+        secret_cipher.clone(),
+    ));
+    let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(
+        trigger_repo.clone(),
+        pipeline_repo.clone(),
+        project_repo.clone(),
+        app_repo.clone(),
+        pipeline_uc.clone(),
+        dispatch_uc.clone(),
+    ));
+    // Webhook ingress: shares the trigger-runner fire path; firing is the
+    // TriggerFiring trait object the cron scheduler also uses.
+    let webhook_ingress_uc = Arc::new(WebhookIngressUseCases::new(
+        trigger_repo.clone(),
+        trigger_delivery_repo.clone(),
+        secret_cipher.clone(),
+        trigger_fire_uc.clone() as Arc<dyn TriggerFiring>,
+    ));
+
+    // Cron firing engine: each tick seeds first-occurrences for new cron triggers
+    // and fires the due ones (each as the org's trigger-runner App, through the
+    // one RunPipeline check). Like the pending-job scheduler it is detached for
+    // the process lifetime; the first interval tick fires immediately, so a
+    // pre-restart backlog is picked up at boot. A 15s tick bounds firing latency
+    // to well under cron's one-minute granularity without busy-polling.
+    {
+        let cron_schedule: Arc<dyn CronSchedule> = Arc::new(CronScheduleService::new());
+        let firing: Arc<dyn TriggerFiring> = trigger_fire_uc.clone();
+        let scheduler = TriggerCronScheduler::new(trigger_repo.clone(), firing, cron_schedule);
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(15));
+            tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tick.tick().await;
+                scheduler.tick().await;
+            }
+        });
+    }
+
     // Pending-job scheduler: places jobs that were minted while no worker was
     // connected. Woken by the agent handler on connect (`pending_signal`), on a
     // periodic tick as a safety net, and once at boot to pick up a pre-restart
@@ -435,16 +475,16 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     Ok(Services {
         db,
         auth_uc,
-        #[cfg(feature = "signup")]
         signup_uc,
-        #[cfg(feature = "invitations")]
         invitation_uc,
-        #[cfg(feature = "oauth-github")]
         oauth_uc,
         user_uc,
         org_uc,
         project_uc,
         pipeline_uc,
+        trigger_uc,
+        trigger_fire_uc,
+        webhook_ingress_uc,
         secret_uc,
         job_uc,
         job_log_uc,
@@ -463,7 +503,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker,
         session_repo,
         app_token_repo,
-        #[cfg(feature = "mail")]
         mailer,
     })
 }
@@ -553,32 +592,23 @@ pub async fn run_grpc<F>(
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    #[cfg(feature = "invitations")]
-    use crate::grpc::InvitationHandler;
-    #[cfg(feature = "oauth-github")]
-    use crate::grpc::OAuthHandler;
-    #[cfg(feature = "signup")]
-    use crate::grpc::RegistrationHandler;
     use crate::grpc::{
-        AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, ConfigHandler,
-        GrantHandler, JobHandler, OrganizationHandler, PipelineHandler, PolicyHandler,
-        ProjectHandler, RoleHandler, SecretHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
+        InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
+        PolicyHandler, ProjectHandler, RegistrationHandler, RoleHandler, SecretHandler,
+        TriggerHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
-    #[cfg(feature = "invitations")]
     use scylla_protocol::services::invitation::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
         invitation_service_server::InvitationServiceServer,
     };
-    #[cfg(feature = "oauth-github")]
     use scylla_protocol::services::oauth::oauth_service_server::OauthServiceServer;
-    #[cfg(feature = "signup")]
     use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
         agent_admin::agent_admin_service_server::AgentAdminServiceServer,
         app::app_auth_service_server::AppAuthServiceServer,
         app::app_service_server::AppServiceServer, auth::auth_service_server::AuthServiceServer,
-        config::config_service_server::ConfigServiceServer,
         job::job_service_server::JobServiceServer,
         organization::organization_service_server::OrganizationServiceServer,
         permission::grant_service_server::GrantServiceServer,
@@ -587,6 +617,7 @@ where
         pipeline::pipeline_service_server::PipelineServiceServer,
         project::project_service_server::ProjectServiceServer,
         secret::secret_service_server::SecretServiceServer,
+        trigger::trigger_service_server::TriggerServiceServer,
         user::user_service_server::UserServiceServer,
     };
     use tonic::transport::Server;
@@ -601,6 +632,14 @@ where
     let project_handler = ProjectHandler::new(services.project_uc.clone());
     let pipeline_handler =
         PipelineHandler::new(services.pipeline_uc.clone(), services.dispatch_uc.clone());
+    let trigger_handler = TriggerHandler::new(
+        services.trigger_uc.clone(),
+        services.trigger_fire_uc.clone(),
+        config
+            .webhook
+            .as_ref()
+            .and_then(|w| w.public_base_url.clone()),
+    );
     let job_handler = JobHandler::new(
         services.job_uc.clone(),
         services.job_log_uc.clone(),
@@ -621,7 +660,6 @@ where
     let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
-    #[cfg(feature = "invitations")]
     let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(
@@ -632,31 +670,33 @@ where
 
     tracing::info!("gRPC server listening on {}", config.grpc.address);
 
-    let reflection = tonic_reflection::server::Builder::configure()
+    // Expose BOTH reflection variants so any client works: v1 (current spec) and
+    // v1alpha (older clients — grpcurl defaults, some MCP/reflection bridges).
+    // They are distinct gRPC services (grpc.reflection.v1[alpha].ServerReflection),
+    // so they coexist on the same server without a route clash.
+    let reflection_v1 = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .map_err(|e| StartupError::Reflection(e.to_string()))?;
+    let reflection_v1alpha = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
         .build_v1alpha()
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
 
     let auth_service = AuthServiceServer::new(auth_handler);
 
-    // Public capability discovery — no auth interceptor, like auth/login.
-    let config_service = ConfigServiceServer::new(ConfigHandler);
-
     // Public app credential exchange — the secret is the credential, so no
     // interceptor; it mints the bearer token apps use on every other call.
     let app_auth_service = AppAuthServiceServer::new(app_auth_handler);
 
-    // Public self-service signup — only present in SaaS (`signup` feature) builds.
-    #[cfg(feature = "signup")]
+    // Public self-service signup.
     let registration_service =
         RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
 
     // Public invitation acceptance — the token is the credential, so no interceptor.
-    #[cfg(feature = "invitations")]
     let invitation_accept_service = InvitationAcceptServiceServer::new(invitation_handler.clone());
 
     // Public GitHub OAuth — present only when configured with credentials.
-    #[cfg(feature = "oauth-github")]
     let oauth_service = services
         .oauth_uc
         .as_ref()
@@ -677,6 +717,10 @@ where
     let pipeline_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(PipelineServiceServer::new(pipeline_handler));
+
+    let trigger_service = ServiceBuilder::new()
+        .layer(auth_interceptor.clone())
+        .service(TriggerServiceServer::new(trigger_handler));
 
     let job_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
@@ -713,7 +757,6 @@ where
         .service(RoleServiceServer::new(role_handler));
 
     // Authenticated invitation management (org-admins).
-    #[cfg(feature = "invitations")]
     let invitation_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(InvitationServiceServer::new(invitation_handler));
@@ -723,14 +766,15 @@ where
         .layer(TraceLayer::new_for_grpc())
         .layer(cors_layer)
         .layer(GrpcWebLayer::new())
-        .add_service(reflection)
+        .add_service(reflection_v1)
+        .add_service(reflection_v1alpha)
         .add_service(auth_service)
-        .add_service(config_service)
         .add_service(app_auth_service)
         .add_service(user_service)
         .add_service(org_service)
         .add_service(project_service)
         .add_service(pipeline_service)
+        .add_service(trigger_service)
         .add_service(secret_service)
         .add_service(job_service)
         .add_service(app_service)
@@ -738,16 +782,12 @@ where
         .add_service(agent_admin_service)
         .add_service(policy_service)
         .add_service(grant_service)
-        .add_service(role_service);
-
-    // SaaS-only services, registered behind their cargo feature.
-    #[cfg(feature = "signup")]
-    let router = router.add_service(registration_service);
-    #[cfg(feature = "invitations")]
-    let router = router
+        .add_service(role_service)
+        .add_service(registration_service)
         .add_service(invitation_service)
         .add_service(invitation_accept_service);
-    #[cfg(feature = "oauth-github")]
+
+    // GitHub OAuth is only registered when configured with credentials.
     let router = match oauth_service {
         Some(svc) => router.add_service(svc),
         None => router,
@@ -757,5 +797,30 @@ where
         .serve_with_shutdown(config.grpc.address, shutdown)
         .await?;
 
+    Ok(())
+}
+
+// ── Webhook ingress HTTP server ────────────────────────────────────────────
+
+/// Serve the inbound-webhook HTTP API on its own port until `shutdown` resolves.
+/// Separate from the gRPC server: a public, unauthenticated-at-the-edge surface
+/// (requests are authenticated per-trigger by HMAC inside the handler).
+pub async fn run_webhook<F>(
+    address: SocketAddr,
+    ingress: SharedWebhookIngressUc,
+    shutdown: F,
+) -> Result<(), StartupError>
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    let app = crate::webhook::router(ingress);
+    let listener = tokio::net::TcpListener::bind(address)
+        .await
+        .map_err(|e| StartupError::Webhook(format!("bind {address}: {e}")))?;
+    tracing::info!("webhook ingress listening on {address}");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown)
+        .await
+        .map_err(|e| StartupError::Webhook(e.to_string()))?;
     Ok(())
 }

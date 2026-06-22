@@ -22,15 +22,10 @@ default:
 
 # -- Dev (local stack) --
 
-# Build all services for local dev (native arch, PaaS edition)
+# Build all services for local dev (native arch)
 [group('dev')]
 local:
     docker compose build
-
-# Build the SaaS edition of the control-plane (FEATURES=saas)
-[group('dev')]
-local-saas:
-    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml build
 
 # Start the stack from already-present images (no pull, no rebuild)
 [group('dev')]
@@ -38,18 +33,12 @@ local-saas:
 start:
     docker compose up -d
 
-# Start the stack with the SaaS control-plane image
-[group('dev')]
-[no-exit-message]
-start-saas:
-    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d
-
-# Pull the released beta images (SaaS edition) and start the stack
+# Pull the released beta images and start the stack
 [group('dev')]
 [no-exit-message]
 up:
-    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml pull
-    docker compose -f docker-compose.yaml -f docker-compose.saas.yaml up -d
+    docker compose pull
+    docker compose up -d
 
 # Stop all services
 [group('dev')]
@@ -93,8 +82,7 @@ db-revert:
     DATABASE_URL={{DATABASE_URL}} cargo sqlx migrate revert --source migrations
 
 # Regenerate the offline query cache (commit the resulting .sqlx/ dir).
-# --all-features so feature-gated queries (saas, invitations, oauth…) stay in
-# the cache — without it a regen would silently break the SaaS offline build.
+# --all-features so every feature-gated query stays in the cache.
 [group('db')]
 db-prepare:
     DATABASE_URL={{DATABASE_URL}} cargo sqlx prepare --workspace -- --all-features --tests
@@ -120,7 +108,7 @@ db-reset:
 # anywhere Docker runs, and needs no host toolchain.
 #
 #   just release-setup            # once per machine (+ docker login)
-#   VERSION=0.3.0 just release    # SaaS stack: control-plane SaaS + agent + frontend
+#   VERSION=0.3.0 just release    # full stack: control-plane + agent + frontend
 
 # One-time: create the multi-arch buildx builder
 [group('release')]
@@ -128,13 +116,12 @@ release-setup:
     docker buildx inspect {{BUILDER}} >/dev/null 2>&1 || docker buildx create --name {{BUILDER}} --driver docker-container --bootstrap
     @echo "✓ buildx builder '{{BUILDER}}' ready (remember: docker login)"
 
-# The PaaS control-plane is NOT part of `release` for now (use release-backend).
-# Build & push the SaaS stack: control-plane SaaS + agent + frontend
+# Build & push the full stack: control-plane + agent + frontend
 [group('release')]
 [no-exit-message]
-release: release-saas (release-svc "scylla-agent") release-frontend
+release: (release-svc "scylla-control-plane") (release-svc "scylla-agent") release-frontend
 
-# Build & push the backend services (PaaS edition — not part of `release`)
+# Build & push the backend services (control-plane + agent)
 [group('release')]
 [no-exit-message]
 release-backend: (release-svc "scylla-control-plane") (release-svc "scylla-agent")
@@ -147,18 +134,6 @@ release-svc pkg: _info
         --build-arg PACKAGE={{pkg}} \
         -t {{DOCKER_USER}}/{{pkg}}:{{VERSION}} \
         -t {{DOCKER_USER}}/{{pkg}}:latest \
-        --push .
-
-# Build & push the SaaS control-plane (tags :<version>-saas and :saas)
-[group('release')]
-[no-exit-message]
-release-saas: _info
-    docker buildx build --builder {{BUILDER}} --platform {{platforms}} \
-        --build-arg PACKAGE=scylla-control-plane \
-        --build-arg FEATURES=saas \
-        -t {{DOCKER_USER}}/scylla-control-plane:{{VERSION}}-saas \
-        -t {{DOCKER_USER}}/scylla-control-plane:latest-saas \
-        -t {{DOCKER_USER}}/scylla-control-plane:saas \
         --push .
 
 # Build & push the frontend (VITE_API_URL is baked into the assets)

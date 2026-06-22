@@ -75,4 +75,5 @@ export enum Permission {
   CREATE_SECRET = 59,
   LIST_SECRETS = 60,
   DELETE_SECRET = 61,
+  MANAGE_TRIGGERS = 62,
 }

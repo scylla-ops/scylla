@@ -1,0 +1,220 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-06-21 22:03+0900\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
+msgid "5-field cron (min hour day month weekday), evaluated in UTC."
+msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:166
+#~ msgid "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
+#~ msgstr "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:110
+msgid "A trigger starts a run of this pipeline automatically."
+msgstr "A trigger starts a run of this pipeline automatically."
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:71
+msgid "Actions"
+msgstr "Actions"
+
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
+msgid "Add a cron schedule or webhook to start runs automatically."
+msgstr "Add a cron schedule or webhook to start runs automatically."
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:40
+msgid "Add input"
+msgstr "Add input"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:77
+msgid "at"
+msgstr "at"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:172
+msgid "at minute"
+msgstr "at minute"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:204
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
+#~ msgid "Copied!"
+#~ msgstr "Copied!"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:26
+msgid "Copy url"
+msgstr "Copy url"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:207
+msgid "Create"
+msgstr "Create"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:162
+msgid "Custom"
+msgstr "Custom"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:144
+msgid "Daily"
+msgstr "Daily"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:25
+msgid "Delete"
+msgstr "Delete"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:34
+msgid "disabled"
+msgstr "disabled"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:32
+msgid "disabled — URL returns 404"
+msgstr "disabled — URL returns 404"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:22
+msgid "Edit"
+msgstr "Edit"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:107
+msgid "Edit trigger"
+msgstr "Edit trigger"
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:32
+msgid "enabled"
+msgstr "enabled"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
+msgid "Enabled"
+msgstr "Enabled"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:21
+msgid "Error"
+msgstr "Error"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:145
+msgid "Every day"
+msgstr "Every day"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:139
+msgid "Every hour"
+msgstr "Every hour"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:18
+msgid "Fire now"
+msgstr "Fire now"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:183
+msgid "Header carrying the HMAC signature. Leave empty for the Scylla default."
+msgstr "Header carrying the HMAC signature. Leave empty for the Scylla default."
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:138
+msgid "Hourly"
+msgstr "Hourly"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:36
+msgid "Inputs"
+msgstr "Inputs"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:67
+msgid "Literal"
+msgstr "Literal"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:156
+msgid "Monthly"
+msgstr "Monthly"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:117
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:22
+msgid "Name"
+msgstr "Name"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:17
+msgid "Never fired"
+msgstr "Never fired"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:107
+msgid "New trigger"
+msgstr "New trigger"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:41
+msgid "next"
+msgstr "next"
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
+msgid "next scheduled run (UTC)"
+msgstr "next scheduled run (UTC)"
+
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:75
+msgid "No triggers yet"
+msgstr "No triggers yet"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:25
+msgid "OK"
+msgstr "OK"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:157
+msgid "On a day of the month"
+msgstr "On a day of the month"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:151
+msgid "On chosen days"
+msgstr "On chosen days"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:225
+msgid "on day"
+msgstr "on day"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:46
+msgid "Optional values injected into the run as environment variables."
+msgstr "Optional values injected into the run as environment variables."
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:207
+msgid "Save"
+msgstr "Save"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:159
+msgid "Schedule"
+msgstr "Schedule"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:174
+msgid "Signature header"
+msgstr "Signature header"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:42
+msgid "Source"
+msgstr "Source"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:48
+msgid "Status"
+msgstr "Status"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:130
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:142
+msgid "Type"
+msgstr "Type"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:135
+msgid "Type can't be changed — delete and recreate to switch."
+msgstr "Type can't be changed — delete and recreate to switch."
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:58
+msgid "webhook endpoints"
+msgstr "webhook endpoints"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:150
+msgid "Weekly"
+msgstr "Weekly"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:163
+msgid "Write a cron expression"
+msgstr "Write a cron expression"

@@ -13,17 +13,6 @@ grpc = [
     "dep:scylla-protocol",
 ]
 
-# ── SaaS edition gating ────────────────────────────────────────────────
-# Mirrors scylla-core's taxonomy and forwards each granular feature down. The
-# api-level flags gate conditional gRPC service registration in `run_grpc`.
-saas = ["signup", "metering", "agent-org-scope", "mail", "invitations", "oauth-github"]
-signup = ["scylla-core/signup"]
-metering = ["scylla-core/metering"]
-agent-org-scope = ["scylla-core/agent-org-scope"]
-mail = ["scylla-core/mail"]
-invitations = ["scylla-core/invitations"]
-oauth-github = ["scylla-core/oauth-github"]
-
 [dependencies]
 # shared
 scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
@@ -43,6 +32,9 @@ thiserror.workspace = true
 tokio-stream = { workspace = true }
 futures-util.workspace = true
 serde_json.workspace = true
+
+# webhook ingress HTTP server (separate listener from the gRPC port)
+axum.workspace = true
 
 # database
 sqlx.workspace = true

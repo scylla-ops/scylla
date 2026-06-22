@@ -1,7 +1,7 @@
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { SecretServiceClient } from '@/generated/secret.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import type {
   CreateSecretInput,
   SecretEntity,

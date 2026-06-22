@@ -26,7 +26,7 @@ pub struct AcceptOutcome {
     pub organization_id: OrganizationId,
 }
 
-/// SaaS member invitations. Creating an invite is gated by the same permission
+/// Member invitations. Creating an invite is gated by the same permission
 /// as adding a member (`AddOrganizationMember`), so an org-admin can invite.
 /// Accepting is public (the token is the credential).
 ///

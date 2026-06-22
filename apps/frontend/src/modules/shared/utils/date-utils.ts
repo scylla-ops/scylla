@@ -1,12 +1,11 @@
 //TODO: make this in function of the choosen language
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
   hour: 'numeric',
   minute: 'numeric',
   second: 'numeric',
-  hour12: true,
 });
 
 /**
@@ -73,12 +72,11 @@ export const getRelativeTime = (dateString: string): string => {
   return 'just now';
 };
 
-export const formatDate = (dateString: string | Date): string => {
-  if (!dateString) return '-';
+export function formatDate(isoString: string | undefined): string {
+  if (!isoString) return '-';
 
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-
-  if (isNaN(date.getTime())) return 'Date invalide';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return '-';
 
   return dateFormatter.format(date);
-};
+}

@@ -1,7 +1,7 @@
 import { useCreateProject } from '@/modules/features/project/presentation/hooks/useCreateProject.ts';
-import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { FormDialog } from '@shared/presentation/ui';
 import {
   type FormChange,
@@ -10,7 +10,6 @@ import {
 } from '@shared/presentation/models/scylla-form.model.ts';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -18,23 +17,12 @@ interface AddProjectDialogProps {
 }
 
 export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const navigate = useNavigate();
-  const setOrganization = useContextStore(state => state.setOrganization);
+  const organizationId = useContextStore(state => state.organization.id);
   const createProject = useCreateProject();
-  const { organizations } = useOrganizations();
 
   const items: FormItem[] = [
-    {
-      id: 'organizationId',
-      label: t`Organization`,
-      placeholder: t`Select an organization`,
-      type: FormItemType.Select,
-      options: (organizations ?? []).map(org => ({
-        label: org.name,
-        value: idValue(org.organizationId),
-      })),
-    },
     {
       id: 'name',
       label: t`Project name`,
@@ -53,26 +41,18 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
 
   const handleSubmit = (values: FormChange[]) => {
     const name = values.find(v => v.id === 'name')?.value;
-    const organizationId = values.find(v => v.id === 'organizationId')?.value;
     const description = values.find(v => v.id === 'description')?.value;
 
     if (!name?.trim() || !organizationId) {
-      toast.error(t`Project name is required and you must select an organization.`);
+      toast.error(i18n._(ToastMessages.PROJECT_NAME_REQUIRED_ERROR));
       return;
     }
-
-    const selectedOrganization = organizations?.find(
-      org => idValue(org.organizationId) === organizationId,
-    );
 
     createProject.mutate(
       { name, organizationId, description: description?.trim() || undefined },
       {
         onSuccess: () => {
           setOpen(false);
-          if (selectedOrganization) {
-            setOrganization(organizationId, selectedOrganization.name);
-          }
           void navigate('/projects');
         },
       },

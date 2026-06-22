@@ -6,6 +6,7 @@ import {
   FormItemType,
 } from '@shared/presentation/models/scylla-form.model.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { FormDialog } from '@shared/presentation/ui';
 
 interface AddUserDialogProps {
@@ -14,7 +15,7 @@ interface AddUserDialogProps {
 }
 
 export function AddUserDialog({ open, setOpen }: AddUserDialogProps) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const createUser = useCreateUser();
 
   const items: FormItem[] = [
@@ -39,7 +40,7 @@ export function AddUserDialog({ open, setOpen }: AddUserDialogProps) {
     const password = values.find(v => v.id === 'password')?.value;
 
     if (!username?.trim() || !password?.trim()) {
-      toast.error(t`Username and password are required.`);
+      toast.error(i18n._(ToastMessages.USER_CREDENTIALS_REQUIRED_ERROR));
       return;
     }
 

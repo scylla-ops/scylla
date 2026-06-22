@@ -29,7 +29,8 @@ Files are suffixed by their role to make intent clear at a glance:
 | **Data source interface** | `.data-source.ts` | `user-remote.data-source.ts` |
 | **Data source implementation** | `.data-source.impl.ts` | `user-remote.data-source.impl.ts` |
 | **Mapper** | `.mapper.ts` | `grpc-user.mapper.ts` |
-| **Domain model** | `.model.ts` | `user.model.ts`, `pagination.model.ts` |
+| **Domain entity** | `.entity.ts` | `secret.entity.ts`, `role.entity.ts`, `grant.entity.ts` |
+| **Domain model (value object)** | `.model.ts` | `permission.model.ts`, `pagination.model.ts` |
 | **Presentation model** | `.model.ts` | `scylla-form.model.ts`, `route-handle.model.ts` |
 | **Hook** | `use-{name}.ts` | `use-create-user.ts`, `use-selection.ts` |
 | **Zustand store** | `use-{name}.store.ts` | `use-context.store.ts`, `use-selection.store.ts` |
@@ -73,7 +74,31 @@ type FormItem = FormItemBase & (FormInput | FormSelect);
 type PipelineTableProps = { ... };
 ```
 
-### 2.2 Classes
+### 2.2 Domain Entities & Value Objects
+
+The domain layer distinguishes **entities** (identity-bearing business objects, in `domain/entities/*.entity.ts`) from **value-object models** (no identity — enums, scopes, shared primitives — in `domain/models/*.model.ts`). See `architecture.md` §3.1 for the rationale.
+
+| Kind | File | Type name | Example |
+|------|------|-----------|---------|
+| Entity | `{name}.entity.ts` | `{Name}Entity` | `secret.entity.ts` → `SecretEntity`; `role.entity.ts` → `RoleEntity` |
+| Entity input/creation shape | (same entity file) | `Create{Name}Input` / `{Name}CreationData` | `CreateSecretInput`, `RoleCreationData` |
+| Entity behavior (pure fn) | (same entity file) | `camelCase` verb | `updateRole(role, changes)` |
+| Value object / enum | `{name}.model.ts` | plain PascalCase | `Permission`, `PermissionScope`, `PrincipalKind` |
+
+```typescript
+// secret.entity.ts
+export interface SecretEntity { id: string; projectId: string; name: string; /* ... */ }
+export interface CreateSecretInput { projectId: string; name: string; value: string; /* ... */ }
+
+// permission.model.ts
+export enum PermissionScope { UNSPECIFIED = 0, SYSTEM = 1, ORGANIZATION = 2, PROJECT = 3 }
+```
+
+The `Entity` suffix is the identity signal — use it for the thing the feature *owns*; keep enums and value objects suffix-free in `models/`.
+
+> Older modules (`jobs`, `pipeline`, `user`) keep their entities as plain `{Name}` in `models/*.model.ts` (e.g. `Job`, `Pipeline`, `User`). New code should use the `entities/` + `{Name}Entity` convention.
+
+### 2.3 Classes
 
 **PascalCase**, suffixed by role:
 
@@ -86,7 +111,7 @@ type PipelineTableProps = { ... };
 | Error | `ScyllaError` | — |
 | Result | `ScyllaResult<T>` | — |
 
-### 2.3 Enums
+### 2.4 Enums
 
 **PascalCase** for names, **UPPER_SNAKE_CASE** or **PascalCase** for values:
 
@@ -102,7 +127,7 @@ enum Act {
 }
 ```
 
-### 2.4 Constants
+### 2.5 Constants
 
 **UPPER_SNAKE_CASE** for true constants, **camelCase** for derived/computed values:
 
@@ -228,6 +253,8 @@ queryClient.invalidateQueries({ queryKey: JOBS_QUERY_KEY(pipelineId), exact: tru
 | File (component) | PascalCase | `FeatureHeader.tsx` |
 | Folder | kebab-case | `data-sources/` |
 | Interface / Type | PascalCase | `UserRepository` |
+| Domain entity | PascalCase + `Entity` (`*.entity.ts`) | `SecretEntity`, `RoleEntity` |
+| Value object / enum | PascalCase (`*.model.ts`) | `Permission`, `PermissionScope` |
 | Class | PascalCase + suffix | `GetUsersUseCase` |
 | Hook | camelCase `use*` | `useCreateUser` |
 | Store | camelCase `use*Store` | `useSelectionStore` |

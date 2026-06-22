@@ -18,15 +18,15 @@ futures-core = "0.3"
 futures-util = "0.3"
 
 # grpc / proto
-tonic = { version = "0.14.5", features = ["server"] }
-tonic-web = "0.14.5"
-tonic-prost = "0.14.5"
-tonic-reflection = "0.14.5"
-prost = "0.14.3"
-prost-types = "0.14.3"
-tonic-prost-build = "0.14.5"
+tonic = { version = "0.14", features = ["server"] }
+tonic-web = "0.14"
+tonic-prost = "0.14"
+tonic-reflection = "0.14"
+prost = "0.14"
+prost-types = "0.14"
+tonic-prost-build = "0.14"
 scylla-protocol = { path = "crates/scylla-protocol" }
-tonic-async-interceptor = "0.14.1"
+tonic-async-interceptor = "0.14"
 
 # serialization
 serde = { version = "1", features = ["derive"] }
@@ -34,7 +34,7 @@ humantime-serde = "1"
 toml = "1"
 
 # database
-sqlx = { version = "0.8", default-features = false, features = [
+sqlx = { version = "0.9", default-features = false, features = [
     "runtime-tokio",
     "tls-rustls",
     "postgres",
@@ -50,7 +50,10 @@ scylla-core = { path = "crates/scylla-core", default-features = false }
 # domain / utilities
 thiserror = "2.0.18"
 anyhow = "1.0.102"
-chrono = "0.4.44"
+chrono = "0.4"
+# 5-field Vixie cron parsing + next-occurrence computation (UTC), chrono-native.
+# Lives behind the CronSchedule application port; the domain stays library-free.
+croner = "3"
 ulid = "1.2.1"
 uuid = { version = "1", features = ["v4"] }
 derive_more = { version = "2.1.1", features = ["full"] }
@@ -60,7 +63,13 @@ argon2 = "0.6.0-rc.8"
 # Reversible AEAD for project secrets (decrypted at dispatch). XChaCha20-Poly1305
 # = 24-byte random nonce, so encrypting many secrets under one key is safe.
 chacha20poly1305 = { version = "0.10", features = ["std"] }
-cedar-policy = "4.6"
+# Webhook HMAC-SHA256 signature verification (constant-time compare via subtle).
+# hmac 0.12 + sha2 0.10 share digest 0.10 (0.13 would need sha2 0.11).
+hmac = "0.12"
+sha2 = "0.10"
+subtle = "2.6"
+hex = "0.4"
+cedar-policy = "4"
 lettre = { version = "0.11", default-features = false, features = [
     "smtp-transport",
     "tokio1-rustls-tls",
@@ -77,9 +86,10 @@ oauth2 = { version = "5", default-features = false, features = [
 ] }
 
 # web / tracing
-tower = { version = "0.5.3" }
-tower-http = { version = "0.6.8", features = ["cors", "trace"] }
-http = "1.4.0"
+axum = "0.8"
+tower = { version = "0.5" }
+tower-http = { version = "0.7", features = ["cors", "trace"] }
+http = "1.4"
 serde_json = "1"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -89,7 +99,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4", features = ["derive", "env"] }
 
 # logging
-log = "0.4.29"
+log = "0.4"
 
 [workspace.lints.rust]
 unsafe_code = "warn"

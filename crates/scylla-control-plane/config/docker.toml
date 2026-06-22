@@ -1,6 +1,12 @@
 [grpc]
 address = "0.0.0.0:50051"
 
+[webhook]
+# Inbound webhook ingress (separate HTTP listener). POST /webhooks/{trigger_id}.
+address = "0.0.0.0:8088"
+# Base URL advertised in TriggerView.webhook_url (override for a real domain).
+public_base_url = "http://localhost:8088"
+
 [database]
 url = "postgres://scylla:scylla@postgres:5432/scylla"
 max_connections = 16

@@ -27,7 +27,6 @@ pub trait SignupRepository: Send + Sync {
     /// no email (the email-relink fallback can't fire).
     ///
     /// [`provision_account`]: SignupRepository::provision_account
-    #[cfg(feature = "oauth-github")]
     async fn provision_account_with_identity(
         &self,
         user: &User,
