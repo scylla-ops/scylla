@@ -36,7 +36,7 @@ export const TriggersOverview = ({ triggers }: { triggers: TriggerEntity[] }) =>
       </Card>
 
       <Card className='rounded-2xl border-blue-200/40 bg-blue-500/5 py-3'>
-        <CardContent className='flex items-center gap-3'>
+        <CardContent className='h-full w-full flex items-center gap-3'>
           <Clock className='size-4 text-blue-500' />
           <div>
             <p className='text-sm font-semibold tracking-tight'>
