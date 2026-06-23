@@ -166,7 +166,7 @@ msgstr ""
 #~ msgid "next scheduled run (UTC)"
 #~ msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:82
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:75
 msgid "No triggers yet"
 msgstr ""
 
