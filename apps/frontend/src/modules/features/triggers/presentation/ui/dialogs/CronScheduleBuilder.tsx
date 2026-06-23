@@ -256,7 +256,7 @@ export const CronScheduleBuilder = ({ initialValue, onChange }: CronScheduleBuil
             className='font-mono'
           />
           <p className='text-xs text-muted-foreground'>
-            <Trans>5-field cron (min hour day month weekday), evaluated in UTC.</Trans>
+            <Trans>5-field cron (min hour day month weekday), evaluated in your local time.</Trans>
           </p>
         </div>
       )}
