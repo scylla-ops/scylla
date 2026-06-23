@@ -14,7 +14,11 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
-msgid "5-field cron (min hour day month weekday), evaluated in UTC."
+#~ msgid "5-field cron (min hour day month weekday), evaluated in UTC."
+#~ msgstr ""
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
+msgid "5-field cron (min hour day month weekday), evaluated in your local time."
 msgstr ""
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:166
@@ -125,6 +129,10 @@ msgstr ""
 msgid "Inputs"
 msgstr ""
 
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:46
+msgid "last"
+msgstr ""
+
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:67
 msgid "Literal"
 msgstr ""
@@ -146,13 +154,17 @@ msgstr ""
 msgid "New trigger"
 msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:41
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:40
 msgid "next"
 msgstr ""
 
 #: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
-msgid "next scheduled run (UTC)"
+msgid "next scheduled run (Local time)"
 msgstr ""
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
+#~ msgid "next scheduled run (UTC)"
+#~ msgstr ""
 
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:75
 msgid "No triggers yet"
