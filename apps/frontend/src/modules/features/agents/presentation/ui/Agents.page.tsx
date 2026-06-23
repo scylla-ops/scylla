@@ -50,7 +50,7 @@ export const AgentsPage = () => {
   if (isError) return <ErrorState message='Error loading agents' />;
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full overflow-hidden'>
+    <div className='flex flex-col gap-4 w-full h-full'>
       <FeatureHeader
         count={agents.length}
         label='Agent'
