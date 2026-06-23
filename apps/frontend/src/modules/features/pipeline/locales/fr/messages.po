@@ -19,7 +19,7 @@ msgstr ""
 msgid "{submitLabel}"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:61
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:62
 msgid "Actions"
 msgstr ""
 
@@ -102,8 +102,8 @@ msgstr ""
 msgid "Draft — not created yet"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:81
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:114
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:83
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:119
 msgid "Duplicate"
 msgstr ""
 
@@ -139,7 +139,7 @@ msgstr ""
 msgid "e.g., my-pipeline"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:77
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:79
 msgid "Edit"
 msgstr "Modifier"
 
@@ -154,7 +154,7 @@ msgstr ""
 #~ msgid "Failed to fetch pipeline stats"
 #~ msgstr "Échec de la récupération des statistiques de la pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:36
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:37
 msgid "History"
 msgstr ""
 
@@ -170,7 +170,7 @@ msgstr ""
 msgid "KEY"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:52
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:53
 msgid "Last Run"
 msgstr ""
 
@@ -186,8 +186,8 @@ msgstr ""
 #~ msgid "Modify the node properties."
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:98
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:127
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:100
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:136
 msgid "More options"
 msgstr "Plus d'options"
 
@@ -237,8 +237,8 @@ msgstr ""
 #~ msgid "relative to the job workspace"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:73
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:107
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:75
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:109
 msgid "Run"
 msgstr "Exécuter"
 
@@ -288,7 +288,7 @@ msgstr ""
 msgid "Shell"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:27
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:28
 msgid "Status"
 msgstr ""
 
@@ -297,8 +297,8 @@ msgstr ""
 #~ msgid "This feature will be available soon"
 #~ msgstr "Cette fonctionnalité sera bientôt disponible"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:92
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:121
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:94
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:130
 msgid "Triggers"
 msgstr ""
 
@@ -314,7 +314,7 @@ msgstr ""
 msgid "value"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:117
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:126
 msgid "View Jobs"
 msgstr ""
 

@@ -8,7 +8,7 @@
     "dev": "pnpm run prebuild && vite",
     "build": "pnpm run prebuild && pnpm run typecheck && vite build",
     "typecheck": "tsc -b",
-    "prebuild": "pnpm run gen-proto && pnpm run extract && pnpm run compile",
+    "prebuild": "pnpm run gen-proto && (pnpm run extract || true) && pnpm run compile",
     "gen-proto": "node scripts/gen-proto.mjs",
     "extract": "lingui extract",
     "compile": "lingui compile --typescript",

@@ -6,13 +6,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@shared/presentation/utils';
 
-interface PipelineCreationTopbarProps {
+interface PipelineEditorHeaderProps {
   onSubmit: () => void;
   submitLabel: string;
-  isPending?: boolean;
-}
-
-export const PipelineEditorHeader = ({ onSubmit, submitLabel, isPending }: PipelineCreationTopbarProps) => {
   /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
   mode: 'create' | 'edit';
   /** Disables the submit button (e.g. when the script JSON is invalid). */
@@ -40,7 +36,7 @@ export const PipelineEditorHeader = ({
   blueprintDisabled,
   isDirty,
   isSaving = false,
-}: PipelineCreationTopbarProps) => {
+}: PipelineEditorHeaderProps) => {
   const status: SaveStatus = isSaving
     ? 'saving'
     : mode === 'create'
@@ -59,9 +55,6 @@ export const PipelineEditorHeader = ({
           <Trans>Blueprint</Trans>
         </TabsTrigger>
       </TabsList>
-      <Button onClick={onSubmit} disabled={isPending}>
-        <Trans>{submitLabel}</Trans>
-      </Button>
 
       <div className='flex items-center gap-3'>
         <div className='flex items-center gap-2 text-sm text-muted-foreground'>
@@ -92,7 +85,7 @@ export const PipelineEditorHeader = ({
           </AnimatePresence>
         </div>
 
-        <Button onClick={onSubmit} disabled={submitDisabled}>
+        <Button onClick={onSubmit} disabled={submitDisabled || isSaving}>
           {isSaving && <Loader2 className='mr-2 size-4 animate-spin' />}
           <Trans>{submitLabel}</Trans>
         </Button>
