@@ -11,7 +11,7 @@ export const TriggerStatusCell = ({ trigger }: { trigger: TriggerEntity }) => {
   const isError = trigger.lastStatus.startsWith('error');
 
   return (
-    <div className='flex flex-col items-start gap-1'>
+    <div className='flex flex-col items-center justify-center gap-1'>
       {!hasFired ? (
         <Badge variant='outline' className='gap-1'>
           <MinusCircle className='size-3' /> <Trans>Never fired</Trans>
@@ -34,11 +34,16 @@ export const TriggerStatusCell = ({ trigger }: { trigger: TriggerEntity }) => {
             <Trans>disabled</Trans>
           )}
         </span>
-      ) : (
-        trigger.source.kind === TriggerKind.Cron &&
+      ) : trigger.source.kind === TriggerKind.Cron ? (
         trigger.nextFireAt && (
           <span className='text-xs text-muted-foreground'>
             <Trans>next</Trans> {formatDate(trigger.nextFireAt)}
+          </span>
+        )
+      ) : (
+        trigger.lastFiredAt && (
+          <span className='text-xs text-muted-foreground'>
+            <Trans>last</Trans> {formatDate(trigger.lastFiredAt)}
           </span>
         )
       )}

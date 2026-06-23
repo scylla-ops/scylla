@@ -64,7 +64,7 @@ msgstr "Loading user information..."
 msgid "Manage your account details."
 msgstr "Manage your account details."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:48
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:50
 msgid "New user"
 msgstr "New user"
 
