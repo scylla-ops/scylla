@@ -4,9 +4,9 @@ import { PipelineLastJob } from './PipelineLastJob.tsx';
 import { PipelineActions } from './PipelineActions.tsx';
 import { PipelineChart } from '../PipelineChart.tsx';
 import { Trans } from '@lingui/react/macro';
-import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import { toStatusState } from '@shared/utils/job-status.utils.ts';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineMetadata) => void;
@@ -16,7 +16,7 @@ type PipelineColumnMeta = {
 
   runningPipelines: Set<string>;
 
-  jobsByPipelineId: Map<string, Job[]>;
+  jobsByPipelineId: Map<string, JobEntity[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
 };

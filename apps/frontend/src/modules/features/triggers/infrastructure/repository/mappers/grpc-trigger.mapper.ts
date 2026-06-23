@@ -14,8 +14,8 @@ import type {
 import type {
   TriggerInput,
   TriggerSource,
-} from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
-import { TriggerKind } from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+} from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import {
   idValue,
   timestampToIso,

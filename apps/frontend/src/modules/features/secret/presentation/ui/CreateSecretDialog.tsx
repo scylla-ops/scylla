@@ -1,7 +1,7 @@
 import { FormDialog } from '@shared/presentation/ui';
 import { createSecretsItems } from '@/modules/features/secret/presentation/utils/createSecretItems.ts';
 import { useCreateSecret } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
-import type { FormChange } from '@shared/presentation/models/scylla-form.model.ts';
+import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 
 interface CreateSecretDialogProps {
   isOpen: boolean;

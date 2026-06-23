@@ -6,7 +6,7 @@ import type {
 import {
   type Permission,
   type PermissionScope,
-} from '@/modules/features/permission/domain/models/permission.model.ts';
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 
 export interface CreateRoleInput {

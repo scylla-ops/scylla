@@ -1,5 +1,5 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { CreatedApp } from '@/modules/features/apps/domain/models/app.model.ts';
+import type { CreatedApp } from '@/modules/features/apps/domain/structs/app.struct.ts';
 import type { AppsRepository } from '@/modules/features/apps/domain/repository/apps.repository.ts';
 
 /** Use case: create an app. Returns the one-time secret. */

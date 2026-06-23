@@ -2,7 +2,7 @@ import { type Permission, type Scope } from '@/generated/permission.ts';
 import {
   type Permission as PermissionDomain,
   type PermissionScope,
-} from '@/modules/features/permission/domain/models/permission.model.ts';
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 export class GrpcPermissionMapper {
   public static toDomain(permission: Permission): PermissionDomain {

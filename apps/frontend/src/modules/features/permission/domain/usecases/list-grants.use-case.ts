@@ -1,4 +1,4 @@
-import type { PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import type { PermissionScope } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import type { GrantEntity } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { PermissionRepository } from '@/modules/features/permission/domain/repository/permission.repository.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';

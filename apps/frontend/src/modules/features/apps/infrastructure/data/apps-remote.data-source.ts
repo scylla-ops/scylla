@@ -1,11 +1,13 @@
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { AppServiceClient } from '@/generated/app.client.ts';
 import type {
-  App,
-  AppSecret,
+  AppEntity,
+  AppSecretEntity,
+} from '@/modules/features/apps/domain/entities/app.entity.ts';
+import type {
   CreatedApp,
   CreatedAppSecret,
-} from '@/modules/features/apps/domain/models/app.model.ts';
+} from '@/modules/features/apps/domain/structs/app.struct.ts';
 import type { AppsRepository } from '@/modules/features/apps/domain/repository/apps.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
@@ -17,7 +19,7 @@ export type AppsRemoteDataSource = AppsRepository;
 export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
   constructor(private grpcTransport: CoreGrpcTransport) {}
 
-  listApps(organizationId: string): Promise<ScyllaResult<App[]>> {
+  listApps(organizationId: string): Promise<ScyllaResult<AppEntity[]>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
       const response = await client.listApps({ organizationId: wrapId(organizationId) }).response;
@@ -25,7 +27,7 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     }, 'Failed to list apps');
   }
 
-  getApp(appId: string): Promise<ScyllaResult<App>> {
+  getApp(appId: string): Promise<ScyllaResult<AppEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
       const response = await client.getApp({ id: wrapId(appId) }).response;
@@ -51,7 +53,7 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     }, 'Failed to delete app');
   }
 
-  setAppActive(appId: string, active: boolean): Promise<ScyllaResult<App>> {
+  setAppActive(appId: string, active: boolean): Promise<ScyllaResult<AppEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
       const response = await client.setAppActive({ appId: wrapId(appId), active }).response;
@@ -59,7 +61,7 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     }, 'Failed to update app');
   }
 
-  listAppSecrets(appId: string): Promise<ScyllaResult<AppSecret[]>> {
+  listAppSecrets(appId: string): Promise<ScyllaResult<AppSecretEntity[]>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
       const response = await client.listAppSecrets({ appId: wrapId(appId) }).response;
@@ -87,7 +89,7 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     }, 'Failed to revoke app secret');
   }
 
-  setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecret>> {
+  setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecretEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
       const response = await client.setAppSecretEnabled({ secretId: wrapId(secretId), enabled })

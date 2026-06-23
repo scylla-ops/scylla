@@ -10,7 +10,7 @@ import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-tran
 import {
   DEFAULT_PAGE_SIZE,
   type PaginationParams,
-} from '@shared/domain/models/pagination.model.ts';
+} from '@shared/domain/structs/pagination.struct.ts';
 import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 

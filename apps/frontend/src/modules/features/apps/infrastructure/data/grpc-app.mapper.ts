@@ -1,10 +1,13 @@
 import type { App as ProtoApp, AppSecret as ProtoAppSecret } from '@/generated/app.ts';
-import type { App, AppSecret } from '@/modules/features/apps/domain/models/app.model.ts';
+import type {
+  AppEntity,
+  AppSecretEntity,
+} from '@/modules/features/apps/domain/entities/app.entity.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
 /** Maps gRPC App messages to the domain App model. */
 export class GrpcAppMapper {
-  static toDomain(a: ProtoApp): App {
+  static toDomain(a: ProtoApp): AppEntity {
     return {
       id: idValue(a.id),
       organizationId: idValue(a.organizationId),
@@ -15,7 +18,7 @@ export class GrpcAppMapper {
     };
   }
 
-  static secretToDomain(s: ProtoAppSecret): AppSecret {
+  static secretToDomain(s: ProtoAppSecret): AppSecretEntity {
     return {
       id: idValue(s.id),
       appId: idValue(s.appId),

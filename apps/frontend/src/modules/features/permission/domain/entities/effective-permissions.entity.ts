@@ -1,4 +1,7 @@
-import type { Permission, PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import type {
+  Permission,
+  PermissionScope,
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 /**
  * The permissions a principal holds at one scope (roles expanded +
@@ -20,4 +23,3 @@ export interface EffectiveScopeEntity {
 export interface EffectivePermissionsEntity {
   scopes: EffectiveScopeEntity[];
 }
-

@@ -1,9 +1,9 @@
 import type {
   EnvEntry,
-  Pipeline,
   PipelineMetadata,
   PipelineStep,
-} from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+} from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
+import type { PipelineEntity } from '@/modules/features/pipeline/domain/entities/pipeline.entity.ts';
 import type {
   EnvVar,
   ListPipelinesResponse,
@@ -12,7 +12,7 @@ import type {
   PipelineSummary,
 } from '@/generated/pipeline.ts';
 import { Shell } from '@/generated/common.ts';
-import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import { idValue, timestampToIso, wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
@@ -92,7 +92,7 @@ export class GrpcPipelineMapper {
     };
   }
 
-  static toDomain(pipeline: PipelineResponse): Pipeline {
+  static toDomain(pipeline: PipelineResponse): PipelineEntity {
     return {
       id: idValue(pipeline.pipelineId),
       projectId: idValue(pipeline.projectId),

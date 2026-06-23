@@ -1,4 +1,4 @@
-import type { PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import type { PermissionScope } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import type { Permission } from '@/generated/permission.ts';
 
 export interface RoleEntity {

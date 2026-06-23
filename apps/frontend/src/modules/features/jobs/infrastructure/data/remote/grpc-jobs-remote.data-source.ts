@@ -13,7 +13,7 @@ import { ScyllaResult as Result } from '@shared/utils/scylla-result.ts';
 import { JobServiceClient } from '@/generated/job.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { wrapId, wrapIdOpt } from '@shared/infrastructure/grpc/wrappers.ts';
-import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 
 export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
   private readonly _jobClient: JobServiceClient;

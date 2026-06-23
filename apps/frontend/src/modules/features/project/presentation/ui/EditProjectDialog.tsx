@@ -1,13 +1,17 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
-import { type FormChange, type FormItem, FormItemType } from '@shared/presentation/models/scylla-form.model.ts';
+import {
+  type FormChange,
+  type FormItem,
+  FormItemType,
+} from '@shared/presentation/structs/scylla-form.struct.ts';
 import { useUpdateProject } from '@/modules/features/project/presentation/hooks/use-update-project.ts';
-import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
+import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 
 interface EditProjectDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  project: Project;
+  project: ProjectEntity;
 }
 
 export function EditProjectDialog({ open, setOpen, project }: EditProjectDialogProps) {
@@ -36,7 +40,11 @@ export function EditProjectDialog({ open, setOpen, project }: EditProjectDialogP
     const description = values.find(v => v.id === 'description')?.value;
 
     updateProject.mutate(
-      { projectId: project.id, name: name?.trim() || undefined, description: description?.trim() || undefined },
+      {
+        projectId: project.id,
+        name: name?.trim() || undefined,
+        description: description?.trim() || undefined,
+      },
       { onSuccess: () => setOpen(false) },
     );
   };
@@ -55,4 +63,3 @@ export function EditProjectDialog({ open, setOpen, project }: EditProjectDialogP
     />
   );
 }
-

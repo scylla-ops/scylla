@@ -11,7 +11,7 @@ import {
   type PipelineNodeData,
   START_NODE_ID,
 } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
-import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import { useBlueprintState } from '@/modules/features/pipeline/presentation/hooks/use-blueprint-state.ts';
 import type { NodeFormValue } from './StepNodeFormDialog.tsx';
 

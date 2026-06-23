@@ -1,13 +1,11 @@
-import type {
-  Project,
-  ProjectList,
-} from '@/modules/features/project/domain/models/project.model.ts';
+import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
+import type { ProjectList } from '@/modules/features/project/domain/structs/project.struct.ts';
 import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
-import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class GrpcProjectMapper {
-  static toDomain(grpcProject: ProjectResponse): Project {
+  static toDomain(grpcProject: ProjectResponse): ProjectEntity {
     return {
       id: idValue(grpcProject.projectId),
       name: grpcProject.name,

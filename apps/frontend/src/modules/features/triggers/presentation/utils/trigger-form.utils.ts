@@ -2,7 +2,7 @@ import type {
   TriggerDraft,
   TriggerEntity,
 } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
-import { TriggerKind } from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 
 /**
  * Décale un champ Cron (Jour du Mois ou Jour de la Semaine) selon un diff (-1, 0, 1)

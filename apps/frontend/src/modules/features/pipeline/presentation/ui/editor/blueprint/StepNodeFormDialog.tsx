@@ -19,7 +19,10 @@ import {
 import { Plus, Trash2 } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@shared/presentation/utils';
-import type { EnvEntry, Shell } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type {
+  EnvEntry,
+  Shell,
+} from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import { useSecrets } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 import ReactCodeMirror from '@uiw/react-codemirror';

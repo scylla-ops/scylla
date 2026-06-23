@@ -1,7 +1,7 @@
 import { type Query, useQueries } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { useMemo } from 'react';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
 const MAX_JOBS_PER_PIPELINE = 10;
 
@@ -28,7 +28,7 @@ export const usePipelineJobs = (pipelineIds: string[]) => {
         return { pipelineId, jobs: items };
       },
       staleTime: 0,
-      refetchInterval: (query: Query<{ pipelineId: string; jobs: Job[] }, Error>) => {
+      refetchInterval: (query: Query<{ pipelineId: string; jobs: JobEntity[] }, Error>) => {
         const data = query.state.data;
 
         if (!data) return false;
@@ -44,7 +44,7 @@ export const usePipelineJobs = (pipelineIds: string[]) => {
   const isError = queries.some(q => q.isError);
 
   const jobsByPipelineId = useMemo(() => {
-    const map = new Map<string, Job[]>();
+    const map = new Map<string, JobEntity[]>();
     for (const query of queries) {
       if (query.data) {
         map.set(query.data.pipelineId, query.data.jobs);

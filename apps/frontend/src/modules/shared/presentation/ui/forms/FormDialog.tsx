@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@shadcn/dialog.tsx';
 import { Trans } from '@lingui/react/macro';
-import type { FormChange, FormItem } from '@shared/presentation/models/scylla-form.model.ts';
+import type { FormChange, FormItem } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 
 interface FormDialogProps {

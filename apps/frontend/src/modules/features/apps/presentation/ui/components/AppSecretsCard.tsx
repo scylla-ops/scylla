@@ -15,18 +15,21 @@ import {
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
 import { FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
-import type { FormChange } from '@shared/presentation/models/scylla-form.model.ts';
+import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { formatDate } from '@shared/utils/date-utils.ts';
 import { useAppSecrets } from '@/modules/features/apps/presentation/hooks/use-apps.ts';
 import { createAppSecretItems } from '@/modules/features/apps/presentation/utils/create-app-secret-form-items.ts';
-import type { App, CreatedAppSecret } from '@/modules/features/apps/domain/models/app.model.ts';
+import type { AppEntity } from '@/modules/features/apps/domain/entities/app.entity.ts';
+import type { CreatedAppSecret } from '@/modules/features/apps/domain/structs/app.struct.ts';
 
 interface AppSecretsCardProps {
-  app: App;
+  app: AppEntity;
 }
 
 export const AppSecretsCard = ({ app }: AppSecretsCardProps) => {
-  const { secrets, isLoading, createSecret, revokeSecret, setSecretEnabled } = useAppSecrets(app.id);
+  const { secrets, isLoading, createSecret, revokeSecret, setSecretEnabled } = useAppSecrets(
+    app.id,
+  );
   const [createOpen, setCreateOpen] = useState(false);
   const [created, setCreated] = useState<CreatedAppSecret | null>(null);
   const [toRevoke, setToRevoke] = useState<string | null>(null);

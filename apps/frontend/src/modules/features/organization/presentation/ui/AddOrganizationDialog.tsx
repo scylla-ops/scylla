@@ -1,7 +1,7 @@
 import { useCreateOrganization } from '@/modules/features/organization/presentation/hooks/useCreateOrganization.ts';
 import { Trans } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
-import { type FormChange } from '@shared/presentation/models/scylla-form.model.ts';
+import { type FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { createOrganizationItems } from '@/modules/features/organization/presentation/utils/create-organization-form-items.ts';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useNavigate } from 'react-router-dom';

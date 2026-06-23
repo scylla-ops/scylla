@@ -5,12 +5,12 @@ import { useRunPipeline } from '../../../hooks/use-run-pipeline.ts';
 import { useDuplicatePipeline } from '../../../hooks/use-duplicate-pipeline.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useState } from 'react';
-import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
 type PipelineTableProps = {
   pipelines: PipelineMetadata[];
-  jobsByPipelineId: Map<string, Job[]>;
+  jobsByPipelineId: Map<string, JobEntity[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
 };

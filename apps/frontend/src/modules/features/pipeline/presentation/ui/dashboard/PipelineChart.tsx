@@ -3,11 +3,11 @@ import { Skeleton } from '@shadcn/skeleton.tsx';
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
 type PipelineChartProps = {
   maxJobs?: number;
-  jobs: Job[];
+  jobs: JobEntity[];
   isLoading?: boolean;
   isError?: boolean;
 };

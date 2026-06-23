@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@shadcn/dialog.tsx';
 import { Trans } from '@lingui/react/macro';
-import { TriggerKind } from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type {
   CreatedTrigger,
   TriggerEntity,

@@ -1,10 +1,10 @@
 import { Badge } from '@shadcn';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { Trans } from '@lingui/react/macro';
 
 type JobStatusProps = {
-  job: Job;
+  job: JobEntity;
 };
 
 /**

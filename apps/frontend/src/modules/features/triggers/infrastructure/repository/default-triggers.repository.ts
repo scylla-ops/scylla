@@ -7,7 +7,7 @@ import type {
 import type { TriggersRepository } from '@/modules/features/triggers/domain/repository/triggers.repository.ts';
 import type { TriggersRemoteDataSource } from '@/modules/features/triggers/infrastructure/repository/data-sources/triggers-remote.data-source.ts';
 import { GrpcTriggerMapper } from '@/modules/features/triggers/infrastructure/repository/mappers/grpc-trigger.mapper.ts';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { GrpcJobMapper } from '@/modules/features/jobs/infrastructure/repository/mappers/grpc-job.mapper.ts';
 
 /** TriggersRepository backed by the remote (gRPC) data source. */
@@ -53,7 +53,7 @@ export class DefaultTriggersRepository implements TriggersRepository {
     );
   }
 
-  public async fireNow(triggerId: string): Promise<ScyllaResult<Job>> {
+  public async fireNow(triggerId: string): Promise<ScyllaResult<JobEntity>> {
     return (await this.remoteDataSource.fireNow(triggerId)).map(GrpcJobMapper.toDomain);
   }
 }

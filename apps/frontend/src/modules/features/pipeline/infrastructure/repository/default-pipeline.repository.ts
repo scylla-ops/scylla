@@ -1,13 +1,13 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { PaginationParams } from '@/modules/shared/domain/models/pagination.model.ts';
+import type { PaginationParams } from '@/modules/shared/domain/structs/pagination.struct.ts';
 import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
 import type { PipelineRepository } from '@/modules/features/pipeline/domain/repository/pipeline.repository.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
+import type { PipelineEntity } from '@/modules/features/pipeline/domain/entities/pipeline.entity.ts';
 import type {
-  Pipeline,
   PipelineMetadata,
   PipelineStep,
-} from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+} from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import { GrpcPipelineMapper } from '@/modules/features/pipeline/infrastructure/repository/mappers/grpc-pipeline.mapper.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
@@ -31,7 +31,7 @@ export class DefaultPipelineRepository implements PipelineRepository {
     return this.remoteDataSource.run(id);
   }
 
-  public async create(pipeline: Omit<Pipeline, 'id'>): Promise<ScyllaResult<void>> {
+  public async create(pipeline: Omit<PipelineEntity, 'id'>): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.create({
       name: pipeline.name,
       projectId: wrapId(pipeline.projectId),
@@ -39,7 +39,7 @@ export class DefaultPipelineRepository implements PipelineRepository {
     });
   }
 
-  public async getById(id: string): Promise<ScyllaResult<Pipeline>> {
+  public async getById(id: string): Promise<ScyllaResult<PipelineEntity>> {
     return (await this.remoteDataSource.getById(id)).map(GrpcPipelineMapper.toDomain);
   }
 
