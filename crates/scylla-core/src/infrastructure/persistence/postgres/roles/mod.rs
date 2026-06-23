@@ -275,6 +275,24 @@ mod tests {
         use crate::infrastructure::persistence::postgres::PgGrantRepository;
         use std::sync::Arc;
 
+        struct AllowAll;
+        #[async_trait::async_trait]
+        impl PermissionService for AllowAll {
+            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
+                Ok(())
+            }
+        }
+        struct NoopPolicy;
+        #[async_trait::async_trait]
+        impl PolicyControl for NoopPolicy {
+            async fn validate_policy(&self, _t: &str) -> DomainResult<()> {
+                Ok(())
+            }
+            async fn reload(&self) -> DomainResult<()> {
+                Ok(())
+            }
+        }
+
         // A custom project-scoped role with two permissions.
         sqlx::query!(
             "INSERT INTO roles (id, name, scope_kind, builtin) VALUES ('ci', 'CI', 'project', FALSE)"
@@ -300,24 +318,6 @@ mod tests {
         .execute(&pool)
         .await
         .unwrap();
-
-        struct AllowAll;
-        #[async_trait::async_trait]
-        impl PermissionService for AllowAll {
-            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
-                Ok(())
-            }
-        }
-        struct NoopPolicy;
-        #[async_trait::async_trait]
-        impl PolicyControl for NoopPolicy {
-            async fn validate_policy(&self, _t: &str) -> DomainResult<()> {
-                Ok(())
-            }
-            async fn reload(&self) -> DomainResult<()> {
-                Ok(())
-            }
-        }
 
         let uc = RoleUseCases::new(
             Arc::new(PgRoleRepository::new(pool.clone())),

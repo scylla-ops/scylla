@@ -33,6 +33,9 @@ tokio-stream = { workspace = true }
 futures-util.workspace = true
 serde_json.workspace = true
 
+# webhook ingress HTTP server (separate listener from the gRPC port)
+axum.workspace = true
+
 # database
 sqlx.workspace = true
 

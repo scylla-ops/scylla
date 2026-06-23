@@ -3,6 +3,7 @@ import { create } from 'zustand';
 interface SelectionState {
   selectedIds: Record<string, string[]>;
   select: (key: string, id: string) => void;
+  selectAll: (key: string, ids: string[]) => void;
   clearSelection: (key: string) => void;
   getSelectedIds: (key: string) => string[];
 }
@@ -21,6 +22,14 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
         },
       };
     }),
+
+  selectAll: (key, ids) =>
+    set(state => ({
+      selectedIds: {
+        ...state.selectedIds,
+        [key]: ids,
+      },
+    })),
 
   clearSelection: (key) =>
     set(state => ({

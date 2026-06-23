@@ -1,7 +1,7 @@
 use crate::domain::clock;
 use crate::domain::entities::{AppId, JobId, Pipeline, PipelineId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::job::{JobStatus, NodeState};
+use crate::domain::value_objects::job::{JobOrigin, JobStatus, NodeState};
 use crate::domain::value_objects::pipeline::NodeId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -69,6 +69,13 @@ pub struct Job {
     pipeline_id: PipelineId,
     status: JobStatus,
     node_executions: Vec<JobNode>,
+    /// Trigger-supplied literal env (`(key, value)`) overlaid on every node at
+    /// dispatch. Empty for a plain run. Persisted with the job so the dispatch is
+    /// identical whether placed immediately or retried by the pending scheduler.
+    inputs: Vec<(String, String)>,
+    /// Provenance: how this run was initiated (human / app / cron / webhook).
+    /// Set at creation, immutable thereafter — a job is never unattributable.
+    origin: JobOrigin,
     /// The agent (app) that executed this job, set at dispatch. `None` while
     /// pending / never dispatched.
     agent_app_id: Option<AppId>,
@@ -86,6 +93,8 @@ impl Job {
         pipeline_id: PipelineId,
         status: JobStatus,
         node_executions: Vec<JobNode>,
+        inputs: Vec<(String, String)>,
+        origin: JobOrigin,
         agent_app_id: Option<AppId>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
@@ -97,6 +106,8 @@ impl Job {
             pipeline_id,
             status,
             node_executions,
+            inputs,
+            origin,
             agent_app_id,
             created_at,
             updated_at,
@@ -105,8 +116,10 @@ impl Job {
         }
     }
 
+    /// Mint a fresh `Pending` job for `pipeline`. `origin` is mandatory — every
+    /// run records who/what initiated it (see [`JobOrigin`]).
     #[must_use]
-    pub fn create_from_pipeline(pipeline: &Pipeline) -> Self {
+    pub fn create_from_pipeline(pipeline: &Pipeline, origin: JobOrigin) -> Self {
         let now = clock::now();
 
         let node_executions: Vec<JobNode> = pipeline
@@ -120,12 +133,22 @@ impl Job {
             pipeline_id: pipeline.id().clone(),
             status: JobStatus::Pending,
             node_executions,
+            inputs: Vec::new(),
+            origin,
             agent_app_id: None,
             created_at: now,
             updated_at: now,
             started_at: None,
             finished_at: None,
         }
+    }
+
+    /// Attach trigger-supplied literal inputs (builder style). These are overlaid
+    /// on every node at dispatch and persisted with the job.
+    #[must_use]
+    pub fn with_inputs(mut self, inputs: Vec<(String, String)>) -> Self {
+        self.inputs = inputs;
+        self
     }
 
     /// Record which agent (app) was handed this job at dispatch.
@@ -299,9 +322,21 @@ impl Job {
         &self.node_executions
     }
 
+    /// Trigger-supplied literal env overlaid on every node at dispatch.
+    #[must_use]
+    pub fn inputs(&self) -> &[(String, String)] {
+        &self.inputs
+    }
+
     #[must_use]
     pub fn agent_app_id(&self) -> Option<&AppId> {
         self.agent_app_id.as_ref()
+    }
+
+    /// How this run was initiated (human / app / cron / webhook).
+    #[must_use]
+    pub fn origin(&self) -> &JobOrigin {
+        &self.origin
     }
 
     #[must_use]
@@ -328,11 +363,22 @@ impl Job {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::entities::ProjectId;
+    use crate::domain::entities::{ProjectId, UserId};
     use crate::domain::value_objects::pipeline::PipelineName;
 
     fn node_id(s: &str) -> NodeId {
         NodeId::new(s).unwrap()
+    }
+
+    /// Mint a job from a pipeline with a throwaway human origin (these tests
+    /// exercise status/node behaviour, not provenance).
+    fn make_job(pipeline: &Pipeline) -> Job {
+        Job::create_from_pipeline(
+            pipeline,
+            JobOrigin::Human {
+                user_id: UserId::generate(),
+            },
+        )
     }
 
     fn make_pipeline(nodes: Vec<crate::domain::entities::PipelineNode>) -> Pipeline {
@@ -360,7 +406,7 @@ mod tests {
     #[test]
     fn creates_job_from_pipeline() {
         let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
-        let job = Job::create_from_pipeline(&pipeline);
+        let job = make_job(&pipeline);
 
         assert_eq!(job.status(), JobStatus::Pending);
         assert_eq!(job.node_executions().len(), 2);
@@ -372,7 +418,7 @@ mod tests {
     #[test]
     fn start_transitions_to_running() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         assert_eq!(job.status(), JobStatus::Pending);
         job.start().unwrap();
@@ -382,7 +428,7 @@ mod tests {
     #[test]
     fn complete_transitions_from_running() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         job.start().unwrap();
         job.complete().unwrap();
@@ -392,7 +438,7 @@ mod tests {
     #[test]
     fn fail_transitions_from_running() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         job.start().unwrap();
         job.fail().unwrap();
@@ -402,7 +448,7 @@ mod tests {
     #[test]
     fn cancel_cancels_all_non_terminal_nodes() {
         let pipeline = make_pipeline(vec![action("a", &[]), action("b", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         job.start().unwrap();
         job.apply_node_started(&node_id("a"), clock::now()).unwrap();
@@ -424,7 +470,7 @@ mod tests {
     #[test]
     fn apply_node_started_sets_running() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         let now = clock::now();
         job.apply_node_started(&node_id("a"), now).unwrap();
@@ -437,7 +483,7 @@ mod tests {
     #[test]
     fn apply_node_finished_sets_terminal() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         let now = clock::now();
         job.apply_node_started(&node_id("a"), now).unwrap();
@@ -452,7 +498,7 @@ mod tests {
     #[test]
     fn logs_readable_for_gates_pending_nodes() {
         let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         // Both nodes start Pending → no logs leak.
         assert!(!job.logs_readable_for(&node_id("a")));
@@ -477,7 +523,7 @@ mod tests {
     #[test]
     fn cannot_finish_pending_node() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         assert!(
             job.apply_node_finished(&node_id("a"), NodeState::Completed, clock::now())
@@ -488,7 +534,7 @@ mod tests {
     #[test]
     fn cannot_start_nonexistent_node() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         assert!(job.apply_node_started(&node_id("z"), clock::now()).is_err());
     }
@@ -496,7 +542,7 @@ mod tests {
     #[test]
     fn apply_node_skipped_from_pending() {
         let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         job.apply_node_skipped(&node_id("b"), clock::now()).unwrap();
 
@@ -508,7 +554,7 @@ mod tests {
     #[test]
     fn apply_node_skipped_from_running() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         job.apply_node_started(&node_id("a"), clock::now()).unwrap();
         job.apply_node_skipped(&node_id("a"), clock::now()).unwrap();
@@ -522,7 +568,7 @@ mod tests {
     #[test]
     fn cannot_skip_terminal_node() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
 
         let now = clock::now();
         job.apply_node_started(&node_id("a"), now).unwrap();
@@ -535,7 +581,7 @@ mod tests {
     #[test]
     fn is_terminal_reflects_status() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
-        let mut job = Job::create_from_pipeline(&pipeline);
+        let mut job = make_job(&pipeline);
         assert!(!job.is_terminal());
 
         job.start().unwrap();

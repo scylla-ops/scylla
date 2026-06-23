@@ -1,44 +1,26 @@
-import ReactCodeMirror from '@uiw/react-codemirror';
-import { StreamLanguage } from '@codemirror/language';
-import { Tabs, TabsContent } from '@shadcn/tabs.tsx';
-import { Card } from '@shadcn';
-import { json } from '@codemirror/legacy-modes/mode/javascript';
-import { useCallback, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx';
 import { usePipeline } from '@/modules/features/pipeline/presentation/hooks/use-pipeline.ts';
 import { useUpdatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-update-pipeline.ts';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
-import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
-import { PipelineBlueprint } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/PipelineBlueprint.tsx';
-import { usePipelineScript } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-script.ts';
-import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
+import { PipelineEditor } from '@/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx';
 
 export const PipelineUpdatePage = () => {
   const { pipelineId } = useParams();
   const { pipeline, isLoading, isError } = usePipeline(pipelineId ?? '');
   const updatePipeline = useUpdatePipeline();
-  const { goBack } = useScyllaNavigate();
 
-  const { script, setScript, pipelineName, steps, handleStepsChange, handleNameChange } =
-    usePipelineScript();
-
-  useEffect(() => {
-    if (pipeline) {
-      const scriptObj = {
-        name: pipeline.name,
-        projectId: pipeline.projectId,
-        nodes: pipeline.nodes,
-      };
-      setScript(JSON.stringify(scriptObj, null, 2));
-    }
-  }, [pipeline, setScript]);
-
-  const handleUpdate = useCallback(() => {
-    if (!pipelineId) return;
-    updatePipeline.mutate({ id: pipelineId, nodes: steps, name: pipelineName });
-  }, [pipelineId, steps, pipelineName, updatePipeline]);
+  const initialScript = useMemo(
+    () =>
+      pipeline
+        ? JSON.stringify(
+            { name: pipeline.name, projectId: pipeline.projectId, nodes: pipeline.nodes },
+            null,
+            2,
+          )
+        : undefined,
+    [pipeline],
+  );
 
   if (isLoading) return <>Loading...</>;
   if (isError) return <ErrorState message='Failed to load pipeline' />;
@@ -72,6 +54,17 @@ export const PipelineUpdatePage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+    <div className='flex h-full flex-col gap-4 overflow-hidden'>
+      <PipelineEditor
+        mode='edit'
+        submitLabel='Save'
+        projectId={pipeline?.projectId}
+        initialScript={initialScript}
+        onSubmit={({ name, steps }) =>
+          pipelineId && updatePipeline.mutate({ id: pipelineId, name, nodes: steps })
+        }
+        isSubmitPending={updatePipeline.isPending}
+      />
     </div>
   );
 };

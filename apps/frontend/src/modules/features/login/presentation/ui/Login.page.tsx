@@ -37,7 +37,7 @@ export const LoginPage = () => {
             <Trans>Login to your account</Trans>
           </CardTitle>
           <CardDescription>
-            <Trans>Enter your email below to login to your account</Trans>
+            <Trans>Enter your username below to login to your account</Trans>
           </CardDescription>
         </CardHeader>
         <CardContent>

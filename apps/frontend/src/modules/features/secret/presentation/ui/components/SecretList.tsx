@@ -1,4 +1,4 @@
-import { DataTable } from '@shared/presentation/ui/DataTable';
+import { DataTable } from '@shared/presentation/ui/data-display/DataTable';
 import { createCredentialsColumns } from './secret-columns.tsx';
 import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
 import { useDeleteSecret } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
@@ -6,7 +6,7 @@ import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
-import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { useState } from 'react';
 
 interface CredentialsListProps {

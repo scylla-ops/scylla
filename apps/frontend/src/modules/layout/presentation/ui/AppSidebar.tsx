@@ -49,7 +49,7 @@ const useNavSections = (): NavSectionModel[] => {
       items: [
         {
           title: 'Users',
-          url: `${prefix}/users-admin`,
+          url: `${prefix}/users`,
           icon: UsersIcon,
         },
       ],

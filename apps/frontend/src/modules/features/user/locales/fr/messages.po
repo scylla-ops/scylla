@@ -64,7 +64,7 @@ msgstr ""
 msgid "Manage your account details."
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:48
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:50
 msgid "New user"
 msgstr ""
 
@@ -87,7 +87,7 @@ msgstr ""
 msgid "User information not available"
 msgstr ""
 
-#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
+#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:17
 msgid "User settings"
 msgstr ""
 

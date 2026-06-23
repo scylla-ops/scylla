@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 /**
  * Synchronizes the :organizationSlug URL param with the Zustand context store.

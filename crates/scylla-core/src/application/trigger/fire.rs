@@ -8,9 +8,28 @@ use crate::application::{
 use crate::domain::clock;
 use crate::domain::entities::{AppId, Job, OrganizationId, Trigger, TriggerId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::trigger::TriggerInputSource;
+use crate::domain::value_objects::job::JobOrigin;
+use crate::domain::value_objects::trigger::{TriggerInputSource, TriggerSource};
+use async_trait::async_trait;
 use std::sync::Arc;
 use tracing::instrument;
+
+/// The act of firing a trigger by id, decoupled from the concrete use-case so
+/// background drivers (the cron scheduler, later the webhook ingress) depend on
+/// behaviour, not on `TriggerFireUseCases`' seven generic parameters.
+#[async_trait]
+pub trait TriggerFiring: Send + Sync {
+    /// Fire `trigger_id`; `payload` carries a webhook body (`None` for cron /
+    /// manual), `delivery_id` the sender's idempotency key for webhook fires
+    /// (`None` otherwise). Mints + dispatches a job and records the outcome on the
+    /// trigger.
+    async fn fire(
+        &self,
+        trigger_id: &TriggerId,
+        payload: Option<&serde_json::Value>,
+        delivery_id: Option<&str>,
+    ) -> DomainResult<Job>;
+}
 
 /// Fires triggers — the single path that turns a due cron tick, a manual
 /// "run now", or (later) a verified webhook into an actual run. Every fire runs
@@ -66,13 +85,15 @@ where
 
     /// Fire the trigger `trigger_id` now. `payload` is the webhook body when the
     /// fire is webhook-driven (used to resolve json-pointer inputs); `None` for
-    /// cron / manual fires, where only literal inputs apply. Mints + dispatches a
-    /// job exactly like a manual run and records the fire outcome on the trigger.
-    #[instrument(skip(self, payload), fields(trigger_id = %trigger_id))]
+    /// cron / manual fires, where only literal inputs apply. `delivery_id` is the
+    /// webhook delivery key, recorded in the job's `Webhook` origin. Mints +
+    /// dispatches a job exactly like a manual run and records the fire outcome.
+    #[instrument(skip(self, payload, delivery_id), fields(trigger_id = %trigger_id))]
     pub async fn fire(
         &self,
         trigger_id: &TriggerId,
         payload: Option<&serde_json::Value>,
+        delivery_id: Option<&str>,
     ) -> DomainResult<Job> {
         let mut trigger = self.trigger_repo.find_by_id(trigger_id).await?;
         if !trigger.is_enabled() {
@@ -87,10 +108,22 @@ where
         let runner = self.runner_app(project.organization_id()).await?;
         let caller = CallerContext::App(runner);
 
+        // The run's origin is the trigger (cron / webhook), NOT the runner App it
+        // executes as. Webhook carries the delivery id when the sender provided one.
+        let origin = match trigger.source() {
+            TriggerSource::Cron(_) => JobOrigin::Cron {
+                trigger_id: trigger_id.clone(),
+            },
+            TriggerSource::Webhook(_) => JobOrigin::Webhook {
+                trigger_id: trigger_id.clone(),
+                delivery_id: delivery_id.map(str::to_owned),
+            },
+        };
+
         let inputs = resolve_inputs(&trigger, payload);
         let (job, dispatch) = self
             .pipeline_uc
-            .run_with_inputs(&caller, trigger.pipeline_id(), &inputs)
+            .run_with_inputs(&caller, trigger.pipeline_id(), &inputs, origin)
             .await?;
 
         // Best-effort placement: if no agent is connected/authorized the job
@@ -117,6 +150,28 @@ where
             .ok_or_else(|| {
                 DomainError::internal("trigger-runner App is not provisioned for this organization")
             })
+    }
+}
+
+#[async_trait]
+impl<T, P, PR, A, J, PS, W> TriggerFiring for TriggerFireUseCases<T, P, PR, A, J, PS, W>
+where
+    T: TriggerRepository + Send + Sync,
+    P: PipelineRepository + Send + Sync,
+    PR: ProjectRepository + Send + Sync,
+    A: AppRepository + Send + Sync,
+    J: JobRepository + Send + Sync,
+    PS: PermissionService + Send + Sync,
+    W: AgentDispatch + Send + Sync,
+{
+    async fn fire(
+        &self,
+        trigger_id: &TriggerId,
+        payload: Option<&serde_json::Value>,
+        delivery_id: Option<&str>,
+    ) -> DomainResult<Job> {
+        // Delegate to the inherent method (preferred in resolution, so no recursion).
+        TriggerFireUseCases::fire(self, trigger_id, payload, delivery_id).await
     }
 }
 

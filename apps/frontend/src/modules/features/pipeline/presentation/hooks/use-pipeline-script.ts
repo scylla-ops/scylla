@@ -85,59 +85,56 @@ interface UsePipelineScriptParams {
 }
 
 export function usePipelineScript({ projectId = '' }: UsePipelineScriptParams = {}) {
-  const { script, setScript } = useScriptStore(state => state);
+  const { script, setScript, initialScript, setInitialScript } = useScriptStore(state => state);
 
-  const pipelineName: string = useMemo(() => {
+  /** Single source of truth for parsing: derive everything else from this. */
+  const { parsed, parseError } = useMemo(() => {
+    // An empty editor isn't an error to report — it just isn't saveable yet.
+    if (!script.trim()) return { parsed: null, parseError: null };
     try {
-      return JSON.parse(script).name ?? 'my-pipeline';
-    } catch {
-      return 'my-pipeline';
+      return { parsed: JSON.parse(script) as Record<string, unknown>, parseError: null };
+    } catch (e) {
+      return { parsed: null, parseError: e instanceof Error ? e.message : 'Invalid JSON' };
     }
   }, [script]);
+
+  const isValid = parsed !== null && parseError === null;
+
+  const pipelineName: string = (parsed?.name as string) ?? 'my-pipeline';
 
   const steps: PipelineStep[] = useMemo(() => {
-    try {
-      const parsed = JSON.parse(script);
-      return (parsed.nodes ?? []).map((n: Record<string, unknown>) => parseNode(n));
-    } catch {
-      return [];
-    }
-  }, [script]);
+    const nodes = (parsed?.nodes ?? []) as Record<string, unknown>[];
+    return nodes.map(n => parseNode(n));
+  }, [parsed]);
+
+  const isDirty = useMemo(() => script !== initialScript, [script, initialScript]);
 
   const handleStepsChange = useCallback(
     (newSteps: PipelineStep[]) => {
       const nodes = newSteps.map(serializeNode);
-
-      try {
-        const parsed = JSON.parse(script);
-        parsed.nodes = nodes;
-        setScript(JSON.stringify(parsed, null, 2));
-      } catch {
-        const obj = { name: 'my-pipeline', projectId, nodes };
-        setScript(JSON.stringify(obj, null, 2));
-      }
+      const base = parsed ?? { name: 'my-pipeline', projectId };
+      setScript(JSON.stringify({ ...base, nodes }, null, 2));
     },
-    [script, setScript, projectId],
+    [parsed, setScript, projectId],
   );
 
   const handleNameChange = useCallback(
     (name: string) => {
-      try {
-        const parsed = JSON.parse(script);
-        parsed.name = name;
-        setScript(JSON.stringify(parsed, null, 2));
-      } catch {
-        /* ignore */
-      }
+      if (!parsed) return;
+      setScript(JSON.stringify({ ...parsed, name }, null, 2));
     },
-    [script, setScript],
+    [parsed, setScript],
   );
 
   return {
     script,
     setScript,
+    setInitialScript,
     pipelineName,
     steps,
+    isValid,
+    parseError,
+    isDirty,
     handleStepsChange,
     handleNameChange,
   };

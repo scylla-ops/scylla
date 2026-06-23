@@ -1,5 +1,5 @@
 import type { JobNodeExecution } from '@/modules/features/jobs/domain/models/job.model.ts';
-import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/StatusBar.tsx';
+import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
 import { useMemo } from 'react';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { cn } from '@shared/presentation/utils';

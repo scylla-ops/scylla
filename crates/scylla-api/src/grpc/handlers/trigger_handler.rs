@@ -24,9 +24,10 @@ use tonic::{Request, Response, Status};
 /// gRPC surface for managing a pipeline's triggers. CRUD is delegated to
 /// [`TriggerUseCases`] (Cedar-gated by `manageTriggers`, with the create/update
 /// anti-escalation `runPipeline` check); manual firing goes through
-/// [`TriggerFireUseCases`], which runs as the org's trigger-runner App. The
-/// `webhook_secret` returned on create is reserved for the webhook-ingress work
-/// (PR4) and is empty until then.
+/// [`TriggerFireUseCases`], which runs as the org's trigger-runner App. On create,
+/// a webhook trigger's generated signing secret is returned ONCE in
+/// `webhook_secret`; `webhook_url` in every view is built from the configured
+/// ingress base URL.
 pub struct TriggerHandler<T, P, PR, A, H, PC, PS, J, W>
 where
     T: TriggerRepository,
@@ -41,6 +42,9 @@ where
 {
     use_cases: Arc<TriggerUseCases<T, P, PR, A, H, PC, PS>>,
     fire_uc: Arc<TriggerFireUseCases<T, P, PR, A, J, PS, W>>,
+    /// Public base URL of the webhook ingress (e.g. `https://host:8088`), used to
+    /// build `TriggerView.webhook_url`. `None` when ingress isn't configured.
+    webhook_base_url: Option<String>,
 }
 
 impl<T, P, PR, A, H, PC, PS, J, W> TriggerHandler<T, P, PR, A, H, PC, PS, J, W>
@@ -58,8 +62,19 @@ where
     pub fn new(
         use_cases: Arc<TriggerUseCases<T, P, PR, A, H, PC, PS>>,
         fire_uc: Arc<TriggerFireUseCases<T, P, PR, A, J, PS, W>>,
+        webhook_base_url: Option<String>,
     ) -> Self {
-        Self { use_cases, fire_uc }
+        Self {
+            use_cases,
+            fire_uc,
+            webhook_base_url,
+        }
+    }
+
+    /// Map a domain trigger to its proto view, filling `webhook_url` from the
+    /// configured ingress base URL.
+    fn view(&self, trigger: &Trigger) -> TriggerView {
+        trigger_to_view(trigger, self.webhook_base_url.as_deref())
     }
 }
 
@@ -88,16 +103,16 @@ where
         let source = create_source_to_domain(req.source)?;
         let inputs = proto_inputs_to_domain(req.inputs)?;
 
-        let trigger = self
+        let (trigger, webhook_secret) = self
             .use_cases
             .create(&caller, pipeline_id, name, source, inputs)
             .await
             .map_err(domain_error_to_status)?;
 
         Ok(Response::new(CreatedTrigger {
-            trigger: Some(trigger_to_view(&trigger)),
-            // The HMAC signing secret is generated with the webhook ingress (PR4).
-            webhook_secret: String::new(),
+            trigger: Some(self.view(&trigger)),
+            // Returned ONCE for webhook triggers; empty for cron.
+            webhook_secret: webhook_secret.unwrap_or_default(),
         }))
     }
 
@@ -114,7 +129,7 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(trigger_to_view(&trigger)))
+        Ok(Response::new(self.view(&trigger)))
     }
 
     async fn update_trigger(
@@ -139,7 +154,7 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(trigger_to_view(&trigger)))
+        Ok(Response::new(self.view(&trigger)))
     }
 
     async fn delete_trigger(
@@ -172,7 +187,7 @@ where
             .map_err(domain_error_to_status)?;
 
         Ok(Response::new(ListTriggersResponse {
-            triggers: triggers.iter().map(trigger_to_view).collect(),
+            triggers: triggers.iter().map(|t| self.view(t)).collect(),
         }))
     }
 
@@ -190,7 +205,7 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(trigger_to_view(&trigger)))
+        Ok(Response::new(self.view(&trigger)))
     }
 
     async fn fire_trigger_now(
@@ -204,7 +219,7 @@ where
         // is authorized as the org's runner App inside the use case.
         let job = self
             .fire_uc
-            .fire(&id, None)
+            .fire(&id, None, None)
             .await
             .map_err(domain_error_to_status)?;
 
@@ -272,7 +287,15 @@ fn proto_inputs_to_domain(inputs: Vec<ProtoTriggerInput>) -> Result<Vec<TriggerI
 
 // ── domain → proto ───────────────────────────────────────────────────────────
 
-fn trigger_to_view(t: &Trigger) -> TriggerView {
+fn trigger_to_view(t: &Trigger, webhook_base_url: Option<&str>) -> TriggerView {
+    // Webhook triggers expose a delivery URL built from the configured ingress
+    // base; cron triggers (and an unconfigured ingress) leave it empty.
+    let webhook_url = match (t.source(), webhook_base_url) {
+        (TriggerSource::Webhook(_), Some(base)) => {
+            format!("{}/webhooks/{}", base.trim_end_matches('/'), t.id())
+        }
+        _ => String::new(),
+    };
     TriggerView {
         trigger_id: wrap(t.id().to_string()),
         pipeline_id: wrap(t.pipeline_id().to_string()),
@@ -280,8 +303,7 @@ fn trigger_to_view(t: &Trigger) -> TriggerView {
         source: Some(source_to_proto(t.source())),
         inputs: t.inputs().iter().map(input_to_proto).collect(),
         enabled: t.is_enabled(),
-        // Derived from the public ingress host once webhooks land (PR4).
-        webhook_url: String::new(),
+        webhook_url,
         next_fire_at: t.next_fire_at().and_then(ts),
         last_fired_at: t.last_fired_at().and_then(ts),
         last_status: t.last_status().unwrap_or_default().to_string(),
