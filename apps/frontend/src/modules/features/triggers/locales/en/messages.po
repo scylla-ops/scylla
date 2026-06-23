@@ -14,8 +14,12 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
-msgid "5-field cron (min hour day month weekday), evaluated in UTC."
-msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
+#~ msgid "5-field cron (min hour day month weekday), evaluated in UTC."
+#~ msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
+msgid "5-field cron (min hour day month weekday), evaluated in your local time."
+msgstr "5-field cron (min hour day month weekday), evaluated in your local time."
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:166
 #~ msgid "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
@@ -29,7 +33,7 @@ msgstr "A trigger starts a run of this pipeline automatically."
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:85
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr "Add a cron schedule or webhook to start runs automatically."
 
@@ -125,6 +129,10 @@ msgstr "Hourly"
 msgid "Inputs"
 msgstr "Inputs"
 
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:46
+msgid "last"
+msgstr "last"
+
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:67
 msgid "Literal"
 msgstr "Literal"
@@ -146,15 +154,19 @@ msgstr "Never fired"
 msgid "New trigger"
 msgstr "New trigger"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:41
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:40
 msgid "next"
 msgstr "next"
 
 #: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
-msgid "next scheduled run (UTC)"
-msgstr "next scheduled run (UTC)"
+msgid "next scheduled run (Local time)"
+msgstr "next scheduled run (Local time)"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:75
+#: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
+#~ msgid "next scheduled run (UTC)"
+#~ msgstr "next scheduled run (UTC)"
+
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:82
 msgid "No triggers yet"
 msgstr "No triggers yet"
 
