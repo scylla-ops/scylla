@@ -43,7 +43,7 @@ export const TriggersOverview = ({ triggers }: { triggers: TriggerEntity[] }) =>
               {nextFire ? formatDate(nextFire) : '—'}
             </p>
             <p className='text-xs text-muted-foreground'>
-              <Trans>next scheduled run (UTC)</Trans>
+              <Trans>next scheduled run (Local time)</Trans>
             </p>
           </div>
         </CardContent>
