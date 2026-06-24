@@ -23,7 +23,7 @@ export const NewTriggerFeaturePopup = () => {
           <div className='flex-1 min-w-0'>
             <p className='text-sm font-semibold text-primary'>New feature: Triggers!</p>
             <p className='mt-0.5 text-sm text-black dark:text-white'>
-              Get a look at the new trigger feature on the pipeline page!
+              Take a look at the new trigger feature on the pipeline page!
             </p>
           </div>
           <button
