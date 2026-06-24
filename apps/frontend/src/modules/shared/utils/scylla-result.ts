@@ -65,7 +65,7 @@ export class ScyllaError extends Error {
       case 'PERMISSION_DENIED':
         return t`You don't have permission to perform this action`;
       default:
-        return this.message || t`An unexpected error occurred`;
+        return (this.causeMessage() ?? this.message) || t`An unexpected error occurred`;
     }
   }
 

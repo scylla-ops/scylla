@@ -19,7 +19,7 @@ msgstr ""
 msgid "{submitLabel}"
 msgstr "{submitLabel}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:61
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:62
 msgid "Actions"
 msgstr "Actions"
 
@@ -102,8 +102,8 @@ msgstr "Define a new pipeline step with a unique ID and clear inputs for the com
 msgid "Draft — not created yet"
 msgstr "Draft — not created yet"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:81
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:114
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:83
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:119
 msgid "Duplicate"
 msgstr "Duplicate"
 
@@ -139,7 +139,7 @@ msgstr "e.g., cargo build && cargo test"
 msgid "e.g., my-pipeline"
 msgstr "e.g., my-pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:77
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:79
 msgid "Edit"
 msgstr "Edit"
 
@@ -154,7 +154,7 @@ msgstr "Environment variables"
 #~ msgid "Failed to fetch pipeline stats"
 #~ msgstr "Failed to fetch pipeline stats"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:36
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:37
 msgid "History"
 msgstr "History"
 
@@ -170,7 +170,7 @@ msgstr "Invalid JSON"
 msgid "KEY"
 msgstr "KEY"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:52
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:53
 msgid "Last Run"
 msgstr "Last Run"
 
@@ -186,8 +186,8 @@ msgstr "Literal"
 #~ msgid "Modify the node properties."
 #~ msgstr "Modify the node properties."
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:98
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:127
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:100
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:136
 msgid "More options"
 msgstr "More options"
 
@@ -237,8 +237,8 @@ msgstr "Reference a secret"
 #~ msgid "relative to the job workspace"
 #~ msgstr "relative to the job workspace"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:73
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:107
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:75
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:109
 msgid "Run"
 msgstr "Run"
 
@@ -288,7 +288,7 @@ msgstr "Set the name of the pipeline."
 msgid "Shell"
 msgstr "Shell"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:27
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:28
 msgid "Status"
 msgstr "Status"
 
@@ -297,8 +297,8 @@ msgstr "Status"
 #~ msgid "This feature will be available soon"
 #~ msgstr "This feature will be available soon"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:92
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:121
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:94
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:130
 msgid "Triggers"
 msgstr "Triggers"
 
@@ -314,7 +314,7 @@ msgstr "Update the step details and dependencies."
 msgid "value"
 msgstr "value"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:117
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:126
 msgid "View Jobs"
 msgstr "View Jobs"
 

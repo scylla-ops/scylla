@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@shared/presentation/utils';
 
-interface PipelineCreationTopbarProps {
+interface PipelineEditorHeaderProps {
   onSubmit: () => void;
   submitLabel: string;
   /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
@@ -36,7 +36,7 @@ export const PipelineEditorHeader = ({
   blueprintDisabled,
   isDirty,
   isSaving = false,
-}: PipelineCreationTopbarProps) => {
+}: PipelineEditorHeaderProps) => {
   const status: SaveStatus = isSaving
     ? 'saving'
     : mode === 'create'
@@ -85,7 +85,7 @@ export const PipelineEditorHeader = ({
           </AnimatePresence>
         </div>
 
-        <Button onClick={onSubmit} disabled={submitDisabled}>
+        <Button onClick={onSubmit} disabled={submitDisabled || isSaving}>
           {isSaving && <Loader2 className='mr-2 size-4 animate-spin' />}
           <Trans>{submitLabel}</Trans>
         </Button>

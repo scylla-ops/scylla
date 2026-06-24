@@ -16,25 +16,25 @@ msgstr ""
 #. placeholder {0}: section.title
 #: src/modules/layout/presentation/ui/NavMain.tsx:83
 msgid "{0}"
-msgstr ""
+msgstr "{0}"
 
 #: src/modules/layout/presentation/ui/NavUser.tsx:105
 msgid "Log out"
-msgstr ""
+msgstr "Se déconnecter"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:69
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:73
 msgid "Organization"
-msgstr ""
+msgstr "Organisation"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:72
 msgid "Select Organization"
-msgstr ""
+msgstr "Sélectionner une organisation"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:68
 msgid "To get started, please create your first organization."
-msgstr ""
+msgstr "Pour commencer, veuillez créer votre première organisation."
 
 #: src/modules/layout/presentation/ui/Layout.tsx:65
 msgid "Welcome to Scylla!"
-msgstr ""
+msgstr "Bienvenue sur Scylla !"
