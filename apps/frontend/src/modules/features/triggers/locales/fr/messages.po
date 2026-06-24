@@ -33,7 +33,7 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:85
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr ""
 

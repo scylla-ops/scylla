@@ -7,9 +7,10 @@ interface TriggersHeaderProps {
   triggerIds: string[];
   pipelineId: string;
   onNew: () => void;
+  isNew?: boolean;
 }
 
-export const TriggersHeader = ({ count, triggerIds, pipelineId, onNew }: TriggersHeaderProps) => {
+export const TriggersHeader = ({ count, triggerIds, pipelineId, onNew, isNew }: TriggersHeaderProps) => {
   const deleteTrigger = useDeleteTrigger(pipelineId);
   const { headerProps } = useFeatureSelection('triggers', triggerIds, {
     deleteItem: id => deleteTrigger.mutateAsync(id),
@@ -22,6 +23,7 @@ export const TriggersHeader = ({ count, triggerIds, pipelineId, onNew }: Trigger
       pluralLabel='Triggers'
       newLabel='New trigger'
       onNew={onNew}
+      isNew={isNew}
       {...headerProps}
       underLabel={
         <span className='text-sm text-muted-foreground font-medium'>Pipeline ID: {pipelineId}</span>

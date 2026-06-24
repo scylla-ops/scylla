@@ -57,7 +57,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:82
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
 msgid "Clear"
 msgstr ""
 
@@ -97,7 +97,7 @@ msgstr ""
 msgid "Creating..."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:99
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:108
 msgid "Delete"
 msgstr ""
 
@@ -113,7 +113,7 @@ msgstr ""
 msgid "From source"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:66
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:75
 msgid "in total"
 msgstr ""
 
@@ -121,7 +121,7 @@ msgstr ""
 msgid "Job queued — no agent connected"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:105
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:114
 msgid "New {label}"
 msgstr ""
 
@@ -205,7 +205,7 @@ msgstr ""
 msgid "Secret deleted"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:77
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
 msgid "Select all"
 msgstr ""
 
