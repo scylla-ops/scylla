@@ -13,19 +13,15 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:40
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:44
 msgid "••••••••"
 msgstr "••••••••"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:22
-msgid "Email"
-msgstr "Email"
-
 #: src/modules/features/login/presentation/ui/Login.page.tsx:40
-msgid "Enter your email below to login to your account"
-msgstr "Enter your email below to login to your account"
+msgid "Enter your username below to login to your account"
+msgstr "Enter your username below to login to your account"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:46
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:50
 msgid "Login"
 msgstr "Login"
 
@@ -33,10 +29,14 @@ msgstr "Login"
 msgid "Login to your account"
 msgstr "Login to your account"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:34
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:37
 msgid "Password"
 msgstr "Password"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:28
-msgid "you@example.com"
-msgstr "you@example.com"
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:30
+msgid "username"
+msgstr "username"
+
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:23
+msgid "Username"
+msgstr "Username"

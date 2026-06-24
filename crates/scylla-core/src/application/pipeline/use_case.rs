@@ -1,3 +1,4 @@
+use crate::application::agent::dispatch::assemble_dispatch;
 use crate::application::caller::CallerContext;
 use crate::application::{
     JobDispatch, JobRepository, PermissionService, PipelineRepository, ProjectRepository,
@@ -6,7 +7,8 @@ use crate::application::{
 use crate::domain::entities::{
     AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
 };
-use crate::domain::errors::DomainResult;
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::value_objects::job::JobOrigin;
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::pipeline::PipelineName;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
@@ -140,36 +142,61 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
             .await
     }
 
-    /// Authorize + materialise the run of `pipeline_id` for `caller`. Loads
-    /// the pipeline, mints a `Job`, persists it, and returns the dispatch
-    /// payload. **Single** permission check (`Permission::RunPipeline`) — the
-    /// internal repo calls deliberately bypass per-step Cedar so that
-    /// granting "run" doesn't also require granting "get" and "create-job".
-    /// The caller (handler) is responsible for actually publishing the
-    /// dispatch to the broker.
-    #[instrument(skip(self, caller), fields(pipeline_id = %pipeline_id))]
+    /// Authorize + materialise the run of `pipeline_id` for `caller`. Loads the
+    /// pipeline, mints a `Job`, persists it, and returns the dispatch payload.
+    /// **Single** permission check (`Permission::RunPipeline`) — the internal
+    /// repo calls deliberately bypass per-step Cedar so granting "run" doesn't
+    /// also require "get" and "create-job". The caller (handler / firing engine)
+    /// then hands the payload to an agent via `DispatchUseCases` (in-process; no
+    /// broker).
     pub async fn run(
         &self,
         caller: &CallerContext,
         pipeline_id: &PipelineId,
+    ) -> DomainResult<(Job, JobDispatch)> {
+        // A direct run is attributed to its caller: a human (`User`) or a machine
+        // principal (`App`). `Service` / `Anonymous` never originate a run — the
+        // permission check would reject them anyway, but we fail fast and clearly.
+        let origin = match caller {
+            CallerContext::User(user_id) => JobOrigin::Human {
+                user_id: user_id.clone(),
+            },
+            CallerContext::App(app_id) => JobOrigin::App {
+                app_id: app_id.clone(),
+            },
+            CallerContext::Service(_) | CallerContext::Anonymous => {
+                return Err(DomainError::forbidden(
+                    "only a user or app can run a pipeline directly",
+                ));
+            }
+        };
+        self.run_with_inputs(caller, pipeline_id, &[], origin).await
+    }
+
+    /// Like [`run`](Self::run) but overlays `inputs` — already-resolved
+    /// `(key, value)` env pairs, e.g. from a trigger — onto every node as
+    /// literal (unmasked) env, merged AFTER secret resolution. A node's own env
+    /// wins on a key collision, and inputs are plain literals that can never
+    /// reference a secret. Same single `RunPipeline` check as `run`.
+    #[instrument(skip(self, caller, inputs, origin), fields(pipeline_id = %pipeline_id, inputs = inputs.len()))]
+    pub async fn run_with_inputs(
+        &self,
+        caller: &CallerContext,
+        pipeline_id: &PipelineId,
+        inputs: &[(String, String)],
+        origin: JobOrigin,
     ) -> DomainResult<(Job, JobDispatch)> {
         self.permission_service
             .check(caller, Permission::RunPipeline(pipeline_id.clone()))
             .await?;
 
         let pipeline = self.pipeline_repo.find_by_id(pipeline_id).await?;
-        let job = Job::create_from_pipeline(&pipeline);
+        // The job IS the run: it carries its inputs and origin, so the dispatch can
+        // be (re)assembled identically whether placed now or retried later.
+        let job = Job::create_from_pipeline(&pipeline, origin).with_inputs(inputs.to_vec());
         let job = self.job_repo.create(&job).await?;
-        // Resolve secret-ref env vars (decrypt) into the dispatch payload.
-        let nodes = self
-            .secret_resolver
-            .resolve(pipeline.project_id(), pipeline.nodes())
-            .await?;
-        let dispatch = JobDispatch {
-            job_id: job.id().to_string(),
-            pipeline_id: pipeline.id().to_string(),
-            nodes,
-        };
+        let dispatch =
+            assemble_dispatch(&*self.pipeline_repo, &*self.secret_resolver, &job).await?;
         Ok((job, dispatch))
     }
 
@@ -181,3 +208,4 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         self.job_repo.set_agent(job_id, app_id).await
     }
 }
+

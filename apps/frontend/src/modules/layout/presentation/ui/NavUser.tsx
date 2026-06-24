@@ -82,7 +82,12 @@ export function NavUser() {
             align='end'
             sideOffset={4}
           >
-            <DropdownMenuItem onSelect={() => goToUserSettings()} className='p-0 font-normal'>
+            <DropdownMenuItem
+              onSelect={() => {
+                if (user) goToUserSettings(user?.userId);
+              }}
+              className='p-0 font-normal'
+            >
               <div className='w-full flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                 <SettingsIcon className='size-4' />
                 <span>Settings</span>

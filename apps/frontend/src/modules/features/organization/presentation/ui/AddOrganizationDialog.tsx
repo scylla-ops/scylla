@@ -6,7 +6,7 @@ import { createOrganizationItems } from '@/modules/features/organization/present
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useNavigate } from 'react-router-dom';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 interface AddOrganizationDialogProps {
   open: boolean;

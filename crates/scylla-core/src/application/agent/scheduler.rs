@@ -1,4 +1,4 @@
-use crate::application::agent::dispatch::JobDispatch;
+use crate::application::agent::dispatch::assemble_dispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::agent::use_case::{DispatchOutcome, DispatchUseCases};
 use crate::application::authz::service::PermissionService;
@@ -70,32 +70,18 @@ where
 
         let mut dispatched = 0usize;
         for job in jobs {
-            // Rebuild the dispatch payload from the persisted job's pipeline —
-            // the same shape `run_pipeline` builds.
-            let pipeline = match self.pipeline_repo.find_by_id(job.pipeline_id()).await {
-                Ok(pipeline) => pipeline,
-                Err(e) => {
-                    warn!(job_id = %job.id(), error = %e, "pending-job drain: pipeline load failed; skipping");
-                    continue;
-                }
-            };
-            let nodes = match self
-                .secret_resolver
-                .resolve(pipeline.project_id(), pipeline.nodes())
-                .await
-            {
-                Ok(nodes) => nodes,
-                Err(e) => {
-                    warn!(job_id = %job.id(), error = %e, "pending-job drain: secret resolution failed; skipping");
-                    continue;
-                }
-            };
-            let dispatch = JobDispatch {
-                job_id: job.id().to_string(),
-                pipeline_id: pipeline.id().to_string(),
-                nodes,
-            };
-            match self.dispatch_uc.dispatch_job(pipeline.id(), &dispatch).await {
+            // Re-assemble the dispatch via the SAME path the immediate run uses
+            // (resolve secrets + overlay the job's persisted inputs), so a job
+            // placed here is byte-for-byte what it would have been on dispatch.
+            let dispatch =
+                match assemble_dispatch(&*self.pipeline_repo, &*self.secret_resolver, &job).await {
+                    Ok(dispatch) => dispatch,
+                    Err(e) => {
+                        warn!(job_id = %job.id(), error = %e, "pending-job drain: dispatch assembly failed; skipping");
+                        continue;
+                    }
+                };
+            match self.dispatch_uc.dispatch_job(job.pipeline_id(), &dispatch).await {
                 Ok(DispatchOutcome::Dispatched(app_id)) => {
                     if let Err(e) = self.job_repo.set_agent(job.id(), &app_id).await {
                         warn!(job_id = %job.id(), %app_id, error = %e, "pending-job drain: agent attribution failed");
@@ -120,7 +106,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::agent::dispatch::DispatchNode;
+    use crate::application::agent::dispatch::{DispatchNode, JobDispatch};
     use crate::application::caller::CallerContext;
     use crate::domain::entities::{
         AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
@@ -278,7 +264,7 @@ mod tests {
                 .iter()
                 .map(|n| DispatchNode {
                     id: n.id().to_string(),
-                    deps: n.deps().iter().map(|d| d.to_string()).collect(),
+                    deps: n.deps().iter().map(ToString::to_string).collect(),
                     working_dir: n.working_dir().map(|w| w.as_str().to_string()),
                     step: n.step().clone(),
                     env: vec![],

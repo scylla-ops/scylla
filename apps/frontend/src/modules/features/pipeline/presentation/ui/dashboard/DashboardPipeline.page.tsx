@@ -1,14 +1,13 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { usePipelinesMetadata } from '../../hooks/use-pipelines-metadata.ts';
 import { usePipelineJobs } from '../../hooks/use-pipeline-jobs.ts';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
-import { Pagination } from '@shared/presentation/ui/Pagination.tsx';
+import { Pagination } from '@shared/presentation/ui/data-display/Pagination.tsx';
 import { PipelineDashboardHeader } from '@/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx';
 import { PipelineTable } from '@/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineTable.tsx';
 
 export const DashboardPipelinePage = () => {
-  const navigate = useNavigate();
   const { projectId } = useParams();
   const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage } =
     usePipelinesMetadata(projectId!);
@@ -24,13 +23,11 @@ export const DashboardPipelinePage = () => {
     return <ErrorState message={String(errorMessage) || 'Unable to load pipelines'} />;
   }
 
-  const handleBack = () => navigate('/projects');
-
   return (
     <div className='flex flex-col gap-4 w-full h-full'>
       <PipelineDashboardHeader
         numberOfPipelines={paginationInfo?.totalCount ?? pipelines.items.length}
-        onBack={handleBack}
+        pipelineIds={pipelineIds}
       />
       <div className='flex-1 min-h-0 overflow-auto'>
         <div className='relative'>

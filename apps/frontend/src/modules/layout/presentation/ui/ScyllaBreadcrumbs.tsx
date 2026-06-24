@@ -1,4 +1,4 @@
-import { useMatches, Link } from 'react-router-dom';
+import { useMatches, Link, useParams } from 'react-router-dom';
 import type {
   BreadcrumbParams,
   RouteHandleModel,
@@ -22,10 +22,13 @@ export const ScyllaBreadcrumbs = () => {
   const proj = useContextStore(state => state.project?.name);
   const pipelineName = useContextStore(state => state.pipeline?.name);
 
+  const { userId } = useParams();
+
   const params: BreadcrumbParams = {
     projectName: proj || undefined,
     organizationName: org || undefined,
     pipelineName: pipelineName || undefined,
+    userId: userId || undefined,
   };
 
   const crumbs = matches

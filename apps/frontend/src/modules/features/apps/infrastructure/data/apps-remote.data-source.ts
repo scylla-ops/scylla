@@ -8,7 +8,7 @@ import type {
 } from '@/modules/features/apps/domain/models/app.model.ts';
 import type { AppsRepository } from '@/modules/features/apps/domain/repository/apps.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import { GrpcAppMapper } from './grpc-app.mapper.ts';
 
 /** Remote data source for apps over gRPC. Shares the repository contract. */

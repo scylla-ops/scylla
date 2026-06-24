@@ -1,7 +1,8 @@
 use super::PgJobRepository;
 use crate::application::{JobRepository, PipelineRepository};
+use crate::domain::entities::TriggerId;
 use crate::domain::errors::DomainError;
-use crate::domain::value_objects::job::JobStatus;
+use crate::domain::value_objects::job::{JobOrigin, JobStatus};
 use crate::infrastructure::persistence::postgres::PgPipelineRepository;
 use crate::test_support::prelude::*;
 use chrono::Utc;
@@ -99,6 +100,24 @@ async fn list_by_organization_joins_through_pipeline_and_project(pool: PgPool) {
             .total_count(),
         2,
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn origin_round_trips_through_jsonb(pool: PgPool) {
+    let (_, _, pipeline) = seed_org_project_pipeline(&pool, "or").await;
+    let repo = PgJobRepository::new(pool);
+
+    // Webhook is the richest variant: a typed trigger id plus an optional delivery
+    // id — exercises the full JSONB serde round-trip of the tagged union.
+    let origin = JobOrigin::Webhook {
+        trigger_id: TriggerId::new("trg-1"),
+        delivery_id: Some("gh-42".to_string()),
+    };
+    let job = JobBuilder::new(&pipeline).origin(origin.clone()).build();
+    repo.create(&job).await.unwrap();
+
+    let found = repo.find_by_id(job.id()).await.unwrap();
+    assert_eq!(found.origin(), &origin);
 }
 
 #[sqlx::test(migrations = "../../migrations")]

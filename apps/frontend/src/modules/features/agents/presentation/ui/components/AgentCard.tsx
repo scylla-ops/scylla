@@ -13,6 +13,8 @@ import { AgentIdLink } from '@/modules/features/agents/presentation/ui/component
 import { cn } from '@shared/presentation/utils';
 import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { toast } from 'sonner';
+import { useLingui } from '@lingui/react/macro';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 interface AgentCardProps {
   agent: Agent;
@@ -21,10 +23,11 @@ interface AgentCardProps {
 
 export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
   const navigate = useNavigate();
+  const { i18n } = useLingui();
 
   const copyId = async () => {
     await navigator.clipboard.writeText(agent.id);
-    toast.success('Agent id copied');
+    toast.success(i18n._(ToastMessages.AGENT_ID_COPIED));
   };
 
   return (

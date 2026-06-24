@@ -13,7 +13,7 @@ import {
   FormItemType,
   type FormChange,
 } from '@shared/presentation/models/scylla-form.model.ts';
-import { ScyllaForm } from '@shared/presentation/ui/ScyllaForm.tsx';
+import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 import { Trans } from '@lingui/react/macro';
 import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
 import { useUpdateUser } from '@/modules/features/user/presentation/hooks/use-update-user.ts';

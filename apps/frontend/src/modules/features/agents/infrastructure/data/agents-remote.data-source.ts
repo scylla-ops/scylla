@@ -7,7 +7,7 @@ import type {
 } from '@/modules/features/agents/domain/models/agent.model.ts';
 import type { AgentsRepository } from '@/modules/features/agents/domain/repository/agents.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import { GrpcAgentMapper } from './grpc-agent.mapper.ts';
 
 /** Remote data source for agents over gRPC. Shares the repository contract. */

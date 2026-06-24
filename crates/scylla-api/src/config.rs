@@ -23,11 +23,11 @@ pub struct CoreConfig {
     #[serde(default)]
     pub metering: MeteringConfig,
 
-    /// SMTP settings for the `mail` feature. When absent, a no-op mailer is used.
+    /// SMTP settings. When absent, a no-op mailer is used.
     #[serde(default)]
     pub mail: Option<MailConfig>,
 
-    /// OAuth providers for the `oauth-github` feature.
+    /// OAuth providers.
     #[serde(default)]
     pub oauth: OauthConfig,
 
@@ -35,6 +35,22 @@ pub struct CoreConfig {
     /// secret operations error with a clear message.
     #[serde(default)]
     pub secrets: Option<SecretsConfig>,
+
+    /// Inbound webhook ingress (a separate HTTP listener). When absent, no
+    /// webhook server is started and webhook triggers can only be fired manually.
+    #[serde(default)]
+    pub webhook: Option<WebhookConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WebhookConfig {
+    /// Address the webhook HTTP server binds to, e.g. `0.0.0.0:8088`.
+    pub address: SocketAddr,
+
+    /// Public base URL advertised in `TriggerView.webhook_url`, e.g.
+    /// `https://hooks.example.com`. When absent, `webhook_url` is left empty.
+    #[serde(default)]
+    pub public_base_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -47,7 +63,7 @@ pub struct SecretsConfig {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct OauthConfig {
     /// GitHub OAuth app credentials. When absent, the OAuth service is not
-    /// registered even in an `oauth-github` build.
+    /// registered.
     #[serde(default)]
     pub github: Option<GitHubOauthConfig>,
 }
@@ -150,8 +166,7 @@ impl Default for BootstrapConfig {
     }
 }
 
-/// Per-organization quotas (SaaS `metering` feature). Parsed in every edition;
-/// only read when the server is built with `metering`.
+/// Per-organization quotas, enforced on resource creation.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MeteringConfig {
     #[serde(default = "default_max_projects_per_org")]

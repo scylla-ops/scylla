@@ -5,7 +5,7 @@ import { UserServiceClient } from '@/generated/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
 import { GrantServiceClient } from '@/generated/permission.client.ts';
 import { Scope } from '@/generated/permission.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   private readonly _userClient: UserServiceClient;

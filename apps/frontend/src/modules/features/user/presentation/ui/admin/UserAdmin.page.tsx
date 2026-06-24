@@ -2,28 +2,32 @@ import { UserTable } from '@/modules/features/user/presentation/ui/admin/user-ta
 import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
 import { useDeleteUser } from '@/modules/features/user/presentation/hooks/use-delete-user.ts';
 import { FeatureHeader } from '@shared/presentation/ui';
-import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
+import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { AddUserDialog } from '@/modules/features/user/presentation/ui/admin/AddUserDialog.tsx';
 import { useState } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
+import { ScyllaError } from '@shared/utils/scylla-result.ts';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
-  const { selectedIds, clearSelection } = useSelection('users');
+  const userIds = users?.items?.map(user => user.userId) ?? [];
+  const { selectedIds, clearSelection, headerProps } = useFeatureSelection('users', userIds);
   const deleteUser = useDeleteUser();
   const [openDialog, setOpenDialog] = useState(false);
-  const { t } = useLingui();
+  const { i18n } = useLingui();
 
   const { goToUserSettings } = useScyllaNavigate();
 
   const handleDelete = async () => {
     const currentUserId = localStorage.getItem('userId');
     if (currentUserId && selectedIds.includes(currentUserId)) {
-      toast.error(t`You cannot delete your own account.`);
-      return;
+      const errorMessage = i18n._(ToastMessages.USER_DELETE_OWN_ACCOUNT_ERROR);
+      toast.error(errorMessage);
+      throw new ScyllaError(errorMessage);
     }
 
     const promises = selectedIds.map(id => deleteUser.mutateAsync(id));
@@ -40,8 +44,7 @@ export const UserAdminPage = () => {
       <FeatureHeader
         count={users?.items?.length ?? 0}
         label='User'
-        selectedCount={selectedIds.length}
-        onClearSelection={clearSelection}
+        {...headerProps}
         onDeleteSelection={handleDelete}
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}

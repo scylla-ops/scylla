@@ -6,37 +6,79 @@
       {
         "ordinal": 0,
         "name": "id",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_secrets",
+            "name": "id"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "project_id",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_secrets",
+            "name": "project_id"
+          }
+        }
       },
       {
         "ordinal": 2,
         "name": "name",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_secrets",
+            "name": "name"
+          }
+        }
       },
       {
         "ordinal": 3,
         "name": "description",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "project_secrets",
+            "name": "description"
+          }
+        }
       },
       {
         "ordinal": 4,
         "name": "encrypted_value",
-        "type_info": "Bytea"
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "project_secrets",
+            "name": "encrypted_value"
+          }
+        }
       },
       {
         "ordinal": 5,
         "name": "created_at",
-        "type_info": "Timestamptz"
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "project_secrets",
+            "name": "created_at"
+          }
+        }
       },
       {
         "ordinal": 6,
         "name": "updated_at",
-        "type_info": "Timestamptz"
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "project_secrets",
+            "name": "updated_at"
+          }
+        }
       }
     ],
     "parameters": {

@@ -11,8 +11,7 @@ use scylla_protocol::services::registration::{
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
-/// Public self-service signup. Lives behind the `signup` cargo feature so PaaS
-/// builds don't register it at all (admin-provisioned accounts only).
+/// Public self-service signup.
 #[derive(Constructor)]
 pub struct RegistrationHandler<SR, S, H, PC>
 where

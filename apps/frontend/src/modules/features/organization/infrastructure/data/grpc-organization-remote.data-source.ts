@@ -2,7 +2,7 @@ import { OrganizationServiceClient } from '@/generated/organization.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ListOrganizationsResponse, OrganizationResponse } from '@/generated/organization.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizationRemoteDataSource {
   private readonly _organizationClient: OrganizationServiceClient;

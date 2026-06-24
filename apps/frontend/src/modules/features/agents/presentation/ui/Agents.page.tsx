@@ -6,7 +6,7 @@ import { AgentCard } from '@/modules/features/agents/presentation/ui/components/
 import { mockCardStats } from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
 import type { CreatedAgent } from '@/modules/features/agents/domain/models/agent.model.ts';
 import { FeatureHeader, FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
-import { ErrorState } from '@shared/presentation/ui/ErrorState.tsx';
+import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Button, Card } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';
 import {
@@ -50,7 +50,7 @@ export const AgentsPage = () => {
   if (isError) return <ErrorState message='Error loading agents' />;
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full overflow-hidden'>
+    <div className='flex flex-col gap-4 w-full h-full'>
       <FeatureHeader
         count={agents.length}
         label='Agent'
