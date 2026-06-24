@@ -1,9 +1,9 @@
 import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
-import { DataTable } from '@/modules/shared/presentation/ui/DataTable';
+import { DataTable } from '@/modules/shared/presentation/ui/data-display/DataTable';
 import { createJobColumns } from './columns';
 import { useState } from 'react';
-import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
 import { JobNodesList } from './JobNodesList';
 import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx';

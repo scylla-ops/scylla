@@ -1,33 +1,33 @@
 import { FeatureHeader } from '@shared/presentation/ui';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
+import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { useDeleteSecret } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 
 interface CredentialsHeaderProps {
   activeCount: number;
+  secretIds: string[];
   onAddSecret?: () => void;
   projectId: string;
 }
 
-export const SecretHeader = ({ activeCount, onAddSecret, projectId }: CredentialsHeaderProps) => {
-  const { goBack } = useScyllaNavigate();
-  const { clearSelection, selectedIds } = useSelection('secrets');
+export const SecretHeader = ({
+  activeCount,
+  secretIds,
+  onAddSecret,
+  projectId,
+}: CredentialsHeaderProps) => {
   const deleteSecret = useDeleteSecret(projectId);
+  const { headerProps } = useFeatureSelection('secrets', secretIds, {
+    deleteItem: id => deleteSecret.mutateAsync(id),
+  });
 
-  const handleDelete = () => {
-    selectedIds.forEach(id => deleteSecret.mutate(id));
-  };
   return (
     <FeatureHeader
-      onBack={goBack}
       count={activeCount}
       label={'Secret'}
       pluralLabel={'Secrets'}
       onNew={onAddSecret}
       newLabel={'New secret'}
-      selectedCount={selectedIds.length}
-      onDeleteSelection={handleDelete}
-      onClearSelection={clearSelection}
+      {...headerProps}
     />
   );
 };

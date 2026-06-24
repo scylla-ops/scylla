@@ -4,9 +4,8 @@ package registration;
 
 import "common.proto";
 
-// Self-service signup. A whole service (not just an RPC on AuthService) so the
-// SaaS-only `signup` cargo feature can gate it at registration time: PaaS builds
-// simply don't register it. Public (no auth).
+// Self-service signup. A whole service (not just an RPC on AuthService).
+// Public (no auth).
 service RegistrationService {
   rpc Signup(SignupRequest) returns (SignupResponse);
 }

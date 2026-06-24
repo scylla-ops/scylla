@@ -1,4 +1,4 @@
-import type { StatusState } from '@shared/presentation/ui/status-indicator';
+import type { StatusState } from '@shared/presentation/ui/data-display/status-indicator';
 
 const JOB_STATUS_MAP: Record<string, StatusState> = {
   pending: 'idle',

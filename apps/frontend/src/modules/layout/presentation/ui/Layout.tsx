@@ -1,11 +1,12 @@
 import { AppSidebar } from '@/modules/layout/presentation/ui/AppSidebar.tsx';
 import { SidebarInset, SidebarProvider } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { TopBar } from '@/modules/layout/presentation/ui/TopBar.tsx';
-import { AnimatedOutlet } from '@/modules/shared/presentation/ui/AnimatedOutlet.tsx';
+import { AnimatedOutlet } from '@/modules/shared/presentation/ui/layout/AnimatedOutlet.tsx';
+import { NewTriggerFeaturePopup } from '@/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { Trans } from '@lingui/react/macro';
 import { useCreateOrganization } from '@/modules/features/organization/presentation/hooks/useCreateOrganization.ts';
-import { ScyllaForm } from '@shared/presentation/ui/ScyllaForm.tsx';
+import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 import { createOrganizationItems } from '@/modules/features/organization/presentation/utils/create-organization-form-items.ts';
 import {
   Card,
@@ -19,7 +20,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export const Layout = () => {
   const { organizations, isLoading } = useOrganizations();
@@ -106,6 +107,7 @@ export const Layout = () => {
           <AnimatedOutlet />
         </div>
       </SidebarInset>
+      <NewTriggerFeaturePopup />
     </SidebarProvider>
   );
 };

@@ -9,7 +9,7 @@ import type {
   PipelineStep,
 } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
 import { GrpcPipelineMapper } from '@/modules/features/pipeline/infrastructure/repository/mappers/grpc-pipeline.mapper.ts';
-import { wrapId } from '@core/infrastructure/grpc/wrappers.ts';
+import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class DefaultPipelineRepository implements PipelineRepository {
   constructor(private readonly remoteDataSource: PipelineRemoteDataSource) {}

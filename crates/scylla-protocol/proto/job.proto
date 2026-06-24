@@ -23,6 +23,19 @@ message JobNodeResponse {
   google.protobuf.Timestamp finished_at = 4;
 }
 
+// Provenance of a run, mirroring the domain `JobOrigin` closed union. Each arm
+// carries the ids needed to trace the initiator. `Human`/`App` = a direct
+// RunPipeline call by a user / machine principal; `Cron`/`Webhook` = a trigger
+// that fired (the run executes as the org's trigger-runner App, but the origin
+// is the trigger).
+message HumanOrigin   { string user_id = 1; }
+message AppOrigin     { string app_id = 1; }
+message CronOrigin    { string trigger_id = 1; }
+message WebhookOrigin {
+  string trigger_id = 1;
+  string delivery_id = 2; // empty when the sender supplied none
+}
+
 message JobResponse {
   common.JobId job_id = 1;
   common.PipelineId pipeline_id = 2;
@@ -32,6 +45,13 @@ message JobResponse {
   google.protobuf.Timestamp updated_at = 6;
   google.protobuf.Timestamp started_at = 7;
   google.protobuf.Timestamp finished_at = 8;
+  // How this run was initiated. Always set.
+  oneof origin {
+    HumanOrigin   human   = 9;
+    AppOrigin     app     = 10;
+    CronOrigin    cron    = 11;
+    WebhookOrigin webhook = 12;
+  }
 }
 
 message GetJobRequest {

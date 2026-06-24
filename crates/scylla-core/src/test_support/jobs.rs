@@ -4,10 +4,17 @@ use bon::bon;
 use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
-use crate::domain::entities::{Job, JobId, JobNode, Pipeline};
-use crate::domain::value_objects::job::{JobStatus, NodeState};
+use crate::domain::entities::{Job, JobId, JobNode, Pipeline, UserId};
+use crate::domain::value_objects::job::{JobOrigin, JobStatus, NodeState};
 
 pub struct JobBuilder;
+
+/// Default provenance for fixtures that don't care about origin.
+fn default_origin() -> JobOrigin {
+    JobOrigin::Human {
+        user_id: UserId::generate(),
+    }
+}
 
 #[bon]
 #[allow(clippy::new_ret_no_self, clippy::must_use_candidate)]
@@ -28,6 +35,9 @@ impl JobBuilder {
         running: bool,
         /// Convenience: terminal status with synthesized started/finished timestamps.
         terminated: Option<JobStatus>,
+        /// Provenance; defaults to a throwaway human origin.
+        #[builder(default = default_origin())]
+        origin: JobOrigin,
     ) -> Job {
         let pipeline_id = pipeline.id().clone();
         let node_executions: Vec<JobNode> = pipeline
@@ -55,6 +65,8 @@ impl JobBuilder {
             pipeline_id,
             status,
             node_executions,
+            Vec::new(),
+            origin,
             None,
             now,
             updated_at.unwrap_or(now),

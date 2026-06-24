@@ -3,20 +3,16 @@ import { div } from 'framer-motion/m';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { UserInformation } from '@/modules/features/user/presentation/ui/settings/UserInformation.tsx';
 import { useParams } from 'react-router-dom';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-import { BackButton } from '@shared/presentation/ui/BackButton.tsx';
 import { Trans } from '@lingui/react/macro';
 
 //TODO: change and list only organization that the user is in
 // (pass it as a props from Organization module)
 export const UserSettingsPage = () => {
   const { userId } = useParams();
-  const { goBack } = useScyllaNavigate();
 
   return (
     <div className='flex flex-col gap-4 w-full'>
       <div className='flex items-center gap-4'>
-        <BackButton iconOnly onClick={() => goBack()} />
         <h1 className='text-3xl font-bold'>
           <Trans>User settings</Trans>
         </h1>

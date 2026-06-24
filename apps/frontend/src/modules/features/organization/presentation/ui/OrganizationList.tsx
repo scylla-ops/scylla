@@ -9,10 +9,10 @@ import { useNavigate } from 'react-router-dom';
 import { IconButton } from '@shared/presentation/ui';
 import { EditOrganizationDialog } from '@/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx';
 import { useDeleteOrganization } from '@/modules/features/organization/presentation/hooks/use-delete-organization.ts';
-import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/ConfirmOperationAlertDialog.tsx';
+import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { Trans } from '@lingui/react/macro';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@core/infrastructure/grpc/wrappers.ts';
+import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
