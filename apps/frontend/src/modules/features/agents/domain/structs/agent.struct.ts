@@ -1,18 +1,4 @@
-/**
- * Domain model for a Agent (a specialized App that runs jobs).
- */
-export interface Agent {
-  id: string;
-  organizationId: string;
-  name: string;
-  isActive: boolean;
-  /** Live agent stream presence — true while an agent is connected. */
-  connected: boolean;
-  /** Last activity timestamp; empty if the agent has never connected. */
-  lastSeen: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 
 /**
  * Aggregate run stats for an agent, derived from the jobs it executed.
@@ -38,10 +24,10 @@ export interface DailyOutcome {
 }
 
 /**
- * Result of creating a Agent. The secret is returned exactly once, at creation
+ * Result of creating an Agent. The secret is returned exactly once, at creation
  * time, and is never retrievable again.
  */
 export interface CreatedAgent {
-  agent: Agent;
+  agent: AgentEntity;
   secret: string;
 }

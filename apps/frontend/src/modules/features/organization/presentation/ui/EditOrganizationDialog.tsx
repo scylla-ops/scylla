@@ -1,6 +1,10 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
-import { type FormChange, type FormItem, FormItemType } from '@shared/presentation/models/scylla-form.model.ts';
+import {
+  type FormChange,
+  type FormItem,
+  FormItemType,
+} from '@shared/presentation/structs/scylla-form.struct.ts';
 import { useUpdateOrganization } from '@/modules/features/organization/presentation/hooks/use-update-organization.ts';
 
 interface EditOrganizationDialogProps {
@@ -9,7 +13,11 @@ interface EditOrganizationDialogProps {
   organization: { id: string; name: string; description?: string };
 }
 
-export function EditOrganizationDialog({ open, setOpen, organization }: EditOrganizationDialogProps) {
+export function EditOrganizationDialog({
+  open,
+  setOpen,
+  organization,
+}: EditOrganizationDialogProps) {
   const { t } = useLingui();
   const updateOrganization = useUpdateOrganization();
 
@@ -35,7 +43,11 @@ export function EditOrganizationDialog({ open, setOpen, organization }: EditOrga
     const description = values.find(v => v.id === 'description')?.value;
 
     updateOrganization.mutate(
-      { organizationId: organization.id, name: name?.trim() || undefined, description: description?.trim() || undefined },
+      {
+        organizationId: organization.id,
+        name: name?.trim() || undefined,
+        description: description?.trim() || undefined,
+      },
       { onSuccess: () => setOpen(false) },
     );
   };
@@ -54,4 +66,3 @@ export function EditOrganizationDialog({ open, setOpen, organization }: EditOrga
     />
   );
 }
-

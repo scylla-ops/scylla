@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useContextStore } from '../stores/use-context.store.ts';
-import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
-import type { PipelineIdentity } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
+import type { PipelineIdentity } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 export const useScyllaNavigate = () => {
@@ -21,7 +21,7 @@ export const useScyllaNavigate = () => {
     void navigate(`${base}/${cleanSubPath}`, options);
   };
 
-  const goToProject = (project: Project) => {
+  const goToProject = (project: ProjectEntity) => {
     void navigate(`${getOrgPrefix()}/projects/${project.id}`);
     setProject(project.id, project.name);
   };

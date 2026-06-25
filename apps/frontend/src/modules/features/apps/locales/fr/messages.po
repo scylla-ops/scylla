@@ -17,11 +17,11 @@ msgstr ""
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:74
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:110
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:56
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:90
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:93
 msgid "active"
 msgstr "actif"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:131
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:134
 msgid "Add a credential for this app."
 msgstr "Ajouter un identifiant pour cette app."
 
@@ -39,7 +39,7 @@ msgstr "Les apps sont des identifiants machine. Créez-en une pour qu'une automa
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:151
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:141
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:163
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:166
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -52,7 +52,7 @@ msgid "Copy id"
 msgstr "Copier l'id"
 
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:111
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:134
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:137
 msgid "Create & reveal secret →"
 msgstr "Créer & révéler le secret →"
 
@@ -61,7 +61,7 @@ msgid "Create your first app"
 msgstr "Créez votre première app"
 
 #: src/modules/features/apps/presentation/ui/components/AppCard.tsx:80
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:99
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:102
 msgid "created"
 msgstr "créé le"
 
@@ -69,7 +69,7 @@ msgstr "créé le"
 msgid "Created"
 msgstr "Créé le"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:54
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:57
 msgid "Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret."
 msgstr "Identifiants pour authentifier cette app. Désactiver coupe les sessions actives immédiatement ; révoquer supprime le secret."
 
@@ -85,7 +85,7 @@ msgstr "Supprimer"
 msgid "Delete app?"
 msgstr "Supprimer l'app ?"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:94
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:97
 msgid "disabled"
 msgstr "désactivé"
 
@@ -123,8 +123,8 @@ msgstr "Nom"
 msgid "New App"
 msgstr "Nouvelle app"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:62
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:130
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:65
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:133
 msgid "New secret"
 msgstr "Nouveau secret"
 
@@ -132,7 +132,7 @@ msgstr "Nouveau secret"
 msgid "No apps yet"
 msgstr "Aucune app pour l'instant"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:73
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:76
 msgid "No secrets. Create one so this app can authenticate."
 msgstr "Aucun secret. Créez-en un pour que cette app puisse s'authentifier."
 
@@ -140,15 +140,15 @@ msgstr "Aucun secret. Créez-en un pour que cette app puisse s'authentifier."
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:171
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:174
 msgid "Revoke"
 msgstr "Révoquer"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:152
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:155
 msgid "Revoke secret?"
 msgstr "Révoquer le secret ?"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:51
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:54
 msgid "Secrets"
 msgstr "Secrets"
 
@@ -160,7 +160,7 @@ msgstr "Service"
 msgid "Status"
 msgstr "Statut"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:155
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:158
 msgid "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
 msgstr "Supprime définitivement le secret et coupe immédiatement toute session qui l'utilise. Irréversible."
 

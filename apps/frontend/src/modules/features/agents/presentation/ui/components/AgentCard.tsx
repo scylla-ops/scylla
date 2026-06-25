@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@shadcn/dropdown-menu.tsx';
-import type { Agent } from '@/modules/features/agents/domain/models/agent.model.ts';
+import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 import { AgentIdLink } from '@/modules/features/agents/presentation/ui/components/AgentIdLink.tsx';
 import { cn } from '@shared/presentation/utils';
 import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
@@ -17,7 +17,7 @@ import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 interface AgentCardProps {
-  agent: Agent;
+  agent: AgentEntity;
   onRequestDelete: (id: string) => void;
 }
 

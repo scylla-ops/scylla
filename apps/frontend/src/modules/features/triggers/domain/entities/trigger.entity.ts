@@ -2,7 +2,7 @@ import type {
   TriggerInput,
   TriggerSource,
   TriggerSourceDraft,
-} from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+} from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 
 /**
  * A stored, pipeline-scoped initiator that launches a run without a human

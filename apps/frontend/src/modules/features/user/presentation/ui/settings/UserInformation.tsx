@@ -12,7 +12,7 @@ import {
   type FormItem,
   FormItemType,
   type FormChange,
-} from '@shared/presentation/models/scylla-form.model.ts';
+} from '@shared/presentation/structs/scylla-form.struct.ts';
 import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 import { Trans } from '@lingui/react/macro';
 import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';

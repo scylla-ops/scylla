@@ -6,7 +6,7 @@ import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.
 import {
   DEFAULT_PAGE_SIZE,
   type PaginationParams,
-} from '@shared/domain/models/pagination.model.ts';
+} from '@shared/domain/structs/pagination.struct.ts';
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 

@@ -4,7 +4,7 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   PrincipalKind,
   PermissionScope,
-} from '@/modules/features/permission/domain/models/permission.model.ts';
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import type { GrpcPermissionRemoteDataSource } from '@/modules/features/permission/infrastructure/data/grpc-permission-remote.data-source.ts';
 import type {
   RoleCreationData,

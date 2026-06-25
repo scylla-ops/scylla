@@ -1,4 +1,4 @@
-import type { PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import type { PermissionScope } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 /**
  * A role that may be assigned via a grant.
@@ -13,4 +13,3 @@ export interface GrantableRoleEntity {
   kind: string;
   description: string;
 }
-

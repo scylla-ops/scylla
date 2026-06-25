@@ -3,7 +3,7 @@ import {
   DEFAULT_PAGE_SIZE,
   type PaginationInfo,
   type PaginationParams,
-} from '@shared/domain/models/pagination.model.ts';
+} from '@shared/domain/structs/pagination.struct.ts';
 
 interface UsePaginationOptions {
   initialPage?: number;

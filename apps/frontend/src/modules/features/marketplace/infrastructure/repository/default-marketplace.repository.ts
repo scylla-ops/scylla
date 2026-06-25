@@ -1,10 +1,10 @@
 import type MarketplaceRepository from '@/modules/features/marketplace/domain/repository/marketplace.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { MarketItemModel } from '@/modules/features/marketplace/domain/models/market-item.model.ts';
+import type { MarketItem } from '@/modules/features/marketplace/domain/structs/market-item.struct.ts';
 
 export class DefaultMarketplaceRepository implements MarketplaceRepository {
   //TODO: replace this fake data with real api data by creating a data layer data-sources class (MarketplaceRemoteStore)
-  getMarketplace(): Promise<ScyllaResult<MarketItemModel[]>> {
+  getMarketplace(): Promise<ScyllaResult<MarketItem[]>> {
     return Promise.resolve(
       ScyllaResult.try(
         () => [

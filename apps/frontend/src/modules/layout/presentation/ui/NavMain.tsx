@@ -1,8 +1,8 @@
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import type {
   NavItem,
-  NavSectionModel,
-} from '@/modules/layout/presentation/models/nav-section.model.ts';
+  NavSection,
+} from '@/modules/layout/presentation/structs/nav-section.struct.ts';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -19,7 +19,7 @@ import { useLocation } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 
 interface NavMainProps {
-  sections: NavSectionModel[];
+  sections: NavSection[];
 }
 
 export function NavMain({ sections }: NavMainProps) {

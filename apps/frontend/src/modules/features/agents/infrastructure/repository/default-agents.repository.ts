@@ -3,19 +3,19 @@ import type { AgentsRemoteDataSource } from '@/modules/features/agents/infrastru
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   CreatedAgent,
-  Agent,
   AgentStats,
-} from '@/modules/features/agents/domain/models/agent.model.ts';
+} from '@/modules/features/agents/domain/structs/agent.struct.ts';
+import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 
 /** AgentsRepository backed by the remote (gRPC) data source. */
 export class DefaultAgentsRepository implements AgentsRepository {
   constructor(private remoteDataSource: AgentsRemoteDataSource) {}
 
-  listAgents(organizationId: string): Promise<ScyllaResult<Agent[]>> {
+  listAgents(organizationId: string): Promise<ScyllaResult<AgentEntity[]>> {
     return this.remoteDataSource.listAgents(organizationId);
   }
 
-  getAgent(agentId: string): Promise<ScyllaResult<Agent>> {
+  getAgent(agentId: string): Promise<ScyllaResult<AgentEntity>> {
     return this.remoteDataSource.getAgent(agentId);
   }
 

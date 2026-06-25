@@ -5,6 +5,6 @@ export interface BreadcrumbParams {
   userId?: string;
 }
 
-export interface RouteHandleModel {
+export interface RouteHandle {
   breadcrumb?: string | ((params: BreadcrumbParams) => string);
 }

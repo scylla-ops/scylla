@@ -1,4 +1,7 @@
-import { Permission, PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import {
+  Permission,
+  PermissionScope,
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 // ── Scope ─────────────────────────────────────────────────────────────────────
 
@@ -38,4 +41,3 @@ export const errorMessage = (error: unknown): string => {
   if (typeof error === 'string') return error;
   return JSON.stringify(error);
 };
-

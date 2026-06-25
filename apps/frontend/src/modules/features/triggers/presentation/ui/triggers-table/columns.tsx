@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Clock, Webhook } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Switch } from '@shadcn/switch.tsx';
-import { TriggerKind } from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 import { TriggerSourceCell } from './TriggerSourceCell.tsx';
 import { TriggerStatusCell } from './TriggerStatusCell.tsx';

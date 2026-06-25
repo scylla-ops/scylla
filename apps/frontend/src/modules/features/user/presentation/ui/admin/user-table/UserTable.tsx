@@ -1,10 +1,10 @@
 import { DataTable } from '@shared/presentation/ui';
 import { createUserColumns } from '@/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx';
-import type { User } from '@/modules/features/user/domain/models/user.model.ts';
+import type { UserEntity } from '@/modules/features/user/domain/entities/user.entity.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 
 interface UserTableProps {
-  readonly data?: User[];
+  readonly data?: UserEntity[];
   onView: (userId: string) => void;
 }
 

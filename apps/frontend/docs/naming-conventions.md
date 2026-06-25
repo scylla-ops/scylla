@@ -13,7 +13,7 @@ All files and folders use **kebab-case**:
 ```
 use-create-user.ts
 user-remote.data-source.ts
-pagination.model.ts
+pagination.struct.ts
 ```
 
 ### 1.2 File Suffixes
@@ -29,9 +29,9 @@ Files are suffixed by their role to make intent clear at a glance:
 | **Data source interface** | `.data-source.ts` | `user-remote.data-source.ts` |
 | **Data source implementation** | `.data-source.impl.ts` | `user-remote.data-source.impl.ts` |
 | **Mapper** | `.mapper.ts` | `grpc-user.mapper.ts` |
-| **Domain entity** | `.entity.ts` | `secret.entity.ts`, `role.entity.ts`, `grant.entity.ts` |
-| **Domain model (value object)** | `.model.ts` | `permission.model.ts`, `pagination.model.ts` |
-| **Presentation model** | `.model.ts` | `scylla-form.model.ts`, `route-handle.model.ts` |
+| **Domain entity** | `.entity.ts` | `secret.entity.ts`, `role.entity.ts`, `user.entity.ts` |
+| **Domain struct (value object / enum / DTO / wrapper)** | `.struct.ts` | `permission.struct.ts`, `pagination.struct.ts` |
+| **Presentation struct** | `.struct.ts` | `scylla-form.struct.ts`, `route-handle.struct.ts` |
 | **Hook** | `use-{name}.ts` | `use-create-user.ts`, `use-selection.ts` |
 | **Zustand store** | `use-{name}.store.ts` | `use-context.store.ts`, `use-selection.store.ts` |
 | **DI module** | `.module.ts` | `user.module.ts`, `pipeline.module.ts` |
@@ -74,29 +74,29 @@ type FormItem = FormItemBase & (FormInput | FormSelect);
 type PipelineTableProps = { ... };
 ```
 
-### 2.2 Domain Entities & Value Objects
+### 2.2 Domain Entities & Structs
 
-The domain layer distinguishes **entities** (identity-bearing business objects, in `domain/entities/*.entity.ts`) from **value-object models** (no identity — enums, scopes, shared primitives — in `domain/models/*.model.ts`). See `architecture.md` §3.1 for the rationale.
+The domain layer distinguishes **entities** (identity-bearing business objects, in `domain/entities/*.entity.ts`) from **structs** (plain data shapes with no identity — value objects, enums, DTOs, and list/result wrappers — in `domain/structs/*.struct.ts`). See `architecture.md` §3.1 for the rationale.
 
 | Kind | File | Type name | Example |
 |------|------|-----------|---------|
-| Entity | `{name}.entity.ts` | `{Name}Entity` | `secret.entity.ts` → `SecretEntity`; `role.entity.ts` → `RoleEntity` |
+| Entity | `{name}.entity.ts` | `{Name}Entity` | `secret.entity.ts` → `SecretEntity`; `user.entity.ts` → `UserEntity` |
 | Entity input/creation shape | (same entity file) | `Create{Name}Input` / `{Name}CreationData` | `CreateSecretInput`, `RoleCreationData` |
 | Entity behavior (pure fn) | (same entity file) | `camelCase` verb | `updateRole(role, changes)` |
-| Value object / enum | `{name}.model.ts` | plain PascalCase | `Permission`, `PermissionScope`, `PrincipalKind` |
+| Struct (value object / enum / DTO / wrapper) | `{name}.struct.ts` | plain PascalCase, no suffix | `Permission`, `PermissionScope`, `ProjectList`, `CreatedApp` |
 
 ```typescript
 // secret.entity.ts
 export interface SecretEntity { id: string; projectId: string; name: string; /* ... */ }
 export interface CreateSecretInput { projectId: string; name: string; value: string; /* ... */ }
 
-// permission.model.ts
+// permission.struct.ts
 export enum PermissionScope { UNSPECIFIED = 0, SYSTEM = 1, ORGANIZATION = 2, PROJECT = 3 }
 ```
 
-The `Entity` suffix is the identity signal — use it for the thing the feature *owns*; keep enums and value objects suffix-free in `models/`.
+The `Entity` suffix is the identity signal — use it for the thing the feature *owns*; keep value objects, enums, and DTOs suffix-free in `structs/`. The suffix also keeps domain types distinct from the proto-generated type of the same bare name (e.g. domain `UserEntity` vs proto `User`, aliased in mappers).
 
-> Older modules (`jobs`, `pipeline`, `user`) keep their entities as plain `{Name}` in `models/*.model.ts` (e.g. `Job`, `Pipeline`, `User`). New code should use the `entities/` + `{Name}Entity` convention.
+> There are **no `*.model.ts` files** anywhere in the codebase — every domain or presentation type is an entity (`*.entity.ts`) or a struct (`*.struct.ts`).
 
 ### 2.3 Classes
 
@@ -254,7 +254,7 @@ queryClient.invalidateQueries({ queryKey: JOBS_QUERY_KEY(pipelineId), exact: tru
 | Folder | kebab-case | `data-sources/` |
 | Interface / Type | PascalCase | `UserRepository` |
 | Domain entity | PascalCase + `Entity` (`*.entity.ts`) | `SecretEntity`, `RoleEntity` |
-| Value object / enum | PascalCase (`*.model.ts`) | `Permission`, `PermissionScope` |
+| Struct (value object / enum / DTO) | PascalCase, no suffix (`*.struct.ts`) | `Permission`, `PermissionScope`, `ProjectList` |
 | Class | PascalCase + suffix | `GetUsersUseCase` |
 | Hook | camelCase `use*` | `useCreateUser` |
 | Store | camelCase `use*Store` | `useSelectionStore` |

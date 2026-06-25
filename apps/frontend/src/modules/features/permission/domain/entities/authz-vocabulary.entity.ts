@@ -1,4 +1,7 @@
-import type { Permission, PermissionScope } from '@/modules/features/permission/domain/models/permission.model.ts';
+import type {
+  Permission,
+  PermissionScope,
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 /**
  * One entry of the authz vocabulary: a permission and the narrowest scope
@@ -21,4 +24,3 @@ export interface AuthzActionEntity {
 export interface AuthzVocabularyEntity {
   actions: AuthzActionEntity[];
 }
-

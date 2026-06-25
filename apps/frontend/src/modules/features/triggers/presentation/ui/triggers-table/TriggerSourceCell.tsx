@@ -1,4 +1,4 @@
-import { TriggerKind } from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 import { convertCronToLocal } from '@/modules/features/triggers/presentation/utils/trigger-form.utils.ts';
 import { CopyableText } from '@shared/presentation/ui/data-display/CopyableText.tsx';

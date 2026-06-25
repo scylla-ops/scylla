@@ -1,7 +1,7 @@
 import { Badge } from '@shadcn';
 import { CheckCircle2, MinusCircle, XCircle } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { TriggerKind } from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 import { formatDate } from '@shared/utils/date-utils.ts';
 

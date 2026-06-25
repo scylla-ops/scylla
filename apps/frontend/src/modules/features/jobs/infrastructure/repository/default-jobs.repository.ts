@@ -1,8 +1,9 @@
 import type { JobsRepository } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
-import type { Job, JobLog, JobLogStream } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
+import type { JobLog, JobLogStream } from '@/modules/features/jobs/domain/structs/job.struct.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
-import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import { GrpcJobMapper } from '@/modules/features/jobs/infrastructure/repository/mappers/grpc-job.mapper.ts';
 
@@ -12,13 +13,13 @@ export class DefaultJobsRepository implements JobsRepository {
   public async getByPipelineId(
     pipelineId: string,
     pagination?: PaginationParams,
-  ): Promise<ScyllaResult<PaginatedList<Job>>> {
+  ): Promise<ScyllaResult<PaginatedList<JobEntity>>> {
     return (await this.remoteDataSource.getByPipelineId(pipelineId, pagination)).map(
       GrpcJobMapper.toDomainList,
     );
   }
 
-  public async getById(jobId: string): Promise<ScyllaResult<Job>> {
+  public async getById(jobId: string): Promise<ScyllaResult<JobEntity>> {
     return (await this.remoteDataSource.getById(jobId)).map(GrpcJobMapper.toDomain);
   }
 

@@ -1,5 +1,9 @@
 import { FormDialog } from '@shared/presentation/ui';
-import { type FormChange, type FormItem, FormItemType } from '@shared/presentation/models/scylla-form.model.ts';
+import {
+  type FormChange,
+  type FormItem,
+  FormItemType,
+} from '@shared/presentation/structs/scylla-form.struct.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
 
 interface StartNodeFormDialogProps {
@@ -9,7 +13,12 @@ interface StartNodeFormDialogProps {
   onSave: (name: string) => void;
 }
 
-export function StartNodeFormDialog({ open, onOpenChange, currentName, onSave }: StartNodeFormDialogProps) {
+export function StartNodeFormDialog({
+  open,
+  onOpenChange,
+  currentName,
+  onSave,
+}: StartNodeFormDialogProps) {
   const { t } = useLingui();
 
   const items: FormItem[] = [
@@ -44,4 +53,3 @@ export function StartNodeFormDialog({ open, onOpenChange, currentName, onSave }:
     />
   );
 }
-

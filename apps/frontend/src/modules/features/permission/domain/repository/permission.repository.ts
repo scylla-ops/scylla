@@ -3,7 +3,7 @@ import type {
   Permission,
   PermissionScope,
   PrincipalKind,
-} from '@/modules/features/permission/domain/models/permission.model.ts';
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import type {
   RoleCreationData,
   RoleEntity,

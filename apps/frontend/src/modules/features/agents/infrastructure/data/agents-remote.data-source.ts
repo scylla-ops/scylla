@@ -2,9 +2,9 @@ import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-tran
 import { AgentAdminServiceClient } from '@/generated/agent_admin.client.ts';
 import type {
   CreatedAgent,
-  Agent,
   AgentStats,
-} from '@/modules/features/agents/domain/models/agent.model.ts';
+} from '@/modules/features/agents/domain/structs/agent.struct.ts';
+import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 import type { AgentsRepository } from '@/modules/features/agents/domain/repository/agents.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
@@ -16,7 +16,7 @@ export type AgentsRemoteDataSource = AgentsRepository;
 export class AgentsRemoteDataSourceImpl implements AgentsRemoteDataSource {
   constructor(private grpcTransport: CoreGrpcTransport) {}
 
-  listAgents(organizationId: string): Promise<ScyllaResult<Agent[]>> {
+  listAgents(organizationId: string): Promise<ScyllaResult<AgentEntity[]>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AgentAdminServiceClient(this.grpcTransport.getTransport());
       const response = await client.listAgents({ organizationId: wrapId(organizationId) }).response;
@@ -24,7 +24,7 @@ export class AgentsRemoteDataSourceImpl implements AgentsRemoteDataSource {
     }, 'Failed to list agents');
   }
 
-  getAgent(agentId: string): Promise<ScyllaResult<Agent>> {
+  getAgent(agentId: string): Promise<ScyllaResult<AgentEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AgentAdminServiceClient(this.grpcTransport.getTransport());
       const response = await client.getAgent({ id: wrapId(agentId) }).response;

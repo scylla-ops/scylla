@@ -71,7 +71,7 @@ Global infrastructure and app-level concerns:
 | `infrastructure/grpc/` | `CoreGrpcTransport` — shared gRPC-Web transport |
 | `presentation/ui/router/` | `CoreRouter` (route definitions), `AuthGuard`, `ContextCleanerWrapper` |
 | `presentation/providers/` | `DependenciesProvider` (React context for DI) |
-| `presentation/models/` | `RouteHandle`, `ScyllaForm` model types |
+| `presentation/structs/` | `RouteHandle`, `ScyllaForm` shape types |
 
 ### 2.2 Feature Modules
 
@@ -108,12 +108,12 @@ Reusable across all features — **no business logic**.
 
 | Folder | Content |
 |--------|---------|
-| `domain/models/` | `PaginationInfo`, `PaginationParams` |
+| `domain/structs/` | `PaginationInfo`, `PaginationParams` |
 | `presentation/ui/` | `FeatureHeader`, `FormDialog`, `ScyllaForm`, `DataTable`, `Pagination`, `ErrorState`, `ConfirmOperationAlertDialog`, `ListCard` |
 | `presentation/ui/shadcn/` | shadcn/ui primitives |
 | `presentation/hooks/` | `useSelection`, `usePagination`, `usePipelineJobs`, `useScyllaNavigate` |
 | `presentation/stores/` | `useContextStore` (org/project context), `useSelectionStore` (generic selection) |
-| `presentation/models/` | `ScyllaForm` model (`FormItem`, `FormChange`, `FormItemType`) |
+| `presentation/structs/` | `ScyllaForm` shapes (`FormItem`, `FormChange`, `FormItemType`) |
 | `utils/` | `ScyllaResult`, `dateUtils`, `jobStatusMapper` |
 
 ---
@@ -130,7 +130,7 @@ feature/
 │   ├── usecases/
 │   ├── repository/              → Repository interfaces
 │   ├── entities/                → Domain entities ({Name}Entity, identity objects)
-│   └── models/                  → Value objects / enums (no identity)
+│   └── structs/                 → Plain data shapes: value objects, enums, DTOs, wrappers (no identity)
 ├── infrastructure/              → Technical implementations
 │   ├── repository/
 │   │   ├── feature.repository.ts        → Repository implementation
@@ -155,7 +155,7 @@ feature/
 - **Use Cases**: Single-responsibility classes that call repository methods
 - **Repository Interfaces**: Abstract contracts — no knowledge of gRPC or HTTP
 - **Entities** (`domain/entities/*.entity.ts`): identity-bearing business objects, independent from proto-generated types
-- **Models** (`domain/models/*.model.ts`): value objects, enums, and shared primitives that have no identity of their own
+- **Structs** (`domain/structs/*.struct.ts`): plain data shapes with no identity — value objects, enums, DTOs, and list/result wrappers
 
 ```typescript
 export class GetUsersUseCase {
@@ -164,17 +164,17 @@ export class GetUsersUseCase {
 }
 ```
 
-#### Entities vs. Models
+#### Entities vs. Structs
 
 The domain layer separates two kinds of types. Both are pure and proto-independent, but they answer different questions:
 
-| | **Entity** (`entities/*.entity.ts`) | **Model** (`models/*.model.ts`) |
+| | **Entity** (`entities/*.entity.ts`) | **Struct** (`structs/*.struct.ts`) |
 |---|---|---|
-| Question | "What *thing* does this feature own?" | "What *values* describe those things?" |
+| Question | "What *thing* does this feature own?" | "What *plain shapes* describe or move data?" |
 | Identity | Yes — has an `id` (or a stable key) | No — interchangeable by value |
-| Examples | `SecretEntity`, `RoleEntity`, `GrantEntity`, `EffectivePermissionsEntity` | `Permission`, `PermissionScope`, `PrincipalKind` (enums) |
-| Naming | `{Name}Entity` | plain PascalCase (often an enum) |
-| One file per | aggregate / entity | cohesive group of value objects |
+| Examples | `SecretEntity`, `RoleEntity`, `UserEntity`, `PipelineEntity` | `Permission`, `PermissionScope` (enums), `ProjectList`, `CreatedApp`, `PipelineMetadata` |
+| Naming | `{Name}Entity` | plain PascalCase (no suffix) |
+| One file per | aggregate / entity | cohesive group of related shapes |
 
 An entity file is the home for everything that revolves around that entity, not just the read shape:
 
@@ -210,9 +210,9 @@ export const updateRole = (role: RoleEntity, changes: Partial<RoleEntity>): Role
 };
 ```
 
-Value-object **models** are shared across entities and use cases — e.g. `permission.model.ts` exports the `Permission`, `PermissionScope`, and `PrincipalKind` enums that `RoleEntity`, `GrantEntity`, and `EffectivePermissionsEntity` all reference.
+**Structs** are shared across entities and use cases — e.g. `permission.struct.ts` exports the `Permission`, `PermissionScope`, and `PrincipalKind` enums that `RoleEntity`, `GrantEntity`, and `EffectivePermissionsEntity` all reference; `project.struct.ts` exports the `ProjectList` wrapper around `ProjectEntity`. A struct file may import an entity (e.g. a `CreatedApp` result wrapping an `AppEntity`), but never the reverse direction of identity ownership.
 
-> **Historical note:** older modules (`jobs`, `pipeline`, `user`) predate this split and keep their entities in `models/*.model.ts` (e.g. `Job`, `Pipeline`, `User`). The `entities/` vs `models/` separation was introduced with the newer modules (`secret`, `permission`) and is the convention going forward. When a feature has both a clear entity and supporting value objects, prefer the split.
+> There are **no `*.model.ts` files** — every domain type is either an entity (`*.entity.ts` / `{Name}Entity`) or a struct (`*.struct.ts` / plain name). The `Entity` suffix is the identity signal and also disambiguates from the proto-generated type of the same bare name (aliased in mappers, e.g. `User as ProtoUser`). Presentation-layer view models follow the same rule under `presentation/structs/`.
 
 Mappers convert proto → entity (one `Grpc{Entity}Mapper` per entity, e.g. `GrpcSecretMapper.toDomain` returns a `SecretEntity`).
 
@@ -222,7 +222,7 @@ Mappers convert proto → entity (one `Grpc{Entity}Mapper` per entity, e.g. `Grp
 
 - **Data Sources**: Interface + implementation for each transport (gRPC, localStorage, etc.)
 - **Repository Impl**: Coordinates data sources, maps infrastructure types to domain types
-- **Mappers**: Transform proto-generated types ↔ domain models
+- **Mappers**: Transform proto-generated types ↔ domain entities/structs
 
 ```typescript
 export class UserRepositoryImpl implements UserRepository {

@@ -1,6 +1,8 @@
-import StatusIndicator, { type StatusState } from '@shared/presentation/ui/data-display/status-indicator.tsx';
+import StatusIndicator, {
+  type StatusState,
+} from '@shared/presentation/ui/data-display/status-indicator.tsx';
 import { Trans } from '@lingui/react/macro';
-import type { PipelineMetadata } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 
 type PipelineStatusProps = {
   pipeline: PipelineMetadata;
