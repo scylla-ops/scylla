@@ -30,7 +30,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       const lastJob = meta.jobsByPipelineId.get(row.original.id)?.[0];
       return <PipelineStatus status={toStatusState(lastJob?.status)} pipeline={row.original} />;
     },
-    size: 240,
+    size: 350,
   },
   {
     id: 'history',
@@ -46,7 +46,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         />
       );
     },
-    size: 300,
+    size: 400,
   },
   {
     id: 'metadata',
@@ -55,7 +55,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       const jobs = meta.jobsByPipelineId.get(row.original.id) ?? [];
       return <PipelineLastJob jobs={jobs} />;
     },
-    size: 140,
+    size: 200,
   },
   {
     id: 'actions',
@@ -86,6 +86,6 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         isDuplicating={meta.duplicatingPipelineId === row.original.id}
       />
     ),
-    size: 140,
+    size: 200,
   },
 ];
