@@ -5,13 +5,14 @@ import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts'
 import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 import { usePagination } from '@shared/presentation/hooks/use-pagination.ts';
 import { useEffect } from 'react';
+import { JOBS_QUERY_KEY } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-jobs.ts';
 
 export const usePipelinesJobs = (pipelineId: string) => {
   const { getPipelineJobs } = useDependencies().jobs;
   const { paginationParams, paginationInfo, updatePaginationInfo, setPage } = usePagination();
 
   const { data, isLoading, error, isError, refetch } = useQuery<PaginatedList<Job>, ScyllaError>({
-    queryKey: ['jobs', 'pipeline', pipelineId, paginationParams],
+    queryKey: [...JOBS_QUERY_KEY(pipelineId), paginationParams],
     queryFn: async () => (await getPipelineJobs.execute(pipelineId, paginationParams)).unwrap(),
     enabled: !!pipelineId,
     staleTime: 0,

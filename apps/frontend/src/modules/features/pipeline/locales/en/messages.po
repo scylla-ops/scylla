@@ -102,8 +102,8 @@ msgstr "Define a new pipeline step with a unique ID and clear inputs for the com
 msgid "Draft — not created yet"
 msgstr "Draft — not created yet"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:83
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:119
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:85
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:129
 msgid "Duplicate"
 msgstr "Duplicate"
 
@@ -139,7 +139,7 @@ msgstr "e.g., cargo build && cargo test"
 msgid "e.g., my-pipeline"
 msgstr "e.g., my-pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:79
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:81
 msgid "Edit"
 msgstr "Edit"
 
@@ -186,8 +186,8 @@ msgstr "Literal"
 #~ msgid "Modify the node properties."
 #~ msgstr "Modify the node properties."
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:100
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:136
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:110
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:156
 msgid "More options"
 msgstr "More options"
 
@@ -237,8 +237,8 @@ msgstr "Reference a secret"
 #~ msgid "relative to the job workspace"
 #~ msgstr "relative to the job workspace"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:75
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:109
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:77
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:119
 msgid "Run"
 msgstr "Run"
 
@@ -297,8 +297,8 @@ msgstr "Status"
 #~ msgid "This feature will be available soon"
 #~ msgstr "This feature will be available soon"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:94
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:130
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:96
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:141
 msgid "Triggers"
 msgstr "Triggers"
 
@@ -314,7 +314,7 @@ msgstr "Update the step details and dependencies."
 msgid "value"
 msgstr "value"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:126
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:136
 msgid "View Jobs"
 msgstr "View Jobs"
 

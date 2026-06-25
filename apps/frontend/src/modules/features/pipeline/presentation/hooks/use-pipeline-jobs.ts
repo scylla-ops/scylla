@@ -5,8 +5,7 @@ import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
 
 const MAX_JOBS_PER_PIPELINE = 10;
 
-export const JOBS_QUERY_KEY = (pipelineId: string) =>
-  ['jobs', 'pipeline', pipelineId, MAX_JOBS_PER_PIPELINE] as const;
+export const JOBS_QUERY_KEY = (pipelineId: string) => ['jobs', 'pipeline', pipelineId] as const;
 
 /**
  * Fetches jobs for multiple pipelines in parallel.

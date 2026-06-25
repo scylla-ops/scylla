@@ -33,7 +33,7 @@ msgstr "A trigger starts a run of this pipeline automatically."
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:85
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:81
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr "Add a cron schedule or webhook to start runs automatically."
 
@@ -166,7 +166,7 @@ msgstr "next scheduled run (Local time)"
 #~ msgid "next scheduled run (UTC)"
 #~ msgstr "next scheduled run (UTC)"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:82
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
 msgid "No triggers yet"
 msgstr "No triggers yet"
 
