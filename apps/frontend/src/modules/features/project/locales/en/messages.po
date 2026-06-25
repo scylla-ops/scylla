@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:28
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:32
 msgid "Add a description..."
 msgstr "Add a description..."
 
@@ -34,7 +34,7 @@ msgstr "Create Project"
 #~ msgstr "Creating..."
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:35
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:27
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:31
 msgid "Description"
 msgstr "Description"
 
@@ -50,7 +50,7 @@ msgstr "e.g., My project"
 msgid "Edit"
 msgstr "Edit"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:48
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:56
 msgid "Edit project"
 msgstr "Edit project"
 
@@ -87,7 +87,7 @@ msgstr "No organization selected"
 #~ msgstr "Project"
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:28
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:20
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:24
 msgid "Project name"
 msgstr "Project name"
 
@@ -95,11 +95,11 @@ msgstr "Project name"
 #~ msgid "Project name is required and you must select an organization."
 #~ msgstr "Project name is required and you must select an organization."
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:52
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:60
 msgid "Save"
 msgstr "Save"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:53
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:61
 msgid "Saving..."
 msgstr "Saving..."
 
@@ -115,7 +115,7 @@ msgstr "Select"
 msgid "Select an organization from the sidebar to view its projects"
 msgstr "Select an organization from the sidebar to view its projects"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:49
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:57
 msgid "Update the project name and description."
 msgstr "Update the project name and description."
 
