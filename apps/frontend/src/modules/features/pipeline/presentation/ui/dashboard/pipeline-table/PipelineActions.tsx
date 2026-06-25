@@ -10,6 +10,7 @@ import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
+import { useNewFeature } from '@shared/presentation/hooks/use-new-feature.ts';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
@@ -19,6 +20,7 @@ type PipelineActionsProps = {
   onViewTriggers?: (e: SyntheticEvent) => void;
   onMore?: (e: SyntheticEvent) => void;
   isRunning?: boolean;
+  isDuplicating?: boolean;
 };
 
 /**
@@ -33,9 +35,11 @@ export const PipelineActions = ({
   onViewTriggers,
   onMore,
   isRunning,
+  isDuplicating,
 }: PipelineActionsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
+  const { isNew: isTriggersNew } = useNewFeature('triggers');
 
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
@@ -90,6 +94,14 @@ export const PipelineActions = ({
               <DropdownMenuItem onClick={onViewTriggers}>
                 <Zap className='w-4 h-4 mr-2' />
                 <Trans>Triggers</Trans>
+                {isTriggersNew && (
+                  <span className='relative inline-flex ml-2'>
+                    <span className='absolute inset-0 animate-ping rounded-full bg-primary opacity-40' />
+                    <span className='relative bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none'>
+                      New
+                    </span>
+                  </span>
+                )}
               </DropdownMenuItem>
             )}
             {onMore && (
@@ -106,19 +118,36 @@ export const PipelineActions = ({
             icon={isRunning ? Loader2 : PlayIcon}
             tooltip={<Trans>Run</Trans>}
             onClick={onRun}
+            disabled={isRunning}
             iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
           />
 
           <IconButton icon={EditIcon} tooltip={'Edit pipeline'} onClick={onEdit} />
 
-          <IconButton icon={Copy} tooltip={<Trans>Duplicate</Trans>} onClick={onDuplicate} />
+          <IconButton
+            icon={isDuplicating ? Loader2 : Copy}
+            tooltip={<Trans>Duplicate</Trans>}
+            onClick={onDuplicate}
+            disabled={isDuplicating}
+            iconClassName={isDuplicating ? 'animate-spin' : undefined}
+          />
 
           {onViewJobs && (
             <IconButton icon={ListChecks} tooltip={<Trans>View Jobs</Trans>} onClick={onViewJobs} />
           )}
 
           {onViewTriggers && (
-            <IconButton icon={Zap} tooltip={<Trans>Triggers</Trans>} onClick={onViewTriggers} />
+            <div className='relative'>
+              <IconButton icon={Zap} tooltip={<Trans>Triggers</Trans>} onClick={onViewTriggers} />
+              {isTriggersNew && (
+                <span className='absolute -top-1.5 -right-1.5 flex pointer-events-none'>
+                  <span className='absolute inset-0 animate-ping rounded-full bg-primary opacity-40' />
+                  <span className='relative bg-primary text-primary-foreground text-[10px] font-bold px-1 py-0.5 rounded-full leading-none'>
+                    New
+                  </span>
+                </span>
+              )}
+            </div>
           )}
 
           {onMore && (

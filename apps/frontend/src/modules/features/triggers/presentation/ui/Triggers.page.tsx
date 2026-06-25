@@ -12,6 +12,7 @@ import {
 import { TriggersTable } from '@/modules/features/triggers/presentation/ui/triggers-table/index.ts';
 import { TriggerFormDialog } from '@/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx';
 import type { CreatedTrigger } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
+import { useNewFeature } from '@shared/presentation/hooks/use-new-feature.ts';
 
 interface RevealedSecret {
   id: string;
@@ -24,6 +25,7 @@ export const TriggersPage = () => {
   const pipelineName = useContextStore(state => state.pipeline?.name) ?? '';
 
   const { triggers, isLoading, isError, error } = usePipelineTriggers(pipelineId ?? '');
+  const { isNew } = useNewFeature('triggers');
 
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [revealed, setRevealed] = useState<RevealedSecret | null>(null);
@@ -56,6 +58,7 @@ export const TriggersPage = () => {
         triggerIds={triggers.map(trigger => trigger.id)}
         pipelineId={pipelineId}
         onNew={() => setCreateOpen(true)}
+        isNew={isNew}
       />
 
       {triggers.length > 0 && <TriggersOverview triggers={triggers} />}

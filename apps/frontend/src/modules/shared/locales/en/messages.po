@@ -57,7 +57,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:82
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
 msgid "Clear"
 msgstr "Clear"
 
@@ -97,7 +97,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:99
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:108
 msgid "Delete"
 msgstr "Delete"
 
@@ -113,7 +113,7 @@ msgstr "Error"
 msgid "From source"
 msgstr "From source"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:66
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:75
 msgid "in total"
 msgstr "in total"
 
@@ -121,7 +121,7 @@ msgstr "in total"
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:105
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:114
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -205,7 +205,7 @@ msgstr "Secret created"
 msgid "Secret deleted"
 msgstr "Secret deleted"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:77
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
 msgid "Select all"
 msgstr "Select all"
 

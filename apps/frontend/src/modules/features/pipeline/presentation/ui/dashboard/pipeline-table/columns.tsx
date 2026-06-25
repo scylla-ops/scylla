@@ -15,6 +15,7 @@ type PipelineColumnMeta = {
   onViewTriggers: (pipeline: PipelineMetadata) => void;
 
   runningPipelines: Set<string>;
+  duplicatingPipelineId: string | undefined;
 
   jobsByPipelineId: Map<string, JobEntity[]>;
   isJobsLoading?: boolean;
@@ -82,6 +83,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
           meta.onViewTriggers(row.original);
         }}
         isRunning={meta.runningPipelines.has(row.original.id)}
+        isDuplicating={meta.duplicatingPipelineId === row.original.id}
       />
     ),
     size: 140,

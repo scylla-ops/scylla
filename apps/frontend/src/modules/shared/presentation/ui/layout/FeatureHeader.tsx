@@ -21,6 +21,8 @@ interface FeatureHeaderProps {
   onNew?: () => void;
   newLabel?: ReactNode;
   extraActions?: ReactNode;
+  /** Shows a pulsing "new feature" dot next to the title. */
+  isNew?: boolean;
 }
 
 export const FeatureHeader = ({
@@ -36,6 +38,7 @@ export const FeatureHeader = ({
   newLabel,
   extraActions,
   underLabel,
+  isNew = false,
 }: FeatureHeaderProps) => {
   const displayLabel = count && count > 1 ? (pluralLabel ?? label) : label;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -60,6 +63,12 @@ export const FeatureHeader = ({
             <h1 className='text-3xl font-bold tracking-tight'>
               {count !== undefined && <span className='text-primary mr-2 '>{count}</span>}
               <span className='text-foreground'>{displayLabel}</span>
+              {isNew && (
+                <span className='relative inline-flex ml-2 h-2.5 w-2.5 align-middle'>
+                  <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75' />
+                  <span className='relative inline-flex h-2.5 w-2.5 rounded-full bg-primary' />
+                </span>
+              )}
             </h1>
             {count !== undefined && (
               <span className='text-sm text-muted-foreground font-medium'>
