@@ -12,7 +12,7 @@ import {
   type FormChange,
   type FormItem,
   FormItemType,
-} from '@shared/presentation/models/scylla-form.model.ts';
+} from '@shared/presentation/structs/scylla-form.struct.ts';
 import { Field, FieldGroup, FieldLabel } from '@/modules/shared/presentation/ui/shadcn/field.tsx';
 import { useState } from 'react';
 
@@ -29,11 +29,14 @@ export const useFormState = (items: FormItem[]) => {
     setValues(prev => prev.map(field => (field.id === id ? { ...field, value } : field)));
   };
 
-  const reset = () => setValues(items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })));
+  const reset = () =>
+    setValues(items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })));
 
   const optionalIds = new Set(items.filter(item => item.optional).map(item => item.id));
   const patternMap = new Map(
-    items.filter(item => item.type === FormItemType.Input && item.pattern).map(item => [item.id, new RegExp((item as { pattern: string }).pattern)]),
+    items
+      .filter(item => item.type === FormItemType.Input && item.pattern)
+      .map(item => [item.id, new RegExp((item as { pattern: string }).pattern)]),
   );
   const isValid = values.every(v => {
     if (optionalIds.has(v.id)) return true;

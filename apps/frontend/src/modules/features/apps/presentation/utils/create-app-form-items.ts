@@ -1,4 +1,4 @@
-import { type FormItem, FormItemType } from '@shared/presentation/models/scylla-form.model.ts';
+import { type FormItem, FormItemType } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { t } from '@lingui/core/macro';
 
 export const createAppItems = (): FormItem[] => [

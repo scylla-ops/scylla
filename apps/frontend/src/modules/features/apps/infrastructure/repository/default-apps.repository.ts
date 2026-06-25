@@ -2,21 +2,23 @@ import type { AppsRepository } from '@/modules/features/apps/domain/repository/a
 import type { AppsRemoteDataSource } from '@/modules/features/apps/infrastructure/data/apps-remote.data-source.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
-  App,
-  AppSecret,
+  AppEntity,
+  AppSecretEntity,
+} from '@/modules/features/apps/domain/entities/app.entity.ts';
+import type {
   CreatedApp,
   CreatedAppSecret,
-} from '@/modules/features/apps/domain/models/app.model.ts';
+} from '@/modules/features/apps/domain/structs/app.struct.ts';
 
 /** AppsRepository backed by the remote (gRPC) data source. */
 export class DefaultAppsRepository implements AppsRepository {
   constructor(private remoteDataSource: AppsRemoteDataSource) {}
 
-  listApps(organizationId: string): Promise<ScyllaResult<App[]>> {
+  listApps(organizationId: string): Promise<ScyllaResult<AppEntity[]>> {
     return this.remoteDataSource.listApps(organizationId);
   }
 
-  getApp(appId: string): Promise<ScyllaResult<App>> {
+  getApp(appId: string): Promise<ScyllaResult<AppEntity>> {
     return this.remoteDataSource.getApp(appId);
   }
 
@@ -28,11 +30,11 @@ export class DefaultAppsRepository implements AppsRepository {
     return this.remoteDataSource.deleteApp(appId);
   }
 
-  setAppActive(appId: string, active: boolean): Promise<ScyllaResult<App>> {
+  setAppActive(appId: string, active: boolean): Promise<ScyllaResult<AppEntity>> {
     return this.remoteDataSource.setAppActive(appId, active);
   }
 
-  listAppSecrets(appId: string): Promise<ScyllaResult<AppSecret[]>> {
+  listAppSecrets(appId: string): Promise<ScyllaResult<AppSecretEntity[]>> {
     return this.remoteDataSource.listAppSecrets(appId);
   }
 
@@ -44,7 +46,7 @@ export class DefaultAppsRepository implements AppsRepository {
     return this.remoteDataSource.revokeAppSecret(secretId);
   }
 
-  setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecret>> {
+  setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecretEntity>> {
     return this.remoteDataSource.setAppSecretEnabled(secretId, enabled);
   }
 }

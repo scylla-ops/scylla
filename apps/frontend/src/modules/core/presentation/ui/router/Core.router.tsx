@@ -5,7 +5,7 @@ import { MarketplacePage } from '@/modules/features/marketplace/presentation/ui/
 import { Layout } from '@/modules/layout/presentation/ui/Layout.tsx';
 import { AuthGuard } from '@core/presentation/ui/router/Auth.guard.tsx';
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
-import type { BreadcrumbParams } from '@core/presentation/models/route-handle.model.ts';
+import type { BreadcrumbParams } from '@core/presentation/structs/route-handle.struct.ts';
 import { ContextCleanerWrapper } from './ContextCleaner.wrapper.tsx';
 import { JobsPage } from '@/modules/features/jobs/presentation/ui/Jobs.page.tsx';
 import { TriggersPage } from '@/modules/features/triggers/presentation/ui/Triggers.page.tsx';

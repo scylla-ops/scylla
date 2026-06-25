@@ -4,7 +4,7 @@ import type {
   EnvEntry,
   PipelineStep,
   Shell,
-} from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+} from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 
 function parseShell(value: unknown): Shell {
   return value === 'bash' ? 'bash' : 'sh';

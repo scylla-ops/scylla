@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Card, CardContent } from '@shadcn';
 import { cn } from '@shared/presentation/utils';
-import type { DailyOutcome } from '@/modules/features/agents/domain/models/agent.model.ts';
+import type { DailyOutcome } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 
 interface OutcomesChartProps {
   /** Per-day finished-job outcomes from the stats endpoint (gap days absent). */

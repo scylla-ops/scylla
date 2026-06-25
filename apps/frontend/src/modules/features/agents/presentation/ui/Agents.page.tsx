@@ -4,7 +4,7 @@ import { useAgents } from '@/modules/features/agents/presentation/hooks/use-agen
 import { createAgentItems } from '@/modules/features/agents/presentation/utils/create-agent-form-items.ts';
 import { AgentCard } from '@/modules/features/agents/presentation/ui/components/AgentCard.tsx';
 import { mockCardStats } from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
-import type { CreatedAgent } from '@/modules/features/agents/domain/models/agent.model.ts';
+import type { CreatedAgent } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import { FeatureHeader, FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Button, Card } from '@shadcn';
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
-import type { FormChange } from '@shared/presentation/models/scylla-form.model.ts';
+import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { Cpu, Plus } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 

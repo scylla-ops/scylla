@@ -1,11 +1,11 @@
 import type { JobsRepository } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
 export class GetJobUseCase {
   constructor(private readonly repository: JobsRepository) {}
 
-  public execute(jobId: string): Promise<ScyllaResult<Job>> {
+  public execute(jobId: string): Promise<ScyllaResult<JobEntity>> {
     return this.repository.getById(jobId);
   }
 }

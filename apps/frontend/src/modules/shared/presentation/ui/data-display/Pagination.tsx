@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts';
 import {
   Pagination as PaginationRoot,
   PaginationContent,

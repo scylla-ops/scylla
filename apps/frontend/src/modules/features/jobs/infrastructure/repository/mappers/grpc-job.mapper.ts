@@ -1,9 +1,9 @@
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import type {
-  Job,
   JobNodeExecution,
   JobLog,
   JobLogStream,
-} from '@/modules/features/jobs/domain/models/job.model.ts';
+} from '@/modules/features/jobs/domain/structs/job.struct.ts';
 import type {
   JobResponse,
   JobNodeResponse,
@@ -11,7 +11,7 @@ import type {
   ListJobsResponse,
   ListJobLogsResponse,
 } from '@/generated/job.ts';
-import type { PaginationInfo } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { JobLogsTailHandleRepo } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
 import {
@@ -30,7 +30,7 @@ export class GrpcJobMapper {
     };
   }
 
-  static toDomain(job: JobResponse): Job {
+  static toDomain(job: JobResponse): JobEntity {
     return {
       id: idValue(job.jobId),
       pipelineId: idValue(job.pipelineId),
@@ -43,7 +43,7 @@ export class GrpcJobMapper {
     };
   }
 
-  static toDomainList(response: ListJobsResponse): PaginatedList<Job> {
+  static toDomainList(response: ListJobsResponse): PaginatedList<JobEntity> {
     return {
       items: response.jobs.map(GrpcJobMapper.toDomain),
       pagination: response.pagination as PaginationInfo,

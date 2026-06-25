@@ -33,7 +33,7 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:85
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:81
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr ""
 
@@ -166,7 +166,7 @@ msgstr ""
 #~ msgid "next scheduled run (UTC)"
 #~ msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:75
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
 msgid "No triggers yet"
 msgstr ""
 

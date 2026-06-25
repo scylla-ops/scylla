@@ -5,7 +5,7 @@ import type {
   JobLogEntry,
 } from '@/generated/job.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 
 //tood: move this
 export interface JobLogsTailHandleRepo {

@@ -1,8 +1,8 @@
 import { useMatches, Link, useParams } from 'react-router-dom';
 import type {
   BreadcrumbParams,
-  RouteHandleModel,
-} from '@core/presentation/models/route-handle.model.ts';
+  RouteHandle,
+} from '@core/presentation/structs/route-handle.struct.ts';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -32,9 +32,9 @@ export const ScyllaBreadcrumbs = () => {
   };
 
   const crumbs = matches
-    .filter(match => (match.handle as RouteHandleModel | undefined)?.breadcrumb)
+    .filter(match => (match.handle as RouteHandle | undefined)?.breadcrumb)
     .map(match => {
-      const handle = match.handle as RouteHandleModel;
+      const handle = match.handle as RouteHandle;
       const label =
         typeof handle.breadcrumb === 'function' ? handle.breadcrumb(params) : handle.breadcrumb;
       return {

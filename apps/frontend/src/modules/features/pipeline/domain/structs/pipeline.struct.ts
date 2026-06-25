@@ -41,7 +41,3 @@ export interface ScriptPipelineStep extends PipelineStepBase {
 }
 
 export type PipelineStep = ExecPipelineStep | ScriptPipelineStep;
-
-export interface Pipeline extends PipelineIdentity {
-  nodes: PipelineStep[];
-}

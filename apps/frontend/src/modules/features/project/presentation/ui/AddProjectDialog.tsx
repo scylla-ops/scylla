@@ -7,7 +7,7 @@ import {
   type FormChange,
   type FormItem,
   FormItemType,
-} from '@shared/presentation/models/scylla-form.model.ts';
+} from '@shared/presentation/structs/scylla-form.struct.ts';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 

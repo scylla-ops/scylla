@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { JobStatus } from './JobStatus';
 import { JobTimeline } from './JobTimeline';
 import { JobActions } from './JobActions';
@@ -20,7 +20,7 @@ type JobColumnMeta = {
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-const JobDurationCell = ({ job }: { job: Job }) => {
+const JobDurationCell = ({ job }: { job: JobEntity }) => {
   const isLive = job.status === 'running' || job.status === 'pending';
   useNow(isLive);
 
@@ -33,7 +33,7 @@ const JobDurationCell = ({ job }: { job: Job }) => {
   );
 };
 
-export function createJobColumns(meta: JobColumnMeta): ColumnDef<Job>[] {
+export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobEntity>[] {
   return [
     {
       accessorKey: 'status',

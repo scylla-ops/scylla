@@ -1,8 +1,8 @@
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
 import type { ProjectRepository } from '@/modules/features/project/domain/repository/project.repository.ts';
-import type { PaginationParams } from '@shared/domain/models/pagination.model.ts';
+import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
+import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 import { GrpcProjectMapper } from '@/modules/features/project/infrastructure/repository/mappers/grpc-project.mapper.ts';
 
 export class DefaultProjectRepository implements ProjectRepository {
@@ -14,13 +14,21 @@ export class DefaultProjectRepository implements ProjectRepository {
     );
   }
 
-  async create(name: string, organizationId: string, description?: string): Promise<ScyllaResult<Project>> {
+  async create(
+    name: string,
+    organizationId: string,
+    description?: string,
+  ): Promise<ScyllaResult<ProjectEntity>> {
     return (await this._remoteDataSource.create(name, organizationId, description)).map(
       GrpcProjectMapper.toDomain,
     );
   }
 
-  async update(projectId: string, name?: string, description?: string): Promise<ScyllaResult<Project>> {
+  async update(
+    projectId: string,
+    name?: string,
+    description?: string,
+  ): Promise<ScyllaResult<ProjectEntity>> {
     return (await this._remoteDataSource.update(projectId, name, description)).map(
       GrpcProjectMapper.toDomain,
     );

@@ -4,7 +4,7 @@ import { BlueprintCanvas, type BlueprintCanvasHandle } from './BlueprintCanvas.t
 import { StepNodeFormDialog, type NodeFormValue } from './StepNodeFormDialog.tsx';
 import { StartNodeFormDialog } from './StartNodeFormDialog.tsx';
 import { type PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
-import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import { useDialog } from '@shared/presentation/hooks/use-dialog.ts';
 
 interface PipelineBlueprintProps {

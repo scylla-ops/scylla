@@ -1,5 +1,5 @@
 import type { Node, Edge, MarkerType } from 'reactflow';
-import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 
 export type PipelineNodeData = PipelineStep;
 
