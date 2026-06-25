@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApps } from '@/modules/features/apps/presentation/hooks/use-apps.ts';
 import { createAppItems } from '@/modules/features/apps/presentation/utils/create-app-form-items.ts';
 import { AppCard } from '@/modules/features/apps/presentation/ui/components/AppCard.tsx';
-import type { CreatedApp } from '@/modules/features/apps/domain/models/app.model.ts';
+import type { CreatedApp } from '@/modules/features/apps/domain/structs/app.struct.ts';
 import { FeatureHeader, FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Button, Card } from '@shadcn';
@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
-import type { FormChange } from '@shared/presentation/models/scylla-form.model.ts';
+import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { KeyRound, Plus } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 

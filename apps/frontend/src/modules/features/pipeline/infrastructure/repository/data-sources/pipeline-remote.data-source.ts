@@ -5,7 +5,7 @@ import type {
   PipelineResponse,
 } from '@/generated/pipeline.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { PaginationParams } from '@/modules/shared/domain/models/pagination.model.ts';
+import type { PaginationParams } from '@/modules/shared/domain/structs/pagination.struct.ts';
 
 export interface PipelineRemoteDataSource {
   getByProjectId(

@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-import type { Pipeline } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { PipelineEntity } from '@/modules/features/pipeline/domain/entities/pipeline.entity.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
@@ -16,7 +16,7 @@ export const useCreatePipeline = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (pipeline: Omit<Pipeline, 'id'>) =>
+    mutationFn: async (pipeline: Omit<PipelineEntity, 'id'>) =>
       (await createPipeline.execute(pipeline)).unwrap(),
     onSuccess: () => {
       toast.success(i18n._(ToastMessages.PIPELINE_CREATE));

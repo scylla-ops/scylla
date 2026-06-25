@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { User } from '@/modules/features/user/domain/models/user.model.ts';
+import type { UserEntity } from '@/modules/features/user/domain/entities/user.entity.ts';
 import { Eye } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { formatDate } from '@shared/utils/date-utils.ts';
@@ -10,7 +10,7 @@ type PipelineColumnMeta = {
   onView: (userId: string) => void;
 };
 
-export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<User>[] => [
+export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntity>[] => [
   {
     id: 'username',
     header: () => <Trans>User</Trans>,

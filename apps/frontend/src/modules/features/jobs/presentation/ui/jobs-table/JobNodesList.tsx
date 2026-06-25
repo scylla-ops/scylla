@@ -1,5 +1,5 @@
 import { Badge, Button } from '@/modules/shared/presentation/ui/shadcn';
-import type { JobNodeExecution } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobNodeExecution } from '@/modules/features/jobs/domain/structs/job.struct.ts';
 import { ChevronDown, ChevronRight, TerminalSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStatusConfig } from '@shared/utils/status-config.ts';

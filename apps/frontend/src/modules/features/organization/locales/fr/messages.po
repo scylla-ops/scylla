@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:27
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:35
 msgid "Add a description..."
 msgstr ""
 
@@ -37,7 +37,7 @@ msgstr "Créer l'organisation"
 msgid "Delete"
 msgstr ""
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:26
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:34
 #: src/modules/features/organization/presentation/utils/create-organization-form-items.ts:14
 msgid "Description"
 msgstr "Description"
@@ -54,7 +54,7 @@ msgstr "ex. L'organisation principale de notre entreprise"
 msgid "Edit"
 msgstr ""
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:47
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:59
 msgid "Edit organization"
 msgstr ""
 
@@ -62,20 +62,20 @@ msgstr ""
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Entrez un nom et une description pour votre nouvelle organisation. Vous pourrez les modifier plus tard dans les paramètres."
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:19
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:27
 #: src/modules/features/organization/presentation/utils/create-organization-form-items.ts:7
 msgid "Organization name"
 msgstr "Nom de l'organisation"
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:51
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:63
 msgid "Save"
 msgstr ""
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:52
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:64
 msgid "Saving..."
 msgstr ""
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:48
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:60
 msgid "Update the organization name and description."
 msgstr ""
 

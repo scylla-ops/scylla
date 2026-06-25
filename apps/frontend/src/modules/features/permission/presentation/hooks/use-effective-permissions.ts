@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import type { PrincipalKind } from '@/modules/features/permission/domain/models/permission.model.ts';
+import type { PrincipalKind } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 /**
  * On-demand "what can this principal do" lookup. Modelled as a mutation since

@@ -8,14 +8,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@shadcn/dropdown-menu.tsx';
-import type { App } from '@/modules/features/apps/domain/models/app.model.ts';
+import type { AppEntity } from '@/modules/features/apps/domain/entities/app.entity.ts';
 import { formatDate } from '@shared/utils/date-utils.ts';
 import { toast } from 'sonner';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 interface AppCardProps {
-  app: App;
+  app: AppEntity;
   onRequestDelete: (id: string) => void;
 }
 

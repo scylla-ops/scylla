@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
-import { TriggerKind } from '@/modules/features/triggers/domain/models/trigger-source.model.ts';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 
 export const TRIGGERS_QUERY_KEY = (pipelineId: string) =>
   ['triggers', 'pipeline', pipelineId] as const;

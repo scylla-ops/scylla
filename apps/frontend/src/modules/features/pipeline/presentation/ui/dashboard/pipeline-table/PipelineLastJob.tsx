@@ -5,10 +5,10 @@ import {
   getRelativeTime,
 } from '@shared/utils/date-utils.ts';
 import { useNow } from '@shared/presentation/hooks/use-now.ts';
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
 type PipelineMetadataProps = {
-  jobs: Job[];
+  jobs: JobEntity[];
 };
 
 /**

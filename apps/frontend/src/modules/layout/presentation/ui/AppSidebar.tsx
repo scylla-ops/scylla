@@ -16,10 +16,10 @@ import { AddOrganizationDialog } from '@/modules/features/organization/presentat
 import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-selector/CurrentContextDisplay.tsx';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { useLingui } from '@lingui/react/macro';
-import type { NavSectionModel } from '@/modules/layout/presentation/models/nav-section.model.ts';
+import type { NavSection } from '@/modules/layout/presentation/structs/nav-section.struct.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
-const useNavSections = (): NavSectionModel[] => {
+const useNavSections = (): NavSection[] => {
   const orgName = useContextStore(state => state.organization.name);
   const prefix = orgName ? `/${slugifyOrgName(orgName)}` : '';
 

@@ -31,10 +31,10 @@ msgstr "Organisation"
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:68
+#: src/modules/layout/presentation/ui/Layout.tsx:69
 msgid "To get started, please create your first organization."
 msgstr "Pour commencer, veuillez créer votre première organisation."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:65
+#: src/modules/layout/presentation/ui/Layout.tsx:66
 msgid "Welcome to Scylla!"
 msgstr "Bienvenue sur Scylla !"

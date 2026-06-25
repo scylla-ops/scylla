@@ -33,7 +33,7 @@ export const useRunPipeline = () => {
       } else {
         toast.success(i18n._(ToastMessages.PIPELINE_RUN));
       }
-      void queryClient.invalidateQueries({ queryKey: JOBS_QUERY_KEY(pipelineId), exact: true });
+      void queryClient.invalidateQueries({ queryKey: JOBS_QUERY_KEY(pipelineId) });
     },
   });
 };

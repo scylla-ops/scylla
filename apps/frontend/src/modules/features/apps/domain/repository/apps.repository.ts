@@ -1,23 +1,25 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
-  App,
-  AppSecret,
+  AppEntity,
+  AppSecretEntity,
+} from '@/modules/features/apps/domain/entities/app.entity.ts';
+import type {
   CreatedApp,
   CreatedAppSecret,
-} from '@/modules/features/apps/domain/models/app.model.ts';
+} from '@/modules/features/apps/domain/structs/app.struct.ts';
 
 /**
  * Repository interface for Apps. Apps are organization-scoped.
  */
 export interface AppsRepository {
-  listApps(organizationId: string): Promise<ScyllaResult<App[]>>;
-  getApp(appId: string): Promise<ScyllaResult<App>>;
+  listApps(organizationId: string): Promise<ScyllaResult<AppEntity[]>>;
+  getApp(appId: string): Promise<ScyllaResult<AppEntity>>;
   createApp(organizationId: string, name: string): Promise<ScyllaResult<CreatedApp>>;
   deleteApp(appId: string): Promise<ScyllaResult<boolean>>;
-  setAppActive(appId: string, active: boolean): Promise<ScyllaResult<App>>;
+  setAppActive(appId: string, active: boolean): Promise<ScyllaResult<AppEntity>>;
 
-  listAppSecrets(appId: string): Promise<ScyllaResult<AppSecret[]>>;
+  listAppSecrets(appId: string): Promise<ScyllaResult<AppSecretEntity[]>>;
   createAppSecret(appId: string, label: string): Promise<ScyllaResult<CreatedAppSecret>>;
   revokeAppSecret(secretId: string): Promise<ScyllaResult<boolean>>;
-  setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecret>>;
+  setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecretEntity>>;
 }

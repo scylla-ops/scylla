@@ -1,4 +1,4 @@
-import type { Job } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { useJobsStore } from '@/modules/features/jobs/presentation/stores/use-jobs.store.ts';
 import { DataTable } from '@/modules/shared/presentation/ui/data-display/DataTable';
 import { createJobColumns } from './columns';
@@ -10,7 +10,7 @@ import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 
 type JobsTableProps = {
-  jobs: Job[];
+  jobs: JobEntity[];
   pipelineId: string;
 };
 

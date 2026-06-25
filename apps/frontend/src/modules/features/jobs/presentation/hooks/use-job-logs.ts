@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import type { JobLog } from '@/modules/features/jobs/domain/models/job.model.ts';
+import type { JobLog } from '@/modules/features/jobs/domain/structs/job.struct.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 

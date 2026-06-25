@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Folder, Pencil } from 'lucide-react';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { Trans } from '@lingui/react/macro';
-import type { Project } from '@/modules/features/project/domain/models/project.model.ts';
+import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { EditProjectDialog } from '@/modules/features/project/presentation/ui/EditProjectDialog.tsx';
 import { useState } from 'react';
@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { IconButton } from '@shared/presentation/ui';
 
 type ProjectCardProps = {
-  project: Project;
+  project: ProjectEntity;
 };
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
@@ -42,15 +42,15 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
             </div>
             <div className='flex flex-row items-center gap-1 shrink-0'>
               <IconButton
-                    icon={Pencil}
-                    tooltip={<Trans>Edit</Trans>}
-                    onClick={e => {
-                      e.stopPropagation();
-                      setEditOpen(true);
-                    }}
-                    className='h-7 w-7 opacity-0 group-hover:opacity-100'
-                    iconClassName='h-3.5 w-3.5'
-                  />
+                icon={Pencil}
+                tooltip={<Trans>Edit</Trans>}
+                onClick={e => {
+                  e.stopPropagation();
+                  setEditOpen(true);
+                }}
+                className='h-7 w-7 opacity-0 group-hover:opacity-100'
+                iconClassName='h-3.5 w-3.5'
+              />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className={'mr-2'}>

@@ -10,7 +10,7 @@ export interface NavItem {
   items?: NavItem[];
 }
 
-export interface NavSectionModel {
+export interface NavSection {
   title: string;
   items: NavItem[];
 }

@@ -1,5 +1,5 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { CreatedAgent } from '@/modules/features/agents/domain/models/agent.model.ts';
+import type { CreatedAgent } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import type { AgentsRepository } from '@/modules/features/agents/domain/repository/agents.repository.ts';
 
 /** Use case: create an agent. Returns the one-time secret. */

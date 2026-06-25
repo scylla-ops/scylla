@@ -2,12 +2,13 @@ import type {
   AgentStats as ProtoAgentStats,
   AgentView as ProtoAgentView,
 } from '@/generated/agent_admin.ts';
-import type { Agent, AgentStats } from '@/modules/features/agents/domain/models/agent.model.ts';
+import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
+import type { AgentStats } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
 /** Maps gRPC AgentAdmin messages to the domain Agent models. */
 export class GrpcAgentMapper {
-  static toDomain(w: ProtoAgentView): Agent {
+  static toDomain(w: ProtoAgentView): AgentEntity {
     return {
       id: idValue(w.id),
       organizationId: idValue(w.organizationId),

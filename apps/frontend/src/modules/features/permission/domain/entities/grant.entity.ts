@@ -1,7 +1,7 @@
 import type {
   Permission,
   PermissionScope,
-} from '@/modules/features/permission/domain/models/permission.model.ts';
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 export interface GrantEntity {
   id: string;

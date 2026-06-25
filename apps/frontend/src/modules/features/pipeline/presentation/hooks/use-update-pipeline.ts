@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
-import type { PipelineStep } from '@/modules/features/pipeline/domain/models/pipeline.model.ts';
+import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 
