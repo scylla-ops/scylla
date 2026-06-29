@@ -13,8 +13,9 @@ tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tokio-util = { workspace = true }
 
-# grpc
-tonic = { workspace = true }
+# grpc — `tls-ring` + `tls-native-roots` so the agent can dial an https://
+# control-plane (TLS terminated at the proxy) using the host's trust store.
+tonic = { workspace = true, features = ["tls-ring", "tls-native-roots"] }
 
 # cli
 clap = { workspace = true, features = ["env"] }

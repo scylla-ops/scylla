@@ -3,7 +3,7 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Streaming;
 use tonic::metadata::MetadataValue;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Code, Request};
 use tracing::{error, info, warn};
 
@@ -107,13 +107,19 @@ impl Agent {
     /// agent stream. Returns the inbound (server→agent) stream and the
     /// up-stream sender (agent→server).
     async fn connect(&self) -> Result<(Streaming<AgentDown>, mpsc::Sender<AgentUp>), AgentError> {
-        let channel = Channel::from_shared(self.config.control_plane_url.clone())
-            .map_err(|e| AgentError::InvalidUrl {
-                url: self.config.control_plane_url.clone(),
+        let url = self.config.control_plane_url.clone();
+        let mut endpoint =
+            Channel::from_shared(url.clone()).map_err(|e| AgentError::InvalidUrl {
+                url: url.clone(),
                 message: e.to_string(),
-            })?
-            .connect()
-            .await?;
+            })?;
+        // An https:// control plane terminates TLS at the proxy (which then
+        // speaks h2c to the backend); load the host's native roots so the
+        // handshake succeeds. Plain http:// (local dev) stays cleartext h2c.
+        if url.starts_with("https://") {
+            endpoint = endpoint.tls_config(ClientTlsConfig::new().with_native_roots())?;
+        }
+        let channel = endpoint.connect().await?;
 
         let token = AppAuthServiceClient::new(channel.clone())
             .issue_token(IssueTokenRequest {
