@@ -7,10 +7,12 @@ use scylla_core::application::{
     CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
     JobLogStreamUseCase, JobLogUseCases, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
     OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
-    RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases,
+    RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
     TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases,
     WebhookIngressUseCases, UserUseCases,
 };
+#[cfg(feature = "register")]
+use scylla_core::application::SignupUseCases;
 use scylla_core::infrastructure::LettreMailer;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
@@ -41,6 +43,7 @@ pub type SharedPolicyUc =
     Arc<PolicyUseCases<PgPolicyRepository, PermissionChecker, PermissionChecker>>;
 
 pub type SharedAuthUc = Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
+#[cfg(feature = "register")]
 pub type SharedSignupUc = Arc<
     SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
 >;
@@ -144,6 +147,7 @@ pub type SharedWebhookIngressUc =
 pub struct Services {
     pub db: PgPool,
     pub auth_uc: SharedAuthUc,
+    #[cfg(feature = "register")]
     pub signup_uc: SharedSignupUc,
     pub invitation_uc: SharedInvitationUc,
     pub oauth_uc: Option<SharedOAuthUc>,
@@ -232,6 +236,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo.clone(),
         hash_service.clone(),
     ));
+    #[cfg(feature = "register")]
     let signup_uc = Arc::new(SignupUseCases::new(
         signup_repo.clone(),
         session_repo.clone(),
@@ -479,6 +484,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     Ok(Services {
         db,
         auth_uc,
+        #[cfg(feature = "register")]
         signup_uc,
         invitation_uc,
         oauth_uc,
@@ -599,14 +605,17 @@ where
     use crate::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
         InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
-        PolicyHandler, ProjectHandler, RegistrationHandler, RoleHandler, SecretHandler,
+        PolicyHandler, ProjectHandler, RoleHandler, SecretHandler,
         TriggerHandler, UserHandler, auth_interceptor::AuthInterceptor,
     };
+    #[cfg(feature = "register")]
+    use crate::grpc::RegistrationHandler;
     use scylla_protocol::services::invitation::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
         invitation_service_server::InvitationServiceServer,
     };
     use scylla_protocol::services::oauth::oauth_service_server::OauthServiceServer;
+    #[cfg(feature = "register")]
     use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
     use scylla_protocol::services::{
         agent::agent_service_server::AgentServiceServer,
@@ -693,7 +702,8 @@ where
     // interceptor; it mints the bearer token apps use on every other call.
     let app_auth_service = AppAuthServiceServer::new(app_auth_handler);
 
-    // Public self-service signup.
+    // Public self-service signup — compiled in only with the `register` feature.
+    #[cfg(feature = "register")]
     let registration_service =
         RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
 
@@ -787,9 +797,12 @@ where
         .add_service(policy_service)
         .add_service(grant_service)
         .add_service(role_service)
-        .add_service(registration_service)
         .add_service(invitation_service)
         .add_service(invitation_accept_service);
+
+    // Public self-service signup — only registered when built with `register`.
+    #[cfg(feature = "register")]
+    let router = router.add_service(registration_service);
 
     // GitHub OAuth is only registered when configured with credentials.
     let router = match oauth_service {

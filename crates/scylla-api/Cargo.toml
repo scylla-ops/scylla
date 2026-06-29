@@ -13,6 +13,11 @@ grpc = [
     "dep:scylla-protocol",
 ]
 
+# Public self-service signup (the gRPC RegistrationService). Off by default so a
+# deployment stays invite-only / OAuth-only unless it opts in. gRPC-only, so it
+# pulls in `grpc` (and its tonic / scylla-protocol deps).
+register = ["grpc"]
+
 [dependencies]
 # shared
 scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }

@@ -14,6 +14,7 @@ pub mod organization_handler;
 pub mod pipeline_handler;
 pub mod policy_handler;
 pub mod project_handler;
+#[cfg(feature = "register")]
 pub mod registration_handler;
 pub mod role_handler;
 pub mod secret_handler;
@@ -33,6 +34,7 @@ pub use organization_handler::OrganizationHandler;
 pub use pipeline_handler::PipelineHandler;
 pub use policy_handler::PolicyHandler;
 pub use project_handler::ProjectHandler;
+#[cfg(feature = "register")]
 pub use registration_handler::RegistrationHandler;
 pub use role_handler::RoleHandler;
 pub use secret_handler::SecretHandler;
