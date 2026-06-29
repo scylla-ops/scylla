@@ -9,6 +9,7 @@ use crate::domain::clock;
 use crate::domain::entities::{AppId, Job, OrganizationId, Trigger, TriggerId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::job::JobOrigin;
+use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::trigger::{TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -52,6 +53,10 @@ where
     app_repo: Arc<A>,
     pipeline_uc: Arc<PipelineUseCases<P, PR, J, PS>>,
     dispatch_uc: Arc<DispatchUseCases<W, PS>>,
+    /// Authorizes the caller on the manual `fire_now` path (`RunPipeline` on the
+    /// trigger's pipeline). The background `fire` (cron / webhook) has no caller
+    /// and does not use it.
+    permission_service: Arc<PS>,
 }
 
 impl<T, P, PR, A, J, PS, W> TriggerFireUseCases<T, P, PR, A, J, PS, W>
@@ -72,6 +77,7 @@ where
         app_repo: Arc<A>,
         pipeline_uc: Arc<PipelineUseCases<P, PR, J, PS>>,
         dispatch_uc: Arc<DispatchUseCases<W, PS>>,
+        permission_service: Arc<PS>,
     ) -> Self {
         Self {
             trigger_repo,
@@ -80,7 +86,28 @@ where
             app_repo,
             pipeline_uc,
             dispatch_uc,
+            permission_service,
         }
+    }
+
+    /// Fire the trigger `trigger_id` now on behalf of `caller` (the manual "run
+    /// now" path). Unlike the background [`fire`](Self::fire) — driven by the cron
+    /// scheduler / webhook ingress with no human principal — this authorizes the
+    /// caller first: a manual fire runs the pipeline, so it is gated by
+    /// `RunPipeline` on the trigger's pipeline (the run itself still executes as
+    /// the org's trigger-runner App). No webhook payload, so only literal inputs
+    /// apply.
+    #[instrument(skip(self, caller), fields(trigger_id = %trigger_id))]
+    pub async fn fire_now(
+        &self,
+        caller: &CallerContext,
+        trigger_id: &TriggerId,
+    ) -> DomainResult<Job> {
+        let trigger = self.trigger_repo.find_by_id(trigger_id).await?;
+        self.permission_service
+            .check(caller, Permission::RunPipeline(trigger.pipeline_id().clone()))
+            .await?;
+        self.fire(trigger_id, None, None).await
     }
 
     /// Fire the trigger `trigger_id` now. `payload` is the webhook body when the

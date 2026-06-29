@@ -419,6 +419,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         app_repo.clone(),
         pipeline_uc.clone(),
         dispatch_uc.clone(),
+        permission_checker.clone(),
     ));
     // Webhook ingress: shares the trigger-runner fire path; firing is the
     // TriggerFiring trait object the cron scheduler also uses.

@@ -23,7 +23,8 @@ use tonic::{Request, Response, Status};
 
 /// gRPC surface for managing a pipeline's triggers. CRUD is delegated to
 /// [`TriggerUseCases`] (Cedar-gated by `manageTriggers`, with the create/update
-/// anti-escalation `runPipeline` check); manual firing goes through
+/// anti-escalation `runPipeline` check); manual firing is authorized against the
+/// caller's `runPipeline` on the trigger's pipeline, then goes through
 /// [`TriggerFireUseCases`], which runs as the org's trigger-runner App. On create,
 /// a webhook trigger's generated signing secret is returned ONCE in
 /// `webhook_secret`; `webhook_url` in every view is built from the configured
@@ -212,14 +213,14 @@ where
         &self,
         request: Request<FireTriggerNowRequest>,
     ) -> Result<Response<JobResponse>, Status> {
-        let _caller = caller!(request);
+        let caller = caller!(request);
         let id = TriggerId::new(&required(request.into_inner().trigger_id, "trigger_id")?);
 
-        // Manual fire: no webhook payload, so only literal inputs apply. The fire
-        // is authorized as the org's runner App inside the use case.
+        // Manual fire is authorized inside the use case (`RunPipeline` on the
+        // trigger's pipeline), then runs as the org's trigger-runner App.
         let job = self
             .fire_uc
-            .fire(&id, None, None)
+            .fire_now(&caller, &id)
             .await
             .map_err(domain_error_to_status)?;
 
