@@ -138,6 +138,9 @@ mod tests {
                 .push((job_id.to_string(), app_id.as_str().to_string()));
             Ok(())
         }
+        async fn orphan_running_without_agents(&self, _: &[AppId]) -> DomainResult<u64> {
+            unimplemented!()
+        }
         async fn create(&self, _: &Job) -> DomainResult<Job> {
             unimplemented!()
         }

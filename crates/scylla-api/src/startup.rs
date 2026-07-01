@@ -3,13 +3,13 @@ use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
 use tokio::sync::Notify;
 use scylla_core::application::{
-    AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases, BootstrapUseCases,
-    CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
-    JobLogStreamUseCase, JobLogUseCases, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
-    OrganizationUseCases, PendingJobScheduler, PipelineUseCases, PolicyUseCases, ProjectUseCases,
-    RoleUseCases, SecretCipher, SecretResolver, SecretUseCases, SignupUseCases,
-    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases,
-    WebhookIngressUseCases, UserUseCases,
+    AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases,
+    BootstrapUseCases, CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
+    InvitationUseCases, JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer,
+    NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PipelineUseCases,
+    PolicyUseCases, ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
+    SignupUseCases, TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases,
+    UserUseCases, WebhookIngressUseCases,
 };
 use scylla_core::infrastructure::LettreMailer;
 use scylla_core::infrastructure::{
@@ -472,6 +472,27 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
                     _ = tick.tick() => {}
                 }
                 scheduler.drain().await;
+            }
+        });
+    }
+
+    // Orphaned-job reaper: a job is `running` only while its agent owns it. If
+    // that agent's stream drops without a terminal report (crash, network, or a
+    // control plane restart that forgets every live stream), the job would sit
+    // `running` forever. Level-triggered reconciliation orphans every running
+    // job whose agent is not currently connected: once at boot (nothing is
+    // connected yet, so every pre-restart running job is cleared) and on a
+    // periodic tick.
+    {
+        let reaper = JobReaper::new(job_repo.clone());
+        let registry = agent_registry.clone();
+        tokio::spawn(async move {
+            reaper.reap(&[]).await;
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(30));
+            tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tick.tick().await;
+                reaper.reap(&registry.connected()).await;
             }
         });
     }
