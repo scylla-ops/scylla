@@ -42,4 +42,16 @@ impl ControlPlaneConfig {
             Err(e) => eprintln!("Error generating example config: {e}"),
         }
     }
+
+    /// Overlay environment overrides on the loaded config (see
+    /// [`scylla_api::CoreConfig::apply_env_overrides`]).
+    pub fn apply_env_overrides(&mut self) {
+        self.api.apply_env_overrides();
+    }
+
+    /// Whether the effective project-secret master key is the public dev one.
+    #[must_use]
+    pub fn uses_dev_master_key(&self) -> bool {
+        self.api.uses_dev_master_key()
+    }
 }

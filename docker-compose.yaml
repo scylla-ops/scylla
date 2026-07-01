@@ -7,7 +7,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scylla}
       POSTGRES_DB: ${POSTGRES_DB:-scylla}
     ports:
-      - "5432:5432"
+      # Bind to loopback only: services reach Postgres over the compose network
+      # (postgres:5432); the host publish is for local tooling, not the world.
+      - "127.0.0.1:5432:5432"
     volumes:
       # PG 18+ stores data under /var/lib/postgresql/<major>/ — mounting the
       # parent dir keeps `pg_upgrade --link` viable when moving to PG 19+.
@@ -35,6 +37,10 @@ services:
       RUST_LOG: info
       # Override DatabaseConfig.url via env so secrets stay out of the image.
       DATABASE_URL: postgres://${POSTGRES_USER:-scylla}:${POSTGRES_PASSWORD:-scylla}@postgres:5432/${POSTGRES_DB:-scylla}
+      # Project-secret master key. Inject a unique 64-hex-char value here (or in a
+      # .env file) for any real deployment: left empty it falls back to the PUBLIC
+      # dev key in docker.toml, which offers NO secret confidentiality.
+      SCYLLA_MASTER_KEY: ${SCYLLA_MASTER_KEY:-}
     command: ["--config", "/app/config/docker.toml"]
     volumes:
       - ./crates/scylla-control-plane/config:/app/config:ro
