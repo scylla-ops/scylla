@@ -1,5 +1,5 @@
 use crate::application::ProjectRepository;
-use crate::application::authz::grant::Grant;
+use crate::application::authz::grant::{Grant, Principal, Scope};
 use crate::domain::entities::{OrganizationId, Project, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
@@ -42,6 +42,24 @@ impl ProjectRepository for PgProjectRepository {
         queries::create(&mut *tx, project).await?;
         user_project::repository::queries::add_member(&mut *tx, owner, project.id()).await?;
         grants::insert(&mut *tx, grant).await?;
+        tx.commit().await.to_domain()?;
+        Ok(())
+    }
+
+    #[instrument(skip(self), fields(project_id = %project_id, user_id = %user_id))]
+    async fn remove_member_and_grants(
+        &self,
+        user_id: &UserId,
+        project_id: &ProjectId,
+    ) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+        user_project::repository::queries::remove_member(&mut *tx, user_id, project_id).await?;
+        grants::delete_by_principal_and_scope(
+            &mut *tx,
+            &Principal::User(user_id.clone()),
+            &Scope::Project(project_id.clone()),
+        )
+        .await?;
         tx.commit().await.to_domain()?;
         Ok(())
     }

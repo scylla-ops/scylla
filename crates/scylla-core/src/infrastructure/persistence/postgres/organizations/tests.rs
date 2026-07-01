@@ -67,6 +67,68 @@ async fn list_active_filters_inactive(pool: PgPool) {
     assert_eq!(all.metadata().total_count(), 3);
 }
 
+/// Removing a member must also delete the grants they hold scoped to the org,
+/// or authorization (which is grant-driven, not membership-driven) would survive
+/// the removal and the ex-member would keep their access. The co-owner's grant
+/// and membership must be left untouched.
+#[sqlx::test(migrations = "../../migrations")]
+async fn remove_member_and_grants_revokes_only_the_members_scoped_grants(pool: PgPool) {
+    use crate::application::UserOrganizationRepository;
+    use crate::application::authz::grant::{
+        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope,
+    };
+    use crate::domain::value_objects::role::name::RoleName;
+    use crate::infrastructure::persistence::postgres::{
+        PgGrantRepository, PgUserOrganizationRepository,
+    };
+
+    let org = seed_org(&pool, "acme").await;
+    let owner = seed_user(&pool, "owner").await;
+    let victim = seed_user(&pool, "victim").await;
+
+    let members = PgUserOrganizationRepository::new(pool.clone());
+    members.add_member(owner.id(), org.id()).await.unwrap();
+    members.add_member(victim.id(), org.id()).await.unwrap();
+
+    let grants = PgGrantRepository::new(pool.clone());
+    let admin_role = || RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap();
+    let owner_grant = Grant::new(
+        Principal::User(owner.id().clone()),
+        admin_role(),
+        Scope::Organization(org.id().clone()),
+    );
+    let victim_grant = Grant::new(
+        Principal::User(victim.id().clone()),
+        admin_role(),
+        Scope::Organization(org.id().clone()),
+    );
+    grants.create(&owner_grant).await.unwrap();
+    grants.create(&victim_grant).await.unwrap();
+
+    PgOrganizationRepository::new(pool.clone())
+        .remove_member_and_grants(victim.id(), org.id())
+        .await
+        .expect("remove");
+
+    assert!(
+        !members.is_member(victim.id(), org.id()).await.unwrap(),
+        "victim membership must be gone",
+    );
+    assert!(
+        members.is_member(owner.id(), org.id()).await.unwrap(),
+        "owner membership must remain",
+    );
+    let remaining = grants.list_all().await.unwrap();
+    assert!(
+        remaining.iter().all(|g| g.id != victim_grant.id),
+        "victim's grant must be deleted with the membership",
+    );
+    assert!(
+        remaining.iter().any(|g| g.id == owner_grant.id),
+        "the co-owner's grant must be untouched",
+    );
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn update_changes_description_to_none(pool: PgPool) {
     let repo = PgOrganizationRepository::new(pool);

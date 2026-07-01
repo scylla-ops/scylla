@@ -62,6 +62,7 @@ async fn project_quota_enforced(pool: PgPool) {
         Arc::new(PgProjectRepository::new(pool.clone())),
         Arc::new(PgUserProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),
+        Arc::new(PgGrantRepository::new(pool.clone())),
         permission.clone(),
         permission,
         Arc::new(PgDefaultRoleBindingRepository::new(pool.clone())),

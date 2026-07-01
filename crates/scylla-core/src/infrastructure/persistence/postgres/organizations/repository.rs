@@ -1,5 +1,5 @@
 use crate::application::OrganizationRepository;
-use crate::application::authz::grant::Grant;
+use crate::application::authz::grant::{Grant, Principal, Scope};
 use crate::domain::entities::{Organization, OrganizationId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
@@ -43,6 +43,24 @@ impl OrganizationRepository for PgOrganizationRepository {
         user_organization::repository::queries::add_member(&mut *tx, owner, organization.id())
             .await?;
         grants::insert(&mut *tx, grant).await?;
+        tx.commit().await.to_domain()?;
+        Ok(())
+    }
+
+    #[instrument(skip(self), fields(org_id = %org_id, user_id = %user_id))]
+    async fn remove_member_and_grants(
+        &self,
+        user_id: &UserId,
+        org_id: &OrganizationId,
+    ) -> DomainResult<()> {
+        let mut tx = self.pool.begin().await.to_domain()?;
+        user_organization::repository::queries::remove_member(&mut *tx, user_id, org_id).await?;
+        grants::delete_by_principal_and_scope(
+            &mut *tx,
+            &Principal::User(user_id.clone()),
+            &Scope::Organization(org_id.clone()),
+        )
+        .await?;
         tx.commit().await.to_domain()?;
         Ok(())
     }
