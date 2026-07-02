@@ -61,7 +61,10 @@ permit (
 
 // ── Project members (ABAC) ─────────────────────────────────────────────
 // A user may operate within a project it belongs to. Resources below a member
-// project (pipelines, jobs) match via the entity hierarchy.
+// project (pipelines, jobs) match via the entity hierarchy. Also gated on the
+// enclosing organization's membership: leaving (or being removed from) the org
+// cuts project access immediately, even if a stale project-membership row
+// lingers.
 @id("project-member")
 permit (
     principal,
@@ -81,5 +84,7 @@ permit (
     ],
     resource
 ) when {
-    principal is Scylla::User && resource in principal.memberProjects
+    principal is Scylla::User &&
+    resource in principal.memberProjects &&
+    resource in principal.memberOrgs
 };

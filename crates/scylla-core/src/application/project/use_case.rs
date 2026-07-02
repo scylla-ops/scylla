@@ -287,10 +287,10 @@ impl<
             .check(caller, Permission::RemoveProjectMember(project_id.clone()))
             .await?;
 
-        // Authorization is grant-driven, not membership-driven: a removed member
-        // keeps their access unless their project-scoped grants go too. Guard the
-        // scope's last human owner before stripping anyone, then drop the
-        // membership row and those grants atomically.
+        // A user removed from a project may still be an org member, so their
+        // project-scoped grants must be deleted with the membership row —
+        // atomically — or they would keep authorizing. Guard the scope's last
+        // human owner before stripping anyone.
         let scope = Scope::Project(project_id.clone());
         let principal = Principal::User(user_id.clone());
         let grants = self.grant_repo.list_all().await?;
@@ -303,7 +303,8 @@ impl<
         self.project_repo
             .remove_member_and_grants(user_id, project_id)
             .await?;
-        // Revoked grants only stop authorizing once the policy set is rebuilt.
+        // Deleted grant rows only stop authorizing once the policy set is
+        // rebuilt.
         self.policy_control.reload().await
     }
 }

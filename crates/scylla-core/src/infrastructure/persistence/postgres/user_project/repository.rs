@@ -1,5 +1,5 @@
 use crate::application::UserProjectRepository;
-use crate::domain::entities::{ProjectId, UserId};
+use crate::domain::entities::{OrganizationId, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
@@ -101,6 +101,30 @@ pub mod queries {
             "DELETE FROM user_project WHERE user_id = $1 AND project_id = $2",
             user_id.as_str(),
             project_id.as_str(),
+        )
+        .execute(executor)
+        .await
+        .to_domain()?;
+        Ok(())
+    }
+
+    /// Remove a user from every project belonging to `org_id`, on any executor.
+    /// Part of removing them from the organization: project membership makes no
+    /// sense once the enclosing org membership is gone.
+    pub async fn remove_member_from_org_projects<'e, E>(
+        executor: E,
+        user_id: &UserId,
+        org_id: &OrganizationId,
+    ) -> DomainResult<()>
+    where
+        E: PgExecutor<'e>,
+    {
+        sqlx::query!(
+            "DELETE FROM user_project \
+             WHERE user_id = $1 \
+               AND project_id IN (SELECT id FROM projects WHERE organization_id = $2)",
+            user_id.as_str(),
+            org_id.as_str(),
         )
         .execute(executor)
         .await

@@ -1,5 +1,5 @@
 use crate::application::OrganizationRepository;
-use crate::application::authz::grant::{Grant, Principal, Scope};
+use crate::application::authz::grant::Grant;
 use crate::domain::entities::{Organization, OrganizationId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
@@ -10,7 +10,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
-use super::super::{grants, user_organization};
+use super::super::{grants, user_organization, user_project};
 
 #[derive(Clone)]
 pub struct PgOrganizationRepository {
@@ -55,12 +55,11 @@ impl OrganizationRepository for PgOrganizationRepository {
     ) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         user_organization::repository::queries::remove_member(&mut *tx, user_id, org_id).await?;
-        grants::delete_by_principal_and_scope(
-            &mut *tx,
-            &Principal::User(user_id.clone()),
-            &Scope::Organization(org_id.clone()),
+        user_project::repository::queries::remove_member_from_org_projects(
+            &mut *tx, user_id, org_id,
         )
         .await?;
+        grants::delete_by_user_under_org(&mut *tx, user_id, org_id).await?;
         tx.commit().await.to_domain()?;
         Ok(())
     }
