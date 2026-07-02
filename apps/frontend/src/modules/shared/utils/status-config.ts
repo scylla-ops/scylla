@@ -1,4 +1,12 @@
-import { Ban, CheckCircle2, DiamondMinusIcon, Loader2, SkipForward, Unplug, XCircle } from 'lucide-react';
+import {
+  Ban,
+  CheckCircle2,
+  DiamondMinusIcon,
+  Loader2,
+  SkipForward,
+  Unplug,
+  XCircle,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export type StatusKey =
