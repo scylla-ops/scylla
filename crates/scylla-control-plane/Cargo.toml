@@ -7,6 +7,11 @@ edition = "2024"
 name = "scylla-control-plane"
 path = "src/main.rs"
 
+[features]
+# Forward the public self-service signup gate to scylla-api. Off by default: the
+# shipped binary is invite-only / OAuth-only unless built with `--features register`.
+register = ["scylla-api/register"]
+
 [dependencies]
 # workspace subsystems composed in-process
 scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
