@@ -17,6 +17,10 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:30
+msgid "agent disconnected mid-run"
+msgstr "agent disconnected mid-run"
+
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
 #~ msgid "Copied!"
 #~ msgstr "Copied!"

@@ -25,6 +25,10 @@ export const JobStatus = ({ job }: JobStatusProps) => {
           <span className='text-xs text-slate-500 truncate'>
             <Trans>queued — waiting for an agent</Trans>
           </span>
+        ) : job.status === 'orphaned' ? (
+          <span className='text-xs text-slate-500 truncate'>
+            <Trans>agent disconnected mid-run</Trans>
+          </span>
         ) : (
           <span className='text-xs text-slate-500 truncate'>{job.pipelineId}</span>
         )}
