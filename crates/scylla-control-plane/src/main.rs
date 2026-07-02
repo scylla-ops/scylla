@@ -56,11 +56,28 @@ async fn run(args: Args) -> Result<()> {
 }
 
 fn load_config(args: &Args) -> Result<ControlPlaneConfig> {
-    if let Some(config_path) = &args.config {
+    let mut config = if let Some(config_path) = &args.config {
         ControlPlaneConfig::from_file(config_path)
-            .with_context(|| format!("Failed to load configuration from {}", config_path))
+            .with_context(|| format!("Failed to load configuration from {}", config_path))?
     } else {
         tracing::info!("No configuration file provided, using defaults");
-        Ok(ControlPlaneConfig::default())
+        ControlPlaneConfig::default()
+    };
+
+    // Let a deployment inject the project-secret master key at deploy time
+    // instead of committing it to a config file.
+    config.apply_env_overrides();
+
+    // The shipped dev/demo config carries a PUBLIC master key. Using it in a real
+    // deployment leaves every project secret and webhook secret decryptable by
+    // anyone with the repo, so refuse to stay quiet about it.
+    if config.uses_dev_master_key() {
+        tracing::error!(
+            "SECURITY: project secrets are encrypted with the PUBLIC dev master key, so they are \
+             NOT confidential. Set {} to a unique 64-hex-char key before exposing this instance.",
+            scylla_api::config::MASTER_KEY_ENV,
+        );
     }
+
+    Ok(config)
 }
