@@ -587,7 +587,218 @@ async fn publish_log_line(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_protocol::services::agent::JobEventKind;
+    use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, WorkingDir};
+    use scylla_protocol::services::agent::{JobEventKind, JobStatus as ProtoJobStatus};
+
+    /// A unique temp path per test tag, keyed on pid to avoid collisions with
+    /// parallel test binaries (matches the existing test's manual-temp style, so
+    /// no `tempfile` dependency is pulled in).
+    fn tmp_root(tag: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("scylla-exec-{tag}-{}", std::process::id()))
+    }
+
+    /// Build a script (`sh`) node with optional deps, working dir and literal env.
+    fn script_node(
+        id: &str,
+        deps: &[&str],
+        script: &str,
+        working_dir: Option<&str>,
+        env: &[(&str, &str)],
+    ) -> PipelineNode {
+        let node_id = NodeId::new(id).unwrap();
+        let deps = deps.iter().map(|d| NodeId::new(*d).unwrap()).collect();
+        let step = Step::script(script.to_string(), Shell::Sh).unwrap();
+        let working_dir = working_dir.map(|w| WorkingDir::new(w).unwrap());
+        let env = env
+            .iter()
+            .map(|(k, v)| EnvVar::literal(EnvKey::new(*k).unwrap(), (*v).to_string()))
+            .collect();
+        PipelineNode::new(node_id, deps, step, working_dir, env)
+    }
+
+    /// Drain every emitted message into (status events, concatenated log lines).
+    /// Safe to call right after `run()` returns: the executor awaits its log
+    /// streamers before finishing, so all lines are already queued.
+    fn drain(rx: &mut mpsc::Receiver<AgentUp>) -> (Vec<ProtoJobStatus>, String) {
+        let mut statuses = Vec::new();
+        let mut logs = String::new();
+        while let Ok(msg) = rx.try_recv() {
+            match msg.payload {
+                Some(agent_up::Payload::Status(s)) => statuses.push(s),
+                Some(agent_up::Payload::Log(l)) => {
+                    logs.push_str(&l.line);
+                    logs.push('\n');
+                }
+                None => {}
+            }
+        }
+        (statuses, logs)
+    }
+
+    fn kinds(statuses: &[ProtoJobStatus]) -> Vec<i32> {
+        statuses.iter().map(|s| s.kind).collect()
+    }
+
+    #[test]
+    fn redact_masks_every_occurrence_and_ignores_empty() {
+        assert_eq!(
+            redact("token=abc123 again abc123".into(), &["abc123".into()]),
+            "token=*** again ***",
+        );
+        // An empty mask must be a no-op, not replace between every character.
+        assert_eq!(redact("plain".into(), &[String::new()]), "plain");
+        assert_eq!(
+            redact("nothing here".into(), &["secret".into()]),
+            "nothing here"
+        );
+    }
+
+    #[tokio::test]
+    async fn masked_values_are_redacted_in_job_logs() {
+        let root = tmp_root("redact");
+        let (tx, mut rx) = mpsc::channel(64);
+        let exec = Executor::new(
+            tx,
+            "job-redact".into(),
+            root.clone(),
+            false,
+            vec!["s3cr3t-value".into()],
+        );
+        // The secret arrives as a node env literal (as it would after control-plane
+        // resolution) and is echoed; the emitted log line must be scrubbed.
+        let node = script_node(
+            "n1",
+            &[],
+            "echo \"leaking $TOKEN here\"",
+            None,
+            &[("TOKEN", "s3cr3t-value")],
+        );
+        exec.run(vec![node]).await.unwrap();
+        let (_statuses, logs) = drain(&mut rx);
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(
+            logs.contains("***"),
+            "masked value should be redacted; logs: {logs:?}"
+        );
+        assert!(
+            !logs.contains("s3cr3t-value"),
+            "the raw secret must never reach the log stream; logs: {logs:?}",
+        );
+    }
+
+    #[tokio::test]
+    async fn agent_environment_does_not_leak_into_jobs() {
+        // Pick a variable in the agent's own environment that the allowlist does
+        // NOT restore and the shell does not auto-set, to prove `env_clear()`
+        // drops it. In a cargo test run there is always such a var (USER,
+        // CARGO_*, ...); the reserved-context assertion below holds regardless.
+        const KEPT: [&str; 8] = [
+            "PATH", "HOME", "LANG", "LC_ALL", "TERM", "CI", "PWD", "SHLVL",
+        ];
+        let probe = std::env::vars()
+            .map(|(k, _)| k)
+            .find(|k| {
+                !KEPT.contains(&k.as_str())
+                    && !k.starts_with("SCYLLA_")
+                    && k != "_"
+                    && k != "OLDPWD"
+                    && !k.is_empty()
+                    && k.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+            })
+            .unwrap_or_else(|| "SCYLLA_NO_SUCH_VAR".to_string());
+
+        let root = tmp_root("envclear");
+        let (tx, mut rx) = mpsc::channel(64);
+        let exec = Executor::new(tx, "job-env".into(), root.clone(), false, vec![]);
+        let script = format!("echo \"LEAK=[${{{probe}}}]\"; echo \"JOB=[$SCYLLA_JOB_ID]\"");
+        exec.run(vec![script_node("n1", &[], &script, None, &[])])
+            .await
+            .unwrap();
+        let (_statuses, logs) = drain(&mut rx);
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(
+            logs.contains("LEAK=[]"),
+            "the agent's own env var `{probe}` must not leak into the job; logs: {logs:?}",
+        );
+        assert!(
+            logs.contains("JOB=[job-env]"),
+            "reserved SCYLLA_JOB_ID must still be injected; logs: {logs:?}",
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn working_directory_escaping_the_workspace_is_rejected() {
+        let root = tmp_root("escape");
+        let outside = tmp_root("escape-outside");
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(&outside);
+        std::fs::create_dir_all(&outside).unwrap();
+        let workspace = root.join("job-escape");
+        std::fs::create_dir_all(&workspace).unwrap();
+        // A symlink inside the workspace that resolves outside it.
+        std::os::unix::fs::symlink(&outside, workspace.join("out")).unwrap();
+
+        let (tx, mut rx) = mpsc::channel(64);
+        let exec = Executor::new(tx, "job-escape".into(), root.clone(), false, vec![]);
+        let node = script_node("n1", &[], "echo hi", Some("out"), &[]);
+        let result = exec.run(vec![node]).await;
+        let (statuses, _logs) = drain(&mut rx);
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(&outside);
+
+        assert!(
+            result.is_err(),
+            "a working dir escaping the workspace must fail the job"
+        );
+        assert!(
+            kinds(&statuses).contains(&(JobEventKind::JobFailed as i32)),
+            "the job must still report a terminal JobFailed",
+        );
+    }
+
+    #[tokio::test]
+    async fn a_nonzero_exit_code_maps_to_node_failed() {
+        let root = tmp_root("exit");
+        let (tx, mut rx) = mpsc::channel(64);
+        let exec = Executor::new(tx, "job-exit".into(), root.clone(), false, vec![]);
+        let err = exec
+            .run(vec![script_node("n1", &[], "exit 3", None, &[])])
+            .await
+            .unwrap_err();
+        let (statuses, _logs) = drain(&mut rx);
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(
+            matches!(err, ExecutionError::NodeFailed { exit_code: 3, .. }),
+            "exit code must be preserved, got {err:?}",
+        );
+        assert!(kinds(&statuses).contains(&(JobEventKind::JobFailed as i32)));
+    }
+
+    #[tokio::test]
+    async fn a_dependent_node_is_skipped_when_its_dependency_fails() {
+        let root = tmp_root("skip");
+        let (tx, mut rx) = mpsc::channel(64);
+        let exec = Executor::new(tx, "job-skip".into(), root.clone(), false, vec![]);
+        let failing = script_node("build", &[], "exit 1", None, &[]);
+        let dependent = script_node("test", &["build"], "echo should-not-run", None, &[]);
+        let _ = exec.run(vec![failing, dependent]).await;
+        let (statuses, logs) = drain(&mut rx);
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(
+            kinds(&statuses).contains(&(JobEventKind::NodeSkipped as i32)),
+            "the dependent node must be skipped once its dependency fails",
+        );
+        assert!(
+            !logs.contains("should-not-run"),
+            "a skipped node must never execute; logs: {logs:?}",
+        );
+        assert!(kinds(&statuses).contains(&(JobEventKind::JobFailed as i32)));
+    }
 
     /// Regression: a workspace root that cannot be created (the bug was a
     /// missing/unwritable --workspace-root) must still bracket the job with
@@ -597,8 +808,7 @@ mod tests {
     #[tokio::test]
     async fn workspace_failure_still_reports_started_and_failed() {
         // A root nested under a regular FILE can never be created.
-        let blocker =
-            std::env::temp_dir().join(format!("scylla-exec-test-{}", std::process::id()));
+        let blocker = std::env::temp_dir().join(format!("scylla-exec-test-{}", std::process::id()));
         tokio::fs::write(&blocker, b"x").await.unwrap();
         let root = blocker.join("ws");
 
