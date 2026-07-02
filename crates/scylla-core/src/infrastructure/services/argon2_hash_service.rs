@@ -24,15 +24,24 @@ impl Argon2HashService {
 
 #[async_trait]
 impl HashService for Argon2HashService {
+    // Argon2 is deliberately CPU-heavy (tens of ms). Running it inline would
+    // block an async worker thread for that whole time, so each hash/verify is
+    // moved onto Tokio's blocking pool — which is exactly what the per-call
+    // `clone()`s (of the hasher and the input) are for.
     #[instrument(skip(self, password))]
     async fn hash(&self, password: &Password) -> DomainResult<PasswordHash> {
         let argon2 = self.argon2.clone();
         let password = password.clone();
-        let hash = argon2
-            .hash_password(password.as_str().as_bytes())
-            .map_err(|e| DomainError::internal(format!("Failed to hash password: {e}")))?;
+        let hash = tokio::task::spawn_blocking(move || {
+            argon2
+                .hash_password(password.as_str().as_bytes())
+                .map(|h| h.to_string())
+                .map_err(|e| DomainError::internal(format!("Failed to hash password: {e}")))
+        })
+        .await
+        .map_err(|e| DomainError::internal(format!("password hashing task failed: {e}")))??;
 
-        PasswordHash::new(hash.to_string())
+        PasswordHash::new(hash)
     }
 
     #[instrument(skip(self, password, hash))]
@@ -40,23 +49,31 @@ impl HashService for Argon2HashService {
         let argon2 = self.argon2.clone();
         let password = password.clone();
         let hash = hash.as_str().to_string();
-        let parsed_hash = Argon2PasswordHash::new(&hash)
-            .map_err(|e| DomainError::internal(format!("Failed to parse hash: {e}")))?;
-
-        Ok(argon2
-            .verify_password(password.as_str().as_bytes(), &parsed_hash)
-            .is_ok())
+        tokio::task::spawn_blocking(move || {
+            let parsed_hash = Argon2PasswordHash::new(&hash)
+                .map_err(|e| DomainError::internal(format!("Failed to parse hash: {e}")))?;
+            Ok(argon2
+                .verify_password(password.as_str().as_bytes(), &parsed_hash)
+                .is_ok())
+        })
+        .await
+        .map_err(|e| DomainError::internal(format!("password verification task failed: {e}")))?
     }
 
     #[instrument(skip(self, secret))]
     async fn hash_secret(&self, secret: &AppSecret) -> DomainResult<AppSecretHash> {
         let argon2 = self.argon2.clone();
         let secret = secret.clone();
-        let hash = argon2
-            .hash_password(secret.as_str().as_bytes())
-            .map_err(|e| DomainError::internal(format!("Failed to hash app secret: {e}")))?;
+        let hash = tokio::task::spawn_blocking(move || {
+            argon2
+                .hash_password(secret.as_str().as_bytes())
+                .map(|h| h.to_string())
+                .map_err(|e| DomainError::internal(format!("Failed to hash app secret: {e}")))
+        })
+        .await
+        .map_err(|e| DomainError::internal(format!("app-secret hashing task failed: {e}")))??;
 
-        AppSecretHash::new(hash.to_string())
+        AppSecretHash::new(hash)
     }
 
     #[instrument(skip(self, secret, hash))]
@@ -64,11 +81,14 @@ impl HashService for Argon2HashService {
         let argon2 = self.argon2.clone();
         let secret = secret.clone();
         let hash = hash.as_str().to_string();
-        let parsed_hash = Argon2PasswordHash::new(&hash)
-            .map_err(|e| DomainError::internal(format!("Failed to parse hash: {e}")))?;
-
-        Ok(argon2
-            .verify_password(secret.as_str().as_bytes(), &parsed_hash)
-            .is_ok())
+        tokio::task::spawn_blocking(move || {
+            let parsed_hash = Argon2PasswordHash::new(&hash)
+                .map_err(|e| DomainError::internal(format!("Failed to parse hash: {e}")))?;
+            Ok(argon2
+                .verify_password(secret.as_str().as_bytes(), &parsed_hash)
+                .is_ok())
+        })
+        .await
+        .map_err(|e| DomainError::internal(format!("app-secret verification task failed: {e}")))?
     }
 }

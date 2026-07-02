@@ -78,6 +78,12 @@ where
             .find_user_id(PROVIDER_GITHUB, &info.provider_user_id)
             .await?
         {
+            // Same liveness gate as password login: a deactivated account must
+            // not be able to log back in through OAuth.
+            let user = self.user_repo.find_by_id(&user_id).await?;
+            if !user.is_active() {
+                return Err(DomainError::unauthorized("User account is inactive"));
+            }
             let token = self.issue_session(&user_id).await?;
             return Ok(OAuthOutcome {
                 token,
@@ -89,6 +95,9 @@ where
         // 2. Same email as an existing account → link the identity.
         if let Some(email) = &info.email {
             if let Ok(user) = self.user_repo.find_by_email(email).await {
+                if !user.is_active() {
+                    return Err(DomainError::unauthorized("User account is inactive"));
+                }
                 self.identity_repo
                     .link(user.id(), PROVIDER_GITHUB, &info.provider_user_id)
                     .await?;

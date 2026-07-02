@@ -43,7 +43,29 @@ impl InMemoryJobLogStream {
             .clone()
     }
 
-    /// Publish a log line to the live subscribers of its job (no-op if none).
+    /// The live sender for a job **only if one already exists** — never creates
+    /// one. Used by `subscribe`: subscribing must not resurrect a channel for a
+    /// job whose live stream was already closed (a finished job), which would
+    /// leak an entry that is never published to nor closed again.
+    fn existing_sender(&self, job_id: &str) -> Option<broadcast::Sender<JobLog>> {
+        self.channels
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(job_id)
+            .cloned()
+    }
+
+    /// Eagerly create a job's live channel at start, so a reader that subscribes
+    /// before the first log line still joins the live stream. Paired with
+    /// [`Self::close`] at terminal; since [`JobLogStreamPort::subscribe`] never
+    /// creates a channel, a finished job's channel can't be resurrected and
+    /// leaked by a late subscriber.
+    pub fn open(&self, job_id: &str) {
+        let _ = self.sender_for(job_id);
+    }
+
+    /// Publish a log line to the live subscribers of its job. Creates the channel
+    /// if the job's `open` was missed, so a line is never silently dropped.
     pub fn publish(&self, log: JobLog) {
         let _ = self.sender_for(log.job_id().as_str()).send(log);
     }
@@ -69,9 +91,17 @@ impl JobLogStreamPort for InMemoryJobLogStream {
         job_id: &JobId,
         node_id: Option<&NodeId>,
     ) -> DomainResult<JobLogLiveStream> {
-        let mut receiver = self.sender_for(job_id.as_str()).subscribe();
-        let node_filter = node_id.cloned();
         let (tx, rx) = mpsc::channel::<DomainResult<JobLog>>(CHANNEL_CAPACITY);
+
+        // No live channel means the job already reached a terminal state (its
+        // channel was closed) or never streamed: return an immediately-ending
+        // stream so the caller falls back to the persisted snapshot, WITHOUT
+        // resurrecting a channel that would then leak forever.
+        let Some(sender) = self.existing_sender(job_id.as_str()) else {
+            return Ok(Box::pin(ReceiverStream::new(rx)));
+        };
+        let mut receiver = sender.subscribe();
+        let node_filter = node_id.cloned();
 
         // Bridge the broadcast receiver to an mpsc the caller can stream. Lagged
         // lines are skipped (the historical snapshot covers any gap); the task
@@ -93,5 +123,65 @@ impl JobLogStreamPort for InMemoryJobLogStream {
         });
 
         Ok(Box::pin(ReceiverStream::new(rx)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::value_objects::job::LogStream;
+    use chrono::Utc;
+    use tokio_stream::StreamExt;
+
+    fn log(job: &str) -> JobLog {
+        JobLog::new(
+            JobId::new(job),
+            NodeId::new("n1").unwrap(),
+            LogStream::Stdout,
+            "hello".to_string(),
+            Utc::now(),
+        )
+    }
+
+    #[tokio::test]
+    async fn subscribe_to_an_unopened_job_yields_an_empty_stream() {
+        let s = InMemoryJobLogStream::new();
+        let mut stream = s.subscribe(&JobId::new("ghost"), None).await.unwrap();
+        assert!(
+            stream.next().await.is_none(),
+            "no live channel means an immediately-ending stream (fall back to the snapshot)",
+        );
+        // Crucially, subscribing did NOT create a channel — otherwise it would
+        // leak forever for a job that will never publish or be closed again.
+        assert!(
+            s.existing_sender("ghost").is_none(),
+            "subscribe must not create a channel"
+        );
+    }
+
+    #[tokio::test]
+    async fn open_then_publish_reaches_a_live_subscriber() {
+        let s = InMemoryJobLogStream::new();
+        s.open("job-1");
+        let mut stream = s.subscribe(&JobId::new("job-1"), None).await.unwrap();
+        s.publish(log("job-1"));
+        let received = stream.next().await.expect("a live line").expect("ok");
+        assert_eq!(received.line(), "hello");
+    }
+
+    #[tokio::test]
+    async fn subscribe_after_close_does_not_resurrect_a_channel() {
+        let s = InMemoryJobLogStream::new();
+        s.open("job-1");
+        s.close("job-1");
+        let mut stream = s.subscribe(&JobId::new("job-1"), None).await.unwrap();
+        assert!(
+            stream.next().await.is_none(),
+            "a finished job's live channel must not be recreated",
+        );
+        assert!(
+            s.existing_sender("job-1").is_none(),
+            "no leaked channel entry"
+        );
     }
 }

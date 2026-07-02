@@ -113,6 +113,15 @@ impl Agent {
                 url: url.clone(),
                 message: e.to_string(),
             })?;
+        // Keepalive so a half-open connection (proxy/NAT idle drop, or a control
+        // plane that vanished without a FIN) is detected instead of hanging the
+        // agent forever: pings while idle, and a missed pong tears the stream
+        // down so the outer reconnect loop kicks in.
+        endpoint = endpoint
+            .http2_keep_alive_interval(Duration::from_secs(20))
+            .keep_alive_timeout(Duration::from_secs(10))
+            .keep_alive_while_idle(true)
+            .tcp_keepalive(Some(Duration::from_secs(30)));
         // An https:// control plane terminates TLS at the proxy (which then
         // speaks h2c to the backend); load the host's native roots so the
         // handshake succeeds. Plain http:// (local dev) stays cleartext h2c.

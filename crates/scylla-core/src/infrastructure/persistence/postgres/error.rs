@@ -5,12 +5,21 @@ use std::fmt::Display;
 /// as `Conflict` so callers don't have to special-case them.
 pub(crate) fn map_sqlx(err: sqlx::Error) -> DomainError {
     match err {
-        sqlx::Error::Database(db_err)
-            if db_err.is_unique_violation() || db_err.is_foreign_key_violation() =>
-        {
-            DomainError::conflict(db_err.to_string())
+        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+            // The raw driver text (constraint name, column values) must not reach
+            // the client; log it for operators and return a generic conflict.
+            tracing::debug!(error = %db_err, "unique-constraint violation");
+            DomainError::conflict("a resource with these values already exists")
         }
-        other => DomainError::infrastructure(format!("Database error: {other}")),
+        sqlx::Error::Database(db_err) if db_err.is_foreign_key_violation() => {
+            tracing::debug!(error = %db_err, "foreign-key violation");
+            DomainError::conflict("references a missing or in-use related resource")
+        }
+        other => {
+            // Never surface raw SQL/driver detail to callers.
+            tracing::error!(error = %other, "unexpected database error");
+            DomainError::infrastructure("database error")
+        }
     }
 }
 
