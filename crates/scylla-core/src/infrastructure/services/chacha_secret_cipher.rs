@@ -6,7 +6,7 @@
 //! configured the cipher is disabled and every operation errors with a clear
 //! message rather than silently using a weak default.
 
-use chacha20poly1305::aead::{Aead, AeadCore, KeyInit, OsRng};
+use chacha20poly1305::aead::{Aead, Generate, KeyInit};
 use chacha20poly1305::{XChaCha20Poly1305, XNonce};
 
 use crate::application::secret::SecretCipher;
@@ -45,7 +45,7 @@ impl ChaChaSecretCipher {
 impl SecretCipher for ChaChaSecretCipher {
     fn encrypt(&self, plaintext: &str) -> DomainResult<Vec<u8>> {
         let cipher = self.active()?;
-        let nonce = XChaCha20Poly1305::generate_nonce(&mut OsRng);
+        let nonce = XNonce::generate();
         let ct = cipher
             .encrypt(&nonce, plaintext.as_bytes())
             .map_err(|_| DomainError::internal("secret encryption failed"))?;
@@ -61,9 +61,11 @@ impl SecretCipher for ChaChaSecretCipher {
             return Err(DomainError::internal("secret ciphertext is too short"));
         }
         let (nonce_bytes, ct) = ciphertext.split_at(NONCE_LEN);
-        let nonce = XNonce::from_slice(nonce_bytes);
+        // split_at guarantees NONCE_LEN bytes, so the conversion cannot fail.
+        let nonce = XNonce::try_from(nonce_bytes)
+            .map_err(|_| DomainError::internal("secret ciphertext is too short"))?;
         let pt = cipher
-            .decrypt(nonce, ct)
+            .decrypt(&nonce, ct)
             .map_err(|_| DomainError::internal("secret decryption failed (wrong master key?)"))?;
         String::from_utf8(pt).map_err(|_| DomainError::internal("decrypted secret is not valid UTF-8"))
     }

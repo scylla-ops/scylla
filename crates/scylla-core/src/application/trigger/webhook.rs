@@ -6,7 +6,7 @@ use crate::domain::clock;
 use crate::domain::entities::{JobId, TriggerId};
 use crate::domain::errors::DomainError;
 use crate::domain::value_objects::trigger::TriggerSource;
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use sha2::Sha256;
 use std::sync::Arc;
 use subtle::ConstantTimeEq;
