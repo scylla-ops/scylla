@@ -93,11 +93,6 @@ impl JobReporter {
         self.outcome = JobOutcome::Failure(error);
     }
 
-    #[must_use]
-    pub fn publisher(&self) -> StatusPublisher {
-        self.publisher.clone()
-    }
-
     /// Emit the terminal event (`JobCompleted` / `JobFailed`) and consume the guard.
     pub async fn finalize(self) -> Result<(), ExecutionError> {
         let event = match self.outcome {

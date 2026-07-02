@@ -57,6 +57,86 @@ async fn update_persists_started_finished_timestamps(pool: PgPool) {
     assert!(found.updated_at() <= Utc::now());
 }
 
+/// The reaper orphans running jobs whose agent is no longer connected, and only
+/// those: a running job owned by a connected agent, a pending job, and a
+/// terminal job are all left untouched. An empty connected set (boot
+/// reconciliation) then orphans every remaining running job.
+#[sqlx::test(migrations = "../../migrations")]
+async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: PgPool) {
+    use crate::application::AppRepository;
+    use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
+    use crate::domain::entities::{Agent, App, AppCredential};
+    use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
+    use crate::domain::value_objects::role::name::RoleName;
+    use crate::infrastructure::persistence::postgres::PgAppRepository;
+
+    let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "reap").await;
+    let repo = PgJobRepository::new(pool.clone());
+
+    // A live agent to own one of the running jobs.
+    let app = App::create(org.id().clone(), AppName::new("live-runner").unwrap());
+    let credential = AppCredential::create(
+        app.id().clone(),
+        AppSecretLabel::new("default").unwrap(),
+        AppSecretHash::new("$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$aGFzaGhhc2g").unwrap(),
+    );
+    let agent = Agent::create(app.id().clone());
+    let grant = Grant::new(
+        Principal::App(app.id().clone()),
+        RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
+        Scope::Organization(org.id().clone()),
+    );
+    PgAppRepository::new(pool.clone())
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .expect("provision agent");
+
+    // owned: running, assigned to the live (connected) agent.
+    let mut owned = job(&pipeline);
+    owned.start().unwrap();
+    repo.create(&owned).await.unwrap();
+    repo.set_agent(owned.id(), app.id()).await.unwrap();
+    // stranded: running, no agent.
+    let mut stranded = job(&pipeline);
+    stranded.start().unwrap();
+    repo.create(&stranded).await.unwrap();
+    // pending + terminal: never reaped.
+    let pending = job(&pipeline);
+    repo.create(&pending).await.unwrap();
+    let done = JobBuilder::new(&pipeline)
+        .terminated(JobStatus::Completed)
+        .build();
+    repo.create(&done).await.unwrap();
+
+    // With the live agent connected, only the stranded running job is reaped.
+    let reaped = repo
+        .orphan_running_without_agents(std::slice::from_ref(app.id()))
+        .await
+        .unwrap();
+    assert_eq!(reaped, 1, "only the agent-less running job is orphaned");
+    assert_eq!(status(&repo, owned.id()).await, JobStatus::Running);
+    assert_eq!(status(&repo, stranded.id()).await, JobStatus::Orphaned);
+    assert_eq!(status(&repo, pending.id()).await, JobStatus::Pending);
+    assert_eq!(status(&repo, done.id()).await, JobStatus::Completed);
+    assert!(
+        repo.find_by_id(stranded.id())
+            .await
+            .unwrap()
+            .finished_at()
+            .is_some(),
+        "an orphaned job is stamped finished",
+    );
+
+    // Boot reconciliation: an empty connected set reaps the still-running owned job.
+    let reaped_at_boot = repo.orphan_running_without_agents(&[]).await.unwrap();
+    assert_eq!(reaped_at_boot, 1, "the last running job is reaped at boot");
+    assert_eq!(status(&repo, owned.id()).await, JobStatus::Orphaned);
+}
+
+async fn status(repo: &PgJobRepository, id: &crate::domain::entities::JobId) -> JobStatus {
+    repo.find_by_id(id).await.unwrap().status()
+}
+
 #[sqlx::test(migrations = "../../migrations")]
 async fn list_by_pipeline_filters(pool: PgPool) {
     let org = seed_org(&pool, "acme").await;

@@ -44,7 +44,7 @@ pub use caller::{CallerContext, ServiceIdentity};
 pub use invitation::{AcceptOutcome, InvitationRepository, InvitationUseCases};
 pub use job::{
     JobEvent, JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase,
-    JobLogUseCases, JobRepository, JobUseCases,
+    JobLogUseCases, JobReaper, JobRepository, JobUseCases,
 };
 pub use mail::{Mailer, NoopMailer};
 pub use oauth::{

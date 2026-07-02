@@ -49,6 +49,11 @@ impl JobRepository for PgJobRepository {
         queries::list_pending_unassigned(&self.pool).await
     }
 
+    #[instrument(skip(self, connected), fields(connected = connected.len()))]
+    async fn orphan_running_without_agents(&self, connected: &[AppId]) -> DomainResult<u64> {
+        queries::orphan_running_without_agents(&self.pool, connected).await
+    }
+
     #[instrument(skip(self), fields(job_id = %id))]
     async fn delete(&self, id: &JobId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
@@ -197,6 +202,32 @@ pub mod queries {
         .await
         .to_domain()?;
         Ok(())
+    }
+
+    /// Orphan every `running` job whose `agent_app_id` is not among `connected`
+    /// (or is NULL), stamping `finished_at`/`updated_at`. `WHERE status =
+    /// 'running'` keeps this to the one valid `Running → Orphaned` transition; an
+    /// empty `connected` reaps every running job (boot reconciliation). Returns
+    /// the number reaped.
+    pub async fn orphan_running_without_agents<'e, E>(
+        executor: E,
+        connected: &[AppId],
+    ) -> DomainResult<u64>
+    where
+        E: PgExecutor<'e>,
+    {
+        let connected_ids: Vec<String> = connected.iter().map(|a| a.as_str().to_owned()).collect();
+        let result = sqlx::query!(
+            "UPDATE jobs \
+             SET status = 'orphaned', finished_at = now(), updated_at = now() \
+             WHERE status = 'running' \
+               AND (agent_app_id IS NULL OR NOT (agent_app_id = ANY($1)))",
+            &connected_ids,
+        )
+        .execute(executor)
+        .await
+        .to_domain()?;
+        Ok(result.rows_affected())
     }
 
     /// Pending jobs with no agent yet — the backlog to (re)dispatch when a
