@@ -1,4 +1,6 @@
-use crate::application::authz::grant::{Grant, Principal, Scope};
+use crate::application::authz::grant::{
+    Grant, GrantRepository, Principal, Scope, removal_orphans_scope,
+};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::{
     DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
@@ -27,6 +29,7 @@ pub struct OrganizationUseCases<
     org_repo: Arc<O>,
     user_org_repo: Arc<UO>,
     user_repo: Arc<U>,
+    grant_repo: Arc<dyn GrantRepository>,
     permission_service: Arc<PS>,
     policy_control: Arc<PC>,
     default_roles: Arc<dyn DefaultRoleBindingRepository>,
@@ -255,6 +258,24 @@ impl<
         self.permission_service
             .check(caller, Permission::RemoveOrganizationMember(org_id.clone()))
             .await?;
-        self.user_org_repo.remove_member(user_id, org_id).await
+
+        // Authorization is grant-driven, not membership-driven: a removed member
+        // keeps their access unless their org-scoped grants go too. Guard the
+        // scope's last human owner before stripping anyone, then drop the
+        // membership row and those grants atomically.
+        let scope = Scope::Organization(org_id.clone());
+        let principal = Principal::User(user_id.clone());
+        let grants = self.grant_repo.list_all().await?;
+        if removal_orphans_scope(&grants, &scope, &principal) {
+            return Err(DomainError::business_rule(
+                "cannot remove the last owner of this organization",
+            ));
+        }
+
+        self.org_repo
+            .remove_member_and_grants(user_id, org_id)
+            .await?;
+        // Revoked grants only stop authorizing once the policy set is rebuilt.
+        self.policy_control.reload().await
     }
 }

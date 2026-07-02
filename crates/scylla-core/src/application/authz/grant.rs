@@ -44,6 +44,32 @@ fn is_owner_role(role: &RoleName) -> bool {
     )
 }
 
+/// Whether removing every grant `victim` holds at `scope` would leave the scope
+/// with no human owner. This is the membership-removal counterpart of the
+/// per-grant last-owner guard inline in [`GrantUseCases::revoke`]: a scope must
+/// always retain at least one *human* owner, so removing its sole owner-holding
+/// member is blocked rather than orphaning the org/project. Returns false when
+/// `victim` holds no owner role at `scope` (removing a non-owner never orphans
+/// it) or when another `User` still holds one there. App owners never count as
+/// the retained human owner, matching `revoke`.
+#[must_use]
+pub fn removal_orphans_scope(grants: &[Grant], scope: &Scope, victim: &Principal) -> bool {
+    let victim_owns_here = grants.iter().any(|g| {
+        &g.principal == victim
+            && &g.scope == scope
+            && matches!(&g.target, GrantTarget::Role(role) if is_owner_role(role))
+    });
+    if !victim_owns_here {
+        return false;
+    }
+    !grants.iter().any(|g| {
+        &g.scope == scope
+            && &g.principal != victim
+            && matches!(g.principal, Principal::User(_))
+            && matches!(&g.target, GrantTarget::Role(role) if is_owner_role(role))
+    })
+}
+
 /// The scope a grant is bound to. Maps to the `?resource` slot of the linked
 /// Cedar template. `System` is the tenancy root (org ∈ System ∈ …): a grant
 /// there — e.g. `system-admin` — covers everything beneath. It is the unified
@@ -913,6 +939,82 @@ mod tests {
                 .is_ok(),
             "revoking one of two owners is allowed"
         );
+    }
+
+    fn owner_grant(principal: Principal, scope: Scope) -> Grant {
+        Grant::new(
+            principal,
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            scope,
+        )
+    }
+
+    #[test]
+    fn removal_orphans_scope_blocks_the_sole_human_owner() {
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        let victim = Principal::User(UserId::new("u1"));
+        let grants = vec![owner_grant(victim.clone(), org.clone())];
+        assert!(
+            removal_orphans_scope(&grants, &org, &victim),
+            "removing the only human owner must be reported as orphaning"
+        );
+    }
+
+    #[test]
+    fn removal_orphans_scope_allows_when_another_human_owner_remains() {
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        let victim = Principal::User(UserId::new("u1"));
+        let grants = vec![
+            owner_grant(victim.clone(), org.clone()),
+            owner_grant(Principal::User(UserId::new("u2")), org.clone()),
+        ];
+        assert!(
+            !removal_orphans_scope(&grants, &org, &victim),
+            "a co-owner keeps the scope owned"
+        );
+    }
+
+    #[test]
+    fn removal_orphans_scope_ignores_non_owner_members() {
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        let victim = Principal::User(UserId::new("u1"));
+        // The victim holds only a single permission, never an owner role.
+        let grants = vec![Grant::with_permission(
+            victim.clone(),
+            "readOrganization",
+            org.clone(),
+        )];
+        assert!(
+            !removal_orphans_scope(&grants, &org, &victim),
+            "removing a non-owner never orphans the scope"
+        );
+    }
+
+    #[test]
+    fn removal_orphans_scope_does_not_count_app_owners_as_human() {
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        let victim = Principal::User(UserId::new("u1"));
+        // Another owner exists but it is an App, which must not count as the
+        // retained human owner (mirrors revoke's last-human-owner rule).
+        let grants = vec![
+            owner_grant(victim.clone(), org.clone()),
+            owner_grant(Principal::App(AppId::new("agent-1")), org.clone()),
+        ];
+        assert!(
+            removal_orphans_scope(&grants, &org, &victim),
+            "an App owner is not a human owner"
+        );
+    }
+
+    #[test]
+    fn removal_orphans_scope_is_scoped() {
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        let other = Scope::Organization(OrganizationId::new("o2"));
+        let victim = Principal::User(UserId::new("u1"));
+        // The victim owns a *different* org; removing them from o1 (where they
+        // own nothing) does not orphan it.
+        let grants = vec![owner_grant(victim.clone(), other)];
+        assert!(!removal_orphans_scope(&grants, &org, &victim));
     }
 
     #[tokio::test]

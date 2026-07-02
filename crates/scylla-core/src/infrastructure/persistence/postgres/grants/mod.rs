@@ -52,6 +52,38 @@ where
     Ok(())
 }
 
+/// Delete every grant a principal holds at exactly `scope`, on any executor
+/// (pool or transaction). Used when a member is removed from an org/project:
+/// authorization is grant-driven, so the member's scoped grants must be dropped
+/// atomically with their membership row, or an ex-member keeps their access.
+pub async fn delete_by_principal_and_scope<'e, E>(
+    executor: E,
+    principal: &Principal,
+    scope: &Scope,
+) -> DomainResult<()>
+where
+    E: PgExecutor<'e>,
+{
+    let (scope_kind, scope_id) = match scope {
+        Scope::System => (SCOPE_SYSTEM, SYSTEM_SCOPE_ID),
+        Scope::Organization(id) => (SCOPE_ORGANIZATION, id.as_str()),
+        Scope::Project(id) => (SCOPE_PROJECT, id.as_str()),
+    };
+    sqlx::query!(
+        "DELETE FROM grants \
+         WHERE principal_kind = $1 AND principal_id = $2 \
+           AND scope_kind = $3 AND scope_id = $4",
+        principal.kind(),
+        principal.id(),
+        scope_kind,
+        scope_id,
+    )
+    .execute(executor)
+    .await
+    .to_domain()?;
+    Ok(())
+}
+
 /// Persistence for explicit scoped grants (`grants` table). Read once
 /// at `CedarPermissionService` construction to link template instances.
 #[derive(Clone)]

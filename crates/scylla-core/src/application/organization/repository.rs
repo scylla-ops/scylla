@@ -19,6 +19,18 @@ pub trait OrganizationRepository {
         grant: &Grant,
     ) -> DomainResult<()>;
 
+    /// Remove a member and, in the same transaction, delete every grant that
+    /// user holds scoped to this org. Authorization is grant-driven, so dropping
+    /// the membership row alone would leave an ex-member with their access; the
+    /// two must go together atomically. Callers guard the scope's last human
+    /// owner (see [`crate::application::authz::grant::removal_orphans_scope`])
+    /// and reload the policy set afterwards.
+    async fn remove_member_and_grants(
+        &self,
+        user_id: &UserId,
+        org_id: &OrganizationId,
+    ) -> DomainResult<()>;
+
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization>;
 
     /// Resolve many organizations in one round-trip (order unspecified, missing

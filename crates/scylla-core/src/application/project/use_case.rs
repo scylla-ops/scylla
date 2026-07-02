@@ -1,4 +1,6 @@
-use crate::application::authz::grant::{Grant, Principal, Scope};
+use crate::application::authz::grant::{
+    Grant, GrantRepository, Principal, Scope, removal_orphans_scope,
+};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::{
     DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
@@ -16,6 +18,10 @@ use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
 
+// One collaborator per port plus quotas: the derived `new` takes 8 args, which
+// trips too_many_arguments. Splitting a use case's ports into a bundle struct
+// buys nothing here, so allow it locally rather than widen the workspace lint.
+#[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct ProjectUseCases<
     P: ProjectRepository,
@@ -27,6 +33,7 @@ pub struct ProjectUseCases<
     project_repo: Arc<P>,
     user_project_repo: Arc<UP>,
     user_repo: Arc<U>,
+    grant_repo: Arc<dyn GrantRepository>,
     permission_service: Arc<PS>,
     policy_control: Arc<PC>,
     default_roles: Arc<dyn DefaultRoleBindingRepository>,
@@ -279,8 +286,24 @@ impl<
         self.permission_service
             .check(caller, Permission::RemoveProjectMember(project_id.clone()))
             .await?;
-        self.user_project_repo
-            .remove_member(user_id, project_id)
-            .await
+
+        // Authorization is grant-driven, not membership-driven: a removed member
+        // keeps their access unless their project-scoped grants go too. Guard the
+        // scope's last human owner before stripping anyone, then drop the
+        // membership row and those grants atomically.
+        let scope = Scope::Project(project_id.clone());
+        let principal = Principal::User(user_id.clone());
+        let grants = self.grant_repo.list_all().await?;
+        if removal_orphans_scope(&grants, &scope, &principal) {
+            return Err(DomainError::business_rule(
+                "cannot remove the last owner of this project",
+            ));
+        }
+
+        self.project_repo
+            .remove_member_and_grants(user_id, project_id)
+            .await?;
+        // Revoked grants only stop authorizing once the policy set is rebuilt.
+        self.policy_control.reload().await
     }
 }
