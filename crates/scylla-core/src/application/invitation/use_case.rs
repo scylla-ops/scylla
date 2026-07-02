@@ -9,7 +9,7 @@ use crate::application::{HashService, OrganizationRepository, SessionRepository,
 use crate::domain::entities::{Invitation, InvitationId, OrganizationId, Session, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;

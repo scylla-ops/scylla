@@ -4,7 +4,7 @@ use crate::application::authz::role::{
 };
 use crate::domain::entities::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use tracing::instrument;

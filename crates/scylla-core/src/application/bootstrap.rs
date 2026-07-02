@@ -5,7 +5,7 @@ use crate::application::caller::{CallerContext, ServiceIdentity};
 use crate::application::user::UserUseCases;
 use crate::application::{GrantRepository, HashService, UserRepository};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use derive_more::Constructor;
 use std::sync::Arc;

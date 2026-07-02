@@ -57,7 +57,8 @@ mod tests {
 
     #[test]
     fn webhook_source_round_trips_with_kind_tag() {
-        let source = TriggerSource::Webhook(WebhookSpec::new(Some("X-Hub-Signature-256".into())).unwrap());
+        let source =
+            TriggerSource::Webhook(WebhookSpec::new(Some("X-Hub-Signature-256".into())).unwrap());
         let json = serde_json::to_string(&source).unwrap();
         assert!(json.contains(r#""kind":"webhook""#), "{json}");
 

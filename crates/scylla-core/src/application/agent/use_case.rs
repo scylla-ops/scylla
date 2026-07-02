@@ -11,7 +11,7 @@ use crate::domain::entities::{Agent, App, AppCredential, AppId, OrganizationId, 
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
 use std::collections::HashSet;

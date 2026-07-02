@@ -9,7 +9,7 @@ use scylla_core::application::{
     PolicyControl, Principal, Scope, grantable_roles,
 };
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
-use scylla_core::domain::value_objects::role::name::RoleName;
+use scylla_core::domain::value_objects::role::RoleName;
 use scylla_protocol::services::permission::{
     CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
     ListGrantableRolesRequest, ListGrantableRolesResponse, ListGrantsRequest, ListGrantsResponse,

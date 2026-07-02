@@ -184,7 +184,7 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
     use crate::application::authz::grant::{
         Grant, GrantRepository, GrantTarget, PROJECT_ADMIN_ROLE, Principal, Scope,
     };
-    use crate::domain::value_objects::role::name::RoleName;
+    use crate::domain::value_objects::role::RoleName;
     use crate::infrastructure::persistence::postgres::{
         PgGrantRepository, PgUserProjectRepository,
     };
@@ -231,7 +231,7 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
 async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
     use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
     use crate::domain::entities::UserId;
-    use crate::domain::value_objects::role::name::RoleName;
+    use crate::domain::value_objects::role::RoleName;
 
     let org = seed_org(&pool, "acme").await;
     let project = project(&org, "rocket");

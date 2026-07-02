@@ -52,7 +52,10 @@ mod tests {
 
     #[test]
     fn trims_and_normalizes() {
-        assert_eq!(CronSpec::new("  */5 * * * *  ").unwrap().expression(), "*/5 * * * *");
+        assert_eq!(
+            CronSpec::new("  */5 * * * *  ").unwrap().expression(),
+            "*/5 * * * *"
+        );
     }
 
     #[test]

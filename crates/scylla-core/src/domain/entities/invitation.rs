@@ -1,7 +1,7 @@
 use crate::domain::clock;
 use crate::domain::entities::ids::{InvitationId, OrganizationId, UserId};
 use crate::domain::value_objects::invitation::InvitationStatus;
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::user::Email;
 use chrono::{DateTime, Duration, Utc};
 

@@ -4,7 +4,7 @@ use crate::application::app::{AppRepository, AppTokenRepository, AppTokenUseCase
 use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use crate::domain::entities::{App, AppCredential};
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use crate::infrastructure::Argon2HashService;
 use crate::infrastructure::persistence::postgres::{PgAppCredentialRepository, PgAppRepository};
 use crate::test_support::prelude::*;

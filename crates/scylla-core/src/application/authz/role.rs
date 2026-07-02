@@ -8,7 +8,7 @@ use crate::application::caller::CallerContext;
 use crate::domain::entities::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::{Permission, permission_resource_type};
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use async_trait::async_trait;
 use derive_more::Constructor;
 use std::collections::{BTreeSet, HashMap};

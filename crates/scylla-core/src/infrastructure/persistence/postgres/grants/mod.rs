@@ -1,7 +1,7 @@
 use crate::application::authz::grant::{Grant, GrantRepository, GrantTarget, Principal, Scope};
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
