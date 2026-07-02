@@ -42,7 +42,16 @@ async fn main() {
 
 async fn run(args: Args) -> Result<()> {
     let config = load_config(&args)?;
-    tracing::debug!("Configuration: {:#?}", config);
+    // Never debug-dump the whole config: it holds the master key, the bootstrap
+    // password, SMTP and OAuth secrets. Log only which optional subsystems are
+    // configured.
+    tracing::info!(
+        secrets = config.api.secrets.is_some(),
+        mail = config.api.mail.is_some(),
+        github_oauth = config.api.oauth.github.is_some(),
+        webhook = config.api.webhook.is_some(),
+        "configuration loaded",
+    );
     runtime::run(config).await
 }
 

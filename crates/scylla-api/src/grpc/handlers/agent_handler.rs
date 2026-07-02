@@ -131,6 +131,13 @@ async fn read_reports<J, L, PS>(
                     if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
                         warn!(app_id = %app_id, job_id = %job_id, error = %e, "failed to record job status");
                     }
+                    // Open the live channel at job start so a reader tailing a
+                    // running job that hasn't logged yet still joins the stream
+                    // (subscribe never creates a channel, to avoid leaking one
+                    // for an already-finished job).
+                    if matches!(event, JobEvent::JobStarted) {
+                        log_stream.open(job_id.as_str());
+                    }
                     // A terminal job won't emit more log lines — evict its live
                     // channel so the per-job stream map can't grow without bound,
                     // and free the agent's load slot so least-loaded dispatch can

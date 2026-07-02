@@ -13,7 +13,7 @@ use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::trigger::{TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
 use std::sync::Arc;
-use tracing::instrument;
+use tracing::{instrument, warn};
 
 /// The act of firing a trigger by id, decoupled from the concrete use-case so
 /// background drivers (the cron scheduler, later the webhook ingress) depend on
@@ -127,6 +127,31 @@ where
             return Err(DomainError::business_rule("trigger is disabled"));
         }
 
+        let outcome = self
+            .run_and_dispatch(&trigger, trigger_id, payload, delivery_id)
+            .await;
+
+        // Record the fire outcome on the trigger so `last_status` reflects
+        // reality (it used to be hard-coded "ok", so a failed fire looked
+        // successful). Best-effort: a status-write failure must not mask the
+        // actual run outcome.
+        trigger.mark_fired(clock::now(), if outcome.is_ok() { "ok" } else { "error" });
+        if let Err(e) = self.trigger_repo.update(&trigger).await {
+            warn!(trigger_id = %trigger_id, error = %e, "failed to record trigger fire status");
+        }
+        outcome
+    }
+
+    /// Run the trigger's pipeline as the org's trigger-runner App and best-effort
+    /// place it on an agent. Split out from [`Self::fire`] so the fire outcome
+    /// (ok / error) can be recorded on the trigger whatever happens here.
+    async fn run_and_dispatch(
+        &self,
+        trigger: &Trigger,
+        trigger_id: &TriggerId,
+        payload: Option<&serde_json::Value>,
+        delivery_id: Option<&str>,
+    ) -> DomainResult<Job> {
         // The run fires as the org's trigger-runner App (resolved pipeline →
         // project → org → App), so the single RunPipeline check is satisfied by
         // its org-scoped grant.
@@ -147,7 +172,7 @@ where
             },
         };
 
-        let inputs = resolve_inputs(&trigger, payload);
+        let inputs = resolve_inputs(trigger, payload);
         let (job, dispatch) = self
             .pipeline_uc
             .run_with_inputs(&caller, trigger.pipeline_id(), &inputs, origin)
@@ -155,14 +180,13 @@ where
 
         // Best-effort placement: if no agent is connected/authorized the job
         // stays pending and the PendingJobScheduler retries it later.
-        if let DispatchOutcome::Dispatched(app_id) =
-            self.dispatch_uc.dispatch_job(trigger.pipeline_id(), &dispatch).await?
+        if let DispatchOutcome::Dispatched(app_id) = self
+            .dispatch_uc
+            .dispatch_job(trigger.pipeline_id(), &dispatch)
+            .await?
         {
             self.pipeline_uc.assign_agent(job.id(), &app_id).await?;
         }
-
-        trigger.mark_fired(clock::now(), "ok");
-        self.trigger_repo.update(&trigger).await?;
         Ok(job)
     }
 
@@ -262,7 +286,10 @@ mod tests {
         )
         .unwrap();
         let resolved = resolve_inputs(&trigger, None);
-        assert_eq!(resolved, vec![("RUN_MODE".to_string(), "nightly".to_string())]);
+        assert_eq!(
+            resolved,
+            vec![("RUN_MODE".to_string(), "nightly".to_string())]
+        );
     }
 
     #[test]
