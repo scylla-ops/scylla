@@ -8,7 +8,7 @@ use scylla_core::application::{
     PermissionService, SessionRepository, UserRepository,
 };
 use scylla_core::domain::entities::{Invitation, InvitationId, OrganizationId};
-use scylla_core::domain::value_objects::role::name::RoleName;
+use scylla_core::domain::value_objects::role::RoleName;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
 use scylla_protocol::services::invitation::{
     AcceptInviteRequest, AcceptInviteResponse, CreateInviteRequest, InvitationResponse,

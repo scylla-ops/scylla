@@ -4,7 +4,7 @@ use crate::application::authz::grant::{
 };
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{OrganizationRepository, UserOrganizationRepository, UserRepository};
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use crate::infrastructure::persistence::postgres::{
     PgGrantRepository, PgOrganizationRepository, PgRoleRepository, PgUserOrganizationRepository,
     PgUserRepository,

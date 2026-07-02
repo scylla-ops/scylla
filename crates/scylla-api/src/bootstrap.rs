@@ -6,7 +6,7 @@ use scylla_core::application::{
     BootstrapUseCases, GrantRepository, HashService, PermissionService, UserRepository,
 };
 use scylla_core::domain::errors::DomainError;
-use scylla_core::domain::value_objects::role::name::RoleName;
+use scylla_core::domain::value_objects::role::RoleName;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
 
 /// Validate the on-disk bootstrap config into domain value objects and run the

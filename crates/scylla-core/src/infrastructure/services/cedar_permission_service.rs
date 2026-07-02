@@ -513,7 +513,7 @@ mod tests {
     use crate::domain::entities::{
         AppId, CedarPolicyId, OrganizationId, PipelineId, ProjectId, UserId,
     };
-    use crate::domain::value_objects::role::name::RoleName;
+    use crate::domain::value_objects::role::RoleName;
 
     /// The five builtin roles as the seed migration defines them: admin roles
     /// confer full control (`*`), agent roles the four job-execution

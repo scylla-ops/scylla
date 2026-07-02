@@ -78,7 +78,7 @@ impl InvitationRepository for PgInvitationRepository {
 pub mod queries {
     use super::*;
     use crate::domain::value_objects::invitation::InvitationStatus;
-    use crate::domain::value_objects::role::name::RoleName;
+    use crate::domain::value_objects::role::RoleName;
     use crate::domain::value_objects::user::Email;
     use crate::infrastructure::persistence::postgres::error::DbFieldExt;
     use chrono::{DateTime, Utc};

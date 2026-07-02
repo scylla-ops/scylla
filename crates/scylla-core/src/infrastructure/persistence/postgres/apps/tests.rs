@@ -5,7 +5,7 @@ use crate::application::authz::grant::{
 };
 use crate::domain::entities::{App, AppCredential};
 use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use crate::infrastructure::persistence::postgres::{PgGrantRepository, PgOrganizationRepository};
 use crate::test_support::prelude::*;
 use sqlx::PgPool;

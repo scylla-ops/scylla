@@ -7,7 +7,7 @@ use crate::domain::clock;
 use crate::domain::entities::{Agent, App, AppCredential, Job, JobId, OrganizationId};
 use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
 use crate::domain::value_objects::job::JobStatus;
-use crate::domain::value_objects::role::name::RoleName;
+use crate::domain::value_objects::role::RoleName;
 use crate::infrastructure::persistence::postgres::{
     PgAppRepository, PgGrantRepository, PgJobRepository,
 };
