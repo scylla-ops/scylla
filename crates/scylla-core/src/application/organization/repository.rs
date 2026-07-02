@@ -19,12 +19,14 @@ pub trait OrganizationRepository {
         grant: &Grant,
     ) -> DomainResult<()>;
 
-    /// Remove a member and, in the same transaction, delete every grant that
-    /// user holds scoped to this org. Authorization is grant-driven, so dropping
-    /// the membership row alone would leave an ex-member with their access; the
-    /// two must go together atomically. Callers guard the scope's last human
-    /// owner (see [`crate::application::authz::grant::removal_orphans_scope`])
-    /// and reload the policy set afterwards.
+    /// Remove a member and, in the same transaction, strip everything they held
+    /// under the org: grants scoped to the org itself, grants scoped to any of
+    /// its projects, and their project memberships there. The Cedar member
+    /// guard already denies an ex-member, but the rows must go too, or
+    /// re-adding the user later would silently restore their old authority.
+    /// Callers guard the scope's last human owner (see
+    /// [`crate::application::authz::grant::removal_orphans_scope`]) and reload
+    /// the policy set afterwards.
     async fn remove_member_and_grants(
         &self,
         user_id: &UserId,

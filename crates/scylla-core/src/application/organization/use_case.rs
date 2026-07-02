@@ -259,10 +259,14 @@ impl<
             .check(caller, Permission::RemoveOrganizationMember(org_id.clone()))
             .await?;
 
-        // Authorization is grant-driven, not membership-driven: a removed member
-        // keeps their access unless their org-scoped grants go too. Guard the
-        // scope's last human owner before stripping anyone, then drop the
-        // membership row and those grants atomically.
+        // Dropping the membership row is what cuts the user's authority: Cedar
+        // gates every org/project-scoped permit on live org membership. The
+        // grants and project memberships under the org are deleted with it —
+        // atomically — so re-adding the user later starts from a clean slate
+        // instead of silently restoring their old authority. Guard the scope's
+        // last human owner before stripping anyone. Owner grants on child
+        // projects are NOT guarded: a remaining org owner keeps full control
+        // of every project through the scope hierarchy.
         let scope = Scope::Organization(org_id.clone());
         let principal = Principal::User(user_id.clone());
         let grants = self.grant_repo.list_all().await?;
@@ -275,7 +279,8 @@ impl<
         self.org_repo
             .remove_member_and_grants(user_id, org_id)
             .await?;
-        // Revoked grants only stop authorizing once the policy set is rebuilt.
+        // Deleted grant rows only leave the live policy set on rebuild. (The
+        // membership gate already denies the ex-member either way.)
         self.policy_control.reload().await
     }
 }

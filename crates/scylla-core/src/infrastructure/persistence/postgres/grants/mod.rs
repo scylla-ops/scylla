@@ -53,9 +53,10 @@ where
 }
 
 /// Delete every grant a principal holds at exactly `scope`, on any executor
-/// (pool or transaction). Used when a member is removed from an org/project:
-/// authorization is grant-driven, so the member's scoped grants must be dropped
-/// atomically with their membership row, or an ex-member keeps their access.
+/// (pool or transaction). Used when a member is removed from a project: the
+/// Cedar member guard is what actually cuts an ex-member's access, but the
+/// rows must go with the membership, or re-adding the user later would
+/// silently restore their old authority.
 pub async fn delete_by_principal_and_scope<'e, E>(
     executor: E,
     principal: &Principal,
@@ -77,6 +78,36 @@ where
         principal.id(),
         scope_kind,
         scope_id,
+    )
+    .execute(executor)
+    .await
+    .to_domain()?;
+    Ok(())
+}
+
+/// Delete every grant a user holds anywhere under an organization — at the org
+/// scope itself and at every project belonging to it — on any executor. Used
+/// when a member is removed from an org: removing them from the org must strip
+/// their authority over the whole subtree, not just the org level.
+pub async fn delete_by_user_under_org<'e, E>(
+    executor: E,
+    user_id: &UserId,
+    org_id: &OrganizationId,
+) -> DomainResult<()>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query!(
+        "DELETE FROM grants \
+         WHERE principal_kind = $1 AND principal_id = $2 \
+           AND ((scope_kind = $3 AND scope_id = $4) \
+             OR (scope_kind = $5 AND scope_id IN \
+                   (SELECT id FROM projects WHERE organization_id = $4)))",
+        PRINCIPAL_USER,
+        user_id.as_str(),
+        SCOPE_ORGANIZATION,
+        org_id.as_str(),
+        SCOPE_PROJECT,
     )
     .execute(executor)
     .await

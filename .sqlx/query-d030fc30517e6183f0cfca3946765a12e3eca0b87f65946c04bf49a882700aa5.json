@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM user_project WHERE user_id = $1 AND project_id IN (SELECT id FROM projects WHERE organization_id = $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d030fc30517e6183f0cfca3946765a12e3eca0b87f65946c04bf49a882700aa5"
+}

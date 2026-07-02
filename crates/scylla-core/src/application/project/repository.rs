@@ -20,10 +20,10 @@ pub trait ProjectRepository {
     ) -> DomainResult<()>;
 
     /// Remove a member and, in the same transaction, delete every grant that
-    /// user holds scoped to this project. Authorization is grant-driven, so
-    /// dropping the membership row alone would leave an ex-member with their
-    /// access; the two must go together atomically. Callers guard the scope's
-    /// last human owner (see
+    /// user holds scoped to this project. The user may still be an org member,
+    /// so those grants would keep authorizing if only the membership row went;
+    /// the two must go together atomically. Callers guard the scope's last
+    /// human owner (see
     /// [`crate::application::authz::grant::removal_orphans_scope`]) and reload
     /// the policy set afterwards. Mirrors
     /// [`OrganizationRepository::remove_member_and_grants`].

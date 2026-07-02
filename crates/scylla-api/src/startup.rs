@@ -221,7 +221,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
 
     let permission_checker = Arc::new(
         CedarPermissionService::new(
-            authz_provider,
+            authz_provider.clone(),
             role_repo.clone(),
             grant_repo.clone(),
             policy_repo.clone(),
@@ -320,6 +320,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         permission_checker.clone(),
         permission_checker.clone(),
         agent_registry.clone(),
+        authz_provider.clone(),
     ));
     let role_uc = Arc::new(RoleUseCases::new(
         role_repo.clone(),
