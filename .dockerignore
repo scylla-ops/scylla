@@ -6,3 +6,4 @@ scylla-bruno
 tests
 **/node_modules
 *.yaml
+.claude
