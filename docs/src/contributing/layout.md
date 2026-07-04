@@ -8,7 +8,7 @@ All Rust code is a Cargo workspace under `crates/`:
 
 | Crate | Kind | Contents |
 |-------|------|----------|
-| `scylla-core` | lib | The domain model — entities, value objects, use cases, ports, and adapters. The heart of the system. |
+| `scylla-core` | lib | The domain model — entities, value objects, use cases, ports, adapters. The heart of the system. |
 | `scylla-api` | lib | gRPC handlers, mappers, middleware, the `Services` composition, and the runners (`run_grpc`, webhook ingress). |
 | `scylla-protocol` | lib | `.proto` definitions and generated Rust + TypeScript bindings. |
 | `scylla-agent` | bin | The worker: connects, receives dispatches, executes the DAG, streams status/logs. |
@@ -26,8 +26,7 @@ scylla-core/src/
 │   ├── value_objects/   validated wrappers (NodeId, PipelineName, JobStatus, …)
 │   └── errors.rs        DomainError / DomainResult
 ├── application/
-│   ├── <area>/          use cases + ports per area (pipeline, job, authz, secret, trigger, …)
-│   └── …
+│   └── <area>/          use cases + ports per area (pipeline, job, authz, secret, trigger, …)
 ├── infrastructure/
 │   ├── persistence/postgres/   one Pg…Repository per aggregate (sqlx)
 │   ├── services/               Cedar, Argon2, ChaCha, croner, lettre, GitHub OAuth

@@ -1,20 +1,14 @@
 # Local development
 
-Running Scylla needs only Docker. This chapter is for **contributors** who want to
-iterate on the crates or the frontend outside the container workflow.
+Running Scylla needs only Docker; this chapter is for **contributors**
+iterating on the crates or the frontend outside the container workflow.
 
 ## Backend (Rust)
 
-Standard Cargo workflow against the workspace:
-
-```sh
-cargo build
-cargo test
-```
-
+Standard Cargo workflow against the workspace: `cargo build`, `cargo test`.
 The toolchain is pinned in `rust-toolchain.toml`, and lints (`clippy::all` +
-`pedantic`, `unsafe_code = warn`) are configured at the workspace root — treat a
-clean `cargo clippy` as part of "done".
+`pedantic`, `unsafe_code = warn`) are configured at the workspace root —
+treat a clean `cargo clippy` as part of "done".
 
 To build the Docker images from source instead of pulling them:
 
@@ -25,8 +19,7 @@ just local          # docker compose build
 ## Database for dev
 
 The compile-time-checked `sqlx` queries need either a live database or the
-committed offline cache. For iterating on queries, run Postgres and point
-`DATABASE_URL` at it:
+committed offline cache. For iterating on queries:
 
 ```sh
 just db-up          # start only Postgres
@@ -39,10 +32,10 @@ If you change any query or migration, regenerate and commit the cache with
 
 ## Frontend (Vite dev server)
 
-Requires **Node.js >= 20** and **pnpm >= 9** (`corepack enable`). The dev server
-runs on `:5173` and talks to a running control plane via `VITE_API_URL`. Setup
-lives in `apps/frontend/README.md`; the app's own architecture and conventions are
-in `apps/frontend/docs/`.
+Requires **Node.js >= 20** and **pnpm >= 9** (`corepack enable`). The dev
+server runs on `:5173` and talks to a running control plane via
+`VITE_API_URL`. Setup lives in `apps/frontend/README.md`; the app's own
+architecture and conventions are in `apps/frontend/docs/`.
 
 ## The justfile
 
