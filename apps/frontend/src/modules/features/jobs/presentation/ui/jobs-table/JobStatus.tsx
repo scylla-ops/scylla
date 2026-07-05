@@ -15,7 +15,7 @@ export const JobStatus = ({ job }: JobStatusProps) => {
   const Icon = config.icon;
 
   return (
-    <div className='flex items-center gap-2'>
+    <div className='w-full flex items-center gap-2'>
       <Icon className={`w-5 h-5 ${config.iconClassName}`} />
       <div className='flex flex-col'>
         <Badge variant={config.variant} className='w-fit'>

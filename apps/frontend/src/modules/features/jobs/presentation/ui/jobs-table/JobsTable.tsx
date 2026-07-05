@@ -70,6 +70,7 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
         )}
         alignColumnsCenter
         alignRowsCenter
+        tableLayoutFixed
       />
       <ConfirmOperationAlertDialog
         open={deleteDialogOpen}
