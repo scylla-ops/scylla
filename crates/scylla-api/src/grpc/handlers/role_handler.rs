@@ -85,7 +85,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(DeleteRoleResponse { deleted: true }))
+        Ok(Response::new(DeleteRoleResponse {}))
     }
 
     async fn list_roles(

@@ -50,11 +50,10 @@ export class AgentsRemoteDataSourceImpl implements AgentsRemoteDataSource {
     }, 'Failed to create agent');
   }
 
-  deleteAgent(agentId: string): Promise<ScyllaResult<boolean>> {
+  deleteAgent(agentId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AgentAdminServiceClient(this.grpcTransport.getTransport());
-      const response = await client.deleteAgent({ id: wrapId(agentId) }).response;
-      return response.deleted;
+      await client.deleteAgent({ id: wrapId(agentId) }).response;
     }, 'Failed to delete agent');
   }
 }

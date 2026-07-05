@@ -143,9 +143,7 @@ message DeletePolicyRequest {
   string id = 1;
 }
 
-message DeletePolicyResponse {
-  bool deleted = 1;
-}
+message DeletePolicyResponse {}
 
 message ListPoliciesRequest {}
 
@@ -315,7 +313,7 @@ message UpdateRoleRequest {
 }
 
 message DeleteRoleRequest { string id = 1; }
-message DeleteRoleResponse { bool deleted = 1; }
+message DeleteRoleResponse {}
 
 message ListRolesRequest {}
 message ListRolesResponse { repeated Role roles = 1; }

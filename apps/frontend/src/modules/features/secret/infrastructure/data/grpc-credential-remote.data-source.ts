@@ -37,12 +37,11 @@ export class GrpcSecretRemoteDataSource implements SecretRemoteDataSource {
     }, 'Failed to create secret.');
   }
 
-  public async deleteById(secretId: string): Promise<ScyllaResult<boolean>> {
-    return ScyllaResult.tryAsync<boolean>(async () => {
-      const response = await this._secretClient.deleteSecret({
+  public async deleteById(secretId: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync<void>(async () => {
+      await this._secretClient.deleteSecret({
         secretId: wrapId(secretId),
       }).response;
-      return response.deleted;
     }, 'Error deleting secret');
   }
 }

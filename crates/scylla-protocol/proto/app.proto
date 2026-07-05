@@ -66,9 +66,7 @@ message DeleteAppRequest {
   common.AppId id = 1;
 }
 
-message DeleteAppResponse {
-  bool deleted = 1;
-}
+message DeleteAppResponse {}
 
 message SetAppActiveRequest {
   common.AppId app_id = 1;
@@ -109,9 +107,7 @@ message RevokeAppSecretRequest {
   common.AppSecretId secret_id = 1;
 }
 
-message RevokeAppSecretResponse {
-  bool deleted = 1;
-}
+message RevokeAppSecretResponse {}
 
 message SetAppSecretEnabledRequest {
   common.AppSecretId secret_id = 1;

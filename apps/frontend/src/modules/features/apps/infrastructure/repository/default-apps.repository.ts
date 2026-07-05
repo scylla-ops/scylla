@@ -26,7 +26,7 @@ export class DefaultAppsRepository implements AppsRepository {
     return this.remoteDataSource.createApp(organizationId, name);
   }
 
-  deleteApp(appId: string): Promise<ScyllaResult<boolean>> {
+  deleteApp(appId: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.deleteApp(appId);
   }
 
@@ -42,7 +42,7 @@ export class DefaultAppsRepository implements AppsRepository {
     return this.remoteDataSource.createAppSecret(appId, label);
   }
 
-  revokeAppSecret(secretId: string): Promise<ScyllaResult<boolean>> {
+  revokeAppSecret(secretId: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.revokeAppSecret(secretId);
   }
 

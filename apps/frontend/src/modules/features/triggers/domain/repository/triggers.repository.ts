@@ -12,7 +12,7 @@ export interface TriggersRepository {
   getById(triggerId: string): Promise<ScyllaResult<TriggerEntity>>;
   create(pipelineId: string, draft: TriggerDraft): Promise<ScyllaResult<CreatedTrigger>>;
   update(triggerId: string, draft: TriggerDraft): Promise<ScyllaResult<TriggerEntity>>;
-  deleteById(triggerId: string): Promise<ScyllaResult<boolean>>;
+  deleteById(triggerId: string): Promise<ScyllaResult<void>>;
   setEnabled(triggerId: string, enabled: boolean): Promise<ScyllaResult<TriggerEntity>>;
   /** Fire immediately for testing — mints and dispatches a Job, like a real tir. */
   fireNow(triggerId: string): Promise<ScyllaResult<JobEntity>>;

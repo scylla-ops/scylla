@@ -48,12 +48,10 @@ export class GrpcTriggersRemoteDataSource implements TriggersRemoteDataSource {
     );
   }
 
-  public async deleteById(triggerId: string): Promise<ScyllaResult<boolean>> {
-    return ScyllaResult.tryAsync<boolean>(
-      async () =>
-        (await this._client.deleteTrigger({ triggerId: wrapId(triggerId) })).response.deleted,
-      'Error deleting trigger',
-    );
+  public async deleteById(triggerId: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync<void>(async () => {
+      await this._client.deleteTrigger({ triggerId: wrapId(triggerId) }).response;
+    }, 'Error deleting trigger');
   }
 
   public async setEnabled(triggerId: string, enabled: boolean): Promise<ScyllaResult<TriggerView>> {

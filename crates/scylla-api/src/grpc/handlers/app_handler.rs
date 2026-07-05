@@ -98,7 +98,7 @@ impl<
             .delete(&caller, AppId::new(&required(req.id, "id")?))
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(DeleteAppResponse { deleted: true }))
+        Ok(Response::new(DeleteAppResponse {}))
     }
 
     async fn set_app_active(
@@ -169,7 +169,7 @@ impl<
             )
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(RevokeAppSecretResponse { deleted: true }))
+        Ok(Response::new(RevokeAppSecretResponse {}))
     }
 
     async fn set_app_secret_enabled(

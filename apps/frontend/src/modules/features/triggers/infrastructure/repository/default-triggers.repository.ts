@@ -40,7 +40,7 @@ export class DefaultTriggersRepository implements TriggersRepository {
     return (await this.remoteDataSource.update(request)).map(GrpcTriggerMapper.toDomain);
   }
 
-  public deleteById(triggerId: string): Promise<ScyllaResult<boolean>> {
+  public deleteById(triggerId: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.deleteById(triggerId);
   }
 

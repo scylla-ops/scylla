@@ -5,7 +5,7 @@ import type { SecretRepository } from '@/modules/features/secret/domain/reposito
 export class DeleteSecretUseCase {
   constructor(private readonly repository: SecretRepository) {}
 
-  public execute(secretId: string): Promise<ScyllaResult<boolean>> {
+  public execute(secretId: string): Promise<ScyllaResult<void>> {
     return this.repository.deleteById(secretId);
   }
 }

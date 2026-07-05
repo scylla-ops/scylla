@@ -98,7 +98,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(DeletePolicyResponse { deleted: true }))
+        Ok(Response::new(DeletePolicyResponse {}))
     }
 
     async fn list_policies(

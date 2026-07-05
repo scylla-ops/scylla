@@ -170,7 +170,7 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(DeleteTriggerResponse { deleted: true }))
+        Ok(Response::new(DeleteTriggerResponse {}))
     }
 
     async fn list_pipeline_triggers(
