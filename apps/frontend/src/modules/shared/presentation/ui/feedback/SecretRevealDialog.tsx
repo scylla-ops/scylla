@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Check, Eye } from 'lucide-react';
 import { Button } from '@shadcn';
@@ -12,15 +12,28 @@ import {
 } from '@shadcn/dialog.tsx';
 import { CodeSnippet } from '@shadcn/code-snippet.tsx';
 import { cn } from '@shared/presentation/utils';
-import { AgentRunInstructions } from '@shared/presentation/ui/data-display/AgentRunInstructions.tsx';
-
-export type SecretEntityKind = 'app' | 'agent' | 'webhook';
 
 interface SecretRevealDialogProps {
   open: boolean;
-  entityKind: SecretEntityKind;
-  entity: { id: string; name: string };
+  title: ReactNode;
+  description: ReactNode;
+  /** The one-time secret value shown (blurred until revealed). */
   secret: string;
+  /** Label displayed on the secret snippet (e.g. the entity id). */
+  secretLabel: ReactNode;
+  /** Toast shown after copying; defaults to "Secret copied". */
+  copyToast?: string;
+  /** Heading for the secret step; defaults to "Copy your secret". */
+  secretStepTitle?: ReactNode;
+  /**
+   * Optional numbered second step, revealed once the secret is shown — e.g. run
+   * instructions. When present, the checklist connector + step 2 bullet appear.
+   */
+  secondStep?: { title: ReactNode; content: ReactNode };
+  /** Optional quiet note shown under the secret once revealed (no second step). */
+  revealedNote?: ReactNode;
+  /** Footer note; defaults to "You won't see this secret again." */
+  footerNote?: ReactNode;
   /** Called once the user confirms they've copied it — caller closes + navigates. */
   onClose: () => void;
 }
@@ -47,9 +60,15 @@ const StepBullet = ({ n, active }: { n: number; active: boolean }) => (
  */
 export const SecretRevealDialog = ({
   open,
-  entityKind,
-  entity,
+  title,
+  description,
   secret,
+  secretLabel,
+  copyToast = 'Secret copied',
+  secretStepTitle,
+  secondStep,
+  revealedNote,
+  footerNote,
   onClose,
 }: SecretRevealDialogProps) => {
   const [revealed, setRevealed] = useState(false);
@@ -66,9 +85,6 @@ export const SecretRevealDialog = ({
     if (revealed) confirmBtnRef.current?.focus();
   }, [revealed]);
 
-  const hasRunStep = entityKind === 'agent';
-  const isWebhook = entityKind === 'webhook';
-
   return (
     <Dialog open={open}>
       <DialogContent
@@ -79,22 +95,8 @@ export const SecretRevealDialog = ({
         onInteractOutside={e => e.preventDefault()}
       >
         <DialogHeader className='space-y-1 p-5 pb-3 text-left'>
-          <DialogTitle className='text-[15px]'>
-            {hasRunStep ? (
-              <Trans>{entity.name} is ready</Trans>
-            ) : isWebhook ? (
-              <Trans>{entity.name} webhook secret</Trans>
-            ) : (
-              <Trans>{entity.name} credentials</Trans>
-            )}
-          </DialogTitle>
-          <DialogDescription className='text-[13px]'>
-            {hasRunStep ? (
-              <Trans>Two steps and it picks up jobs.</Trans>
-            ) : (
-              <Trans>Copy the secret below — it is shown only once.</Trans>
-            )}
-          </DialogDescription>
+          <DialogTitle className='text-[15px]'>{title}</DialogTitle>
+          <DialogDescription className='text-[13px]'>{description}</DialogDescription>
         </DialogHeader>
 
         <div className='space-y-1 px-5 pb-4'>
@@ -102,11 +104,11 @@ export const SecretRevealDialog = ({
           <div className='flex gap-3'>
             <div className='flex flex-col items-center'>
               <StepBullet n={1} active />
-              {hasRunStep && <span className='mt-1.5 w-px flex-1 bg-border' />}
+              {secondStep && <span className='mt-1.5 w-px flex-1 bg-border' />}
             </div>
             <div className='min-w-0 flex-1 pb-4'>
               <p className='mb-2 mt-0.5 text-[13px] font-medium'>
-                <Trans>Copy your secret</Trans>{' '}
+                {secretStepTitle ?? <Trans>Copy your secret</Trans>}{' '}
                 <span className='font-normal text-muted-foreground'>
                   · <Trans>shown once</Trans>
                 </span>
@@ -115,12 +117,8 @@ export const SecretRevealDialog = ({
                 multiline
                 value={secret}
                 blurred={!revealed}
-                copyToast='Secret copied'
-                label={
-                  <span className='truncate font-mono'>
-                    {entity.id}
-                  </span>
-                }
+                copyToast={copyToast}
+                label={<span className='truncate font-mono'>{secretLabel}</span>}
                 overlay={
                   <Button
                     ref={revealBtnRef}
@@ -138,8 +136,8 @@ export const SecretRevealDialog = ({
             </div>
           </div>
 
-          {/* Step 2 — run it (agents); apps just get a quiet usage note */}
-          {hasRunStep ? (
+          {/* Step 2 — an optional follow-up (e.g. run instructions); otherwise a quiet note */}
+          {secondStep ? (
             <div className='flex gap-3'>
               <div className='flex flex-col items-center'>
                 <StepBullet n={2} active={revealed} />
@@ -150,33 +148,19 @@ export const SecretRevealDialog = ({
                   revealed ? 'opacity-100' : 'opacity-40',
                 )}
               >
-                <p className='mb-2 mt-0.5 text-[13px] font-medium'>
-                  <Trans>Start your agent</Trans>
-                </p>
-                {revealed && <AgentRunInstructions appId={entity.id} secret={secret} />}
+                <p className='mb-2 mt-0.5 text-[13px] font-medium'>{secondStep.title}</p>
+                {revealed && secondStep.content}
               </div>
             </div>
           ) : (
-            revealed && (
-              <p className='pl-9 text-xs text-muted-foreground'>
-                {isWebhook ? (
-                  <Trans>
-                    Add this signing secret to your webhook sender's HMAC configuration.
-                  </Trans>
-                ) : (
-                  <Trans>
-                    Use these credentials (id + secret) to authenticate an automation against the
-                    Scylla API.
-                  </Trans>
-                )}
-              </p>
-            )
+            revealed &&
+            revealedNote && <p className='pl-9 text-xs text-muted-foreground'>{revealedNote}</p>
           )}
         </div>
 
         <DialogFooter className='items-center justify-between gap-2 border-t p-4 sm:justify-between'>
           <span className='text-xs text-muted-foreground'>
-            <Trans>You won't see this secret again.</Trans>
+            {footerNote ?? <Trans>You won't see this secret again.</Trans>}
           </span>
           <Button
             ref={confirmBtnRef}

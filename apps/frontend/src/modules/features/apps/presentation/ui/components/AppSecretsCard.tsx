@@ -141,9 +141,20 @@ export const AppSecretsCard = ({ app }: AppSecretsCardProps) => {
       {created && (
         <SecretRevealDialog
           open={!!created}
-          entityKind='app'
-          entity={{ id: app.id, name: `${app.name} · ${created.credential.label}` }}
+          title={
+            <Trans>
+              {app.name} · {created.credential.label} credentials
+            </Trans>
+          }
+          description={<Trans>Copy the secret below — it is shown only once.</Trans>}
           secret={created.secret}
+          secretLabel={'Secret'}
+          revealedNote={
+            <Trans>
+              Use these credentials (id + secret) to authenticate an automation against the Scylla
+              API.
+            </Trans>
+          }
           onClose={() => setCreated(null)}
         />
       )}

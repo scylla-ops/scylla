@@ -115,9 +115,16 @@ export const AppsPage = () => {
       {created && (
         <SecretRevealDialog
           open={!!created}
-          entityKind='app'
-          entity={{ id: created.app.id, name: created.app.name }}
+          title={<Trans>{created.app.name} credentials</Trans>}
+          description={<Trans>Copy the secret below — it is shown only once.</Trans>}
           secret={created.secret}
+          secretLabel={created.app.id}
+          revealedNote={
+            <Trans>
+              Use these credentials (id + secret) to authenticate an automation against the Scylla
+              API.
+            </Trans>
+          }
           onClose={() => {
             const id = created.app.id;
             setCreated(null);
