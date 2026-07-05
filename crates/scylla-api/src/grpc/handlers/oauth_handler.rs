@@ -3,12 +3,12 @@ use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::authz::policy::PolicyControl;
 use scylla_core::application::{
-    HashService, OAuthIdentityRepository, OAuthProvider, OAuthUseCases, SessionRepository,
-    SignupRepository, UserRepository,
+    AccountOutcome, HashService, OAuthIdentityRepository, OAuthOutcome, OAuthProvider,
+    OAuthUseCases, SessionRepository, SignupRepository, UserRepository,
 };
 use scylla_protocol::services::oauth::{
-    GetAuthUrlRequest, GetAuthUrlResponse, OauthCallbackRequest, OauthCallbackResponse,
-    oauth_service_server::OauthService,
+    ExistingAccount, GetAuthUrlRequest, GetAuthUrlResponse, NewAccount, OauthCallbackRequest,
+    OauthCallbackResponse, oauth_callback_response, oauth_service_server::OauthService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -56,15 +56,29 @@ impl<
         request: Request<OauthCallbackRequest>,
     ) -> Result<Response<OauthCallbackResponse>, Status> {
         let req = request.into_inner();
-        let outcome = self
+        let OAuthOutcome {
+            token,
+            user_id,
+            account,
+        } = self
             .use_cases
             .callback(&req.code)
             .await
             .map_err(domain_error_to_status)?;
+        let outcome = match account {
+            AccountOutcome::New { organization_id } => {
+                oauth_callback_response::Outcome::NewAccount(NewAccount {
+                    organization_id: wrap(organization_id.to_string()),
+                })
+            }
+            AccountOutcome::Existing => {
+                oauth_callback_response::Outcome::ExistingAccount(ExistingAccount {})
+            }
+        };
         Ok(Response::new(OauthCallbackResponse {
-            token: outcome.token,
-            user_id: wrap(outcome.user_id.to_string()),
-            organization_id: outcome.organization_id.and_then(|o| wrap(o.to_string())),
+            token,
+            user_id: wrap(user_id.to_string()),
+            outcome: Some(outcome),
         }))
     }
 }

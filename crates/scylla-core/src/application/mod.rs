@@ -48,7 +48,8 @@ pub use job::{
 };
 pub use mail::{Mailer, NoopMailer};
 pub use oauth::{
-    OAuthIdentityRepository, OAuthOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo,
+    AccountOutcome, OAuthIdentityRepository, OAuthOutcome, OAuthProvider, OAuthUseCases,
+    OAuthUserInfo,
 };
 pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
 pub use pipeline::{PipelineRepository, PipelineUseCases};

@@ -22,8 +22,18 @@ const SESSION_TTL_HOURS: i64 = 24;
 pub struct OAuthOutcome {
     pub token: String,
     pub user_id: UserId,
-    /// Set only when a brand-new account (and its organization) was created.
-    pub organization_id: Option<OrganizationId>,
+    /// Whether this login provisioned a new account or reused an existing one.
+    pub account: AccountOutcome,
+}
+
+/// Which onboarding path the callback took. Mirrors the
+/// `OauthCallbackResponse.outcome` oneof: a brand-new account carries the id of
+/// the organization created alongside it; an existing account carries nothing.
+pub enum AccountOutcome {
+    /// A brand-new account and its organization were provisioned on first login.
+    New { organization_id: OrganizationId },
+    /// The login resolved to an already-existing account.
+    Existing,
 }
 
 /// GitHub OAuth login. Public flow: the frontend redirects to `authorize_url`,
@@ -88,7 +98,7 @@ where
             return Ok(OAuthOutcome {
                 token,
                 user_id,
-                organization_id: None,
+                account: AccountOutcome::Existing,
             });
         }
 
@@ -105,7 +115,7 @@ where
                 return Ok(OAuthOutcome {
                     token,
                     user_id: user.id().clone(),
-                    organization_id: None,
+                    account: AccountOutcome::Existing,
                 });
             }
         }
@@ -149,7 +159,9 @@ where
         Ok(OAuthOutcome {
             token,
             user_id: user.id().clone(),
-            organization_id: Some(organization.id().clone()),
+            account: AccountOutcome::New {
+                organization_id: organization.id().clone(),
+            },
         })
     }
 
