@@ -27,5 +27,21 @@ message OauthCallbackRequest {
 message OauthCallbackResponse {
   string token = 1;
   common.UserId user_id = 2;
-  optional common.OrganizationId organization_id = 3; // set only when a new account was created
+  // Exactly one outcome. A first login provisions a new account (carrying its
+  // fresh organization id); any later login resolves to an existing account
+  // and carries no org id. Splitting these makes "new account without an org"
+  // and "existing account with an org" unrepresentable.
+  oneof outcome {
+    NewAccount new_account = 3;
+    ExistingAccount existing_account = 4;
+  }
 }
+
+// First OAuth login: a brand-new account and its organization were provisioned.
+message NewAccount {
+  common.OrganizationId organization_id = 1;
+}
+
+// A later login that resolved to an already-existing account (matched by linked
+// identity, or by email on first link). Carries no fields.
+message ExistingAccount {}

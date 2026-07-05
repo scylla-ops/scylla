@@ -1,6 +1,6 @@
 use crate::application::UserOrganizationRepository;
 use crate::application::audit::NoopAuditLog;
-use crate::application::oauth::{OAuthProvider, OAuthUseCases, OAuthUserInfo};
+use crate::application::oauth::{AccountOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::user::Email;
 use crate::infrastructure::persistence::postgres::{
@@ -74,13 +74,12 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
     let uc = use_cases(&pool, info).await;
 
     let first = uc.callback("code-1").await.expect("first login");
-    assert!(
-        first.organization_id.is_some(),
-        "new account gets an organization"
-    );
+    let AccountOutcome::New { organization_id } = &first.account else {
+        panic!("new account gets an organization");
+    };
     assert!(
         PgUserOrganizationRepository::new(pool.clone())
-            .is_member(&first.user_id, first.organization_id.as_ref().unwrap())
+            .is_member(&first.user_id, organization_id)
             .await
             .unwrap()
     );
@@ -91,7 +90,7 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
         "same identity reuses account"
     );
     assert!(
-        second.organization_id.is_none(),
+        matches!(second.account, AccountOutcome::Existing),
         "returning user creates no org"
     );
 }
@@ -116,7 +115,7 @@ async fn login_links_to_existing_user_by_email(pool: sqlx::PgPool) {
     let out = uc.callback("code").await.expect("login");
     assert_eq!(out.user_id, *existing.id(), "linked to existing account");
     assert!(
-        out.organization_id.is_none(),
+        matches!(out.account, AccountOutcome::Existing),
         "no new org for existing user"
     );
 }
