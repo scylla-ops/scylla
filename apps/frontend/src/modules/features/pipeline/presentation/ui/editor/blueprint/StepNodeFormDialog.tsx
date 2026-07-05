@@ -144,7 +144,7 @@ export function StepNodeFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-2xl'>
+      <DialogContent className='max-w-5xl'>
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? <Trans>Edit node</Trans> : <Trans>Add a new node</Trans>}

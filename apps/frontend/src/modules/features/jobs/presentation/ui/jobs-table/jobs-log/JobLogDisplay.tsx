@@ -26,7 +26,7 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
         editable={false}
         autoFocus={false}
         value={logs}
-        maxHeight={'15rem'}
+        maxHeight={'28rem'}
         extensions={[StreamLanguage.define(shell), codeMirrorTheme]}
       />
     </div>
