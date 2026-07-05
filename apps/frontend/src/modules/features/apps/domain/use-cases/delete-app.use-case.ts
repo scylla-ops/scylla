@@ -5,7 +5,7 @@ import type { AppsRepository } from '@/modules/features/apps/domain/repository/a
 export class DeleteAppUseCase {
   constructor(private readonly repository: AppsRepository) {}
 
-  execute(appId: string): Promise<ScyllaResult<boolean>> {
+  execute(appId: string): Promise<ScyllaResult<void>> {
     return this.repository.deleteApp(appId);
   }
 }

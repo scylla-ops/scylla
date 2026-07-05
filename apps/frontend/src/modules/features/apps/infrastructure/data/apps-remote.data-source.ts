@@ -45,11 +45,10 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     }, 'Failed to create app');
   }
 
-  deleteApp(appId: string): Promise<ScyllaResult<boolean>> {
+  deleteApp(appId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
-      const response = await client.deleteApp({ id: wrapId(appId) }).response;
-      return response.deleted;
+      await client.deleteApp({ id: wrapId(appId) }).response;
     }, 'Failed to delete app');
   }
 
@@ -81,11 +80,10 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     }, 'Failed to create app secret');
   }
 
-  revokeAppSecret(secretId: string): Promise<ScyllaResult<boolean>> {
+  revokeAppSecret(secretId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
-      const response = await client.revokeAppSecret({ secretId: wrapId(secretId) }).response;
-      return response.deleted;
+      await client.revokeAppSecret({ secretId: wrapId(secretId) }).response;
     }, 'Failed to revoke app secret');
   }
 

@@ -95,7 +95,7 @@ message CreatedTrigger {
 
 message GetTriggerRequest    { common.TriggerId trigger_id = 1; }
 message DeleteTriggerRequest  { common.TriggerId trigger_id = 1; }
-message DeleteTriggerResponse { bool deleted = 1; }
+message DeleteTriggerResponse {}
 
 // Remplace les champs éditables (name, spec de source, inputs). `enabled` se gère
 // via SetTriggerEnabled. Le KIND de source est immuable — pour passer de cron à

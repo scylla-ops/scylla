@@ -5,7 +5,7 @@ import type { TriggersRepository } from '@/modules/features/triggers/domain/repo
 export class DeleteTriggerUseCase {
   constructor(private readonly repository: TriggersRepository) {}
 
-  public execute(triggerId: string): Promise<ScyllaResult<boolean>> {
+  public execute(triggerId: string): Promise<ScyllaResult<void>> {
     return this.repository.deleteById(triggerId);
   }
 }

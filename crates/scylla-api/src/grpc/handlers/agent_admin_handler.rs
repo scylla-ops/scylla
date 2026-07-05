@@ -131,7 +131,7 @@ impl<
             .delete(&caller, AppId::new(&required(req.id, "id")?))
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(DeleteAgentResponse { deleted: true }))
+        Ok(Response::new(DeleteAgentResponse {}))
     }
 }
 

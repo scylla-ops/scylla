@@ -50,8 +50,8 @@ export class DefaultPermissionRepository implements PermissionRepository {
     ).map(GrpcRoleMapper.toDomain);
   }
 
-  public async deleteRole(id: string): Promise<ScyllaResult<boolean>> {
-    return (await this._dataSource.deleteRole(id)).map(response => response.deleted);
+  public async deleteRole(id: string): Promise<ScyllaResult<void>> {
+    return (await this._dataSource.deleteRole(id)).map<void>(() => undefined);
   }
 
   // ── Introspection ──────────────────────────────────────────────────────────

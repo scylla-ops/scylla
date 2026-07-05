@@ -69,6 +69,6 @@ impl<R: SecretRepository + Send + Sync + 'static, PS: PermissionService + Send +
             .delete(&caller, &id)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(DeleteSecretResponse { deleted: true }))
+        Ok(Response::new(DeleteSecretResponse {}))
     }
 }

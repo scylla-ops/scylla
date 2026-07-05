@@ -5,7 +5,7 @@ import type { AgentsRepository } from '@/modules/features/agents/domain/reposito
 export class DeleteAgentUseCase {
   constructor(private readonly repository: AgentsRepository) {}
 
-  execute(agentId: string): Promise<ScyllaResult<boolean>> {
+  execute(agentId: string): Promise<ScyllaResult<void>> {
     return this.repository.deleteAgent(agentId);
   }
 }

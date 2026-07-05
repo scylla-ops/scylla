@@ -17,7 +17,7 @@ export interface TriggersRemoteDataSource {
   getById(triggerId: string): Promise<ScyllaResult<TriggerView>>;
   create(request: CreateTriggerRequest): Promise<ScyllaResult<CreatedTrigger>>;
   update(request: UpdateTriggerRequest): Promise<ScyllaResult<TriggerView>>;
-  deleteById(triggerId: string): Promise<ScyllaResult<boolean>>;
+  deleteById(triggerId: string): Promise<ScyllaResult<void>>;
   setEnabled(triggerId: string, enabled: boolean): Promise<ScyllaResult<TriggerView>>;
   fireNow(triggerId: string): Promise<ScyllaResult<JobResponse>>;
 }

@@ -39,7 +39,7 @@ export interface PermissionRepository {
   getRole(id: string): Promise<ScyllaResult<RoleEntity>>;
   createRole(role: RoleCreationData): Promise<ScyllaResult<RoleEntity>>;
   updateRole(role: RoleEntity): Promise<ScyllaResult<RoleEntity>>;
-  deleteRole(id: string): Promise<ScyllaResult<boolean>>;
+  deleteRole(id: string): Promise<ScyllaResult<void>>;
 
   // ── Introspection ──────────────────────────────────────────────────────────
   getEffectivePermissions(
