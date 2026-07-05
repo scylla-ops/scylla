@@ -1,6 +1,4 @@
 import ReactCodeMirror from '@uiw/react-codemirror';
-import { StreamLanguage } from '@codemirror/language';
-import { shell } from '@codemirror/legacy-modes/mode/shell';
 import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
 import { useTailJobLogs } from '@/modules/features/jobs/presentation/hooks/use-tail-job-logs.ts';
 
@@ -27,7 +25,7 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
         autoFocus={false}
         value={logs}
         maxHeight={'28rem'}
-        extensions={[StreamLanguage.define(shell), codeMirrorTheme]}
+        extensions={[codeMirrorTheme]}
       />
     </div>
   );
