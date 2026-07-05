@@ -5,7 +5,12 @@ import { createAgentItems } from '@/modules/features/agents/presentation/utils/c
 import { AgentCard } from '@/modules/features/agents/presentation/ui/components/AgentCard.tsx';
 import { mockCardStats } from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
 import type { CreatedAgent } from '@/modules/features/agents/domain/structs/agent.struct.ts';
-import { FeatureHeader, FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
+import {
+  AgentRunInstructions,
+  FeatureHeader,
+  FormDialog,
+  SecretRevealDialog,
+} from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Button, Card } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';
@@ -134,9 +139,14 @@ export const AgentsPage = () => {
       {created && (
         <SecretRevealDialog
           open={!!created}
-          entityKind='agent'
-          entity={{ id: created.agent.id, name: created.agent.name }}
+          title={<Trans>{created.agent.name} is ready</Trans>}
+          description={<Trans>Two steps and it picks up jobs.</Trans>}
           secret={created.secret}
+          secretLabel={'Secret for the agent'}
+          secondStep={{
+            title: <Trans>Start your agent</Trans>,
+            content: <AgentRunInstructions appId={created.agent.id} secret={created.secret} />,
+          }}
           onClose={() => {
             const id = created.agent.id;
             setCreated(null);
