@@ -180,13 +180,13 @@ where
         self.permission_service
             .check(caller, Permission::ManageTriggers(trigger.pipeline_id().clone()))
             .await?;
-        trigger.set_enabled(enabled);
         // Re-enabling re-anchors from now (no catch-up fire at a stale past time);
-        // disabling clears the due time so it isn't shown or claimed.
+        // disabling structurally drops the due time (see `Trigger::disable`).
         if enabled {
+            trigger.enable();
             self.schedule_next(&mut trigger)?;
         } else {
-            trigger.set_next_fire_at(None);
+            trigger.disable();
         }
         self.trigger_repo.update(&trigger).await
     }

@@ -132,14 +132,28 @@ message TriggerView {
     WebhookSpec webhook = 5;
   }
   repeated TriggerInput inputs  = 6;
-  bool              enabled     = 7;
   // Webhook uniquement : l'URL publique où POSTer. Dérivée de la config serveur.
-  string            webhook_url = 8;
-  // Cron uniquement : prochaine occurrence due (UTC).
-  google.protobuf.Timestamp next_fire_at  = 9;
-  // Dernier résultat de tir, pour l'observabilité. Vide avant le 1er tir.
-  google.protobuf.Timestamp last_fired_at = 10;
-  string                    last_status   = 11; // "" | "ok" | "error: ..."
-  google.protobuf.Timestamp created_at    = 12;
-  google.protobuf.Timestamp updated_at    = 13;
+  string            webhook_url = 7;
+  // Activation, miroir du domaine TriggerActivation : un trigger désactivé n'a
+  // structurellement pas d'échéance ; `next_fire_at` ne vit que dans `enabled`.
+  oneof activation {
+    TriggerDisabled disabled = 8;
+    TriggerEnabled  enabled  = 9;
+  }
+  // Dernier résultat de tir (horodatage + statut, ensemble ou absents), miroir du
+  // domaine FireObservation. Absent avant le 1er tir.
+  FireObservationView last_observation = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message TriggerDisabled {}
+message TriggerEnabled {
+  // Cron planifié uniquement : prochaine occurrence due (UTC). Absent pour un
+  // webhook ou un cron pas encore planifié.
+  google.protobuf.Timestamp next_fire_at = 1;
+}
+message FireObservationView {
+  google.protobuf.Timestamp fired_at = 1;
+  string                    status   = 2; // "ok" | "error: ..."
 }

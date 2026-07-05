@@ -5,7 +5,9 @@ use scylla_core::application::{
     AgentDispatch, AppRepository, HashService, JobRepository, PermissionService, PipelineRepository,
     PolicyControl, ProjectRepository, TriggerFireUseCases, TriggerRepository, TriggerUseCases,
 };
-use scylla_core::domain::entities::{PipelineId, Trigger, TriggerId};
+use scylla_core::domain::entities::{
+    FireObservation, PipelineId, Trigger, TriggerActivation, TriggerId,
+};
 use scylla_core::domain::value_objects::pipeline::EnvKey;
 use scylla_core::domain::value_objects::trigger::{
     CronSpec, TriggerInput, TriggerInputSource, TriggerName, TriggerSource, WebhookSpec,
@@ -13,10 +15,11 @@ use scylla_core::domain::value_objects::trigger::{
 use scylla_protocol::services::job::JobResponse;
 use scylla_protocol::services::trigger::{
     CreateTriggerRequest, CreatedTrigger, CronSpec as ProtoCronSpec, DeleteTriggerRequest,
-    DeleteTriggerResponse, FireTriggerNowRequest, GetTriggerRequest, ListPipelineTriggersRequest,
-    ListTriggersResponse, SetTriggerEnabledRequest, TriggerInput as ProtoTriggerInput, TriggerView,
-    UpdateTriggerRequest, WebhookSpec as ProtoWebhookSpec, create_trigger_request,
-    trigger_input, trigger_service_server::TriggerService, trigger_view, update_trigger_request,
+    DeleteTriggerResponse, FireObservationView, FireTriggerNowRequest, GetTriggerRequest,
+    ListPipelineTriggersRequest, ListTriggersResponse, SetTriggerEnabledRequest, TriggerDisabled,
+    TriggerEnabled, TriggerInput as ProtoTriggerInput, TriggerView, UpdateTriggerRequest,
+    WebhookSpec as ProtoWebhookSpec, create_trigger_request, trigger_input,
+    trigger_service_server::TriggerService, trigger_view, update_trigger_request,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -303,13 +306,29 @@ fn trigger_to_view(t: &Trigger, webhook_base_url: Option<&str>) -> TriggerView {
         name: t.name().to_string(),
         source: Some(source_to_proto(t.source())),
         inputs: t.inputs().iter().map(input_to_proto).collect(),
-        enabled: t.is_enabled(),
         webhook_url,
-        next_fire_at: t.next_fire_at().and_then(ts),
-        last_fired_at: t.last_fired_at().and_then(ts),
-        last_status: t.last_status().unwrap_or_default().to_string(),
+        activation: Some(activation_to_proto(t.activation())),
+        last_observation: t.last_observation().map(observation_to_proto),
         created_at: ts(t.created_at()),
         updated_at: ts(t.updated_at()),
+    }
+}
+
+fn activation_to_proto(activation: &TriggerActivation) -> trigger_view::Activation {
+    match activation {
+        TriggerActivation::Disabled => trigger_view::Activation::Disabled(TriggerDisabled {}),
+        TriggerActivation::Enabled { next_fire_at } => {
+            trigger_view::Activation::Enabled(TriggerEnabled {
+                next_fire_at: next_fire_at.and_then(ts),
+            })
+        }
+    }
+}
+
+fn observation_to_proto(observation: &FireObservation) -> FireObservationView {
+    FireObservationView {
+        fired_at: ts(observation.fired_at),
+        status: observation.status.clone(),
     }
 }
 

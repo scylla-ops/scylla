@@ -11,10 +11,11 @@ use scylla_core::application::{
 use scylla_core::domain::entities::{AppId, UserId};
 use scylla_protocol::services::permission::{
     CreateRoleRequest, DeleteRoleRequest, DeleteRoleResponse,
-    EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest,
+    EffectiveScope as ProtoEffectiveScope, FullControl, GetEffectivePermissionsRequest,
     GetEffectivePermissionsResponse, GetRoleRequest, ListRolesRequest, ListRolesResponse,
-    Permission, PrincipalKind, Role as ProtoRole, UpdateRoleRequest,
-    role_service_server::RoleService,
+    Permission, PrincipalKind, RestrictedPermissions, Role as ProtoRole, UpdateRoleRequest,
+    create_role_request, effective_scope, role, role_service_server::RoleService,
+    update_role_request,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -45,7 +46,16 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         let scope = scope_kind_from_proto(req.scope)?;
-        let permissions = permissions_from_proto(req.full_control, &req.permissions)?;
+        let (full_control, permission_ids) = match req.access {
+            Some(create_role_request::Access::FullControl(_)) => (true, Vec::new()),
+            Some(create_role_request::Access::Restricted(r)) => (false, r.permissions),
+            None => {
+                return Err(Status::invalid_argument(
+                    "access is required (full_control or restricted)",
+                ));
+            }
+        };
+        let permissions = permissions_from_proto(full_control, &permission_ids)?;
 
         let role = self
             .use_cases
@@ -62,7 +72,16 @@ impl<
     ) -> Result<Response<ProtoRole>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let permissions = permissions_from_proto(req.full_control, &req.permissions)?;
+        let (full_control, permission_ids) = match req.access {
+            Some(update_role_request::Access::FullControl(_)) => (true, Vec::new()),
+            Some(update_role_request::Access::Restricted(r)) => (false, r.permissions),
+            None => {
+                return Err(Status::invalid_argument(
+                    "access is required (full_control or restricted)",
+                ));
+            }
+        };
+        let permissions = permissions_from_proto(full_control, &permission_ids)?;
 
         let role = self
             .use_cases
@@ -153,12 +172,22 @@ fn principal_from_proto(kind: i32, id: String) -> Result<Principal, Status> {
 
 fn effective_scope_to_proto(es: &EffectiveScope) -> ProtoEffectiveScope {
     let (scope, scope_id) = scope_to_proto(&es.scope);
+    let access = if es.full_control {
+        effective_scope::Access::FullControl(FullControl {})
+    } else {
+        effective_scope::Access::Restricted(restricted_from_keys(&es.permissions))
+    };
     ProtoEffectiveScope {
         scope: scope as i32,
         scope_id,
-        full_control: es.full_control,
-        permissions: es
-            .permissions
+        access: Some(access),
+    }
+}
+
+/// The proto `RestrictedPermissions` for a set of domain permission keys.
+fn restricted_from_keys(keys: &[String]) -> RestrictedPermissions {
+    RestrictedPermissions {
+        permissions: keys
             .iter()
             .filter_map(|key| permission_from_key(key).map(|p| p as i32))
             .collect(),
@@ -182,14 +211,10 @@ fn permissions_from_proto(full_control: bool, permissions: &[i32]) -> Result<Vec
 }
 
 fn role_to_proto(role: &Role) -> ProtoRole {
-    let full_control = role.is_full_control();
-    let permissions = if full_control {
-        Vec::new()
+    let access = if role.is_full_control() {
+        role::Access::FullControl(FullControl {})
     } else {
-        role.permissions
-            .iter()
-            .filter_map(|key| permission_from_key(key).map(|p| p as i32))
-            .collect()
+        role::Access::Restricted(restricted_from_keys(&role.permissions))
     };
     ProtoRole {
         id: role.id.clone(),
@@ -198,7 +223,6 @@ fn role_to_proto(role: &Role) -> ProtoRole {
         description: role.description.clone(),
         scope: scope_kind_to_proto(role.scope) as i32,
         builtin: role.builtin,
-        full_control,
-        permissions,
+        access: Some(access),
     }
 }

@@ -1,6 +1,7 @@
 use crate::application::JobRepository;
 use crate::domain::entities::{AppId, Job, JobId, JobNode, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::entities::JobState;
 use crate::domain::value_objects::job::{JobOrigin, JobStatus};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;
@@ -137,18 +138,18 @@ impl TryFrom<JobRow> for Job {
     type Error = DomainError;
     fn try_from(r: JobRow) -> DomainResult<Self> {
         let status = JobStatus::new(r.status).db_field("job status")?;
+        let state =
+            JobState::from_columns(status, r.started_at, r.finished_at).db_field("job state")?;
         Ok(Job::from_persistence(
             JobId::new(r.id),
             PipelineId::new(r.pipeline_id),
-            status,
+            state,
+            r.agent_app_id.map(AppId::new),
             r.node_executions.0,
             r.inputs.0,
             r.origin.0,
-            r.agent_app_id.map(AppId::new),
             r.created_at,
             r.updated_at,
-            r.started_at,
-            r.finished_at,
         ))
     }
 }

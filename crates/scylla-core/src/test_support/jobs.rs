@@ -4,8 +4,8 @@ use bon::bon;
 use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
-use crate::domain::entities::{Job, JobId, JobNode, Pipeline, UserId};
-use crate::domain::value_objects::job::{JobOrigin, JobStatus, NodeState};
+use crate::domain::entities::{Job, JobId, JobNode, JobState, NodeExecution, Pipeline, UserId};
+use crate::domain::value_objects::job::{JobOrigin, JobStatus};
 
 pub struct JobBuilder;
 
@@ -43,7 +43,7 @@ impl JobBuilder {
         let node_executions: Vec<JobNode> = pipeline
             .nodes()
             .iter()
-            .map(|n| JobNode::from_persistence(n.id().clone(), NodeState::Pending, None, None))
+            .map(|n| JobNode::from_persistence(n.id().clone(), NodeExecution::Pending))
             .collect();
 
         let (status, started_at, finished_at) = if let Some(terminal) = terminated {
@@ -58,20 +58,20 @@ impl JobBuilder {
         } else {
             (status, started_at, finished_at)
         };
+        let state = JobState::from_columns(status, started_at, finished_at)
+            .expect("test fixture built an inconsistent job state");
 
         let now = created_at.unwrap_or_else(clock::now);
         Job::from_persistence(
             id.unwrap_or_else(JobId::generate),
             pipeline_id,
-            status,
+            state,
+            None,
             node_executions,
             Vec::new(),
             origin,
-            None,
             now,
             updated_at.unwrap_or(now),
-            started_at,
-            finished_at,
         )
     }
 }

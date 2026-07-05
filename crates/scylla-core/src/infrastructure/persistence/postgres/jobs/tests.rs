@@ -43,11 +43,10 @@ async fn status_all_terminal_variants_round_trip(pool: PgPool) {
 async fn update_persists_started_finished_timestamps(pool: PgPool) {
     let (_, _, pipeline) = seed_org_project_pipeline(&pool, "ts").await;
     let repo = PgJobRepository::new(pool);
-    let mut job = job(&pipeline);
+    let job = job(&pipeline);
     repo.create(&job).await.unwrap();
 
-    job.start().unwrap();
-    job.complete().unwrap();
+    let job = job.start().unwrap().complete().unwrap();
     repo.update(&job).await.unwrap();
 
     let found = repo.find_by_id(job.id()).await.unwrap();
@@ -92,13 +91,11 @@ async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: Pg
         .expect("provision agent");
 
     // owned: running, assigned to the live (connected) agent.
-    let mut owned = job(&pipeline);
-    owned.start().unwrap();
+    let owned = job(&pipeline).start().unwrap();
     repo.create(&owned).await.unwrap();
     repo.set_agent(owned.id(), app.id()).await.unwrap();
     // stranded: running, no agent.
-    let mut stranded = job(&pipeline);
-    stranded.start().unwrap();
+    let stranded = job(&pipeline).start().unwrap();
     repo.create(&stranded).await.unwrap();
     // pending + terminal: never reaped.
     let pending = job(&pipeline);

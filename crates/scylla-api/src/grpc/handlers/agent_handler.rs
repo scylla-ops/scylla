@@ -11,8 +11,8 @@ use scylla_core::domain::value_objects::job::LogStream;
 use scylla_core::domain::value_objects::pipeline::{NodeId, Shell, Step};
 use scylla_core::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use scylla_protocol::services::agent::{
-    AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, JobEventKind, ResolvedEnv,
-    agent_down, agent_node, agent_service_server::AgentService, agent_up,
+    AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, ResolvedEnv, agent_down,
+    agent_node, agent_service_server::AgentService, agent_up, job_status,
 };
 use scylla_protocol::services::common;
 use std::pin::Pin;
@@ -264,19 +264,29 @@ fn step_to_proto(step: &Step) -> agent_node::Step {
 }
 
 fn status_to_event(status: &scylla_protocol::services::agent::JobStatus) -> Option<JobEvent> {
-    let node_id = || status.node_id.clone().unwrap_or_default().value;
-    let error = || status.error.clone();
-    Some(match status.kind() {
-        JobEventKind::JobStarted => JobEvent::JobStarted,
-        JobEventKind::NodeStarted => JobEvent::NodeStarted { node_id: node_id() },
-        JobEventKind::NodeCompleted => JobEvent::NodeCompleted { node_id: node_id() },
-        JobEventKind::NodeFailed => JobEvent::NodeFailed {
-            node_id: node_id(),
-            error: error(),
+    use job_status::Event;
+    let node_id = |id: &Option<common::NodeId>| id.clone().unwrap_or_default().value;
+    // An absent oneof is a malformed report, not a valid state — drop it (the
+    // caller logs the skip). The variant now carries exactly this event's fields.
+    Some(match status.event.as_ref()? {
+        Event::JobStarted(_) => JobEvent::JobStarted,
+        Event::NodeStarted(e) => JobEvent::NodeStarted {
+            node_id: node_id(&e.node_id),
         },
-        JobEventKind::NodeSkipped => JobEvent::NodeSkipped { node_id: node_id() },
-        JobEventKind::JobCompleted => JobEvent::JobCompleted,
-        JobEventKind::JobFailed => JobEvent::JobFailed { error: error() },
+        Event::NodeCompleted(e) => JobEvent::NodeCompleted {
+            node_id: node_id(&e.node_id),
+        },
+        Event::NodeFailed(e) => JobEvent::NodeFailed {
+            node_id: node_id(&e.node_id),
+            error: e.error.clone(),
+        },
+        Event::NodeSkipped(e) => JobEvent::NodeSkipped {
+            node_id: node_id(&e.node_id),
+        },
+        Event::JobCompleted(_) => JobEvent::JobCompleted,
+        Event::JobFailed(e) => JobEvent::JobFailed {
+            error: e.error.clone(),
+        },
     })
 }
 

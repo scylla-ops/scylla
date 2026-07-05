@@ -122,7 +122,7 @@ async fn set_enabled_persists(pool: PgPool) {
     let mut trigger = cron_trigger(&pipeline, "nightly");
     repo.create(&trigger, None).await.unwrap();
 
-    trigger.set_enabled(false);
+    trigger.disable();
     repo.update(&trigger).await.unwrap();
 
     assert!(!repo.find_by_id(trigger.id()).await.unwrap().is_enabled());
@@ -200,7 +200,7 @@ async fn list_unscheduled_cron_selects_only_enabled_cron_without_next_fire(pool:
     cron_trigger_at(&repo, &pipeline, "scheduled", Some(now)).await;
     // Ineligible: disabled.
     let mut disabled = cron_trigger(&pipeline, "disabled");
-    disabled.set_enabled(false);
+    disabled.disable();
     repo.create(&disabled, None).await.unwrap();
     // Ineligible: webhook kind.
     let webhook = Trigger::create(
@@ -229,10 +229,9 @@ async fn claim_due_cron_claims_due_advances_and_excludes_others(pool: PgPool) {
     let due = cron_trigger_at(&repo, &pipeline, "due", Some(past)).await;
     // Not due yet.
     cron_trigger_at(&repo, &pipeline, "later", Some(future)).await;
-    // Due time but disabled.
+    // Ineligible: disabled (structurally has no due time).
     let mut disabled = cron_trigger(&pipeline, "off");
-    disabled.set_enabled(false);
-    disabled.set_next_fire_at(Some(past));
+    disabled.disable();
     repo.create(&disabled, None).await.unwrap();
 
     let compute = |_t: &Trigger| -> DomainResult<DateTime<Utc>> { Ok(advanced) };

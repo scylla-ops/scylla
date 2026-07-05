@@ -7,6 +7,26 @@ use crate::domain::value_objects::trigger::{
 use chrono::{DateTime, Utc};
 use std::collections::HashSet;
 
+/// Whether a trigger fires, and — for an enabled cron — when it is next due.
+/// A disabled trigger has no schedule, so `next_fire_at` cannot outlive being
+/// disabled: it lives only inside the `Enabled` variant.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TriggerActivation {
+    Disabled,
+    /// Fires. `next_fire_at` is the next due occurrence (cron only, once the
+    /// scheduler has computed it); `None` for a webhook or a not-yet-seeded cron.
+    Enabled { next_fire_at: Option<DateTime<Utc>> },
+}
+
+/// The outcome of the most recent fire attempt. The timestamp and its status
+/// move together — there is never one without the other.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FireObservation {
+    pub fired_at: DateTime<Utc>,
+    /// `"ok"` or an error description, for observability.
+    pub status: String,
+}
+
 /// A stored initiator that launches runs of a single pipeline. Firing always
 /// flows through the normal `PipelineUseCases::run` path (one `RunPipeline`
 /// check, one job minted) — a trigger is a new *source*, not a new execution
@@ -19,21 +39,17 @@ pub struct Trigger {
     name: TriggerName,
     source: TriggerSource,
     inputs: Vec<TriggerInput>,
-    enabled: bool,
-    /// Cron/poll only: when the next occurrence is due (UTC). `None` for webhook
-    /// (push-driven) and until the scheduler computes the first occurrence.
-    next_fire_at: Option<DateTime<Utc>>,
-    last_fired_at: Option<DateTime<Utc>>,
-    /// Outcome of the last fire attempt, for observability (`"ok"` / an error).
-    last_status: Option<String>,
+    activation: TriggerActivation,
+    last_observation: Option<FireObservation>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
 
 impl Trigger {
-    /// Reconstitute a `Trigger` from persistent storage without re-validation;
-    /// fields were validated at create/update time and JSONB is round-tripped
-    /// verbatim.
+    /// Reconstitute a `Trigger` from persistent storage. The flat columns are
+    /// normalised into the state machine here — a disabled trigger drops any stale
+    /// `next_fire_at`, and a lone `last_status`/`last_fired_at` collapses to a
+    /// coherent observation (or none).
     #[must_use]
     #[allow(clippy::too_many_arguments)]
     pub fn from_persistence(
@@ -49,16 +65,23 @@ impl Trigger {
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
     ) -> Self {
+        let activation = if enabled {
+            TriggerActivation::Enabled { next_fire_at }
+        } else {
+            TriggerActivation::Disabled
+        };
+        let last_observation = last_fired_at.map(|fired_at| FireObservation {
+            fired_at,
+            status: last_status.unwrap_or_default(),
+        });
         Self {
             id,
             pipeline_id,
             name,
             source,
             inputs,
-            enabled,
-            next_fire_at,
-            last_fired_at,
-            last_status,
+            activation,
+            last_observation,
             created_at,
             updated_at,
         }
@@ -81,10 +104,8 @@ impl Trigger {
             name,
             source,
             inputs,
-            enabled: true,
-            next_fire_at: None,
-            last_fired_at: None,
-            last_status: None,
+            activation: TriggerActivation::Enabled { next_fire_at: None },
+            last_observation: None,
             created_at: now,
             updated_at: now,
         })
@@ -112,22 +133,35 @@ impl Trigger {
         Ok(())
     }
 
-    /// Enable or disable the trigger. A disabled trigger never fires.
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
+    /// Enable the trigger. Its schedule is re-anchored separately (the use case
+    /// computes the next occurrence right after), so it starts unscheduled.
+    pub fn enable(&mut self) {
+        self.activation = TriggerActivation::Enabled { next_fire_at: None };
         self.updated_at = clock::now();
     }
 
-    /// Set the next due time (the scheduler owns this for cron sources).
+    /// Disable the trigger. A disabled trigger never fires and structurally has no
+    /// due time — the schedule is dropped with the `Enabled` state.
+    pub fn disable(&mut self) {
+        self.activation = TriggerActivation::Disabled;
+        self.updated_at = clock::now();
+    }
+
+    /// Set the next due time (the scheduler owns this for cron sources). A no-op on
+    /// a disabled trigger, which by construction has no schedule.
     pub fn set_next_fire_at(&mut self, next_fire_at: Option<DateTime<Utc>>) {
-        self.next_fire_at = next_fire_at;
-        self.updated_at = clock::now();
+        if let TriggerActivation::Enabled { next_fire_at: slot } = &mut self.activation {
+            *slot = next_fire_at;
+            self.updated_at = clock::now();
+        }
     }
 
-    /// Record the outcome of a fire attempt.
+    /// Record the outcome of a fire attempt (timestamp and status together).
     pub fn mark_fired(&mut self, fired_at: DateTime<Utc>, status: impl Into<String>) {
-        self.last_fired_at = Some(fired_at);
-        self.last_status = Some(status.into());
+        self.last_observation = Some(FireObservation {
+            fired_at,
+            status: status.into(),
+        });
         self.updated_at = clock::now();
     }
 
@@ -178,23 +212,36 @@ impl Trigger {
     }
 
     #[must_use]
+    pub fn activation(&self) -> &TriggerActivation {
+        &self.activation
+    }
+
+    #[must_use]
+    pub fn last_observation(&self) -> Option<&FireObservation> {
+        self.last_observation.as_ref()
+    }
+
+    #[must_use]
     pub fn is_enabled(&self) -> bool {
-        self.enabled
+        matches!(self.activation, TriggerActivation::Enabled { .. })
     }
 
     #[must_use]
     pub fn next_fire_at(&self) -> Option<DateTime<Utc>> {
-        self.next_fire_at
+        match &self.activation {
+            TriggerActivation::Enabled { next_fire_at } => *next_fire_at,
+            TriggerActivation::Disabled => None,
+        }
     }
 
     #[must_use]
     pub fn last_fired_at(&self) -> Option<DateTime<Utc>> {
-        self.last_fired_at
+        self.last_observation.as_ref().map(|o| o.fired_at)
     }
 
     #[must_use]
     pub fn last_status(&self) -> Option<&str> {
-        self.last_status.as_deref()
+        self.last_observation.as_ref().map(|o| o.status.as_str())
     }
 
     #[must_use]
@@ -287,11 +334,24 @@ mod tests {
     }
 
     #[test]
-    fn set_enabled_and_mark_fired_track_state() {
+    fn disable_drops_the_schedule() {
         let mut t = Trigger::create(pipeline_id(), name("nightly"), cron(), vec![]).unwrap();
-        t.set_enabled(false);
-        assert!(!t.is_enabled());
+        t.set_next_fire_at(Some(clock::now()));
+        assert!(t.next_fire_at().is_some());
 
+        t.disable();
+        assert!(!t.is_enabled());
+        // A disabled trigger structurally cannot carry a due time.
+        assert!(t.next_fire_at().is_none());
+
+        // Scheduling a disabled trigger is a no-op.
+        t.set_next_fire_at(Some(clock::now()));
+        assert!(t.next_fire_at().is_none());
+    }
+
+    #[test]
+    fn mark_fired_tracks_the_observation_as_a_pair() {
+        let mut t = Trigger::create(pipeline_id(), name("nightly"), cron(), vec![]).unwrap();
         let now = clock::now();
         t.mark_fired(now, "ok");
         assert_eq!(t.last_fired_at(), Some(now));

@@ -39,7 +39,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       // on the System root confers control over the whole tenancy tree).
       await this._grantClient.createGrant({
         userId: user.userId,
-        role: 'system-admin',
+        grantType: { oneofKind: 'role', role: 'system-admin' },
         scope: Scope.SYSTEM,
         scopeId: '',
       }).response;

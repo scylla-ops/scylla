@@ -588,7 +588,21 @@ async fn publish_log_line(
 mod tests {
     use super::*;
     use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, WorkingDir};
-    use scylla_protocol::services::agent::{JobEventKind, JobStatus as ProtoJobStatus};
+    use scylla_protocol::services::agent::{JobStatus as ProtoJobStatus, job_status::Event};
+
+    /// Name the oneof event variant carried by a status, for order/`contains`
+    /// assertions (replaces the old integer `kind` discriminant).
+    fn event_name(e: &Event) -> &'static str {
+        match e {
+            Event::JobStarted(_) => "job_started",
+            Event::NodeStarted(_) => "node_started",
+            Event::NodeCompleted(_) => "node_completed",
+            Event::NodeFailed(_) => "node_failed",
+            Event::NodeSkipped(_) => "node_skipped",
+            Event::JobCompleted(_) => "job_completed",
+            Event::JobFailed(_) => "job_failed",
+        }
+    }
 
     /// A unique temp path per test tag, keyed on pid to avoid collisions with
     /// parallel test binaries (matches the existing test's manual-temp style, so
@@ -635,8 +649,11 @@ mod tests {
         (statuses, logs)
     }
 
-    fn kinds(statuses: &[ProtoJobStatus]) -> Vec<i32> {
-        statuses.iter().map(|s| s.kind).collect()
+    fn kinds(statuses: &[ProtoJobStatus]) -> Vec<&'static str> {
+        statuses
+            .iter()
+            .filter_map(|s| s.event.as_ref().map(event_name))
+            .collect()
     }
 
     #[test]
@@ -754,7 +771,7 @@ mod tests {
             "a working dir escaping the workspace must fail the job"
         );
         assert!(
-            kinds(&statuses).contains(&(JobEventKind::JobFailed as i32)),
+            kinds(&statuses).contains(&"job_failed"),
             "the job must still report a terminal JobFailed",
         );
     }
@@ -775,7 +792,7 @@ mod tests {
             matches!(err, ExecutionError::NodeFailed { exit_code: 3, .. }),
             "exit code must be preserved, got {err:?}",
         );
-        assert!(kinds(&statuses).contains(&(JobEventKind::JobFailed as i32)));
+        assert!(kinds(&statuses).contains(&"job_failed"));
     }
 
     #[tokio::test]
@@ -790,14 +807,14 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
 
         assert!(
-            kinds(&statuses).contains(&(JobEventKind::NodeSkipped as i32)),
+            kinds(&statuses).contains(&"node_skipped"),
             "the dependent node must be skipped once its dependency fails",
         );
         assert!(
             !logs.contains("should-not-run"),
             "a skipped node must never execute; logs: {logs:?}",
         );
-        assert!(kinds(&statuses).contains(&(JobEventKind::JobFailed as i32)));
+        assert!(kinds(&statuses).contains(&"job_failed"));
     }
 
     /// Regression: a workspace root that cannot be created (the bug was a
@@ -824,19 +841,18 @@ mod tests {
                 statuses.push(s);
             }
         }
-        let kinds: Vec<i32> = statuses.iter().map(|s| s.kind).collect();
         assert_eq!(
-            kinds,
-            vec![
-                JobEventKind::JobStarted as i32,
-                JobEventKind::JobFailed as i32
-            ],
+            kinds(&statuses),
+            vec!["job_started", "job_failed"],
             "a workspace failure must still produce exactly one terminal event"
         );
+        let last_error = match statuses[1].event.as_ref() {
+            Some(Event::JobFailed(f)) => f.error.as_str(),
+            other => panic!("expected a terminal JobFailed, got {other:?}"),
+        };
         assert!(
-            statuses[1].error.contains("scylla-exec-test"),
-            "the failure message must carry the offending path, got: {}",
-            statuses[1].error
+            last_error.contains("scylla-exec-test"),
+            "the failure message must carry the offending path, got: {last_error}",
         );
     }
 }

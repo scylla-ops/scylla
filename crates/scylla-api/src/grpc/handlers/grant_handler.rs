@@ -13,8 +13,8 @@ use scylla_core::domain::value_objects::role::RoleName;
 use scylla_protocol::services::permission::{
     CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
     ListGrantableRolesRequest, ListGrantableRolesResponse, ListGrantsRequest, ListGrantsResponse,
-    Permission, RevokeGrantRequest, RevokeGrantResponse, Scope as ProtoScope,
-    grant_service_server::GrantService,
+    Permission, RevokeGrantRequest, RevokeGrantResponse, Scope as ProtoScope, create_grant_request,
+    grant, grant_service_server::GrantService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -40,19 +40,25 @@ impl<
         let user_id = UserId::new(&required(req.user_id, "user_id")?);
         let scope = scope_from_proto(req.scope, &req.scope_id)?;
 
-        // A `permission` set → grant that single permission (additive); otherwise
-        // grant the named `role`. Both go through the same anti-escalation check.
-        let grant = match req.permission {
-            Some(p) if p != Permission::Unspecified as i32 => {
+        // The `grant_type` oneof decides: a single permission (additive) or a named
+        // role. Both go through the same anti-escalation check. An absent oneof is a
+        // malformed request.
+        let grant = match req.grant_type {
+            Some(create_grant_request::GrantType::Permission(p)) => {
                 let perm = Permission::try_from(p)
                     .map_err(|_| Status::invalid_argument("unknown permission value"))?;
                 let key = permission_key(perm)
                     .ok_or_else(|| Status::invalid_argument("permission unspecified"))?;
                 Grant::with_permission(Principal::User(user_id), key, scope)
             }
-            _ => {
-                let role = RoleName::new(&req.role).map_err(domain_error_to_status)?;
+            Some(create_grant_request::GrantType::Role(role)) => {
+                let role = RoleName::new(&role).map_err(domain_error_to_status)?;
                 Grant::new(Principal::User(user_id), role, scope)
+            }
+            None => {
+                return Err(Status::invalid_argument(
+                    "grant_type is required (role or permission)",
+                ));
             }
         };
         self.use_cases
@@ -148,17 +154,18 @@ fn grant_to_proto(g: &Grant) -> ProtoGrant {
         Scope::Organization(id) => (ProtoScope::Organization, id.to_string()),
         Scope::Project(id) => (ProtoScope::Project, id.to_string()),
     };
-    // A role grant fills `role`; a permission grant fills `permission`.
-    let (role, permission) = match &g.target {
-        GrantTarget::Role(r) => (r.to_string(), None),
-        GrantTarget::Permission(key) => (String::new(), permission_from_key(key).map(|p| p as i32)),
+    // Mirror the domain target onto the `grant_type` oneof.
+    let grant_type = match &g.target {
+        GrantTarget::Role(r) => grant::GrantType::Role(r.to_string()),
+        GrantTarget::Permission(key) => grant::GrantType::Permission(
+            permission_from_key(key).map_or(Permission::Unspecified as i32, |p| p as i32),
+        ),
     };
     ProtoGrant {
         id: g.id.clone(),
         user_id: wrap(g.principal.id().to_string()),
-        role,
         scope: scope as i32,
         scope_id,
-        permission,
+        grant_type: Some(grant_type),
     }
 }

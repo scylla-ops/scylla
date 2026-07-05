@@ -56,16 +56,23 @@ export class GrpcTriggerMapper {
   }
 
   static toDomain(view: TriggerView): TriggerEntity {
+    // Flatten the `activation` oneof back to the flat entity: a disabled trigger
+    // structurally carries no due time, so `nextFireAt` only exists when enabled.
+    const nextFireAt =
+      view.activation.oneofKind === 'enabled'
+        ? timestampToIsoOpt(view.activation.enabled.nextFireAt)
+        : undefined;
     return {
       id: idValue(view.triggerId),
       pipelineId: idValue(view.pipelineId),
       name: view.name,
       source: GrpcTriggerMapper.sourceToDomain(view),
       inputs: view.inputs.map(GrpcTriggerMapper.inputToDomain),
-      enabled: view.enabled,
-      nextFireAt: timestampToIsoOpt(view.nextFireAt),
-      lastFiredAt: timestampToIsoOpt(view.lastFiredAt),
-      lastStatus: view.lastStatus,
+      enabled: view.activation.oneofKind === 'enabled',
+      nextFireAt,
+      // `last_observation` keeps the fired-at and its status together, or absent.
+      lastFiredAt: timestampToIsoOpt(view.lastObservation?.firedAt),
+      lastStatus: view.lastObservation?.status ?? '',
       createdAt: timestampToIso(view.createdAt),
       updatedAt: timestampToIso(view.updatedAt),
     };

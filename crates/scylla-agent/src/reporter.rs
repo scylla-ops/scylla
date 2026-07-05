@@ -7,7 +7,10 @@
 //! the run — regardless of which path the executor took.
 
 use scylla_core::application::JobEvent;
-use scylla_protocol::services::agent::{AgentUp, JobEventKind, JobStatus, agent_up};
+use scylla_protocol::services::agent::{
+    AgentUp, JobCompleted, JobFailed, JobStarted, JobStatus, NodeCompleted, NodeFailed,
+    NodeSkipped, NodeStarted, agent_up, job_status,
+};
 use scylla_protocol::services::common;
 use tokio::sync::mpsc;
 
@@ -39,26 +42,34 @@ impl StatusPublisher {
 }
 
 /// Map a domain [`JobEvent`] to the proto [`JobStatus`] sent over the stream.
+/// Each arm builds exactly the oneof variant that carries this event's fields —
+/// a job-level event has no node, a node event always names one.
 fn job_event_to_status(job_id: &str, event: JobEvent) -> JobStatus {
-    let (kind, node_id, error) = match event {
-        JobEvent::JobStarted => (JobEventKind::JobStarted, String::new(), String::new()),
-        JobEvent::NodeStarted { node_id } => (JobEventKind::NodeStarted, node_id, String::new()),
-        JobEvent::NodeCompleted { node_id } => {
-            (JobEventKind::NodeCompleted, node_id, String::new())
-        }
-        JobEvent::NodeFailed { node_id, error } => (JobEventKind::NodeFailed, node_id, error),
-        JobEvent::NodeSkipped { node_id } => (JobEventKind::NodeSkipped, node_id, String::new()),
-        JobEvent::JobCompleted => (JobEventKind::JobCompleted, String::new(), String::new()),
-        JobEvent::JobFailed { error } => (JobEventKind::JobFailed, String::new(), error),
+    use job_status::Event;
+    let node = |value: String| Some(common::NodeId { value });
+    let event = match event {
+        JobEvent::JobStarted => Event::JobStarted(JobStarted {}),
+        JobEvent::NodeStarted { node_id } => Event::NodeStarted(NodeStarted {
+            node_id: node(node_id),
+        }),
+        JobEvent::NodeCompleted { node_id } => Event::NodeCompleted(NodeCompleted {
+            node_id: node(node_id),
+        }),
+        JobEvent::NodeFailed { node_id, error } => Event::NodeFailed(NodeFailed {
+            node_id: node(node_id),
+            error,
+        }),
+        JobEvent::NodeSkipped { node_id } => Event::NodeSkipped(NodeSkipped {
+            node_id: node(node_id),
+        }),
+        JobEvent::JobCompleted => Event::JobCompleted(JobCompleted {}),
+        JobEvent::JobFailed { error } => Event::JobFailed(JobFailed { error }),
     };
     JobStatus {
         job_id: Some(common::JobId {
             value: job_id.to_string(),
         }),
-        kind: kind as i32,
-        // Empty node_id means a job-level event (no node) — send it unset.
-        node_id: (!node_id.is_empty()).then_some(common::NodeId { value: node_id }),
-        error,
+        event: Some(event),
     }
 }
 

@@ -7,11 +7,15 @@ import { GrpcPermissionMapper } from '@/modules/features/permission/infrastructu
 
 export class GrpcEffectivePermissionsMapper {
   public static scopeToDomain(grpcScope: EffectiveScope): EffectiveScopeEntity {
+    // `access` is a oneof: full control (no list) or an explicit permission set.
     return {
       scope: GrpcPermissionMapper.scopeToDomain(grpcScope.scope),
       scopeId: grpcScope.scopeId,
-      fullControl: grpcScope.fullControl,
-      permissions: grpcScope.permissions.map(GrpcPermissionMapper.toDomain),
+      fullControl: grpcScope.access.oneofKind === 'fullControl',
+      permissions:
+        grpcScope.access.oneofKind === 'restricted'
+          ? grpcScope.access.restricted.permissions.map(GrpcPermissionMapper.toDomain)
+          : [],
     };
   }
 

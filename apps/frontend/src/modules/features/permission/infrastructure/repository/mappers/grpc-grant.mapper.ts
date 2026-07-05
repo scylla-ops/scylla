@@ -9,15 +9,16 @@ export class GrpcGrantMapper {
    * The `UserId` wrapper is unwrapped to a plain string.
    */
   public static toDomain(grpcGrant: Grant): GrantEntity {
+    // `grantType` is a oneof: a role or a single permission, never both.
     return {
       id: grpcGrant.id,
       userId: grpcGrant.userId?.value,
-      role: grpcGrant.role,
+      role: grpcGrant.grantType.oneofKind === 'role' ? grpcGrant.grantType.role : '',
       scope: GrpcPermissionMapper.scopeToDomain(grpcGrant.scope),
       scopeId: grpcGrant.scopeId,
       permission:
-        grpcGrant.permission != null
-          ? GrpcPermissionMapper.toDomain(grpcGrant.permission)
+        grpcGrant.grantType.oneofKind === 'permission'
+          ? GrpcPermissionMapper.toDomain(grpcGrant.grantType.permission)
           : undefined,
     };
   }
@@ -28,13 +29,15 @@ export class GrpcGrantMapper {
    * The plain string `userId` is wrapped in the required `UserId` message.
    */
   public static toGrpcCreateRequest(input: CreateGrantInput): CreateGrantRequest {
+    // A permission set → a single-permission grant; otherwise a role grant.
     return {
       userId: input.userId != null ? { value: input.userId } : undefined,
-      role: input.role,
       scope: GrpcPermissionMapper.scopeToGrpc(input.scope),
       scopeId: input.scopeId,
-      permission:
-        input.permission != null ? GrpcPermissionMapper.toGrpc(input.permission) : undefined,
+      grantType:
+        input.permission != null
+          ? { oneofKind: 'permission', permission: GrpcPermissionMapper.toGrpc(input.permission) }
+          : { oneofKind: 'role', role: input.role },
     };
   }
 }

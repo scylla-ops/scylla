@@ -202,26 +202,30 @@ service GrantService {
 message Grant {
   string         id       = 1;
   common.UserId  user_id  = 2;
-  // Role id (== key for builtins), e.g. "organization-admin". Empty for a
-  // permission grant (see `permission`).
-  string         role     = 3;
   Scope          scope    = 4;
   // The org/project id the grant is bound to; ignored for SCOPE_SYSTEM.
   string         scope_id = 5;
-  // Set instead of `role` when this is a direct single-permission grant.
-  optional Permission permission = 6;
+  // What is granted, mirroring the domain `GrantTarget`: a whole role or a single
+  // direct permission — exactly one, never both nor neither.
+  oneof grant_type {
+    // Role id (== key for builtins), e.g. "organization-admin".
+    string     role       = 3;
+    // A direct single-permission grant, additive to the user's roles.
+    Permission permission = 6;
+  }
 }
 
 message CreateGrantRequest {
   common.UserId user_id  = 1;
-  // The role to grant. Used unless `permission` is set.
-  string        role     = 2;
   Scope         scope    = 3;
   string        scope_id = 4;
-  // Set to grant a SINGLE permission instead of a role (additive to the user's
-  // roles, e.g. "Alice may runPipeline within Org A"). When set, `role` is
-  // ignored. Subject to the same anti-escalation rule as a role grant.
-  optional Permission permission = 5;
+  // What to grant — a role or a single permission (additive to the user's roles,
+  // e.g. "Alice may runPipeline within Org A"). Both go through the same
+  // anti-escalation check. Mirrors the domain `GrantTarget`.
+  oneof grant_type {
+    string     role       = 2;
+    Permission permission = 5;
+  }
 }
 
 message RevokeGrantRequest {
@@ -289,19 +293,29 @@ message Role {
   // The scope kind a grant of this role must bind to.
   Scope scope = 5;
   bool builtin = 6;
-  // Full control: the role confers every permission within the grant's scope.
-  // When true, `permissions` is empty.
-  bool full_control = 7;
-  // The role's explicit permission set (when not full_control).
-  repeated Permission permissions = 8;
+  // What the role confers: full control over its scope, or an explicit permission
+  // set — exactly one, never both nor neither.
+  oneof access {
+    FullControl           full_control = 7;
+    RestrictedPermissions restricted   = 8;
+  }
+}
+
+// Confers every permission within the enclosing scope — carries no list.
+message FullControl {}
+// An explicit permission set (anything short of full control).
+message RestrictedPermissions {
+  repeated Permission permissions = 1;
 }
 
 message CreateRoleRequest {
   string name = 1;
   string description = 2;
   Scope scope = 3;
-  bool full_control = 4;
-  repeated Permission permissions = 5;
+  oneof access {
+    FullControl           full_control = 4;
+    RestrictedPermissions restricted   = 5;
+  }
 }
 
 // Replaces the role's name, description and permission set wholesale (PUT-style).
@@ -310,8 +324,10 @@ message UpdateRoleRequest {
   string id = 1;
   string name = 2;
   string description = 3;
-  bool full_control = 4;
-  repeated Permission permissions = 5;
+  oneof access {
+    FullControl           full_control = 4;
+    RestrictedPermissions restricted   = 5;
+  }
 }
 
 message DeleteRoleRequest { string id = 1; }
@@ -333,10 +349,11 @@ message EffectiveScope {
   Scope  scope    = 1;
   // The org/project id the grants are bound to; empty for SCOPE_SYSTEM.
   string scope_id = 2;
-  // Full control: the principal holds every permission within this scope
-  // (`permissions` is then empty).
-  bool   full_control = 3;
-  repeated Permission permissions = 4;
+  // Full control over this scope, or the explicit set the principal holds here.
+  oneof access {
+    FullControl           full_control = 3;
+    RestrictedPermissions restricted   = 4;
+  }
 }
 
 message GetEffectivePermissionsResponse {

@@ -1,9 +1,8 @@
 use crate::application::caller::CallerContext;
 use crate::application::job::event::JobEvent;
 use crate::application::{JobRepository, PermissionService};
-use crate::domain::entities::{Job, JobId, OrganizationId, PipelineId, ProjectId};
+use crate::domain::entities::{Job, JobId, NodeOutcome, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::job::NodeState;
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::pipeline::NodeId;
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
@@ -62,25 +61,25 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
             .check(caller, Permission::WriteJobStatus(job_id.clone()))
             .await?;
 
-        let mut job = self.job_repo.find_by_id(job_id).await?;
+        let job = self.job_repo.find_by_id(job_id).await?;
         let now = chrono::Utc::now();
-        match event {
+        // Each arm consumes the loaded job and yields the next state; adding a
+        // `JobEvent` variant breaks this match until it is handled.
+        let job = match event {
             JobEvent::JobStarted => job.start()?,
-            JobEvent::NodeStarted { node_id } => {
-                job.apply_node_started(&NodeId::new(node_id)?, now)?;
-            }
+            JobEvent::NodeStarted { node_id } => job.apply_node_started(&NodeId::new(node_id)?, now)?,
             JobEvent::NodeCompleted { node_id } => {
-                job.apply_node_finished(&NodeId::new(node_id)?, NodeState::Completed, now)?;
+                job.apply_node_finished(&NodeId::new(node_id)?, NodeOutcome::Completed, now)?
             }
             JobEvent::NodeFailed { node_id, .. } => {
-                job.apply_node_finished(&NodeId::new(node_id)?, NodeState::Failed, now)?;
+                job.apply_node_finished(&NodeId::new(node_id)?, NodeOutcome::Failed, now)?
             }
             JobEvent::NodeSkipped { node_id } => {
-                job.apply_node_skipped(&NodeId::new(node_id)?, now)?;
+                job.apply_node_skipped(&NodeId::new(node_id)?, now)?
             }
             JobEvent::JobCompleted => job.complete()?,
             JobEvent::JobFailed { .. } => job.fail()?,
-        }
+        };
         self.job_repo.update(&job).await?;
         Ok(())
     }

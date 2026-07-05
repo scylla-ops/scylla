@@ -95,10 +95,9 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
         (
           await this._grants.createGrant({
             userId: input.userId,
-            role: input.role,
             scope: input.scope,
             scopeId: input.scopeId,
-            permission: input.permission,
+            grantType: input.grantType,
           })
         ).response,
       'Failed to create grant.',

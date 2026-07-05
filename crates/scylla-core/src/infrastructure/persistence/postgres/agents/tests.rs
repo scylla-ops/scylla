@@ -141,20 +141,30 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
 
     let mk = |status: JobStatus| {
         let now = clock::now();
+        // Synthesize timestamps consistent with the status so the reconstructed
+        // state is valid (a terminal job always has a finish time, etc.).
+        let (started_at, finished_at) = match status {
+            JobStatus::Pending => (None, None),
+            JobStatus::Running => (Some(now), None),
+            JobStatus::Completed
+            | JobStatus::Failed
+            | JobStatus::Cancelled
+            | JobStatus::Orphaned => (Some(now - chrono::Duration::seconds(1)), Some(now)),
+        };
+        let state = crate::domain::entities::JobState::from_columns(status, started_at, finished_at)
+            .unwrap();
         Job::from_persistence(
             JobId::generate(),
             pipeline.id().clone(),
-            status,
+            state,
+            Some(app.id().clone()),
             vec![],
             vec![],
             crate::domain::value_objects::job::JobOrigin::App {
                 app_id: app.id().clone(),
             },
-            Some(app.id().clone()),
             now,
             now,
-            None,
-            None,
         )
     };
     for status in [
