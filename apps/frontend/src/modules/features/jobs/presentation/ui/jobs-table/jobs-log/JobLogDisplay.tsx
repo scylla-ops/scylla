@@ -20,7 +20,7 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
   if (isError) return <div>Error loading logs...</div>;
 
   return (
-    <div className={'border rounded-md overflow-hidden shadow-sm'}>
+    <div className={'min-w-0 w-full border rounded-md overflow-hidden shadow-sm'}>
       <ReactCodeMirror
         readOnly
         editable={false}

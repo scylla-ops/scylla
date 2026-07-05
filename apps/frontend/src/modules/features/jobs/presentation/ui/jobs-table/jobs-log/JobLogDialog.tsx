@@ -27,7 +27,7 @@ export const JobLogDialog = ({ jobId, nodeId, onClose }: JobLogDialogProps) => {
         }
       }}
     >
-      <DialogContent className={'max-h-full flex flex-col'}>
+      <DialogContent className={'max-w-3xl max-h-full flex flex-col'}>
         <DialogHeader className={'space-y-3'}>
           <div className={'flex items-center justify-between'}>
             <DialogTitle className={'flex items-center gap-2.5 text-lg font-semibold'}>

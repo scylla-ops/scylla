@@ -144,7 +144,7 @@ export function StepNodeFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className='max-w-2xl'>
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? <Trans>Edit node</Trans> : <Trans>Add a new node</Trans>}
@@ -161,7 +161,7 @@ export function StepNodeFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-4'>
+        <div className='min-w-0 space-y-4'>
           {/* Node ID */}
           <div className='space-y-2'>
             <Label htmlFor='node-id'>
