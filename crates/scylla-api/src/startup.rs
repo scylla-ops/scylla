@@ -635,28 +635,31 @@ where
     };
     #[cfg(feature = "register")]
     use crate::grpc::RegistrationHandler;
-    use scylla_protocol::services::invitation::{
+    use scylla_protocol::invitation::v1::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
         invitation_service_server::InvitationServiceServer,
     };
-    use scylla_protocol::services::oauth::oauth_service_server::OauthServiceServer;
+    use scylla_protocol::oauth::v1::oauth_service_server::OauthServiceServer;
     #[cfg(feature = "register")]
-    use scylla_protocol::services::registration::registration_service_server::RegistrationServiceServer;
-    use scylla_protocol::services::{
-        agent::agent_service_server::AgentServiceServer,
-        agent_admin::agent_admin_service_server::AgentAdminServiceServer,
-        app::app_auth_service_server::AppAuthServiceServer,
-        app::app_service_server::AppServiceServer, auth::auth_service_server::AuthServiceServer,
-        job::job_service_server::JobServiceServer,
-        organization::organization_service_server::OrganizationServiceServer,
-        permission::grant_service_server::GrantServiceServer,
-        permission::policy_service_server::PolicyServiceServer,
-        permission::role_service_server::RoleServiceServer,
-        pipeline::pipeline_service_server::PipelineServiceServer,
-        project::project_service_server::ProjectServiceServer,
-        secret::secret_service_server::SecretServiceServer,
-        trigger::trigger_service_server::TriggerServiceServer,
-        user::user_service_server::UserServiceServer,
+    use scylla_protocol::registration::v1::registration_service_server::RegistrationServiceServer;
+    // `agent` and `agent_admin` are one package now (`scylla.agent.v1`), so both
+    // stubs come from the same module.
+    use scylla_protocol::{
+        agent::v1::agent_admin_service_server::AgentAdminServiceServer,
+        agent::v1::agent_service_server::AgentServiceServer,
+        app::v1::app_auth_service_server::AppAuthServiceServer,
+        app::v1::app_service_server::AppServiceServer,
+        auth::v1::auth_service_server::AuthServiceServer,
+        authz::v1::grant_service_server::GrantServiceServer,
+        authz::v1::policy_service_server::PolicyServiceServer,
+        authz::v1::role_service_server::RoleServiceServer,
+        job::v1::job_service_server::JobServiceServer,
+        organization::v1::organization_service_server::OrganizationServiceServer,
+        pipeline::v1::pipeline_service_server::PipelineServiceServer,
+        project::v1::project_service_server::ProjectServiceServer,
+        secret::v1::secret_service_server::SecretServiceServer,
+        trigger::v1::trigger_service_server::TriggerServiceServer,
+        user::v1::user_service_server::UserServiceServer,
     };
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
@@ -713,11 +716,11 @@ where
     // They are distinct gRPC services (grpc.reflection.v1[alpha].ServerReflection),
     // so they coexist on the same server without a route clash.
     let reflection_v1 = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(scylla_protocol::FILE_DESCRIPTOR_SET)
         .build_v1()
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
     let reflection_v1alpha = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(scylla_protocol::services::FILE_DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(scylla_protocol::FILE_DESCRIPTOR_SET)
         .build_v1alpha()
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
 

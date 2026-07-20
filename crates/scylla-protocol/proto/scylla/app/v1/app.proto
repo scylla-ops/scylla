@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package scylla.app.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Management of machine Apps (agents / automations) owned by an organization.
+// An App authenticates with an app token and acts under an agent grant on its
+// org. Creating one returns the plaintext secret exactly once — it is never
+// stored in recoverable form or retrievable again. Authorization is org-scoped:
+// the caller must hold the matching app permission on the target organization /
+// app.
+service AppService {
+  rpc CreateApp(CreateAppRequest) returns (CreateAppResponse);
+  rpc GetApp(GetAppRequest) returns (GetAppResponse);
+  rpc ListApps(ListAppsRequest) returns (ListAppsResponse);
+  rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse);
+  // Enable / disable the whole App. Disabling rejects auth and cuts every
+  // active token across all its secrets at once (interceptor checks is_active).
+  rpc SetAppActive(SetAppActiveRequest) returns (SetAppActiveResponse);
+
+  // Secrets. An App can hold several; the plaintext of any *enabled* one
+  // authenticates. Creating one (regen) returns the plaintext exactly once.
+  // Revoking deletes it; disabling keeps it but rejects it at auth.
+  rpc CreateAppSecret(CreateAppSecretRequest) returns (CreateAppSecretResponse);
+  rpc ListAppSecrets(ListAppSecretsRequest) returns (ListAppSecretsResponse);
+  rpc RevokeAppSecret(RevokeAppSecretRequest) returns (RevokeAppSecretResponse);
+  rpc SetAppSecretEnabled(SetAppSecretEnabledRequest) returns (SetAppSecretEnabledResponse);
+}
+
+// A machine principal owned by an organization.
+message App {
+  scylla.common.v1.AppId app_id = 1;
+  scylla.common.v1.OrganizationId organization_id = 2;
+  string name = 3;
+  bool is_active = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// Metadata for one App secret. Never carries the plaintext — that is shown only
+// once, in CreateAppSecretResponse.
+message AppSecret {
+  scylla.common.v1.AppSecretId app_secret_id = 1;
+  scylla.common.v1.AppId app_id = 2;
+  string label = 3;
+  bool enabled = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreateAppRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  string name = 2;
+}
+
+// The newly created app plus its plaintext secret, shown exactly once.
+message CreateAppResponse {
+  App app = 1;
+  string secret = 2;
+}
+
+message GetAppRequest { scylla.common.v1.AppId app_id = 1; }
+
+message GetAppResponse { App app = 1; }
+
+message ListAppsRequest { scylla.common.v1.OrganizationId organization_id = 1; }
+
+message ListAppsResponse { repeated App apps = 1; }
+
+message DeleteAppRequest { scylla.common.v1.AppId app_id = 1; }
+
+message DeleteAppResponse {}
+
+message SetAppActiveRequest {
+  scylla.common.v1.AppId app_id = 1;
+  bool is_active = 2;
+}
+
+message SetAppActiveResponse { App app = 1; }
+
+message CreateAppSecretRequest {
+  scylla.common.v1.AppId app_id = 1;
+  string label = 2;
+}
+
+// The newly created secret plus its plaintext, shown exactly once.
+message CreateAppSecretResponse {
+  AppSecret app_secret = 1;
+  string secret = 2;
+}
+
+message ListAppSecretsRequest { scylla.common.v1.AppId app_id = 1; }
+
+message ListAppSecretsResponse { repeated AppSecret app_secrets = 1; }
+
+message RevokeAppSecretRequest { scylla.common.v1.AppSecretId app_secret_id = 1; }
+
+message RevokeAppSecretResponse {}
+
+message SetAppSecretEnabledRequest {
+  scylla.common.v1.AppSecretId app_secret_id = 1;
+  bool enabled = 2;
+}
+
+message SetAppSecretEnabledResponse { AppSecret app_secret = 1; }

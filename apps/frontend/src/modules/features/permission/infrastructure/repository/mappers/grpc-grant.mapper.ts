@@ -1,44 +1,64 @@
-import type { CreateGrantRequest, Grant } from '@/generated/permission.ts';
-import type { GrantEntity } from '@/modules/features/permission/domain/entities/grant.entity.ts';
+import type { CreateGrantRequest, Grant } from '@/generated/scylla/authz/v1/grant.ts';
+import type {
+  GrantEntity,
+  GrantTarget,
+} from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { CreateGrantInput } from '@/modules/features/permission/domain/repository/permission.repository.ts';
 import { GrpcPermissionMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 
 export class GrpcGrantMapper {
   /**
+   * `target` is a oneof: a role or a single permission, never both. An arm this
+   * build does not know surfaces as `unknown` rather than as an empty role.
+   */
+  private static targetToDomain(grpcGrant: Grant): GrantTarget {
+    switch (grpcGrant.target.oneofKind) {
+      case 'role':
+        return { kind: 'role', roleId: grpcGrant.target.role.value };
+      case 'permission':
+        return {
+          kind: 'permission',
+          permission: GrpcPermissionMapper.toDomain(grpcGrant.target.permission),
+        };
+      default:
+        return { kind: 'unknown' };
+    }
+  }
+
+  /**
    * Maps a gRPC {@link Grant} to a domain {@link GrantEntity}.
-   * The `UserId` wrapper is unwrapped to a plain string.
+   * The id wrappers are unwrapped to plain strings, and the `PrincipalRef`
+   * oneof is flattened to a (kind, id) pair — a grant may target a user or an
+   * app.
    */
   public static toDomain(grpcGrant: Grant): GrantEntity {
-    // `grantType` is a oneof: a role or a single permission, never both.
+    const { scope, scopeId } = GrpcPermissionMapper.scopeRefToDomain(grpcGrant.scope);
+
     return {
-      id: grpcGrant.id,
-      userId: grpcGrant.userId?.value,
-      role: grpcGrant.grantType.oneofKind === 'role' ? grpcGrant.grantType.role : '',
-      scope: GrpcPermissionMapper.scopeToDomain(grpcGrant.scope),
-      scopeId: grpcGrant.scopeId,
-      permission:
-        grpcGrant.grantType.oneofKind === 'permission'
-          ? GrpcPermissionMapper.toDomain(grpcGrant.grantType.permission)
-          : undefined,
+      id: grpcGrant.grantId?.value ?? '',
+      principal: GrpcPermissionMapper.principalRefToDomain(grpcGrant.principal),
+      target: GrpcGrantMapper.targetToDomain(grpcGrant),
+      scope,
+      scopeId,
     };
   }
 
   /**
    * Maps a domain {@link CreateGrantInput} to the gRPC
-   * {@link CreateGrantRequest}.
-   * The plain string `userId` is wrapped in the required `UserId` message.
+   * {@link CreateGrantRequest}. Throws when the principal or the scope was left
+   * unspecified — the backend rejects those anyway.
    */
   public static toGrpcCreateRequest(input: CreateGrantInput): CreateGrantRequest {
-    // A permission set → a single-permission grant; otherwise a role grant.
     return {
-      userId: input.userId != null ? { value: input.userId } : undefined,
-      scope: GrpcPermissionMapper.scopeToGrpc(input.scope),
-      scopeId: input.scopeId,
-      grantType:
-        input.permission != null
-          ? { oneofKind: 'permission', permission: GrpcPermissionMapper.toGrpc(input.permission) }
-          : { oneofKind: 'role', role: input.role },
+      principal: GrpcPermissionMapper.principalRefToGrpc(input.principal),
+      scope: GrpcPermissionMapper.scopeRefToGrpc(input.scope, input.scopeId),
+      target:
+        input.target.kind === 'permission'
+          ? {
+              oneofKind: 'permission',
+              permission: GrpcPermissionMapper.toGrpc(input.target.permission),
+            }
+          : { oneofKind: 'role', role: { value: input.target.roleId } },
     };
   }
 }
-

@@ -8,10 +8,10 @@ use scylla_core::application::UserUseCases;
 use scylla_core::application::{HashService, PermissionService, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
-use scylla_protocol::services::user::{
-    ChangeUserGlobalRoleRequest, ChangeUserGlobalRoleResponse, CreateUserRequest,
-    DeleteUserRequest, DeleteUserResponse, GetUserRequest, ListUsersRequest, ListUsersResponse,
-    UpdateUserRequest, UserResponse, user_service_server::UserService,
+use scylla_protocol::user::v1::{
+    CreateUserRequest, CreateUserResponse, DeleteUserRequest, DeleteUserResponse, GetUserRequest,
+    GetUserResponse, ListUsersRequest, ListUsersResponse, UpdateUserRequest, UpdateUserResponse,
+    user_service_server::UserService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -31,7 +31,7 @@ impl<
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,
-    ) -> Result<Response<UserResponse>, Status> {
+    ) -> Result<Response<CreateUserResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let username = Username::new(&req.username).map_err(domain_error_to_status)?;
@@ -47,13 +47,15 @@ impl<
             .create(&caller, username, email, password)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(user_to_proto(&user)))
+        Ok(Response::new(CreateUserResponse {
+            user: Some(user_to_proto(&user)),
+        }))
     }
 
     async fn get_user(
         &self,
         request: Request<GetUserRequest>,
-    ) -> Result<Response<UserResponse>, Status> {
+    ) -> Result<Response<GetUserResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = UserId::new(&required(req.user_id, "user_id")?);
@@ -62,13 +64,15 @@ impl<
             .get(&caller, &id)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(user_to_proto(&user)))
+        Ok(Response::new(GetUserResponse {
+            user: Some(user_to_proto(&user)),
+        }))
     }
 
     async fn update_user(
         &self,
         request: Request<UpdateUserRequest>,
-    ) -> Result<Response<UserResponse>, Status> {
+    ) -> Result<Response<UpdateUserResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = UserId::new(&required(req.user_id, "user_id")?);
@@ -82,7 +86,9 @@ impl<
             .update(&caller, &id, username)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(user_to_proto(&user)))
+        Ok(Response::new(UpdateUserResponse {
+            user: Some(user_to_proto(&user)),
+        }))
     }
 
     async fn delete_user(
@@ -117,14 +123,5 @@ impl<
             users: users.iter().map(user_to_proto).collect(),
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
-    }
-
-    async fn change_user_global_role(
-        &self,
-        _request: Request<ChangeUserGlobalRoleRequest>,
-    ) -> Result<Response<ChangeUserGlobalRoleResponse>, Status> {
-        Err(Status::unimplemented(
-            "Global role management requires RBAC configuration",
-        ))
     }
 }

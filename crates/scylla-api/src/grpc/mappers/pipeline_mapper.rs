@@ -3,13 +3,14 @@ use scylla_core::domain::entities::{Pipeline, PipelineNode as DomainPipelineNode
 use scylla_core::domain::value_objects::pipeline::{
     EnvSource, EnvVar as DomainEnvVar, NodeId, Shell, Step,
 };
-use scylla_protocol::services::common;
-use scylla_protocol::services::pipeline::{
-    EnvVar, PipelineNode, PipelineResponse, PipelineSummary, env_var, pipeline_node,
+use scylla_protocol::common::v1 as common;
+use scylla_protocol::exec::v1 as exec;
+use scylla_protocol::pipeline::v1::{
+    EnvVar, Pipeline as ProtoPipeline, PipelineNode, PipelineSummary, env_var, pipeline_node,
 };
 
-pub fn pipeline_to_proto(pipeline: &Pipeline) -> PipelineResponse {
-    PipelineResponse {
+pub fn pipeline_to_proto(pipeline: &Pipeline) -> ProtoPipeline {
+    ProtoPipeline {
         pipeline_id: wrap(pipeline.id().to_string()),
         project_id: wrap(pipeline.project_id().to_string()),
         name: pipeline.name().to_string(),
@@ -66,20 +67,20 @@ fn env_to_proto(ev: &DomainEnvVar) -> EnvVar {
 
 fn step_to_proto(step: &Step) -> pipeline_node::Step {
     match step {
-        Step::Exec { command, args } => pipeline_node::Step::Exec(common::ExecStep {
+        Step::Exec { command, args } => pipeline_node::Step::Exec(exec::ExecStep {
             command: command.clone(),
             args: args.clone(),
         }),
-        Step::Script { script, shell } => pipeline_node::Step::Script(common::ScriptStep {
+        Step::Script { script, shell } => pipeline_node::Step::Script(exec::ScriptStep {
             script: script.clone(),
             shell: shell_to_proto(*shell) as i32,
         }),
     }
 }
 
-fn shell_to_proto(shell: Shell) -> common::Shell {
+fn shell_to_proto(shell: Shell) -> exec::Shell {
     match shell {
-        Shell::Sh => common::Shell::Sh,
-        Shell::Bash => common::Shell::Bash,
+        Shell::Sh => exec::Shell::Sh,
+        Shell::Bash => exec::Shell::Bash,
     }
 }

@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package scylla.invitation.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Authenticated management of org invitations (org-admins).
+service InvitationService {
+  rpc CreateInvitation(CreateInvitationRequest) returns (CreateInvitationResponse);
+  rpc ListInvitations(ListInvitationsRequest) returns (ListInvitationsResponse);
+  rpc RevokeInvitation(RevokeInvitationRequest) returns (RevokeInvitationResponse);
+}
+
+// Public acceptance — the invite token is the credential, so this must NOT sit
+// behind the auth interceptor (the invitee has no session yet).
+service InvitationAcceptService {
+  rpc AcceptInvitation(AcceptInvitationRequest) returns (AcceptInvitationResponse);
+}
+
+// Where an invitation stands. Closed and code-owned; mirrors the domain
+// `InvitationStatus`. Expiry is not a status — compare `expires_at` instead.
+enum InvitationStatus {
+  INVITATION_STATUS_UNSPECIFIED = 0;
+  INVITATION_STATUS_PENDING = 1;
+  INVITATION_STATUS_ACCEPTED = 2;
+  INVITATION_STATUS_REVOKED = 3;
+}
+
+// An email invitation to join an organization. Never carries the invite token —
+// that goes to the invitee by email and is the acceptance credential.
+message Invitation {
+  scylla.common.v1.InvitationId invitation_id = 1;
+  scylla.common.v1.OrganizationId organization_id = 2;
+  scylla.common.v1.Email email = 3;
+  // Role granted on acceptance, e.g. "organization-admin". Unset = plain member.
+  scylla.common.v1.RoleId role = 4;
+  InvitationStatus status = 5;
+  google.protobuf.Timestamp expires_at = 6;
+}
+
+message CreateInvitationRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  scylla.common.v1.Email email = 2;
+  // Unset = plain member.
+  scylla.common.v1.RoleId role = 3;
+}
+
+message CreateInvitationResponse { Invitation invitation = 1; }
+
+message ListInvitationsRequest { scylla.common.v1.OrganizationId organization_id = 1; }
+
+message ListInvitationsResponse { repeated Invitation invitations = 1; }
+
+message RevokeInvitationRequest { scylla.common.v1.InvitationId invitation_id = 1; }
+
+message RevokeInvitationResponse {}
+
+message AcceptInvitationRequest {
+  // The invite token from the email. This is the credential.
+  string token = 1;
+  string username = 2;
+  // Plaintext; hashed on receipt.
+  string password = 3;
+}
+
+message AcceptInvitationResponse {
+  // Opaque bearer token for the new session.
+  string token = 1;
+  scylla.common.v1.UserId user_id = 2;
+  scylla.common.v1.OrganizationId organization_id = 3;
+}

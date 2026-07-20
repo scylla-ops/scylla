@@ -9,11 +9,12 @@ use tracing::{error, info, warn};
 
 use scylla_core::domain::entities::PipelineNode;
 use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir};
-use scylla_protocol::services::agent::agent_service_client::AgentServiceClient;
-use scylla_protocol::services::agent::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
-use scylla_protocol::services::common;
-use scylla_protocol::services::app::IssueTokenRequest;
-use scylla_protocol::services::app::app_auth_service_client::AppAuthServiceClient;
+use scylla_protocol::agent::v1::agent_service_client::AgentServiceClient;
+use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
+use scylla_protocol::app::v1::IssueTokenRequest;
+use scylla_protocol::app::v1::app_auth_service_client::AppAuthServiceClient;
+use scylla_protocol::common::v1 as common;
+use scylla_protocol::exec::v1 as exec;
 
 use crate::config::AgentConfig;
 use crate::error::AgentError;
@@ -132,7 +133,7 @@ impl Agent {
 
         let token = AppAuthServiceClient::new(channel.clone())
             .issue_token(IssueTokenRequest {
-                app_id: Some(scylla_protocol::services::common::AppId {
+                app_id: Some(common::AppId {
                     value: self.config.app_id.clone(),
                 }),
                 secret: self.config.app_secret.clone(),
@@ -303,8 +304,8 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
 }
 
 fn shell_from_proto(raw: i32) -> Shell {
-    match common::Shell::try_from(raw).unwrap_or_default() {
-        common::Shell::Bash => Shell::Bash,
-        common::Shell::Sh | common::Shell::Unspecified => Shell::Sh,
+    match exec::Shell::try_from(raw).unwrap_or_default() {
+        exec::Shell::Bash => Shell::Bash,
+        exec::Shell::Sh | exec::Shell::Unspecified => Shell::Sh,
     }
 }

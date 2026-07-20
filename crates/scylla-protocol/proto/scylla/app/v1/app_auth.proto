@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package scylla.app.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Public credential exchange: an App presents its id + secret and receives a
+// bearer token. No auth interceptor — the secret is the credential, like user
+// login. Kept in its own file because it is the one unauthenticated surface of
+// this package.
+service AppAuthService {
+  rpc IssueToken(IssueTokenRequest) returns (IssueTokenResponse);
+}
+
+message IssueTokenRequest {
+  scylla.common.v1.AppId app_id = 1;
+  // The plaintext app secret exchanged for a token (opaque credential).
+  string secret = 2;
+}
+
+message IssueTokenResponse {
+  // Opaque bearer token; send as `authorization: Bearer <token>`.
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}

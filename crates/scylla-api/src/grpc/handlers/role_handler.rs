@@ -1,21 +1,20 @@
 use crate::extract_auth_context;
 use crate::grpc::convert::{
-    permission_from_key, permission_key, scope_kind_from_proto, scope_kind_to_proto, scope_to_proto,
+    permission_from_key, permission_key, principal_ref_from_proto, required, scope_kind_from_proto,
+    scope_kind_to_proto, scope_ref_to_proto, wrap,
 };
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
-    EffectiveScope, FULL_CONTROL, GrantRepository, PermissionService, PolicyControl, Principal,
-    Role, RoleRepository, RoleUseCases,
+    EffectiveScope, FULL_CONTROL, GrantRepository, PermissionService, PolicyControl, Role,
+    RoleRepository, RoleUseCases,
 };
-use scylla_core::domain::entities::{AppId, UserId};
-use scylla_protocol::services::permission::{
-    CreateRoleRequest, DeleteRoleRequest, DeleteRoleResponse,
-    EffectiveScope as ProtoEffectiveScope, FullControl, GetEffectivePermissionsRequest,
-    GetEffectivePermissionsResponse, GetRoleRequest, ListRolesRequest, ListRolesResponse,
-    Permission, PrincipalKind, RestrictedPermissions, Role as ProtoRole, UpdateRoleRequest,
-    create_role_request, effective_scope, role, role_service_server::RoleService,
-    update_role_request,
+use scylla_protocol::authz::v1::{
+    Access, CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest, DeleteRoleResponse,
+    EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest,
+    GetEffectivePermissionsResponse, GetRoleRequest, GetRoleResponse, ListRolesRequest,
+    ListRolesResponse, Permission, Role as ProtoRole, UpdateRoleRequest, UpdateRoleResponse, access,
+    role, role_service_server::RoleService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -42,20 +41,11 @@ impl<
     async fn create_role(
         &self,
         request: Request<CreateRoleRequest>,
-    ) -> Result<Response<ProtoRole>, Status> {
+    ) -> Result<Response<CreateRoleResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let scope = scope_kind_from_proto(req.scope)?;
-        let (full_control, permission_ids) = match req.access {
-            Some(create_role_request::Access::FullControl(_)) => (true, Vec::new()),
-            Some(create_role_request::Access::Restricted(r)) => (false, r.permissions),
-            None => {
-                return Err(Status::invalid_argument(
-                    "access is required (full_control or restricted)",
-                ));
-            }
-        };
-        let permissions = permissions_from_proto(full_control, &permission_ids)?;
+        let scope = scope_kind_from_proto(req.scope_kind)?;
+        let permissions = permissions_from_proto(req.access)?;
 
         let role = self
             .use_cases
@@ -63,33 +53,29 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(role_to_proto(&role)))
+        Ok(Response::new(CreateRoleResponse {
+            role: Some(role_to_proto(&role)),
+        }))
     }
 
     async fn update_role(
         &self,
         request: Request<UpdateRoleRequest>,
-    ) -> Result<Response<ProtoRole>, Status> {
+    ) -> Result<Response<UpdateRoleResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let (full_control, permission_ids) = match req.access {
-            Some(update_role_request::Access::FullControl(_)) => (true, Vec::new()),
-            Some(update_role_request::Access::Restricted(r)) => (false, r.permissions),
-            None => {
-                return Err(Status::invalid_argument(
-                    "access is required (full_control or restricted)",
-                ));
-            }
-        };
-        let permissions = permissions_from_proto(full_control, &permission_ids)?;
+        let role_id = required(req.role_id, "role_id")?;
+        let permissions = permissions_from_proto(req.access)?;
 
         let role = self
             .use_cases
-            .update(&caller, &req.id, req.name, req.description, permissions)
+            .update(&caller, &role_id, req.name, req.description, permissions)
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(role_to_proto(&role)))
+        Ok(Response::new(UpdateRoleResponse {
+            role: Some(role_to_proto(&role)),
+        }))
     }
 
     async fn delete_role(
@@ -98,9 +84,10 @@ impl<
     ) -> Result<Response<DeleteRoleResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
+        let role_id = required(req.role_id, "role_id")?;
 
         self.use_cases
-            .delete(&caller, &req.id)
+            .delete(&caller, &role_id)
             .await
             .map_err(domain_error_to_status)?;
 
@@ -127,17 +114,20 @@ impl<
     async fn get_role(
         &self,
         request: Request<GetRoleRequest>,
-    ) -> Result<Response<ProtoRole>, Status> {
+    ) -> Result<Response<GetRoleResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
+        let role_id = required(req.role_id, "role_id")?;
 
         let role = self
             .use_cases
-            .get(&caller, &req.id)
+            .get(&caller, &role_id)
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(role_to_proto(&role)))
+        Ok(Response::new(GetRoleResponse {
+            role: Some(role_to_proto(&role)),
+        }))
     }
 
     async fn get_effective_permissions(
@@ -146,7 +136,7 @@ impl<
     ) -> Result<Response<GetEffectivePermissionsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let principal = principal_from_proto(req.principal_kind, req.principal_id)?;
+        let principal = principal_ref_from_proto(req.principal)?;
 
         let scopes = self
             .use_cases
@@ -160,69 +150,69 @@ impl<
     }
 }
 
-fn principal_from_proto(kind: i32, id: String) -> Result<Principal, Status> {
-    match PrincipalKind::try_from(kind) {
-        Ok(PrincipalKind::User) => Ok(Principal::User(UserId::new(id))),
-        Ok(PrincipalKind::App) => Ok(Principal::App(AppId::new(id))),
-        Ok(PrincipalKind::Unspecified) | Err(_) => Err(Status::invalid_argument(
-            "unknown or unspecified principal kind",
+fn effective_scope_to_proto(es: &EffectiveScope) -> ProtoEffectiveScope {
+    ProtoEffectiveScope {
+        scope: Some(scope_ref_to_proto(&es.scope)),
+        access: Some(access_from_keys(es.full_control, &es.permissions)),
+    }
+}
+
+/// The shared proto `Access` for a domain permission set: full control carries
+/// no list, anything else is the named permission keys.
+fn access_from_keys(full_control: bool, keys: &[String]) -> Access {
+    let inner = if full_control {
+        access::Access::FullControl(access::FullControl {})
+    } else {
+        access::Access::Restricted(access::Restricted {
+            permissions: keys
+                .iter()
+                .filter_map(|key| permission_from_key(key).map(|p| p as i32))
+                .collect(),
+        })
+    };
+    Access {
+        access: Some(inner),
+    }
+}
+
+/// Build the domain permission set from the proto `Access`: full control → the
+/// `*` sentinel; otherwise the named permission keys. An absent oneof is a
+/// client error, never a silent empty set.
+fn permissions_from_proto(access: Option<Access>) -> Result<Vec<String>, Status> {
+    let access = access.ok_or_else(|| Status::invalid_argument("access is required"))?;
+    match access.access {
+        Some(access::Access::FullControl(_)) => Ok(vec![FULL_CONTROL.to_string()]),
+        Some(access::Access::Restricted(r)) => r
+            .permissions
+            .iter()
+            .map(|&p| {
+                let perm = Permission::try_from(p)
+                    .map_err(|_| Status::invalid_argument("unknown permission value"))?;
+                permission_key(perm)
+                    .ok_or_else(|| Status::invalid_argument("permission unspecified"))
+            })
+            .collect(),
+        None => Err(Status::invalid_argument(
+            "access is required (full_control or restricted)",
         )),
     }
 }
 
-fn effective_scope_to_proto(es: &EffectiveScope) -> ProtoEffectiveScope {
-    let (scope, scope_id) = scope_to_proto(&es.scope);
-    let access = if es.full_control {
-        effective_scope::Access::FullControl(FullControl {})
-    } else {
-        effective_scope::Access::Restricted(restricted_from_keys(&es.permissions))
-    };
-    ProtoEffectiveScope {
-        scope: scope as i32,
-        scope_id,
-        access: Some(access),
-    }
-}
-
-/// The proto `RestrictedPermissions` for a set of domain permission keys.
-fn restricted_from_keys(keys: &[String]) -> RestrictedPermissions {
-    RestrictedPermissions {
-        permissions: keys
-            .iter()
-            .filter_map(|key| permission_from_key(key).map(|p| p as i32))
-            .collect(),
-    }
-}
-
-/// Build the domain permission set from the proto: `full_control` → the `*`
-/// sentinel; otherwise the named permission keys.
-fn permissions_from_proto(full_control: bool, permissions: &[i32]) -> Result<Vec<String>, Status> {
-    if full_control {
-        return Ok(vec![FULL_CONTROL.to_string()]);
-    }
-    permissions
-        .iter()
-        .map(|&p| {
-            let perm = Permission::try_from(p)
-                .map_err(|_| Status::invalid_argument("unknown permission value"))?;
-            permission_key(perm).ok_or_else(|| Status::invalid_argument("permission unspecified"))
-        })
-        .collect()
-}
-
 fn role_to_proto(role: &Role) -> ProtoRole {
-    let access = if role.is_full_control() {
-        role::Access::FullControl(FullControl {})
-    } else {
-        role::Access::Restricted(restricted_from_keys(&role.permissions))
+    // A builtin has a stable key and no owner; a custom role has an owner and no
+    // key. The oneof makes the mixed case unrepresentable.
+    let origin = match &role.key {
+        Some(key) => role::Origin::Builtin(role::Builtin { key: key.clone() }),
+        None => role::Origin::Custom(role::Custom {
+            owner_organization_id: role.owner_org.as_ref().and_then(|id| wrap(id.to_string())),
+        }),
     };
     ProtoRole {
-        id: role.id.clone(),
-        key: role.key.clone(),
+        role_id: wrap(role.id.clone()),
         name: role.name.clone(),
         description: role.description.clone(),
-        scope: scope_kind_to_proto(role.scope) as i32,
-        builtin: role.builtin,
-        access: Some(access),
+        scope_kind: scope_kind_to_proto(role.scope) as i32,
+        access: Some(access_from_keys(role.is_full_control(), &role.permissions)),
+        origin: Some(origin),
     }
 }

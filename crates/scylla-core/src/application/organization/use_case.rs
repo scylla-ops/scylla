@@ -129,19 +129,23 @@ impl<
         self.org_repo.update(&org).await
     }
 
+    /// Set the active flag to an explicit value and return the updated
+    /// organization. Idempotent, so a retried call is safe — see
+    /// [`Organization::set_active`].
     #[instrument(skip(self, caller), fields(org_id = %id))]
-    pub async fn toggle_active(
+    pub async fn set_active(
         &self,
         caller: &CallerContext,
         id: &OrganizationId,
-    ) -> DomainResult<()> {
+        is_active: bool,
+    ) -> DomainResult<Organization> {
         self.permission_service
             .check(caller, Permission::UpdateOrganization(id.clone()))
             .await?;
         let mut org = self.org_repo.find_by_id(id).await?;
-        org.toggle_active()?;
+        org.set_active(is_active);
         self.org_repo.update(&org).await?;
-        Ok(())
+        Ok(org)
     }
 
     #[instrument(skip(self, caller), fields(org_id = %id))]

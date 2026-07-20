@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package scylla.auth.v1;
+
+import "scylla/common/v1/common.proto";
+
+// Session credentials for human users. Login is public (no session exists yet);
+// the returned token is sent as `authorization: Bearer <token>`.
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}
+
+message LoginRequest {
+  // Email (contains '@') or username.
+  string identifier = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  // Opaque bearer token.
+  string token = 1;
+  scylla.common.v1.UserId user_id = 2;
+}
+
+message ValidateTokenRequest { string token = 1; }
+
+// The verdict on a token. A oneof rather than a bool, so a future distinction
+// (expired vs revoked vs malformed) is a new arm instead of a breaking change,
+// and so "neither valid nor invalid" cannot be built.
+message ValidateTokenResponse {
+  oneof result {
+    Valid valid = 1;
+    Invalid invalid = 2;
+  }
+
+  // The token identifies a live session. Empty today; adding the session's
+  // user id here later is a safe, non-breaking change.
+  message Valid {}
+  // The token is unknown, expired or revoked. Deliberately carries no detail —
+  // telling an unauthenticated caller *why* helps only an attacker.
+  message Invalid {}
+}
+
+message RevokeTokenRequest { string token = 1; }
+
+message RevokeTokenResponse {}

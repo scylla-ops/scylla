@@ -7,7 +7,7 @@ import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-
 export const TRIGGERS_QUERY_KEY = (pipelineId: string) =>
   ['triggers', 'pipeline', pipelineId] as const;
 
-/** List a pipeline's triggers. Polls while an enabled cron trigger exists, to keep `nextFireAt`/`lastStatus` fresh. */
+/** List a pipeline's triggers. Polls while an enabled cron trigger exists, to keep `nextFireAt`/`lastResult` fresh. */
 export const usePipelineTriggers = (pipelineId: string) => {
   const { listPipelineTriggers } = useDependencies().triggers;
 

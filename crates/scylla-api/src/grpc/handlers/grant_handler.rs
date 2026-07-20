@@ -1,21 +1,23 @@
 use crate::extract_auth_context;
 use crate::grpc::convert::{
-    permission_from_key, permission_key, required, scope_kind_from_proto, scope_kind_to_proto, wrap,
+    permission_from_key, permission_key, principal_ref_from_proto, principal_ref_to_proto,
+    required, scope_kind_from_proto, scope_kind_to_proto, scope_ref_from_proto, scope_ref_to_proto,
+    wrap,
 };
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
     Grant, GrantRepository, GrantTarget, GrantUseCases, GrantableRole, PermissionService,
-    PolicyControl, Principal, Scope, grantable_roles,
+    PolicyControl, RoleKind, grantable_roles,
 };
-use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::role::RoleName;
-use scylla_protocol::services::permission::{
-    CreateGrantRequest, Grant as ProtoGrant, GrantableRole as ProtoGrantableRole,
-    ListGrantableRolesRequest, ListGrantableRolesResponse, ListGrantsRequest, ListGrantsResponse,
-    Permission, RevokeGrantRequest, RevokeGrantResponse, Scope as ProtoScope, create_grant_request,
-    grant, grant_service_server::GrantService,
+use scylla_protocol::authz::v1::{
+    CreateGrantRequest, CreateGrantResponse, Grant as ProtoGrant,
+    GrantableRole as ProtoGrantableRole, ListGrantableRolesRequest, ListGrantableRolesResponse,
+    ListGrantsRequest, ListGrantsResponse, Permission, RevokeGrantRequest, RevokeGrantResponse,
+    RoleKind as ProtoRoleKind, create_grant_request, grant, grant_service_server::GrantService,
 };
+use scylla_protocol::common::v1::RoleId;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
@@ -34,30 +36,32 @@ impl<
     async fn create_grant(
         &self,
         request: Request<CreateGrantRequest>,
-    ) -> Result<Response<ProtoGrant>, Status> {
+    ) -> Result<Response<CreateGrantResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let user_id = UserId::new(&required(req.user_id, "user_id")?);
-        let scope = scope_from_proto(req.scope, &req.scope_id)?;
+        // A grant is about a user *or* a machine app — the `PrincipalRef` union
+        // carries the kind with its id, so neither is inferred here.
+        let principal = principal_ref_from_proto(req.principal)?;
+        let scope = scope_ref_from_proto(req.scope)?;
 
-        // The `grant_type` oneof decides: a single permission (additive) or a named
+        // The `target` oneof decides: a single permission (additive) or a named
         // role. Both go through the same anti-escalation check. An absent oneof is a
         // malformed request.
-        let grant = match req.grant_type {
-            Some(create_grant_request::GrantType::Permission(p)) => {
+        let grant = match req.target {
+            Some(create_grant_request::Target::Permission(p)) => {
                 let perm = Permission::try_from(p)
                     .map_err(|_| Status::invalid_argument("unknown permission value"))?;
                 let key = permission_key(perm)
                     .ok_or_else(|| Status::invalid_argument("permission unspecified"))?;
-                Grant::with_permission(Principal::User(user_id), key, scope)
+                Grant::with_permission(principal, key, scope)
             }
-            Some(create_grant_request::GrantType::Role(role)) => {
-                let role = RoleName::new(&role).map_err(domain_error_to_status)?;
-                Grant::new(Principal::User(user_id), role, scope)
+            Some(create_grant_request::Target::Role(role_id)) => {
+                let role = RoleName::new(&role_id.value).map_err(domain_error_to_status)?;
+                Grant::new(principal, role, scope)
             }
             None => {
                 return Err(Status::invalid_argument(
-                    "grant_type is required (role or permission)",
+                    "target is required (role or permission)",
                 ));
             }
         };
@@ -66,7 +70,9 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(grant_to_proto(&grant)))
+        Ok(Response::new(CreateGrantResponse {
+            grant: Some(grant_to_proto(&grant)),
+        }))
     }
 
     async fn revoke_grant(
@@ -75,13 +81,14 @@ impl<
     ) -> Result<Response<RevokeGrantResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
+        let grant_id = required(req.grant_id, "grant_id")?;
 
         self.use_cases
-            .revoke(&caller, &req.id)
+            .revoke(&caller, &grant_id)
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(RevokeGrantResponse { revoked: true }))
+        Ok(Response::new(RevokeGrantResponse {}))
     }
 
     async fn list_grants(
@@ -92,11 +99,11 @@ impl<
         let req = request.into_inner();
 
         // Scope filter present → scoped listing (org/project/system admins of it).
-        // Absent → list every grant (system admins only). The `scope_id` is
-        // ignored for SYSTEM (singleton root) and used for org/project.
+        // Absent → list every grant (system admins only). The bound entity travels
+        // inside the `ScopeRef` arm, so SYSTEM carries no id at all.
         let grants = match req.scope {
-            Some(kind) => {
-                let scope = scope_from_proto(kind, req.scope_id.as_deref().unwrap_or(""))?;
+            Some(scope) => {
+                let scope = scope_ref_from_proto(Some(scope))?;
                 self.use_cases.list_by_scope(&caller, &scope).await
             }
             None => self.use_cases.list(&caller).await,
@@ -116,7 +123,7 @@ impl<
         // non-sensitive compile-time data, so no Cedar check is applied.
         let _caller = caller!(request);
         let req = request.into_inner();
-        let filter = req.scope.map(scope_kind_from_proto).transpose()?;
+        let filter = req.scope_kind.map(scope_kind_from_proto).transpose()?;
 
         Ok(Response::new(ListGrantableRolesResponse {
             roles: grantable_roles(filter)
@@ -129,43 +136,37 @@ impl<
 
 fn grantable_role_to_proto(r: &GrantableRole) -> ProtoGrantableRole {
     ProtoGrantableRole {
-        name: r.name.to_string(),
-        scope: scope_kind_to_proto(r.scope) as i32,
-        kind: r.kind.as_str().to_string(),
+        // Builtin role ids are their stable keys, so the catalog name is the id.
+        role_id: wrap(r.name),
+        scope_kind: scope_kind_to_proto(r.scope) as i32,
+        kind: role_kind_to_proto(r.kind) as i32,
         description: r.description.to_string(),
     }
 }
 
-fn scope_from_proto(kind: i32, id: &str) -> Result<Scope, Status> {
-    match ProtoScope::try_from(kind) {
-        // System is the tenancy root; scope_id is ignored (single root).
-        Ok(ProtoScope::System) => Ok(Scope::System),
-        Ok(ProtoScope::Organization) => Ok(Scope::Organization(OrganizationId::new(id))),
-        Ok(ProtoScope::Project) => Ok(Scope::Project(ProjectId::new(id))),
-        Ok(ProtoScope::Unspecified) | Err(_) => {
-            Err(Status::invalid_argument("unknown or unspecified scope"))
-        }
+/// Domain `RoleKind` → the proto enum. Both arms are real kinds, so
+/// `UNSPECIFIED` is never produced.
+fn role_kind_to_proto(kind: RoleKind) -> ProtoRoleKind {
+    match kind {
+        RoleKind::Admin => ProtoRoleKind::Admin,
+        RoleKind::Agent => ProtoRoleKind::Agent,
     }
 }
 
 fn grant_to_proto(g: &Grant) -> ProtoGrant {
-    let (scope, scope_id) = match &g.scope {
-        Scope::System => (ProtoScope::System, String::new()),
-        Scope::Organization(id) => (ProtoScope::Organization, id.to_string()),
-        Scope::Project(id) => (ProtoScope::Project, id.to_string()),
-    };
-    // Mirror the domain target onto the `grant_type` oneof.
-    let grant_type = match &g.target {
-        GrantTarget::Role(r) => grant::GrantType::Role(r.to_string()),
-        GrantTarget::Permission(key) => grant::GrantType::Permission(
+    // Mirror the domain target onto the `target` oneof.
+    let target = match &g.target {
+        GrantTarget::Role(r) => grant::Target::Role(RoleId {
+            value: r.to_string(),
+        }),
+        GrantTarget::Permission(key) => grant::Target::Permission(
             permission_from_key(key).map_or(Permission::Unspecified as i32, |p| p as i32),
         ),
     };
     ProtoGrant {
-        id: g.id.clone(),
-        user_id: wrap(g.principal.id().to_string()),
-        scope: scope as i32,
-        scope_id,
-        grant_type: Some(grant_type),
+        grant_id: wrap(g.id.clone()),
+        principal: Some(principal_ref_to_proto(&g.principal)),
+        scope: Some(scope_ref_to_proto(&g.scope)),
+        target: Some(target),
     }
 }

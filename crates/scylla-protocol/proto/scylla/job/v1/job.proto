@@ -1,0 +1,193 @@
+syntax = "proto3";
+
+package scylla.job.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Jobs — one execution of a pipeline — and the log lines they produce.
+service JobService {
+  rpc GetJob(GetJobRequest) returns (GetJobResponse);
+  rpc DeleteJob(DeleteJobRequest) returns (DeleteJobResponse);
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse);
+  rpc ListPipelineJobs(ListPipelineJobsRequest) returns (ListPipelineJobsResponse);
+  rpc ListProjectJobs(ListProjectJobsRequest) returns (ListProjectJobsResponse);
+  rpc ListOrganizationJobs(ListOrganizationJobsRequest) returns (ListOrganizationJobsResponse);
+  rpc ListJobLogs(ListJobLogsRequest) returns (ListJobLogsResponse);
+  rpc TailJobLogs(TailJobLogsRequest) returns (stream TailJobLogsResponse);
+}
+
+// The terminal outcome of a job.
+enum JobOutcome {
+  JOB_OUTCOME_UNSPECIFIED = 0;
+  JOB_OUTCOME_COMPLETED = 1;
+  JOB_OUTCOME_FAILED = 2;
+  JOB_OUTCOME_CANCELLED = 3;
+  // The agent running it disappeared without reporting a result.
+  JOB_OUTCOME_ORPHANED = 4;
+}
+
+// The terminal outcome of a single node execution.
+enum NodeOutcome {
+  NODE_OUTCOME_UNSPECIFIED = 0;
+  NODE_OUTCOME_COMPLETED = 1;
+  NODE_OUTCOME_FAILED = 2;
+  NODE_OUTCOME_CANCELLED = 3;
+  // An upstream failure invalidated it, so it never ran.
+  NODE_OUTCOME_SKIPPED = 4;
+}
+
+// One execution of a pipeline.
+//
+// Tags 1-9 carry what is true in every state; the state and origin unions start
+// at 10 and 20 so both sides can grow without colliding.
+message Job {
+  scylla.common.v1.JobId job_id = 1;
+  scylla.common.v1.PipelineId pipeline_id = 2;
+  repeated JobNode node_executions = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+
+  // Lifecycle, mirroring the domain `JobState`: each state carries only the
+  // timestamps that exist in it, so "running without a start time" cannot be
+  // built. Always set — an absent state is a decode error, never a valid job.
+  oneof state {
+    Pending pending = 10;
+    Running running = 11;
+    Terminal terminal = 12;
+  }
+
+  // How this run was initiated, mirroring the domain `JobOrigin`. Always set —
+  // a job is never unattributable. `Human`/`App` = a direct RunPipeline call by
+  // a user / machine principal; `Cron`/`Webhook` = a trigger that fired (the run
+  // executes as the org's trigger-runner App, but the origin is the trigger).
+  oneof origin {
+    Human human = 20;
+    App app = 21;
+    Cron cron = 22;
+    Webhook webhook = 23;
+  }
+
+  // Minted, not yet started by an agent.
+  message Pending {}
+  // An agent reported it started.
+  message Running { google.protobuf.Timestamp started_at = 1; }
+  // Ended. `finished_at` always exists; `started_at` is absent only when the job
+  // was cancelled before it ever started running.
+  message Terminal {
+    JobOutcome outcome = 1;
+    google.protobuf.Timestamp started_at = 2;
+    google.protobuf.Timestamp finished_at = 3;
+  }
+
+  // A human pressed "Run" — a direct RunPipeline by a user principal.
+  message Human { scylla.common.v1.UserId user_id = 1; }
+  // A machine principal called RunPipeline directly, outside any trigger.
+  message App { scylla.common.v1.AppId app_id = 1; }
+  // A cron trigger fired on schedule.
+  message Cron { scylla.common.v1.TriggerId trigger_id = 1; }
+  // A webhook trigger fired from an inbound delivery.
+  message Webhook {
+    scylla.common.v1.TriggerId trigger_id = 1;
+    // Set only when the sender supplied one, e.g. GitHub's `X-GitHub-Delivery`.
+    optional string delivery_id = 2;
+  }
+}
+
+// How one pipeline node fared within a job.
+message JobNode {
+  scylla.common.v1.NodeId node_id = 1;
+
+  // Mirrors the domain `NodeExecution`: exactly one execution state, each
+  // carrying only its own timestamps. Always set.
+  oneof execution {
+    Pending pending = 10;
+    Running running = 11;
+    Finished finished = 12;
+  }
+
+  message Pending {}
+  message Running { google.protobuf.Timestamp started_at = 1; }
+  // Reached a terminal outcome. `started_at` is absent only when the node was
+  // skipped or cancelled before it ever ran.
+  message Finished {
+    NodeOutcome outcome = 1;
+    google.protobuf.Timestamp started_at = 2;
+    google.protobuf.Timestamp finished_at = 3;
+  }
+}
+
+// One captured line of job output.
+message JobLogEntry {
+  scylla.common.v1.JobLogId job_log_id = 1;
+  scylla.common.v1.JobId job_id = 2;
+  scylla.common.v1.NodeId node_id = 3;
+  scylla.common.v1.LogStream stream = 4;
+  string line = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+message GetJobRequest { scylla.common.v1.JobId job_id = 1; }
+
+message GetJobResponse { Job job = 1; }
+
+message DeleteJobRequest { scylla.common.v1.JobId job_id = 1; }
+
+message DeleteJobResponse {}
+
+message ListJobsRequest { scylla.common.v1.PaginationRequest pagination = 1; }
+
+message ListJobsResponse {
+  repeated Job jobs = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListPipelineJobsRequest {
+  scylla.common.v1.PipelineId pipeline_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListPipelineJobsResponse {
+  repeated Job jobs = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListProjectJobsRequest {
+  scylla.common.v1.ProjectId project_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListProjectJobsResponse {
+  repeated Job jobs = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListOrganizationJobsRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListOrganizationJobsResponse {
+  repeated Job jobs = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListJobLogsRequest {
+  scylla.common.v1.JobId job_id = 1;
+  // Unset = every node's logs.
+  scylla.common.v1.NodeId node_id = 2;
+  scylla.common.v1.PaginationRequest pagination = 3;
+}
+
+message ListJobLogsResponse {
+  repeated JobLogEntry logs = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message TailJobLogsRequest {
+  scylla.common.v1.JobId job_id = 1;
+  // Unset = every node's logs.
+  scylla.common.v1.NodeId node_id = 2;
+}
+
+message TailJobLogsResponse { JobLogEntry log = 1; }

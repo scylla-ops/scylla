@@ -8,6 +8,8 @@
 export enum TriggerKind {
   Cron = 'cron',
   Webhook = 'webhook',
+  /** The server sent a source arm this build doesn't know. Read-only, never written. */
+  Unknown = 'unknown',
 }
 
 /** Cron schedule. `expression` is a 5-field cron expression, evaluated in UTC. */
@@ -21,11 +23,19 @@ export interface WebhookSource {
   kind: TriggerKind.Webhook;
   /** Header carrying the HMAC signature. Empty = the Scylla default header. */
   signatureHeader: string;
-  /** Public URL to POST to. Read-only — derived by the server. */
+  /** Public URL to POST to. Read-only — derived by the server, carried by the webhook arm. */
   webhookUrl: string;
 }
 
-export type TriggerSource = CronSource | WebhookSource;
+/**
+ * A source kind newer than this build. Rendered as-is, never edited: we can't
+ * round-trip a shape we don't understand.
+ */
+export interface UnknownSource {
+  kind: TriggerKind.Unknown;
+}
+
+export type TriggerSource = CronSource | WebhookSource | UnknownSource;
 
 /** A trigger input value: a constant, or a value extracted from a webhook payload. */
 export type TriggerInputValue =
@@ -41,3 +51,6 @@ export interface TriggerInput {
 export type TriggerSourceDraft =
   | { kind: TriggerKind.Cron; expression: string }
   | { kind: TriggerKind.Webhook; signatureHeader: string };
+
+/** The kinds a user can actually author — {@link TriggerKind.Unknown} is read-only. */
+export type TriggerDraftKind = TriggerSourceDraft['kind'];

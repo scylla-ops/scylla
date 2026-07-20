@@ -1,6 +1,6 @@
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
-use crate::grpc::mappers::{domain_error_to_status, job_to_proto};
+use crate::grpc::mappers::domain_error_to_status;
 use scylla_core::application::{
     AgentDispatch, AppRepository, HashService, JobRepository, PermissionService, PipelineRepository,
     PolicyControl, ProjectRepository, TriggerFireUseCases, TriggerRepository, TriggerUseCases,
@@ -12,14 +12,15 @@ use scylla_core::domain::value_objects::pipeline::EnvKey;
 use scylla_core::domain::value_objects::trigger::{
     CronSpec, TriggerInput, TriggerInputSource, TriggerName, TriggerSource, WebhookSpec,
 };
-use scylla_protocol::services::job::JobResponse;
-use scylla_protocol::services::trigger::{
-    CreateTriggerRequest, CreatedTrigger, CronSpec as ProtoCronSpec, DeleteTriggerRequest,
-    DeleteTriggerResponse, FireObservationView, FireTriggerNowRequest, GetTriggerRequest,
-    ListPipelineTriggersRequest, ListTriggersResponse, SetTriggerEnabledRequest, TriggerDisabled,
-    TriggerEnabled, TriggerInput as ProtoTriggerInput, TriggerView, UpdateTriggerRequest,
-    WebhookSpec as ProtoWebhookSpec, create_trigger_request, trigger_input,
-    trigger_service_server::TriggerService, trigger_view, update_trigger_request,
+use scylla_protocol::trigger::v1::{
+    CreateTriggerRequest, CreateTriggerResponse, CronSpec as ProtoCronSpec, DeleteTriggerRequest,
+    DeleteTriggerResponse, FireObservation as ProtoFireObservation, FireTriggerNowRequest,
+    FireTriggerNowResponse, GetTriggerRequest, GetTriggerResponse, ListPipelineTriggersRequest,
+    ListPipelineTriggersResponse, SetTriggerEnabledRequest, SetTriggerEnabledResponse,
+    Trigger as ProtoTrigger, TriggerInput as ProtoTriggerInput, UpdateTriggerRequest,
+    UpdateTriggerResponse, WebhookSpec as ProtoWebhookSpec, create_trigger_request,
+    fire_observation, trigger as proto_trigger, trigger_input,
+    trigger_service_server::TriggerService, update_trigger_request,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -30,8 +31,8 @@ use tonic::{Request, Response, Status};
 /// caller's `runPipeline` on the trigger's pipeline, then goes through
 /// [`TriggerFireUseCases`], which runs as the org's trigger-runner App. On create,
 /// a webhook trigger's generated signing secret is returned ONCE in
-/// `webhook_secret`; `webhook_url` in every view is built from the configured
-/// ingress base URL.
+/// `webhook_secret`; the delivery URL lives inside the read model's webhook arm
+/// and is built from the configured ingress base URL.
 pub struct TriggerHandler<T, P, PR, A, H, PC, PS, J, W>
 where
     T: TriggerRepository,
@@ -47,7 +48,7 @@ where
     use_cases: Arc<TriggerUseCases<T, P, PR, A, H, PC, PS>>,
     fire_uc: Arc<TriggerFireUseCases<T, P, PR, A, J, PS, W>>,
     /// Public base URL of the webhook ingress (e.g. `https://host:8088`), used to
-    /// build `TriggerView.webhook_url`. `None` when ingress isn't configured.
+    /// build `Trigger.webhook.url`. `None` when ingress isn't configured.
     webhook_base_url: Option<String>,
 }
 
@@ -75,9 +76,9 @@ where
         }
     }
 
-    /// Map a domain trigger to its proto view, filling `webhook_url` from the
-    /// configured ingress base URL.
-    fn view(&self, trigger: &Trigger) -> TriggerView {
+    /// Map a domain trigger to its proto read model, filling the webhook arm's
+    /// `url` from the configured ingress base URL.
+    fn view(&self, trigger: &Trigger) -> ProtoTrigger {
         trigger_to_view(trigger, self.webhook_base_url.as_deref())
     }
 }
@@ -98,7 +99,7 @@ where
     async fn create_trigger(
         &self,
         request: Request<CreateTriggerRequest>,
-    ) -> Result<Response<CreatedTrigger>, Status> {
+    ) -> Result<Response<CreateTriggerResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
 
@@ -113,17 +114,17 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(CreatedTrigger {
+        Ok(Response::new(CreateTriggerResponse {
             trigger: Some(self.view(&trigger)),
-            // Returned ONCE for webhook triggers; empty for cron.
-            webhook_secret: webhook_secret.unwrap_or_default(),
+            // Returned ONCE for webhook triggers; absent for cron.
+            webhook_secret,
         }))
     }
 
     async fn get_trigger(
         &self,
         request: Request<GetTriggerRequest>,
-    ) -> Result<Response<TriggerView>, Status> {
+    ) -> Result<Response<GetTriggerResponse>, Status> {
         let caller = caller!(request);
         let id = TriggerId::new(&required(request.into_inner().trigger_id, "trigger_id")?);
 
@@ -133,13 +134,15 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(self.view(&trigger)))
+        Ok(Response::new(GetTriggerResponse {
+            trigger: Some(self.view(&trigger)),
+        }))
     }
 
     async fn update_trigger(
         &self,
         request: Request<UpdateTriggerRequest>,
-    ) -> Result<Response<TriggerView>, Status> {
+    ) -> Result<Response<UpdateTriggerResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
 
@@ -158,7 +161,9 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(self.view(&trigger)))
+        Ok(Response::new(UpdateTriggerResponse {
+            trigger: Some(self.view(&trigger)),
+        }))
     }
 
     async fn delete_trigger(
@@ -179,7 +184,7 @@ where
     async fn list_pipeline_triggers(
         &self,
         request: Request<ListPipelineTriggersRequest>,
-    ) -> Result<Response<ListTriggersResponse>, Status> {
+    ) -> Result<Response<ListPipelineTriggersResponse>, Status> {
         let caller = caller!(request);
         let pipeline_id =
             PipelineId::new(&required(request.into_inner().pipeline_id, "pipeline_id")?);
@@ -190,7 +195,7 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(ListTriggersResponse {
+        Ok(Response::new(ListPipelineTriggersResponse {
             triggers: triggers.iter().map(|t| self.view(t)).collect(),
         }))
     }
@@ -198,7 +203,7 @@ where
     async fn set_trigger_enabled(
         &self,
         request: Request<SetTriggerEnabledRequest>,
-    ) -> Result<Response<TriggerView>, Status> {
+    ) -> Result<Response<SetTriggerEnabledResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = TriggerId::new(&required(req.trigger_id, "trigger_id")?);
@@ -209,13 +214,15 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(self.view(&trigger)))
+        Ok(Response::new(SetTriggerEnabledResponse {
+            trigger: Some(self.view(&trigger)),
+        }))
     }
 
     async fn fire_trigger_now(
         &self,
         request: Request<FireTriggerNowRequest>,
-    ) -> Result<Response<JobResponse>, Status> {
+    ) -> Result<Response<FireTriggerNowResponse>, Status> {
         let caller = caller!(request);
         let id = TriggerId::new(&required(request.into_inner().trigger_id, "trigger_id")?);
 
@@ -227,7 +234,10 @@ where
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(job_to_proto(&job)))
+        // Only the minted job's id: fetch the job itself with JobService.GetJob.
+        Ok(Response::new(FireTriggerNowResponse {
+            job_id: wrap(job.id().to_string()),
+        }))
     }
 }
 
@@ -291,22 +301,13 @@ fn proto_inputs_to_domain(inputs: Vec<ProtoTriggerInput>) -> Result<Vec<TriggerI
 
 // ── domain → proto ───────────────────────────────────────────────────────────
 
-fn trigger_to_view(t: &Trigger, webhook_base_url: Option<&str>) -> TriggerView {
-    // Webhook triggers expose a delivery URL built from the configured ingress
-    // base; cron triggers (and an unconfigured ingress) leave it empty.
-    let webhook_url = match (t.source(), webhook_base_url) {
-        (TriggerSource::Webhook(_), Some(base)) => {
-            format!("{}/webhooks/{}", base.trim_end_matches('/'), t.id())
-        }
-        _ => String::new(),
-    };
-    TriggerView {
+fn trigger_to_view(t: &Trigger, webhook_base_url: Option<&str>) -> ProtoTrigger {
+    ProtoTrigger {
         trigger_id: wrap(t.id().to_string()),
         pipeline_id: wrap(t.pipeline_id().to_string()),
         name: t.name().to_string(),
-        source: Some(source_to_proto(t.source())),
+        source: Some(source_to_proto(t, webhook_base_url)),
         inputs: t.inputs().iter().map(input_to_proto).collect(),
-        webhook_url,
         activation: Some(activation_to_proto(t.activation())),
         last_observation: t.last_observation().map(observation_to_proto),
         created_at: ts(t.created_at()),
@@ -314,31 +315,47 @@ fn trigger_to_view(t: &Trigger, webhook_base_url: Option<&str>) -> TriggerView {
     }
 }
 
-fn activation_to_proto(activation: &TriggerActivation) -> trigger_view::Activation {
+fn activation_to_proto(activation: &TriggerActivation) -> proto_trigger::Activation {
     match activation {
-        TriggerActivation::Disabled => trigger_view::Activation::Disabled(TriggerDisabled {}),
+        TriggerActivation::Disabled => {
+            proto_trigger::Activation::Disabled(proto_trigger::Disabled {})
+        }
         TriggerActivation::Enabled { next_fire_at } => {
-            trigger_view::Activation::Enabled(TriggerEnabled {
+            proto_trigger::Activation::Enabled(proto_trigger::Enabled {
                 next_fire_at: next_fire_at.and_then(ts),
             })
         }
     }
 }
 
-fn observation_to_proto(observation: &FireObservation) -> FireObservationView {
-    FireObservationView {
+/// The domain records `"ok"` on success and an error description otherwise.
+fn observation_to_proto(observation: &FireObservation) -> ProtoFireObservation {
+    let result = if observation.status == "ok" {
+        fire_observation::Result::Succeeded(fire_observation::Succeeded {})
+    } else {
+        fire_observation::Result::Failed(fire_observation::Failed {
+            error: observation.status.clone(),
+        })
+    };
+    ProtoFireObservation {
         fired_at: ts(observation.fired_at),
-        status: observation.status.clone(),
+        result: Some(result),
     }
 }
 
-fn source_to_proto(source: &TriggerSource) -> trigger_view::Source {
-    match source {
-        TriggerSource::Cron(c) => trigger_view::Source::Cron(ProtoCronSpec {
+/// Read-side source union. The delivery URL lives in the webhook arm and is
+/// built from the configured ingress base; an unconfigured ingress leaves it
+/// empty. A cron trigger has no URL field at all.
+fn source_to_proto(t: &Trigger, webhook_base_url: Option<&str>) -> proto_trigger::Source {
+    match t.source() {
+        TriggerSource::Cron(c) => proto_trigger::Source::Cron(proto_trigger::Cron {
             expression: c.expression().to_string(),
         }),
-        TriggerSource::Webhook(w) => trigger_view::Source::Webhook(ProtoWebhookSpec {
+        TriggerSource::Webhook(w) => proto_trigger::Source::Webhook(proto_trigger::Webhook {
             signature_header: w.signature_header().unwrap_or_default().to_string(),
+            url: webhook_base_url
+                .map(|base| format!("{}/webhooks/{}", base.trim_end_matches('/'), t.id()))
+                .unwrap_or_default(),
         }),
     }
 }

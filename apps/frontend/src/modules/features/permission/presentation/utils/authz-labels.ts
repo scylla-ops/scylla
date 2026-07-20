@@ -27,7 +27,7 @@ export const scopeName = (scope: PermissionScope): string => {
 // ── Permission ────────────────────────────────────────────────────────────────
 
 export const ALL_PERMISSIONS: Permission[] = Object.values(Permission).filter(
-  (v): v is Permission => typeof v === 'number' && v !== Permission.PERMISSION_UNSPECIFIED,
+  (v): v is Permission => typeof v === 'number' && v !== Permission.UNSPECIFIED,
 );
 
 export const permissionName = (permission: Permission): string =>

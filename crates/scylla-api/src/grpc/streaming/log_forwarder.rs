@@ -6,7 +6,7 @@
 use crate::grpc::mappers::{domain_error_to_status, job_log_to_proto};
 use futures_util::StreamExt;
 use scylla_core::application::JobLogLiveStream;
-use scylla_protocol::services::job::JobLogEvent;
+use scylla_protocol::job::v1::TailJobLogsResponse;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
@@ -21,20 +21,23 @@ const FORWARD_CHANNEL_CAPACITY: usize = 256;
 #[must_use]
 pub fn spawn_log_forwarder(
     stream: JobLogLiveStream,
-) -> ReceiverStream<Result<JobLogEvent, Status>> {
-    let (tx, rx) = mpsc::channel::<Result<JobLogEvent, Status>>(FORWARD_CHANNEL_CAPACITY);
+) -> ReceiverStream<Result<TailJobLogsResponse, Status>> {
+    let (tx, rx) = mpsc::channel::<Result<TailJobLogsResponse, Status>>(FORWARD_CHANNEL_CAPACITY);
     tokio::spawn(forward(stream, tx));
     ReceiverStream::new(rx)
 }
 
-async fn forward(mut stream: JobLogLiveStream, tx: mpsc::Sender<Result<JobLogEvent, Status>>) {
+async fn forward(
+    mut stream: JobLogLiveStream,
+    tx: mpsc::Sender<Result<TailJobLogsResponse, Status>>,
+) {
     info!("log forwarder: stream opened");
     let mut forwarded = 0_u64;
     loop {
         tokio::select! {
             item = stream.next() => match item {
                 Some(Ok(log)) => {
-                    let evt = JobLogEvent { log: Some(job_log_to_proto(&log)) };
+                    let evt = TailJobLogsResponse { log: Some(job_log_to_proto(&log)) };
                     // Await a slot (back-pressure) instead of dropping: a noisy
                     // job's full log must reach the client, not just the first
                     // bufferful. If the client has gone, `send` errors -> stop.

@@ -1,5 +1,5 @@
 use crate::extract_auth_context;
-use crate::grpc::convert::{required, ts, wrap};
+use crate::grpc::convert::{optional, required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::authz::policy::PolicyControl;
@@ -8,12 +8,14 @@ use scylla_core::application::{
     PermissionService, SessionRepository, UserRepository,
 };
 use scylla_core::domain::entities::{Invitation, InvitationId, OrganizationId};
+use scylla_core::domain::value_objects::invitation::InvitationStatus as DomainInvitationStatus;
 use scylla_core::domain::value_objects::role::RoleName;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
-use scylla_protocol::services::invitation::{
-    AcceptInviteRequest, AcceptInviteResponse, CreateInviteRequest, InvitationResponse,
-    ListInvitesRequest, ListInvitesResponse, RevokeInviteRequest, RevokeInviteResponse,
-    invitation_accept_service_server::InvitationAcceptService,
+use scylla_protocol::invitation::v1::{
+    AcceptInvitationRequest, AcceptInvitationResponse, CreateInvitationRequest,
+    CreateInvitationResponse, Invitation as ProtoInvitation, InvitationStatus,
+    ListInvitationsRequest, ListInvitationsResponse, RevokeInvitationRequest,
+    RevokeInvitationResponse, invitation_accept_service_server::InvitationAcceptService,
     invitation_service_server::InvitationService,
 };
 use std::sync::Arc;
@@ -52,13 +54,23 @@ where
     }
 }
 
-fn to_proto(i: &Invitation) -> InvitationResponse {
-    InvitationResponse {
-        id: wrap(i.id().to_string()),
+/// Domain status → proto enum. Total: every domain variant has a real proto
+/// variant, so `Unspecified` is never produced.
+fn status_to_proto(status: DomainInvitationStatus) -> InvitationStatus {
+    match status {
+        DomainInvitationStatus::Pending => InvitationStatus::Pending,
+        DomainInvitationStatus::Accepted => InvitationStatus::Accepted,
+        DomainInvitationStatus::Revoked => InvitationStatus::Revoked,
+    }
+}
+
+fn to_proto(i: &Invitation) -> ProtoInvitation {
+    ProtoInvitation {
+        invitation_id: wrap(i.id().to_string()),
         organization_id: wrap(i.organization_id().to_string()),
         email: wrap(i.email().as_str().to_string()),
-        role: i.role().map(|r| r.as_str().to_string()),
-        status: i.status().as_str().to_string(),
+        role: i.role().and_then(|r| wrap(r.as_str().to_string())),
+        status: status_to_proto(i.status()) as i32,
         expires_at: ts(i.expires_at()),
     }
 }
@@ -74,16 +86,15 @@ impl<
     PC: PolicyControl + Send + Sync + 'static,
 > InvitationService for InvitationHandler<I, PS, O, U, H, S, PC>
 {
-    async fn create_invite(
+    async fn create_invitation(
         &self,
-        request: Request<CreateInviteRequest>,
-    ) -> Result<Response<InvitationResponse>, Status> {
+        request: Request<CreateInvitationRequest>,
+    ) -> Result<Response<CreateInvitationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(required(req.organization_id, "organization_id")?);
         let email = Email::new(&required(req.email, "email")?).map_err(domain_error_to_status)?;
-        let role = req
-            .role
+        let role = optional(req.role)
             .as_deref()
             .map(RoleName::new)
             .transpose()
@@ -94,13 +105,15 @@ impl<
             .create_invite(&caller, org_id, email, role)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(to_proto(&invite)))
+        Ok(Response::new(CreateInvitationResponse {
+            invitation: Some(to_proto(&invite)),
+        }))
     }
 
-    async fn list_invites(
+    async fn list_invitations(
         &self,
-        request: Request<ListInvitesRequest>,
-    ) -> Result<Response<ListInvitesResponse>, Status> {
+        request: Request<ListInvitationsRequest>,
+    ) -> Result<Response<ListInvitationsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(required(req.organization_id, "organization_id")?);
@@ -109,15 +122,15 @@ impl<
             .list_pending(&caller, &org_id)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(ListInvitesResponse {
+        Ok(Response::new(ListInvitationsResponse {
             invitations: invites.iter().map(to_proto).collect(),
         }))
     }
 
-    async fn revoke_invite(
+    async fn revoke_invitation(
         &self,
-        request: Request<RevokeInviteRequest>,
-    ) -> Result<Response<RevokeInviteResponse>, Status> {
+        request: Request<RevokeInvitationRequest>,
+    ) -> Result<Response<RevokeInvitationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = InvitationId::new(required(req.invitation_id, "invitation_id")?);
@@ -125,7 +138,7 @@ impl<
             .revoke(&caller, &id)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(RevokeInviteResponse {}))
+        Ok(Response::new(RevokeInvitationResponse {}))
     }
 }
 
@@ -140,10 +153,10 @@ impl<
     PC: PolicyControl + Send + Sync + 'static,
 > InvitationAcceptService for InvitationHandler<I, PS, O, U, H, S, PC>
 {
-    async fn accept_invite(
+    async fn accept_invitation(
         &self,
-        request: Request<AcceptInviteRequest>,
-    ) -> Result<Response<AcceptInviteResponse>, Status> {
+        request: Request<AcceptInvitationRequest>,
+    ) -> Result<Response<AcceptInvitationResponse>, Status> {
         let req = request.into_inner();
         let username = Username::new(&req.username).map_err(domain_error_to_status)?;
         let password = Password::new(&req.password).map_err(domain_error_to_status)?;
@@ -153,7 +166,7 @@ impl<
             .accept(&req.token, username, password)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(AcceptInviteResponse {
+        Ok(Response::new(AcceptInvitationResponse {
             token: outcome.token,
             user_id: wrap(outcome.user_id.to_string()),
             organization_id: wrap(outcome.organization_id.to_string()),

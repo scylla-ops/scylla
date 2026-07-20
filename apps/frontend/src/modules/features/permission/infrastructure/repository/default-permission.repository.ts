@@ -2,7 +2,7 @@ import type { PermissionRepository } from '@/modules/features/permission/domain/
 import type { CreateGrantInput } from '@/modules/features/permission/domain/repository/permission.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
-  PrincipalKind,
+  PrincipalEntity,
   PermissionScope,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import type { GrpcPermissionRemoteDataSource } from '@/modules/features/permission/infrastructure/data/grpc-permission-remote.data-source.ts';
@@ -26,9 +26,7 @@ export class DefaultPermissionRepository implements PermissionRepository {
   // ── Roles ──────────────────────────────────────────────────────────────────
 
   public async listRoles(): Promise<ScyllaResult<RoleEntity[]>> {
-    return (await this._dataSource.listRoles()).map(response =>
-      response.roles.map(GrpcRoleMapper.toDomain),
-    );
+    return (await this._dataSource.listRoles()).map(roles => roles.map(GrpcRoleMapper.toDomain));
   }
 
   public async getRole(id: string): Promise<ScyllaResult<RoleEntity>> {
@@ -51,19 +49,20 @@ export class DefaultPermissionRepository implements PermissionRepository {
   }
 
   public async deleteRole(id: string): Promise<ScyllaResult<void>> {
-    return (await this._dataSource.deleteRole(id)).map<void>(() => undefined);
+    return this._dataSource.deleteRole(id);
   }
 
   // ── Introspection ──────────────────────────────────────────────────────────
 
   public async getEffectivePermissions(
-    principalKind: PrincipalKind,
-    principalId: string,
+    principal: PrincipalEntity,
   ): Promise<ScyllaResult<EffectivePermissionsEntity>> {
-    // Domain and gRPC PrincipalKind enums share identical numeric values.
-    return (await this._dataSource.getEffectivePermissions(principalKind, principalId)).map(
-      GrpcEffectivePermissionsMapper.toDomain,
-    );
+    return (
+      await ScyllaResult.try(
+        () => GrpcPermissionMapper.principalRefToGrpc(principal),
+        'Failed to map principal to gRPC request',
+      ).flatMapAsync(ref => this._dataSource.getEffectivePermissions(ref))
+    ).map(GrpcEffectivePermissionsMapper.toDomain);
   }
 
   // ── Grants ─────────────────────────────────────────────────────────────────
@@ -73,31 +72,38 @@ export class DefaultPermissionRepository implements PermissionRepository {
     scopeId?: string,
   ): Promise<ScyllaResult<GrantEntity[]>> {
     return (
-      await this._dataSource.listGrants(
-        scope != null ? GrpcPermissionMapper.scopeToGrpc(scope) : undefined,
-        scopeId,
-      )
-    ).map(response => response.grants.map(GrpcGrantMapper.toDomain));
+      await ScyllaResult.try(
+        // No scope filter → list every grant; otherwise bind the filter to the
+        // scope's own id, as `ScopeRef` now carries both together.
+        () =>
+          scope != null ? GrpcPermissionMapper.scopeRefToGrpc(scope, scopeId ?? '') : undefined,
+        'Failed to map scope to gRPC request',
+      ).flatMapAsync(ref => this._dataSource.listGrants(ref))
+    ).map(grants => grants.map(GrpcGrantMapper.toDomain));
   }
 
   public async createGrant(input: CreateGrantInput): Promise<ScyllaResult<GrantEntity>> {
-    return (await this._dataSource.createGrant(GrpcGrantMapper.toGrpcCreateRequest(input))).map(
-      GrpcGrantMapper.toDomain,
-    );
+    return (
+      await ScyllaResult.try(
+        () => GrpcGrantMapper.toGrpcCreateRequest(input),
+        'Failed to map grant to gRPC request',
+      ).flatMapAsync(request => this._dataSource.createGrant(request))
+    ).map(GrpcGrantMapper.toDomain);
   }
 
-  public async revokeGrant(id: string): Promise<ScyllaResult<boolean>> {
-    return (await this._dataSource.revokeGrant(id)).map(response => response.revoked);
+  public async revokeGrant(id: string): Promise<ScyllaResult<void>> {
+    return this._dataSource.revokeGrant(id);
   }
 
   public async listGrantableRoles(
     scope?: PermissionScope,
   ): Promise<ScyllaResult<GrantableRoleEntity[]>> {
+    // The grantable-role catalog filters on the id-free `ScopeKind`.
     return (
       await this._dataSource.listGrantableRoles(
         scope != null ? GrpcPermissionMapper.scopeToGrpc(scope) : undefined,
       )
-    ).map(response => response.roles.map(GrpcGrantableRoleMapper.toDomain));
+    ).map(roles => roles.map(GrpcGrantableRoleMapper.toDomain));
   }
 
   // ── Vocabulary ─────────────────────────────────────────────────────────────

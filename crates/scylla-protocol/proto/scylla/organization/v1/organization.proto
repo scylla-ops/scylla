@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package scylla.organization.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Organizations — the top-level tenant. Membership is listed here; the roles a
+// member holds live in `scylla.authz.v1`.
+service OrganizationService {
+  rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse);
+  rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse);
+  rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse);
+  // Sets the active flag outright rather than toggling it, so a retried or
+  // double-submitted call lands on the state the caller asked for.
+  rpc SetOrganizationActive(SetOrganizationActiveRequest) returns (SetOrganizationActiveResponse);
+  rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse);
+  rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse);
+  rpc ListOrganizationMembers(ListOrganizationMembersRequest) returns (ListOrganizationMembersResponse);
+  rpc ListUserOrganizations(ListUserOrganizationsRequest) returns (ListUserOrganizationsResponse);
+  rpc AddOrganizationMember(AddOrganizationMemberRequest) returns (AddOrganizationMemberResponse);
+  rpc RemoveOrganizationMember(RemoveOrganizationMemberRequest) returns (RemoveOrganizationMemberResponse);
+}
+
+// A tenant organization.
+message Organization {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  string name = 2;
+  string description = 3;
+  bool is_active = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// A user's membership in an organization, as shown in member lists.
+message OrganizationMember {
+  scylla.common.v1.UserId user_id = 1;
+  string username = 2;
+}
+
+message CreateOrganizationRequest {
+  string name = 1;
+  optional string description = 2;
+}
+
+message CreateOrganizationResponse { Organization organization = 1; }
+
+message GetOrganizationRequest { scylla.common.v1.OrganizationId organization_id = 1; }
+
+message GetOrganizationResponse { Organization organization = 1; }
+
+message UpdateOrganizationRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message UpdateOrganizationResponse { Organization organization = 1; }
+
+message SetOrganizationActiveRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  bool is_active = 2;
+}
+
+message SetOrganizationActiveResponse { Organization organization = 1; }
+
+message DeleteOrganizationRequest { scylla.common.v1.OrganizationId organization_id = 1; }
+
+message DeleteOrganizationResponse {}
+
+message ListOrganizationsRequest { scylla.common.v1.PaginationRequest pagination = 1; }
+
+message ListOrganizationsResponse {
+  repeated Organization organizations = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListOrganizationMembersRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListOrganizationMembersResponse {
+  repeated OrganizationMember members = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListUserOrganizationsRequest {
+  scylla.common.v1.UserId user_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListUserOrganizationsResponse {
+  repeated Organization organizations = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message AddOrganizationMemberRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  scylla.common.v1.UserId user_id = 2;
+}
+
+message AddOrganizationMemberResponse {}
+
+message RemoveOrganizationMemberRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  scylla.common.v1.UserId user_id = 2;
+}
+
+message RemoveOrganizationMemberResponse {}

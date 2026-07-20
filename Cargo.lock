@@ -2681,6 +2681,7 @@ dependencies = [
  "chrono",
  "clap",
  "libc",
+ "prost-types",
  "scylla-core",
  "scylla-protocol",
  "thiserror 2.0.18",

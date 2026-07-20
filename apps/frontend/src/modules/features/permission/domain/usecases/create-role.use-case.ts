@@ -4,7 +4,7 @@ import type {
   RoleEntity,
 } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import {
-  type Permission,
+  type AccessSpec,
   type PermissionScope,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
@@ -12,9 +12,8 @@ import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 export interface CreateRoleInput {
   name: string;
   description?: string;
-  permissions: Permission[];
-  fullControl: boolean;
   scope: PermissionScope;
+  access: AccessSpec;
 }
 
 export class CreateRoleUseCase {
@@ -24,9 +23,8 @@ export class CreateRoleUseCase {
     const role: RoleCreationData = {
       name: input.name,
       description: input.description || '',
-      permissions: input.permissions,
-      fullControl: input.fullControl,
       scope: input.scope,
+      access: input.access,
     };
 
     return this._repository.createRole(role);

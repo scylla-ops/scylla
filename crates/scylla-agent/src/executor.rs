@@ -24,8 +24,8 @@ use scylla_core::application::JobEvent;
 use scylla_core::domain::entities::PipelineNode;
 use scylla_core::domain::value_objects::job::LogStream;
 use scylla_core::domain::value_objects::pipeline::{Shell, Step};
-use scylla_protocol::services::agent::{AgentUp, JobLogLine, agent_up};
-use scylla_protocol::services::common;
+use scylla_protocol::agent::v1::{AgentUp, JobLogLine, agent_up};
+use scylla_protocol::common::v1 as common;
 
 use crate::error::ExecutionError;
 use crate::plan::DagPlan;
@@ -539,6 +539,25 @@ where
     })
 }
 
+/// Domain log stream → the proto enum. Total: the domain has no "unspecified".
+const fn log_stream_to_proto(stream: LogStream) -> common::LogStream {
+    match stream {
+        LogStream::Stdout => common::LogStream::Stdout,
+        LogStream::Stderr => common::LogStream::Stderr,
+    }
+}
+
+/// Wall-clock now as a protobuf `Timestamp`. Mirrors `scylla-api`'s
+/// `convert::ts`; scylla-agent does not depend on scylla-api so it cannot
+/// reuse it.
+fn now_timestamp() -> Option<prost_types::Timestamp> {
+    let now = Utc::now();
+    Some(prost_types::Timestamp {
+        seconds: now.timestamp(),
+        nanos: i32::try_from(now.timestamp_subsec_nanos()).unwrap_or(0),
+    })
+}
+
 /// Replace any secret-sourced value with `***` so secrets don't leak into logs.
 fn redact(mut line: String, masked: &[String]) -> String {
     for secret in masked {
@@ -567,9 +586,9 @@ async fn publish_log_line(
         node_id: Some(common::NodeId {
             value: node_id.to_string(),
         }),
-        stream: stream.as_str().to_string(),
+        stream: log_stream_to_proto(stream) as i32,
         line,
-        timestamp: Utc::now().to_rfc3339(),
+        timestamp: now_timestamp(),
     };
     if up_tx
         .send(AgentUp {
@@ -588,7 +607,7 @@ async fn publish_log_line(
 mod tests {
     use super::*;
     use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, WorkingDir};
-    use scylla_protocol::services::agent::{JobStatus as ProtoJobStatus, job_status::Event};
+    use scylla_protocol::agent::v1::{JobStatus as ProtoJobStatus, job_status::Event};
 
     /// Name the oneof event variant carried by a status, for order/`contains`
     /// assertions (replaces the old integer `kind` discriminant).

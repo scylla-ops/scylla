@@ -1,10 +1,10 @@
 use crate::grpc::convert::{ts, wrap};
 use scylla_core::domain::entities::User;
-use scylla_protocol::services::common;
-use scylla_protocol::services::user::UserResponse;
+use scylla_protocol::common::v1 as common;
+use scylla_protocol::user::v1::User as ProtoUser;
 
-pub fn user_to_proto(user: &User) -> UserResponse {
-    UserResponse {
+pub fn user_to_proto(user: &User) -> ProtoUser {
+    ProtoUser {
         user_id: wrap(user.id().to_string()),
         username: user.username().to_string(),
         is_active: user.is_active(),

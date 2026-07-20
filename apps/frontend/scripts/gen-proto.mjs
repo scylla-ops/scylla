@@ -19,10 +19,19 @@ const protoc = resolve(root, 'node_modules', '.bin', 'protoc');
 
 // Enumerate .proto files in JS rather than relying on a shell glob: cmd.exe on
 // Windows does not expand `*.proto`, so the glob would be passed to protoc
-// verbatim and fail.
-const protoFiles = readdirSync(protoDir)
-  .filter((f) => f.endsWith('.proto'))
-  .map((f) => `"${resolve(protoDir, f)}"`)
+// verbatim and fail. The tree is walked recursively because each proto lives in
+// the directory that mirrors its package (`scylla/job/v1/job.proto`), never at
+// the root.
+function collectProtos(dir) {
+  return readdirSync(dir).flatMap((entry) => {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) return collectProtos(full);
+    return entry.endsWith('.proto') ? [full] : [];
+  });
+}
+
+const protoFiles = collectProtos(protoDir)
+  .map((f) => `"${f}"`)
   .join(' ');
 
 const cmd = `"${protoc}" -I="${protoDir}" --ts_out="${outDir}" ${protoFiles}`;

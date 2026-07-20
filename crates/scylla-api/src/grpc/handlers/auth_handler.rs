@@ -4,9 +4,9 @@ use derive_more::Constructor;
 use scylla_core::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::user::Password;
-use scylla_protocol::services::auth::{
+use scylla_protocol::auth::v1::{
     LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
-    ValidateTokenResponse, auth_service_server::AuthService,
+    ValidateTokenResponse, auth_service_server::AuthService, validate_token_response,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -49,20 +49,21 @@ impl<
     ) -> Result<Response<ValidateTokenResponse>, Status> {
         let req = request.into_inner();
 
-        if req.token.is_empty() {
-            return Ok(Response::new(ValidateTokenResponse {
-                is_valid: Some(false),
-            }));
-        }
-
-        let is_valid = self
-            .use_cases
-            .validate_token(&req.token)
-            .await
-            .map_err(domain_error_to_status)?;
+        let is_valid = if req.token.is_empty() {
+            false
+        } else {
+            self.use_cases
+                .validate_token(&req.token)
+                .await
+                .map_err(domain_error_to_status)?
+        };
 
         Ok(Response::new(ValidateTokenResponse {
-            is_valid: Some(is_valid),
+            result: Some(if is_valid {
+                validate_token_response::Result::Valid(validate_token_response::Valid {})
+            } else {
+                validate_token_response::Result::Invalid(validate_token_response::Invalid {})
+            }),
         }))
     }
 

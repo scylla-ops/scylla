@@ -1,5 +1,5 @@
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
-import { AppServiceClient } from '@/generated/app.client.ts';
+import { AppServiceClient } from '@/generated/scylla/app/v1/app.client.ts';
 import type {
   AppEntity,
   AppSecretEntity,
@@ -30,8 +30,9 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
   getApp(appId: string): Promise<ScyllaResult<AppEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
-      const response = await client.getApp({ id: wrapId(appId) }).response;
-      return GrpcAppMapper.toDomain(response);
+      const response = await client.getApp({ appId: wrapId(appId) }).response;
+      if (!response.app) throw new Error('GetApp returned no app');
+      return GrpcAppMapper.toDomain(response.app);
     }, 'Failed to fetch app');
   }
 
@@ -48,15 +49,17 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
   deleteApp(appId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
-      await client.deleteApp({ id: wrapId(appId) }).response;
+      await client.deleteApp({ appId: wrapId(appId) }).response;
     }, 'Failed to delete app');
   }
 
   setAppActive(appId: string, active: boolean): Promise<ScyllaResult<AppEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
-      const response = await client.setAppActive({ appId: wrapId(appId), active }).response;
-      return GrpcAppMapper.toDomain(response);
+      const response = await client.setAppActive({ appId: wrapId(appId), isActive: active })
+        .response;
+      if (!response.app) throw new Error('SetAppActive returned no app');
+      return GrpcAppMapper.toDomain(response.app);
     }, 'Failed to update app');
   }
 
@@ -64,7 +67,7 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
       const response = await client.listAppSecrets({ appId: wrapId(appId) }).response;
-      return response.secrets.map(s => GrpcAppMapper.secretToDomain(s));
+      return response.appSecrets.map(s => GrpcAppMapper.secretToDomain(s));
     }, 'Failed to list app secrets');
   }
 
@@ -72,9 +75,9 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
       const response = await client.createAppSecret({ appId: wrapId(appId), label }).response;
-      if (!response.credential) throw new Error('CreateAppSecret returned no credential');
+      if (!response.appSecret) throw new Error('CreateAppSecret returned no secret metadata');
       return {
-        credential: GrpcAppMapper.secretToDomain(response.credential),
+        credential: GrpcAppMapper.secretToDomain(response.appSecret),
         secret: response.secret,
       };
     }, 'Failed to create app secret');
@@ -83,16 +86,19 @@ export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
   revokeAppSecret(secretId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
-      await client.revokeAppSecret({ secretId: wrapId(secretId) }).response;
+      await client.revokeAppSecret({ appSecretId: wrapId(secretId) }).response;
     }, 'Failed to revoke app secret');
   }
 
   setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecretEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AppServiceClient(this.grpcTransport.getTransport());
-      const response = await client.setAppSecretEnabled({ secretId: wrapId(secretId), enabled })
-        .response;
-      return GrpcAppMapper.secretToDomain(response);
+      const response = await client.setAppSecretEnabled({
+        appSecretId: wrapId(secretId),
+        enabled,
+      }).response;
+      if (!response.appSecret) throw new Error('SetAppSecretEnabled returned no secret metadata');
+      return GrpcAppMapper.secretToDomain(response.appSecret);
     }, 'Failed to update app secret');
   }
 }

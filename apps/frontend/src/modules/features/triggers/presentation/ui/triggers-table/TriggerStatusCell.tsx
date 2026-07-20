@@ -1,5 +1,5 @@
 import { Badge } from '@shadcn';
-import { CheckCircle2, MinusCircle, XCircle } from 'lucide-react';
+import { CheckCircle2, HelpCircle, MinusCircle, XCircle } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
@@ -7,8 +7,8 @@ import { formatDate } from '@shared/utils/date-utils.ts';
 
 /** Last-run badge (shared status language) plus a context line: next fire or disabled reason. */
 export const TriggerStatusCell = ({ trigger }: { trigger: TriggerEntity }) => {
-  const hasFired = trigger.lastStatus.length > 0 || !!trigger.lastFiredAt;
-  const isError = trigger.lastStatus.startsWith('error');
+  const result = trigger.lastResult;
+  const hasFired = !!result || !!trigger.lastFiredAt;
 
   return (
     <div className='flex flex-col items-center justify-center gap-1'>
@@ -16,13 +16,18 @@ export const TriggerStatusCell = ({ trigger }: { trigger: TriggerEntity }) => {
         <Badge variant='outline' className='gap-1'>
           <MinusCircle className='size-3' /> <Trans>Never fired</Trans>
         </Badge>
-      ) : isError ? (
-        <Badge variant='destructive' className='gap-1'>
+      ) : result?.kind === 'failed' ? (
+        <Badge variant='destructive' className='gap-1' title={result.error}>
           <XCircle className='size-3' /> <Trans>Error</Trans>
         </Badge>
-      ) : (
+      ) : result?.kind === 'succeeded' ? (
         <Badge variant='default' className='gap-1'>
           <CheckCircle2 className='size-3' /> <Trans>OK</Trans>
+        </Badge>
+      ) : (
+        // Fired, but the outcome arm is newer than this build — don't claim success.
+        <Badge variant='outline' className='gap-1'>
+          <HelpCircle className='size-3' /> <Trans>Unknown</Trans>
         </Badge>
       )}
 

@@ -1,11 +1,15 @@
 syntax = "proto3";
 
-package common;
+package scylla.common.v1;
 
 // Shared, strongly-typed value objects used across every Scylla service. They
 // exist so a client (frontend or otherwise) cannot accidentally pass a
 // ProjectId where an OrganizationId is expected, and so the exact format of each
 // value is documented in one place rather than guessed from a bare `string`.
+//
+// This package is a deliberate leaf: it imports nothing, and every other package
+// may import it. Nothing lands here unless it is a primitive value object with
+// universal, glacial semantics. Domain concepts belong to their own context.
 //
 // Each id wraps a single `value`. Unless noted, an id is a **lowercase ULID**
 // (Crockford base32, 26 chars, e.g. `01hb2k...`): opaque, lexicographically
@@ -34,6 +38,15 @@ message InvitationId { string value = 1; }
 message SecretId { string value = 1; }
 // Identifies a trigger — a stored initiator that launches a pipeline run.
 message TriggerId { string value = 1; }
+// Identifies a runtime Cedar authorization policy. NOT a ULID: an opaque
+// Cedar-assigned policy id.
+message PolicyId { string value = 1; }
+// Identifies a scoped grant ("principal holds target within scope").
+message GrantId { string value = 1; }
+// Identifies a role. NOT a ULID for builtins, where it equals the stable role
+// key (e.g. `organization-admin`); a generated id for tenant custom roles.
+// This is the value a grant references.
+message RoleId { string value = 1; }
 // Identifies one node within a pipeline. NOT a ULID: a caller-supplied id,
 // unique within its pipeline, lowercase ASCII alphanumeric plus `-`/`_`, ≤128
 // chars.
@@ -42,50 +55,35 @@ message NodeId { string value = 1; }
 // An email address. Validated (RFC-5322-ish) and stored lowercased on write.
 message Email { string value = 1; }
 
-// How a ScriptStep's script is interpreted. The agent runs the script through
-// the named shell with fail-fast semantics. SHELL_UNSPECIFIED is treated as sh.
-enum Shell {
-  SHELL_UNSPECIFIED = 0; // treated as SHELL_SH
-  SHELL_SH          = 1; // POSIX /bin/sh — always present in the agent image
-  SHELL_BASH        = 2; // /bin/bash — requires bash in the agent base image
+// Which of a process's two output streams a log line came from. Universal and
+// closed — a line is one or the other, forever.
+enum LogStream {
+  LOG_STREAM_UNSPECIFIED = 0;
+  LOG_STREAM_STDOUT      = 1;
+  LOG_STREAM_STDERR      = 2;
 }
 
-// A direct process execution: `command` is resolved via PATH and `args` is a
-// literal argv vector (never word-split). No shell is involved, so nothing is
-// interpolated — deterministic and injection-proof.
-message ExecStep {
-  string command = 1;
-  repeated string args = 2;
-}
-
-// A shell script run via the chosen shell. The whole (possibly multi-line)
-// script is the unit of execution; the shell parses quoting, pipes, globs,
-// redirects and `$VAR` expansion.
-message ScriptStep {
-  string script = 1;
-  Shell  shell  = 2;
-}
-
-// Pagination request parameters
+// Pagination request parameters. Offset-based on purpose: the dashboard shows
+// "page 3 of 12", which a cursor cannot express.
 message PaginationRequest {
-  // Page number (1-indexed, defaults to 1)
+  // Page number, 1-indexed. 0 means unset and is treated as page 1.
   uint32 page = 1;
-  // Number of items per page (defaults to 20, max 100)
+  // Items per page. 0 means unset and is treated as 20; capped server-side at 100.
   uint32 page_size = 2;
 }
 
-// Pagination metadata included in list responses
+// Pagination metadata included in list responses.
 message PaginationMetadata {
-  // Total number of items across all pages
+  // Total number of items across all pages.
   uint32 total_count = 1;
-  // Current page number (1-indexed)
+  // Current page number (1-indexed).
   uint32 page = 2;
-  // Number of items per page
+  // Number of items per page.
   uint32 page_size = 3;
-  // Total number of pages
+  // Total number of pages.
   uint32 total_pages = 4;
-  // Whether there is a next page
+  // Whether there is a next page.
   bool has_next = 5;
-  // Whether there is a previous page
+  // Whether there is a previous page.
   bool has_previous = 6;
 }

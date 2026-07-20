@@ -1,4 +1,4 @@
-import type { EffectiveScope, GetEffectivePermissionsResponse } from '@/generated/permission.ts';
+import type { EffectiveScope } from '@/generated/scylla/authz/v1/role.ts';
 import type {
   EffectivePermissionsEntity,
   EffectiveScopeEntity,
@@ -7,24 +7,18 @@ import { GrpcPermissionMapper } from '@/modules/features/permission/infrastructu
 
 export class GrpcEffectivePermissionsMapper {
   public static scopeToDomain(grpcScope: EffectiveScope): EffectiveScopeEntity {
-    // `access` is a oneof: full control (no list) or an explicit permission set.
+    const { scope, scopeId } = GrpcPermissionMapper.scopeRefToDomain(grpcScope.scope);
+
     return {
-      scope: GrpcPermissionMapper.scopeToDomain(grpcScope.scope),
-      scopeId: grpcScope.scopeId,
-      fullControl: grpcScope.access.oneofKind === 'fullControl',
-      permissions:
-        grpcScope.access.oneofKind === 'restricted'
-          ? grpcScope.access.restricted.permissions.map(GrpcPermissionMapper.toDomain)
-          : [],
+      scope,
+      scopeId,
+      access: GrpcPermissionMapper.accessToDomain(grpcScope.access),
     };
   }
 
-  public static toDomain(
-    grpcResponse: GetEffectivePermissionsResponse,
-  ): EffectivePermissionsEntity {
+  public static toDomain(grpcScopes: EffectiveScope[]): EffectivePermissionsEntity {
     return {
-      scopes: grpcResponse.scopes.map(GrpcEffectivePermissionsMapper.scopeToDomain),
+      scopes: grpcScopes.map(GrpcEffectivePermissionsMapper.scopeToDomain),
     };
   }
 }
-

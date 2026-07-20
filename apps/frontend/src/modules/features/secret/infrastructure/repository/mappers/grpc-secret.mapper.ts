@@ -1,4 +1,4 @@
-import type { Secret as ProtoSecret } from '@/generated/secret.ts';
+import type { Secret as ProtoSecret } from '@/generated/scylla/secret/v1/secret.ts';
 import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 

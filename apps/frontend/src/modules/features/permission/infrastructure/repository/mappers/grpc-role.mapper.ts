@@ -1,25 +1,43 @@
-import type { CreateRoleRequest, Role, UpdateRoleRequest } from '@/generated/permission.ts';
+import type {
+  CreateRoleRequest,
+  Role,
+  UpdateRoleRequest,
+} from '@/generated/scylla/authz/v1/role.ts';
 import type {
   RoleCreationData,
   RoleEntity,
+  RoleOrigin,
 } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import { GrpcPermissionMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 
 export class GrpcRoleMapper {
+  /**
+   * `origin` is a oneof: a builtin role carries its stable key, a custom one
+   * the organization that owns it. An arm this build does not know surfaces as
+   * `unknown` rather than being read as "custom".
+   */
+  private static originToDomain(grpcRole: Role): RoleOrigin {
+    switch (grpcRole.origin.oneofKind) {
+      case 'builtin':
+        return { kind: 'builtin', key: grpcRole.origin.builtin.key };
+      case 'custom':
+        return {
+          kind: 'custom',
+          ownerOrganizationId: grpcRole.origin.custom.ownerOrganizationId?.value,
+        };
+      default:
+        return { kind: 'unknown' };
+    }
+  }
+
   public static toDomain(grpcRole: Role): RoleEntity {
-    // `access` is a oneof: full control (no list) or an explicit permission set.
     return {
-      id: grpcRole.id,
-      key: grpcRole.key,
+      id: grpcRole.roleId?.value ?? '',
       name: grpcRole.name,
       description: grpcRole.description,
-      scope: GrpcPermissionMapper.scopeToDomain(grpcRole.scope),
-      builtin: grpcRole.builtin,
-      fullControl: grpcRole.access.oneofKind === 'fullControl',
-      permissions:
-        grpcRole.access.oneofKind === 'restricted'
-          ? grpcRole.access.restricted.permissions.map(GrpcPermissionMapper.toDomain)
-          : [],
+      scope: GrpcPermissionMapper.scopeToDomain(grpcRole.scopeKind),
+      origin: GrpcRoleMapper.originToDomain(grpcRole),
+      access: GrpcPermissionMapper.accessToDomain(grpcRole.access),
     };
   }
 
@@ -27,27 +45,23 @@ export class GrpcRoleMapper {
     return {
       name: data.name,
       description: data.description,
-      scope: GrpcPermissionMapper.scopeToGrpc(data.scope),
-      access: data.fullControl
-        ? { oneofKind: 'fullControl', fullControl: {} }
-        : {
-            oneofKind: 'restricted',
-            restricted: { permissions: data.permissions.map(GrpcPermissionMapper.toGrpc) },
-          },
+      scopeKind: GrpcPermissionMapper.scopeToGrpc(data.scope),
+      access: GrpcPermissionMapper.accessToGrpc(data.access),
     };
   }
 
   public static toGrpcUpdateRequest(role: RoleEntity): UpdateRoleRequest {
+    if (role.access.kind === 'unknown') {
+      throw new Error(
+        'This role uses an access mode this version does not understand; it cannot be updated here.',
+      );
+    }
+
     return {
-      id: role.id,
+      roleId: { value: role.id },
       name: role.name,
       description: role.description,
-      access: role.fullControl
-        ? { oneofKind: 'fullControl', fullControl: {} }
-        : {
-            oneofKind: 'restricted',
-            restricted: { permissions: role.permissions.map(GrpcPermissionMapper.toGrpc) },
-          },
+      access: GrpcPermissionMapper.accessToGrpc(role.access),
     };
   }
 }

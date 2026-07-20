@@ -4,9 +4,9 @@ use crate::grpc::mappers::{domain_error_to_status, secret_to_proto};
 use scylla_core::application::{PermissionService, SecretRepository, SecretUseCases};
 use scylla_core::domain::entities::{ProjectId, SecretId};
 use scylla_core::domain::value_objects::secret::SecretName;
-use scylla_protocol::services::secret::{
-    CreateSecretRequest, DeleteSecretRequest, DeleteSecretResponse, ListSecretsRequest,
-    ListSecretsResponse, Secret, secret_service_server::SecretService,
+use scylla_protocol::secret::v1::{
+    CreateSecretRequest, CreateSecretResponse, DeleteSecretRequest, DeleteSecretResponse,
+    ListSecretsRequest, ListSecretsResponse, secret_service_server::SecretService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -28,7 +28,7 @@ impl<R: SecretRepository + Send + Sync + 'static, PS: PermissionService + Send +
     async fn create_secret(
         &self,
         request: Request<CreateSecretRequest>,
-    ) -> Result<Response<Secret>, Status> {
+    ) -> Result<Response<CreateSecretResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
@@ -38,7 +38,9 @@ impl<R: SecretRepository + Send + Sync + 'static, PS: PermissionService + Send +
             .create(&caller, project_id, name, req.description, req.value)
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(secret_to_proto(&secret)))
+        Ok(Response::new(CreateSecretResponse {
+            secret: Some(secret_to_proto(&secret)),
+        }))
     }
 
     async fn list_secrets(

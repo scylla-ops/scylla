@@ -1,5 +1,5 @@
 use crate::extract_auth_context;
-use crate::grpc::convert::{permission_from_key, scope_kind_to_proto, ts};
+use crate::grpc::convert::{permission_from_key, required, scope_kind_to_proto, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
@@ -8,11 +8,12 @@ use scylla_core::application::{
 };
 use scylla_core::domain::entities::CedarPolicyId;
 use scylla_core::domain::errors::DomainError;
-use scylla_protocol::services::permission::{
-    AuthzAction, CreatePolicyRequest, DeletePolicyRequest, DeletePolicyResponse,
-    ListAuthzVocabularyRequest, ListAuthzVocabularyResponse, ListPoliciesRequest,
-    ListPoliciesResponse, Policy, PolicyResponse, SetPolicyEnabledRequest, UpdatePolicyRequest,
-    ValidatePolicyRequest, ValidatePolicyResponse, policy_service_server::PolicyService,
+use scylla_protocol::authz::v1::{
+    AuthzAction, CreatePolicyRequest, CreatePolicyResponse, DeletePolicyRequest,
+    DeletePolicyResponse, ListAuthzVocabularyRequest, ListAuthzVocabularyResponse,
+    ListPoliciesRequest, ListPoliciesResponse, Policy, SetPolicyEnabledRequest,
+    SetPolicyEnabledResponse, UpdatePolicyRequest, UpdatePolicyResponse, ValidatePolicyRequest,
+    ValidatePolicyResponse, policy_service_server::PolicyService, validate_policy_response,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -32,7 +33,7 @@ impl<
     async fn create_policy(
         &self,
         request: Request<CreatePolicyRequest>,
-    ) -> Result<Response<PolicyResponse>, Status> {
+    ) -> Result<Response<CreatePolicyResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
 
@@ -42,7 +43,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(PolicyResponse {
+        Ok(Response::new(CreatePolicyResponse {
             policy: Some(policy_to_proto(&policy)),
         }))
     }
@@ -50,10 +51,10 @@ impl<
     async fn update_policy(
         &self,
         request: Request<UpdatePolicyRequest>,
-    ) -> Result<Response<PolicyResponse>, Status> {
+    ) -> Result<Response<UpdatePolicyResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = CedarPolicyId::new(&req.id);
+        let id = CedarPolicyId::new(&required(req.policy_id, "policy_id")?);
 
         let policy = self
             .use_cases
@@ -61,7 +62,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(PolicyResponse {
+        Ok(Response::new(UpdatePolicyResponse {
             policy: Some(policy_to_proto(&policy)),
         }))
     }
@@ -69,10 +70,10 @@ impl<
     async fn set_policy_enabled(
         &self,
         request: Request<SetPolicyEnabledRequest>,
-    ) -> Result<Response<PolicyResponse>, Status> {
+    ) -> Result<Response<SetPolicyEnabledResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = CedarPolicyId::new(&req.id);
+        let id = CedarPolicyId::new(&required(req.policy_id, "policy_id")?);
 
         let policy = self
             .use_cases
@@ -80,7 +81,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(PolicyResponse {
+        Ok(Response::new(SetPolicyEnabledResponse {
             policy: Some(policy_to_proto(&policy)),
         }))
     }
@@ -91,7 +92,7 @@ impl<
     ) -> Result<Response<DeletePolicyResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        let id = CedarPolicyId::new(&req.id);
+        let id = CedarPolicyId::new(&required(req.policy_id, "policy_id")?);
 
         self.use_cases
             .delete(&caller, &id)
@@ -125,19 +126,21 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
 
-        // A validation failure is a successful RPC reporting `valid = false`;
+        // A validation failure is a successful RPC reporting the `invalid` arm;
         // only auth/infra errors surface as a gRPC error status.
-        match self.use_cases.validate(&caller, &req.text).await {
-            Ok(()) => Ok(Response::new(ValidatePolicyResponse {
-                valid: true,
-                error: None,
-            })),
-            Err(DomainError::Validation(message)) => Ok(Response::new(ValidatePolicyResponse {
-                valid: false,
-                error: Some(message),
-            })),
-            Err(e) => Err(domain_error_to_status(e)),
-        }
+        let result = match self.use_cases.validate(&caller, &req.text).await {
+            Ok(()) => validate_policy_response::Result::Valid(validate_policy_response::Valid {}),
+            Err(DomainError::Validation(error)) => {
+                validate_policy_response::Result::Invalid(validate_policy_response::Invalid {
+                    error,
+                })
+            }
+            Err(e) => return Err(domain_error_to_status(e)),
+        };
+
+        Ok(Response::new(ValidatePolicyResponse {
+            result: Some(result),
+        }))
     }
 
     async fn list_authz_vocabulary(
@@ -169,7 +172,7 @@ impl<
 
 fn policy_to_proto(p: &PolicyDefinition) -> Policy {
     Policy {
-        id: p.id.to_string(),
+        policy_id: wrap(p.id.to_string()),
         description: p.description.clone(),
         text: p.text.clone(),
         enabled: p.enabled,

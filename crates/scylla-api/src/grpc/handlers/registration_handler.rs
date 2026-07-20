@@ -5,7 +5,7 @@ use scylla_core::application::authz::policy::PolicyControl;
 use scylla_core::application::{HashService, SessionRepository, SignupRepository, SignupUseCases};
 use scylla_core::domain::value_objects::organization::OrganizationName;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
-use scylla_protocol::services::registration::{
+use scylla_protocol::registration::v1::{
     SignupRequest, SignupResponse, registration_service_server::RegistrationService,
 };
 use std::sync::Arc;

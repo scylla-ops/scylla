@@ -1,7 +1,10 @@
 import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
-import { ProjectServiceClient } from '@/generated/project.client.ts';
+import { ProjectServiceClient } from '@/generated/scylla/project/v1/project.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { ListProjectsResponse, ProjectResponse } from '@/generated/project.ts';
+import type {
+  ListOrganizationProjectsResponse,
+  Project,
+} from '@/generated/scylla/project/v1/project.ts';
 
 import {
   DEFAULT_PAGE_SIZE,
@@ -9,6 +12,16 @@ import {
 } from '@shared/domain/structs/pagination.struct.ts';
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
+
+/**
+ * Every project RPC now answers with a `XxxResponse` wrapper holding the entity
+ * in field 1. The unwrapping lives here so mappers and the domain keep seeing
+ * plain `Project` entities.
+ */
+function requireProject(project: Project | undefined): Project {
+  if (!project) throw new Error('Server returned no project.');
+  return project;
+}
 
 export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   private readonly _projectClient: ProjectServiceClient;
@@ -20,7 +33,7 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   public getByOrganizationId(
     organizationId: string,
     pagination?: PaginationParams,
-  ): Promise<ScyllaResult<ListProjectsResponse>> {
+  ): Promise<ScyllaResult<ListOrganizationProjectsResponse>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._projectClient.listOrganizationProjects({
         organizationId: wrapId(organizationId),
@@ -34,14 +47,14 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
     name: string,
     organizationId: string,
     description?: string,
-  ): Promise<ScyllaResult<ProjectResponse>> {
+  ): Promise<ScyllaResult<Project>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._projectClient.createProject({
         name,
         organizationId: wrapId(organizationId),
         description,
       });
-      return response;
+      return requireProject(response.project);
     }, 'Failed to create project.');
   }
 
@@ -49,14 +62,14 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
     projectId: string,
     name?: string,
     description?: string,
-  ): Promise<ScyllaResult<ProjectResponse>> {
+  ): Promise<ScyllaResult<Project>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._projectClient.updateProject({
         projectId: wrapId(projectId),
         name,
         description,
       });
-      return response;
+      return requireProject(response.project);
     }, 'Failed to update project.');
   }
 

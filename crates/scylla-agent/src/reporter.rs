@@ -7,11 +7,11 @@
 //! the run — regardless of which path the executor took.
 
 use scylla_core::application::JobEvent;
-use scylla_protocol::services::agent::{
-    AgentUp, JobCompleted, JobFailed, JobStarted, JobStatus, NodeCompleted, NodeFailed,
-    NodeSkipped, NodeStarted, agent_up, job_status,
+use scylla_protocol::agent::v1::job_status::{
+    JobCompleted, JobFailed, JobStarted, NodeCompleted, NodeFailed, NodeSkipped, NodeStarted,
 };
-use scylla_protocol::services::common;
+use scylla_protocol::agent::v1::{AgentUp, JobStatus, agent_up, job_status};
+use scylla_protocol::common::v1 as common;
 use tokio::sync::mpsc;
 
 use crate::error::ExecutionError;

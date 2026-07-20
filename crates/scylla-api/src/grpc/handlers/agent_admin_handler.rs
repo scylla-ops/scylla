@@ -8,12 +8,11 @@ use scylla_core::application::{
 };
 use scylla_core::domain::entities::{AppId, OrganizationId};
 use scylla_core::domain::value_objects::app::AppName;
-use scylla_protocol::services::agent_admin::{
-    AgentStats as ProtoAgentStats, AgentView as ProtoAgentView, CreateAgentRequest,
-    DailyOutcome as ProtoDailyOutcome,
-    CreatedAgent as ProtoCreatedAgent, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest,
-    GetAgentStatsRequest, ListAgentsRequest, ListAgentsResponse,
-    agent_admin_service_server::AgentAdminService,
+use scylla_protocol::agent::v1::{
+    Agent as ProtoAgent, AgentStats as ProtoAgentStats, CreateAgentRequest, CreateAgentResponse,
+    DailyOutcome as ProtoDailyOutcome, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest,
+    GetAgentResponse, GetAgentStatsRequest, GetAgentStatsResponse, ListAgentsRequest,
+    ListAgentsResponse, agent_admin_service_server::AgentAdminService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -44,7 +43,7 @@ impl<
     async fn create_agent(
         &self,
         request: Request<CreateAgentRequest>,
-    ) -> Result<Response<ProtoCreatedAgent>, Status> {
+    ) -> Result<Response<CreateAgentResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let organization_id =
@@ -58,8 +57,8 @@ impl<
             .map_err(domain_error_to_status)?;
 
         // A freshly created agent has not connected yet.
-        let agent = ProtoAgentView {
-            id: wrap(created.app.id().to_string()),
+        let agent = ProtoAgent {
+            agent_id: wrap(created.app.id().to_string()),
             organization_id: wrap(created.app.organization_id().to_string()),
             name: created.app.name().as_str().to_string(),
             is_active: created.app.is_active(),
@@ -68,7 +67,7 @@ impl<
             connected: false,
             last_seen: None,
         };
-        Ok(Response::new(ProtoCreatedAgent {
+        Ok(Response::new(CreateAgentResponse {
             agent: Some(agent),
             secret: created.secret.as_str().to_string(),
         }))
@@ -96,29 +95,33 @@ impl<
     async fn get_agent(
         &self,
         request: Request<GetAgentRequest>,
-    ) -> Result<Response<ProtoAgentView>, Status> {
+    ) -> Result<Response<GetAgentResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let view = self
             .use_cases
-            .get(&caller, AppId::new(&required(req.id, "id")?))
+            .get(&caller, AppId::new(&required(req.agent_id, "agent_id")?))
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(agent_view_to_proto(&view)))
+        Ok(Response::new(GetAgentResponse {
+            agent: Some(agent_view_to_proto(&view)),
+        }))
     }
 
     async fn get_agent_stats(
         &self,
         request: Request<GetAgentStatsRequest>,
-    ) -> Result<Response<ProtoAgentStats>, Status> {
+    ) -> Result<Response<GetAgentStatsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let stats = self
             .use_cases
-            .stats(&caller, AppId::new(&required(req.id, "id")?))
+            .stats(&caller, AppId::new(&required(req.agent_id, "agent_id")?))
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(stats_to_proto(&stats)))
+        Ok(Response::new(GetAgentStatsResponse {
+            stats: Some(stats_to_proto(&stats)),
+        }))
     }
 
     async fn delete_agent(
@@ -128,16 +131,16 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         self.use_cases
-            .delete(&caller, AppId::new(&required(req.id, "id")?))
+            .delete(&caller, AppId::new(&required(req.agent_id, "agent_id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(DeleteAgentResponse {}))
     }
 }
 
-fn agent_view_to_proto(view: &AgentView) -> ProtoAgentView {
-    ProtoAgentView {
-        id: wrap(view.app.id().to_string()),
+fn agent_view_to_proto(view: &AgentView) -> ProtoAgent {
+    ProtoAgent {
+        agent_id: wrap(view.app.id().to_string()),
         organization_id: wrap(view.app.organization_id().to_string()),
         name: view.app.name().as_str().to_string(),
         is_active: view.app.is_active(),

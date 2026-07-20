@@ -1,8 +1,8 @@
 use crate::extract_auth_context;
-use crate::grpc::convert::required;
+use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::{
-    domain_error_to_status, domain_to_proto_metadata, job_to_proto, pipeline_to_proto,
-    pipeline_to_proto_summary, proto_to_domain_pagination,
+    domain_error_to_status, domain_to_proto_metadata, pipeline_to_proto, pipeline_to_proto_summary,
+    proto_to_domain_pagination,
 };
 use scylla_core::application::{
     AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PermissionService,
@@ -11,14 +11,15 @@ use scylla_core::application::{
 use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
 use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, PipelineName, Shell, Step, WorkingDir};
 use scylla_core::domain::value_objects::secret::SecretName;
-use scylla_protocol::services::common;
-use scylla_protocol::services::job::JobResponse;
-use scylla_protocol::services::pipeline::{
-    CreatePipelineRequest, DeletePipelineRequest, DeletePipelineResponse, EnvVar as ProtoEnvVar,
-    GetPipelineRequest, ListOrganizationPipelinesRequest, ListPipelinesRequest,
-    ListPipelinesResponse, ListProjectPipelinesRequest, PipelineNode as ProtoPipelineNode,
-    PipelineResponse, PipelineSummary, RunPipelineRequest, UpdatePipelineRequest, env_var,
-    pipeline_node, pipeline_service_server::PipelineService,
+use scylla_protocol::exec::v1 as exec;
+use scylla_protocol::pipeline::v1::{
+    CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse,
+    EnvVar as ProtoEnvVar, GetPipelineRequest, GetPipelineResponse,
+    ListOrganizationPipelinesRequest, ListOrganizationPipelinesResponse, ListPipelinesRequest,
+    ListPipelinesResponse, ListProjectPipelinesRequest, ListProjectPipelinesResponse,
+    PipelineNode as ProtoPipelineNode, PipelineSummary, RunPipelineRequest, RunPipelineResponse,
+    UpdatePipelineRequest, UpdatePipelineResponse, env_var, pipeline_node,
+    pipeline_service_server::PipelineService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -65,7 +66,7 @@ impl<
     async fn create_pipeline(
         &self,
         request: Request<CreatePipelineRequest>,
-    ) -> Result<Response<PipelineResponse>, Status> {
+    ) -> Result<Response<CreatePipelineResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
 
@@ -84,13 +85,15 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(pipeline_to_proto(&pipeline)))
+        Ok(Response::new(CreatePipelineResponse {
+            pipeline: Some(pipeline_to_proto(&pipeline)),
+        }))
     }
 
     async fn get_pipeline(
         &self,
         request: Request<GetPipelineRequest>,
-    ) -> Result<Response<PipelineResponse>, Status> {
+    ) -> Result<Response<GetPipelineResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
@@ -101,13 +104,15 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(pipeline_to_proto(&pipeline)))
+        Ok(Response::new(GetPipelineResponse {
+            pipeline: Some(pipeline_to_proto(&pipeline)),
+        }))
     }
 
     async fn update_pipeline(
         &self,
         request: Request<UpdatePipelineRequest>,
-    ) -> Result<Response<PipelineResponse>, Status> {
+    ) -> Result<Response<UpdatePipelineResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
@@ -135,7 +140,9 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(pipeline_to_proto(&pipeline)))
+        Ok(Response::new(UpdatePipelineResponse {
+            pipeline: Some(pipeline_to_proto(&pipeline)),
+        }))
     }
 
     async fn delete_pipeline(
@@ -181,7 +188,7 @@ impl<
     async fn list_project_pipelines(
         &self,
         request: Request<ListProjectPipelinesRequest>,
-    ) -> Result<Response<ListPipelinesResponse>, Status> {
+    ) -> Result<Response<ListProjectPipelinesResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
@@ -197,7 +204,7 @@ impl<
         let pipelines: Vec<PipelineSummary> =
             pipelines.iter().map(pipeline_to_proto_summary).collect();
 
-        Ok(Response::new(ListPipelinesResponse {
+        Ok(Response::new(ListProjectPipelinesResponse {
             pipelines,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
@@ -206,7 +213,7 @@ impl<
     async fn list_organization_pipelines(
         &self,
         request: Request<ListOrganizationPipelinesRequest>,
-    ) -> Result<Response<ListPipelinesResponse>, Status> {
+    ) -> Result<Response<ListOrganizationPipelinesResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let organization_id =
@@ -223,7 +230,7 @@ impl<
         let pipelines: Vec<PipelineSummary> =
             pipelines.iter().map(pipeline_to_proto_summary).collect();
 
-        Ok(Response::new(ListPipelinesResponse {
+        Ok(Response::new(ListOrganizationPipelinesResponse {
             pipelines,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
@@ -232,7 +239,7 @@ impl<
     async fn run_pipeline(
         &self,
         request: Request<RunPipelineRequest>,
-    ) -> Result<Response<JobResponse>, Status> {
+    ) -> Result<Response<RunPipelineResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let pipeline_id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
@@ -262,7 +269,10 @@ impl<
             }
         }
 
-        Ok(Response::new(job_to_proto(&job)))
+        // Only the id: callers fetch the run with JobService.GetJob.
+        Ok(Response::new(RunPipelineResponse {
+            job_id: wrap(job.id().to_string()),
+        }))
     }
 }
 
@@ -319,8 +329,8 @@ fn proto_env_to_domain(e: ProtoEnvVar) -> Result<EnvVar, Status> {
 }
 
 fn proto_shell(raw: i32) -> Shell {
-    match common::Shell::try_from(raw).unwrap_or_default() {
-        common::Shell::Bash => Shell::Bash,
-        common::Shell::Sh | common::Shell::Unspecified => Shell::Sh,
+    match exec::Shell::try_from(raw).unwrap_or_default() {
+        exec::Shell::Bash => Shell::Bash,
+        exec::Shell::Sh | exec::Shell::Unspecified => Shell::Sh,
     }
 }

@@ -12,15 +12,15 @@ use scylla_core::application::{
 };
 use scylla_core::domain::entities::{OrganizationId, UserId};
 use scylla_core::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
-use scylla_protocol::services::organization::{
-    AddUserToOrganizationRequest, AddUserToOrganizationResponse, CreateOrganizationRequest,
-    DeleteOrganizationRequest, DeleteOrganizationResponse, GetOrganizationRequest,
-    ListOrganizationUsersRequest, ListOrganizationUsersResponse, ListOrganizationsRequest,
-    ListOrganizationsResponse, ListUserOrganizationsRequest, ListUserOrganizationsResponse,
-    OrganizationResponse, OrganizationUserInfoResponse, RemoveUserFromOrganizationRequest,
-    RemoveUserFromOrganizationResponse, ToggleOrganizationActiveRequest,
-    ToggleOrganizationActiveResponse, UpdateOrganizationRequest,
-    organization_service_server::OrganizationService,
+use scylla_protocol::organization::v1::{
+    AddOrganizationMemberRequest, AddOrganizationMemberResponse, CreateOrganizationRequest,
+    CreateOrganizationResponse, DeleteOrganizationRequest, DeleteOrganizationResponse,
+    GetOrganizationRequest, GetOrganizationResponse, ListOrganizationMembersRequest,
+    ListOrganizationMembersResponse, ListOrganizationsRequest, ListOrganizationsResponse,
+    ListUserOrganizationsRequest, ListUserOrganizationsResponse, Organization as ProtoOrganization,
+    OrganizationMember, RemoveOrganizationMemberRequest, RemoveOrganizationMemberResponse,
+    SetOrganizationActiveRequest, SetOrganizationActiveResponse, UpdateOrganizationRequest,
+    UpdateOrganizationResponse, organization_service_server::OrganizationService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -48,7 +48,7 @@ impl<
     async fn create_organization(
         &self,
         request: Request<CreateOrganizationRequest>,
-    ) -> Result<Response<OrganizationResponse>, Status> {
+    ) -> Result<Response<CreateOrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let name = OrganizationName::new(&req.name).map_err(domain_error_to_status)?;
@@ -64,13 +64,15 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(organization_to_proto(&org)))
+        Ok(Response::new(CreateOrganizationResponse {
+            organization: Some(organization_to_proto(&org)),
+        }))
     }
 
     async fn get_organization(
         &self,
         request: Request<GetOrganizationRequest>,
-    ) -> Result<Response<OrganizationResponse>, Status> {
+    ) -> Result<Response<GetOrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
@@ -81,13 +83,15 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(organization_to_proto(&org)))
+        Ok(Response::new(GetOrganizationResponse {
+            organization: Some(organization_to_proto(&org)),
+        }))
     }
 
     async fn update_organization(
         &self,
         request: Request<UpdateOrganizationRequest>,
-    ) -> Result<Response<OrganizationResponse>, Status> {
+    ) -> Result<Response<UpdateOrganizationResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
@@ -109,23 +113,30 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(organization_to_proto(&org)))
+        Ok(Response::new(UpdateOrganizationResponse {
+            organization: Some(organization_to_proto(&org)),
+        }))
     }
 
-    async fn toggle_organization_active(
+    /// Sets the active flag to the requested value, so a retried call lands on
+    /// the state the caller asked for instead of flipping it back.
+    async fn set_organization_active(
         &self,
-        request: Request<ToggleOrganizationActiveRequest>,
-    ) -> Result<Response<ToggleOrganizationActiveResponse>, Status> {
+        request: Request<SetOrganizationActiveRequest>,
+    ) -> Result<Response<SetOrganizationActiveResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
 
-        self.use_cases
-            .toggle_active(&caller, &org_id)
+        let org = self
+            .use_cases
+            .set_active(&caller, &org_id, req.is_active)
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(ToggleOrganizationActiveResponse {}))
+        Ok(Response::new(SetOrganizationActiveResponse {
+            organization: Some(organization_to_proto(&org)),
+        }))
     }
 
     async fn delete_organization(
@@ -159,8 +170,7 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (orgs, metadata) = result.into_parts();
-        let organizations: Vec<OrganizationResponse> =
-            orgs.iter().map(organization_to_proto).collect();
+        let organizations: Vec<ProtoOrganization> = orgs.iter().map(organization_to_proto).collect();
 
         Ok(Response::new(ListOrganizationsResponse {
             organizations,
@@ -168,10 +178,10 @@ impl<
         }))
     }
 
-    async fn list_organization_users(
+    async fn list_organization_members(
         &self,
-        request: Request<ListOrganizationUsersRequest>,
-    ) -> Result<Response<ListOrganizationUsersResponse>, Status> {
+        request: Request<ListOrganizationMembersRequest>,
+    ) -> Result<Response<ListOrganizationMembersResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
@@ -183,16 +193,16 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        let users = users
+        let members = users
             .iter()
-            .map(|user| OrganizationUserInfoResponse {
+            .map(|user| OrganizationMember {
                 user_id: wrap(user.id().to_string()),
                 username: user.username().to_string(),
             })
             .collect();
 
-        Ok(Response::new(ListOrganizationUsersResponse {
-            users,
+        Ok(Response::new(ListOrganizationMembersResponse {
+            members,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
@@ -212,8 +222,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        let organizations: Vec<OrganizationResponse> =
-            orgs.iter().map(organization_to_proto).collect();
+        let organizations: Vec<ProtoOrganization> = orgs.iter().map(organization_to_proto).collect();
 
         Ok(Response::new(ListUserOrganizationsResponse {
             organizations,
@@ -221,10 +230,10 @@ impl<
         }))
     }
 
-    async fn add_user_to_organization(
+    async fn add_organization_member(
         &self,
-        request: Request<AddUserToOrganizationRequest>,
-    ) -> Result<Response<AddUserToOrganizationResponse>, Status> {
+        request: Request<AddOrganizationMemberRequest>,
+    ) -> Result<Response<AddOrganizationMemberResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
@@ -235,13 +244,13 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(AddUserToOrganizationResponse {}))
+        Ok(Response::new(AddOrganizationMemberResponse {}))
     }
 
-    async fn remove_user_from_organization(
+    async fn remove_organization_member(
         &self,
-        request: Request<RemoveUserFromOrganizationRequest>,
-    ) -> Result<Response<RemoveUserFromOrganizationResponse>, Status> {
+        request: Request<RemoveOrganizationMemberRequest>,
+    ) -> Result<Response<RemoveOrganizationMemberResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
@@ -252,6 +261,6 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(RemoveUserFromOrganizationResponse {}))
+        Ok(Response::new(RemoveOrganizationMemberResponse {}))
     }
 }

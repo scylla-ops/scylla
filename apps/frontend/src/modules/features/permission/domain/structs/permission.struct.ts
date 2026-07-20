@@ -1,3 +1,7 @@
+/**
+ * Mirrors the wire `ScopeKind`. `UNSPECIFIED` doubles as "the backend named a
+ * scope this build does not know about".
+ */
 export enum PermissionScope {
   UNSPECIFIED = 0,
   SYSTEM = 1,
@@ -5,14 +9,46 @@ export enum PermissionScope {
   PROJECT = 3,
 }
 
+/**
+ * Who a grant is for. `UNSPECIFIED` doubles as "the backend named a principal
+ * kind this build does not know about".
+ */
 export enum PrincipalKind {
   UNSPECIFIED = 0,
   USER = 1,
   APP = 2,
 }
 
+/** Mirrors the wire `RoleKind`: full-control admin vs restricted agent role. */
+export enum RoleKind {
+  UNSPECIFIED = 0,
+  ADMIN = 1,
+  AGENT = 2,
+}
+
+/** A grant holder: a user or an app, identified by its plain string id. */
+export interface PrincipalEntity {
+  kind: PrincipalKind;
+  /** Empty when `kind` is `UNSPECIFIED`. */
+  id: string;
+}
+
+/**
+ * Write-side access: what the caller wants a role to confer. Only the two arms
+ * this build can actually build are representable.
+ */
+export type AccessSpec =
+  | { kind: 'fullControl' }
+  | { kind: 'restricted'; permissions: Permission[] };
+
+/**
+ * Read-side access. `unknown` means the backend sent an access arm newer than
+ * this build — surface it, never read it as "holds no permission".
+ */
+export type AccessEntity = AccessSpec | { kind: 'unknown' };
+
 export enum Permission {
-  PERMISSION_UNSPECIFIED = 0,
+  UNSPECIFIED = 0,
   CREATE_USER = 1,
   READ_USER = 2,
   UPDATE_USER = 3,

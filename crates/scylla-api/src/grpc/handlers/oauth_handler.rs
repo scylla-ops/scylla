@@ -6,9 +6,10 @@ use scylla_core::application::{
     AccountOutcome, HashService, OAuthIdentityRepository, OAuthOutcome, OAuthProvider,
     OAuthUseCases, SessionRepository, SignupRepository, UserRepository,
 };
-use scylla_protocol::services::oauth::{
-    ExistingAccount, GetAuthUrlRequest, GetAuthUrlResponse, NewAccount, OauthCallbackRequest,
-    OauthCallbackResponse, oauth_callback_response, oauth_service_server::OauthService,
+use scylla_protocol::oauth::v1::{
+    CallbackRequest, CallbackResponse, GetAuthUrlRequest, GetAuthUrlResponse, callback_response,
+    callback_response::{ExistingAccount, NewAccount},
+    oauth_service_server::OauthService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -53,8 +54,8 @@ impl<
 
     async fn callback(
         &self,
-        request: Request<OauthCallbackRequest>,
-    ) -> Result<Response<OauthCallbackResponse>, Status> {
+        request: Request<CallbackRequest>,
+    ) -> Result<Response<CallbackResponse>, Status> {
         let req = request.into_inner();
         let OAuthOutcome {
             token,
@@ -67,15 +68,15 @@ impl<
             .map_err(domain_error_to_status)?;
         let outcome = match account {
             AccountOutcome::New { organization_id } => {
-                oauth_callback_response::Outcome::NewAccount(NewAccount {
+                callback_response::Outcome::NewAccount(NewAccount {
                     organization_id: wrap(organization_id.to_string()),
                 })
             }
             AccountOutcome::Existing => {
-                oauth_callback_response::Outcome::ExistingAccount(ExistingAccount {})
+                callback_response::Outcome::ExistingAccount(ExistingAccount {})
             }
         };
-        Ok(Response::new(OauthCallbackResponse {
+        Ok(Response::new(CallbackResponse {
             token,
             user_id: wrap(user_id.to_string()),
             outcome: Some(outcome),

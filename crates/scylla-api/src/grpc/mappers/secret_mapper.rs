@@ -1,6 +1,6 @@
 use crate::grpc::convert::{ts, wrap};
 use scylla_core::domain::entities::Secret as DomainSecret;
-use scylla_protocol::services::secret::Secret;
+use scylla_protocol::secret::v1::Secret;
 
 /// Domain secret → proto. Metadata only; the value is never included.
 pub fn secret_to_proto(secret: &DomainSecret) -> Secret {

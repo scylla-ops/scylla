@@ -13,11 +13,12 @@ use scylla_core::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases}
 use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId};
 use scylla_core::domain::value_objects::PaginationMetadata;
 use scylla_core::domain::value_objects::pipeline::NodeId;
-use scylla_protocol::services::job::{
-    DeleteJobRequest, DeleteJobResponse, GetJobRequest, JobLogEvent, JobResponse,
-    ListJobLogsRequest, ListJobLogsResponse, ListJobsRequest, ListJobsResponse,
-    ListOrganizationJobsRequest, ListPipelineJobsRequest, ListProjectJobsRequest,
-    TailJobLogsRequest, job_service_server::JobService,
+use scylla_protocol::job::v1::{
+    DeleteJobRequest, DeleteJobResponse, GetJobRequest, GetJobResponse, Job, ListJobLogsRequest,
+    ListJobLogsResponse, ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest,
+    ListOrganizationJobsResponse, ListPipelineJobsRequest, ListPipelineJobsResponse,
+    ListProjectJobsRequest, ListProjectJobsResponse, TailJobLogsRequest, TailJobLogsResponse,
+    job_service_server::JobService,
 };
 use std::pin::Pin;
 use std::sync::Arc;
@@ -46,7 +47,7 @@ impl<
     async fn get_job(
         &self,
         request: Request<GetJobRequest>,
-    ) -> Result<Response<JobResponse>, Status> {
+    ) -> Result<Response<GetJobResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = JobId::new(&required(req.job_id, "job_id")?);
@@ -57,7 +58,9 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(job_to_proto(&job)))
+        Ok(Response::new(GetJobResponse {
+            job: Some(job_to_proto(&job)),
+        }))
     }
 
     async fn delete_job(
@@ -91,7 +94,7 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<JobResponse> = jobs.iter().map(job_to_proto).collect();
+        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
 
         Ok(Response::new(ListJobsResponse {
             jobs,
@@ -102,7 +105,7 @@ impl<
     async fn list_pipeline_jobs(
         &self,
         request: Request<ListPipelineJobsRequest>,
-    ) -> Result<Response<ListJobsResponse>, Status> {
+    ) -> Result<Response<ListPipelineJobsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let pipeline_id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
@@ -115,9 +118,9 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<JobResponse> = jobs.iter().map(job_to_proto).collect();
+        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
 
-        Ok(Response::new(ListJobsResponse {
+        Ok(Response::new(ListPipelineJobsResponse {
             jobs,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
@@ -126,7 +129,7 @@ impl<
     async fn list_project_jobs(
         &self,
         request: Request<ListProjectJobsRequest>,
-    ) -> Result<Response<ListJobsResponse>, Status> {
+    ) -> Result<Response<ListProjectJobsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
@@ -139,9 +142,9 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<JobResponse> = jobs.iter().map(job_to_proto).collect();
+        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
 
-        Ok(Response::new(ListJobsResponse {
+        Ok(Response::new(ListProjectJobsResponse {
             jobs,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
@@ -150,7 +153,7 @@ impl<
     async fn list_organization_jobs(
         &self,
         request: Request<ListOrganizationJobsRequest>,
-    ) -> Result<Response<ListJobsResponse>, Status> {
+    ) -> Result<Response<ListOrganizationJobsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let organization_id =
@@ -164,9 +167,9 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<JobResponse> = jobs.iter().map(job_to_proto).collect();
+        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
 
-        Ok(Response::new(ListJobsResponse {
+        Ok(Response::new(ListOrganizationJobsResponse {
             jobs,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
@@ -223,8 +226,9 @@ impl<
         }))
     }
 
-    type TailJobLogsStream =
-        Pin<Box<dyn tokio_stream::Stream<Item = Result<JobLogEvent, Status>> + Send + 'static>>;
+    type TailJobLogsStream = Pin<
+        Box<dyn tokio_stream::Stream<Item = Result<TailJobLogsResponse, Status>> + Send + 'static>,
+    >;
 
     async fn tail_job_logs(
         &self,

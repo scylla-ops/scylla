@@ -16,7 +16,14 @@ export const TriggerSourceCell = ({ trigger }: { trigger: TriggerEntity }) => {
     );
   }
 
-  if (!trigger.source.webhookUrl) return <div className='w-full' />;
+  // A source arm this build doesn't know: nothing meaningful to render.
+  if (trigger.source.kind !== TriggerKind.Webhook) {
+    return (
+      <div className='flex items-center justify-center'>
+        <code className='font-mono text-xs text-muted-foreground'>—</code>
+      </div>
+    );
+  }
 
   return (
     <CopyableText

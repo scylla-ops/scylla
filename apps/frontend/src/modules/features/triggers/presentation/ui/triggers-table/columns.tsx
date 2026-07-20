@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { Clock, Webhook } from 'lucide-react';
+import { Clock, HelpCircle, Webhook } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Switch } from '@shadcn/switch.tsx';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
@@ -7,6 +7,12 @@ import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/
 import { TriggerSourceCell } from './TriggerSourceCell.tsx';
 import { TriggerStatusCell } from './TriggerStatusCell.tsx';
 import { TriggerActions } from './TriggerActions.tsx';
+
+const SOURCE_ICON = {
+  [TriggerKind.Cron]: Clock,
+  [TriggerKind.Webhook]: Webhook,
+  [TriggerKind.Unknown]: HelpCircle,
+} as const;
 
 interface TriggerColumnsMeta {
   onFire: (trigger: TriggerEntity) => void;
@@ -22,7 +28,7 @@ export const createTriggerColumns = (meta: TriggerColumnsMeta): ColumnDef<Trigge
     header: () => <Trans>Name</Trans>,
     cell: ({ row }) => {
       const trigger = row.original;
-      const Icon = trigger.source.kind === TriggerKind.Cron ? Clock : Webhook;
+      const Icon = SOURCE_ICON[trigger.source.kind];
       return (
         <div className='flex flex-row items-center gap-3'>
           <div className='flex size-10 items-center justify-center rounded-lg bg-primary/10 shrink-0'>

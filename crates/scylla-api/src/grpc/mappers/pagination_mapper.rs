@@ -1,5 +1,5 @@
 use scylla_core::domain::value_objects::{PaginationMetadata, PaginationParams};
-use scylla_protocol::services::common::{
+use scylla_protocol::common::v1::{
     PaginationMetadata as ProtoPaginationMetadata, PaginationRequest as ProtoPaginationRequest,
 };
 

@@ -1,16 +1,16 @@
 import type {
   AgentStats as ProtoAgentStats,
-  AgentView as ProtoAgentView,
-} from '@/generated/agent_admin.ts';
+  Agent as ProtoAgent,
+} from '@/generated/scylla/agent/v1/agent_admin.ts';
 import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 import type { AgentStats } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
 /** Maps gRPC AgentAdmin messages to the domain Agent models. */
 export class GrpcAgentMapper {
-  static toDomain(w: ProtoAgentView): AgentEntity {
+  static toDomain(w: ProtoAgent): AgentEntity {
     return {
-      id: idValue(w.id),
+      id: idValue(w.agentId),
       organizationId: idValue(w.organizationId),
       name: w.name,
       isActive: w.isActive,

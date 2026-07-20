@@ -1,12 +1,20 @@
-import type { PermissionScope } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import type { Permission } from '@/generated/permission.ts';
+import type {
+  AccessEntity,
+  AccessSpec,
+  PermissionScope,
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
+
+/**
+ * Where a role comes from. `unknown` means the backend sent an origin arm newer
+ * than this build — never read it as "custom".
+ */
+export type RoleOrigin =
+  | { kind: 'builtin'; key: string }
+  | { kind: 'custom'; ownerOrganizationId?: string }
+  | { kind: 'unknown' };
 
 export interface RoleEntity {
   id: string;
-  /**
-   * Stable key, set only for builtin roles (e.g. "organization-admin").
-   */
-  key?: string;
   name: string;
   description: string;
 
@@ -15,24 +23,18 @@ export interface RoleEntity {
    */
   scope: PermissionScope;
 
-  builtin: boolean;
-  /**
-   * Full control: the role confers every permission within the grant's scope.
-   * When true, `permissions` is empty.
-   */
-  fullControl: boolean;
-  /**
-   * The role's explicit permission set (when not full_control).
-   */
-  permissions: Permission[];
+  /** Builtin (carries its stable key, e.g. "organization-admin") or custom. */
+  origin: RoleOrigin;
+
+  /** Full control over the scope, or an explicit permission set. */
+  access: AccessEntity;
 }
 
 export interface RoleCreationData {
   name: string;
   description: string;
-  permissions: Permission[];
-  fullControl: boolean;
   scope: PermissionScope;
+  access: AccessSpec;
 }
 
 export const updateRole = (role: RoleEntity, changes: Partial<RoleEntity>): RoleEntity => {

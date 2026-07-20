@@ -211,7 +211,9 @@ An agent is connected when its [App](#app) holds an open `WorkerService` stream 
 ## Networking & protocol
 
 ### gRPC
-Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-protocol/proto/`.
+Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-protocol/proto/`, which is the single include root. Each file's path below that root **is** its package: `scylla/job/v1/job.proto` declares `package scylla.job.v1`. Packages carry a version suffix from day one, so a breaking change means a new `v2` directory beside `v1`, never an edit in place. `buf lint` and `buf breaking` enforce both (`just proto-lint`, `just proto-breaking`).
+
+Two packages are deliberate leaves that others may import: `scylla.common.v1` (id wrappers, `Email`, pagination) and `scylla.exec.v1` (the step contract shared by pipelines and agents). Feature packages never import each other — they reference across contexts by id.
 
 ### gRPC-Web
 Browser-compatible variant of gRPC spoken by the frontend via `@protobuf-ts/grpcweb-transport`. Served by the control plane through `tonic-web`.

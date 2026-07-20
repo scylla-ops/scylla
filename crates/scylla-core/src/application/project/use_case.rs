@@ -136,16 +136,23 @@ impl<
         self.project_repo.update(&project).await
     }
 
+    /// Set the active flag to an explicit value and return the updated project.
+    /// Idempotent, so a retried call is safe — see [`Project::set_active`].
     #[instrument(skip(self, caller), fields(project_id = %id))]
-    pub async fn toggle_active(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<()> {
+    pub async fn set_active(
+        &self,
+        caller: &CallerContext,
+        id: &ProjectId,
+        is_active: bool,
+    ) -> DomainResult<Project> {
         self.permission_service
             .check(caller, Permission::UpdateProject(id.clone()))
             .await?;
 
         let mut project = self.project_repo.find_by_id(id).await?;
-        project.toggle_active()?;
+        project.set_active(is_active);
         self.project_repo.update(&project).await?;
-        Ok(())
+        Ok(project)
     }
 
     #[instrument(skip(self, caller), fields(project_id = %id))]

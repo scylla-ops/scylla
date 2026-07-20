@@ -7,12 +7,13 @@ use scylla_core::application::{
 };
 use scylla_core::domain::entities::{App, AppCredential, AppCredentialId, AppId, OrganizationId};
 use scylla_core::domain::value_objects::app::{AppName, AppSecretLabel};
-use scylla_protocol::services::app::{
-    App as ProtoApp, AppSecret as ProtoAppSecret, CreateAppRequest, CreateAppSecretRequest,
-    CreatedApp as ProtoCreatedApp, CreatedAppSecret as ProtoCreatedAppSecret, DeleteAppRequest,
-    DeleteAppResponse, GetAppRequest, ListAppSecretsRequest, ListAppSecretsResponse,
-    ListAppsRequest, ListAppsResponse, RevokeAppSecretRequest, RevokeAppSecretResponse,
-    SetAppActiveRequest, SetAppSecretEnabledRequest, app_service_server::AppService,
+use scylla_protocol::app::v1::{
+    App as ProtoApp, AppSecret as ProtoAppSecret, CreateAppRequest, CreateAppResponse,
+    CreateAppSecretRequest, CreateAppSecretResponse, DeleteAppRequest, DeleteAppResponse,
+    GetAppRequest, GetAppResponse, ListAppSecretsRequest, ListAppSecretsResponse, ListAppsRequest,
+    ListAppsResponse, RevokeAppSecretRequest, RevokeAppSecretResponse, SetAppActiveRequest,
+    SetAppActiveResponse, SetAppSecretEnabledRequest, SetAppSecretEnabledResponse,
+    app_service_server::AppService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -39,7 +40,7 @@ impl<
     async fn create_app(
         &self,
         request: Request<CreateAppRequest>,
-    ) -> Result<Response<ProtoCreatedApp>, Status> {
+    ) -> Result<Response<CreateAppResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let organization_id =
@@ -52,21 +53,26 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(ProtoCreatedApp {
+        Ok(Response::new(CreateAppResponse {
             app: Some(app_to_proto(&created.app)),
             secret: created.secret.as_str().to_string(),
         }))
     }
 
-    async fn get_app(&self, request: Request<GetAppRequest>) -> Result<Response<ProtoApp>, Status> {
+    async fn get_app(
+        &self,
+        request: Request<GetAppRequest>,
+    ) -> Result<Response<GetAppResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let app = self
             .use_cases
-            .get(&caller, AppId::new(&required(req.id, "id")?))
+            .get(&caller, AppId::new(&required(req.app_id, "app_id")?))
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(app_to_proto(&app)))
+        Ok(Response::new(GetAppResponse {
+            app: Some(app_to_proto(&app)),
+        }))
     }
 
     async fn list_apps(
@@ -95,7 +101,7 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         self.use_cases
-            .delete(&caller, AppId::new(&required(req.id, "id")?))
+            .delete(&caller, AppId::new(&required(req.app_id, "app_id")?))
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(DeleteAppResponse {}))
@@ -104,7 +110,7 @@ impl<
     async fn set_app_active(
         &self,
         request: Request<SetAppActiveRequest>,
-    ) -> Result<Response<ProtoApp>, Status> {
+    ) -> Result<Response<SetAppActiveResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let app = self
@@ -112,17 +118,19 @@ impl<
             .set_active(
                 &caller,
                 AppId::new(&required(req.app_id, "app_id")?),
-                req.active,
+                req.is_active,
             )
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(app_to_proto(&app)))
+        Ok(Response::new(SetAppActiveResponse {
+            app: Some(app_to_proto(&app)),
+        }))
     }
 
     async fn create_app_secret(
         &self,
         request: Request<CreateAppSecretRequest>,
-    ) -> Result<Response<ProtoCreatedAppSecret>, Status> {
+    ) -> Result<Response<CreateAppSecretResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let app_id = AppId::new(&required(req.app_id, "app_id")?);
@@ -134,8 +142,8 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(ProtoCreatedAppSecret {
-            credential: Some(credential_to_proto(&created.credential)),
+        Ok(Response::new(CreateAppSecretResponse {
+            app_secret: Some(credential_to_proto(&created.credential)),
             secret: created.secret.as_str().to_string(),
         }))
     }
@@ -152,7 +160,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
         Ok(Response::new(ListAppSecretsResponse {
-            secrets: secrets.iter().map(credential_to_proto).collect(),
+            app_secrets: secrets.iter().map(credential_to_proto).collect(),
         }))
     }
 
@@ -165,7 +173,7 @@ impl<
         self.use_cases
             .revoke_secret(
                 &caller,
-                AppCredentialId::new(&required(req.secret_id, "secret_id")?),
+                AppCredentialId::new(&required(req.app_secret_id, "app_secret_id")?),
             )
             .await
             .map_err(domain_error_to_status)?;
@@ -175,25 +183,27 @@ impl<
     async fn set_app_secret_enabled(
         &self,
         request: Request<SetAppSecretEnabledRequest>,
-    ) -> Result<Response<ProtoAppSecret>, Status> {
+    ) -> Result<Response<SetAppSecretEnabledResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let credential = self
             .use_cases
             .set_secret_enabled(
                 &caller,
-                AppCredentialId::new(&required(req.secret_id, "secret_id")?),
+                AppCredentialId::new(&required(req.app_secret_id, "app_secret_id")?),
                 req.enabled,
             )
             .await
             .map_err(domain_error_to_status)?;
-        Ok(Response::new(credential_to_proto(&credential)))
+        Ok(Response::new(SetAppSecretEnabledResponse {
+            app_secret: Some(credential_to_proto(&credential)),
+        }))
     }
 }
 
 fn app_to_proto(a: &App) -> ProtoApp {
     ProtoApp {
-        id: wrap(a.id().to_string()),
+        app_id: wrap(a.id().to_string()),
         organization_id: wrap(a.organization_id().to_string()),
         name: a.name().as_str().to_string(),
         is_active: a.is_active(),
@@ -204,7 +214,7 @@ fn app_to_proto(a: &App) -> ProtoApp {
 
 fn credential_to_proto(c: &AppCredential) -> ProtoAppSecret {
     ProtoAppSecret {
-        id: wrap(c.id().to_string()),
+        app_secret_id: wrap(c.id().to_string()),
         app_id: wrap(c.app_id().to_string()),
         label: c.label().as_str().to_string(),
         enabled: c.is_enabled(),

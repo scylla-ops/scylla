@@ -1,15 +1,16 @@
 import type {
-  CreatedTrigger as ProtoCreatedTrigger,
   CreateTriggerRequest,
-  ListTriggersResponse,
+  CreateTriggerResponse,
+  FireObservation,
+  Trigger as ProtoTrigger,
   TriggerInput as ProtoTriggerInput,
-  TriggerView,
   UpdateTriggerRequest,
-} from '@/generated/trigger.ts';
+} from '@/generated/scylla/trigger/v1/trigger.ts';
 import type {
   CreatedTrigger,
   TriggerDraft,
   TriggerEntity,
+  TriggerFireResult,
 } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 import type {
   TriggerInput,
@@ -28,19 +29,33 @@ import { ScyllaError } from '@shared/utils/scylla-result.ts';
 export class GrpcTriggerMapper {
   // ── proto → domain ─────────────────────────────────────────────────────────
 
-  private static sourceToDomain(view: TriggerView): TriggerSource {
-    switch (view.source.oneofKind) {
+  private static sourceToDomain(source: ProtoTrigger['source']): TriggerSource {
+    switch (source.oneofKind) {
       case 'cron':
-        return { kind: TriggerKind.Cron, expression: view.source.cron.expression };
+        return { kind: TriggerKind.Cron, expression: source.cron.expression };
       case 'webhook':
+        // The public URL is derived by the server and lives inside the webhook arm.
         return {
           kind: TriggerKind.Webhook,
-          signatureHeader: view.source.webhook.signatureHeader,
-          webhookUrl: view.webhookUrl,
+          signatureHeader: source.webhook.signatureHeader,
+          webhookUrl: source.webhook.url,
         };
       default:
-        // Defensive: unknown/empty source — render as an empty cron so the row still shows.
-        return { kind: TriggerKind.Cron, expression: '' };
+        // A source arm newer than this build: surface it as unknown, don't guess.
+        return { kind: TriggerKind.Unknown };
+    }
+  }
+
+  private static observationToDomain(observation?: FireObservation): TriggerFireResult | undefined {
+    if (!observation) return undefined;
+    switch (observation.result.oneofKind) {
+      case 'succeeded':
+        return { kind: 'succeeded' };
+      case 'failed':
+        return { kind: 'failed', error: observation.result.failed.error };
+      default:
+        // An outcome arm newer than this build — neither a success nor a failure.
+        return { kind: 'unknown' };
     }
   }
 
@@ -55,34 +70,34 @@ export class GrpcTriggerMapper {
     }
   }
 
-  static toDomain(view: TriggerView): TriggerEntity {
+  static toDomain(trigger: ProtoTrigger): TriggerEntity {
     // Flatten the `activation` oneof back to the flat entity: a disabled trigger
     // structurally carries no due time, so `nextFireAt` only exists when enabled.
     const nextFireAt =
-      view.activation.oneofKind === 'enabled'
-        ? timestampToIsoOpt(view.activation.enabled.nextFireAt)
+      trigger.activation.oneofKind === 'enabled'
+        ? timestampToIsoOpt(trigger.activation.enabled.nextFireAt)
         : undefined;
     return {
-      id: idValue(view.triggerId),
-      pipelineId: idValue(view.pipelineId),
-      name: view.name,
-      source: GrpcTriggerMapper.sourceToDomain(view),
-      inputs: view.inputs.map(GrpcTriggerMapper.inputToDomain),
-      enabled: view.activation.oneofKind === 'enabled',
+      id: idValue(trigger.triggerId),
+      pipelineId: idValue(trigger.pipelineId),
+      name: trigger.name,
+      source: GrpcTriggerMapper.sourceToDomain(trigger.source),
+      inputs: trigger.inputs.map(GrpcTriggerMapper.inputToDomain),
+      enabled: trigger.activation.oneofKind === 'enabled',
       nextFireAt,
-      // `last_observation` keeps the fired-at and its status together, or absent.
-      lastFiredAt: timestampToIsoOpt(view.lastObservation?.firedAt),
-      lastStatus: view.lastObservation?.status ?? '',
-      createdAt: timestampToIso(view.createdAt),
-      updatedAt: timestampToIso(view.updatedAt),
+      // `last_observation` keeps the fired-at and its outcome together, or absent.
+      lastFiredAt: timestampToIsoOpt(trigger.lastObservation?.firedAt),
+      lastResult: GrpcTriggerMapper.observationToDomain(trigger.lastObservation),
+      createdAt: timestampToIso(trigger.createdAt),
+      updatedAt: timestampToIso(trigger.updatedAt),
     };
   }
 
-  static toDomainList(response: ListTriggersResponse): TriggerEntity[] {
-    return response.triggers.map(GrpcTriggerMapper.toDomain);
+  static toDomainList(triggers: ProtoTrigger[]): TriggerEntity[] {
+    return triggers.map(GrpcTriggerMapper.toDomain);
   }
 
-  static createdToDomain(response: ProtoCreatedTrigger): CreatedTrigger {
+  static createdToDomain(response: CreateTriggerResponse): CreatedTrigger {
     if (!response.trigger) {
       throw new ScyllaError('CreateTrigger returned no trigger');
     }

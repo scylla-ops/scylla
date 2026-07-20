@@ -1,4 +1,5 @@
 use crate::extract_auth_context;
+use crate::grpc::convert::{dt, log_stream_from_proto};
 use derive_more::Constructor;
 use scylla_core::application::caller::CallerContext;
 use scylla_core::application::{
@@ -10,11 +11,12 @@ use scylla_core::domain::entities::{AppId, JobId, JobLog};
 use scylla_core::domain::value_objects::job::LogStream;
 use scylla_core::domain::value_objects::pipeline::{NodeId, Shell, Step};
 use scylla_core::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
-use scylla_protocol::services::agent::{
+use scylla_protocol::agent::v1::{
     AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, ResolvedEnv, agent_down,
     agent_node, agent_service_server::AgentService, agent_up, job_status,
 };
-use scylla_protocol::services::common;
+use scylla_protocol::common::v1 as common;
+use scylla_protocol::exec::v1 as exec;
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::Notify;
@@ -249,21 +251,21 @@ fn dispatch_to_proto(dispatch: &JobDispatch) -> AgentDown {
 
 fn step_to_proto(step: &Step) -> agent_node::Step {
     match step {
-        Step::Exec { command, args } => agent_node::Step::Exec(common::ExecStep {
+        Step::Exec { command, args } => agent_node::Step::Exec(exec::ExecStep {
             command: command.clone(),
             args: args.clone(),
         }),
-        Step::Script { script, shell } => agent_node::Step::Script(common::ScriptStep {
+        Step::Script { script, shell } => agent_node::Step::Script(exec::ScriptStep {
             script: script.clone(),
             shell: match shell {
-                Shell::Sh => common::Shell::Sh,
-                Shell::Bash => common::Shell::Bash,
+                Shell::Sh => exec::Shell::Sh,
+                Shell::Bash => exec::Shell::Bash,
             } as i32,
         }),
     }
 }
 
-fn status_to_event(status: &scylla_protocol::services::agent::JobStatus) -> Option<JobEvent> {
+fn status_to_event(status: &scylla_protocol::agent::v1::JobStatus) -> Option<JobEvent> {
     use job_status::Event;
     let node_id = |id: &Option<common::NodeId>| id.clone().unwrap_or_default().value;
     // An absent oneof is a malformed report, not a valid state — drop it (the
@@ -290,14 +292,16 @@ fn status_to_event(status: &scylla_protocol::services::agent::JobStatus) -> Opti
     })
 }
 
-fn log_line_to_domain(line: &scylla_protocol::services::agent::JobLogLine) -> Option<JobLog> {
+fn log_line_to_domain(line: &scylla_protocol::agent::v1::JobLogLine) -> Option<JobLog> {
     let node_id_str = line.node_id.clone().unwrap_or_default().value;
     let node_id = NodeId::new(&node_id_str)
         .map_err(|e| warn!(node_id = %node_id_str, error = %e, "invalid node_id in agent log"))
         .ok()?;
-    let stream = LogStream::new(&line.stream).unwrap_or(LogStream::Stdout);
-    let timestamp = chrono::DateTime::parse_from_rfc3339(&line.timestamp)
-        .map_or_else(|_| chrono::Utc::now(), |dt| dt.with_timezone(&chrono::Utc));
+    // `log_stream_from_proto` already folds UNSPECIFIED/unknown to "stdout", so
+    // the domain parse below can never actually fail.
+    let stream = LogStream::new(log_stream_from_proto(line.stream)).unwrap_or(LogStream::Stdout);
+    // An agent that omits the timestamp gets server-side now, as before.
+    let timestamp = dt(line.timestamp).unwrap_or_else(chrono::Utc::now);
     Some(JobLog::new(
         JobId::new(line.job_id.clone().unwrap_or_default().value),
         node_id,

@@ -1,4 +1,4 @@
-import type { AuthzAction, ListAuthzVocabularyResponse } from '@/generated/permission.ts';
+import type { AuthzAction } from '@/generated/scylla/authz/v1/permission.ts';
 import type {
   AuthzActionEntity,
   AuthzVocabularyEntity,
@@ -13,10 +13,9 @@ export class GrpcAuthzVocabularyMapper {
     };
   }
 
-  public static toDomain(grpcResponse: ListAuthzVocabularyResponse): AuthzVocabularyEntity {
+  public static toDomain(grpcActions: AuthzAction[]): AuthzVocabularyEntity {
     return {
-      actions: grpcResponse.actions.map(GrpcAuthzVocabularyMapper.actionToDomain),
+      actions: grpcActions.map(GrpcAuthzVocabularyMapper.actionToDomain),
     };
   }
 }
-

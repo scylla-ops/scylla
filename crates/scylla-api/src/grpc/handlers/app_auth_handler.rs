@@ -6,7 +6,7 @@ use scylla_core::application::{
 };
 use scylla_core::domain::entities::AppId;
 use scylla_core::domain::value_objects::app::AppSecret;
-use scylla_protocol::services::app::{
+use scylla_protocol::app::v1::{
     IssueTokenRequest, IssueTokenResponse, app_auth_service_server::AppAuthService,
 };
 use std::sync::Arc;

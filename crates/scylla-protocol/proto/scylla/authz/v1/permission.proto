@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package scylla.authz.v1;
+
+import "scylla/common/v1/common.proto";
+
+// The authorization vocabulary shared by policies, grants and roles: what can be
+// permitted, to whom, and where.
+
+// Every authorization permission Scylla enforces — the atomic capability a role
+// or a direct grant confers. Closed, code-owned: one value per real enforced
+// capability, mirroring the backend `Permission` enum. Strongly typed so a
+// client can build a permission matrix / "can I do X" check without guessing
+// string names. Append-only: never renumber, add new values at the end.
+enum Permission {
+  PERMISSION_UNSPECIFIED = 0;
+  PERMISSION_CREATE_USER = 1;
+  PERMISSION_READ_USER = 2;
+  PERMISSION_UPDATE_USER = 3;
+  PERMISSION_DELETE_USER = 4;
+  PERMISSION_LIST_USERS = 5;
+  PERMISSION_CREATE_ORGANIZATION = 6;
+  PERMISSION_READ_ORGANIZATION = 7;
+  PERMISSION_UPDATE_ORGANIZATION = 8;
+  PERMISSION_DELETE_ORGANIZATION = 9;
+  PERMISSION_LIST_ORGANIZATIONS = 10;
+  PERMISSION_LIST_ORGANIZATION_MEMBERS = 11;
+  PERMISSION_ADD_ORGANIZATION_MEMBER = 12;
+  PERMISSION_REMOVE_ORGANIZATION_MEMBER = 13;
+  PERMISSION_MANAGE_INVITATIONS = 14;
+  PERMISSION_LIST_USER_ORGANIZATIONS = 15;
+  PERMISSION_CREATE_PROJECT = 16;
+  PERMISSION_READ_PROJECT = 17;
+  PERMISSION_UPDATE_PROJECT = 18;
+  PERMISSION_DELETE_PROJECT = 19;
+  PERMISSION_LIST_PROJECTS = 20;
+  PERMISSION_LIST_PROJECTS_BY_ORGANIZATION = 21;
+  PERMISSION_LIST_PROJECT_MEMBERS = 22;
+  PERMISSION_ADD_PROJECT_MEMBER = 23;
+  PERMISSION_REMOVE_PROJECT_MEMBER = 24;
+  PERMISSION_LIST_USER_PROJECTS = 25;
+  PERMISSION_CREATE_PIPELINE = 26;
+  PERMISSION_READ_PIPELINE = 27;
+  PERMISSION_UPDATE_PIPELINE = 28;
+  PERMISSION_DELETE_PIPELINE = 29;
+  PERMISSION_RUN_PIPELINE = 30;
+  PERMISSION_EXECUTE_JOB = 31;
+  PERMISSION_LIST_PIPELINES = 32;
+  PERMISSION_LIST_PIPELINES_BY_PROJECT = 33;
+  PERMISSION_LIST_PIPELINES_BY_ORGANIZATION = 34;
+  PERMISSION_CREATE_JOB = 35;
+  PERMISSION_READ_JOB = 36;
+  PERMISSION_UPDATE_JOB = 37;
+  PERMISSION_DELETE_JOB = 38;
+  PERMISSION_LIST_JOBS = 39;
+  PERMISSION_LIST_JOBS_BY_PIPELINE = 40;
+  PERMISSION_LIST_JOBS_BY_PROJECT = 41;
+  PERMISSION_LIST_JOBS_BY_ORGANIZATION = 42;
+  PERMISSION_READ_JOB_LOGS = 43;
+  PERMISSION_WRITE_JOB_LOGS = 44;
+  PERMISSION_WRITE_JOB_STATUS = 45;
+  PERMISSION_APPEND_JOB_LOG = 46;
+  PERMISSION_CREATE_APP = 47;
+  PERMISSION_READ_APP = 48;
+  // Run stats of an app (an agent reports its job-execution stats this way).
+  PERMISSION_READ_APP_STATS = 49;
+  PERMISSION_DELETE_APP = 50;
+  PERMISSION_LIST_APPS_BY_ORGANIZATION = 51;
+  PERMISSION_CREATE_AGENT = 52;
+  PERMISSION_LIST_AGENTS = 53;
+  PERMISSION_MANAGE_SYSTEM_GRANTS = 54;
+  PERMISSION_MANAGE_ORG_GRANTS = 55;
+  PERMISSION_MANAGE_PROJECT_GRANTS = 56;
+  PERMISSION_MANAGE_POLICIES = 57;
+  PERMISSION_MANAGE_ROLES = 58;
+  PERMISSION_CREATE_SECRET = 59;
+  PERMISSION_LIST_SECRETS = 60;
+  PERMISSION_DELETE_SECRET = 61;
+  PERMISSION_MANAGE_TRIGGERS = 62;
+}
+
+// Which tenancy level an authorization applies to, *without* the concrete entity
+// it binds to. The catalog declares one of these per role; a grant is valid only
+// when its role's kind matches the kind of the scope it binds to. Use `ScopeRef`
+// whenever the entity itself is needed.
+enum ScopeKind {
+  SCOPE_KIND_UNSPECIFIED = 0;
+  SCOPE_KIND_SYSTEM = 1;
+  SCOPE_KIND_ORGANIZATION = 2;
+  SCOPE_KIND_PROJECT = 3;
+}
+
+// Where an authorization applies, *with* the entity it binds to. SYSTEM is the
+// root of the tree (org ∈ System), so a grant there covers everything beneath
+// and binds to no entity at all.
+//
+// The binding lives inside each arm rather than beside them on purpose: a system
+// scope carrying an organization id, or an organization scope missing its id,
+// are both unrepresentable. Mirrors the domain `Scope`.
+message ScopeRef {
+  oneof scope {
+    System system = 1;
+    Organization organization = 2;
+    Project project = 3;
+  }
+
+  // The whole installation. Covers every organization and project.
+  message System {}
+  // One organization and everything beneath it.
+  message Organization { scylla.common.v1.OrganizationId organization_id = 1; }
+  // One project.
+  message Project { scylla.common.v1.ProjectId project_id = 1; }
+}
+
+// Who an authorization is about: a human user or a machine app. The id lives
+// inside the arm, so a principal is never a kind without its id. Mirrors the
+// domain `Principal`.
+message PrincipalRef {
+  oneof principal {
+    User user = 1;
+    App app = 2;
+  }
+
+  message User { scylla.common.v1.UserId user_id = 1; }
+  message App { scylla.common.v1.AppId app_id = 1; }
+}
+
+// One entry of the permission vocabulary: a permission and the broadest scope at
+// which it is coherent.
+message AuthzAction {
+  Permission permission = 1;
+  // The minimal (narrowest) scope kind a role may bind to and still have this
+  // permission do something — i.e. the scope whose subtree contains the target
+  // resource. The permission is usable in a role scoped at `min_scope` or any
+  // broader (ancestor) scope. Lets a client grey out incoherent permissions per
+  // role scope (e.g. createOrganization → SCOPE_KIND_SYSTEM only).
+  ScopeKind min_scope = 2;
+}
+
+// What an authorization confers within its scope: full control, or an explicit
+// permission set — exactly one, never both nor neither. Shared by roles and by
+// the resolved effective-permission view.
+message Access {
+  oneof access {
+    FullControl full_control = 1;
+    Restricted restricted = 2;
+  }
+
+  // Confers every permission within the enclosing scope — carries no list.
+  message FullControl {}
+  // An explicit permission set (anything short of full control).
+  message Restricted { repeated Permission permissions = 1; }
+}

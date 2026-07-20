@@ -1,6 +1,7 @@
 import {
   Ban,
   CheckCircle2,
+  CircleHelp,
   DiamondMinusIcon,
   Loader2,
   SkipForward,
@@ -16,7 +17,8 @@ export type StatusKey =
   | 'failed'
   | 'skipped'
   | 'cancelled'
-  | 'orphaned';
+  | 'orphaned'
+  | 'unknown';
 
 export interface StatusConfig {
   label: string;
@@ -90,6 +92,18 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     barHoverClassName: 'hover:bg-orange-500 hover:scale-y-110',
     dotClassName: 'bg-orange-500',
     textClassName: 'text-orange-600',
+  },
+  // The server reported a state this build doesn't know about (a newer oneof
+  // arm or enum value). Shown as-is rather than guessed at.
+  unknown: {
+    label: 'Unknown',
+    variant: 'outline',
+    icon: CircleHelp,
+    iconClassName: 'text-slate-400',
+    barClassName: 'bg-slate-300/80',
+    barHoverClassName: 'hover:bg-slate-400 hover:scale-y-110',
+    dotClassName: 'bg-slate-400',
+    textClassName: 'text-slate-500',
   },
   cancelled: {
     label: 'Cancelled',

@@ -11,13 +11,14 @@ use scylla_core::application::{
 };
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
-use scylla_protocol::services::project::{
-    AddUserToProjectRequest, AddUserToProjectResponse, CreateProjectRequest, DeleteProjectRequest,
-    DeleteProjectResponse, GetProjectRequest, ListOrganizationProjectsRequest,
-    ListProjectUsersRequest, ListProjectUsersResponse, ListProjectsRequest, ListProjectsResponse,
-    ListUserProjectsRequest, ProjectResponse, ProjectUserInfoResponse,
-    RemoveUserFromProjectRequest, RemoveUserFromProjectResponse, ToggleProjectActiveRequest,
-    ToggleProjectActiveResponse, UpdateProjectRequest, project_service_server::ProjectService,
+use scylla_protocol::project::v1::{
+    AddProjectMemberRequest, AddProjectMemberResponse, CreateProjectRequest, CreateProjectResponse,
+    DeleteProjectRequest, DeleteProjectResponse, GetProjectRequest, GetProjectResponse,
+    ListOrganizationProjectsRequest, ListOrganizationProjectsResponse, ListProjectMembersRequest,
+    ListProjectMembersResponse, ListProjectsRequest, ListProjectsResponse, ListUserProjectsRequest,
+    ListUserProjectsResponse, Project, ProjectMember, RemoveProjectMemberRequest,
+    RemoveProjectMemberResponse, SetProjectActiveRequest, SetProjectActiveResponse,
+    UpdateProjectRequest, UpdateProjectResponse, project_service_server::ProjectService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -45,7 +46,7 @@ impl<
     async fn create_project(
         &self,
         request: Request<CreateProjectRequest>,
-    ) -> Result<Response<ProjectResponse>, Status> {
+    ) -> Result<Response<CreateProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let name = ProjectName::new(&req.name).map_err(domain_error_to_status)?;
@@ -63,13 +64,15 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(project_to_proto(&project)))
+        Ok(Response::new(CreateProjectResponse {
+            project: Some(project_to_proto(&project)),
+        }))
     }
 
     async fn get_project(
         &self,
         request: Request<GetProjectRequest>,
-    ) -> Result<Response<ProjectResponse>, Status> {
+    ) -> Result<Response<GetProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
@@ -80,13 +83,15 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(project_to_proto(&project)))
+        Ok(Response::new(GetProjectResponse {
+            project: Some(project_to_proto(&project)),
+        }))
     }
 
     async fn update_project(
         &self,
         request: Request<UpdateProjectRequest>,
-    ) -> Result<Response<ProjectResponse>, Status> {
+    ) -> Result<Response<UpdateProjectResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
@@ -108,23 +113,30 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(project_to_proto(&project)))
+        Ok(Response::new(UpdateProjectResponse {
+            project: Some(project_to_proto(&project)),
+        }))
     }
 
-    async fn toggle_project_active(
+    /// Sets the active flag to the requested value instead of flipping it, so a
+    /// retried call lands on the state the caller asked for.
+    async fn set_project_active(
         &self,
-        request: Request<ToggleProjectActiveRequest>,
-    ) -> Result<Response<ToggleProjectActiveResponse>, Status> {
+        request: Request<SetProjectActiveRequest>,
+    ) -> Result<Response<SetProjectActiveResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
-        self.use_cases
-            .toggle_active(&caller, &id)
+        let project = self
+            .use_cases
+            .set_active(&caller, &id, req.is_active)
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(ToggleProjectActiveResponse {}))
+        Ok(Response::new(SetProjectActiveResponse {
+            project: Some(project_to_proto(&project)),
+        }))
     }
 
     async fn delete_project(
@@ -158,7 +170,7 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (projects, metadata) = result.into_parts();
-        let projects: Vec<ProjectResponse> = projects.iter().map(project_to_proto).collect();
+        let projects: Vec<Project> = projects.iter().map(project_to_proto).collect();
 
         Ok(Response::new(ListProjectsResponse {
             projects,
@@ -169,7 +181,7 @@ impl<
     async fn list_organization_projects(
         &self,
         request: Request<ListOrganizationProjectsRequest>,
-    ) -> Result<Response<ListProjectsResponse>, Status> {
+    ) -> Result<Response<ListOrganizationProjectsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let organization_id =
@@ -183,18 +195,18 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (projects, metadata) = result.into_parts();
-        let projects: Vec<ProjectResponse> = projects.iter().map(project_to_proto).collect();
+        let projects: Vec<Project> = projects.iter().map(project_to_proto).collect();
 
-        Ok(Response::new(ListProjectsResponse {
+        Ok(Response::new(ListOrganizationProjectsResponse {
             projects,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
 
-    async fn list_project_users(
+    async fn list_project_members(
         &self,
-        request: Request<ListProjectUsersRequest>,
-    ) -> Result<Response<ListProjectUsersResponse>, Status> {
+        request: Request<ListProjectMembersRequest>,
+    ) -> Result<Response<ListProjectMembersResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
@@ -206,16 +218,16 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        let users = users
+        let members = users
             .iter()
-            .map(|user| ProjectUserInfoResponse {
+            .map(|user| ProjectMember {
                 user_id: wrap(user.id().to_string()),
                 username: user.username().to_string(),
             })
             .collect();
 
-        Ok(Response::new(ListProjectUsersResponse {
-            users,
+        Ok(Response::new(ListProjectMembersResponse {
+            members,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
@@ -223,7 +235,7 @@ impl<
     async fn list_user_projects(
         &self,
         request: Request<ListUserProjectsRequest>,
-    ) -> Result<Response<ListProjectsResponse>, Status> {
+    ) -> Result<Response<ListUserProjectsResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let user_id = UserId::new(&required(req.user_id, "user_id")?);
@@ -235,18 +247,18 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        let projects: Vec<ProjectResponse> = projects.iter().map(project_to_proto).collect();
+        let projects: Vec<Project> = projects.iter().map(project_to_proto).collect();
 
-        Ok(Response::new(ListProjectsResponse {
+        Ok(Response::new(ListUserProjectsResponse {
             projects,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
     }
 
-    async fn add_user_to_project(
+    async fn add_project_member(
         &self,
-        request: Request<AddUserToProjectRequest>,
-    ) -> Result<Response<AddUserToProjectResponse>, Status> {
+        request: Request<AddProjectMemberRequest>,
+    ) -> Result<Response<AddProjectMemberResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let user_id = UserId::new(&required(req.user_id, "user_id")?);
@@ -257,13 +269,13 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(AddUserToProjectResponse {}))
+        Ok(Response::new(AddProjectMemberResponse {}))
     }
 
-    async fn remove_user_from_project(
+    async fn remove_project_member(
         &self,
-        request: Request<RemoveUserFromProjectRequest>,
-    ) -> Result<Response<RemoveUserFromProjectResponse>, Status> {
+        request: Request<RemoveProjectMemberRequest>,
+    ) -> Result<Response<RemoveProjectMemberResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
         let user_id = UserId::new(&required(req.user_id, "user_id")?);
@@ -274,6 +286,6 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        Ok(Response::new(RemoveUserFromProjectResponse {}))
+        Ok(Response::new(RemoveProjectMemberResponse {}))
     }
 }
