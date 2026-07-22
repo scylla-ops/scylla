@@ -39,8 +39,8 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobEntity>[] {
       accessorKey: 'status',
       header: () => <Trans>Status</Trans>,
       cell: ({ row }) => <JobStatus job={row.original} />,
-      size: 160,
-      minSize: 140,
+      size: 220,
+      minSize: 200,
     },
     {
       accessorKey: 'id',
@@ -91,8 +91,8 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobEntity>[] {
           }}
         />
       ),
-      size: 100,
-      minSize: 80,
+      size: 120,
+      minSize: 100,
     },
   ];
 }

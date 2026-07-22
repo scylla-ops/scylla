@@ -12,6 +12,7 @@ const buildTheme = (hasError: boolean) => {
     '&': {
       borderRadius: '0.75rem',
       overflow: 'hidden',
+      maxWidth: '100%',
       border: `1px solid ${hasError ? 'var(--destructive)' : 'transparent'}`,
       transition: 'border-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out',
     },

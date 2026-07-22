@@ -46,6 +46,13 @@ interface DataTableProps<TData, TValue> {
   isRowExpanded?: (row: TData) => boolean;
   alignColumnsCenter?: boolean;
   alignRowsCenter?: boolean;
+  /**
+   * Use a fixed table layout so the table honours its `w-full` width instead of
+   * growing to fit cell content. Needed when a cell (e.g. expanded row content)
+   * can be wider than the viewport and should scroll internally rather than
+   * widening the whole table.
+   */
+  tableLayoutFixed?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -58,6 +65,7 @@ export function DataTable<TData, TValue>({
   isRowExpanded,
   alignRowsCenter = false,
   alignColumnsCenter = false,
+  tableLayoutFixed = false,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -68,7 +76,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className='w-full h-full border border-slate-200 bg-white shadow-sm rounded-xl overflow-auto'>
-      <table className='w-full caption-bottom text-sm relative'>
+      <table className={cn('w-full caption-bottom text-sm relative', tableLayoutFixed && 'table-fixed')}>
         <TableHeader className='bg-slate-50 sticky top-0 z-10'>
           {table.getHeaderGroups().map(headerGroup => (
             <TableRow
