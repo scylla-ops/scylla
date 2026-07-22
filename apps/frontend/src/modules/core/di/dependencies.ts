@@ -8,7 +8,7 @@ import { UserModule } from '@/modules/features/user/di/user.module.ts';
 import { AppsModule } from '@/modules/features/apps/di/apps.module.ts';
 import { AgentsModule } from '@/modules/features/agents/di/agents.module.ts';
 import { SecretModule } from '@/modules/features/secret/di/secret.module.ts';
-import { PermissonModule } from '@/modules/features/permission/di/permisson.module.ts';
+import { PermissonModule } from '@/modules/features/role/di/permisson.module.ts';
 import { TriggersModule } from '@/modules/features/triggers/di/triggers.module.ts';
 
 export const dependencies = {

@@ -19,6 +19,7 @@ import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx'
 import { SecretPage } from '@/modules/features/secret/presentation/ui/Secret.page.tsx';
 import { AgentsPage } from '@/modules/features/agents/presentation/ui/Agents.page.tsx';
 import { AgentDetailsPage } from '@/modules/features/agents/presentation/ui/AgentDetails.page.tsx';
+import { RolesPage } from '@/modules/features/role/presentation/ui/Roles.page.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -146,6 +147,13 @@ export const CoreRouter = createBrowserRouter([
                     },
                   },
                 ],
+              },
+              {
+                path: 'roles',
+                element: <RolesPage />,
+                handle: {
+                  breadcrumb: () => 'Roles',
+                },
               },
             ],
           },

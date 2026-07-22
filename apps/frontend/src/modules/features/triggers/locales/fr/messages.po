@@ -13,6 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: revealed.name
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:98
+msgid "{0} webhook secret"
+msgstr ""
+
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
 #~ msgid "5-field cron (min hour day month weekday), evaluated in UTC."
 #~ msgstr ""
@@ -41,6 +46,10 @@ msgstr ""
 msgid "Add input"
 msgstr ""
 
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:103
+msgid "Add this signing secret to your webhook sender's HMAC configuration."
+msgstr ""
+
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:77
 msgid "at"
 msgstr ""
@@ -56,6 +65,10 @@ msgstr ""
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
 #~ msgid "Copied!"
 #~ msgstr ""
+
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:99
+msgid "Copy the secret below — it is shown only once."
+msgstr ""
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:33
 msgid "Copy url"

@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:32
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:33
 msgid "Add a description..."
 msgstr ""
 
@@ -34,7 +34,7 @@ msgstr "Créer le projet"
 #~ msgstr "Création en cours..."
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:35
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:31
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:32
 msgid "Description"
 msgstr ""
 
@@ -50,7 +50,7 @@ msgstr "ex. Mon projet"
 msgid "Edit"
 msgstr ""
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:56
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:58
 msgid "Edit project"
 msgstr ""
 
@@ -95,11 +95,11 @@ msgstr "Nom du projet"
 #~ msgid "Project name is required and you must select an organization."
 #~ msgstr "Le nom du projet est requis et vous devez sélectionner une organisation."
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:60
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:62
 msgid "Save"
 msgstr ""
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:61
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:63
 msgid "Saving..."
 msgstr ""
 
@@ -115,7 +115,7 @@ msgstr ""
 msgid "Select an organization from the sidebar to view its projects"
 msgstr "Sélectionnez une organisation dans la barre latérale pour voir ses projets"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:57
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:59
 msgid "Update the project name and description."
 msgstr ""
 
