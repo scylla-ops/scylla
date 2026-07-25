@@ -1,17 +1,52 @@
 import { Trans } from '@lingui/react/macro';
+import { Badge } from '@shadcn';
 import { ScrollArea } from '@shadcn/scroll-area.tsx';
-import { PrincipalKind } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { AppWindow, User, X } from 'lucide-react';
+import { AppWindow, Building2, FolderGit2, Globe, User, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
-import { useRoleAssignees } from '@/modules/features/role/presentation/hooks/use-role-assignees.ts';
+import { PermissionScope, PrincipalKind } from '@/modules/features/role/domain/structs/permission.struct.ts';
 import type { RoleEntity } from '@/modules/features/role/domain/entities/role.entity.ts';
+import { useRoleAssignees } from '@/modules/features/role/presentation/hooks/use-role-assignees.ts';
+import {
+  useGrantTargetLabels,
+  type GrantTargetLabel,
+} from '@/modules/features/role/presentation/hooks/use-grant-target-labels.ts';
 import GrantCreator from '@/modules/features/role/presentation/ui/components/role-detail/GrantCreator.tsx';
 
 interface RoleDetailGrantsProps {
   role: RoleEntity;
 }
+
+const scopeIcon: Record<PermissionScope, LucideIcon> = {
+  [PermissionScope.SYSTEM]: Globe,
+  [PermissionScope.ORGANIZATION]: Building2,
+  [PermissionScope.PROJECT]: FolderGit2,
+  [PermissionScope.UNSPECIFIED]: Globe,
+};
+
+/** The scope target of a grant, resolved to a name, shown as an icon chip. */
+const ScopeTargetBadge = ({
+  scope,
+  target,
+}: {
+  scope: PermissionScope;
+  target: GrantTargetLabel;
+}) => {
+  const Icon = scopeIcon[scope] ?? Globe;
+  return (
+    <Badge variant='secondary' className='gap-1 font-normal max-w-full'>
+      <Icon className='size-3 shrink-0' />
+      <span className='truncate'>
+        {target.organizationName ? `${target.organizationName} / ` : ''}
+        {target.name}
+      </span>
+    </Badge>
+  );
+};
+
 export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
   const { assignees, removeAssignee } = useRoleAssignees(role);
+  const { labelFor } = useGrantTargetLabels(role.scope);
 
   return (
     <section className='flex flex-col gap-2 min-h-0'>
@@ -31,6 +66,7 @@ export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
           <ul className='flex flex-col gap-2 pr-2'>
             {assignees.map(({ grant, label }) => {
               const isUser = grant.principal.kind === PrincipalKind.USER;
+              const target = labelFor(grant.scopeId);
               return (
                 <li
                   key={grant.id}
@@ -43,13 +79,9 @@ export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
                       <AppWindow className='size-4 text-primary' />
                     )}
                   </div>
-                  <div className='flex flex-col items-start min-w-0'>
-                    <p className='font-medium text-foreground truncate'>
-                      {label} -{'>'} {grant.scopeId.length == 0 ? 'System' : grant.scopeId}
-                    </p>
-                    <p className='font-mono text-xs text-muted-foreground truncate'>
-                      {grant.principal.id}
-                    </p>
+                  <div className='flex flex-col items-start gap-1 min-w-0'>
+                    <p className='font-medium text-foreground truncate max-w-full'>{label}</p>
+                    <ScopeTargetBadge scope={role.scope} target={target} />
                   </div>
                   <IconButton
                     icon={X}
