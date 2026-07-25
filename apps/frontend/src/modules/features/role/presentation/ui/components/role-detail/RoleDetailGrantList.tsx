@@ -1,10 +1,6 @@
 import { Trans } from '@lingui/react/macro';
-import { Button } from '@shadcn';
 import { ScrollArea } from '@shadcn/scroll-area.tsx';
-import {
-  PermissionScope,
-  PrincipalKind,
-} from '@/modules/features/role/domain/structs/permission.struct.ts';
+import { PrincipalKind } from '@/modules/features/role/domain/structs/permission.struct.ts';
 import { AppWindow, User, X } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
 import { useRoleAssignees } from '@/modules/features/role/presentation/hooks/use-role-assignees.ts';
@@ -15,7 +11,7 @@ interface RoleDetailGrantsProps {
   role: RoleEntity;
 }
 export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
-  const { assignees, assignableUsers, addUser, removeAssignee, isAdding } = useRoleAssignees(role);
+  const { assignees, removeAssignee } = useRoleAssignees(role);
 
   return (
     <section className='flex flex-col gap-2 min-h-0'>
@@ -24,9 +20,7 @@ export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
           <Trans>Grants</Trans> ({assignees.length})
         </h3>
 
-        <div className='flex items-center justify-end p-4'>
-          <GrantCreator scope={role.scope} />
-        </div>
+        <GrantCreator role={role} />
       </div>
       {assignees.length === 0 ? (
         <p className='rounded-lg border border-dashed border-slate-200 py-6 text-center text-sm text-muted-foreground'>
