@@ -103,8 +103,7 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
 
   const handleSubmit = async () => {
     if (!isValid) return;
-    const scopeIds =
-      role.scope === PermissionScope.SYSTEM ? [''] : [...selected.keys()];
+    const scopeIds = role.scope === PermissionScope.SYSTEM ? [''] : [...selected.keys()];
     try {
       await Promise.all(
         scopeIds.map(scopeId =>
@@ -116,11 +115,7 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
           }),
         ),
       );
-      toast.success(
-        scopeIds.length > 1
-          ? t`${scopeIds.length} grants created`
-          : t`Grant created`,
-      );
+      toast.success(scopeIds.length > 1 ? t`${scopeIds.length} grants created` : t`Grant created`);
       setOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t`Failed to create grant`);
@@ -201,14 +196,16 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
                   {[...selected.entries()].map(([id, name]) => (
                     <Badge key={id} variant='secondary' className='gap-1 pr-1'>
                       {name}
-                      <button
+                      <Button
+                        variant={'outline'}
+                        size={'xs'}
                         type='button'
                         disabled={isPending}
                         className='rounded hover:text-destructive'
                         onClick={() => toggle({ id, name })}
                       >
                         <X className='size-3' />
-                      </button>
+                      </Button>
                     </Badge>
                   ))}
                 </div>
@@ -244,12 +241,7 @@ interface TargetsProps {
   onToggle: (option: TargetOption) => void;
 }
 
-const OrganizationTargets = ({
-  disabled,
-  selected,
-  alreadyGranted,
-  onToggle,
-}: TargetsProps) => {
+const OrganizationTargets = ({ disabled, selected, alreadyGranted, onToggle }: TargetsProps) => {
   const { organizations, isLoading } = useOrganizations();
   const options: TargetOption[] = (organizations ?? []).map(org => ({
     id: idValue(org.organizationId),

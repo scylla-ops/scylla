@@ -33,6 +33,7 @@ import {
   permissionName,
   scopeName,
 } from '@/modules/features/role/presentation/utils/authz-labels.ts';
+import { PERMISSIONS_BY_SCOPE } from '@/modules/features/role/presentation/utils/permission-mapping.ts';
 
 type AccessKind = 'fullControl' | 'restricted';
 
@@ -80,8 +81,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
       return next;
     });
 
-  const isValid =
-    name.trim().length > 0 && (accessKind === 'fullControl' || permissions.size > 0);
+  const isValid = name.trim().length > 0 && (accessKind === 'fullControl' || permissions.size > 0);
   const isPending = createRole.isPending || updateRole.isPending;
 
   const buildAccess = (): AccessSpec =>
@@ -209,7 +209,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
               </div>
               <ScrollArea className='h-56 rounded-lg border border-slate-200 p-2'>
                 <div className='flex flex-col gap-0.5'>
-                  {ALL_PERMISSIONS.map(permission => (
+                  {PERMISSIONS_BY_SCOPE.get(scope)?.map(permission => (
                     <label
                       key={permission}
                       className='flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer hover:bg-slate-50'
