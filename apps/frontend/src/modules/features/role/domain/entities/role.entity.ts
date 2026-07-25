@@ -14,9 +14,9 @@ export type RoleOrigin =
   | { kind: 'unknown' };
 
 export interface RoleEntity {
-  id: string;
-  name: string;
-  description: string;
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
 
   /**
    * The scope kind a grant of this role must bind to. todo: see if necessary in the entity
