@@ -25,7 +25,7 @@ export const RoleDetailPanel = ({ role, onEdit }: RoleDetailPanelProps) => {
   }
 
   return (
-    <div className='flex h-full flex-col gap-6 overflow-y-auto'>
+    <div className='flex h-full flex-col gap-6 overflow-y-auto p-4'>
       <RoleDetailHeader role={role} onEdit={onEdit} />
       <RoleDetailPermissions role={role} />
       <RoleDetailGrantList role={role} />

@@ -4,7 +4,10 @@ import { ScrollArea } from '@shadcn/scroll-area.tsx';
 import { AppWindow, Building2, FolderGit2, Globe, User, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
-import { PermissionScope, PrincipalKind } from '@/modules/features/role/domain/structs/permission.struct.ts';
+import {
+  PermissionScope,
+  PrincipalKind,
+} from '@/modules/features/role/domain/structs/permission.struct.ts';
 import type { RoleEntity } from '@/modules/features/role/domain/entities/role.entity.ts';
 import { useRoleAssignees } from '@/modules/features/role/presentation/hooks/use-role-assignees.ts';
 import {

@@ -28,7 +28,6 @@ import {
 } from '@/modules/features/role/domain/structs/permission.struct.ts';
 import { useRoles } from '@/modules/features/role/presentation/hooks/use-roles.ts';
 import {
-  ALL_PERMISSIONS,
   ALL_SCOPES,
   permissionName,
   scopeName,
@@ -154,7 +153,13 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
             <Select
               value={String(scope)}
               disabled={isEdit || isPending}
-              onValueChange={value => setScope(Number(value))}
+              onValueChange={value => {
+                const next = Number(value) as PermissionScope;
+                setScope(next);
+                // Drop any selected permissions that aren't coherent at the new scope.
+                const allowed = new Set(PERMISSIONS_BY_SCOPE.get(next) ?? []);
+                setPermissions(prev => new Set([...prev].filter(p => allowed.has(p))));
+              }}
             >
               <SelectTrigger id='role-scope' className='w-full'>
                 <SelectValue />

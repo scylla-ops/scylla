@@ -66,7 +66,9 @@ export const RolesPage = () => {
                 active={role.id === activeRoleId}
                 selected={isSelected(role.id)}
                 onOpen={() => setActiveRoleId(role.id)}
-                onToggleSelect={() => select(role.id)}
+                onToggleSelect={() => {
+                  select(role.id);
+                }}
               />
             ))
           )}

@@ -34,16 +34,10 @@ export const RoleListItem = ({
       }
       sections={[
         {
-          width: '28px',
+          width: '20px',
           noSeparator: true,
           content: (
-            <div
-              className='flex items-center justify-center'
-              onClick={e => {
-                e.stopPropagation();
-                onToggleSelect();
-              }}
-            >
+            <div className='flex items-center justify-center' onClick={e => e.stopPropagation()}>
               <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
             </div>
           ),
@@ -52,13 +46,13 @@ export const RoleListItem = ({
           className: 'flex-1',
           noSeparator: true,
           content: (
-            <div className='flex items-center gap-3 min-w-0'>
+            <div className='flex items-center gap-3 w-full min-w-0 overflow-hidden mr-4'>
               <div className='flex size-9 items-center justify-center rounded-lg bg-primary/10 shrink-0'>
                 <ShieldCheck className='size-4 text-primary' />
               </div>
-              <div className='flex flex-col items-start min-w-0'>
-                <p className='font-semibold text-foreground truncate'>{role.name}</p>
-                <p className='text-xs text-muted-foreground truncate'>
+              <div className='flex flex-col items-start min-w-0 flex-1'>
+                <p className='font-semibold text-foreground truncate w-full'>{role.name}</p>
+                <p className='text-xs text-muted-foreground truncate w-full'>
                   {role.description || <Trans>No description</Trans>}
                 </p>
               </div>
@@ -66,10 +60,10 @@ export const RoleListItem = ({
           ),
         },
         {
-          width: '150px',
+          width: 'fit-content',
           noSeparator: true,
           content: (
-            <div className='flex items-center justify-end gap-1.5'>
+            <div className='flex items-center  gap-1.5'>
               <Badge variant='secondary'>{scopeName(role.scope)}</Badge>
               <Badge variant='outline'>
                 <Trans>{memberCount} members</Trans>
