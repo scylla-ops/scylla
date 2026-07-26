@@ -21,6 +21,19 @@ import { messages as appsMessages } from '@/modules/features/apps/locales/en/mes
 import { messages as agentsMessages } from '@/modules/features/agents/locales/en/messages.ts';
 import { messages as secretMessages } from '@/modules/features/secret/locales/en/messages.ts';
 import { messages as triggersMessages } from '@/modules/features/triggers/locales/en/messages.ts';
+import { messages as loginFrMessages } from '@/modules/features/login/locales/fr/messages.ts';
+import { messages as projectFrMessages } from '@/modules/features/project/locales/fr/messages.ts';
+import { messages as pipelineFrMessages } from '@/modules/features/pipeline/locales/fr/messages.ts';
+import { messages as marketplaceFrMessages } from '@/modules/features/marketplace/locales/fr/messages.ts';
+import { messages as organizationFrMessages } from '@/modules/features/organization/locales/fr/messages.ts';
+import { messages as userFrMessages } from '@/modules/features/user/locales/fr/messages.ts';
+import { messages as sharedFrMessages } from '@/modules/shared/locales/fr/messages.ts';
+import { messages as layoutFrMessages } from '@/modules/layout/locales/fr/messages.ts';
+import { messages as jobFrMessages } from '@/modules/features/jobs/locales/fr/messages.ts';
+import { messages as appsFrMessages } from '@/modules/features/apps/locales/fr/messages.ts';
+import { messages as agentsFrMessages } from '@/modules/features/agents/locales/fr/messages.ts';
+import { messages as secretFrMessages } from '@/modules/features/secret/locales/fr/messages.ts';
+import { messages as triggersFrMessages } from '@/modules/features/triggers/locales/fr/messages.ts';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
@@ -41,6 +54,21 @@ i18n.load('en', {
   ...agentsMessages,
   ...secretMessages,
   ...triggersMessages,
+});
+i18n.load('fr', {
+  ...loginFrMessages,
+  ...userFrMessages,
+  ...projectFrMessages,
+  ...pipelineFrMessages,
+  ...marketplaceFrMessages,
+  ...organizationFrMessages,
+  ...sharedFrMessages,
+  ...jobFrMessages,
+  ...appsFrMessages,
+  ...layoutFrMessages,
+  ...agentsFrMessages,
+  ...secretFrMessages,
+  ...triggersFrMessages,
 });
 initializeAppLocale();
 
