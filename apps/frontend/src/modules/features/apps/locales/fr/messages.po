@@ -13,6 +13,17 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: app.name
+#. placeholder {1}: created.credential.label
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:145
+msgid "{0} · {1} credentials"
+msgstr ""
+
+#. placeholder {0}: created.app.name
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:118
+msgid "{0} credentials"
+msgstr ""
+
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:58
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:74
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:110
@@ -38,8 +49,8 @@ msgid "Apps are machine credentials. Create one to let an automation authenticat
 msgstr "Les apps sont des identifiants machine. Créez-en une pour qu'une automatisation s'authentifie auprès de l'API Scylla."
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:151
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:141
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:166
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:148
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:177
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -50,6 +61,11 @@ msgstr "ci-runner"
 #: src/modules/features/apps/presentation/ui/components/AppCard.tsx:61
 msgid "Copy id"
 msgstr "Copier l'id"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:119
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:149
+msgid "Copy the secret below — it is shown only once."
+msgstr ""
 
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:111
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:137
@@ -75,13 +91,13 @@ msgstr "Identifiants pour authentifier cette app. Désactiver coupe les sessions
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:80
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:159
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:149
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:156
 #: src/modules/features/apps/presentation/ui/components/AppCard.tsx:65
 msgid "Delete"
 msgstr "Supprimer"
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:143
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:133
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:140
 msgid "Delete app?"
 msgstr "Supprimer l'app ?"
 
@@ -140,11 +156,11 @@ msgstr "Aucun secret. Créez-en un pour que cette app puisse s'authentifier."
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:174
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:185
 msgid "Revoke"
 msgstr "Révoquer"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:155
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:166
 msgid "Revoke secret?"
 msgstr "Révoquer le secret ?"
 
@@ -160,15 +176,20 @@ msgstr "Service"
 msgid "Status"
 msgstr "Statut"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:158
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:169
 msgid "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
 msgstr "Supprime définitivement le secret et coupe immédiatement toute session qui l'utilise. Irréversible."
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:146
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:136
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:143
 msgid "This revokes the app's credentials. Cannot be undone."
 msgstr "Cela révoque les identifiants de l'app. Irréversible."
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:122
 msgid "Updated"
 msgstr "Mis à jour le"
+
+#: src/modules/features/apps/presentation/ui/Apps.page.tsx:123
+#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:153
+msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
+msgstr ""

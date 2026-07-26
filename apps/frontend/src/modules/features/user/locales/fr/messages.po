@@ -15,11 +15,11 @@ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:36
 msgid "Actions"
-msgstr ""
+msgstr "Actions"
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:151
 msgid "Active account"
-msgstr ""
+msgstr "Compte actif"
 
 #: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
 #~ msgid "Back"
@@ -27,35 +27,35 @@ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
 msgid "Create a new user"
-msgstr ""
+msgstr "Créer un nouvel utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:58
 msgid "Create User"
-msgstr ""
+msgstr "Créer l’utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:31
 msgid "Created at"
-msgstr ""
+msgstr "Créé le"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:25
 msgid "e.g., john.doe"
-msgstr ""
+msgstr "ex. john.doe"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:32
 msgid "Enter a password"
-msgstr ""
+msgstr "Saisissez un mot de passe"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:55
 msgid "Enter a username and password for the new user."
-msgstr ""
+msgstr "Saisissez un nom d’utilisateur et un mot de passe pour le nouvel utilisateur."
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:95
 msgid "Error loading user information"
-msgstr ""
+msgstr "Erreur lors du chargement des informations utilisateur"
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:75
 msgid "Loading user information..."
-msgstr ""
+msgstr "Chargement des informations utilisateur..."
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:50
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:70
@@ -66,11 +66,11 @@ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:50
 msgid "New user"
-msgstr ""
+msgstr "Nouvel utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:31
 msgid "Password"
-msgstr ""
+msgstr "Mot de passe"
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
 msgid "User"
@@ -81,19 +81,19 @@ msgstr ""
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:87
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:136
 msgid "User information"
-msgstr ""
+msgstr "Informations utilisateur"
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:55
 msgid "User information not available"
-msgstr ""
+msgstr "Informations utilisateur indisponibles"
 
 #: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:17
 msgid "User settings"
-msgstr ""
+msgstr "Paramètres utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
 msgid "Username"
-msgstr ""
+msgstr "Nom d’utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
 #~ msgid "Username and password are required."
@@ -101,7 +101,7 @@ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "View"
-msgstr ""
+msgstr "Voir"
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
 #~ msgid "You cannot delete your own account."

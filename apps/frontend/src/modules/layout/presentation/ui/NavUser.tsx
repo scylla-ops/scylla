@@ -90,7 +90,9 @@ export function NavUser() {
             >
               <div className='w-full flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                 <SettingsIcon className='size-4' />
-                <span>Settings</span>
+                <span>
+                  <Trans>Settings</Trans>
+                </span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

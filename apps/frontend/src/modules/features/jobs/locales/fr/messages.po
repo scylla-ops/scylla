@@ -15,7 +15,7 @@ msgstr ""
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:77
 msgid "Actions"
-msgstr ""
+msgstr "Actions"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:30
 msgid "agent disconnected mid-run"
@@ -27,35 +27,35 @@ msgstr "agent déconnecté en cours d'exécution"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:6
 msgid "Copy ID"
-msgstr ""
+msgstr "Copier l’ID"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:68
 msgid "Created"
-msgstr ""
+msgstr "Créé"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:83
 msgid "Delete"
-msgstr ""
+msgstr "Supprimer"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:61
 msgid "Duration"
-msgstr ""
+msgstr "Durée"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:47
 msgid "Job ID"
-msgstr ""
+msgstr "ID du job"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:41
 msgid "Job Logs"
-msgstr ""
+msgstr "Journaux de job"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:44
 msgid "No jobs found"
-msgstr ""
+msgstr "Aucun job trouvé"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:77
 msgid "Open logs"
-msgstr ""
+msgstr "Ouvrir les journaux"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:81
 #~ msgid "OpenJobLog"
@@ -67,24 +67,24 @@ msgstr "en file — en attente d'un agent"
 
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:65
 msgid "Refresh"
-msgstr ""
+msgstr "Actualiser"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "Run your pipeline to create the first job"
-msgstr ""
+msgstr "Exécutez votre pipeline pour créer le premier job"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:40
 msgid "Status"
-msgstr ""
+msgstr "Statut"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:56
 msgid "Streaming live output"
-msgstr ""
+msgstr "Flux de sortie en direct"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
 msgid "Timeline"
-msgstr ""
+msgstr "Chronologie"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:73
 msgid "View"
-msgstr ""
+msgstr "Voir"

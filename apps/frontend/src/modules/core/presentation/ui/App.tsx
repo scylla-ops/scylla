@@ -22,6 +22,7 @@ import { messages as triggersMessages } from '@/modules/features/triggers/locale
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Toaster } from '@shadcn/sonner.tsx';
+import { initializeAppLocale } from '@shared/presentation/utils/i18n.ts';
 
 i18n.load('en', {
   ...loginMessages,
@@ -38,7 +39,7 @@ i18n.load('en', {
   ...secretMessages,
   ...triggersMessages,
 });
-i18n.activate('en');
+initializeAppLocale();
 
 //todo: maybe in production, console error only network or non scylla error ?
 //todo: domain errors should be only be toasted by module itself
