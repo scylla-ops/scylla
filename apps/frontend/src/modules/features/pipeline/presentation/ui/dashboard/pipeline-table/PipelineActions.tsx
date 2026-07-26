@@ -11,6 +11,8 @@ import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
 import { useNewFeature } from '@shared/presentation/hooks/use-new-feature.ts';
+import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
@@ -40,6 +42,13 @@ export const PipelineActions = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
   const { isNew: isTriggersNew } = useNewFeature('triggers');
+
+  // Gate each action by the permission it needs, in the current project context.
+  const canRun = useCan(Permission.RUN_PIPELINE);
+  const canEdit = useCan(Permission.UPDATE_PIPELINE);
+  const canDuplicate = useCan(Permission.CREATE_PIPELINE);
+  const canManageTriggers = useCan(Permission.MANAGE_TRIGGERS);
+  const showTriggers = !!onViewTriggers && canManageTriggers;
 
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
@@ -72,25 +81,31 @@ export const PipelineActions = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-40'>
-            <DropdownMenuItem onClick={onRun}>
-              <PlayIcon className='w-4 h-4 mr-2' />
-              <Trans>Run</Trans>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onEdit}>
-              <EditIcon className='w-4 h-4 mr-2' />
-              <Trans>Edit</Trans>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className='w-4 h-4 mr-2' />
-              <Trans>Duplicate</Trans>
-            </DropdownMenuItem>
+            {canRun && (
+              <DropdownMenuItem onClick={onRun}>
+                <PlayIcon className='w-4 h-4 mr-2' />
+                <Trans>Run</Trans>
+              </DropdownMenuItem>
+            )}
+            {canEdit && (
+              <DropdownMenuItem onClick={onEdit}>
+                <EditIcon className='w-4 h-4 mr-2' />
+                <Trans>Edit</Trans>
+              </DropdownMenuItem>
+            )}
+            {canDuplicate && (
+              <DropdownMenuItem onClick={onDuplicate}>
+                <Copy className='w-4 h-4 mr-2' />
+                <Trans>Duplicate</Trans>
+              </DropdownMenuItem>
+            )}
             {onViewJobs && (
               <DropdownMenuItem onClick={onViewJobs}>
                 <ListChecks className='w-4 h-4 mr-2' />
                 View Jobs
               </DropdownMenuItem>
             )}
-            {onViewTriggers && (
+            {showTriggers && (
               <DropdownMenuItem onClick={onViewTriggers}>
                 <Zap className='w-4 h-4 mr-2' />
                 <Trans>Triggers</Trans>
@@ -114,29 +129,33 @@ export const PipelineActions = ({
         </DropdownMenu>
       ) : (
         <>
-          <IconButton
-            icon={isRunning ? Loader2 : PlayIcon}
-            tooltip={<Trans>Run</Trans>}
-            onClick={onRun}
-            disabled={isRunning}
-            iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
-          />
+          {canRun && (
+            <IconButton
+              icon={isRunning ? Loader2 : PlayIcon}
+              tooltip={<Trans>Run</Trans>}
+              onClick={onRun}
+              disabled={isRunning}
+              iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
+            />
+          )}
 
-          <IconButton icon={EditIcon} tooltip={'Edit pipeline'} onClick={onEdit} />
+          {canEdit && <IconButton icon={EditIcon} tooltip={'Edit pipeline'} onClick={onEdit} />}
 
-          <IconButton
-            icon={isDuplicating ? Loader2 : Copy}
-            tooltip={<Trans>Duplicate</Trans>}
-            onClick={onDuplicate}
-            disabled={isDuplicating}
-            iconClassName={isDuplicating ? 'animate-spin' : undefined}
-          />
+          {canDuplicate && (
+            <IconButton
+              icon={isDuplicating ? Loader2 : Copy}
+              tooltip={<Trans>Duplicate</Trans>}
+              onClick={onDuplicate}
+              disabled={isDuplicating}
+              iconClassName={isDuplicating ? 'animate-spin' : undefined}
+            />
+          )}
 
           {onViewJobs && (
             <IconButton icon={ListChecks} tooltip={<Trans>View Jobs</Trans>} onClick={onViewJobs} />
           )}
 
-          {onViewTriggers && (
+          {showTriggers && (
             <div className='relative'>
               <IconButton icon={Zap} tooltip={<Trans>Triggers</Trans>} onClick={onViewTriggers} />
               {isTriggersNew && (

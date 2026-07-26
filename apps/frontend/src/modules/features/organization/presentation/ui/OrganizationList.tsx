@@ -14,6 +14,8 @@ import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/Co
 import { Trans } from '@lingui/react/macro';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
+import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
+import { Can } from '@/modules/features/role/presentation/ui/authorization/Can.tsx';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
@@ -93,43 +95,58 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
               />
             </div>
             <div className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
-              <IconButton
-                icon={Users}
-                tooltip={<Trans>Members</Trans>}
-                onClick={e => {
-                  e.stopPropagation();
-                  setMembersOrg({
-                    id: idValue(organisation.organizationId),
-                    name: organisation.name,
-                  });
-                }}
-                className='h-7 w-7'
-                iconClassName='h-3.5 w-3.5'
-              />
-              <IconButton
-                icon={Pencil}
-                tooltip={<Trans>Edit</Trans>}
-                onClick={e => {
-                  e.stopPropagation();
-                  setEditOrg({
-                    id: idValue(organisation.organizationId),
-                    name: organisation.name,
-                    description: organisation.description,
-                  });
-                }}
-                className='h-7 w-7'
-                iconClassName='h-3.5 w-3.5'
-              />
-              <IconButton
-                icon={Trash}
-                tooltip={<Trans>Delete</Trans>}
-                onClick={e => {
-                  e.stopPropagation();
-                  setDeleteOrgId(idValue(organisation.organizationId));
-                }}
-                className='h-7 w-7 hover:text-destructive hover:bg-destructive/10'
-                iconClassName='h-3.5 w-3.5'
-              />
+              <Can
+                permission={Permission.LIST_ORGANIZATION_MEMBERS}
+                target={{ organizationId: idValue(organisation.organizationId) }}
+              >
+                <IconButton
+                  icon={Users}
+                  tooltip={<Trans>Members</Trans>}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setMembersOrg({
+                      id: idValue(organisation.organizationId),
+                      name: organisation.name,
+                    });
+                  }}
+                  className='h-7 w-7'
+                  iconClassName='h-3.5 w-3.5'
+                />
+              </Can>
+              <Can
+                permission={Permission.UPDATE_ORGANIZATION}
+                target={{ organizationId: idValue(organisation.organizationId) }}
+              >
+                <IconButton
+                  icon={Pencil}
+                  tooltip={<Trans>Edit</Trans>}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setEditOrg({
+                      id: idValue(organisation.organizationId),
+                      name: organisation.name,
+                      description: organisation.description,
+                    });
+                  }}
+                  className='h-7 w-7'
+                  iconClassName='h-3.5 w-3.5'
+                />
+              </Can>
+              <Can
+                permission={Permission.DELETE_ORGANIZATION}
+                target={{ organizationId: idValue(organisation.organizationId) }}
+              >
+                <IconButton
+                  icon={Trash}
+                  tooltip={<Trans>Delete</Trans>}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setDeleteOrgId(idValue(organisation.organizationId));
+                  }}
+                  className='h-7 w-7 hover:text-destructive hover:bg-destructive/10'
+                  iconClassName='h-3.5 w-3.5'
+                />
+              </Can>
             </div>
           </div>
         </Wrapper>

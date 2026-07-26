@@ -1,7 +1,9 @@
 import { Pencil, ShieldCheck } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { Badge, Button } from '@shadcn';
+import { Badge } from '@shadcn';
 import type { RoleEntity } from '@/modules/features/role/domain/entities/role.entity.ts';
+import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
+import { PermissionButton } from '@/modules/features/role/presentation/ui/authorization/PermissionButton.tsx';
 import { scopeName } from '@/modules/features/role/presentation/utils/authz-labels.ts';
 
 interface RoleDetailHeaderProps {
@@ -35,14 +37,16 @@ export const RoleDetailHeader = ({ role, onEdit }: RoleDetailHeaderProps) => {
             </p>
           </div>
         </div>
-        <Button
+        <PermissionButton
+          permission={Permission.MANAGE_ROLES}
           variant='outline'
           disabled={role.origin.kind === 'builtin'}
           onClick={() => onEdit(role)}
+          deniedReason={<Trans>You don't have permission to edit roles.</Trans>}
         >
           <Pencil className='size-4' />
           <Trans>Edit</Trans>
-        </Button>
+        </PermissionButton>
       </div>
       <div className='flex flex-wrap gap-2'>
         <Badge variant='secondary'>{scopeName(role.scope)}</Badge>

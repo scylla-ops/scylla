@@ -23,9 +23,11 @@ import { Globe, Plus, X } from 'lucide-react';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 import type { RoleEntity } from '@/modules/features/role/domain/entities/role.entity.ts';
 import {
+  Permission,
   PermissionScope,
   PrincipalKind,
 } from '@/modules/features/role/domain/structs/permission.struct.ts';
+import { PermissionButton } from '@/modules/features/role/presentation/ui/authorization/PermissionButton.tsx';
 import { useGrants } from '@/modules/features/role/presentation/hooks/use-grants.ts';
 import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
@@ -101,6 +103,14 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
   const isValid = userId !== '' && (!needsTargets || selected.size > 0);
   const isPending = createGrant.isPending;
 
+  // Granting a role requires the "manage grants" permission for its scope.
+  const managePermission =
+    role.scope === PermissionScope.PROJECT
+      ? Permission.MANAGE_PROJECT_GRANTS
+      : role.scope === PermissionScope.ORGANIZATION
+        ? Permission.MANAGE_ORG_GRANTS
+        : Permission.MANAGE_SYSTEM_GRANTS;
+
   const handleSubmit = async () => {
     if (!isValid) return;
     const scopeIds = role.scope === PermissionScope.SYSTEM ? [''] : [...selected.keys()];
@@ -124,10 +134,15 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
 
   return (
     <>
-      <Button size='sm' onClick={() => setOpen(true)}>
+      <PermissionButton
+        permission={managePermission}
+        size='sm'
+        onClick={() => setOpen(true)}
+        deniedReason={<Trans>You don't have permission to grant this role.</Trans>}
+      >
         <Plus className='size-4' />
         <Trans>Add grant</Trans>
-      </Button>
+      </PermissionButton>
 
       <Dialog open={open} onOpenChange={value => !value && setOpen(false)}>
         <DialogContent className='max-w-lg flex flex-col max-h-[85vh]'>

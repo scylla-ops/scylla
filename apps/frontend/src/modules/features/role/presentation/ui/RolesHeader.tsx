@@ -5,7 +5,8 @@ type FeatureHeaderProps = Parameters<typeof FeatureHeader>[0];
 
 export type RolesHeaderProps = {
   count: number;
-  onNew: () => void;
+  /** Omit to hide the "Create role" button (e.g. the user can't manage roles). */
+  onNew?: () => void;
 } & Pick<
   FeatureHeaderProps,
   'selectedCount' | 'allSelected' | 'onSelectAll' | 'onClearSelection' | 'onDeleteSelection'

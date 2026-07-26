@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,6 +17,9 @@ import { Plus, User, UserPlus, X } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
 import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
 import { useOrganizationMembers } from '@/modules/features/organization/presentation/hooks/use-organization-members.ts';
+import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
+import { PermissionButton } from '@/modules/features/role/presentation/ui/authorization/PermissionButton.tsx';
+import { useCan } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
 
 interface OrganizationMembersDialogProps {
   open: boolean;
@@ -54,6 +56,7 @@ export const OrganizationMembersDialog = ({
   };
 
   const isBusy = addMember.isPending || removeMember.isPending;
+  const canRemove = useCan(Permission.REMOVE_ORGANIZATION_MEMBER, { organizationId });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,10 +99,17 @@ export const OrganizationMembersDialog = ({
               </SelectContent>
             </Select>
           </div>
-          <Button type='button' disabled={!selectedUserId || isBusy} onClick={handleAdd}>
+          <PermissionButton
+            type='button'
+            permission={Permission.ADD_ORGANIZATION_MEMBER}
+            target={{ organizationId }}
+            deniedReason={<Trans>You don't have permission to add members.</Trans>}
+            disabled={!selectedUserId || isBusy}
+            onClick={handleAdd}
+          >
             <Plus className='size-4' />
             <Trans>Add</Trans>
-          </Button>
+          </PermissionButton>
         </div>
 
         {/* Member list */}
@@ -130,8 +140,14 @@ export const OrganizationMembersDialog = ({
                   </div>
                   <IconButton
                     icon={X}
-                    tooltip={<Trans>Remove</Trans>}
-                    disabled={isBusy}
+                    tooltip={
+                      canRemove ? (
+                        <Trans>Remove</Trans>
+                      ) : (
+                        <Trans>You don't have permission to remove members.</Trans>
+                      )
+                    }
+                    disabled={isBusy || !canRemove}
                     className='ml-auto hover:text-destructive'
                     onClick={() => removeMember.mutate(member.userId)}
                   />
