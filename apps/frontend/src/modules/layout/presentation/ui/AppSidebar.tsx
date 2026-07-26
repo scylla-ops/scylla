@@ -26,11 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/modules/shared/presentation/ui/shadcn/dropdown-menu.tsx';
 import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
-import {
-  getCurrentLocale,
-  setAppLocale,
-  type SupportedLocale,
-} from '@shared/presentation/utils/i18n.ts';
+import { setAppLocale, type SupportedLocale } from '@shared/presentation/utils/i18n.ts';
 
 const useNavSections = (): NavSection[] => {
   const { t } = useLingui();
@@ -72,15 +68,12 @@ const useNavSections = (): NavSection[] => {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const organization = useContextStore(state => state.organization);
   const navSections = useNavSections();
-  const [currentLocale, setCurrentLocale] = React.useState<SupportedLocale>(() =>
-    getCurrentLocale(),
-  );
+  const currentLocale = (i18n.locale as SupportedLocale | undefined) ?? 'en';
 
   const handleLocaleChange = (locale: SupportedLocale) => {
-    setCurrentLocale(locale);
     setAppLocale(locale);
   };
 
@@ -111,15 +104,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant='ghost' size='sm' className='h-8 px-2'>
+              <Button type='button' variant='ghost' size='sm' className='h-8 px-2'>
                 {currentLocale === 'fr' ? 'FR' : 'EN'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end'>
-              <DropdownMenuItem onSelect={() => handleLocaleChange('en')}>English</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleLocaleChange('fr')}>
-                Français
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleLocaleChange('en')}>English</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleLocaleChange('fr')}>Français</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
