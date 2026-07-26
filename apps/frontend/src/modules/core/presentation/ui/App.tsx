@@ -7,7 +7,7 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
-import { Switch } from '@/modules/shared/presentation/ui/shadcn/switch.tsx';
+import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
 import { messages as projectMessages } from '@/modules/features/project/locales/en/messages.ts';
 import { messages as pipelineMessages } from '@/modules/features/pipeline/locales/en/messages.ts';
@@ -101,15 +101,20 @@ function ThemeToggle() {
   const isDark = resolvedTheme === 'dark';
 
   return (
-    <div className='fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-2 shadow-sm backdrop-blur'>
-      <Sun className='size-4 text-amber-500' />
-      <Switch
-        checked={isDark}
-        onCheckedChange={checked => setTheme(checked ? 'dark' : 'light')}
-        aria-label='Toggle dark mode'
-      />
-      <Moon className='size-4 text-slate-400' />
-    </div>
+    <Button
+      type='button'
+      variant='outline'
+      size='icon'
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label='Toggle dark mode'
+      className='fixed right-4 top-4 z-50 h-10 w-10 rounded-full border-border bg-background/90 shadow-sm backdrop-blur'
+    >
+      {isDark ? (
+        <Sun className='size-4 text-amber-500' />
+      ) : (
+        <Moon className='size-4 text-slate-600 dark:text-slate-300' />
+      )}
+    </Button>
   );
 }
 

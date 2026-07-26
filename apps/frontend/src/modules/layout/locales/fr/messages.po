@@ -18,11 +18,11 @@ msgstr ""
 msgid "{0}"
 msgstr "{0}"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:62
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:58
 msgid "Admin"
 msgstr "Admin"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:50
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:46
 msgid "Agents"
 msgstr "Agents"
 
@@ -30,7 +30,7 @@ msgstr "Agents"
 msgid "Create"
 msgstr "Créer"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:110
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:103
 msgid "Language"
 msgstr "Langue"
 
@@ -38,24 +38,24 @@ msgstr "Langue"
 msgid "Log out"
 msgstr "Se déconnecter"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:42
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:38
 msgid "Main"
 msgstr "Principal"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:55
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:51
 msgid "Marketplace"
 msgstr "Marketplace"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:91
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:95
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:84
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:88
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:45
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:41
 msgid "Projects"
 msgstr "Projets"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:94
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:87
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
@@ -67,7 +67,7 @@ msgstr "Paramètres"
 msgid "To get started, please create your first organization."
 msgstr "Pour commencer, veuillez créer votre première organisation."
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:65
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
 msgid "Users"
 msgstr "Utilisateurs"
 
