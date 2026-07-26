@@ -6,8 +6,8 @@ import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { useRunPipeline } from '@/modules/features/pipeline/presentation/hooks/use-run-pipeline.ts';
-import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { useCan } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 interface JobsHeaderProps {
   numberOfJobs: number;

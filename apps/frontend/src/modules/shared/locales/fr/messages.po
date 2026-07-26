@@ -29,7 +29,7 @@ msgstr ""
 #~ msgid "Add this signing secret to your webhook sender's HMAC configuration."
 #~ msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:44
+#: src/modules/shared/utils/toast-messages.ts:46
 msgid "Agent id copied"
 msgstr ""
 
@@ -41,7 +41,7 @@ msgstr ""
 msgid "An unexpected error occurred"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:48
+#: src/modules/shared/utils/toast-messages.ts:50
 msgid "App id copied"
 msgstr ""
 
@@ -54,7 +54,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
 msgid "Clear"
 msgstr ""
 
@@ -62,7 +62,7 @@ msgstr ""
 msgid "Continue"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:63
+#: src/modules/shared/utils/toast-messages.ts:65
 msgid "Copied"
 msgstr ""
 
@@ -82,7 +82,7 @@ msgstr ""
 msgid "Copy your secret"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:45
+#: src/modules/shared/utils/toast-messages.ts:47
 msgid "Could not copy — select the id manually"
 msgstr ""
 
@@ -94,7 +94,7 @@ msgstr ""
 msgid "Creating..."
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:108
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:126
 msgid "Delete"
 msgstr ""
 
@@ -110,15 +110,24 @@ msgstr ""
 msgid "From source"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:75
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
 msgid "in total"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:41
+#: src/modules/shared/utils/toast-messages.ts:43
 msgid "Job queued — no agent connected"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:114
+#: src/modules/shared/utils/toast-messages.ts:29
+msgid "Member added"
+msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:30
+msgid "Member removed"
+msgstr ""
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:137
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:143
 msgid "New {label}"
 msgstr ""
 
@@ -138,35 +147,35 @@ msgstr ""
 msgid "Organization updated"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:37
+#: src/modules/shared/utils/toast-messages.ts:39
 msgid "Pipeline created"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:38
+#: src/modules/shared/utils/toast-messages.ts:40
 msgid "Pipeline deleted"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:39
+#: src/modules/shared/utils/toast-messages.ts:41
 msgid "Pipeline edited"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:40
+#: src/modules/shared/utils/toast-messages.ts:42
 msgid "Pipeline ran"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:31
+#: src/modules/shared/utils/toast-messages.ts:33
 msgid "Project created"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:32
+#: src/modules/shared/utils/toast-messages.ts:34
 msgid "Project deleted"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:34
+#: src/modules/shared/utils/toast-messages.ts:36
 msgid "Project name is required and you must select an organization."
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:33
+#: src/modules/shared/utils/toast-messages.ts:35
 msgid "Project updated"
 msgstr ""
 
@@ -194,15 +203,15 @@ msgstr ""
 msgid "Run with Docker"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:51
+#: src/modules/shared/utils/toast-messages.ts:53
 msgid "Secret created"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:52
+#: src/modules/shared/utils/toast-messages.ts:54
 msgid "Secret deleted"
 msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:97
 msgid "Select all"
 msgstr ""
 
@@ -234,27 +243,27 @@ msgstr ""
 msgid "This action cannot be undone."
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:55
+#: src/modules/shared/utils/toast-messages.ts:57
 msgid "Trigger created"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:57
+#: src/modules/shared/utils/toast-messages.ts:59
 msgid "Trigger deleted"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:59
+#: src/modules/shared/utils/toast-messages.ts:61
 msgid "Trigger disabled"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:58
+#: src/modules/shared/utils/toast-messages.ts:60
 msgid "Trigger enabled"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:60
+#: src/modules/shared/utils/toast-messages.ts:62
 msgid "Trigger fired — run started"
 msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:56
+#: src/modules/shared/utils/toast-messages.ts:58
 msgid "Trigger updated"
 msgstr ""
 
@@ -284,6 +293,11 @@ msgstr ""
 
 #: src/modules/shared/utils/toast-messages.ts:22
 msgid "You cannot delete your own account."
+msgstr ""
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:128
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
+msgid "You don't have permission to do this."
 msgstr ""
 
 #: src/modules/shared/utils/scylla-result.ts:66

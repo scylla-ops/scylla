@@ -5,9 +5,9 @@ import { FeatureHeader } from '@shared/presentation/ui';
 import { useDeletePipeline } from '@/modules/features/pipeline/presentation/hooks/use-delete-pipeline.ts';
 import { Button } from '@shadcn';
 import { KeyIcon } from 'lucide-react';
-import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { useCan } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
-import { Can } from '@/modules/features/role/presentation/ui/authorization/Can.tsx';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
 
 interface PipelineDashboardHeaderProps {
   numberOfPipelines: number;

@@ -11,8 +11,8 @@ import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
 import { useNewFeature } from '@shared/presentation/hooks/use-new-feature.ts';
-import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { useCan } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;

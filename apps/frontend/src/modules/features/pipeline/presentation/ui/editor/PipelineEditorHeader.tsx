@@ -6,8 +6,8 @@ import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@shared/presentation/utils';
-import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { useCan } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 interface PipelineEditorHeaderProps {
   onSubmit: () => void;

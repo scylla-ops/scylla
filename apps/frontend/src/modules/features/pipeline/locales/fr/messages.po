@@ -15,7 +15,8 @@ msgstr ""
 #~ msgid "{0}"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:90
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:99
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:106
 msgid "{submitLabel}"
 msgstr ""
 
@@ -40,7 +41,7 @@ msgstr ""
 msgid "Add variable"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:28
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:31
 msgid "All changes saved"
 msgstr ""
 
@@ -61,7 +62,7 @@ msgstr ""
 #~ msgid "Back"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:55
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:63
 msgid "Blueprint"
 msgstr ""
 
@@ -98,12 +99,12 @@ msgstr ""
 #~ msgid "Define a new pipeline step. You can connect it to other nodes by dragging edges."
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:25
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:28
 msgid "Draft — not created yet"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:85
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:129
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:99
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:147
 msgid "Duplicate"
 msgstr ""
 
@@ -139,7 +140,7 @@ msgstr ""
 msgid "e.g., my-pipeline"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:81
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:93
 msgid "Edit"
 msgstr "Modifier"
 
@@ -186,8 +187,8 @@ msgstr ""
 #~ msgid "Modify the node properties."
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:110
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:156
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:125
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:175
 msgid "More options"
 msgstr "Plus d'options"
 
@@ -195,7 +196,7 @@ msgstr "Plus d'options"
 msgid "Name"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:31
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:37
 msgid "New pipeline"
 msgstr "Nouveau pipeline"
 
@@ -237,8 +238,8 @@ msgstr ""
 #~ msgid "relative to the job workspace"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:77
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:119
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:87
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:135
 msgid "Run"
 msgstr "Exécuter"
 
@@ -255,7 +256,7 @@ msgstr ""
 #~ msgid "Saved"
 #~ msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:26
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:29
 msgid "Saving…"
 msgstr ""
 
@@ -264,7 +265,7 @@ msgstr ""
 msgid "Script"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:52
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:60
 msgid "Scripting"
 msgstr ""
 
@@ -297,12 +298,12 @@ msgstr ""
 #~ msgid "This feature will be available soon"
 #~ msgstr "Cette fonctionnalité sera bientôt disponible"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:96
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:141
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:111
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:160
 msgid "Triggers"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:27
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:30
 msgid "Unsaved changes"
 msgstr ""
 
@@ -314,10 +315,23 @@ msgstr ""
 msgid "value"
 msgstr ""
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:136
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:155
 msgid "View Jobs"
 msgstr ""
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:289
 msgid "Working directory"
+msgstr ""
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:39
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:113
+msgid "You don't have permission to create pipelines."
+msgstr ""
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:41
+msgid "You don't have permission to delete pipelines."
+msgstr ""
+
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:115
+msgid "You don't have permission to edit this pipeline."
 msgstr ""

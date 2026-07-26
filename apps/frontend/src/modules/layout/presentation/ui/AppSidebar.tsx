@@ -25,8 +25,8 @@ import { useContextStore } from '@shared/presentation/stores/use-context.store.t
 import { useLingui } from '@lingui/react/macro';
 import type { NavSection } from '@/modules/layout/presentation/structs/nav-section.struct.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 const useNavSections = (): NavSection[] => {
   const orgName = useContextStore(state => state.organization.name);

@@ -14,8 +14,8 @@ import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/Co
 import { Trans } from '@lingui/react/macro';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
-import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { Can } from '@/modules/features/role/presentation/ui/authorization/Can.tsx';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
 
 interface OrganizationListProps {
   Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;

@@ -29,7 +29,7 @@ msgstr ""
 #~ msgid "Add this signing secret to your webhook sender's HMAC configuration."
 #~ msgstr "Add this signing secret to your webhook sender's HMAC configuration."
 
-#: src/modules/shared/utils/toast-messages.ts:44
+#: src/modules/shared/utils/toast-messages.ts:46
 msgid "Agent id copied"
 msgstr "Agent id copied"
 
@@ -41,7 +41,7 @@ msgstr "An error occurred"
 msgid "An unexpected error occurred"
 msgstr "An unexpected error occurred"
 
-#: src/modules/shared/utils/toast-messages.ts:48
+#: src/modules/shared/utils/toast-messages.ts:50
 msgid "App id copied"
 msgstr "App id copied"
 
@@ -54,7 +54,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
 msgid "Clear"
 msgstr "Clear"
 
@@ -62,7 +62,7 @@ msgstr "Clear"
 msgid "Continue"
 msgstr "Continue"
 
-#: src/modules/shared/utils/toast-messages.ts:63
+#: src/modules/shared/utils/toast-messages.ts:65
 msgid "Copied"
 msgstr "Copied"
 
@@ -82,7 +82,7 @@ msgstr "Copy"
 msgid "Copy your secret"
 msgstr "Copy your secret"
 
-#: src/modules/shared/utils/toast-messages.ts:45
+#: src/modules/shared/utils/toast-messages.ts:47
 msgid "Could not copy — select the id manually"
 msgstr "Could not copy — select the id manually"
 
@@ -94,7 +94,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:108
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:126
 msgid "Delete"
 msgstr "Delete"
 
@@ -110,15 +110,24 @@ msgstr "Error"
 msgid "From source"
 msgstr "From source"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:75
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
 msgid "in total"
 msgstr "in total"
 
-#: src/modules/shared/utils/toast-messages.ts:41
+#: src/modules/shared/utils/toast-messages.ts:43
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:114
+#: src/modules/shared/utils/toast-messages.ts:29
+msgid "Member added"
+msgstr "Member added"
+
+#: src/modules/shared/utils/toast-messages.ts:30
+msgid "Member removed"
+msgstr "Member removed"
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:137
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:143
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -138,35 +147,35 @@ msgstr "Organization deleted"
 msgid "Organization updated"
 msgstr "Organization updated"
 
-#: src/modules/shared/utils/toast-messages.ts:37
+#: src/modules/shared/utils/toast-messages.ts:39
 msgid "Pipeline created"
 msgstr "Pipeline created"
 
-#: src/modules/shared/utils/toast-messages.ts:38
+#: src/modules/shared/utils/toast-messages.ts:40
 msgid "Pipeline deleted"
 msgstr "Pipeline deleted"
 
-#: src/modules/shared/utils/toast-messages.ts:39
+#: src/modules/shared/utils/toast-messages.ts:41
 msgid "Pipeline edited"
 msgstr "Pipeline edited"
 
-#: src/modules/shared/utils/toast-messages.ts:40
+#: src/modules/shared/utils/toast-messages.ts:42
 msgid "Pipeline ran"
 msgstr "Pipeline ran"
 
-#: src/modules/shared/utils/toast-messages.ts:31
+#: src/modules/shared/utils/toast-messages.ts:33
 msgid "Project created"
 msgstr "Project created"
 
-#: src/modules/shared/utils/toast-messages.ts:32
+#: src/modules/shared/utils/toast-messages.ts:34
 msgid "Project deleted"
 msgstr "Project deleted"
 
-#: src/modules/shared/utils/toast-messages.ts:34
+#: src/modules/shared/utils/toast-messages.ts:36
 msgid "Project name is required and you must select an organization."
 msgstr "Project name is required and you must select an organization."
 
-#: src/modules/shared/utils/toast-messages.ts:33
+#: src/modules/shared/utils/toast-messages.ts:35
 msgid "Project updated"
 msgstr "Project updated"
 
@@ -194,15 +203,15 @@ msgstr "Run from a repo checkout"
 msgid "Run with Docker"
 msgstr "Run with Docker"
 
-#: src/modules/shared/utils/toast-messages.ts:51
+#: src/modules/shared/utils/toast-messages.ts:53
 msgid "Secret created"
 msgstr "Secret created"
 
-#: src/modules/shared/utils/toast-messages.ts:52
+#: src/modules/shared/utils/toast-messages.ts:54
 msgid "Secret deleted"
 msgstr "Secret deleted"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:97
 msgid "Select all"
 msgstr "Select all"
 
@@ -234,27 +243,27 @@ msgstr "The agent starts in the foreground: its logs show up right in the termin
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
 
-#: src/modules/shared/utils/toast-messages.ts:55
+#: src/modules/shared/utils/toast-messages.ts:57
 msgid "Trigger created"
 msgstr "Trigger created"
 
-#: src/modules/shared/utils/toast-messages.ts:57
+#: src/modules/shared/utils/toast-messages.ts:59
 msgid "Trigger deleted"
 msgstr "Trigger deleted"
 
-#: src/modules/shared/utils/toast-messages.ts:59
+#: src/modules/shared/utils/toast-messages.ts:61
 msgid "Trigger disabled"
 msgstr "Trigger disabled"
 
-#: src/modules/shared/utils/toast-messages.ts:58
+#: src/modules/shared/utils/toast-messages.ts:60
 msgid "Trigger enabled"
 msgstr "Trigger enabled"
 
-#: src/modules/shared/utils/toast-messages.ts:60
+#: src/modules/shared/utils/toast-messages.ts:62
 msgid "Trigger fired — run started"
 msgstr "Trigger fired — run started"
 
-#: src/modules/shared/utils/toast-messages.ts:56
+#: src/modules/shared/utils/toast-messages.ts:58
 msgid "Trigger updated"
 msgstr "Trigger updated"
 
@@ -285,6 +294,11 @@ msgstr "Username and password are required."
 #: src/modules/shared/utils/toast-messages.ts:22
 msgid "You cannot delete your own account."
 msgstr "You cannot delete your own account."
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:128
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
+msgid "You don't have permission to do this."
+msgstr "You don't have permission to do this."
 
 #: src/modules/shared/utils/scylla-result.ts:66
 msgid "You don't have permission to perform this action"

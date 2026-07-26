@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 
 interface UseFeatureSelectionOptions {

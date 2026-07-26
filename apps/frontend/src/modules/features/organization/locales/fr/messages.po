@@ -13,8 +13,16 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:111
+msgid "Add"
+msgstr ""
+
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:35
 msgid "Add a description..."
+msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:74
+msgid "Add or remove the users that belong to this organization."
 msgstr ""
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:85
@@ -33,7 +41,7 @@ msgstr "Créer l'organisation"
 #~ msgid "Creating..."
 #~ msgstr "Création en cours..."
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:110
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:141
 msgid "Delete"
 msgstr ""
 
@@ -50,7 +58,7 @@ msgstr "ex. Mon organisation"
 msgid "e.g., Our company's main organization"
 msgstr "ex. L'organisation principale de notre entreprise"
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:96
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:122
 msgid "Edit"
 msgstr ""
 
@@ -62,10 +70,34 @@ msgstr ""
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Entrez un nom et une description pour votre nouvelle organisation. Vous pourrez les modifier plus tard dans les paramètres."
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:89
+msgid "Everyone is a member"
+msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:118
+msgid "Loading members…"
+msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:104
+msgid "Members"
+msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:70
+msgid "Members of {organizationName}"
+msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:122
+msgid "No members yet."
+msgstr ""
+
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:27
 #: src/modules/features/organization/presentation/utils/create-organization-form-items.ts:7
 msgid "Organization name"
 msgstr "Nom de l'organisation"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:145
+msgid "Remove"
+msgstr ""
 
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:63
 msgid "Save"
@@ -75,6 +107,10 @@ msgstr ""
 msgid "Saving..."
 msgstr ""
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:89
+msgid "Select a user to add"
+msgstr ""
+
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:60
 msgid "Update the organization name and description."
 msgstr ""
@@ -82,3 +118,11 @@ msgstr ""
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:41
 #~ msgid "Update the organization name."
 #~ msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:106
+msgid "You don't have permission to add members."
+msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:147
+msgid "You don't have permission to remove members."
+msgstr ""

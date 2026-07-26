@@ -17,9 +17,9 @@ import { Plus, User, UserPlus, X } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
 import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
 import { useOrganizationMembers } from '@/modules/features/organization/presentation/hooks/use-organization-members.ts';
-import { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
-import { PermissionButton } from '@/modules/features/role/presentation/ui/authorization/PermissionButton.tsx';
-import { useCan } from '@/modules/features/role/presentation/hooks/use-authorization.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { PermissionButton } from '@/modules/features/permission/presentation/ui/authorization/PermissionButton.tsx';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 interface OrganizationMembersDialogProps {
   open: boolean;

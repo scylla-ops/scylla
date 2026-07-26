@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import type { Permission } from '@/modules/features/role/domain/structs/permission.struct.ts';
+import type { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 export interface NavItem {
   title: string;
