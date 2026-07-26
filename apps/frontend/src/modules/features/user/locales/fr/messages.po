@@ -62,7 +62,7 @@ msgstr "Chargement des informations utilisateur..."
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:90
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:139
 msgid "Manage your account details."
-msgstr ""
+msgstr "Gérez les détails de votre compte."
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:50
 msgid "New user"
@@ -74,7 +74,7 @@ msgstr "Mot de passe"
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
 msgid "User"
-msgstr ""
+msgstr "Utilisateur"
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67

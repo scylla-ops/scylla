@@ -15,7 +15,7 @@ msgstr ""
 
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:35
 msgid "Add a description..."
-msgstr ""
+msgstr "Ajouter une description..."
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:85
 #~ msgid "Cancel"

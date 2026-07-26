@@ -162,7 +162,7 @@ msgstr "History"
 #~ msgid "in total"
 #~ msgstr "in total"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx:98
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx:113
 msgid "Invalid JSON"
 msgstr "Invalid JSON"
 

@@ -17,12 +17,12 @@ msgstr ""
 #. placeholder {1}: created.credential.label
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:145
 msgid "{0} · {1} credentials"
-msgstr ""
+msgstr "Identifiants {0} · {1}"
 
 #. placeholder {0}: created.app.name
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:118
 msgid "{0} credentials"
-msgstr ""
+msgstr "Identifiants {0}"
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:58
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:74
@@ -65,7 +65,7 @@ msgstr "Copier l'id"
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:119
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:149
 msgid "Copy the secret below — it is shown only once."
-msgstr ""
+msgstr "Copiez le secret ci-dessous — il est affiché une seule fois."
 
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:111
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:137
@@ -119,7 +119,7 @@ msgstr "inactif"
 
 #: src/modules/features/apps/presentation/utils/create-app-secret-form-items.ts:7
 msgid "Label"
-msgstr "Label"
+msgstr "Étiquette"
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:62
 msgid "Machine credential · no runtime presence"
@@ -192,4 +192,4 @@ msgstr "Mis à jour le"
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:123
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:153
 msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
-msgstr ""
+msgstr "Utilisez ces identifiants (ID + secret) pour authentifier une automatisation auprès de l’API Scylla."

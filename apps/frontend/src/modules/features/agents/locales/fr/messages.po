@@ -16,7 +16,7 @@ msgstr ""
 #. placeholder {0}: created.agent.name
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:142
 msgid "{0} is ready"
-msgstr ""
+msgstr "{0} est prêt"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:121
 msgid "active"
@@ -130,7 +130,7 @@ msgstr "lignes"
 
 #: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:32
 msgid "Logs"
-msgstr "Logs"
+msgstr "Journaux"
 
 #: src/modules/features/agents/presentation/utils/create-agent-form-items.ts:8
 msgid "my-build-runner"
@@ -241,7 +241,7 @@ msgstr "depuis"
 
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:147
 msgid "Start your agent"
-msgstr ""
+msgstr "Démarrez votre agent"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:199
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:165
@@ -250,7 +250,7 @@ msgstr "Cela révoque les autorisations de l'agent et le déconnecte. Irréversi
 
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:143
 msgid "Two steps and it picks up jobs."
-msgstr ""
+msgstr "Deux étapes et il récupère les travaux."
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:134
 msgid "Updated"

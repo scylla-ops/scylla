@@ -24,7 +24,7 @@ msgstr "Secret webhook {0}"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
 msgid "5-field cron (min hour day month weekday), evaluated in your local time."
-msgstr ""
+msgstr "Cron en 5 champs (min heure jour mois jour de semaine), évalué selon votre heure locale."
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:166
 #~ msgid "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
@@ -36,7 +36,7 @@ msgstr "Un déclencheur lance automatiquement une exécution de ce pipeline."
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:77
 msgid "Actions"
-msgstr ""
+msgstr "Actions"
 
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:81
 msgid "Add a cron schedule or webhook to start runs automatically."
@@ -68,11 +68,11 @@ msgstr "Annuler"
 
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:99
 msgid "Copy the secret below — it is shown only once."
-msgstr ""
+msgstr "Copiez le secret ci-dessous — il est affiché une seule fois."
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:33
 msgid "Copy url"
-msgstr ""
+msgstr "Copier l’URL"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:219
 msgid "Create"
@@ -148,7 +148,7 @@ msgstr "dernier"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:67
 msgid "Literal"
-msgstr "Literal"
+msgstr "Littéral"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:156
 msgid "Monthly"
@@ -157,7 +157,7 @@ msgstr "Mensuel"
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:121
 #: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:28
 msgid "Name"
-msgstr ""
+msgstr "Nom"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:17
 msgid "Never fired"
