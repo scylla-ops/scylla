@@ -162,7 +162,7 @@ msgstr ""
 #~ msgid "in total"
 #~ msgstr "au total"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx:110
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx:98
 msgid "Invalid JSON"
 msgstr ""
 

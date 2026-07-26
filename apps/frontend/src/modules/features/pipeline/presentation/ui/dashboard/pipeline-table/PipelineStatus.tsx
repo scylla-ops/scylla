@@ -20,11 +20,11 @@ export const PipelineStatus = ({ pipeline, status }: PipelineStatusProps) => {
       <StatusIndicator state={status} />
 
       <div className='flex flex-col items-start text-start overflow-hidden'>
-        <span className='font-semibold text-slate-900 truncate w-65'>{pipeline.name}</span>
-        <span className='text-xs text-slate-500'>
+        <span className='w-65 truncate font-semibold text-foreground'>{pipeline.name}</span>
+        <span className='text-xs text-muted-foreground'>
           <Trans>Creation:</Trans> {creationDate.toDateString()}
         </span>
-        <span className={'text-xs text-slate-400'}>id: {pipeline.id}</span>
+        <span className='text-xs text-muted-foreground/80'>id: {pipeline.id}</span>
       </div>
     </div>
   );

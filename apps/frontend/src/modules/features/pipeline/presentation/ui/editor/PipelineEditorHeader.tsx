@@ -57,7 +57,7 @@ export const PipelineEditorHeader = ({
       </TabsList>
 
       <div className='flex items-center gap-3'>
-        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+        <div className='flex items-center gap-2 text-sm text-foreground/80'>
           <span className='relative flex size-2'>
             {status === 'dirty' && (
               <span className='absolute inline-flex size-full animate-ping rounded-full bg-amber-500/70' />

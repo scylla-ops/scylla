@@ -18,9 +18,18 @@ const buildTheme = (hasError: boolean) => {
     },
     '.cm-scroller': { overflow: 'auto' },
     '.cm-content': { padding: '0.5rem' },
-    '.cm-activeLineGutter': { backgroundColor: 'var(--code-editor-line-bg)' },
+    '.cm-activeLineGutter': {
+      backgroundColor: 'var(--code-editor-line-bg)',
+      color: 'var(--muted-foreground)',
+      borderRight: '1px solid var(--border)',
+    },
     '.cm-activeLine': { backgroundColor: 'var(--code-editor-line-bg)' },
-    'cm-gutters': { backgroundColor: 'transparent', border: 'none' },
+    '.cm-lineNumbers': { color: 'var(--muted-foreground)' },
+    '.cm-gutters': {
+      backgroundColor: 'var(--card)',
+      borderRight: '1px solid var(--border)',
+      color: 'var(--muted-foreground)',
+    },
     '&.cm-focused': {
       outline: 'none',
       boxShadow: `-2px 0 0px 0px ${accent}, 0 1px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)`,

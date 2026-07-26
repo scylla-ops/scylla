@@ -75,7 +75,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
     <>
       {organizations.map(organisation => (
         <Wrapper
-          className={'group hover:bg-slate-50 transition-colors'}
+          className='group rounded-md transition-colors hover:bg-accent/70'
           key={idValue(organisation.organizationId)}
           onSelect={() => {
             setOrganization(idValue(organisation.organizationId), organisation.name);

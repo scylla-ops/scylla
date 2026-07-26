@@ -34,7 +34,7 @@ msgstr "Créer"
 msgid "Language"
 msgstr "Langue"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:107
+#: src/modules/layout/presentation/ui/NavUser.tsx:108
 msgid "Log out"
 msgstr "Se déconnecter"
 
