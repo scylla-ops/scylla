@@ -5,6 +5,9 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
+import { ThemeProvider, useTheme } from 'next-themes';
+import { Moon, Sun } from 'lucide-react';
+import { Switch } from '@/modules/shared/presentation/ui/shadcn/switch.tsx';
 import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
 import { messages as projectMessages } from '@/modules/features/project/locales/en/messages.ts';
 import { messages as pipelineMessages } from '@/modules/features/pipeline/locales/en/messages.ts';
@@ -93,17 +96,43 @@ const queryClient = new QueryClient({
   }),
 });
 
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  return (
+    <div className='fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-2 shadow-sm backdrop-blur'>
+      <Sun className='size-4 text-amber-500' />
+      <Switch
+        checked={isDark}
+        onCheckedChange={checked => setTheme(checked ? 'dark' : 'light')}
+        aria-label='Toggle dark mode'
+      />
+      <Moon className='size-4 text-slate-400' />
+    </div>
+  );
+}
+
 function App() {
   return (
     <StrictMode>
-      <I18nProvider i18n={i18n}>
-        <QueryClientProvider client={queryClient}>
-          <DependenciesProvider>
-            <RouterProvider router={CoreRouter} />
-            <Toaster />
-          </DependenciesProvider>
-        </QueryClientProvider>
-      </I18nProvider>
+      <ThemeProvider
+        attribute='class'
+        defaultTheme='dark'
+        enableSystem={false}
+        storageKey='scylla-theme'
+        disableTransitionOnChange
+      >
+        <I18nProvider i18n={i18n}>
+          <QueryClientProvider client={queryClient}>
+            <DependenciesProvider>
+              <ThemeToggle />
+              <RouterProvider router={CoreRouter} />
+              <Toaster />
+            </DependenciesProvider>
+          </QueryClientProvider>
+        </I18nProvider>
+      </ThemeProvider>
     </StrictMode>
   );
 }
