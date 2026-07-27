@@ -4,6 +4,7 @@ use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
     AppCredentialRepository, AppRepository, AppUseCases, HashService, PermissionService,
+    PolicyControl,
 };
 use scylla_core::domain::entities::{App, AppCredential, AppCredentialId, AppId, OrganizationId};
 use scylla_core::domain::value_objects::app::{AppName, AppSecretLabel};
@@ -19,14 +20,15 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct AppHandler<A, C, H, PS>
+pub struct AppHandler<A, C, H, PS, PC>
 where
     A: AppRepository,
     C: AppCredentialRepository,
     H: HashService,
     PS: PermissionService,
+    PC: PolicyControl,
 {
-    use_cases: Arc<AppUseCases<A, C, H, PS>>,
+    use_cases: Arc<AppUseCases<A, C, H, PS, PC>>,
 }
 
 #[async_trait::async_trait]
@@ -35,7 +37,8 @@ impl<
     C: AppCredentialRepository + Send + Sync + 'static,
     H: HashService + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
-> AppService for AppHandler<A, C, H, PS>
+    PC: PolicyControl + Send + Sync + 'static,
+> AppService for AppHandler<A, C, H, PS, PC>
 {
     async fn create_app(
         &self,

@@ -1,3 +1,4 @@
+use crate::application::authz::policy::PolicyControl;
 use crate::application::caller::CallerContext;
 use crate::application::{HashService, PermissionService, UserRepository};
 use crate::domain::entities::{User, UserId};
@@ -10,13 +11,17 @@ use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Constructor)]
-pub struct UserUseCases<U: UserRepository, H: HashService, PS: PermissionService> {
+pub struct UserUseCases<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl>
+{
     user_repo: Arc<U>,
     hash_service: Arc<H>,
     permission_service: Arc<PS>,
+    policy_control: Arc<PC>,
 }
 
-impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H, PS> {
+impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl>
+    UserUseCases<U, H, PS, PC>
+{
     #[instrument(skip(self, password, caller), fields(username = %username))]
     pub async fn create(
         &self,
@@ -92,7 +97,10 @@ impl<U: UserRepository, H: HashService, PS: PermissionService> UserUseCases<U, H
             .check(caller, Permission::DeleteUser(id.clone()))
             .await?;
         self.user_repo.find_by_id(id).await?;
-        self.user_repo.delete(id).await
+        // A DB trigger drops every grant this user held, at any scope, with the
+        // row; reload so the live policy set stops carrying their dead links.
+        self.user_repo.delete(id).await?;
+        self.policy_control.reload().await
     }
 
     #[instrument(skip(self, caller))]

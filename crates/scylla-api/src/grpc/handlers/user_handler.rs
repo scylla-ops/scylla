@@ -5,7 +5,7 @@ use crate::grpc::mappers::{
 };
 use derive_more::Constructor;
 use scylla_core::application::UserUseCases;
-use scylla_core::application::{HashService, PermissionService, UserRepository};
+use scylla_core::application::{HashService, PermissionService, PolicyControl, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
 use scylla_protocol::user::v1::{
@@ -17,8 +17,9 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct UserHandler<U: UserRepository, H: HashService, PS: PermissionService> {
-    use_cases: Arc<UserUseCases<U, H, PS>>,
+pub struct UserHandler<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl>
+{
+    use_cases: Arc<UserUseCases<U, H, PS, PC>>,
 }
 
 #[async_trait::async_trait]
@@ -26,7 +27,8 @@ impl<
     U: UserRepository + Send + Sync + 'static,
     H: HashService + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
-> UserService for UserHandler<U, H, PS>
+    PC: PolicyControl + Send + Sync + 'static,
+> UserService for UserHandler<U, H, PS, PC>
 {
     async fn create_user(
         &self,

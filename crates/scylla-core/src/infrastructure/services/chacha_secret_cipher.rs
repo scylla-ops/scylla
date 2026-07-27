@@ -67,7 +67,8 @@ impl SecretCipher for ChaChaSecretCipher {
         let pt = cipher
             .decrypt(&nonce, ct)
             .map_err(|_| DomainError::internal("secret decryption failed (wrong master key?)"))?;
-        String::from_utf8(pt).map_err(|_| DomainError::internal("decrypted secret is not valid UTF-8"))
+        String::from_utf8(pt)
+            .map_err(|_| DomainError::internal("decrypted secret is not valid UTF-8"))
     }
 }
 

@@ -106,10 +106,7 @@ where
 
         // Decrypt the per-trigger signing secret.
         let secret = match self.trigger_repo.webhook_secret(trigger_id).await {
-            Ok(Some(enc)) => self
-                .cipher
-                .decrypt(&enc)
-                .map_err(WebhookError::Internal)?,
+            Ok(Some(enc)) => self.cipher.decrypt(&enc).map_err(WebhookError::Internal)?,
             Ok(None) => {
                 return Err(WebhookError::Internal(DomainError::internal(
                     "webhook trigger has no signing secret",

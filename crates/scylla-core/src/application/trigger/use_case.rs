@@ -1,14 +1,15 @@
 use crate::application::caller::CallerContext;
 use crate::application::{
-    AppRepository, CronSchedule, Grant, HashService, PermissionService, PipelineRepository,
-    PolicyControl, Principal, ProjectRepository, Scope, SecretCipher, TriggerRepository,
-    next_fire_time,
+    AppRepository, CronSchedule, Grant, HashService, ORGANIZATION_TRIGGER_RUNNER_ROLE,
+    PermissionService, PipelineRepository, PolicyControl, Principal, ProjectRepository, Scope,
+    SecretCipher, TriggerRepository, next_fire_time,
 };
 use crate::domain::clock;
 use crate::domain::entities::{App, AppCredential, OrganizationId, PipelineId, Trigger, TriggerId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::trigger::{TriggerInput, TriggerName, TriggerSource};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -16,14 +17,13 @@ use tracing::instrument;
 use uuid::Uuid;
 
 /// Name of the per-organization machine App that pipeline runs fire as. One is
-/// lazily provisioned per org on first trigger creation; it holds a single
-/// `runPipeline` permission grant at org scope (NOT the agent role, which only
-/// confers `executeJob`). It is used in-process as `CallerContext::App`, never
-/// via a token, so its credential is provisioned only to keep the App invariant.
+/// lazily provisioned per org on first trigger creation; it holds the
+/// `organization-trigger-runner` role at org scope, which confers `runPipeline`
+/// and nothing else (NOT the agent role, which only confers `executeJob`). It is
+/// used in-process as `CallerContext::App`, never via a token, so its credential
+/// is provisioned only to keep the App invariant.
 pub(crate) const TRIGGER_RUNNER_APP_NAME: &str = "trigger-runner";
 const RUNNER_SECRET_LABEL: &str = "default";
-/// Must equal `Permission::RunPipeline(_).key()` — asserted in tests.
-const RUN_PIPELINE_PERMISSION_KEY: &str = "runPipeline";
 
 /// Manage a pipeline's triggers. Every method is Cedar-gated by
 /// `ManageTriggers`; create/update additionally require `RunPipeline` on the
@@ -123,10 +123,17 @@ where
     }
 
     #[instrument(skip(self, caller), fields(trigger_id = %trigger_id))]
-    pub async fn get(&self, caller: &CallerContext, trigger_id: &TriggerId) -> DomainResult<Trigger> {
+    pub async fn get(
+        &self,
+        caller: &CallerContext,
+        trigger_id: &TriggerId,
+    ) -> DomainResult<Trigger> {
         let trigger = self.trigger_repo.find_by_id(trigger_id).await?;
         self.permission_service
-            .check(caller, Permission::ManageTriggers(trigger.pipeline_id().clone()))
+            .check(
+                caller,
+                Permission::ManageTriggers(trigger.pipeline_id().clone()),
+            )
             .await?;
         Ok(trigger)
     }
@@ -154,12 +161,18 @@ where
     ) -> DomainResult<Trigger> {
         let mut trigger = self.trigger_repo.find_by_id(trigger_id).await?;
         self.permission_service
-            .check(caller, Permission::ManageTriggers(trigger.pipeline_id().clone()))
+            .check(
+                caller,
+                Permission::ManageTriggers(trigger.pipeline_id().clone()),
+            )
             .await?;
         // Same anti-escalation fence as create: editing what a trigger fires
         // (source/inputs) requires the right to run the pipeline.
         self.permission_service
-            .check(caller, Permission::RunPipeline(trigger.pipeline_id().clone()))
+            .check(
+                caller,
+                Permission::RunPipeline(trigger.pipeline_id().clone()),
+            )
             .await?;
         trigger.update(name, source, inputs)?;
         // Re-anchor next_fire_at from now: a changed cron expression takes effect
@@ -178,7 +191,10 @@ where
     ) -> DomainResult<Trigger> {
         let mut trigger = self.trigger_repo.find_by_id(trigger_id).await?;
         self.permission_service
-            .check(caller, Permission::ManageTriggers(trigger.pipeline_id().clone()))
+            .check(
+                caller,
+                Permission::ManageTriggers(trigger.pipeline_id().clone()),
+            )
             .await?;
         // Re-enabling re-anchors from now (no catch-up fire at a stale past time);
         // disabling structurally drops the due time (see `Trigger::disable`).
@@ -195,7 +211,10 @@ where
     pub async fn delete(&self, caller: &CallerContext, trigger_id: &TriggerId) -> DomainResult<()> {
         let trigger = self.trigger_repo.find_by_id(trigger_id).await?;
         self.permission_service
-            .check(caller, Permission::ManageTriggers(trigger.pipeline_id().clone()))
+            .check(
+                caller,
+                Permission::ManageTriggers(trigger.pipeline_id().clone()),
+            )
             .await?;
         self.trigger_repo.delete(trigger_id).await
     }
@@ -209,9 +228,9 @@ where
         Ok(())
     }
 
-    /// Ensure the org has its trigger-runner App (App + credential + a direct
-    /// `runPipeline` grant at org scope), provisioned once and reused by every
-    /// trigger in the org. Idempotent: a concurrent first-create that loses the
+    /// Ensure the org has its trigger-runner App (App + credential + an
+    /// `organization-trigger-runner` grant at org scope), provisioned once and
+    /// reused by every trigger in the org. Idempotent: a concurrent first-create that loses the
     /// `UNIQUE(org, name)` race is treated as already-provisioned.
     async fn ensure_runner_app(&self, organization_id: &OrganizationId) -> DomainResult<()> {
         let existing = self.app_repo.list_by_organization(organization_id).await?;
@@ -233,9 +252,9 @@ where
             AppSecretLabel::new(RUNNER_SECRET_LABEL)?,
             secret_hash,
         );
-        let grant = Grant::with_permission(
+        let grant = Grant::new(
             Principal::App(app.id().clone()),
-            RUN_PIPELINE_PERMISSION_KEY,
+            RoleName::new(ORGANIZATION_TRIGGER_RUNNER_ROLE)?,
             Scope::Organization(organization_id.clone()),
         );
 
@@ -255,20 +274,4 @@ where
 /// returned to the user once and stored only encrypted.
 fn generate_webhook_secret() -> String {
     format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple())
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::domain::value_objects::permission::Permission;
-    use crate::domain::entities::PipelineId;
-
-    #[test]
-    fn run_pipeline_key_matches_permission_enum() {
-        // The literal used for the runner's direct grant must equal the canonical
-        // Permission key, or the grant would name an action Cedar can't emit.
-        assert_eq!(
-            Permission::RunPipeline(PipelineId::new("_")).key(),
-            super::RUN_PIPELINE_PERMISSION_KEY
-        );
-    }
 }

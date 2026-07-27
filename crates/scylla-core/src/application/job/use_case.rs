@@ -67,7 +67,9 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         // `JobEvent` variant breaks this match until it is handled.
         let job = match event {
             JobEvent::JobStarted => job.start()?,
-            JobEvent::NodeStarted { node_id } => job.apply_node_started(&NodeId::new(node_id)?, now)?,
+            JobEvent::NodeStarted { node_id } => {
+                job.apply_node_started(&NodeId::new(node_id)?, now)?
+            }
             JobEvent::NodeCompleted { node_id } => {
                 job.apply_node_finished(&NodeId::new(node_id)?, NodeOutcome::Completed, now)?
             }

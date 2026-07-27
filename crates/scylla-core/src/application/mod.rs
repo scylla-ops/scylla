@@ -33,11 +33,10 @@ pub use app::{
 pub use audit::{AuditDecision, AuditEntry, AuditLog, NoopAuditLog};
 pub use auth::{AuthUseCases, HashService, SessionRepository};
 pub use authz::{
-    AuthzEntityProvider, EffectiveScope, FULL_CONTROL, Grant, GrantRepository, GrantTarget,
-    GrantUseCases, GrantableRole, PermissionService, PolicyControl, PolicyDefinition,
-    PolicyRepository, PolicyUseCases, Principal, PrincipalAuthz, ResourceAncestors, Role, RoleKind,
-    RoleRepository, RoleUseCases, Scope, ScopeKind, grantable_roles, resource_home_scope,
-    validate_role_in_db,
+    AuthzEntityProvider, EffectiveScope, FULL_CONTROL, Grant, GrantRepository, GrantUseCases,
+    GrantableRole, ORGANIZATION_TRIGGER_RUNNER_ROLE, PermissionService, PolicyControl, Principal,
+    ResourceAncestors, Role, RoleKind, RoleRepository, RoleUseCases, Scope, ScopeKind, Visibility,
+    VisibilityResolver, grantable_roles, resource_home_scope, validate_role_in_db,
 };
 pub use bootstrap::BootstrapUseCases;
 pub use caller::{CallerContext, ServiceIdentity};
@@ -51,9 +50,9 @@ pub use oauth::{
     AccountOutcome, OAuthIdentityRepository, OAuthOutcome, OAuthProvider, OAuthUseCases,
     OAuthUserInfo,
 };
-pub use organization::{OrganizationRepository, OrganizationUseCases, UserOrganizationRepository};
+pub use organization::{OrganizationRepository, OrganizationUseCases};
 pub use pipeline::{PipelineRepository, PipelineUseCases};
-pub use project::{ProjectRepository, ProjectUseCases, UserProjectRepository};
+pub use project::{ProjectRepository, ProjectUseCases};
 pub use quota::Quotas;
 pub use secret::{
     DispatchSecretResolver, SecretCipher, SecretRepository, SecretResolver, SecretUseCases,

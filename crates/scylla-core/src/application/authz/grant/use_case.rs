@@ -1,5 +1,5 @@
 use super::{
-    Grant, GrantRepository, GrantTarget, Principal, Scope, is_owner_role, validate_permission_key,
+    Grant, GrantRepository, Principal, Scope, is_owner_role, removal_orphans_scope,
     validate_role_in_db,
 };
 use crate::application::agent::dispatch_port::AgentDispatch;
@@ -10,6 +10,7 @@ use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::{Permission, ResourceRef};
+use crate::domain::value_objects::role::RoleName;
 use derive_more::Constructor;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
@@ -84,47 +85,61 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         self.permission_service
             .check(caller, Self::manage_perm(&grant.scope))
             .await?;
-        // Validate the target before persisting so a stored grant is always
-        // emittable into Cedar: a role grant names an existing role valid at its
-        // scope; a permission grant names a known permission key.
-        match &grant.target {
-            GrantTarget::Role(role) => {
-                validate_role_in_db(&*self.role_repo, role, &grant.scope).await?;
-            }
-            GrantTarget::Permission(key) => validate_permission_key(key)?,
-        }
-        self.require_grantee_membership(grant).await?;
+        // Validate the role before persisting so a stored grant is always
+        // emittable into Cedar: it must name an existing role valid at the
+        // grant's scope.
+        validate_role_in_db(&*self.role_repo, &grant.role, &grant.scope).await?;
+        self.require_grantee_in_organization(grant).await?;
         self.check_no_escalation(caller, grant).await?;
         self.grant_repo.create(grant).await?;
         self.policy_control.reload().await
     }
 
-    /// A human grantee must belong to the organization an org/project-scoped
-    /// grant lives under. Cedar's member guard makes such a grant inert for a
-    /// non-member anyway, so persisting one would only create a row that
-    /// silently does nothing — rejecting it here keeps every stored grant
-    /// effective. System-scoped grants and machine Apps (org-owned, never
-    /// members) are exempt.
-    async fn require_grantee_membership(&self, grant: &Grant) -> DomainResult<()> {
-        let Principal::User(user_id) = &grant.principal else {
+    /// A project-scoped grant may only go to someone the organization has already
+    /// accepted, meaning someone already holding a grant somewhere under it.
+    ///
+    /// "Already accepted" means holding a grant at this organization's own
+    /// scope, which is the two-step flow the product documents: admit someone to
+    /// the organization (`organization-member` is enough), then assign them to
+    /// projects.
+    ///
+    /// This is the tenant boundary. Admitting a person requires
+    /// `manageOrgGrants`, which only organization and system administrators
+    /// hold; a project administrator then distributes access among those people.
+    /// Without this check a project administrator could attach any account in
+    /// the installation, including one belonging to another customer, and
+    /// `check_no_escalation` would not catch it because it returns early for
+    /// project scope.
+    ///
+    /// Organization- and System-scoped grants are exempt: they are how someone
+    /// enters in the first place, so requiring prior access would be circular.
+    /// Machine Apps are exempt too — they are owned by an organization by
+    /// construction, not admitted to it.
+    async fn require_grantee_in_organization(&self, grant: &Grant) -> DomainResult<()> {
+        let Principal::User(_) = &grant.principal else {
             return Ok(());
         };
-        let org_id = match &grant.scope {
-            Scope::System => return Ok(()),
-            Scope::Organization(id) => id.clone(),
-            Scope::Project(id) => self
-                .entity_provider
-                .resource_ancestors(&ResourceRef::Project(id.clone()))
-                .await?
-                .organization
-                .ok_or_else(|| DomainError::not_found("Project", id.to_string()))?,
+        let Scope::Project(project_id) = &grant.scope else {
+            return Ok(());
         };
-        let membership = self.entity_provider.principal_authz(user_id).await?;
-        if membership.member_orgs.contains(&org_id) {
+        let org_id = self
+            .entity_provider
+            .resource_ancestors(&ResourceRef::Project(project_id.clone()))
+            .await?
+            .organization
+            .ok_or_else(|| DomainError::not_found("Project", project_id.to_string()))?;
+
+        let admitted = self.grant_repo.list_all().await?.into_iter().any(|g| {
+            g.principal == grant.principal
+                && matches!(&g.scope, Scope::Organization(o) if o == &org_id)
+        });
+
+        if admitted {
             Ok(())
         } else {
             Err(DomainError::business_rule(
-                "the user must be a member of the organization before receiving a grant there",
+                "the user must already have access to this organization before \
+                 receiving a grant on one of its projects",
             ))
         }
     }
@@ -139,11 +154,9 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
     /// not subset-checked yet (smallest blast radius) — they stay gated by
     /// `manageProjectGrants`.
     async fn check_no_escalation(&self, caller: &CallerContext, grant: &Grant) -> DomainResult<()> {
-        let principal = match caller {
-            CallerContext::User(id) => Principal::User(id.clone()),
-            CallerContext::App(id) => Principal::App(id.clone()),
-            // Services act as the system; Anonymous is already denied upstream.
-            CallerContext::Service(_) | CallerContext::Anonymous => return Ok(()),
+        // Services act as the system; Anonymous is already denied upstream.
+        let Some(principal) = Principal::from_caller(caller) else {
+            return Ok(());
         };
         if matches!(grant.scope, Scope::Project(_)) {
             return Ok(());
@@ -151,7 +164,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
 
         let allowed = match (
             self.holding_at(&principal, &grant.scope).await?,
-            self.target_keys(&grant.target).await?,
+            self.role_keys(&grant.role).await?,
         ) {
             (Holding::Full, _) => true,
             // Can't confer full control without holding it.
@@ -167,16 +180,13 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         }
     }
 
-    /// The permission keys a grant target confers, or `None` for full control.
-    async fn target_keys(&self, target: &GrantTarget) -> DomainResult<Option<BTreeSet<String>>> {
-        match target {
-            GrantTarget::Permission(key) => Ok(Some(BTreeSet::from([key.clone()]))),
-            GrantTarget::Role(role) => match self.role_repo.get(role.as_str()).await? {
-                Some(r) if r.is_full_control() => Ok(None),
-                Some(r) => Ok(Some(r.permissions.into_iter().collect())),
-                // Unknown role confers nothing; an empty set is trivially a subset.
-                None => Ok(Some(BTreeSet::new())),
-            },
+    /// The permission keys a role confers, or `None` for full control.
+    async fn role_keys(&self, role: &RoleName) -> DomainResult<Option<BTreeSet<String>>> {
+        match self.role_repo.get(role.as_str()).await? {
+            Some(r) if r.is_full_control() => Ok(None),
+            Some(r) => Ok(Some(r.permissions.into_iter().collect())),
+            // Unknown role confers nothing; an empty set is trivially a subset.
+            None => Ok(Some(BTreeSet::new())),
         }
     }
 
@@ -197,18 +207,52 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
             if !(matches!(g.scope, Scope::System) || &g.scope == scope) {
                 continue;
             }
-            let perms: Vec<String> = match &g.target {
-                GrantTarget::Role(role) => {
-                    role_perms.get(role.as_str()).cloned().unwrap_or_default()
-                }
-                GrantTarget::Permission(key) => vec![key.clone()],
-            };
+            let perms: Vec<String> = role_perms.get(g.role.as_str()).cloned().unwrap_or_default();
             if perms.iter().any(|p| p == FULL_CONTROL) {
                 return Ok(Holding::Full);
             }
             keys.extend(perms);
         }
         Ok(Holding::Keys(keys))
+    }
+
+    /// Strip every access a principal holds at `scope` and below it, in one
+    /// operation. This is how someone leaves an organization or a project: it
+    /// replaces the member-removal calls that existed when membership was a
+    /// table of its own.
+    ///
+    /// Returns how many grants were removed, so a caller can tell "removed
+    /// three" from "there was nothing to remove".
+    #[instrument(skip(self, caller))]
+    pub async fn revoke_all_access(
+        &self,
+        caller: &CallerContext,
+        principal: &Principal,
+        scope: &Scope,
+    ) -> DomainResult<u64> {
+        self.permission_service
+            .check(caller, Self::manage_perm(scope))
+            .await?;
+
+        // Same rule as the per-grant revoke: a scope must always keep at least
+        // one human owner, so stripping the last one is refused rather than
+        // leaving the organization or project unadministered.
+        let grants = self.grant_repo.list_all().await?;
+        if removal_orphans_scope(&grants, scope, principal) {
+            return Err(DomainError::business_rule(
+                "cannot remove the last owner of this scope",
+            ));
+        }
+
+        let removed = self.grant_repo.revoke_all(principal, scope).await?;
+        self.policy_control.reload().await?;
+
+        // A machine principal that just lost its access must not keep running on
+        // an already-open stream.
+        if let Principal::App(app_id) = principal {
+            self.agent_registry.disconnect(app_id);
+        }
+        Ok(removed)
     }
 
     #[instrument(skip(self, caller))]
@@ -232,15 +276,14 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         // to administer it). If this is the final human owner, block the revoke
         // rather than orphan the org/project.
         if let Some(g) = &grant
-            && let GrantTarget::Role(role) = &g.target
-            && is_owner_role(role)
+            && is_owner_role(&g.role)
             && matches!(g.principal, Principal::User(_))
         {
             let other_human_owners = grants
                 .iter()
                 .filter(|o| {
                     o.id != g.id
-                        && o.target == g.target
+                        && o.role == g.role
                         && o.scope == g.scope
                         && matches!(o.principal, Principal::User(_))
                 })
@@ -267,7 +310,7 @@ mod tests {
     use super::super::*;
     use super::*;
     use crate::application::agent::dispatch::JobDispatch;
-    use crate::application::authz::entity_provider::{PrincipalAuthz, ResourceAncestors};
+    use crate::application::authz::entity_provider::ResourceAncestors;
     use crate::application::authz::role::Role;
     use crate::application::caller::ServiceIdentity;
     use crate::domain::entities::{AppId, OrganizationId, UserId};
@@ -286,14 +329,14 @@ mod tests {
         async fn delete(&self, _id: &str) -> DomainResult<()> {
             Ok(())
         }
+        async fn revoke_all(&self, _p: &Principal, _s: &Scope) -> DomainResult<u64> {
+            Ok(0)
+        }
     }
 
     struct StubPolicy;
     #[async_trait]
     impl PolicyControl for StubPolicy {
-        async fn validate_policy(&self, _text: &str) -> DomainResult<()> {
-            Ok(())
-        }
         async fn reload(&self) -> DomainResult<()> {
             Ok(())
         }
@@ -327,17 +370,10 @@ mod tests {
         }
     }
 
-    /// Stub membership: every user is a member of exactly `orgs`, and any
-    /// project resolves under the first of them (tests use a single org).
-    struct StubMembers(Vec<OrganizationId>);
+    /// Every project in these tests resolves under the single org `o1`.
+    struct StubAncestry;
     #[async_trait]
-    impl AuthzEntityProvider for StubMembers {
-        async fn principal_authz(&self, _user: &UserId) -> DomainResult<PrincipalAuthz> {
-            Ok(PrincipalAuthz {
-                member_orgs: self.0.clone(),
-                member_projects: vec![],
-            })
-        }
+    impl AuthzEntityProvider for StubAncestry {
         async fn resource_ancestors(
             &self,
             _resource: &ResourceRef,
@@ -369,6 +405,12 @@ mod tests {
     #[derive(Default)]
     struct RecordingRegistry {
         disconnected: Mutex<Vec<String>>,
+    }
+
+    impl RecordingRegistry {
+        fn disconnected(&self) -> Vec<String> {
+            self.disconnected.lock().unwrap().clone()
+        }
     }
     #[async_trait]
     impl AgentDispatch for RecordingRegistry {
@@ -402,24 +444,13 @@ mod tests {
         roles: Vec<Role>,
         reg: Arc<RecordingRegistry>,
     ) -> GrantUseCases<StubGrants, StubPolicy, StubPerms> {
-        // Grantees are members of o1 by default, so tests not about the
-        // membership rule pass it.
-        use_cases_with_members(grants, roles, reg, vec![OrganizationId::new("o1")])
-    }
-
-    fn use_cases_with_members(
-        grants: Vec<Grant>,
-        roles: Vec<Role>,
-        reg: Arc<RecordingRegistry>,
-        member_orgs: Vec<OrganizationId>,
-    ) -> GrantUseCases<StubGrants, StubPolicy, StubPerms> {
         GrantUseCases::new(
             Arc::new(StubGrants(grants)),
             Arc::new(StubRoles(roles)),
             Arc::new(StubPolicy),
             Arc::new(StubPerms),
             reg,
-            Arc::new(StubMembers(member_orgs)),
+            Arc::new(StubAncestry),
         )
     }
 
@@ -427,7 +458,7 @@ mod tests {
     fn grantable_roles_filter_by_scope_kind() {
         assert_eq!(grantable_roles(None).len(), GRANTABLE_ROLES.len());
         let project = grantable_roles(Some(ScopeKind::Project));
-        assert_eq!(project.len(), 2);
+        assert_eq!(project.len(), 4);
         assert!(
             project
                 .iter()
@@ -439,48 +470,37 @@ mod tests {
     }
 
     #[test]
-    fn validate_permission_key_accepts_catalog_rejects_unknown() {
-        // A real permission key validates; an invented one is rejected, so a
-        // direct permission grant can never name something Cedar can't emit.
-        assert!(validate_permission_key("runPipeline").is_ok());
-        assert!(validate_permission_key("readJob").is_ok());
-        assert!(validate_permission_key("flyToTheMoon").is_err());
-    }
-
-    #[test]
-    fn grant_target_constructors_set_kind_and_value() {
-        let role = Grant::new(
+    fn grant_carries_the_role_it_confers() {
+        let grant = Grant::new(
             Principal::User(UserId::new("u1")),
             RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
             Scope::Organization(OrganizationId::new("o1")),
         );
-        assert_eq!(role.target.kind(), "role");
-        assert_eq!(role.target.value(), ORGANIZATION_ADMIN_ROLE);
-
-        let perm = Grant::with_permission(
-            Principal::User(UserId::new("u1")),
-            "runPipeline",
-            Scope::Organization(OrganizationId::new("o1")),
-        );
-        assert_eq!(perm.target.kind(), "permission");
-        assert_eq!(perm.target.value(), "runPipeline");
+        assert_eq!(grant.role.as_str(), ORGANIZATION_ADMIN_ROLE);
     }
 
     #[tokio::test]
     async fn anti_escalation_blocks_granting_more_than_you_hold() {
         let org = Scope::Organization(OrganizationId::new("o1"));
-        // Bob holds only `manageOrgGrants` on the org; Carol holds the
-        // full-control organization-admin role there.
-        let roles = vec![test_role(
-            ORGANIZATION_ADMIN_ROLE,
-            ScopeKind::Organization,
-            &[FULL_CONTROL],
-        )];
+        // Bob holds a narrow role conferring only `manageOrgGrants` on the org;
+        // Carol holds the full-control organization-admin role there.
+        let roles = vec![
+            test_role(
+                ORGANIZATION_ADMIN_ROLE,
+                ScopeKind::Organization,
+                &[FULL_CONTROL],
+            ),
+            test_role(
+                "grant-manager",
+                ScopeKind::Organization,
+                &["manageOrgGrants"],
+            ),
+        ];
         let uc = use_cases_with(
             vec![
-                Grant::with_permission(
+                Grant::new(
                     Principal::User(UserId::new("bob")),
-                    "manageOrgGrants",
+                    RoleName::new("grant-manager").unwrap(),
                     org.clone(),
                 ),
                 Grant::new(
@@ -510,19 +530,19 @@ mod tests {
             "escalation to full control must be blocked",
         );
 
-        // Bob CAN delegate a permission he himself holds.
+        // Bob CAN delegate the narrow role he himself holds.
         assert!(
             uc.grant(
                 &bob,
-                &Grant::with_permission(
+                &Grant::new(
                     Principal::User(UserId::new("alice")),
-                    "manageOrgGrants",
+                    RoleName::new("grant-manager").unwrap(),
                     org.clone(),
                 ),
             )
             .await
             .is_ok(),
-            "delegating a permission you hold is allowed",
+            "delegating a role whose permissions you hold is allowed",
         );
 
         // Carol (full control) may grant the org-admin role.
@@ -711,10 +731,10 @@ mod tests {
     fn removal_orphans_scope_ignores_non_owner_members() {
         let org = Scope::Organization(OrganizationId::new("o1"));
         let victim = Principal::User(UserId::new("u1"));
-        // The victim holds only a single permission, never an owner role.
-        let grants = vec![Grant::with_permission(
+        // The victim holds a non-owner role, so removing them orphans nothing.
+        let grants = vec![Grant::new(
             victim.clone(),
-            "readOrganization",
+            RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
             org.clone(),
         )];
         assert!(
@@ -774,107 +794,136 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn grant_requires_the_grantee_to_be_an_org_member() {
-        // Membership gates authority: a grant to a user outside the org would
-        // be inert under the Cedar member guard, so creating it is refused.
+    async fn a_project_grant_requires_admission_to_the_organization() {
+        // The tenant boundary. Admitting someone needs `manageOrgGrants`; a
+        // project admin then distributes access among the people already
+        // admitted, and cannot pull in an arbitrary account.
+        let roles = vec![
+            test_role(PROJECT_ADMIN_ROLE, ScopeKind::Project, &[FULL_CONTROL]),
+            test_role(
+                ORGANIZATION_MEMBER_ROLE,
+                ScopeKind::Organization,
+                &["readOrganization"],
+            ),
+        ];
+        let service = CallerContext::Service(ServiceIdentity::recorder());
+        let alice = Principal::User(UserId::new("alice"));
+        let grant = Grant::new(
+            alice.clone(),
+            RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
+            Scope::Project(ProjectId::new("p1")),
+        );
+
+        // Alice holds nothing under o1 yet.
+        let uc = use_cases_with(
+            vec![],
+            roles.clone(),
+            Arc::new(RecordingRegistry::default()),
+        );
+        assert!(
+            uc.grant(&service, &grant).await.is_err(),
+            "a project grant to someone the organization has not admitted must be refused"
+        );
+
+        // Once she holds the floor role on the org, the project grant lands.
+        let admitted = Grant::new(
+            alice,
+            RoleName::new(ORGANIZATION_MEMBER_ROLE).unwrap(),
+            Scope::Organization(OrganizationId::new("o1")),
+        );
+        let uc = use_cases_with(
+            vec![admitted],
+            roles,
+            Arc::new(RecordingRegistry::default()),
+        );
+        assert!(
+            uc.grant(&service, &grant).await.is_ok(),
+            "a project grant to an admitted user is accepted"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_organization_grant_needs_no_prior_admission() {
+        // Otherwise nobody could ever join: the org-scoped grant *is* the
+        // admission.
         let roles = vec![test_role(
             ORGANIZATION_ADMIN_ROLE,
             ScopeKind::Organization,
             &[FULL_CONTROL],
         )];
-        let service = CallerContext::Service(ServiceIdentity::recorder());
+        let uc = use_cases_with(vec![], roles, Arc::new(RecordingRegistry::default()));
         let grant = Grant::new(
             Principal::User(UserId::new("alice")),
             RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
             Scope::Organization(OrganizationId::new("o1")),
         );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles.clone(),
-            Arc::new(RecordingRegistry::default()),
-            vec![],
-        );
         assert!(
-            uc.grant(&service, &grant).await.is_err(),
-            "granting to a non-member of the org must be refused"
-        );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles,
-            Arc::new(RecordingRegistry::default()),
-            vec![OrganizationId::new("o1")],
-        );
-        assert!(
-            uc.grant(&service, &grant).await.is_ok(),
-            "granting to an org member is accepted"
+            uc.grant(&CallerContext::Service(ServiceIdentity::recorder()), &grant)
+                .await
+                .is_ok()
         );
     }
 
     #[tokio::test]
-    async fn project_grant_requires_membership_of_the_parent_org() {
-        // A project-scoped grant resolves the project's parent org (p1 → o1 in
-        // the stub) and applies the same membership rule there.
+    async fn app_grants_need_no_admission() {
+        // Machine Apps are owned by an organization by construction, never
+        // admitted to one.
         let roles = vec![test_role(
-            PROJECT_ADMIN_ROLE,
+            PROJECT_AGENT_ROLE,
             ScopeKind::Project,
-            &[FULL_CONTROL],
-        )];
-        let service = CallerContext::Service(ServiceIdentity::recorder());
-        let grant = Grant::new(
-            Principal::User(UserId::new("alice")),
-            RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
-            Scope::Project(ProjectId::new("p1")),
-        );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles.clone(),
-            Arc::new(RecordingRegistry::default()),
-            vec![],
-        );
-        assert!(
-            uc.grant(&service, &grant).await.is_err(),
-            "a project grant to a user outside the parent org must be refused"
-        );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles,
-            Arc::new(RecordingRegistry::default()),
-            vec![OrganizationId::new("o1")],
-        );
-        assert!(
-            uc.grant(&service, &grant).await.is_ok(),
-            "a project grant to a member of the parent org is accepted"
-        );
-    }
-
-    #[tokio::test]
-    async fn app_grants_are_exempt_from_the_membership_rule() {
-        // Machine Apps are owned by an org, never members of one.
-        let roles = vec![test_role(
-            ORGANIZATION_AGENT_ROLE,
-            ScopeKind::Organization,
             &["readPipeline", "executeJob"],
         )];
-        let uc = use_cases_with_members(
-            vec![],
-            roles,
-            Arc::new(RecordingRegistry::default()),
-            vec![],
-        );
+        let uc = use_cases_with(vec![], roles, Arc::new(RecordingRegistry::default()));
         let grant = Grant::new(
             Principal::App(AppId::new("agent-1")),
-            RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
-            Scope::Organization(OrganizationId::new("o1")),
+            RoleName::new(PROJECT_AGENT_ROLE).unwrap(),
+            Scope::Project(ProjectId::new("p1")),
         );
         assert!(
             uc.grant(&CallerContext::Service(ServiceIdentity::recorder()), &grant)
                 .await
                 .is_ok(),
-            "an App grant needs no membership"
+            "an App grant needs no admission"
         );
+    }
+
+    #[tokio::test]
+    async fn revoke_all_access_refuses_to_strip_the_last_owner() {
+        // The kill switch obeys the same rule as a single revoke: a scope must
+        // never be left without a human owner.
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        let alice = Principal::User(UserId::new("alice"));
+        let sole_owner = Grant::new(
+            alice.clone(),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            org.clone(),
+        );
+        let uc = use_cases(vec![sole_owner], Arc::new(RecordingRegistry::default()));
+        let service = CallerContext::Service(ServiceIdentity::recorder());
+
+        assert!(
+            uc.revoke_all_access(&service, &alice, &org).await.is_err(),
+            "stripping the only owner of an organization must be refused"
+        );
+    }
+
+    #[tokio::test]
+    async fn revoke_all_access_disconnects_a_machine_principal() {
+        // An App that just lost its access must not keep running on an
+        // already-open stream.
+        let app = Principal::App(AppId::new("agent-1"));
+        let project = Scope::Project(ProjectId::new("p1"));
+        let reg = Arc::new(RecordingRegistry::default());
+        let uc = use_cases(vec![], reg.clone());
+
+        uc.revoke_all_access(
+            &CallerContext::Service(ServiceIdentity::recorder()),
+            &app,
+            &project,
+        )
+        .await
+        .expect("revoke all");
+
+        assert_eq!(reg.disconnected(), vec!["agent-1".to_string()]);
     }
 }

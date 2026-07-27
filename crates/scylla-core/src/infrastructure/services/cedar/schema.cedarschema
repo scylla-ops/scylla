@@ -1,10 +1,10 @@
 // scylla — Cedar schema (V1). Validated against policies at startup.
 //
 // Entities form the tenancy hierarchy Pipeline ∈ Project ∈ Organization and
-// Job ∈ Pipeline. A User carries its role memberships (entity parents) plus
-// ABAC attributes listing the orgs/projects it belongs to. Actions are
-// fine-grained (one per use-case operation) so `appliesTo` pins the resource
-// type and policies stay readable.
+// Job ∈ Pipeline. Principals carry no attributes: what someone may do comes
+// entirely from the grants linked into the policy set. Actions are fine-grained
+// (one per use-case operation) so `appliesTo` pins the resource type and
+// policies stay readable.
 
 namespace Scylla {
     entity Service;
@@ -26,17 +26,17 @@ namespace Scylla {
     // Users are also `in [System]` so a System-scoped grant (system-admin)
     // reaches User-targeted actions (read/update/delete user) — without it,
     // System would only cover the org subtree, not user management.
-    entity User in [System] {
-        "memberOrgs": Set<Organization>,
-        "memberProjects": Set<Project>,
-    };
+    //
+    // A user carries no attributes: authorization reads grants, never who the
+    // principal belongs to, so there is nothing to materialise per request.
+    entity User in [System];
 
     // ── System-scoped (admin / service) ────────────────────────────────
     action "createUser", "listUsers",
            "createOrganization", "listOrganizations",
            "listProjects", "listPipelines",
            "createJob", "listJobs",
-           "managePolicies", "manageRoles"
+           "manageRoles"
         appliesTo { principal: [User, Service], resource: [System] };
 
     // Grant management is scope-aware, one action per scope so `appliesTo` pins
@@ -60,8 +60,7 @@ namespace Scylla {
 
     // ── Organization-targeted ──────────────────────────────────────────
     action "readOrganization", "updateOrganization", "deleteOrganization",
-           "listOrganizationMembers", "addOrganizationMember", "removeOrganizationMember",
-           "manageInvitations",
+           "listOrganizationMembers", "manageInvitations",
            "createProject", "createApp", "createAgent",
            "listProjectsByOrganization", "listPipelinesByOrganization", "listJobsByOrganization",
            "listAppsByOrganization", "listAgents"
@@ -69,8 +68,7 @@ namespace Scylla {
 
     // ── Project-targeted ───────────────────────────────────────────────
     action "readProject", "updateProject", "deleteProject",
-           "listProjectMembers", "addProjectMember", "removeProjectMember",
-           "createPipeline",
+           "listProjectMembers", "createPipeline",
            "listPipelinesByProject", "listJobsByProject",
            "createSecret", "listSecrets", "deleteSecret"
         appliesTo { principal: [User, Service], resource: [Project] };

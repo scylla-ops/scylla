@@ -1,8 +1,8 @@
 pub mod bootstrap;
 pub mod config;
 pub mod error;
-pub mod startup;
 pub mod rest;
+pub mod startup;
 
 #[cfg(feature = "grpc")]
 pub mod grpc;

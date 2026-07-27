@@ -208,4 +208,3 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         self.job_repo.set_agent(job_id, app_id).await
     }
 }
-

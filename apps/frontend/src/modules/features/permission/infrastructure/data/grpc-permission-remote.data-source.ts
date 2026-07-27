@@ -1,5 +1,4 @@
 import { GrantServiceClient } from '@/generated/scylla/authz/v1/grant.client.ts';
-import { PolicyServiceClient } from '@/generated/scylla/authz/v1/policy.client.ts';
 import { RoleServiceClient } from '@/generated/scylla/authz/v1/role.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
@@ -41,12 +40,10 @@ const required = <T>(value: T | undefined, what: string): T => {
 export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
   private readonly _roles: RoleServiceClient;
   private readonly _grants: GrantServiceClient;
-  private readonly _policies: PolicyServiceClient;
 
   constructor(transport: CoreGrpcTransport) {
     this._roles = new RoleServiceClient(transport.getTransport());
     this._grants = new GrantServiceClient(transport.getTransport());
-    this._policies = new PolicyServiceClient(transport.getTransport());
   }
 
   public listRoles(): Promise<ScyllaResult<Role[]>> {
@@ -91,6 +88,13 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
     );
   }
 
+  public getMyPermissions(): Promise<ScyllaResult<EffectiveScope[]>> {
+    return ScyllaResult.tryAsync(
+      async () => (await this._roles.getMyPermissions({})).response.scopes,
+      'Failed to fetch your own permissions.',
+    );
+  }
+
   public listGrants(scope?: ScopeRef): Promise<ScyllaResult<Grant[]>> {
     return ScyllaResult.tryAsync(
       async () => (await this._grants.listGrants({ scope })).response.grants,
@@ -120,7 +124,7 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
 
   public listAuthzVocabulary(): Promise<ScyllaResult<AuthzAction[]>> {
     return ScyllaResult.tryAsync(
-      async () => (await this._policies.listAuthzVocabulary({})).response.actions,
+      async () => (await this._roles.listAuthzVocabulary({})).response.actions,
       'Failed to load authz vocabulary.',
     );
   }

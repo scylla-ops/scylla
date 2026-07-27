@@ -2,6 +2,7 @@ use crate::application::HashService;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::app::credential_repository::AppCredentialRepository;
 use crate::application::app::repository::AppRepository;
+use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::entities::{App, AppCredential, AppCredentialId, AppId, OrganizationId};
@@ -39,12 +40,13 @@ pub struct CreatedAppSecret {
 /// enable) is gated on the app permissions: reading uses `ReadApp`, mutating
 /// uses `DeleteApp` (the manage-level app permission).
 #[derive(Constructor)]
-pub struct AppUseCases<A, C, H, PS>
+pub struct AppUseCases<A, C, H, PS, PC>
 where
     A: AppRepository,
     C: AppCredentialRepository,
     H: HashService,
     PS: PermissionService,
+    PC: PolicyControl,
 {
     app_repo: Arc<A>,
     credential_repo: Arc<C>,
@@ -54,14 +56,16 @@ where
     /// here so a connected agent stops at once. No-op for apps that aren't
     /// connected agents.
     registry: Arc<dyn AgentDispatch>,
+    policy_control: Arc<PC>,
 }
 
-impl<A, C, H, PS> AppUseCases<A, C, H, PS>
+impl<A, C, H, PS, PC> AppUseCases<A, C, H, PS, PC>
 where
     A: AppRepository,
     C: AppCredentialRepository,
     H: HashService,
     PS: PermissionService,
+    PC: PolicyControl,
 {
     #[instrument(skip(self, caller), fields(org_id = %organization_id, name = %name))]
     pub async fn create(
@@ -119,7 +123,10 @@ where
         self.permission_service
             .check(caller, Permission::DeleteApp(id.clone()))
             .await?;
-        self.app_repo.delete(&id).await
+        // A DB trigger drops every grant this app held with the row; reload so
+        // the live policy set stops carrying their dead links.
+        self.app_repo.delete(&id).await?;
+        self.policy_control.reload().await
     }
 
     /// Enable or disable the whole app. Disabling has three effects: new token

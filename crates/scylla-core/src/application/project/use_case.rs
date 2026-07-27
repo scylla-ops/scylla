@@ -1,53 +1,38 @@
-use crate::application::authz::grant::{
-    Grant, GrantRepository, Principal, Scope, removal_orphans_scope,
-};
+use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::{
-    DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
-};
+use crate::application::authz::{Visibility, VisibilityResolver};
 use crate::application::caller::CallerContext;
-use crate::application::{
-    PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
-};
+use crate::application::{PermissionService, ProjectRepository, UserRepository};
 use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
 
-// One collaborator per port plus quotas: the derived `new` takes 8 args, which
-// trips too_many_arguments. Splitting a use case's ports into a bundle struct
-// buys nothing here, so allow it locally rather than widen the workspace lint.
-#[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct ProjectUseCases<
     P: ProjectRepository,
-    UP: UserProjectRepository,
     U: UserRepository,
     PS: PermissionService,
     PC: PolicyControl,
 > {
     project_repo: Arc<P>,
-    user_project_repo: Arc<UP>,
     user_repo: Arc<U>,
-    grant_repo: Arc<dyn GrantRepository>,
     permission_service: Arc<PS>,
+    /// Narrows listings to what the caller holds, for the pages a single
+    /// yes/no check cannot answer.
+    visibility: Arc<dyn VisibilityResolver>,
     policy_control: Arc<PC>,
-    default_roles: Arc<dyn DefaultRoleBindingRepository>,
     /// Per-org limits enforced on project creation.
     quotas: crate::application::quota::Quotas,
 }
 
-impl<
-    P: ProjectRepository,
-    UP: UserProjectRepository,
-    U: UserRepository,
-    PS: PermissionService,
-    PC: PolicyControl,
-> ProjectUseCases<P, UP, U, PS, PC>
+impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyControl>
+    ProjectUseCases<P, U, PS, PC>
 {
     #[instrument(skip(self, caller), fields(name = %name, org_id = %organization_id))]
     pub async fn create(
@@ -75,25 +60,20 @@ impl<
 
         let project = Project::create(name, description, organization_id)?;
 
-        // Enroll the human creator as a member + project-admin of the project they
-        // just created — mirrors organization create. The project insert,
-        // membership and owner grant happen in ONE transaction so a partial
-        // failure can never leave a project without an owner. Machine/anonymous
-        // callers have no human to enroll, so they just get the bare project.
+        // The human creator becomes the project's admin. The project row and the
+        // owner grant are written in ONE transaction, so a partial failure can
+        // never leave a project without an owner. Machine/anonymous callers have
+        // nobody to make owner, so they just get the bare project.
         match caller {
             CallerContext::User(user_id) => {
-                let role = resolve_default_role(
-                    self.default_roles.as_ref(),
-                    DefaultRoleSlot::ProjectCreation,
-                )
-                .await?;
+                let role = RoleName::new(PROJECT_ADMIN_ROLE)?;
                 let grant = Grant::new(
                     Principal::User(user_id.clone()),
                     role,
                     Scope::Project(project.id().clone()),
                 );
                 self.project_repo
-                    .provision_with_owner(&project, user_id, &grant)
+                    .provision_with_owner(&project, &grant)
                     .await?;
                 // Make the project-admin grant live now so the creator can act on
                 // the project immediately, without a control-plane restart.
@@ -161,7 +141,10 @@ impl<
             .check(caller, Permission::DeleteProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await?;
-        self.project_repo.delete(id).await
+        // A DB trigger drops the project-scoped grants with the row; reload so
+        // the live policy set stops carrying their dead links.
+        self.project_repo.delete(id).await?;
+        self.policy_control.reload().await
     }
 
     #[instrument(skip(self, caller))]
@@ -176,6 +159,14 @@ impl<
         self.project_repo.list_all(pagination).await
     }
 
+    /// The organization's projects, narrowed to the ones the caller may see.
+    ///
+    /// Deliberately not gated on `listProjectsByOrganization`: that permission
+    /// means "see *all* of them" and comes from an organization-wide role.
+    /// Someone holding only a project role has no business being refused the
+    /// whole listing — they should see their own project and nothing else,
+    /// which is what the filter expresses. Reading the organization at all is
+    /// still required, so this is not an open endpoint.
     #[instrument(skip(self, caller), fields(organization_id = %organization_id))]
     pub async fn list_by_organization(
         &self,
@@ -186,14 +177,37 @@ impl<
         self.permission_service
             .check(
                 caller,
-                Permission::ListProjectsByOrganization(organization_id.clone()),
+                Permission::ReadOrganization(organization_id.clone()),
             )
             .await?;
+
+        // Holding the org-wide list permission means nothing is hidden; anything
+        // else is narrowed to the scopes the caller actually holds.
+        let visible = if self
+            .permission_service
+            .check(
+                caller,
+                Permission::ListProjectsByOrganization(organization_id.clone()),
+            )
+            .await
+            .is_ok()
+        {
+            Visibility::All
+        } else {
+            self.visibility
+                .visible_scopes(caller, Permission::ReadProject(ProjectId::new("_")).key())
+                .await?
+        };
+
         self.project_repo
-            .list_by_organization(organization_id, pagination)
+            .list_by_organization(organization_id, pagination, &visible)
             .await
     }
 
+    /// Everyone on the project: the principals holding a grant scoped to it.
+    /// Holders of an organization-wide grant are not listed — they administer
+    /// the organization rather than work here, and the scope hierarchy already
+    /// gives them the access they need.
     #[instrument(skip(self, caller), fields(project_id = %project_id))]
     pub async fn list_users(
         &self,
@@ -206,12 +220,12 @@ impl<
             .await?;
 
         let paginated = self
-            .user_project_repo
-            .list_members(project_id, pagination)
+            .project_repo
+            .list_principals(project_id, pagination)
             .await?;
         let (user_ids, metadata) = paginated.into_parts();
 
-        // Batched read + re-order to the paginated membership order.
+        // Batched read + re-order to the paginated order.
         let mut by_id: std::collections::HashMap<String, User> = self
             .user_repo
             .find_by_ids(&user_ids)
@@ -227,6 +241,8 @@ impl<
         Ok((users, metadata))
     }
 
+    /// The projects a user works on: granted directly, or through a grant on the
+    /// owning organization.
     #[instrument(skip(self, caller), fields(user_id = %user_id))]
     pub async fn list_user_projects(
         &self,
@@ -238,80 +254,7 @@ impl<
             .check(caller, Permission::ListUserProjects(user_id.clone()))
             .await?;
 
-        let paginated = self
-            .user_project_repo
-            .list_user_projects(user_id, pagination)
-            .await?;
-        let (project_ids, metadata) = paginated.into_parts();
-
-        let mut by_id: std::collections::HashMap<String, Project> = self
-            .project_repo
-            .find_by_ids(&project_ids)
-            .await?
-            .into_iter()
-            .map(|p| (p.id().as_str().to_owned(), p))
-            .collect();
-        let projects = project_ids
-            .iter()
-            .filter_map(|id| by_id.remove(id.as_str()))
-            .collect();
-
-        Ok((projects, metadata))
-    }
-
-    #[instrument(skip(self, caller), fields(user_id = %user_id, project_id = %project_id))]
-    pub async fn add_user(
-        &self,
-        caller: &CallerContext,
-        user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<()> {
-        self.permission_service
-            .check(caller, Permission::AddProjectMember(project_id.clone()))
-            .await?;
-
-        if self
-            .user_project_repo
-            .is_member(user_id, project_id)
-            .await?
-        {
-            return Err(DomainError::conflict(
-                "User is already a member of this project",
-            ));
-        }
-
-        self.user_project_repo.add_member(user_id, project_id).await
-    }
-
-    #[instrument(skip(self, caller), fields(user_id = %user_id, project_id = %project_id))]
-    pub async fn remove_user(
-        &self,
-        caller: &CallerContext,
-        user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<()> {
-        self.permission_service
-            .check(caller, Permission::RemoveProjectMember(project_id.clone()))
-            .await?;
-
-        // A user removed from a project may still be an org member, so their
-        // project-scoped grants must be deleted with the membership row —
-        // atomically — or they would keep authorizing. Guard the scope's last
-        // human owner before stripping anyone.
-        let scope = Scope::Project(project_id.clone());
-        let principal = Principal::User(user_id.clone());
-        let grants = self.grant_repo.list_all().await?;
-        if removal_orphans_scope(&grants, &scope, &principal) {
-            return Err(DomainError::business_rule(
-                "cannot remove the last owner of this project",
-            ));
-        }
-
-        self.project_repo
-            .remove_member_and_grants(user_id, project_id)
-            .await?;
-        // Deleted grant rows only stop authorizing once the policy set is
-        // rebuilt.
-        self.policy_control.reload().await
+        let paginated = self.project_repo.list_for_user(user_id, pagination).await?;
+        Ok(paginated.into_parts())
     }
 }

@@ -1,4 +1,5 @@
 use super::PgProjectRepository;
+use crate::application::authz::Visibility;
 use crate::application::{OrganizationRepository, ProjectRepository};
 use crate::domain::errors::DomainError;
 use crate::infrastructure::persistence::postgres::PgOrganizationRepository;
@@ -41,8 +42,7 @@ async fn project_quota_enforced(pool: PgPool) {
     use crate::domain::value_objects::project::ProjectName;
     use crate::infrastructure::CedarPermissionService;
     use crate::infrastructure::persistence::postgres::{
-        PgAuthzEntityProvider, PgDefaultRoleBindingRepository, PgGrantRepository,
-        PgPolicyRepository, PgRoleRepository, PgUserProjectRepository, PgUserRepository,
+        PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
     };
     use std::sync::Arc;
 
@@ -52,7 +52,6 @@ async fn project_quota_enforced(pool: PgPool) {
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
-            Arc::new(PgPolicyRepository::new(pool.clone())),
             Arc::new(NoopAuditLog),
         )
         .await
@@ -60,12 +59,10 @@ async fn project_quota_enforced(pool: PgPool) {
     );
     let uc = ProjectUseCases::new(
         Arc::new(PgProjectRepository::new(pool.clone())),
-        Arc::new(PgUserProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),
-        Arc::new(PgGrantRepository::new(pool.clone())),
+        permission.clone(),
         permission.clone(),
         permission,
-        Arc::new(PgDefaultRoleBindingRepository::new(pool.clone())),
         Quotas {
             max_projects_per_org: 2,
         },
@@ -117,7 +114,7 @@ async fn list_by_organization_filters_other_orgs(pool: PgPool) {
     repo.create(&project(&org_b, "b1")).await.unwrap();
 
     assert_eq!(
-        repo.list_by_organization(org_a.id(), None)
+        repo.list_by_organization(org_a.id(), None, &Visibility::All)
             .await
             .unwrap()
             .metadata()
@@ -125,7 +122,7 @@ async fn list_by_organization_filters_other_orgs(pool: PgPool) {
         2,
     );
     assert_eq!(
-        repo.list_by_organization(org_b.id(), None)
+        repo.list_by_organization(org_b.id(), None, &Visibility::All)
             .await
             .unwrap()
             .metadata()
@@ -176,18 +173,16 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
 }
 
 /// H1: creating a project for a human owner must atomically write the project,
-/// the membership row AND a `project-admin` owner grant — so a project is never
-/// left without an administrator.
+/// a `project-admin` owner grant — so a project is never left without an
+/// administrator. That grant is also what puts the creator on the project:
+/// there is no second row to write.
 #[sqlx::test(migrations = "../../migrations")]
-async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
-    use crate::application::UserProjectRepository;
+async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
     use crate::application::authz::grant::{
-        Grant, GrantRepository, GrantTarget, PROJECT_ADMIN_ROLE, Principal, Scope,
+        Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
     };
     use crate::domain::value_objects::role::RoleName;
-    use crate::infrastructure::persistence::postgres::{
-        PgGrantRepository, PgUserProjectRepository,
-    };
+    use crate::infrastructure::persistence::postgres::PgGrantRepository;
 
     let org = seed_org(&pool, "acme").await;
     let owner = seed_user(&pool, "alice").await;
@@ -199,7 +194,7 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
     );
 
     let repo = PgProjectRepository::new(pool.clone());
-    repo.provision_with_owner(&project, owner.id(), &grant)
+    repo.provision_with_owner(&project, &grant)
         .await
         .expect("provision");
 
@@ -207,18 +202,11 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
         repo.find_by_id(project.id()).await.unwrap().id(),
         project.id()
     );
-    assert!(
-        PgUserProjectRepository::new(pool.clone())
-            .is_member(owner.id(), project.id())
-            .await
-            .unwrap(),
-        "creator should be a project member",
-    );
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
         grants.iter().any(|g| {
             matches!(&g.principal, Principal::User(u) if u.as_str() == owner.id().as_str())
-                && matches!(&g.target, GrantTarget::Role(r) if r.as_str() == PROJECT_ADMIN_ROLE)
+                && g.role.as_str() == PROJECT_ADMIN_ROLE
                 && matches!(&g.scope, Scope::Project(p) if p.as_str() == project.id().as_str())
         }),
         "creator should hold a project-admin owner grant",
@@ -229,33 +217,106 @@ async fn provision_with_owner_writes_membership_and_owner_grant(pool: PgPool) {
 /// dangling owner id → FK violation) rolls back the project too.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
-    use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
-    use crate::domain::entities::UserId;
+    use crate::application::authz::grant::{
+        Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
+    };
     use crate::domain::value_objects::role::RoleName;
+    use crate::infrastructure::persistence::postgres::PgGrantRepository;
 
+    // Note what this no longer proves: it used to fail on a dangling owner,
+    // because the membership row had a foreign key to `users`. `grants` has
+    // none — `principal_id` is polymorphic — so a fabricated owner id now
+    // inserts cleanly. Nothing in the API can produce one (the owner is the
+    // authenticated caller), and the delete triggers clear grants when a user
+    // goes, but the database no longer refuses it on its own.
     let org = seed_org(&pool, "acme").await;
+    let owner = seed_user(&pool, "alice").await;
     let project = project(&org, "rocket");
-    let ghost = UserId::new("does-not-exist");
+    let repo = PgProjectRepository::new(pool.clone());
+
+    // The project already exists, so the insert inside the transaction fails.
+    repo.create(&project).await.expect("seed the clash");
+
     let grant = Grant::new(
-        Principal::User(ghost.clone()),
+        Principal::User(owner.id().clone()),
         RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
         Scope::Project(project.id().clone()),
     );
+    assert!(
+        repo.provision_with_owner(&project, &grant).await.is_err(),
+        "a duplicate project id must fail the transaction"
+    );
 
-    let repo = PgProjectRepository::new(pool.clone());
-    let err = repo
-        .provision_with_owner(&project, &ghost, &grant)
+    // And the grant must not have survived the rollback.
+    let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
+    assert!(
+        grants.is_empty(),
+        "the owner grant is rolled back with the project insert"
+    );
+}
+
+/// The visibility rule, end to end: in an organization you see the projects you
+/// hold a role on, and nothing else. This is the whole point of removing the
+/// membership floor, so it is asserted against a real database rather than a
+/// stub.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
+    use crate::application::audit::NoopAuditLog;
+    use crate::application::authz::grant::{
+        Grant, GrantRepository, PROJECT_VIEWER_ROLE, Principal, Scope,
+    };
+    use crate::application::authz::{Visibility, VisibilityResolver};
+    use crate::application::caller::CallerContext;
+    use crate::domain::value_objects::role::RoleName;
+    use crate::infrastructure::CedarPermissionService;
+    use crate::infrastructure::persistence::postgres::{
+        PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository,
+    };
+    use std::sync::Arc;
+
+    let org = seed_org(&pool, "acme").await;
+    let mine = seed_project(&pool, &org, "apollo").await;
+    let _theirs = seed_project(&pool, &org, "zeus").await;
+    let alice = seed_user(&pool, "alice").await;
+
+    PgGrantRepository::new(pool.clone())
+        .create(&Grant::new(
+            Principal::User(alice.id().clone()),
+            RoleName::new(PROJECT_VIEWER_ROLE).unwrap(),
+            Scope::Project(mine.id().clone()),
+        ))
         .await
-        .expect_err("FK violation on the dangling owner");
-    assert!(
-        matches!(err, DomainError::Conflict(_)),
-        "FK violation maps to Conflict"
+        .unwrap();
+
+    let permission = CedarPermissionService::new(
+        Arc::new(PgAuthzEntityProvider::new(pool.clone())),
+        Arc::new(PgRoleRepository::new(pool.clone())),
+        Arc::new(PgGrantRepository::new(pool.clone())),
+        Arc::new(NoopAuditLog),
+    )
+    .await
+    .expect("cedar");
+
+    let visible = permission
+        .visible_scopes(&CallerContext::User(alice.id().clone()), "readProject")
+        .await
+        .expect("visible scopes");
+    assert_eq!(
+        visible,
+        Visibility::Scoped {
+            orgs: vec![],
+            projects: vec![mine.id().clone()],
+        }
     );
-    assert!(
-        matches!(
-            repo.find_by_id(project.id()).await,
-            Err(DomainError::NotFound { .. })
-        ),
-        "the project insert must have rolled back",
+
+    let page = PgProjectRepository::new(pool)
+        .list_by_organization(org.id(), None, &visible)
+        .await
+        .expect("list");
+    assert_eq!(
+        page.metadata().total_count(),
+        1,
+        "the other project is not hers"
     );
+    assert_eq!(page.items()[0].id(), mine.id());
 }

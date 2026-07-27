@@ -151,8 +151,9 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
             | JobStatus::Cancelled
             | JobStatus::Orphaned => (Some(now - chrono::Duration::seconds(1)), Some(now)),
         };
-        let state = crate::domain::entities::JobState::from_columns(status, started_at, finished_at)
-            .unwrap();
+        let state =
+            crate::domain::entities::JobState::from_columns(status, started_at, finished_at)
+                .unwrap();
         Job::from_persistence(
             JobId::generate(),
             pipeline.id().clone(),

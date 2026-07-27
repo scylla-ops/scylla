@@ -1,4 +1,6 @@
-use crate::application::authz::grant::{Grant, Principal, Scope, validate_role_in_db};
+use crate::application::authz::grant::{
+    Grant, ORGANIZATION_MEMBER_ROLE, Principal, Scope, validate_role_in_db,
+};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::role::RoleRepository;
 use crate::application::authz::service::PermissionService;
@@ -180,13 +182,19 @@ where
                 (Some(user), id)
             };
 
-        let grant = invite.role().map(|role| {
-            Grant::new(
-                Principal::User(user_id.clone()),
-                role.clone(),
-                Scope::Organization(invite.organization_id().clone()),
-            )
-        });
+        // The grant is what joins them to the organization, so an invitation
+        // without a named role still mints one: `organization-member`, which
+        // confers only the ability to see that the organization exists. Without
+        // it the invitee would accept and land on an empty account.
+        let role = match invite.role() {
+            Some(role) => role.clone(),
+            None => RoleName::new(ORGANIZATION_MEMBER_ROLE)?,
+        };
+        let grant = Grant::new(
+            Principal::User(user_id.clone()),
+            role,
+            Scope::Organization(invite.organization_id().clone()),
+        );
 
         self.invite_repo
             .accept_atomic(
@@ -194,13 +202,11 @@ where
                 new_user.as_ref(),
                 &user_id,
                 invite.organization_id(),
-                grant.as_ref(),
+                &grant,
             )
             .await?;
 
-        if grant.is_some() {
-            self.policy_control.reload().await?;
-        }
+        self.policy_control.reload().await?;
 
         let session_token = Uuid::new_v4().to_string();
         let session = Session::create(

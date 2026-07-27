@@ -42,7 +42,6 @@ impl_wrapper!(
     common::NodeId,
     common::SecretId,
     common::TriggerId,
-    common::PolicyId,
     common::GrantId,
     common::RoleId,
     common::Email,
@@ -181,9 +180,9 @@ pub fn scope_kind_from_proto(kind: i32) -> Result<ScopeKind, Status> {
         Ok(ProtoScopeKind::System) => Ok(ScopeKind::System),
         Ok(ProtoScopeKind::Organization) => Ok(ScopeKind::Organization),
         Ok(ProtoScopeKind::Project) => Ok(ScopeKind::Project),
-        Ok(ProtoScopeKind::Unspecified) | Err(_) => {
-            Err(Status::invalid_argument("unknown or unspecified scope kind"))
-        }
+        Ok(ProtoScopeKind::Unspecified) | Err(_) => Err(Status::invalid_argument(
+            "unknown or unspecified scope kind",
+        )),
     }
 }
 

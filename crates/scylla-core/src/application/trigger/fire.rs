@@ -105,7 +105,10 @@ where
     ) -> DomainResult<Job> {
         let trigger = self.trigger_repo.find_by_id(trigger_id).await?;
         self.permission_service
-            .check(caller, Permission::RunPipeline(trigger.pipeline_id().clone()))
+            .check(
+                caller,
+                Permission::RunPipeline(trigger.pipeline_id().clone()),
+            )
             .await?;
         self.fire(trigger_id, None, None).await
     }

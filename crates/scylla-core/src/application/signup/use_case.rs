@@ -1,13 +1,11 @@
-use crate::application::authz::grant::{Grant, Principal, Scope};
+use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::{
-    DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
-};
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{HashService, SessionRepository};
 use crate::domain::entities::{Organization, OrganizationId, Session, User, UserId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::organization::OrganizationName;
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;
@@ -42,7 +40,6 @@ where
     session_repo: Arc<S>,
     hash_service: Arc<H>,
     policy_control: Arc<PC>,
-    default_roles: Arc<dyn DefaultRoleBindingRepository>,
 }
 
 impl<SR, S, H, PC> SignupUseCases<SR, S, H, PC>
@@ -65,8 +62,7 @@ where
         let organization = Organization::create(organization_name, None)?;
 
         // The org creator becomes its admin via a scoped grant on their own org.
-        let role =
-            resolve_default_role(self.default_roles.as_ref(), DefaultRoleSlot::OrgCreation).await?;
+        let role = RoleName::new(ORGANIZATION_ADMIN_ROLE)?;
         let grant = Grant::new(
             Principal::User(user.id().clone()),
             role,

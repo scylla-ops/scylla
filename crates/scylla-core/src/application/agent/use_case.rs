@@ -75,7 +75,12 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
         let start = self.next.fetch_add(1, Ordering::Relaxed);
         let n = agents.len();
         let mut order: Vec<usize> = (0..n).collect();
-        order.sort_by_key(|&i| (self.registry.in_flight(&agents[i]), start.wrapping_add(i) % n));
+        order.sort_by_key(|&i| {
+            (
+                self.registry.in_flight(&agents[i]),
+                start.wrapping_add(i) % n,
+            )
+        });
         for i in order {
             let app_id = &agents[i];
             let caller = CallerContext::App(app_id.clone());
@@ -317,7 +322,12 @@ mod tests {
         }
         fn disconnect(&self, _app_id: &AppId) {}
         fn in_flight(&self, app_id: &AppId) -> usize {
-            *self.loads.lock().unwrap().get(app_id.as_str()).unwrap_or(&0)
+            *self
+                .loads
+                .lock()
+                .unwrap()
+                .get(app_id.as_str())
+                .unwrap_or(&0)
         }
         fn release(&self, app_id: &AppId) {
             if let Some(v) = self.loads.lock().unwrap().get_mut(app_id.as_str()) {
@@ -380,7 +390,10 @@ mod tests {
         // Two equally-authorized connected agents. Before the round-robin fix
         // every job went to the first one and the second starved; now four
         // dispatches must split two-and-two.
-        let registry = Arc::new(StubRegistry::new(vec![AppId::new("app-a"), AppId::new("app-b")]));
+        let registry = Arc::new(StubRegistry::new(vec![
+            AppId::new("app-a"),
+            AppId::new("app-b"),
+        ]));
         let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPermsAll));
 
         for _ in 0..4 {

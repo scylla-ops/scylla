@@ -62,8 +62,6 @@ async fn handle(
         // Opaque: never reveal whether a trigger id exists or is enabled.
         Err(WebhookError::NotFound) => (StatusCode::NOT_FOUND, "not found"),
         Err(WebhookError::BadSignature) => (StatusCode::UNAUTHORIZED, "invalid signature"),
-        Err(WebhookError::Internal(_)) => {
-            (StatusCode::INTERNAL_SERVER_ERROR, "internal error")
-        }
+        Err(WebhookError::Internal(_)) => (StatusCode::INTERNAL_SERVER_ERROR, "internal error"),
     }
 }

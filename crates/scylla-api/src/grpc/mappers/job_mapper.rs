@@ -86,11 +86,9 @@ pub fn job_node_to_proto(node: &JobNode) -> ProtoJobNode {
 fn node_execution_to_proto(execution: &NodeExecution) -> job_node::Execution {
     match execution {
         NodeExecution::Pending => job_node::Execution::Pending(job_node::Pending {}),
-        NodeExecution::Running { started_at } => {
-            job_node::Execution::Running(job_node::Running {
-                started_at: ts(*started_at),
-            })
-        }
+        NodeExecution::Running { started_at } => job_node::Execution::Running(job_node::Running {
+            started_at: ts(*started_at),
+        }),
         NodeExecution::Finished {
             started_at,
             finished_at,

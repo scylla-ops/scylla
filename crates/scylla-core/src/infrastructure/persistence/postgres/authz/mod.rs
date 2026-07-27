@@ -1,7 +1,5 @@
-use crate::application::authz::entity_provider::{
-    AuthzEntityProvider, PrincipalAuthz, ResourceAncestors,
-};
-use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
+use crate::application::authz::entity_provider::{AuthzEntityProvider, ResourceAncestors};
+use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::permission::ResourceRef;
 use async_trait::async_trait;
@@ -10,9 +8,10 @@ use tracing::instrument;
 
 use super::error::SqlxResultExt;
 
-/// Loads the authz facts Cedar needs from the existing membership tables and
-/// tenancy foreign keys. Read-only; one query per dimension, no caching (fine
-/// at current scale — revisit if check latency matters).
+/// Resolves a resource's place in the tenancy tree for Cedar, over the
+/// pipeline→project→org foreign keys. Read-only. Principals need nothing
+/// materialised: their authority lives in the grants compiled into the policy
+/// set, so there is no per-principal query on the check path at all.
 #[derive(Clone)]
 pub struct PgAuthzEntityProvider {
     pool: PgPool,
@@ -27,38 +26,6 @@ impl PgAuthzEntityProvider {
 
 #[async_trait]
 impl AuthzEntityProvider for PgAuthzEntityProvider {
-    #[instrument(skip(self), fields(user_id = %user))]
-    async fn principal_authz(&self, user: &UserId) -> DomainResult<PrincipalAuthz> {
-        let org_rows = sqlx::query!(
-            "SELECT organization_id FROM user_organization WHERE user_id = $1",
-            user.as_str(),
-        )
-        .fetch_all(&self.pool)
-        .await
-        .to_domain()?;
-        let member_orgs = org_rows
-            .into_iter()
-            .map(|r| OrganizationId::new(r.organization_id))
-            .collect();
-
-        let proj_rows = sqlx::query!(
-            "SELECT project_id FROM user_project WHERE user_id = $1",
-            user.as_str(),
-        )
-        .fetch_all(&self.pool)
-        .await
-        .to_domain()?;
-        let member_projects = proj_rows
-            .into_iter()
-            .map(|r| ProjectId::new(r.project_id))
-            .collect();
-
-        Ok(PrincipalAuthz {
-            member_orgs,
-            member_projects,
-        })
-    }
-
     #[instrument(skip(self))]
     async fn resource_ancestors(&self, resource: &ResourceRef) -> DomainResult<ResourceAncestors> {
         match resource {

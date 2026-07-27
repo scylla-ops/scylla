@@ -36,9 +36,10 @@ pub use persistence::postgres::PgOrganizationRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgPipelineRepository;
 #[cfg(feature = "postgres")]
-pub use persistence::postgres::PgPolicyRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgProjectRepository;
+#[cfg(feature = "postgres")]
+pub use persistence::postgres::PgRoleRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgSecretRepository;
 #[cfg(feature = "postgres")]
@@ -50,13 +51,9 @@ pub use persistence::postgres::PgTriggerDeliveryRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgTriggerRepository;
 #[cfg(feature = "postgres")]
-pub use persistence::postgres::PgUserOrganizationRepository;
 #[cfg(feature = "postgres")]
-pub use persistence::postgres::PgUserProjectRepository;
 #[cfg(feature = "postgres")]
 pub use persistence::postgres::PgUserRepository;
-#[cfg(feature = "postgres")]
-pub use persistence::postgres::{PgDefaultRoleBindingRepository, PgRoleRepository};
 #[cfg(feature = "postgres")]
 #[cfg(feature = "hash")]
 pub use services::Argon2HashService;

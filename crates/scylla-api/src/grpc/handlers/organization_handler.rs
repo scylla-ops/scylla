@@ -7,20 +7,17 @@ use crate::grpc::mappers::{
 use derive_more::Constructor;
 use scylla_core::application::OrganizationUseCases;
 use scylla_core::application::authz::policy::PolicyControl;
-use scylla_core::application::{
-    OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
-};
+use scylla_core::application::{OrganizationRepository, PermissionService, UserRepository};
 use scylla_core::domain::entities::{OrganizationId, UserId};
 use scylla_core::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use scylla_protocol::organization::v1::{
-    AddOrganizationMemberRequest, AddOrganizationMemberResponse, CreateOrganizationRequest,
-    CreateOrganizationResponse, DeleteOrganizationRequest, DeleteOrganizationResponse,
-    GetOrganizationRequest, GetOrganizationResponse, ListOrganizationMembersRequest,
-    ListOrganizationMembersResponse, ListOrganizationsRequest, ListOrganizationsResponse,
-    ListUserOrganizationsRequest, ListUserOrganizationsResponse, Organization as ProtoOrganization,
-    OrganizationMember, RemoveOrganizationMemberRequest, RemoveOrganizationMemberResponse,
-    SetOrganizationActiveRequest, SetOrganizationActiveResponse, UpdateOrganizationRequest,
-    UpdateOrganizationResponse, organization_service_server::OrganizationService,
+    CreateOrganizationRequest, CreateOrganizationResponse, DeleteOrganizationRequest,
+    DeleteOrganizationResponse, GetOrganizationRequest, GetOrganizationResponse,
+    ListOrganizationMembersRequest, ListOrganizationMembersResponse, ListOrganizationsRequest,
+    ListOrganizationsResponse, ListUserOrganizationsRequest, ListUserOrganizationsResponse,
+    Organization as ProtoOrganization, OrganizationMember, SetOrganizationActiveRequest,
+    SetOrganizationActiveResponse, UpdateOrganizationRequest, UpdateOrganizationResponse,
+    organization_service_server::OrganizationService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -28,22 +25,20 @@ use tonic::{Request, Response, Status};
 #[derive(Constructor)]
 pub struct OrganizationHandler<
     O: OrganizationRepository,
-    UO: UserOrganizationRepository,
     U: UserRepository,
     PS: PermissionService,
     PC: PolicyControl,
 > {
-    use_cases: Arc<OrganizationUseCases<O, UO, U, PS, PC>>,
+    use_cases: Arc<OrganizationUseCases<O, U, PS, PC>>,
 }
 
 #[async_trait::async_trait]
 impl<
     O: OrganizationRepository + Send + Sync + 'static,
-    UO: UserOrganizationRepository + Send + Sync + 'static,
     U: UserRepository + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
     PC: PolicyControl + Send + Sync + 'static,
-> OrganizationService for OrganizationHandler<O, UO, U, PS, PC>
+> OrganizationService for OrganizationHandler<O, U, PS, PC>
 {
     async fn create_organization(
         &self,
@@ -170,7 +165,8 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (orgs, metadata) = result.into_parts();
-        let organizations: Vec<ProtoOrganization> = orgs.iter().map(organization_to_proto).collect();
+        let organizations: Vec<ProtoOrganization> =
+            orgs.iter().map(organization_to_proto).collect();
 
         Ok(Response::new(ListOrganizationsResponse {
             organizations,
@@ -222,45 +218,12 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        let organizations: Vec<ProtoOrganization> = orgs.iter().map(organization_to_proto).collect();
+        let organizations: Vec<ProtoOrganization> =
+            orgs.iter().map(organization_to_proto).collect();
 
         Ok(Response::new(ListUserOrganizationsResponse {
             organizations,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
-    }
-
-    async fn add_organization_member(
-        &self,
-        request: Request<AddOrganizationMemberRequest>,
-    ) -> Result<Response<AddOrganizationMemberResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
-        let user_id = UserId::new(&required(req.user_id, "user_id")?);
-
-        self.use_cases
-            .add_user(&caller, &user_id, &org_id)
-            .await
-            .map_err(domain_error_to_status)?;
-
-        Ok(Response::new(AddOrganizationMemberResponse {}))
-    }
-
-    async fn remove_organization_member(
-        &self,
-        request: Request<RemoveOrganizationMemberRequest>,
-    ) -> Result<Response<RemoveOrganizationMemberResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let org_id = OrganizationId::new(&required(req.organization_id, "organization_id")?);
-        let user_id = UserId::new(&required(req.user_id, "user_id")?);
-
-        self.use_cases
-            .remove_user(&caller, &user_id, &org_id)
-            .await
-            .map_err(domain_error_to_status)?;
-
-        Ok(Response::new(RemoveOrganizationMemberResponse {}))
     }
 }

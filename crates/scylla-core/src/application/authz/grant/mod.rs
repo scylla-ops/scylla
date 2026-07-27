@@ -1,15 +1,16 @@
 use crate::application::authz::role::RoleRepository;
+use crate::application::caller::CallerContext;
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::is_known_permission;
 use crate::domain::value_objects::role::RoleName;
 
 // Canonical builtin role keys — the stable ids grants reference and the default
 // seed inserts. Convention: `<scope>-<role>`, kebab-case, scope ∈ {system,
 // organization, project}. The live Cedar policy bodies are generated per role
 // from the `roles` table (see `cedar_permission_service`), not hard-coded here.
-// The implicit `system-member` / `organization-member` / `project-member` tiers
-// are NOT named roles: membership is ABAC (`user_organization` / `user_project`).
+// There are no implicit tiers: belonging somewhere confers nothing on its own,
+// so every level of access, down to "can see this organization exists", is a
+// role in this list.
 
 /// Global super-user (full control, every scope), via a grant on the System scope.
 pub const SYSTEM_ADMIN_ROLE: &str = "system-admin";
@@ -23,6 +24,18 @@ pub const PROJECT_ADMIN_ROLE: &str = "project-admin";
 pub const ORGANIZATION_AGENT_ROLE: &str = "organization-agent";
 /// Same restricted agent capability, scoped to a single project.
 pub const PROJECT_AGENT_ROLE: &str = "project-agent";
+/// Restricted role for the per-organization `trigger-runner` App: it only fires
+/// the org's pipelines, so `runPipeline` within that org and nothing else.
+pub const ORGANIZATION_TRIGGER_RUNNER_ROLE: &str = "organization-trigger-runner";
+/// Read-only across a whole organization: every project and run, no writes.
+pub const ORGANIZATION_VIEWER_ROLE: &str = "organization-viewer";
+/// The floor: belongs to the organization, sees that it exists, nothing else.
+/// What membership used to confer implicitly, now grantable and revocable.
+pub const ORGANIZATION_MEMBER_ROLE: &str = "organization-member";
+/// Build in one project: create, edit and run its pipelines.
+pub const PROJECT_DEVELOPER_ROLE: &str = "project-developer";
+/// Read-only on one project.
+pub const PROJECT_VIEWER_ROLE: &str = "project-viewer";
 
 /// Owner-equivalent roles: holding one grants full control over a scope. A scope
 /// must never lose its last owner, so revoking one of these is guarded. Includes
@@ -45,11 +58,9 @@ pub(crate) fn is_owner_role(role: &RoleName) -> bool {
 /// the retained human owner, matching `revoke`.
 #[must_use]
 pub fn removal_orphans_scope(grants: &[Grant], scope: &Scope, victim: &Principal) -> bool {
-    let victim_owns_here = grants.iter().any(|g| {
-        &g.principal == victim
-            && &g.scope == scope
-            && matches!(&g.target, GrantTarget::Role(role) if is_owner_role(role))
-    });
+    let victim_owns_here = grants
+        .iter()
+        .any(|g| &g.principal == victim && &g.scope == scope && is_owner_role(&g.role));
     if !victim_owns_here {
         return false;
     }
@@ -57,7 +68,7 @@ pub fn removal_orphans_scope(grants: &[Grant], scope: &Scope, victim: &Principal
         &g.scope == scope
             && &g.principal != victim
             && matches!(g.principal, Principal::User(_))
-            && matches!(&g.target, GrantTarget::Role(role) if is_owner_role(role))
+            && is_owner_role(&g.role)
     })
 }
 
@@ -125,14 +136,15 @@ impl ScopeKind {
     }
 }
 
-/// Full-control admin role vs restricted machine-agent role. Used by the
-/// compile-time grantable-role catalog ([`GRANTABLE_ROLES`]) to describe a
-/// builtin; the live Cedar policy bodies are now generated per role from the
-/// `roles` table (full control → unconstrained action; otherwise the role's
-/// explicit permission keys), not from this kind.
+/// What a builtin role is *for*, so a client can group the catalog sensibly:
+/// `Admin` runs the scope, `Member` works inside it, `Agent` is a machine app.
+/// Purely descriptive — the live Cedar policy bodies are generated per role from
+/// the `roles` table (full control → unconstrained action; otherwise the role's
+/// explicit permission keys), never from this kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RoleKind {
     Admin,
+    Member,
     Agent,
 }
 
@@ -141,6 +153,7 @@ impl RoleKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Admin => "admin",
+            Self::Member => "member",
             Self::Agent => "agent",
         }
     }
@@ -191,6 +204,36 @@ pub const GRANTABLE_ROLES: &[GrantableRole] = &[
         kind: RoleKind::Agent,
         description: "Machine app scoped to a project: pull and run its jobs.",
     },
+    GrantableRole {
+        name: ORGANIZATION_TRIGGER_RUNNER_ROLE,
+        scope: ScopeKind::Organization,
+        kind: RoleKind::Agent,
+        description: "Machine app that fires the triggers of an organization: run its pipelines.",
+    },
+    GrantableRole {
+        name: ORGANIZATION_MEMBER_ROLE,
+        scope: ScopeKind::Organization,
+        kind: RoleKind::Member,
+        description: "Belongs to the organization: sees it exists, nothing more.",
+    },
+    GrantableRole {
+        name: ORGANIZATION_VIEWER_ROLE,
+        scope: ScopeKind::Organization,
+        kind: RoleKind::Member,
+        description: "Read every project and run in the organization, change nothing.",
+    },
+    GrantableRole {
+        name: PROJECT_DEVELOPER_ROLE,
+        scope: ScopeKind::Project,
+        kind: RoleKind::Member,
+        description: "Build in a project: create, edit and run its pipelines.",
+    },
+    GrantableRole {
+        name: PROJECT_VIEWER_ROLE,
+        scope: ScopeKind::Project,
+        kind: RoleKind::Member,
+        description: "Read a project, its pipelines and its runs, change nothing.",
+    },
 ];
 
 /// The assignable-role catalog, optionally narrowed to one scope kind. Pure /
@@ -234,18 +277,6 @@ pub async fn validate_role_in_db(
     Ok(())
 }
 
-/// Validate a direct permission grant's key against the permission catalog, so a
-/// persisted grant can never name a permission the Cedar adapter cannot emit.
-pub fn validate_permission_key(key: &str) -> DomainResult<()> {
-    if is_known_permission(key) {
-        Ok(())
-    } else {
-        Err(DomainError::validation(format!(
-            "unknown permission '{key}'"
-        )))
-    }
-}
-
 /// The principal a grant is bound to — a human `User` or a machine `App`. Maps
 /// to the `(principal_kind, principal_id)` columns of `grants` and to
 /// the Cedar `?principal` slot (`Scylla::User` / `Scylla::App`).
@@ -256,6 +287,18 @@ pub enum Principal {
 }
 
 impl Principal {
+    /// The principal a caller acts as, or `None` when the caller is not one:
+    /// an internal `Service` acts as the system (permitted by a static Cedar
+    /// policy, it holds no grants), and `Anonymous` is nobody.
+    #[must_use]
+    pub fn from_caller(caller: &CallerContext) -> Option<Self> {
+        match caller {
+            CallerContext::User(id) => Some(Self::User(id.clone())),
+            CallerContext::App(id) => Some(Self::App(id.clone())),
+            CallerContext::Service(_) | CallerContext::Anonymous => None,
+        }
+    }
+
     /// Persistence discriminant — the `principal_kind` column value.
     #[must_use]
     pub fn kind(&self) -> &'static str {
@@ -275,72 +318,26 @@ impl Principal {
     }
 }
 
-/// What a grant confers: a whole role, or a single permission. A direct
-/// permission grant is additive to the principal's role-derived permissions
-/// (e.g. "Alice may runPipeline within Org A" on top of whatever roles she has).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GrantTarget {
-    /// A role, referenced by its id (== key for builtins).
-    Role(RoleName),
-    /// A single permission, by its [`crate::domain::value_objects::permission::Permission::key`].
-    Permission(String),
-}
-
-impl GrantTarget {
-    /// Persistence discriminant — the `target_kind` column value.
-    #[must_use]
-    pub fn kind(&self) -> &'static str {
-        match self {
-            Self::Role(_) => "role",
-            Self::Permission(_) => "permission",
-        }
-    }
-
-    /// The stored `target` column value — a role id or a permission key.
-    #[must_use]
-    pub fn value(&self) -> &str {
-        match self {
-            Self::Role(role) => role.as_str(),
-            Self::Permission(key) => key.as_str(),
-        }
-    }
-}
-
-/// An explicit, scoped grant — "principal P holds TARGET within scope S", where
-/// the target is a role or a single permission. A role grant materialises as a
-/// linked Cedar template instance; a permission grant as a direct permit policy.
+/// An explicit, scoped grant — "principal P holds ROLE within scope S". It
+/// materialises as an instance of the role's Cedar template, linked with the
+/// principal and the scope in its slots. A role is the one thing a grant can
+/// confer: anything narrower is expressed by creating a role with exactly the
+/// permissions wanted.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Grant {
     pub id: String,
     pub principal: Principal,
-    pub target: GrantTarget,
+    pub role: RoleName,
     pub scope: Scope,
 }
 
 impl Grant {
-    /// A grant of a whole role.
     #[must_use]
     pub fn new(principal: Principal, role: RoleName, scope: Scope) -> Self {
-        Self::with_target(principal, GrantTarget::Role(role), scope)
-    }
-
-    /// A grant of a single permission (by its `Permission::key()`), additive to
-    /// the principal's role-derived permissions.
-    #[must_use]
-    pub fn with_permission(
-        principal: Principal,
-        permission: impl Into<String>,
-        scope: Scope,
-    ) -> Self {
-        Self::with_target(principal, GrantTarget::Permission(permission.into()), scope)
-    }
-
-    #[must_use]
-    fn with_target(principal: Principal, target: GrantTarget, scope: Scope) -> Self {
         Self {
             id: ulid::Ulid::new().to_string().to_lowercase(),
             principal,
-            target,
+            role,
             scope,
         }
     }

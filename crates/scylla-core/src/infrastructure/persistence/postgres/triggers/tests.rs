@@ -31,7 +31,10 @@ async fn cron_trigger_round_trips_with_inputs(pool: PgPool) {
         pipeline.id().clone(),
         TriggerName::new("nightly").unwrap(),
         TriggerSource::Cron(CronSpec::new("0 9 * * 1-5").unwrap()),
-        vec![TriggerInput::literal(EnvKey::new("RUN_MODE").unwrap(), "nightly")],
+        vec![TriggerInput::literal(
+            EnvKey::new("RUN_MODE").unwrap(),
+            "nightly",
+        )],
     )
     .unwrap();
     repo.create(&trigger, None).await.unwrap();
@@ -133,7 +136,9 @@ async fn duplicate_name_in_pipeline_conflicts(pool: PgPool) {
     let (_, _, pipeline) = seed_org_project_pipeline(&pool, "dup").await;
     let repo = PgTriggerRepository::new(pool);
 
-    repo.create(&cron_trigger(&pipeline, "dup"), None).await.unwrap();
+    repo.create(&cron_trigger(&pipeline, "dup"), None)
+        .await
+        .unwrap();
     let err = repo.create(&cron_trigger(&pipeline, "dup"), None).await;
     assert!(matches!(err, Err(DomainError::Conflict(_))), "{err:?}");
 }
@@ -247,5 +252,10 @@ async fn claim_due_cron_claims_due_advances_and_excludes_others(pool: PgPool) {
     assert_eq!(reloaded.next_fire_at(), Some(advanced));
 
     // A second pass claims nothing — the occurrence was consumed exactly once.
-    assert!(repo.claim_due_cron(now, 10, &compute).await.unwrap().is_empty());
+    assert!(
+        repo.claim_due_cron(now, 10, &compute)
+            .await
+            .unwrap()
+            .is_empty()
+    );
 }

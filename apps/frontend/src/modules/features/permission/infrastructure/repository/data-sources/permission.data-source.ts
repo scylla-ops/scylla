@@ -34,6 +34,7 @@ export interface PermissionDataSource {
 
   // ── Introspection ──────────────────────────────────────────────────────────
   getEffectivePermissions(principal: PrincipalRef): Promise<ScyllaResult<EffectiveScope[]>>;
+  getMyPermissions(): Promise<ScyllaResult<EffectiveScope[]>>;
 
   // ── Grants ─────────────────────────────────────────────────────────────────
   listGrants(scope?: ScopeRef): Promise<ScyllaResult<Grant[]>>;

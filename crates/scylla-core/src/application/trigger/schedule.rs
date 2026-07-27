@@ -11,8 +11,7 @@ pub trait CronSchedule: Send + Sync {
     /// The next occurrence strictly after `after`. Errors when the expression is
     /// syntactically 5-field-shaped but semantically invalid (e.g. `"99 * * * *"`),
     /// which the shape check at create time cannot catch.
-    fn next_after(&self, expression: &str, after: DateTime<Utc>)
-    -> DomainResult<DateTime<Utc>>;
+    fn next_after(&self, expression: &str, after: DateTime<Utc>) -> DomainResult<DateTime<Utc>>;
 }
 
 /// THE single source of a trigger's schedule timing: the cron's next occurrence

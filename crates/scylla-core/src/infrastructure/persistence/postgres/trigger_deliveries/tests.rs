@@ -57,7 +57,9 @@ async fn webhook_secret_round_trips_and_is_absent_for_missing(pool: PgPool) {
         vec![],
     )
     .unwrap();
-    repo.create(&trigger, Some(b"\x00\x01\x02secret")).await.unwrap();
+    repo.create(&trigger, Some(b"\x00\x01\x02secret"))
+        .await
+        .unwrap();
 
     let got = repo.webhook_secret(trigger.id()).await.unwrap();
     assert_eq!(got.as_deref(), Some(&b"\x00\x01\x02secret"[..]));

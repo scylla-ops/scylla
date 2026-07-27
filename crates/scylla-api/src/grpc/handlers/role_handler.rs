@@ -7,14 +7,15 @@ use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
 use scylla_core::application::{
     EffectiveScope, FULL_CONTROL, GrantRepository, PermissionService, PolicyControl, Role,
-    RoleRepository, RoleUseCases,
+    RoleRepository, RoleUseCases, resource_home_scope,
 };
 use scylla_protocol::authz::v1::{
-    Access, CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest, DeleteRoleResponse,
-    EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest,
-    GetEffectivePermissionsResponse, GetRoleRequest, GetRoleResponse, ListRolesRequest,
-    ListRolesResponse, Permission, Role as ProtoRole, UpdateRoleRequest, UpdateRoleResponse, access,
-    role, role_service_server::RoleService,
+    Access, AuthzAction, CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest,
+    DeleteRoleResponse, EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest,
+    GetEffectivePermissionsResponse, GetMyPermissionsRequest, GetMyPermissionsResponse,
+    GetRoleRequest, GetRoleResponse, ListAuthzVocabularyRequest, ListAuthzVocabularyResponse,
+    ListRolesRequest, ListRolesResponse, Permission, Role as ProtoRole, UpdateRoleRequest,
+    UpdateRoleResponse, access, role, role_service_server::RoleService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -146,6 +147,49 @@ impl<
 
         Ok(Response::new(GetEffectivePermissionsResponse {
             scopes: scopes.iter().map(effective_scope_to_proto).collect(),
+        }))
+    }
+
+    async fn get_my_permissions(
+        &self,
+        request: Request<GetMyPermissionsRequest>,
+    ) -> Result<Response<GetMyPermissionsResponse>, Status> {
+        let caller = caller!(request);
+
+        let scopes = self
+            .use_cases
+            .my_permissions(&caller)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(GetMyPermissionsResponse {
+            scopes: scopes.iter().map(effective_scope_to_proto).collect(),
+        }))
+    }
+
+    async fn list_authz_vocabulary(
+        &self,
+        request: Request<ListAuthzVocabularyRequest>,
+    ) -> Result<Response<ListAuthzVocabularyResponse>, Status> {
+        let caller = caller!(request);
+
+        let actions = self
+            .use_cases
+            .authz_vocabulary(&caller)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(ListAuthzVocabularyResponse {
+            // resource_type is derivable from the permission, so it never ships;
+            // we keep min_scope (the one derived fact the client consumes) and
+            // compute it server-side from the permission's resource type.
+            actions: actions
+                .iter()
+                .map(|(key, resource_type)| AuthzAction {
+                    permission: permission_from_key(key).map_or(0, |p| p as i32),
+                    min_scope: scope_kind_to_proto(resource_home_scope(resource_type)) as i32,
+                })
+                .collect(),
         }))
     }
 }

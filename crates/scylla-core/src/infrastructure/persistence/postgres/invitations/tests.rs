@@ -2,12 +2,12 @@ use crate::application::audit::NoopAuditLog;
 use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::application::caller::CallerContext;
 use crate::application::invitation::InvitationUseCases;
-use crate::application::{Mailer, NoopMailer, UserOrganizationRepository};
+use crate::application::{Mailer, NoopMailer};
 use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::user::{Email, Password, Username};
 use crate::infrastructure::persistence::postgres::{
     PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgOrganizationRepository,
-    PgRoleRepository, PgSessionRepository, PgUserOrganizationRepository, PgUserRepository,
+    PgRoleRepository, PgSessionRepository, PgUserRepository,
 };
 use crate::infrastructure::{Argon2HashService, CedarPermissionService};
 use crate::test_support::prelude::*;
@@ -30,9 +30,6 @@ async fn use_cases(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
-            Arc::new(
-                crate::infrastructure::persistence::postgres::PgPolicyRepository::new(pool.clone()),
-            ),
             Arc::new(NoopAuditLog),
         )
         .await
@@ -91,13 +88,6 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
         .expect("accept invite");
 
     assert_eq!(outcome.organization_id, *org.id());
-    assert!(
-        PgUserOrganizationRepository::new(pool.clone())
-            .is_member(&outcome.user_id, org.id())
-            .await
-            .unwrap(),
-        "accepted user must be a member"
-    );
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
         grants

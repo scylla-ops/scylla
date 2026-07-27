@@ -17,6 +17,8 @@ function roleKindToDomain(kind: GrpcRoleKind): RoleKind {
       return RoleKind.ADMIN;
     case GrpcRoleKind.AGENT:
       return RoleKind.AGENT;
+    case GrpcRoleKind.MEMBER:
+      return RoleKind.MEMBER;
     case GrpcRoleKind.UNSPECIFIED:
       return RoleKind.UNSPECIFIED;
   }
