@@ -250,6 +250,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         user_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
+        permission_checker.clone(),
         scylla_core::application::Quotas {
             max_projects_per_org: config.metering.max_projects_per_org,
         },

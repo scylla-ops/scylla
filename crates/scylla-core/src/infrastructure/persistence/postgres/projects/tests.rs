@@ -61,6 +61,7 @@ async fn project_quota_enforced(pool: PgPool) {
         Arc::new(PgProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),
         permission.clone(),
+        permission.clone(),
         permission,
         Quotas {
             max_projects_per_org: 2,
@@ -252,4 +253,70 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
         grants.is_empty(),
         "the owner grant is rolled back with the project insert"
     );
+}
+
+/// The visibility rule, end to end: in an organization you see the projects you
+/// hold a role on, and nothing else. This is the whole point of removing the
+/// membership floor, so it is asserted against a real database rather than a
+/// stub.
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
+    use crate::application::audit::NoopAuditLog;
+    use crate::application::authz::grant::{
+        Grant, GrantRepository, PROJECT_VIEWER_ROLE, Principal, Scope,
+    };
+    use crate::application::authz::{Visibility, VisibilityResolver};
+    use crate::application::caller::CallerContext;
+    use crate::domain::value_objects::role::RoleName;
+    use crate::infrastructure::CedarPermissionService;
+    use crate::infrastructure::persistence::postgres::{
+        PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository,
+    };
+    use std::sync::Arc;
+
+    let org = seed_org(&pool, "acme").await;
+    let mine = seed_project(&pool, &org, "apollo").await;
+    let _theirs = seed_project(&pool, &org, "zeus").await;
+    let alice = seed_user(&pool, "alice").await;
+
+    PgGrantRepository::new(pool.clone())
+        .create(&Grant::new(
+            Principal::User(alice.id().clone()),
+            RoleName::new(PROJECT_VIEWER_ROLE).unwrap(),
+            Scope::Project(mine.id().clone()),
+        ))
+        .await
+        .unwrap();
+
+    let permission = CedarPermissionService::new(
+        Arc::new(PgAuthzEntityProvider::new(pool.clone())),
+        Arc::new(PgRoleRepository::new(pool.clone())),
+        Arc::new(PgGrantRepository::new(pool.clone())),
+        Arc::new(NoopAuditLog),
+    )
+    .await
+    .expect("cedar");
+
+    let visible = permission
+        .visible_scopes(&CallerContext::User(alice.id().clone()), "readProject")
+        .await
+        .expect("visible scopes");
+    assert_eq!(
+        visible,
+        Visibility::Scoped {
+            orgs: vec![],
+            projects: vec![mine.id().clone()],
+        }
+    );
+
+    let page = PgProjectRepository::new(pool)
+        .list_by_organization(org.id(), None, &visible)
+        .await
+        .expect("list");
+    assert_eq!(
+        page.metadata().total_count(),
+        1,
+        "the other project is not hers"
+    );
+    assert_eq!(page.items()[0].id(), mine.id());
 }

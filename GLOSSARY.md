@@ -25,10 +25,10 @@ Primary datastore. PostgreSQL 18 in the compose stack, listening on port `5432`.
 ## Domain entities
 
 ### Organization
-Top-level tenant. Carries a `name`, optional `description`, and an `is_active` flag. Owns projects; users join via the `user_organization` table.
+Top-level tenant. Carries a `name`, optional `description`, and an `is_active` flag. Owns projects. People reach it by holding a grant on it or on one of its projects; there is no membership table.
 
 ### Project
-A unit of work inside an organization. Carries a `name`, optional `description`, `organization_id`, and `is_active` flag. Owns pipelines and jobs; users join via the `user_project` table.
+A unit of work inside an organization. Carries a `name`, optional `description`, `organization_id`, and `is_active` flag. Owns pipelines and jobs. Being on a project means holding a grant scoped to it.
 
 ### Pipeline
 A directed acyclic graph (DAG) of **nodes** describing what to run. A pipeline is a blueprint — running it produces a **job**.
@@ -48,8 +48,8 @@ A machine principal owned by an organization (an agent / automation). Identified
 ### Session
 An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions.
 
-### User / Membership
-A user account. Membership is modeled via the `user_organization` and `user_project` join tables — each row is just `(user_id, org_id)` or `(user_id, project_id)`. No role or permission is stored on the row itself (see [Authorization](#authorization)).
+### User
+A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization) and `docs/src/access-model.md`).
 
 ## States & status values
 
@@ -100,7 +100,7 @@ Canonical roles (all stored in `grants`):
 | `organization-agent` | Organization | restricted agent | `readPipeline`/`executeJob`/`writeJobStatus`/`appendJobLog` within the org |
 | `project-agent` | Project | restricted agent | same, within a project |
 
-**Implicit tiers (NOT named roles):** `system-member` (a plain user with no grant), `organization-member` / `project-member` (membership via the `user_organization` / `user_project` tables, granted read/operate access through ABAC policies). They follow the same naming vocabulary but are realized as membership/ABAC, not stored grants.
+**No implicit tiers.** Belonging somewhere confers nothing on its own, so every level of access is a role in the table above — down to `organization-member`, which grants only the ability to see that the organization exists. A principal with no grant can do nothing.
 
 ### Permission
 The atomic capability — a verb on a resource type, e.g. `runPipeline` on a
@@ -119,8 +119,7 @@ A few permissions encode a scope in their name on purpose — `manageSystemGrant
 / `list*ByProject` / `list*ByPipeline` families. Each member is a **distinct Cedar
 action** with its own `appliesTo` resource type; that split is the anti-escalation
 fence (a single shared action would let one over-broad permit authorize every
-scope, and the ABAC member policies rely on the per-scope ids to confine listing
-to a tenant subtree). They look redundant but are **load-bearing — do not collapse
+scope). They look redundant but are **load-bearing — do not collapse
 them into one Cedar action.** The UI presents each family as a single concept (one
 "Manage grants", one "List jobs") with a scope selector; the split stays in the
 schema only.
@@ -162,9 +161,10 @@ A grant-holding actor: a human `User` or a machine `App`. Maps to the
 Anonymous, which cannot hold grants.
 
 ### Policy
-**Only** an advanced Cedar escape-hatch rule (a `permit`/`forbid` in the
-`cedar_policies` table), layered on top of the role/grant-derived policy set for
-cases RBAC can't express. Not a synonym for permission or grant.
+A Cedar rule in the live policy set. They come from exactly two places: the
+static base compiled into the binary (`policies.cedar`), and one generated
+template per role, instantiated once per grant. There is no runtime-authored
+policy. Not a synonym for permission or grant.
 
 ### `PermissionService`
 Port (`application/authz/service.rs`) used by every use case to check a
@@ -175,8 +175,8 @@ Cedar, and records an audit-log row.
 
 ### Cedar
 The authorization engine (AWS Cedar). Scylla generates its policy set from the
-RBAC model (roles + grants → `permit` policies), keeps a static ABAC base
-(`policies.cedar`: membership, self-read) and the admin-defined `cedar_policies`.
+model (roles + grants → `permit` policies) plus a small static base
+(`policies.cedar`: internal services, self-read).
 Resolves the scope hierarchy via `in` and yields the allow/deny decision +
 diagnostics.
 

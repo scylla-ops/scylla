@@ -64,8 +64,8 @@ pub trait VisibilityResolver: Send + Sync {
 /// `role_permissions` maps a role id to its permission keys; a role holding the
 /// [`FULL_CONTROL`] sentinel confers every permission within its scope.
 #[must_use]
-pub fn visibility_from_grants(
-    role_permissions: &HashMap<String, Vec<String>>,
+pub fn visibility_from_grants<S: std::hash::BuildHasher>(
+    role_permissions: &HashMap<String, Vec<String>, S>,
     grants: &[Grant],
     principal: &crate::application::authz::grant::Principal,
     permission_key: &str,

@@ -19,11 +19,13 @@ export enum PrincipalKind {
   APP = 2,
 }
 
-/** Mirrors the wire `RoleKind`: full-control admin vs restricted agent role. */
+/** Mirrors the wire `RoleKind`: what a builtin role is for. Descriptive only. */
 export enum RoleKind {
   UNSPECIFIED = 0,
   ADMIN = 1,
   AGENT = 2,
+  /** A human working inside the scope, short of administering it. */
+  MEMBER = 3,
 }
 
 /** A grant holder: a user or an app, identified by its plain string id. */

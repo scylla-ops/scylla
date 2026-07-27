@@ -1,6 +1,6 @@
-use crate::application::authz::Visibility;
 use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
+use crate::application::authz::{Visibility, VisibilityResolver};
 use crate::application::caller::CallerContext;
 use crate::application::{PermissionService, ProjectRepository, UserRepository};
 use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
@@ -23,6 +23,9 @@ pub struct ProjectUseCases<
     project_repo: Arc<P>,
     user_repo: Arc<U>,
     permission_service: Arc<PS>,
+    /// Narrows listings to what the caller holds, for the pages a single
+    /// yes/no check cannot answer.
+    visibility: Arc<dyn VisibilityResolver>,
     policy_control: Arc<PC>,
     /// Per-org limits enforced on project creation.
     quotas: crate::application::quota::Quotas,
@@ -156,6 +159,14 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         self.project_repo.list_all(pagination).await
     }
 
+    /// The organization's projects, narrowed to the ones the caller may see.
+    ///
+    /// Deliberately not gated on `listProjectsByOrganization`: that permission
+    /// means "see *all* of them" and comes from an organization-wide role.
+    /// Someone holding only a project role has no business being refused the
+    /// whole listing — they should see their own project and nothing else,
+    /// which is what the filter expresses. Reading the organization at all is
+    /// still required, so this is not an open endpoint.
     #[instrument(skip(self, caller), fields(organization_id = %organization_id))]
     pub async fn list_by_organization(
         &self,
@@ -166,11 +177,30 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         self.permission_service
             .check(
                 caller,
-                Permission::ListProjectsByOrganization(organization_id.clone()),
+                Permission::ReadOrganization(organization_id.clone()),
             )
             .await?;
+
+        // Holding the org-wide list permission means nothing is hidden; anything
+        // else is narrowed to the scopes the caller actually holds.
+        let visible = if self
+            .permission_service
+            .check(
+                caller,
+                Permission::ListProjectsByOrganization(organization_id.clone()),
+            )
+            .await
+            .is_ok()
+        {
+            Visibility::All
+        } else {
+            self.visibility
+                .visible_scopes(caller, Permission::ReadProject(ProjectId::new("_")).key())
+                .await?
+        };
+
         self.project_repo
-            .list_by_organization(organization_id, pagination, &Visibility::All)
+            .list_by_organization(organization_id, pagination, &visible)
             .await
     }
 

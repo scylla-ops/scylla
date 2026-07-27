@@ -173,12 +173,10 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             .map_err(|e| DomainError::Internal(format!("cedar link: {e}")))
     }
 
-    /// Build the principal entity (+ role entities) for the caller. Returns the
-    /// principal UID and every entity that must be in the store for it.
-    async fn principal_entities(
-        &self,
-        caller: &CallerContext,
-    ) -> DomainResult<(EntityUid, Vec<Entity>)> {
+    /// Build the principal entity for the caller. Returns its UID and the entity
+    /// itself. No I/O: principals carry no attributes, which is exactly what
+    /// removing membership bought.
+    fn principal_entities(caller: &CallerContext) -> DomainResult<(EntityUid, Vec<Entity>)> {
         match caller {
             CallerContext::User(id) => {
                 // Like every principal, a user carries no attributes: what it may
@@ -259,14 +257,14 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             ResourceRef::Job(_) => pipeline_uid.as_ref(),
             ResourceRef::Pipeline(_) => project_uid.as_ref(),
             ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
-            // An organization's parent is the System root.
-            ResourceRef::Organization(_) => Some(&system_uid),
-            // So is a user's. This used to be supplied by `user_entity`; without
-            // it a System-scoped grant stops reaching user-targeted actions, and
-            // no test catches it because self-access comes from the static
-            // `self` policy instead.
-            ResourceRef::User(_) => Some(&system_uid),
-            _ => None,
+            // An organization's parent is the System root, and so is a user's.
+            // The user arm used to be supplied by `user_entity`; without it a
+            // System-scoped grant stops reaching user-targeted actions, and no
+            // test catches it because self-access comes from the static `self`
+            // policy instead.
+            ResourceRef::Organization(_) | ResourceRef::User(_) => Some(&system_uid),
+            // System is the root: it has no parent.
+            ResourceRef::System => None,
         };
 
         // The leaf entity itself. No entity in the schema carries attributes.
@@ -344,7 +342,7 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
             }
         }
 
-        let (principal_uid, principal_entities) = self.principal_entities(caller).await?;
+        let (principal_uid, principal_entities) = Self::principal_entities(caller)?;
         let (resource_uid, resource_entities) = self.resource_entities(&resource).await?;
         let action_uid = euid("Scylla::Action", perm.key())?;
 
