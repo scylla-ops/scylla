@@ -44,6 +44,8 @@ export interface PermissionRepository {
   getEffectivePermissions(
     principal: PrincipalEntity,
   ): Promise<ScyllaResult<EffectivePermissionsEntity>>;
+  /** The signed-in caller's own access. Needs no permission, unlike the above. */
+  getMyPermissions(): Promise<ScyllaResult<EffectivePermissionsEntity>>;
 
   // ── Grants (principal holds role|permission within scope) ──────────────────
   listGrants(scope?: PermissionScope, scopeId?: string): Promise<ScyllaResult<GrantEntity[]>>;

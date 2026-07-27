@@ -1,4 +1,5 @@
 use crate::application::authz::role::RoleRepository;
+use crate::application::caller::CallerContext;
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::RoleName;
@@ -250,6 +251,18 @@ pub enum Principal {
 }
 
 impl Principal {
+    /// The principal a caller acts as, or `None` when the caller is not one:
+    /// an internal `Service` acts as the system (permitted by a static Cedar
+    /// policy, it holds no grants), and `Anonymous` is nobody.
+    #[must_use]
+    pub fn from_caller(caller: &CallerContext) -> Option<Self> {
+        match caller {
+            CallerContext::User(id) => Some(Self::User(id.clone())),
+            CallerContext::App(id) => Some(Self::App(id.clone())),
+            CallerContext::Service(_) | CallerContext::Anonymous => None,
+        }
+    }
+
     /// Persistence discriminant — the `principal_kind` column value.
     #[must_use]
     pub fn kind(&self) -> &'static str {

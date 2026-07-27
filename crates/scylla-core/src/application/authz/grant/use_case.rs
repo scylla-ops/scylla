@@ -132,11 +132,9 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
     /// not subset-checked yet (smallest blast radius) — they stay gated by
     /// `manageProjectGrants`.
     async fn check_no_escalation(&self, caller: &CallerContext, grant: &Grant) -> DomainResult<()> {
-        let principal = match caller {
-            CallerContext::User(id) => Principal::User(id.clone()),
-            CallerContext::App(id) => Principal::App(id.clone()),
-            // Services act as the system; Anonymous is already denied upstream.
-            CallerContext::Service(_) | CallerContext::Anonymous => return Ok(()),
+        // Services act as the system; Anonymous is already denied upstream.
+        let Some(principal) = Principal::from_caller(caller) else {
+            return Ok(());
         };
         if matches!(grant.scope, Scope::Project(_)) {
             return Ok(());

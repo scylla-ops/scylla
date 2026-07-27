@@ -287,13 +287,10 @@ where
         self.policy_control.reload().await
     }
 
-    /// Resolve a principal's effective permissions, grouped by the scope each
-    /// grant binds to (each grant's role expanded to its permission set).
-    /// Powers the "what can this principal do" matrix. Gated by `manageGrants`.
-    ///
-    /// Note: this returns grants AS BOUND per scope; it does not expand scope
-    /// inheritance (a System grant is reported at System, not re-listed under
-    /// every org/project beneath it).
+    /// Resolve *another* principal's effective permissions, grouped by the scope
+    /// each grant binds to. Powers the admin "what can this principal do" matrix,
+    /// so it is gated by `manageSystemGrants`. To read your own, call
+    /// [`Self::my_permissions`], which needs no permission at all.
     #[instrument(skip(self, caller))]
     pub async fn effective_permissions(
         &self,
@@ -303,7 +300,41 @@ where
         self.permission_service
             .check(caller, Permission::ManageSystemGrants)
             .await?;
+        self.resolve_effective_permissions(principal).await
+    }
 
+    /// The caller's own effective permissions. Deliberately takes no principal:
+    /// there is nothing to authorize, because the only readable principal is the
+    /// caller itself, and that is enforced by the shape of the call rather than
+    /// by a check on its argument. Backs the "my access" view and any client-side
+    /// decision about what to offer the current user.
+    ///
+    /// An internal `Service` caller acts as the system and holds no grants, so it
+    /// has nothing to report; `Anonymous` never reaches here (the transport
+    /// rejects it first). Both are refused rather than answered with an empty
+    /// list, which would read as "you have no permissions".
+    #[instrument(skip(self, caller))]
+    pub async fn my_permissions(
+        &self,
+        caller: &CallerContext,
+    ) -> DomainResult<Vec<EffectiveScope>> {
+        let principal = Principal::from_caller(caller).ok_or_else(|| {
+            DomainError::Forbidden("this caller is not a principal that holds grants".to_string())
+        })?;
+        self.resolve_effective_permissions(&principal).await
+    }
+
+    /// Group a principal's grants by scope and expand each grant's role to its
+    /// permission set. Shared by both entry points above, which differ only in
+    /// how they establish *whose* permissions may be read.
+    ///
+    /// Note: this returns grants AS BOUND per scope; it does not expand scope
+    /// inheritance (a System grant is reported at System, not re-listed under
+    /// every org/project beneath it).
+    async fn resolve_effective_permissions(
+        &self,
+        principal: &Principal,
+    ) -> DomainResult<Vec<EffectiveScope>> {
         let role_perms: HashMap<String, Vec<String>> = self
             .role_repo
             .list_all()

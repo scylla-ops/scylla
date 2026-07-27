@@ -88,6 +88,13 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
     );
   }
 
+  public getMyPermissions(): Promise<ScyllaResult<EffectiveScope[]>> {
+    return ScyllaResult.tryAsync(
+      async () => (await this._roles.getMyPermissions({})).response.scopes,
+      'Failed to fetch your own permissions.',
+    );
+  }
+
   public listGrants(scope?: ScopeRef): Promise<ScyllaResult<Grant[]>> {
     return ScyllaResult.tryAsync(
       async () => (await this._grants.listGrants({ scope })).response.grants,
