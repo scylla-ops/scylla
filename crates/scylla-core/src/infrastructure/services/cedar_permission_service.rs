@@ -1,12 +1,13 @@
-use super::cedar_authz::{
-    euid, parent_set, principal_parts, resource_parts, resource_uid, user_entity,
-};
+use super::cedar_authz::{euid, parent_set, principal_parts, resource_parts, resource_uid};
 use crate::application::PermissionService;
 use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
-use crate::application::authz::entity_provider::{AuthzEntityProvider, PrincipalAuthz};
+use crate::application::authz::entity_provider::AuthzEntityProvider;
 use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope, ScopeKind};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::role::{Role, RoleRepository};
+use crate::application::authz::visibility::{
+    Visibility, VisibilityResolver, visibility_from_grants,
+};
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::{Permission, ResourceRef};
@@ -24,23 +25,13 @@ use tracing::{info, instrument, warn};
 const SCHEMA_SRC: &str = include_str!("cedar/schema.cedarschema");
 const POLICIES_SRC: &str = include_str!("cedar/policies.cedar");
 
-/// Cedar guard appended to every org/project-scoped permit for a *human*
-/// principal: the permit only applies while the user is still a member of the
-/// organization the resource lives under. `memberOrgs` is materialised live on
-/// every check, so removing a user from an organization instantly cuts all
-/// their authority beneath it — org-scoped and project-scoped grants alike —
-/// even if a stale grant row lingers in the store. Machine Apps are owned by
-/// an org, never members of one, so they pass unguarded.
-const MEMBER_GUARD: &str =
-    "principal is Scylla::App || (principal is Scylla::User && resource in principal.memberOrgs)";
-
 /// The Cedar permit body for a role, instantiated per grant via the `?principal`
 /// / `?resource` slots. A full-control role (`*` permission set) gets an
 /// unconstrained action; any other role lists its permission keys explicitly.
-/// Org/project-scoped roles carry the [`MEMBER_GUARD`]; System-scoped roles
-/// (system-admin) authorize across every org without membership. Returns `None`
-/// for a role that confers nothing (empty permission set): it gets no template,
-/// so a grant of it links to nothing (and is logged as unlinkable).
+/// The body carries no condition: holding the grant *is* the authority, and
+/// `resource in ?resource` is what bounds it. Returns `None` for a role that
+/// confers nothing (empty permission set): it gets no template, so a grant of it
+/// links to nothing (and is logged as unlinkable).
 fn role_template_src(role: &Role) -> Option<String> {
     let action = if role.is_full_control() {
         "action".to_string()
@@ -55,12 +46,8 @@ fn role_template_src(role: &Role) -> Option<String> {
         }
         format!("action in [\n{}\n    ]", actions.join(",\n"))
     };
-    let guard = match role.scope {
-        ScopeKind::System => String::new(),
-        ScopeKind::Organization | ScopeKind::Project => format!("\nwhen {{ {MEMBER_GUARD} }}"),
-    };
     Some(format!(
-        "permit (\n    principal == ?principal,\n    {action},\n    resource in ?resource\n){guard};\n"
+        "permit (\n    principal == ?principal,\n    {action},\n    resource in ?resource\n);\n"
     ))
 }
 
@@ -194,10 +181,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
     ) -> DomainResult<(EntityUid, Vec<Entity>)> {
         match caller {
             CallerContext::User(id) => {
+                // Like every principal, a user carries no attributes: what it may
+                // do lives in the grants linked into the policy set, never on the
+                // entity, so nothing has to be materialised per request.
                 let uid = euid("Scylla::User", id.as_str())?;
-                let authz = self.entity_provider.principal_authz(id).await?;
-                let user = user_entity(uid.clone(), &authz)?;
-                Ok((uid, vec![user]))
+                Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
             }
             CallerContext::App(id) => {
                 // A machine principal carries no roles/ABAC attrs of its own; its
@@ -273,15 +261,16 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
             // An organization's parent is the System root.
             ResourceRef::Organization(_) => Some(&system_uid),
+            // So is a user's. This used to be supplied by `user_entity`; without
+            // it a System-scoped grant stops reaching user-targeted actions, and
+            // no test catches it because self-access comes from the static
+            // `self` policy instead.
+            ResourceRef::User(_) => Some(&system_uid),
             _ => None,
         };
 
-        // The leaf entity itself. A `User` resource needs the schema's required
-        // attrs (empty here — policies never read resource memberships).
-        let leaf = match resource {
-            ResourceRef::User(_) => user_entity(uid.clone(), &PrincipalAuthz::default())?,
-            _ => Entity::new_no_attrs(uid.clone(), parent_set(leaf_parent)),
-        };
+        // The leaf entity itself. No entity in the schema carries attributes.
+        let leaf = Entity::new_no_attrs(uid.clone(), parent_set(leaf_parent));
         entities.push(leaf);
 
         Ok((uid, entities))
@@ -414,6 +403,51 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
 
         self.record_decision(caller, &perm, &resource, audit_decision, reason, policies);
         result
+    }
+}
+
+#[async_trait]
+impl<EP: AuthzEntityProvider + 'static> VisibilityResolver for CedarPermissionService<EP> {
+    /// Read the same stores the policy set is built from, and fold the caller's
+    /// grants into the scopes where they hold `permission_key`. Deliberately not
+    /// a Cedar query: Cedar answers "may this principal do X to that entity",
+    /// one entity at a time, which cannot express a filter over a page.
+    ///
+    /// The two paths agree because they read the same rows. A grant only widens
+    /// visibility here if its role confers the permission, which is the same
+    /// condition that puts the action in the role's generated template.
+    #[instrument(skip(self, caller))]
+    async fn visible_scopes(
+        &self,
+        caller: &CallerContext,
+        permission_key: &str,
+    ) -> DomainResult<Visibility> {
+        // A service acts as the system; an App or User is filtered by its
+        // grants; Anonymous never reaches a listing.
+        let principal = match caller {
+            CallerContext::Service(_) => return Ok(Visibility::All),
+            CallerContext::Anonymous => return Ok(Visibility::none()),
+            _ => match Principal::from_caller(caller) {
+                Some(p) => p,
+                None => return Ok(Visibility::none()),
+            },
+        };
+
+        let role_permissions: HashMap<String, Vec<String>> = self
+            .role_repo
+            .list_all()
+            .await?
+            .into_iter()
+            .map(|r| (r.id, r.permissions))
+            .collect();
+        let grants = self.grant_repo.list_all().await?;
+
+        Ok(visibility_from_grants(
+            &role_permissions,
+            &grants,
+            &principal,
+            permission_key,
+        ))
     }
 }
 

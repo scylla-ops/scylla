@@ -7,11 +7,11 @@ use sqlx::PgPool;
 use tracing::instrument;
 
 use super::super::error::SqlxResultExt;
-use super::super::{grants, organizations, user_organization, users};
+use super::super::{grants, organizations, users};
 
-/// Cross-aggregate atomic write for self-service signup. Runs the four inserts
-/// in one transaction using the shared `queries` helpers, so a failure at any
-/// step (e.g. a username unique violation) rolls the whole account back.
+/// Cross-aggregate atomic write for self-service signup: user, organization and
+/// the owner grant in one transaction, so a failure at any step (e.g. a username
+/// unique violation) rolls the whole account back.
 #[derive(Clone)]
 pub struct PgSignupRepository {
     pool: PgPool,
@@ -37,8 +37,6 @@ impl SignupRepository for PgSignupRepository {
 
         users::repository::queries::create(&mut *tx, user).await?;
         organizations::repository::queries::create(&mut *tx, organization).await?;
-        user_organization::repository::queries::add_member(&mut *tx, user.id(), organization.id())
-            .await?;
         grants::insert(&mut *tx, grant).await?;
 
         tx.commit().await.to_domain()?;
@@ -58,8 +56,6 @@ impl SignupRepository for PgSignupRepository {
 
         users::repository::queries::create(&mut *tx, user).await?;
         organizations::repository::queries::create(&mut *tx, organization).await?;
-        user_organization::repository::queries::add_member(&mut *tx, user.id(), organization.id())
-            .await?;
         grants::insert(&mut *tx, grant).await?;
         super::super::oauth_identities::repository::queries::link(
             &mut *tx,

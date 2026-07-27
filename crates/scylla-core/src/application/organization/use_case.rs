@@ -1,11 +1,7 @@
-use crate::application::authz::grant::{
-    Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope, removal_orphans_scope,
-};
+use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::caller::CallerContext;
-use crate::application::{
-    OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
-};
+use crate::application::{OrganizationRepository, PermissionService, UserRepository};
 use crate::domain::entities::{Organization, OrganizationId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
@@ -19,26 +15,18 @@ use tracing::instrument;
 #[derive(Constructor)]
 pub struct OrganizationUseCases<
     O: OrganizationRepository,
-    UO: UserOrganizationRepository,
     U: UserRepository,
     PS: PermissionService,
     PC: PolicyControl,
 > {
     org_repo: Arc<O>,
-    user_org_repo: Arc<UO>,
     user_repo: Arc<U>,
-    grant_repo: Arc<dyn GrantRepository>,
     permission_service: Arc<PS>,
     policy_control: Arc<PC>,
 }
 
-impl<
-    O: OrganizationRepository,
-    UO: UserOrganizationRepository,
-    U: UserRepository,
-    PS: PermissionService,
-    PC: PolicyControl,
-> OrganizationUseCases<O, UO, U, PS, PC>
+impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: PolicyControl>
+    OrganizationUseCases<O, U, PS, PC>
 {
     #[instrument(skip(self, caller), fields(name = %name))]
     pub async fn create(
@@ -57,11 +45,10 @@ impl<
 
         let org = Organization::create(name, description)?;
 
-        // Enroll the human creator as a member + org-admin of the org they just
-        // created — mirrors signup's `provision_account`. The org insert,
-        // membership and owner grant happen in ONE transaction so a partial
-        // failure can never leave an org without an owner. Machine/anonymous
-        // callers create nothing to enroll, so they just get the bare org.
+        // The human creator becomes the org's admin. The org row and the owner
+        // grant are written in ONE transaction, so a partial failure can never
+        // leave an org without an owner. Machine/anonymous callers have nobody
+        // to make owner, so they just get the bare org.
         match caller {
             CallerContext::User(user_id) => {
                 let role = RoleName::new(ORGANIZATION_ADMIN_ROLE)?;
@@ -70,9 +57,7 @@ impl<
                     role,
                     Scope::Organization(org.id().clone()),
                 );
-                self.org_repo
-                    .provision_with_owner(&org, user_id, &grant)
-                    .await?;
+                self.org_repo.provision_with_owner(&org, &grant).await?;
                 // Make the org-admin grant live now so the creator can act on
                 // the org immediately, without a control-plane restart.
                 self.policy_control.reload().await?;
@@ -169,6 +154,10 @@ impl<
         self.org_repo.list_all(pagination).await
     }
 
+    /// Everyone with access to the organization: the principals holding a grant
+    /// on it or on one of its projects. There is no membership roster to read
+    /// from, so the grants themselves answer "who is here", which also means the
+    /// answer can never disagree with what those people can actually do.
     #[instrument(skip(self, caller), fields(org_id = %org_id))]
     pub async fn list_users(
         &self,
@@ -180,11 +169,11 @@ impl<
             .check(caller, Permission::ListOrganizationMembers(org_id.clone()))
             .await?;
 
-        let paginated = self.user_org_repo.list_members(org_id, pagination).await?;
+        let paginated = self.org_repo.list_principals(org_id, pagination).await?;
         let (user_ids, metadata) = paginated.into_parts();
 
         // One batched read instead of N `find_by_id`; re-order to the paginated
-        // membership order (the batch result order is unspecified).
+        // order (the batch result order is unspecified).
         let mut by_id: std::collections::HashMap<String, User> = self
             .user_repo
             .find_by_ids(&user_ids)
@@ -200,6 +189,11 @@ impl<
         Ok((users, metadata))
     }
 
+    /// The organizations a user belongs to, meaning those they hold a grant on
+    /// or that contain a project they hold a grant on. A System-scoped grant is
+    /// deliberately not expanded here: a platform operator reaching every
+    /// organization is not a member of each one, and listing them all under
+    /// "my organizations" would be noise.
     #[instrument(skip(self, caller), fields(user_id = %user_id))]
     pub async fn list_user_orgs(
         &self,
@@ -211,80 +205,8 @@ impl<
             .check(caller, Permission::ListUserOrganizations(user_id.clone()))
             .await?;
 
-        let paginated = self
-            .user_org_repo
-            .list_user_organizations(user_id, pagination)
-            .await?;
-        let (org_ids, metadata) = paginated.into_parts();
-
-        let mut by_id: std::collections::HashMap<String, Organization> = self
-            .org_repo
-            .find_by_ids(&org_ids)
-            .await?
-            .into_iter()
-            .map(|o| (o.id().as_str().to_owned(), o))
-            .collect();
-        let orgs = org_ids
-            .iter()
-            .filter_map(|id| by_id.remove(id.as_str()))
-            .collect();
-
+        let paginated = self.org_repo.list_for_user(user_id, pagination).await?;
+        let (orgs, metadata) = paginated.into_parts();
         Ok((orgs, metadata))
-    }
-
-    #[instrument(skip(self, caller), fields(user_id = %user_id, org_id = %org_id))]
-    pub async fn add_user(
-        &self,
-        caller: &CallerContext,
-        user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<()> {
-        self.permission_service
-            .check(caller, Permission::AddOrganizationMember(org_id.clone()))
-            .await?;
-
-        if self.user_org_repo.is_member(user_id, org_id).await? {
-            return Err(DomainError::conflict(
-                "User is already a member of this organization",
-            ));
-        }
-
-        self.user_org_repo.add_member(user_id, org_id).await
-    }
-
-    #[instrument(skip(self, caller), fields(user_id = %user_id, org_id = %org_id))]
-    pub async fn remove_user(
-        &self,
-        caller: &CallerContext,
-        user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<()> {
-        self.permission_service
-            .check(caller, Permission::RemoveOrganizationMember(org_id.clone()))
-            .await?;
-
-        // Dropping the membership row is what cuts the user's authority: Cedar
-        // gates every org/project-scoped permit on live org membership. The
-        // grants and project memberships under the org are deleted with it —
-        // atomically — so re-adding the user later starts from a clean slate
-        // instead of silently restoring their old authority. Guard the scope's
-        // last human owner before stripping anyone. Owner grants on child
-        // projects are NOT guarded: a remaining org owner keeps full control
-        // of every project through the scope hierarchy.
-        let scope = Scope::Organization(org_id.clone());
-        let principal = Principal::User(user_id.clone());
-        let grants = self.grant_repo.list_all().await?;
-        if removal_orphans_scope(&grants, &scope, &principal) {
-            return Err(DomainError::business_rule(
-                "cannot remove the last owner of this organization",
-            ));
-        }
-
-        self.org_repo
-            .remove_member_and_grants(user_id, org_id)
-            .await?;
-        // Deleted grant rows only leave the live policy set on rebuild. (The
-        // membership gate already denies the ex-member either way.)
-        self.policy_control.reload().await
     }
 }

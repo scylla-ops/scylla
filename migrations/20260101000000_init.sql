@@ -40,6 +40,9 @@ CREATE TABLE user_oauth_identities (
 CREATE INDEX user_oauth_identities_user_idx ON user_oauth_identities (user_id);
 
 -- ── Tenancy: organizations → projects ─────────────────────────────────────────
+-- There is no membership table. Belonging somewhere means holding a grant on it
+-- or on something that contains it, so `grants` is the only relation between a
+-- principal and the tree. See docs/src/access-model.md.
 
 CREATE TABLE organizations (
     id          TEXT        PRIMARY KEY,
@@ -52,13 +55,6 @@ CREATE TABLE organizations (
 CREATE INDEX organizations_created_at_idx ON organizations (created_at DESC);
 CREATE INDEX organizations_name_idx ON organizations (name);
 
-CREATE TABLE user_organization (
-    user_id         TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    organization_id TEXT NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, organization_id)
-);
-CREATE INDEX user_organization_organization_id_idx ON user_organization (organization_id);
-
 CREATE TABLE projects (
     id              TEXT        PRIMARY KEY,
     name            TEXT        NOT NULL,
@@ -70,13 +66,6 @@ CREATE TABLE projects (
 );
 CREATE INDEX projects_created_at_idx ON projects (created_at DESC);
 CREATE INDEX projects_organization_id_idx ON projects (organization_id);
-
-CREATE TABLE user_project (
-    user_id    TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    project_id TEXT NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, project_id)
-);
-CREATE INDEX user_project_project_id_idx ON user_project (project_id);
 
 -- ── Pipelines ────────────────────────────────────────────────────────────────
 
@@ -353,6 +342,7 @@ INSERT INTO roles (id, key, name, description, scope_kind, builtin) VALUES
     ('organization-agent', 'organization-agent', 'Organization Agent', 'Machine app scoped to an organization: pull and run its jobs.', 'organization', TRUE),
     ('project-agent',      'project-agent',      'Project Agent',      'Machine app scoped to a project: pull and run its jobs.',        'project',      TRUE),
     ('organization-trigger-runner', 'organization-trigger-runner', 'Organization Trigger Runner', 'Machine app that fires the triggers of an organization: run its pipelines.', 'organization', TRUE),
+    ('organization-member', 'organization-member', 'Organization Member', 'Belongs to the organization: sees it exists, nothing more.',             'organization', TRUE),
     ('organization-viewer', 'organization-viewer', 'Organization Viewer', 'Read every project and run in the organization, change nothing.',        'organization', TRUE),
     ('project-developer',   'project-developer',   'Project Developer',   'Build in a project: create, edit and run its pipelines.',                'project',      TRUE),
     ('project-viewer',      'project-viewer',      'Project Viewer',      'Read a project, its pipelines and its runs, change nothing.',            'project',      TRUE);
@@ -373,6 +363,9 @@ INSERT INTO role_permissions (role_id, permission) VALUES
     -- Read-only tiers. Kept explicit rather than derived: a role is a list of
     -- permissions, and a viewer that silently gained a write permission through
     -- some clever inheritance is exactly the bug this table exists to prevent.
+    -- The floor tier: what belonging to an organization used to confer through a
+    -- hardcoded policy is now a role like any other, so a tenant can redefine it.
+    ('organization-member', 'readOrganization'),
     ('organization-viewer', 'readOrganization'),
     ('organization-viewer', 'listOrganizationMembers'),
     ('organization-viewer', 'listProjectsByOrganization'),

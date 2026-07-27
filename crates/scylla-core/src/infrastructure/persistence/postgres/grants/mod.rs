@@ -110,6 +110,65 @@ where
     Ok(())
 }
 
+/// Delete every grant a principal holds at `scope` and everything beneath it.
+/// System-scoped grants are deliberately out of reach: an organization
+/// administrator revoking someone must not be able to strip a platform
+/// operator's global access as a side effect.
+pub async fn delete_under_scope<'e, E>(
+    executor: E,
+    principal: &Principal,
+    scope: &Scope,
+) -> DomainResult<u64>
+where
+    E: PgExecutor<'e>,
+{
+    let result = match scope {
+        // Everything the principal holds except System itself.
+        Scope::System => {
+            sqlx::query!(
+                "DELETE FROM grants \
+                 WHERE principal_kind = $1 AND principal_id = $2 AND scope_kind <> $3",
+                principal.kind(),
+                principal.id(),
+                SCOPE_SYSTEM,
+            )
+            .execute(executor)
+            .await
+        }
+        // The org itself plus every project under it, in one statement.
+        Scope::Organization(org_id) => {
+            sqlx::query!(
+                "DELETE FROM grants \
+                 WHERE principal_kind = $1 AND principal_id = $2 \
+                   AND ((scope_kind = $3 AND scope_id = $4) \
+                     OR (scope_kind = $5 AND scope_id IN \
+                           (SELECT id FROM projects WHERE organization_id = $4)))",
+                principal.kind(),
+                principal.id(),
+                SCOPE_ORGANIZATION,
+                org_id.as_str(),
+                SCOPE_PROJECT,
+            )
+            .execute(executor)
+            .await
+        }
+        Scope::Project(project_id) => {
+            sqlx::query!(
+                "DELETE FROM grants \
+                 WHERE principal_kind = $1 AND principal_id = $2 \
+                   AND scope_kind = $3 AND scope_id = $4",
+                principal.kind(),
+                principal.id(),
+                SCOPE_PROJECT,
+                project_id.as_str(),
+            )
+            .execute(executor)
+            .await
+        }
+    };
+    Ok(result.to_domain()?.rows_affected())
+}
+
 /// Persistence for explicit scoped grants (`grants` table). Read once
 /// at `CedarPermissionService` construction to link template instances.
 #[derive(Clone)]
@@ -169,6 +228,11 @@ impl GrantRepository for PgGrantRepository {
     #[instrument(skip(self, grant), fields(grant_id = %grant.id))]
     async fn create(&self, grant: &Grant) -> DomainResult<()> {
         insert(&self.pool, grant).await
+    }
+
+    #[instrument(skip(self))]
+    async fn revoke_all(&self, principal: &Principal, scope: &Scope) -> DomainResult<u64> {
+        delete_under_scope(&self.pool, principal, scope).await
     }
 
     #[instrument(skip(self))]

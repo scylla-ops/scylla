@@ -12,6 +12,10 @@ import "scylla/common/v1/common.proto";
 service GrantService {
   rpc CreateGrant(CreateGrantRequest) returns (CreateGrantResponse);
   rpc RevokeGrant(RevokeGrantRequest) returns (RevokeGrantResponse);
+  // Strip every access a principal holds at a scope and below it, in one call:
+  // how someone leaves an organization or a project. System-scoped grants are
+  // never touched, so an org admin cannot strip a platform operator.
+  rpc RevokeAllAccess(RevokeAllAccessRequest) returns (RevokeAllAccessResponse);
   rpc ListGrants(ListGrantsRequest) returns (ListGrantsResponse);
   // The static catalog of roles assignable via CreateGrant. The optional
   // scope_kind filter narrows to roles valid on that scope kind (e.g. PROJECT →
@@ -47,6 +51,18 @@ message CreateGrantResponse { Grant grant = 1; }
 message RevokeGrantRequest { scylla.common.v1.GrantId grant_id = 1; }
 
 message RevokeGrantResponse {}
+
+message RevokeAllAccessRequest {
+  PrincipalRef principal = 1;
+  // The scope to clear, inclusive of everything beneath it.
+  ScopeRef scope = 2;
+}
+
+message RevokeAllAccessResponse {
+  // How many grants were removed, so a caller can tell "removed three" from
+  // "there was nothing to remove".
+  uint64 revoked = 1;
+}
 
 message ListGrantsRequest {
   // Optional scope filter. Set → list the grants bound to exactly that scope

@@ -4,12 +4,11 @@
 //! independently readable; the service module keeps only the orchestration
 //! (`check`, policy-set build/reload, the trait impls).
 
-use crate::application::authz::entity_provider::PrincipalAuthz;
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::ResourceRef;
-use cedar_policy::{Entity, EntityUid, RestrictedExpression};
-use std::collections::{HashMap, HashSet};
+use cedar_policy::{Entity, EntityUid};
+use std::collections::HashSet;
 use std::str::FromStr;
 
 pub(crate) fn euid(type_name: &str, id: &str) -> DomainResult<EntityUid> {
@@ -19,40 +18,6 @@ pub(crate) fn euid(type_name: &str, id: &str) -> DomainResult<EntityUid> {
 
 pub(crate) fn parent_set(parent: Option<&EntityUid>) -> HashSet<EntityUid> {
     parent.cloned().into_iter().collect()
-}
-
-pub(crate) fn uid_set<T: AsRef<str>>(
-    type_name: &str,
-    ids: &[T],
-) -> DomainResult<RestrictedExpression> {
-    let mut exprs = Vec::with_capacity(ids.len());
-    for id in ids {
-        exprs.push(RestrictedExpression::new_entity_uid(euid(
-            type_name,
-            id.as_ref(),
-        )?));
-    }
-    Ok(RestrictedExpression::new_set(exprs))
-}
-
-pub(crate) fn user_entity(uid: EntityUid, authz: &PrincipalAuthz) -> DomainResult<Entity> {
-    // No role-membership parents anymore: global authority is a System-scoped
-    // grant (linked template instance), not entity membership. The only parent is
-    // the System root, so a User (as a *resource*) is reachable by a system-admin
-    // grant's `resource in System`. ABAC org/project memberships are attrs.
-    let parents = HashSet::from([euid("Scylla::System", "root")?]);
-    let attrs = HashMap::from([
-        (
-            "memberOrgs".to_string(),
-            uid_set("Scylla::Organization", &authz.member_orgs)?,
-        ),
-        (
-            "memberProjects".to_string(),
-            uid_set("Scylla::Project", &authz.member_projects)?,
-        ),
-    ]);
-    Entity::new(uid, attrs, parents)
-        .map_err(|e| DomainError::Internal(format!("cedar user entity: {e}")))
 }
 
 pub(crate) fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {

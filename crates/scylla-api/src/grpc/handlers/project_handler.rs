@@ -6,18 +6,15 @@ use crate::grpc::mappers::{
 use derive_more::Constructor;
 use scylla_core::application::ProjectUseCases;
 use scylla_core::application::authz::policy::PolicyControl;
-use scylla_core::application::{
-    PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
-};
+use scylla_core::application::{PermissionService, ProjectRepository, UserRepository};
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
 use scylla_protocol::project::v1::{
-    AddProjectMemberRequest, AddProjectMemberResponse, CreateProjectRequest, CreateProjectResponse,
-    DeleteProjectRequest, DeleteProjectResponse, GetProjectRequest, GetProjectResponse,
-    ListOrganizationProjectsRequest, ListOrganizationProjectsResponse, ListProjectMembersRequest,
-    ListProjectMembersResponse, ListProjectsRequest, ListProjectsResponse, ListUserProjectsRequest,
-    ListUserProjectsResponse, Project, ProjectMember, RemoveProjectMemberRequest,
-    RemoveProjectMemberResponse, SetProjectActiveRequest, SetProjectActiveResponse,
+    CreateProjectRequest, CreateProjectResponse, DeleteProjectRequest, DeleteProjectResponse,
+    GetProjectRequest, GetProjectResponse, ListOrganizationProjectsRequest,
+    ListOrganizationProjectsResponse, ListProjectMembersRequest, ListProjectMembersResponse,
+    ListProjectsRequest, ListProjectsResponse, ListUserProjectsRequest, ListUserProjectsResponse,
+    Project, ProjectMember, SetProjectActiveRequest, SetProjectActiveResponse,
     UpdateProjectRequest, UpdateProjectResponse, project_service_server::ProjectService,
 };
 use std::sync::Arc;
@@ -26,22 +23,20 @@ use tonic::{Request, Response, Status};
 #[derive(Constructor)]
 pub struct ProjectHandler<
     P: ProjectRepository,
-    UP: UserProjectRepository,
     U: UserRepository,
     PS: PermissionService,
     PC: PolicyControl,
 > {
-    use_cases: Arc<ProjectUseCases<P, UP, U, PS, PC>>,
+    use_cases: Arc<ProjectUseCases<P, U, PS, PC>>,
 }
 
 #[async_trait::async_trait]
 impl<
     P: ProjectRepository + Send + Sync + 'static,
-    UP: UserProjectRepository + Send + Sync + 'static,
     U: UserRepository + Send + Sync + 'static,
     PS: PermissionService + Send + Sync + 'static,
     PC: PolicyControl + Send + Sync + 'static,
-> ProjectService for ProjectHandler<P, UP, U, PS, PC>
+> ProjectService for ProjectHandler<P, U, PS, PC>
 {
     async fn create_project(
         &self,
@@ -253,39 +248,5 @@ impl<
             projects,
             pagination: Some(domain_to_proto_metadata(&metadata)),
         }))
-    }
-
-    async fn add_project_member(
-        &self,
-        request: Request<AddProjectMemberRequest>,
-    ) -> Result<Response<AddProjectMemberResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let user_id = UserId::new(&required(req.user_id, "user_id")?);
-        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
-
-        self.use_cases
-            .add_user(&caller, &user_id, &project_id)
-            .await
-            .map_err(domain_error_to_status)?;
-
-        Ok(Response::new(AddProjectMemberResponse {}))
-    }
-
-    async fn remove_project_member(
-        &self,
-        request: Request<RemoveProjectMemberRequest>,
-    ) -> Result<Response<RemoveProjectMemberResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let user_id = UserId::new(&required(req.user_id, "user_id")?);
-        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
-
-        self.use_cases
-            .remove_user(&caller, &user_id, &project_id)
-            .await
-            .map_err(domain_error_to_status)?;
-
-        Ok(Response::new(RemoveProjectMemberResponse {}))
     }
 }

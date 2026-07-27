@@ -19,8 +19,8 @@ service ProjectService {
   rpc ListOrganizationProjects(ListOrganizationProjectsRequest) returns (ListOrganizationProjectsResponse);
   rpc ListUserProjects(ListUserProjectsRequest) returns (ListUserProjectsResponse);
   rpc ListProjectMembers(ListProjectMembersRequest) returns (ListProjectMembersResponse);
-  rpc AddProjectMember(AddProjectMemberRequest) returns (AddProjectMemberResponse);
-  rpc RemoveProjectMember(RemoveProjectMemberRequest) returns (RemoveProjectMemberResponse);
+  // Adding and removing people is granting and revoking a role: see
+  // scylla.authz.v1.GrantService (CreateGrant / RevokeGrant / RevokeAllAccess).
 }
 
 message Project {
@@ -107,16 +107,3 @@ message ListProjectMembersResponse {
   scylla.common.v1.PaginationMetadata pagination = 2;
 }
 
-message AddProjectMemberRequest {
-  scylla.common.v1.ProjectId project_id = 1;
-  scylla.common.v1.UserId user_id = 2;
-}
-
-message AddProjectMemberResponse {}
-
-message RemoveProjectMemberRequest {
-  scylla.common.v1.ProjectId project_id = 1;
-  scylla.common.v1.UserId user_id = 2;
-}
-
-message RemoveProjectMemberResponse {}

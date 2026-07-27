@@ -10,7 +10,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
-use super::super::{grants, user_organization, user_project};
+use super::super::grants;
 
 #[derive(Clone)]
 pub struct PgOrganizationRepository {
@@ -31,37 +31,41 @@ impl OrganizationRepository for PgOrganizationRepository {
         queries::create(&self.pool, organization).await
     }
 
-    #[instrument(skip(self, organization, grant), fields(org_id = %organization.id(), owner = %owner))]
+    #[instrument(skip(self, organization, grant), fields(org_id = %organization.id()))]
     async fn provision_with_owner(
         &self,
         organization: &Organization,
-        owner: &UserId,
         grant: &Grant,
     ) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         queries::create(&mut *tx, organization).await?;
-        user_organization::repository::queries::add_member(&mut *tx, owner, organization.id())
-            .await?;
         grants::insert(&mut *tx, grant).await?;
         tx.commit().await.to_domain()?;
         Ok(())
     }
 
-    #[instrument(skip(self), fields(org_id = %org_id, user_id = %user_id))]
-    async fn remove_member_and_grants(
+    #[instrument(skip(self), fields(org_id = %org_id))]
+    async fn list_principals(
+        &self,
+        org_id: &OrganizationId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<UserId>> {
+        let params = pagination.copied().unwrap_or_default();
+        let total = queries::count_principals(&self.pool, org_id).await?;
+        let items = queries::list_principals_page(&self.pool, org_id, &params).await?;
+        Ok(PaginatedResult::new(items, &params, total))
+    }
+
+    #[instrument(skip(self), fields(user_id = %user_id))]
+    async fn list_for_user(
         &self,
         user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<()> {
-        let mut tx = self.pool.begin().await.to_domain()?;
-        user_organization::repository::queries::remove_member(&mut *tx, user_id, org_id).await?;
-        user_project::repository::queries::remove_member_from_org_projects(
-            &mut *tx, user_id, org_id,
-        )
-        .await?;
-        grants::delete_by_user_under_org(&mut *tx, user_id, org_id).await?;
-        tx.commit().await.to_domain()?;
-        Ok(())
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Organization>> {
+        let params = pagination.copied().unwrap_or_default();
+        let total = queries::count_for_user(&self.pool, user_id).await?;
+        let items = queries::list_for_user_page(&self.pool, user_id, &params).await?;
+        Ok(PaginatedResult::new(items, &params, total))
     }
 
     #[instrument(skip(self), fields(org_id = %id))]
@@ -120,6 +124,136 @@ impl OrganizationRepository for PgOrganizationRepository {
 #[allow(clippy::wildcard_imports)]
 pub mod queries {
     use super::*;
+
+    pub async fn count_principals<'e, E>(executor: E, org_id: &OrganizationId) -> DomainResult<u64>
+    where
+        E: PgExecutor<'e>,
+    {
+        let row = sqlx::query!(
+            r#"
+            SELECT COUNT(DISTINCT g.principal_id) AS "count!"
+            FROM grants g
+            WHERE g.principal_kind = 'user'
+              AND ((g.scope_kind = 'organization' AND g.scope_id = $1)
+                OR (g.scope_kind = 'project' AND g.scope_id IN
+                      (SELECT id FROM projects WHERE organization_id = $1)))
+            "#,
+            org_id.as_str(),
+        )
+        .fetch_one(executor)
+        .await
+        .to_domain()?;
+        Ok(u64::try_from(row.count).unwrap_or(0))
+    }
+
+    pub async fn list_principals_page<'e, E>(
+        executor: E,
+        org_id: &OrganizationId,
+        params: &PaginationParams,
+    ) -> DomainResult<Vec<UserId>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let limit = i64::try_from(params.limit()).unwrap_or(i64::MAX);
+        let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
+        let rows = sqlx::query!(
+            r#"
+            SELECT g.principal_id, MAX(g.created_at) AS "granted_at!"
+            FROM grants g
+            WHERE g.principal_kind = 'user'
+              AND ((g.scope_kind = 'organization' AND g.scope_id = $1)
+                OR (g.scope_kind = 'project' AND g.scope_id IN
+                      (SELECT id FROM projects WHERE organization_id = $1)))
+            GROUP BY g.principal_id
+            ORDER BY "granted_at!" DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            org_id.as_str(),
+            limit,
+            offset,
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        Ok(rows
+            .into_iter()
+            .map(|r| UserId::new(r.principal_id))
+            .collect())
+    }
+
+    pub async fn count_for_user<'e, E>(executor: E, user_id: &UserId) -> DomainResult<u64>
+    where
+        E: PgExecutor<'e>,
+    {
+        let row = sqlx::query!(
+            r#"
+            SELECT COUNT(*) AS "count!" FROM organizations o
+            WHERE o.id IN (
+                SELECT g.scope_id FROM grants g
+                WHERE g.principal_kind = 'user' AND g.principal_id = $1
+                  AND g.scope_kind = 'organization'
+              )
+              OR o.id IN (
+                SELECT p.organization_id FROM projects p
+                JOIN grants g ON g.scope_kind = 'project' AND g.scope_id = p.id
+                WHERE g.principal_kind = 'user' AND g.principal_id = $1
+              )
+            "#,
+            user_id.as_str(),
+        )
+        .fetch_one(executor)
+        .await
+        .to_domain()?;
+        Ok(u64::try_from(row.count).unwrap_or(0))
+    }
+
+    pub async fn list_for_user_page<'e, E>(
+        executor: E,
+        user_id: &UserId,
+        params: &PaginationParams,
+    ) -> DomainResult<Vec<Organization>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let limit = i64::try_from(params.limit()).unwrap_or(i64::MAX);
+        let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, name, description, is_active, created_at, updated_at
+            FROM organizations o
+            WHERE o.id IN (
+                SELECT g.scope_id FROM grants g
+                WHERE g.principal_kind = 'user' AND g.principal_id = $1
+                  AND g.scope_kind = 'organization'
+              )
+              OR o.id IN (
+                SELECT p.organization_id FROM projects p
+                JOIN grants g ON g.scope_kind = 'project' AND g.scope_id = p.id
+                WHERE g.principal_kind = 'user' AND g.principal_id = $1
+              )
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id.as_str(),
+            limit,
+            offset,
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter()
+            .map(|r| {
+                row_into_org(
+                    r.id,
+                    r.name,
+                    r.description,
+                    r.is_active,
+                    r.created_at,
+                    r.updated_at,
+                )
+            })
+            .collect()
+    }
 
     fn row_into_org(
         id: String,

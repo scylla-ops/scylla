@@ -1,3 +1,4 @@
+use crate::application::authz::Visibility;
 use crate::application::authz::grant::Grant;
 use crate::domain::entities::{OrganizationId, Project, ProjectId, UserId};
 use crate::domain::errors::DomainResult;
@@ -8,30 +9,27 @@ use async_trait::async_trait;
 pub trait ProjectRepository {
     async fn create(&self, project: &Project) -> DomainResult<Project>;
 
-    /// Insert a project together with the creator's membership and owner grant in
-    /// a single transaction, so a new project is never left without an owner (a
-    /// partial failure rolls the whole thing back). Mirrors
-    /// [`OrganizationRepository::provision_with_owner`].
-    async fn provision_with_owner(
-        &self,
-        project: &Project,
-        owner: &UserId,
-        grant: &Grant,
-    ) -> DomainResult<()>;
+    /// Insert a project together with its owner's grant in a single transaction,
+    /// so a new project is never left without an owner. The owner is
+    /// `grant.principal`; there is no separate membership row to write.
+    async fn provision_with_owner(&self, project: &Project, grant: &Grant) -> DomainResult<()>;
 
-    /// Remove a member and, in the same transaction, delete every grant that
-    /// user holds scoped to this project. The user may still be an org member,
-    /// so those grants would keep authorizing if only the membership row went;
-    /// the two must go together atomically. Callers guard the scope's last
-    /// human owner (see
-    /// [`crate::application::authz::grant::removal_orphans_scope`]) and reload
-    /// the policy set afterwards. Mirrors
-    /// [`OrganizationRepository::remove_member_and_grants`].
-    async fn remove_member_and_grants(
+    /// The users on the project: everyone holding a grant scoped to it, most
+    /// recently granted first. Holders of an organization-wide grant are not
+    /// listed — they administer the organization rather than work here.
+    async fn list_principals(
+        &self,
+        project_id: &ProjectId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<UserId>>;
+
+    /// The projects a user works on: those they hold a grant on, plus every
+    /// project of an organization they hold a grant on.
+    async fn list_for_user(
         &self,
         user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<()>;
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Project>>;
 
     async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project>;
 
@@ -54,10 +52,14 @@ pub trait ProjectRepository {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>>;
 
+    /// The organization's projects, narrowed to what `visible` allows. The
+    /// filter is applied in SQL rather than after the fact, so the page size and
+    /// the total count describe the same, already-narrowed set.
     async fn list_by_organization(
         &self,
         organization_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
+        visible: &Visibility,
     ) -> DomainResult<PaginatedResult<Project>>;
 
     async fn count_by_organization(&self, organization_id: &OrganizationId) -> DomainResult<u64>;

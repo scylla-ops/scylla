@@ -7,7 +7,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::SqlxResultExt;
-use super::super::{grants, user_organization, users};
+use super::super::{grants, users};
 
 #[derive(Clone)]
 pub struct PgInvitationRepository {
@@ -55,18 +55,14 @@ impl InvitationRepository for PgInvitationRepository {
         new_user: Option<&User>,
         member: &UserId,
         organization_id: &OrganizationId,
-        grant: Option<&Grant>,
+        grant: &Grant,
     ) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
 
         if let Some(user) = new_user {
             users::repository::queries::create(&mut *tx, user).await?;
         }
-        user_organization::repository::queries::add_member(&mut *tx, member, organization_id)
-            .await?;
-        if let Some(grant) = grant {
-            grants::insert(&mut *tx, grant).await?;
-        }
+        grants::insert(&mut *tx, grant).await?;
         queries::mark_accepted(&mut *tx, invite_id).await?;
 
         tx.commit().await.to_domain()?;

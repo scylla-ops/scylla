@@ -13,8 +13,9 @@ use scylla_core::domain::value_objects::role::RoleName;
 use scylla_protocol::authz::v1::{
     CreateGrantRequest, CreateGrantResponse, Grant as ProtoGrant,
     GrantableRole as ProtoGrantableRole, ListGrantableRolesRequest, ListGrantableRolesResponse,
-    ListGrantsRequest, ListGrantsResponse, RevokeGrantRequest, RevokeGrantResponse,
-    RoleKind as ProtoRoleKind, grant_service_server::GrantService,
+    ListGrantsRequest, ListGrantsResponse, RevokeAllAccessRequest, RevokeAllAccessResponse,
+    RevokeGrantRequest, RevokeGrantResponse, RoleKind as ProtoRoleKind,
+    grant_service_server::GrantService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -68,6 +69,24 @@ impl<
             .map_err(domain_error_to_status)?;
 
         Ok(Response::new(RevokeGrantResponse {}))
+    }
+
+    async fn revoke_all_access(
+        &self,
+        request: Request<RevokeAllAccessRequest>,
+    ) -> Result<Response<RevokeAllAccessResponse>, Status> {
+        let caller = caller!(request);
+        let req = request.into_inner();
+        let principal = principal_ref_from_proto(req.principal)?;
+        let scope = scope_ref_from_proto(req.scope)?;
+
+        let revoked = self
+            .use_cases
+            .revoke_all_access(&caller, &principal, &scope)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(RevokeAllAccessResponse { revoked }))
     }
 
     async fn list_grants(

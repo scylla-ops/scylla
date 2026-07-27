@@ -1,4 +1,5 @@
 use super::PgProjectRepository;
+use crate::application::authz::Visibility;
 use crate::application::{OrganizationRepository, ProjectRepository};
 use crate::domain::errors::DomainError;
 use crate::infrastructure::persistence::postgres::PgOrganizationRepository;
@@ -115,7 +116,7 @@ async fn list_by_organization_filters_other_orgs(pool: PgPool) {
     repo.create(&project(&org_b, "b1")).await.unwrap();
 
     assert_eq!(
-        repo.list_by_organization(org_a.id(), None)
+        repo.list_by_organization(org_a.id(), None, &Visibility::All)
             .await
             .unwrap()
             .metadata()
@@ -123,7 +124,7 @@ async fn list_by_organization_filters_other_orgs(pool: PgPool) {
         2,
     );
     assert_eq!(
-        repo.list_by_organization(org_b.id(), None)
+        repo.list_by_organization(org_b.id(), None, &Visibility::All)
             .await
             .unwrap()
             .metadata()

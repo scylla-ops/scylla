@@ -1,4 +1,5 @@
 use crate::application::ProjectRepository;
+use crate::application::authz::Visibility;
 use crate::application::authz::grant::{Grant, Principal, Scope};
 use crate::domain::entities::{OrganizationId, Project, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
@@ -10,7 +11,7 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
-use super::super::{grants, user_project};
+use super::super::grants;
 
 #[derive(Clone)]
 pub struct PgProjectRepository {
@@ -31,37 +32,37 @@ impl ProjectRepository for PgProjectRepository {
         queries::create(&self.pool, project).await
     }
 
-    #[instrument(skip(self, project, grant), fields(project_id = %project.id(), owner = %owner))]
-    async fn provision_with_owner(
-        &self,
-        project: &Project,
-        owner: &UserId,
-        grant: &Grant,
-    ) -> DomainResult<()> {
+    #[instrument(skip(self, project, grant), fields(project_id = %project.id()))]
+    async fn provision_with_owner(&self, project: &Project, grant: &Grant) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         queries::create(&mut *tx, project).await?;
-        user_project::repository::queries::add_member(&mut *tx, owner, project.id()).await?;
         grants::insert(&mut *tx, grant).await?;
         tx.commit().await.to_domain()?;
         Ok(())
     }
 
-    #[instrument(skip(self), fields(project_id = %project_id, user_id = %user_id))]
-    async fn remove_member_and_grants(
+    #[instrument(skip(self), fields(project_id = %project_id))]
+    async fn list_principals(
+        &self,
+        project_id: &ProjectId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<UserId>> {
+        let params = pagination.copied().unwrap_or_default();
+        let total = queries::count_principals(&self.pool, project_id).await?;
+        let items = queries::list_principals_page(&self.pool, project_id, &params).await?;
+        Ok(PaginatedResult::new(items, &params, total))
+    }
+
+    #[instrument(skip(self), fields(user_id = %user_id))]
+    async fn list_for_user(
         &self,
         user_id: &UserId,
-        project_id: &ProjectId,
-    ) -> DomainResult<()> {
-        let mut tx = self.pool.begin().await.to_domain()?;
-        user_project::repository::queries::remove_member(&mut *tx, user_id, project_id).await?;
-        grants::delete_by_principal_and_scope(
-            &mut *tx,
-            &Principal::User(user_id.clone()),
-            &Scope::Project(project_id.clone()),
-        )
-        .await?;
-        tx.commit().await.to_domain()?;
-        Ok(())
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Project>> {
+        let params = pagination.copied().unwrap_or_default();
+        let total = queries::count_for_user(&self.pool, user_id).await?;
+        let items = queries::list_for_user_page(&self.pool, user_id, &params).await?;
+        Ok(PaginatedResult::new(items, &params, total))
     }
 
     #[instrument(skip(self), fields(project_id = %id))]
@@ -90,8 +91,9 @@ impl ProjectRepository for PgProjectRepository {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
         let params = pagination.copied().unwrap_or_default();
-        let total = queries::count(&self.pool, false, None).await?;
-        let items = queries::list_page(&self.pool, &params, false, None).await?;
+        let unrestricted = queries::VisibilityFilter::unrestricted();
+        let total = queries::count(&self.pool, false, None, &unrestricted).await?;
+        let items = queries::list_page(&self.pool, &params, false, None, &unrestricted).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
 
@@ -101,8 +103,9 @@ impl ProjectRepository for PgProjectRepository {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
         let params = pagination.copied().unwrap_or_default();
-        let total = queries::count(&self.pool, true, None).await?;
-        let items = queries::list_page(&self.pool, &params, true, None).await?;
+        let unrestricted = queries::VisibilityFilter::unrestricted();
+        let total = queries::count(&self.pool, true, None, &unrestricted).await?;
+        let items = queries::list_page(&self.pool, &params, true, None, &unrestricted).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
 
@@ -111,22 +114,159 @@ impl ProjectRepository for PgProjectRepository {
         &self,
         organization_id: &OrganizationId,
         pagination: Option<&PaginationParams>,
+        visible: &Visibility,
     ) -> DomainResult<PaginatedResult<Project>> {
         let params = pagination.copied().unwrap_or_default();
-        let total = queries::count(&self.pool, false, Some(organization_id)).await?;
-        let items = queries::list_page(&self.pool, &params, false, Some(organization_id)).await?;
+        // Nothing visible: answer an empty page without touching the database.
+        if visible.is_empty() {
+            return Ok(PaginatedResult::new(Vec::new(), &params, 0));
+        }
+        let filter = queries::VisibilityFilter::new(visible);
+        let total = queries::count(&self.pool, false, Some(organization_id), &filter).await?;
+        let items =
+            queries::list_page(&self.pool, &params, false, Some(organization_id), &filter).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
 
     #[instrument(skip(self), fields(org_id = %organization_id))]
     async fn count_by_organization(&self, organization_id: &OrganizationId) -> DomainResult<u64> {
-        queries::count(&self.pool, false, Some(organization_id)).await
+        queries::count(
+            &self.pool,
+            false,
+            Some(organization_id),
+            &queries::VisibilityFilter::unrestricted(),
+        )
+        .await
     }
 }
 
 #[allow(clippy::wildcard_imports)]
 pub mod queries {
     use super::*;
+
+    pub async fn count_principals<'e, E>(executor: E, project_id: &ProjectId) -> DomainResult<u64>
+    where
+        E: PgExecutor<'e>,
+    {
+        let row = sqlx::query!(
+            r#"
+            SELECT COUNT(DISTINCT principal_id) AS "count!" FROM grants
+            WHERE principal_kind = 'user' AND scope_kind = 'project' AND scope_id = $1
+            "#,
+            project_id.as_str(),
+        )
+        .fetch_one(executor)
+        .await
+        .to_domain()?;
+        Ok(u64::try_from(row.count).unwrap_or(0))
+    }
+
+    pub async fn list_principals_page<'e, E>(
+        executor: E,
+        project_id: &ProjectId,
+        params: &PaginationParams,
+    ) -> DomainResult<Vec<UserId>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let limit = i64::try_from(params.limit()).unwrap_or(i64::MAX);
+        let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
+        let rows = sqlx::query!(
+            r#"
+            SELECT principal_id, MAX(created_at) AS "granted_at!" FROM grants
+            WHERE principal_kind = 'user' AND scope_kind = 'project' AND scope_id = $1
+            GROUP BY principal_id
+            ORDER BY "granted_at!" DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            project_id.as_str(),
+            limit,
+            offset,
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        Ok(rows
+            .into_iter()
+            .map(|r| UserId::new(r.principal_id))
+            .collect())
+    }
+
+    /// Projects reachable by a user: granted directly, or through a grant on the
+    /// owning organization.
+    ///
+    /// ponytail: the org arm re-reads `grants` per call; fold it into the
+    /// `Visibility` resolver if project listings ever get hot.
+    pub async fn count_for_user<'e, E>(executor: E, user_id: &UserId) -> DomainResult<u64>
+    where
+        E: PgExecutor<'e>,
+    {
+        let row = sqlx::query!(
+            r#"
+            SELECT COUNT(*) AS "count!" FROM projects p
+            WHERE p.id IN (
+                SELECT scope_id FROM grants
+                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'project'
+              )
+              OR p.organization_id IN (
+                SELECT scope_id FROM grants
+                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'organization'
+              )
+            "#,
+            user_id.as_str(),
+        )
+        .fetch_one(executor)
+        .await
+        .to_domain()?;
+        Ok(u64::try_from(row.count).unwrap_or(0))
+    }
+
+    pub async fn list_for_user_page<'e, E>(
+        executor: E,
+        user_id: &UserId,
+        params: &PaginationParams,
+    ) -> DomainResult<Vec<Project>>
+    where
+        E: PgExecutor<'e>,
+    {
+        let limit = i64::try_from(params.limit()).unwrap_or(i64::MAX);
+        let offset = i64::try_from(params.offset()).unwrap_or(i64::MAX);
+        let rows = sqlx::query!(
+            r#"
+            SELECT id, name, description, organization_id, is_active, created_at, updated_at
+            FROM projects p
+            WHERE p.id IN (
+                SELECT scope_id FROM grants
+                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'project'
+              )
+              OR p.organization_id IN (
+                SELECT scope_id FROM grants
+                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'organization'
+              )
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id.as_str(),
+            limit,
+            offset,
+        )
+        .fetch_all(executor)
+        .await
+        .to_domain()?;
+        rows.into_iter()
+            .map(|r| {
+                row_into_project(
+                    r.id,
+                    r.name,
+                    r.description,
+                    r.organization_id,
+                    r.is_active,
+                    r.created_at,
+                    r.updated_at,
+                )
+            })
+            .collect()
+    }
 
     #[allow(clippy::too_many_arguments)]
     fn row_into_project(
@@ -278,10 +418,50 @@ pub mod queries {
         Ok(())
     }
 
+    /// A [`Visibility`] flattened into the three bind parameters the queries
+    /// below take: see-everything, plus the organizations and projects the
+    /// caller holds. Built once per call so the count and the page share exactly
+    /// the same filter.
+    pub struct VisibilityFilter {
+        all: bool,
+        orgs: Vec<String>,
+        projects: Vec<String>,
+    }
+
+    impl VisibilityFilter {
+        #[must_use]
+        pub fn new(visible: &Visibility) -> Self {
+            match visible {
+                Visibility::All => Self {
+                    all: true,
+                    orgs: Vec::new(),
+                    projects: Vec::new(),
+                },
+                Visibility::Scoped { orgs, projects } => Self {
+                    all: false,
+                    orgs: orgs.iter().map(|o| o.as_str().to_owned()).collect(),
+                    projects: projects.iter().map(|p| p.as_str().to_owned()).collect(),
+                },
+            }
+        }
+
+        /// Everything is visible — used by the internal callers that legitimately
+        /// bypass filtering (quota counts, cascade bookkeeping).
+        #[must_use]
+        pub fn unrestricted() -> Self {
+            Self {
+                all: true,
+                orgs: Vec::new(),
+                projects: Vec::new(),
+            }
+        }
+    }
+
     pub async fn count<'e, E>(
         executor: E,
         only_active: bool,
         organization_id: Option<&OrganizationId>,
+        visible: &VisibilityFilter,
     ) -> DomainResult<u64>
     where
         E: PgExecutor<'e>,
@@ -291,9 +471,13 @@ pub mod queries {
             SELECT COUNT(*) AS "count!" FROM projects
             WHERE (NOT $1 OR is_active)
               AND ($2::text IS NULL OR organization_id = $2)
+              AND ($3 OR organization_id = ANY($4) OR id = ANY($5))
             "#,
             only_active,
             organization_id.map(AsRef::as_ref),
+            visible.all,
+            &visible.orgs,
+            &visible.projects,
         )
         .fetch_one(executor)
         .await
@@ -306,6 +490,7 @@ pub mod queries {
         params: &PaginationParams,
         only_active: bool,
         organization_id: Option<&OrganizationId>,
+        visible: &VisibilityFilter,
     ) -> DomainResult<Vec<Project>>
     where
         E: PgExecutor<'e>,
@@ -318,6 +503,7 @@ pub mod queries {
             FROM projects
             WHERE (NOT $3 OR is_active)
               AND ($4::text IS NULL OR organization_id = $4)
+              AND ($5 OR organization_id = ANY($6) OR id = ANY($7))
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
             "#,
@@ -325,6 +511,9 @@ pub mod queries {
             offset,
             only_active,
             organization_id.map(AsRef::as_ref),
+            visible.all,
+            &visible.orgs,
+            &visible.projects,
         )
         .fetch_all(executor)
         .await

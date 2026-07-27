@@ -30,8 +30,6 @@ pub mod sessions;
 pub mod signup;
 pub mod trigger_deliveries;
 pub mod triggers;
-pub mod user_organization;
-pub mod user_project;
 pub mod users;
 
 // Flat re-exports so call sites can keep `scylla_core::infrastructure::PgUserRepository`
@@ -56,6 +54,4 @@ pub use sessions::PgSessionRepository;
 pub use signup::PgSignupRepository;
 pub use trigger_deliveries::PgTriggerDeliveryRepository;
 pub use triggers::PgTriggerRepository;
-pub use user_organization::PgUserOrganizationRepository;
-pub use user_project::PgUserProjectRepository;
 pub use users::PgUserRepository;

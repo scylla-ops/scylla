@@ -14,8 +14,6 @@ mod secret;
 mod session;
 mod trigger;
 mod user;
-mod user_organization;
-mod user_project;
 
 pub use ids::*;
 
@@ -33,5 +31,3 @@ pub use secret::*;
 pub use session::*;
 pub use trigger::*;
 pub use user::*;
-pub use user_organization::*;
-pub use user_project::*;

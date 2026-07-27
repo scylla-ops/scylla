@@ -25,8 +25,6 @@ pub enum Permission {
     DeleteOrganization(OrganizationId),
     ListOrganizations,
     ListOrganizationMembers(OrganizationId),
-    AddOrganizationMember(OrganizationId),
-    RemoveOrganizationMember(OrganizationId),
     /// Manage this organization's invitations (create / revoke / list pending).
     /// Distinct from member listing so a plain org member can't enumerate
     /// outstanding invites (and their invitee emails) — only org-admins can.
@@ -41,8 +39,6 @@ pub enum Permission {
     ListProjects,
     ListProjectsByOrganization(OrganizationId),
     ListProjectMembers(ProjectId),
-    AddProjectMember(ProjectId),
-    RemoveProjectMember(ProjectId),
     ListUserProjects(UserId),
 
     // ── pipeline ───────────────────────────────────────────────────────
@@ -136,8 +132,6 @@ impl Permission {
             Self::DeleteOrganization(_) => "deleteOrganization",
             Self::ListOrganizations => "listOrganizations",
             Self::ListOrganizationMembers(_) => "listOrganizationMembers",
-            Self::AddOrganizationMember(_) => "addOrganizationMember",
-            Self::RemoveOrganizationMember(_) => "removeOrganizationMember",
             Self::ManageInvitations(_) => "manageInvitations",
             Self::ListUserOrganizations(_) => "listUserOrganizations",
 
@@ -148,8 +142,6 @@ impl Permission {
             Self::ListProjects => "listProjects",
             Self::ListProjectsByOrganization(_) => "listProjectsByOrganization",
             Self::ListProjectMembers(_) => "listProjectMembers",
-            Self::AddProjectMember(_) => "addProjectMember",
-            Self::RemoveProjectMember(_) => "removeProjectMember",
             Self::ListUserProjects(_) => "listUserProjects",
 
             Self::CreatePipeline(_) => "createPipeline",
@@ -231,8 +223,6 @@ impl Permission {
             | Self::UpdateOrganization(id)
             | Self::DeleteOrganization(id)
             | Self::ListOrganizationMembers(id)
-            | Self::AddOrganizationMember(id)
-            | Self::RemoveOrganizationMember(id)
             | Self::ManageInvitations(id)
             | Self::CreateProject(id)
             | Self::ListProjectsByOrganization(id)
@@ -249,8 +239,6 @@ impl Permission {
             | Self::UpdateProject(id)
             | Self::DeleteProject(id)
             | Self::ListProjectMembers(id)
-            | Self::AddProjectMember(id)
-            | Self::RemoveProjectMember(id)
             | Self::CreatePipeline(id)
             | Self::ListPipelinesByProject(id)
             | Self::ListJobsByProject(id)
@@ -332,8 +320,6 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::DeleteOrganization(org.clone()),
         Permission::ListOrganizations,
         Permission::ListOrganizationMembers(org.clone()),
-        Permission::AddOrganizationMember(org.clone()),
-        Permission::RemoveOrganizationMember(org.clone()),
         Permission::ManageInvitations(org.clone()),
         Permission::ListUserOrganizations(user.clone()),
         // project
@@ -344,8 +330,6 @@ fn catalog_variants() -> Vec<Permission> {
         Permission::ListProjects,
         Permission::ListProjectsByOrganization(org.clone()),
         Permission::ListProjectMembers(project.clone()),
-        Permission::AddProjectMember(project.clone()),
-        Permission::RemoveProjectMember(project.clone()),
         Permission::ListUserProjects(user.clone()),
         // pipeline
         Permission::CreatePipeline(project.clone()),

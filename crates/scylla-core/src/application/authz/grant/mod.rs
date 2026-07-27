@@ -8,8 +8,9 @@ use crate::domain::value_objects::role::RoleName;
 // seed inserts. Convention: `<scope>-<role>`, kebab-case, scope ∈ {system,
 // organization, project}. The live Cedar policy bodies are generated per role
 // from the `roles` table (see `cedar_permission_service`), not hard-coded here.
-// The implicit `system-member` / `organization-member` / `project-member` tiers
-// are NOT named roles: membership is ABAC (`user_organization` / `user_project`).
+// There are no implicit tiers: belonging somewhere confers nothing on its own,
+// so every level of access, down to "can see this organization exists", is a
+// role in this list.
 
 /// Global super-user (full control, every scope), via a grant on the System scope.
 pub const SYSTEM_ADMIN_ROLE: &str = "system-admin";
@@ -28,6 +29,9 @@ pub const PROJECT_AGENT_ROLE: &str = "project-agent";
 pub const ORGANIZATION_TRIGGER_RUNNER_ROLE: &str = "organization-trigger-runner";
 /// Read-only across a whole organization: every project and run, no writes.
 pub const ORGANIZATION_VIEWER_ROLE: &str = "organization-viewer";
+/// The floor: belongs to the organization, sees that it exists, nothing else.
+/// What membership used to confer implicitly, now grantable and revocable.
+pub const ORGANIZATION_MEMBER_ROLE: &str = "organization-member";
 /// Build in one project: create, edit and run its pipelines.
 pub const PROJECT_DEVELOPER_ROLE: &str = "project-developer";
 /// Read-only on one project.
@@ -205,6 +209,12 @@ pub const GRANTABLE_ROLES: &[GrantableRole] = &[
         scope: ScopeKind::Organization,
         kind: RoleKind::Agent,
         description: "Machine app that fires the triggers of an organization: run its pipelines.",
+    },
+    GrantableRole {
+        name: ORGANIZATION_MEMBER_ROLE,
+        scope: ScopeKind::Organization,
+        kind: RoleKind::Member,
+        description: "Belongs to the organization: sees it exists, nothing more.",
     },
     GrantableRole {
         name: ORGANIZATION_VIEWER_ROLE,

@@ -1,4 +1,7 @@
-use super::{Grant, GrantRepository, Principal, Scope, is_owner_role, validate_role_in_db};
+use super::{
+    Grant, GrantRepository, Principal, Scope, is_owner_role, removal_orphans_scope,
+    validate_role_in_db,
+};
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::authz::entity_provider::AuthzEntityProvider;
 use crate::application::authz::policy::PolicyControl;
@@ -86,38 +89,57 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         // emittable into Cedar: it must name an existing role valid at the
         // grant's scope.
         validate_role_in_db(&*self.role_repo, &grant.role, &grant.scope).await?;
-        self.require_grantee_membership(grant).await?;
+        self.require_grantee_in_organization(grant).await?;
         self.check_no_escalation(caller, grant).await?;
         self.grant_repo.create(grant).await?;
         self.policy_control.reload().await
     }
 
-    /// A human grantee must belong to the organization an org/project-scoped
-    /// grant lives under. Cedar's member guard makes such a grant inert for a
-    /// non-member anyway, so persisting one would only create a row that
-    /// silently does nothing — rejecting it here keeps every stored grant
-    /// effective. System-scoped grants and machine Apps (org-owned, never
-    /// members) are exempt.
-    async fn require_grantee_membership(&self, grant: &Grant) -> DomainResult<()> {
-        let Principal::User(user_id) = &grant.principal else {
+    /// A project-scoped grant may only go to someone the organization has already
+    /// accepted, meaning someone already holding a grant somewhere under it.
+    ///
+    /// "Already accepted" means holding a grant at this organization's own
+    /// scope, which is the two-step flow the product documents: admit someone to
+    /// the organization (`organization-member` is enough), then assign them to
+    /// projects.
+    ///
+    /// This is the tenant boundary. Admitting a person requires
+    /// `manageOrgGrants`, which only organization and system administrators
+    /// hold; a project administrator then distributes access among those people.
+    /// Without this check a project administrator could attach any account in
+    /// the installation, including one belonging to another customer, and
+    /// `check_no_escalation` would not catch it because it returns early for
+    /// project scope.
+    ///
+    /// Organization- and System-scoped grants are exempt: they are how someone
+    /// enters in the first place, so requiring prior access would be circular.
+    /// Machine Apps are exempt too — they are owned by an organization by
+    /// construction, not admitted to it.
+    async fn require_grantee_in_organization(&self, grant: &Grant) -> DomainResult<()> {
+        let Principal::User(_) = &grant.principal else {
             return Ok(());
         };
-        let org_id = match &grant.scope {
-            Scope::System => return Ok(()),
-            Scope::Organization(id) => id.clone(),
-            Scope::Project(id) => self
-                .entity_provider
-                .resource_ancestors(&ResourceRef::Project(id.clone()))
-                .await?
-                .organization
-                .ok_or_else(|| DomainError::not_found("Project", id.to_string()))?,
+        let Scope::Project(project_id) = &grant.scope else {
+            return Ok(());
         };
-        let membership = self.entity_provider.principal_authz(user_id).await?;
-        if membership.member_orgs.contains(&org_id) {
+        let org_id = self
+            .entity_provider
+            .resource_ancestors(&ResourceRef::Project(project_id.clone()))
+            .await?
+            .organization
+            .ok_or_else(|| DomainError::not_found("Project", project_id.to_string()))?;
+
+        let admitted = self.grant_repo.list_all().await?.into_iter().any(|g| {
+            g.principal == grant.principal
+                && matches!(&g.scope, Scope::Organization(o) if o == &org_id)
+        });
+
+        if admitted {
             Ok(())
         } else {
             Err(DomainError::business_rule(
-                "the user must be a member of the organization before receiving a grant there",
+                "the user must already have access to this organization before \
+                 receiving a grant on one of its projects",
             ))
         }
     }
@@ -192,6 +214,45 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
             keys.extend(perms);
         }
         Ok(Holding::Keys(keys))
+    }
+
+    /// Strip every access a principal holds at `scope` and below it, in one
+    /// operation. This is how someone leaves an organization or a project: it
+    /// replaces the member-removal calls that existed when membership was a
+    /// table of its own.
+    ///
+    /// Returns how many grants were removed, so a caller can tell "removed
+    /// three" from "there was nothing to remove".
+    #[instrument(skip(self, caller))]
+    pub async fn revoke_all_access(
+        &self,
+        caller: &CallerContext,
+        principal: &Principal,
+        scope: &Scope,
+    ) -> DomainResult<u64> {
+        self.permission_service
+            .check(caller, Self::manage_perm(scope))
+            .await?;
+
+        // Same rule as the per-grant revoke: a scope must always keep at least
+        // one human owner, so stripping the last one is refused rather than
+        // leaving the organization or project unadministered.
+        let grants = self.grant_repo.list_all().await?;
+        if removal_orphans_scope(&grants, scope, principal) {
+            return Err(DomainError::business_rule(
+                "cannot remove the last owner of this scope",
+            ));
+        }
+
+        let removed = self.grant_repo.revoke_all(principal, scope).await?;
+        self.policy_control.reload().await?;
+
+        // A machine principal that just lost its access must not keep running on
+        // an already-open stream.
+        if let Principal::App(app_id) = principal {
+            self.agent_registry.disconnect(app_id);
+        }
+        Ok(removed)
     }
 
     #[instrument(skip(self, caller))]

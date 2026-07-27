@@ -41,28 +41,8 @@ permit (
     principal is Scylla::User && principal == resource
 };
 
-// ── Organization membership (ABAC) ─────────────────────────────────────
-// The one thing membership confers, and deliberately the only one: you may see
-// the organization you belong to, and who else is in it. Everything else comes
-// from a grant (see docs/src/access-model.md). Without this a member would need
-// a grant merely to see their own organization, which reads as a bug rather
-// than as a security boundary.
-//
-// Note what is NOT here: listing an organization's projects. That is what makes
-// "in an organization without seeing all its projects" expressible — the project
-// list is filtered by the grants you actually hold.
-@id("org-member")
-permit (
-    principal,
-    action in [
-        Scylla::Action::"readOrganization",
-        Scylla::Action::"listOrganizationMembers"
-    ],
-    resource
-) when {
-    principal is Scylla::User && resource in principal.memberOrgs
-};
-
-// There is no project counterpart to the policy above. Being on a project means
-// holding a role on it, so a project confers nothing on its own; what you may do
-// there is exactly what your role says.
+// ── No membership policies ─────────────────────────────────────────────
+// There used to be an `org-member` and a `project-member` policy here, granting
+// rights for merely belonging somewhere. Both are gone: every capability now
+// comes from a grant, so what belonging used to confer is the
+// `organization-member` builtin role, editable by the tenant like any other.

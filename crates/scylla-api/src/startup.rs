@@ -20,8 +20,7 @@ use scylla_core::infrastructure::{
     PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
     PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
     PgProjectRepository, PgRoleRepository, PgSecretRepository, PgSessionRepository,
-    PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
-    PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
+    PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository, PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
@@ -71,20 +70,13 @@ pub type SharedUserUc =
 pub type SharedOrgUc = Arc<
     OrganizationUseCases<
         PgOrganizationRepository,
-        PgUserOrganizationRepository,
         PgUserRepository,
         PermissionChecker,
         PermissionChecker,
     >,
 >;
 pub type SharedProjectUc = Arc<
-    ProjectUseCases<
-        PgProjectRepository,
-        PgUserProjectRepository,
-        PgUserRepository,
-        PermissionChecker,
-        PermissionChecker,
-    >,
+    ProjectUseCases<PgProjectRepository, PgUserRepository, PermissionChecker, PermissionChecker>,
 >;
 pub type SharedPipelineUc = Arc<
     PipelineUseCases<PgPipelineRepository, PgProjectRepository, PgJobRepository, PermissionChecker>,
@@ -198,10 +190,8 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let app_credential_repo = Arc::new(PgAppCredentialRepository::new(db.clone()));
     let app_token_repo = Arc::new(PgAppTokenRepository::new(db.clone()));
     let agent_repo = Arc::new(PgAgentRepository::new(db.clone()));
-    let user_org_repo = Arc::new(PgUserOrganizationRepository::new(db.clone()));
     let signup_repo = Arc::new(PgSignupRepository::new(db.clone()));
     let invite_repo = Arc::new(PgInvitationRepository::new(db.clone()));
-    let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
     let role_repo = Arc::new(PgRoleRepository::new(db.clone()));
     let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
@@ -251,17 +241,13 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     ));
     let org_uc = Arc::new(OrganizationUseCases::new(
         org_repo.clone(),
-        user_org_repo.clone(),
         user_repo.clone(),
-        grant_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
     ));
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
-        user_project_repo.clone(),
         user_repo.clone(),
-        grant_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
         scylla_core::application::Quotas {

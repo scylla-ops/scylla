@@ -9,29 +9,33 @@ use async_trait::async_trait;
 pub trait OrganizationRepository {
     async fn create(&self, organization: &Organization) -> DomainResult<Organization>;
 
-    /// Insert an org together with the creator's membership and owner grant in a
-    /// single transaction, so a new org is never left without an owner (a partial
-    /// failure rolls the whole thing back).
+    /// Insert an org together with its owner's grant in a single transaction, so
+    /// a new org is never left without an owner (a partial failure rolls the
+    /// whole thing back). The owner is `grant.principal`; there is no separate
+    /// membership row to write.
     async fn provision_with_owner(
         &self,
         organization: &Organization,
-        owner: &UserId,
         grant: &Grant,
     ) -> DomainResult<()>;
 
-    /// Remove a member and, in the same transaction, strip everything they held
-    /// under the org: grants scoped to the org itself, grants scoped to any of
-    /// its projects, and their project memberships there. The Cedar member
-    /// guard already denies an ex-member, but the rows must go too, or
-    /// re-adding the user later would silently restore their old authority.
-    /// Callers guard the scope's last human owner (see
-    /// [`crate::application::authz::grant::removal_orphans_scope`]) and reload
-    /// the policy set afterwards.
-    async fn remove_member_and_grants(
+    /// The users with access to the organization: everyone holding a grant on it
+    /// or on one of its projects, most recently granted first. Distinct, so
+    /// someone holding several roles appears once.
+    async fn list_principals(
+        &self,
+        org_id: &OrganizationId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<UserId>>;
+
+    /// The organizations a user belongs to: those they hold a grant on, plus
+    /// those owning a project they hold a grant on. System-scoped grants are not
+    /// expanded — a platform operator is not a member of every organization.
+    async fn list_for_user(
         &self,
         user_id: &UserId,
-        org_id: &OrganizationId,
-    ) -> DomainResult<()>;
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Organization>>;
 
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization>;
 
