@@ -9,7 +9,6 @@ import type {
 } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import type {
   GrantEntity,
-  GrantTargetSpec,
 } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/permission/domain/entities/grantable-role.entity.ts';
 import type { EffectivePermissionsEntity } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
@@ -23,7 +22,8 @@ import type { AuthzVocabularyEntity } from '@/modules/features/permission/domain
 export interface CreateGrantInput {
   principal: PrincipalEntity;
   /** The role, or the single permission, to grant. */
-  target: GrantTargetSpec;
+  /** The role to grant within the scope. */
+  roleId: string;
   scope: PermissionScope;
   scopeId: string;
 }

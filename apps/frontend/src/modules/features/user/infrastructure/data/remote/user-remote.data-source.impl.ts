@@ -53,7 +53,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       await this._grantClient.createGrant({
         principal: { principal: { oneofKind: 'user', user: { userId: user.userId } } },
         scope: { scope: { oneofKind: 'system', system: {} } },
-        target: { oneofKind: 'role', role: wrapId('system-admin') },
+        role: wrapId('system-admin'),
       }).response;
 
       return user;
