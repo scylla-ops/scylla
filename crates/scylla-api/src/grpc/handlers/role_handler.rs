@@ -12,10 +12,10 @@ use scylla_core::application::{
 use scylla_protocol::authz::v1::{
     Access, AuthzAction, CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest,
     DeleteRoleResponse, EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest,
-    GetEffectivePermissionsResponse, GetRoleRequest, GetRoleResponse, ListAuthzVocabularyRequest,
-    ListAuthzVocabularyResponse, ListRolesRequest, ListRolesResponse, Permission,
-    Role as ProtoRole, UpdateRoleRequest, UpdateRoleResponse, access, role,
-    role_service_server::RoleService,
+    GetEffectivePermissionsResponse, GetMyPermissionsRequest, GetMyPermissionsResponse,
+    GetRoleRequest, GetRoleResponse, ListAuthzVocabularyRequest, ListAuthzVocabularyResponse,
+    ListRolesRequest, ListRolesResponse, Permission, Role as ProtoRole, UpdateRoleRequest,
+    UpdateRoleResponse, access, role, role_service_server::RoleService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -146,6 +146,23 @@ impl<
             .map_err(domain_error_to_status)?;
 
         Ok(Response::new(GetEffectivePermissionsResponse {
+            scopes: scopes.iter().map(effective_scope_to_proto).collect(),
+        }))
+    }
+
+    async fn get_my_permissions(
+        &self,
+        request: Request<GetMyPermissionsRequest>,
+    ) -> Result<Response<GetMyPermissionsResponse>, Status> {
+        let caller = caller!(request);
+
+        let scopes = self
+            .use_cases
+            .my_permissions(&caller)
+            .await
+            .map_err(domain_error_to_status)?;
+
+        Ok(Response::new(GetMyPermissionsResponse {
             scopes: scopes.iter().map(effective_scope_to_proto).collect(),
         }))
     }

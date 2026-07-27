@@ -317,4 +317,73 @@ mod tests {
             .expect("org o1 scope");
         assert_eq!(org.permissions, vec!["deleteJob".to_string()]);
     }
+
+    /// Reading your own access needs no permission, while reading someone else's
+    /// still requires `manageSystemGrants`. Both run against a permission service
+    /// that denies everything, so the split is what is under test, not the stub.
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn my_permissions_needs_no_permission_unlike_the_admin_view(pool: PgPool) {
+        use crate::application::PermissionService;
+        use crate::application::authz::policy::PolicyControl;
+        use crate::application::authz::{Principal, RoleUseCases, Scope};
+        use crate::application::caller::{CallerContext, ServiceIdentity};
+        use crate::domain::entities::UserId;
+        use crate::domain::errors::{DomainError, DomainResult};
+        use crate::domain::value_objects::permission::Permission;
+        use crate::infrastructure::persistence::postgres::PgGrantRepository;
+        use std::sync::Arc;
+
+        struct DenyAll;
+        #[async_trait::async_trait]
+        impl PermissionService for DenyAll {
+            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
+                Err(DomainError::Forbidden("denied".to_string()))
+            }
+        }
+        struct NoopPolicy;
+        #[async_trait::async_trait]
+        impl PolicyControl for NoopPolicy {
+            async fn reload(&self) -> DomainResult<()> {
+                Ok(())
+            }
+        }
+
+        sqlx::query!(
+            "INSERT INTO grants (id, principal_kind, principal_id, role_id, scope_kind, scope_id) \
+             VALUES ('g1', 'user', 'alice', 'organization-admin', 'organization', 'o1')"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let uc = RoleUseCases::new(
+            Arc::new(PgRoleRepository::new(pool.clone())),
+            Arc::new(PgGrantRepository::new(pool)),
+            Arc::new(DenyAll),
+            Arc::new(NoopPolicy),
+        );
+
+        // Alice reads her own access even though every permission check fails.
+        let alice = CallerContext::User(UserId::new("alice"));
+        let scopes = uc.my_permissions(&alice).await.expect("own permissions");
+        assert_eq!(scopes.len(), 1);
+        assert!(matches!(&scopes[0].scope, Scope::Organization(o) if o.as_str() == "o1"));
+        assert!(scopes[0].full_control, "organization-admin confers '*'");
+
+        // A user with no grants gets an empty list, not an error.
+        let bob = CallerContext::User(UserId::new("bob"));
+        assert!(uc.my_permissions(&bob).await.unwrap().is_empty());
+
+        // The admin view over another principal is still gated.
+        assert!(
+            uc.effective_permissions(&alice, &Principal::User(UserId::new("bob")))
+                .await
+                .is_err(),
+            "reading another principal must still require manageSystemGrants",
+        );
+
+        // A service acts as the system and holds no grants: refused, not empty.
+        let service = CallerContext::Service(ServiceIdentity::recorder());
+        assert!(uc.my_permissions(&service).await.is_err());
+    }
 }
