@@ -1,11 +1,11 @@
-use crate::application::UserOrganizationRepository;
 use crate::application::audit::NoopAuditLog;
+use crate::application::authz::grant::{GrantRepository, Principal, Scope};
 use crate::application::oauth::{AccountOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo};
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::user::Email;
 use crate::infrastructure::persistence::postgres::{
     PgAuthzEntityProvider, PgGrantRepository, PgOAuthIdentityRepository, PgRoleRepository,
-    PgSessionRepository, PgSignupRepository, PgUserOrganizationRepository, PgUserRepository,
+    PgSessionRepository, PgSignupRepository, PgUserRepository,
 };
 use crate::infrastructure::{Argon2HashService, CedarPermissionService};
 use crate::test_support::prelude::*;
@@ -74,11 +74,18 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
     let AccountOutcome::New { organization_id } = &first.account else {
         panic!("new account gets an organization");
     };
+    // Joining is the grant, so that is what proves the account was provisioned
+    // into its organization.
+    let grants = PgGrantRepository::new(pool.clone())
+        .list_all()
+        .await
+        .unwrap();
     assert!(
-        PgUserOrganizationRepository::new(pool.clone())
-            .is_member(&first.user_id, organization_id)
-            .await
-            .unwrap()
+        grants.iter().any(|g| {
+            matches!(&g.principal, Principal::User(u) if u.as_str() == first.user_id.as_str())
+                && matches!(&g.scope, Scope::Organization(o) if o.as_str() == organization_id.as_str())
+        }),
+        "the new account holds an owner grant on its organization"
     );
 
     let second = uc.callback("code-2").await.expect("second login");

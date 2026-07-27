@@ -3,11 +3,10 @@ use crate::application::authz::grant::{
     Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope,
 };
 use crate::application::signup::repository::SignupRepository;
-use crate::application::{OrganizationRepository, UserOrganizationRepository, UserRepository};
+use crate::application::{OrganizationRepository, UserRepository};
 use crate::domain::value_objects::role::RoleName;
 use crate::infrastructure::persistence::postgres::{
-    PgGrantRepository, PgOrganizationRepository, PgRoleRepository, PgUserOrganizationRepository,
-    PgUserRepository,
+    PgGrantRepository, PgOrganizationRepository, PgRoleRepository, PgUserRepository,
 };
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
@@ -42,13 +41,6 @@ async fn provision_account_persists_all_four_rows(pool: PgPool) {
         .find_by_id(org.id())
         .await
         .expect("org persisted");
-    assert!(
-        PgUserOrganizationRepository::new(pool.clone())
-            .is_member(user.id(), org.id())
-            .await
-            .unwrap(),
-        "membership persisted"
-    );
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
         grants.iter().any(|g| g.id == grant.id),

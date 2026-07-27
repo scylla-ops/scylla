@@ -1,6 +1,6 @@
 use crate::application::ProjectRepository;
 use crate::application::authz::Visibility;
-use crate::application::authz::grant::{Grant, Principal, Scope};
+use crate::application::authz::grant::Grant;
 use crate::domain::entities::{OrganizationId, Project, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};

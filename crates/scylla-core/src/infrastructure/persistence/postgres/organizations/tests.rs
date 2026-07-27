@@ -67,156 +67,96 @@ async fn list_active_filters_inactive(pool: PgPool) {
     assert_eq!(all.metadata().total_count(), 3);
 }
 
-/// Removing a member must also delete the grants they hold scoped to the org,
-/// so a later re-add starts from a clean slate instead of silently restoring
-/// their old authority. The co-owner's grant and membership must be left
-/// untouched.
+/// The kill switch. Stripping someone's access to an organization has to reach
+/// every project underneath it in one statement, and must leave both the other
+/// people and the same person's holdings in other organizations untouched.
+///
+/// This is the anti-regression for the leak that used to be covered by the Cedar
+/// membership guard: with membership gone, deleting the rows *is* the boundary,
+/// so it has to be complete.
 #[sqlx::test(migrations = "../../migrations")]
-async fn remove_member_and_grants_revokes_only_the_members_scoped_grants(pool: PgPool) {
-    use crate::application::UserOrganizationRepository;
+async fn revoke_all_access_strips_the_whole_org_subtree(pool: PgPool) {
     use crate::application::authz::grant::{
-        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope,
+        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE,
+        Principal, SYSTEM_ADMIN_ROLE, Scope,
     };
     use crate::domain::value_objects::role::name::RoleName;
-    use crate::infrastructure::persistence::postgres::{
-        PgGrantRepository, PgUserOrganizationRepository,
-    };
-
-    let org = seed_org(&pool, "acme").await;
-    let owner = seed_user(&pool, "owner").await;
-    let victim = seed_user(&pool, "victim").await;
-
-    let members = PgUserOrganizationRepository::new(pool.clone());
-    members.add_member(owner.id(), org.id()).await.unwrap();
-    members.add_member(victim.id(), org.id()).await.unwrap();
-
-    let grants = PgGrantRepository::new(pool.clone());
-    let admin_role = || RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap();
-    let owner_grant = Grant::new(
-        Principal::User(owner.id().clone()),
-        admin_role(),
-        Scope::Organization(org.id().clone()),
-    );
-    let victim_grant = Grant::new(
-        Principal::User(victim.id().clone()),
-        admin_role(),
-        Scope::Organization(org.id().clone()),
-    );
-    grants.create(&owner_grant).await.unwrap();
-    grants.create(&victim_grant).await.unwrap();
-
-    PgOrganizationRepository::new(pool.clone())
-        .remove_member_and_grants(victim.id(), org.id())
-        .await
-        .expect("remove");
-
-    assert!(
-        !members.is_member(victim.id(), org.id()).await.unwrap(),
-        "victim membership must be gone",
-    );
-    assert!(
-        members.is_member(owner.id(), org.id()).await.unwrap(),
-        "owner membership must remain",
-    );
-    let remaining = grants.list_all().await.unwrap();
-    assert!(
-        remaining.iter().all(|g| g.id != victim_grant.id),
-        "victim's grant must be deleted with the membership",
-    );
-    assert!(
-        remaining.iter().any(|g| g.id == owner_grant.id),
-        "the co-owner's grant must be untouched",
-    );
-}
-
-/// Removing a member from an org strips everything they held *under* it too:
-/// grants scoped to the org's projects and their memberships in those projects.
-/// Identical holdings in another organization must survive — the purge is
-/// scoped to the one org the user is leaving.
-#[sqlx::test(migrations = "../../migrations")]
-async fn remove_member_and_grants_purges_the_whole_org_subtree(pool: PgPool) {
-    use crate::application::authz::grant::{
-        Grant, GrantRepository, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, Principal, Scope,
-    };
-    use crate::application::{UserOrganizationRepository, UserProjectRepository};
-    use crate::domain::value_objects::role::name::RoleName;
-    use crate::infrastructure::persistence::postgres::{
-        PgGrantRepository, PgUserOrganizationRepository, PgUserProjectRepository,
-    };
+    use crate::infrastructure::persistence::postgres::PgGrantRepository;
 
     let org = seed_org(&pool, "acme").await;
     let other_org = seed_org(&pool, "globex").await;
     let project = seed_project(&pool, &org, "apollo").await;
     let other_project = seed_project(&pool, &other_org, "zeus").await;
     let victim = seed_user(&pool, "victim").await;
-
-    let org_members = PgUserOrganizationRepository::new(pool.clone());
-    org_members.add_member(victim.id(), org.id()).await.unwrap();
-    org_members
-        .add_member(victim.id(), other_org.id())
-        .await
-        .unwrap();
-    let project_members = PgUserProjectRepository::new(pool.clone());
-    project_members
-        .add_member(victim.id(), project.id())
-        .await
-        .unwrap();
-    project_members
-        .add_member(victim.id(), other_project.id())
-        .await
-        .unwrap();
+    let colleague = seed_user(&pool, "colleague").await;
 
     let grants = PgGrantRepository::new(pool.clone());
-    let admin_role = || RoleName::new(PROJECT_ADMIN_ROLE).unwrap();
-    let child_role_grant = Grant::new(
-        Principal::User(victim.id().clone()),
-        admin_role(),
-        Scope::Project(project.id().clone()),
-    );
-    let child_agent_grant = Grant::new(
-        Principal::User(victim.id().clone()),
-        RoleName::new(PROJECT_AGENT_ROLE).unwrap(),
-        Scope::Project(project.id().clone()),
-    );
-    let other_org_grant = Grant::new(
-        Principal::User(victim.id().clone()),
-        admin_role(),
-        Scope::Project(other_project.id().clone()),
-    );
-    grants.create(&child_role_grant).await.unwrap();
-    grants.create(&child_agent_grant).await.unwrap();
-    grants.create(&other_org_grant).await.unwrap();
+    let role = |name: &str| RoleName::new(name).unwrap();
+    let victim_principal = Principal::User(victim.id().clone());
 
-    PgOrganizationRepository::new(pool.clone())
-        .remove_member_and_grants(victim.id(), org.id())
+    let doomed = [
+        Grant::new(
+            victim_principal.clone(),
+            role(ORGANIZATION_ADMIN_ROLE),
+            Scope::Organization(org.id().clone()),
+        ),
+        Grant::new(
+            victim_principal.clone(),
+            role(PROJECT_ADMIN_ROLE),
+            Scope::Project(project.id().clone()),
+        ),
+        Grant::new(
+            victim_principal.clone(),
+            role(PROJECT_AGENT_ROLE),
+            Scope::Project(project.id().clone()),
+        ),
+    ];
+    let survivors = [
+        // Same person, another organization.
+        Grant::new(
+            victim_principal.clone(),
+            role(PROJECT_ADMIN_ROLE),
+            Scope::Project(other_project.id().clone()),
+        ),
+        // A platform operator's global access, which an org-level revoke must
+        // never be able to strip.
+        Grant::new(
+            victim_principal.clone(),
+            role(SYSTEM_ADMIN_ROLE),
+            Scope::System,
+        ),
+        // Someone else, so the org keeps an owner and the revoke is allowed.
+        Grant::new(
+            Principal::User(colleague.id().clone()),
+            role(ORGANIZATION_ADMIN_ROLE),
+            Scope::Organization(org.id().clone()),
+        ),
+    ];
+    for g in doomed.iter().chain(survivors.iter()) {
+        grants.create(g).await.unwrap();
+    }
+
+    let removed = grants
+        .revoke_all(&victim_principal, &Scope::Organization(org.id().clone()))
         .await
-        .expect("remove");
+        .expect("revoke all");
+    assert_eq!(removed, 3, "the org grant plus both project grants");
 
-    assert!(
-        !project_members
-            .is_member(victim.id(), project.id())
-            .await
-            .unwrap(),
-        "membership in the org's project must be gone",
-    );
-    assert!(
-        project_members
-            .is_member(victim.id(), other_project.id())
-            .await
-            .unwrap(),
-        "membership in the other org's project must remain",
-    );
     let remaining = grants.list_all().await.unwrap();
-    assert!(
-        remaining
-            .iter()
-            .all(|g| g.id != child_role_grant.id && g.id != child_agent_grant.id),
-        "grants on the org's projects must be deleted with the org membership",
-    );
-    assert!(
-        remaining.iter().any(|g| g.id == other_org_grant.id),
-        "grants under the other org must be untouched",
-    );
+    for g in &doomed {
+        assert!(
+            !remaining.iter().any(|r| r.id == g.id),
+            "grant {} should have gone with the organization access",
+            g.id,
+        );
+    }
+    for g in &survivors {
+        assert!(
+            remaining.iter().any(|r| r.id == g.id),
+            "grant {} is outside the revoked scope and must survive",
+            g.id,
+        );
+    }
 }
 
 #[sqlx::test(migrations = "../../migrations")]

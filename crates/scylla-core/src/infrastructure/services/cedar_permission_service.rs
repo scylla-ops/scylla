@@ -2,7 +2,7 @@ use super::cedar_authz::{euid, parent_set, principal_parts, resource_parts, reso
 use crate::application::PermissionService;
 use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::application::authz::entity_provider::AuthzEntityProvider;
-use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope, ScopeKind};
+use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::role::{Role, RoleRepository};
 use crate::application::authz::visibility::{
@@ -473,8 +473,8 @@ mod tests {
     use crate::application::authz::entity_provider::ResourceAncestors;
     use crate::application::authz::grant::{
         ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE, ORGANIZATION_TRIGGER_RUNNER_ROLE,
-        PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, PROJECT_DEVELOPER_ROLE, SYSTEM_ADMIN_ROLE,
-        ScopeKind,
+        ORGANIZATION_VIEWER_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, PROJECT_DEVELOPER_ROLE,
+        SYSTEM_ADMIN_ROLE, ScopeKind,
     };
     use crate::application::authz::role::FULL_CONTROL;
     use crate::application::caller::ServiceIdentity;
@@ -537,6 +537,19 @@ mod tests {
                 .map(ToString::to_string)
                 .collect(),
         };
+        let org_viewer = Role {
+            id: ORGANIZATION_VIEWER_ROLE.to_string(),
+            key: Some(ORGANIZATION_VIEWER_ROLE.to_string()),
+            name: ORGANIZATION_VIEWER_ROLE.to_string(),
+            description: String::new(),
+            scope: ScopeKind::Organization,
+            owner_org: None,
+            builtin: true,
+            permissions: ["readOrganization", "listOrganizationMembers"]
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
+        };
         vec![
             admin(SYSTEM_ADMIN_ROLE, ScopeKind::System),
             admin(ORGANIZATION_ADMIN_ROLE, ScopeKind::Organization),
@@ -545,6 +558,7 @@ mod tests {
             agent(PROJECT_AGENT_ROLE, ScopeKind::Project),
             runner,
             developer,
+            org_viewer,
         ]
     }
 
@@ -570,16 +584,12 @@ mod tests {
     }
 
     struct StubProvider {
-        authz: PrincipalAuthz,
         ancestors: ResourceAncestors,
         app_active: bool,
     }
 
     #[async_trait]
     impl AuthzEntityProvider for StubProvider {
-        async fn principal_authz(&self, _user: &UserId) -> DomainResult<PrincipalAuthz> {
-            Ok(self.authz.clone())
-        }
         async fn resource_ancestors(
             &self,
             _resource: &ResourceRef,
@@ -598,6 +608,9 @@ mod tests {
         async fn list_all(&self) -> DomainResult<Vec<Grant>> {
             Ok(self.0.clone())
         }
+        async fn revoke_all(&self, _p: &Principal, _s: &Scope) -> DomainResult<u64> {
+            Ok(0)
+        }
         async fn create(&self, _grant: &Grant) -> DomainResult<()> {
             Ok(())
         }
@@ -607,13 +620,11 @@ mod tests {
     }
 
     async fn service(
-        authz: PrincipalAuthz,
         ancestors: ResourceAncestors,
         grants: Vec<Grant>,
     ) -> CedarPermissionService<StubProvider> {
         CedarPermissionService::new(
             Arc::new(StubProvider {
-                authz,
                 ancestors,
                 app_active: true,
             }),
@@ -633,7 +644,6 @@ mod tests {
     ) -> CedarPermissionService<StubProvider> {
         CedarPermissionService::new(
             Arc::new(StubProvider {
-                authz: PrincipalAuthz::default(),
                 ancestors,
                 app_active: false,
             }),
@@ -654,7 +664,6 @@ mod tests {
     #[tokio::test]
     async fn schema_and_policies_validate_and_admin_allows_everything() {
         let svc = service(
-            PrincipalAuthz::default(),
             ResourceAncestors::default(),
             vec![Grant::new(
                 Principal::User(UserId::new("u-admin")),
@@ -674,24 +683,14 @@ mod tests {
 
     #[tokio::test]
     async fn service_principal_bypasses() {
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
+        let svc = service(ResourceAncestors::default(), vec![]).await;
         let caller = CallerContext::Service(ServiceIdentity::recorder());
         assert!(svc.check(&caller, Permission::CreateJob).await.is_ok());
     }
 
     #[tokio::test]
     async fn anonymous_denied() {
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
+        let svc = service(ResourceAncestors::default(), vec![]).await;
         assert!(
             svc.check(&CallerContext::Anonymous, Permission::ListUsers)
                 .await
@@ -705,10 +704,6 @@ mod tests {
         // every right comes from a grant. The same call succeeds in the test
         // below once a role is actually held.
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![ProjectId::new("p1")],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -728,10 +723,6 @@ mod tests {
     #[tokio::test]
     async fn a_project_role_is_what_confers_rights() {
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![ProjectId::new("p1")],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -765,10 +756,6 @@ mod tests {
         // lingers. Membership gates authority: the stale row alone must not
         // authorize anything.
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![],
-                member_projects: vec![ProjectId::new("p1")],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -789,10 +776,6 @@ mod tests {
     #[tokio::test]
     async fn project_member_denied_outside_scope() {
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![],
-                member_projects: vec![ProjectId::new("p1")],
-            },
             // pipeline lives under project p2, which the user is not a member of
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
@@ -818,10 +801,6 @@ mod tests {
             Scope::Project(ProjectId::new("p1")),
         );
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -839,45 +818,55 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn scoped_grants_go_inert_once_the_user_leaves_the_org() {
-        // The reported leak: a user removed from an organization kept acting
-        // through grants scoped to the org's projects (the removal only deleted
-        // org-scoped grant rows). Membership now gates every org/project-scoped
-        // permit, so the surviving rows confer nothing — org-scoped and
-        // project-scoped alike — the moment the membership row is gone.
-        let project_grant = Grant::new(
-            Principal::User(UserId::new("u1")),
-            role("project-admin"),
-            Scope::Project(ProjectId::new("p1")),
-        );
-        let org_grant = Grant::new(
-            Principal::User(UserId::new("u1")),
-            role(ORGANIZATION_TRIGGER_RUNNER_ROLE),
-            Scope::Organization(OrganizationId::new("o1")),
-        );
+    async fn a_grant_authorizes_on_its_own() {
+        // Grants used to be conditional: a Cedar guard re-read the membership
+        // tables on every check, so a grant went inert the moment someone left.
+        // With membership gone the grant IS the authority, unconditionally, and
+        // removing access means deleting the row. The completeness of that
+        // deletion is covered by `revoke_all_access_strips_the_whole_org_subtree`
+        // in the organizations persistence tests — that test is what replaces
+        // the guard this one used to describe.
         let svc = service(
-            // No memberships left: the user was removed from the org.
-            PrincipalAuthz::default(),
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
                 pipeline: None,
             },
-            vec![project_grant, org_grant],
+            vec![Grant::new(
+                Principal::User(UserId::new("u1")),
+                role(PROJECT_ADMIN_ROLE),
+                Scope::Project(ProjectId::new("p1")),
+            )],
         )
         .await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
             svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
                 .await
-                .is_err(),
-            "a project-scoped role grant must be inert for an ex-member"
+                .is_ok(),
+            "the grant alone authorizes: nothing else has to be true"
         );
+
+        // And it reaches only its own scope.
+        let elsewhere = service(
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p2")),
+                pipeline: None,
+            },
+            vec![Grant::new(
+                Principal::User(UserId::new("u1")),
+                role(PROJECT_ADMIN_ROLE),
+                Scope::Project(ProjectId::new("p1")),
+            )],
+        )
+        .await;
         assert!(
-            svc.check(&caller, Permission::RunPipeline(PipelineId::new("pl1")))
+            elsewhere
+                .check(&caller, Permission::DeletePipeline(PipelineId::new("pl9")))
                 .await
                 .is_err(),
-            "an org-scoped permission grant must be inert for an ex-member"
+            "a grant on p1 confers nothing on p2"
         );
     }
 
@@ -886,7 +875,6 @@ mod tests {
         // system-admin authority comes from the System scope, above the org
         // tree: it must keep working inside any org without membership there.
         let svc = service(
-            PrincipalAuthz::default(),
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -918,7 +906,6 @@ mod tests {
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
-            PrincipalAuthz::default(),
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -956,7 +943,6 @@ mod tests {
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
-            PrincipalAuthz::default(),
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -991,10 +977,6 @@ mod tests {
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -1057,7 +1039,6 @@ mod tests {
         );
         // Pipeline lives under a different org the app has no grant on.
         let svc = service(
-            PrincipalAuthz::default(),
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o2")),
                 project: Some(ProjectId::new("p2")),
@@ -1087,10 +1068,6 @@ mod tests {
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: None,
@@ -1125,7 +1102,6 @@ mod tests {
     #[tokio::test]
     async fn user_without_grant_denied_agent_actions() {
         let svc = service(
-            PrincipalAuthz::default(),
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: None,
@@ -1157,10 +1133,6 @@ mod tests {
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: None,
@@ -1191,50 +1163,43 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn invitation_management_is_org_admin_only_not_member() {
-        // A plain org member (ABAC membership, no grant) may list members but
-        // must NOT manage invitations — closing the leak where any member could
-        // enumerate pending invites (and invitee emails) via the member-list
-        // permission. `manageInvitations` is covered only by the org-admin role
-        // template / global admin, never the org-member ABAC policy.
-        let member = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                ..Default::default()
-            },
+    async fn listing_members_does_not_confer_invitation_management() {
+        // The leak this guards: whoever can enumerate an organization's people
+        // must not thereby be able to enumerate its pending invites, which carry
+        // email addresses. `manageInvitations` belongs to the admin role only.
+        let viewer = service(
             ResourceAncestors::default(),
-            vec![],
+            vec![Grant::new(
+                Principal::User(UserId::new("viewer")),
+                role(ORGANIZATION_VIEWER_ROLE),
+                Scope::Organization(OrganizationId::new("o1")),
+            )],
         )
         .await;
-        let member_caller = CallerContext::User(UserId::new("member"));
+        let viewer_caller = CallerContext::User(UserId::new("viewer"));
         assert!(
-            member
+            viewer
                 .check(
-                    &member_caller,
+                    &viewer_caller,
                     Permission::ListOrganizationMembers(OrganizationId::new("o1"))
                 )
                 .await
                 .is_ok(),
-            "a plain org member can still list members"
+            "an organization viewer can list its people"
         );
         assert!(
-            member
+            viewer
                 .check(
-                    &member_caller,
+                    &viewer_caller,
                     Permission::ManageInvitations(OrganizationId::new("o1"))
                 )
                 .await
                 .is_err(),
-            "a plain org member must NOT manage invitations"
+            "but must NOT manage its invitations"
         );
 
-        // An org admin (owner grant on the org, member of it) may manage its
-        // invitations.
+        // An org admin may.
         let admin = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
-            },
             ResourceAncestors::default(),
             vec![Grant::new(
                 Principal::User(UserId::new("admin")),
@@ -1251,7 +1216,7 @@ mod tests {
                 )
                 .await
                 .is_ok(),
-            "org admin manages invitations in its org"
+            "an org admin manages its invitations"
         );
     }
 
@@ -1263,10 +1228,6 @@ mod tests {
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -1295,10 +1256,6 @@ mod tests {
             Scope::Project(ProjectId::new("p1")),
         );
         let svc = service(
-            PrincipalAuthz {
-                member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
-            },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),
@@ -1332,12 +1289,7 @@ mod tests {
     async fn user_lists_its_own_organizations() {
         // A plain user (no role, no membership) may list its own orgs/projects
         // via the `self` ABAC policy, but not another user's.
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
+        let svc = service(ResourceAncestors::default(), vec![]).await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(
             svc.check(
@@ -1386,7 +1338,6 @@ mod tests {
     #[tokio::test]
     async fn non_member_without_role_denied() {
         let svc = service(
-            PrincipalAuthz::default(),
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p1")),

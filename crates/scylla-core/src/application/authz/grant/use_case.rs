@@ -310,7 +310,7 @@ mod tests {
     use super::super::*;
     use super::*;
     use crate::application::agent::dispatch::JobDispatch;
-    use crate::application::authz::entity_provider::{PrincipalAuthz, ResourceAncestors};
+    use crate::application::authz::entity_provider::ResourceAncestors;
     use crate::application::authz::role::Role;
     use crate::application::caller::ServiceIdentity;
     use crate::domain::entities::{AppId, OrganizationId, UserId};
@@ -328,6 +328,9 @@ mod tests {
         }
         async fn delete(&self, _id: &str) -> DomainResult<()> {
             Ok(())
+        }
+        async fn revoke_all(&self, _p: &Principal, _s: &Scope) -> DomainResult<u64> {
+            Ok(0)
         }
     }
 
@@ -367,17 +370,10 @@ mod tests {
         }
     }
 
-    /// Stub membership: every user is a member of exactly `orgs`, and any
-    /// project resolves under the first of them (tests use a single org).
-    struct StubMembers(Vec<OrganizationId>);
+    /// Every project in these tests resolves under the single org `o1`.
+    struct StubAncestry;
     #[async_trait]
-    impl AuthzEntityProvider for StubMembers {
-        async fn principal_authz(&self, _user: &UserId) -> DomainResult<PrincipalAuthz> {
-            Ok(PrincipalAuthz {
-                member_orgs: self.0.clone(),
-                member_projects: vec![],
-            })
-        }
+    impl AuthzEntityProvider for StubAncestry {
         async fn resource_ancestors(
             &self,
             _resource: &ResourceRef,
@@ -409,6 +405,12 @@ mod tests {
     #[derive(Default)]
     struct RecordingRegistry {
         disconnected: Mutex<Vec<String>>,
+    }
+
+    impl RecordingRegistry {
+        fn disconnected(&self) -> Vec<String> {
+            self.disconnected.lock().unwrap().clone()
+        }
     }
     #[async_trait]
     impl AgentDispatch for RecordingRegistry {
@@ -442,24 +444,13 @@ mod tests {
         roles: Vec<Role>,
         reg: Arc<RecordingRegistry>,
     ) -> GrantUseCases<StubGrants, StubPolicy, StubPerms> {
-        // Grantees are members of o1 by default, so tests not about the
-        // membership rule pass it.
-        use_cases_with_members(grants, roles, reg, vec![OrganizationId::new("o1")])
-    }
-
-    fn use_cases_with_members(
-        grants: Vec<Grant>,
-        roles: Vec<Role>,
-        reg: Arc<RecordingRegistry>,
-        member_orgs: Vec<OrganizationId>,
-    ) -> GrantUseCases<StubGrants, StubPolicy, StubPerms> {
         GrantUseCases::new(
             Arc::new(StubGrants(grants)),
             Arc::new(StubRoles(roles)),
             Arc::new(StubPolicy),
             Arc::new(StubPerms),
             reg,
-            Arc::new(StubMembers(member_orgs)),
+            Arc::new(StubAncestry),
         )
     }
 
@@ -803,107 +794,136 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn grant_requires_the_grantee_to_be_an_org_member() {
-        // Membership gates authority: a grant to a user outside the org would
-        // be inert under the Cedar member guard, so creating it is refused.
+    async fn a_project_grant_requires_admission_to_the_organization() {
+        // The tenant boundary. Admitting someone needs `manageOrgGrants`; a
+        // project admin then distributes access among the people already
+        // admitted, and cannot pull in an arbitrary account.
+        let roles = vec![
+            test_role(PROJECT_ADMIN_ROLE, ScopeKind::Project, &[FULL_CONTROL]),
+            test_role(
+                ORGANIZATION_MEMBER_ROLE,
+                ScopeKind::Organization,
+                &["readOrganization"],
+            ),
+        ];
+        let service = CallerContext::Service(ServiceIdentity::recorder());
+        let alice = Principal::User(UserId::new("alice"));
+        let grant = Grant::new(
+            alice.clone(),
+            RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
+            Scope::Project(ProjectId::new("p1")),
+        );
+
+        // Alice holds nothing under o1 yet.
+        let uc = use_cases_with(
+            vec![],
+            roles.clone(),
+            Arc::new(RecordingRegistry::default()),
+        );
+        assert!(
+            uc.grant(&service, &grant).await.is_err(),
+            "a project grant to someone the organization has not admitted must be refused"
+        );
+
+        // Once she holds the floor role on the org, the project grant lands.
+        let admitted = Grant::new(
+            alice,
+            RoleName::new(ORGANIZATION_MEMBER_ROLE).unwrap(),
+            Scope::Organization(OrganizationId::new("o1")),
+        );
+        let uc = use_cases_with(
+            vec![admitted],
+            roles,
+            Arc::new(RecordingRegistry::default()),
+        );
+        assert!(
+            uc.grant(&service, &grant).await.is_ok(),
+            "a project grant to an admitted user is accepted"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_organization_grant_needs_no_prior_admission() {
+        // Otherwise nobody could ever join: the org-scoped grant *is* the
+        // admission.
         let roles = vec![test_role(
             ORGANIZATION_ADMIN_ROLE,
             ScopeKind::Organization,
             &[FULL_CONTROL],
         )];
-        let service = CallerContext::Service(ServiceIdentity::recorder());
+        let uc = use_cases_with(vec![], roles, Arc::new(RecordingRegistry::default()));
         let grant = Grant::new(
             Principal::User(UserId::new("alice")),
             RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
             Scope::Organization(OrganizationId::new("o1")),
         );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles.clone(),
-            Arc::new(RecordingRegistry::default()),
-            vec![],
-        );
         assert!(
-            uc.grant(&service, &grant).await.is_err(),
-            "granting to a non-member of the org must be refused"
-        );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles,
-            Arc::new(RecordingRegistry::default()),
-            vec![OrganizationId::new("o1")],
-        );
-        assert!(
-            uc.grant(&service, &grant).await.is_ok(),
-            "granting to an org member is accepted"
+            uc.grant(&CallerContext::Service(ServiceIdentity::recorder()), &grant)
+                .await
+                .is_ok()
         );
     }
 
     #[tokio::test]
-    async fn project_grant_requires_membership_of_the_parent_org() {
-        // A project-scoped grant resolves the project's parent org (p1 → o1 in
-        // the stub) and applies the same membership rule there.
+    async fn app_grants_need_no_admission() {
+        // Machine Apps are owned by an organization by construction, never
+        // admitted to one.
         let roles = vec![test_role(
-            PROJECT_ADMIN_ROLE,
+            PROJECT_AGENT_ROLE,
             ScopeKind::Project,
-            &[FULL_CONTROL],
-        )];
-        let service = CallerContext::Service(ServiceIdentity::recorder());
-        let grant = Grant::new(
-            Principal::User(UserId::new("alice")),
-            RoleName::new(PROJECT_ADMIN_ROLE).unwrap(),
-            Scope::Project(ProjectId::new("p1")),
-        );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles.clone(),
-            Arc::new(RecordingRegistry::default()),
-            vec![],
-        );
-        assert!(
-            uc.grant(&service, &grant).await.is_err(),
-            "a project grant to a user outside the parent org must be refused"
-        );
-
-        let uc = use_cases_with_members(
-            vec![],
-            roles,
-            Arc::new(RecordingRegistry::default()),
-            vec![OrganizationId::new("o1")],
-        );
-        assert!(
-            uc.grant(&service, &grant).await.is_ok(),
-            "a project grant to a member of the parent org is accepted"
-        );
-    }
-
-    #[tokio::test]
-    async fn app_grants_are_exempt_from_the_membership_rule() {
-        // Machine Apps are owned by an org, never members of one.
-        let roles = vec![test_role(
-            ORGANIZATION_AGENT_ROLE,
-            ScopeKind::Organization,
             &["readPipeline", "executeJob"],
         )];
-        let uc = use_cases_with_members(
-            vec![],
-            roles,
-            Arc::new(RecordingRegistry::default()),
-            vec![],
-        );
+        let uc = use_cases_with(vec![], roles, Arc::new(RecordingRegistry::default()));
         let grant = Grant::new(
             Principal::App(AppId::new("agent-1")),
-            RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
-            Scope::Organization(OrganizationId::new("o1")),
+            RoleName::new(PROJECT_AGENT_ROLE).unwrap(),
+            Scope::Project(ProjectId::new("p1")),
         );
         assert!(
             uc.grant(&CallerContext::Service(ServiceIdentity::recorder()), &grant)
                 .await
                 .is_ok(),
-            "an App grant needs no membership"
+            "an App grant needs no admission"
         );
+    }
+
+    #[tokio::test]
+    async fn revoke_all_access_refuses_to_strip_the_last_owner() {
+        // The kill switch obeys the same rule as a single revoke: a scope must
+        // never be left without a human owner.
+        let org = Scope::Organization(OrganizationId::new("o1"));
+        let alice = Principal::User(UserId::new("alice"));
+        let sole_owner = Grant::new(
+            alice.clone(),
+            RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
+            org.clone(),
+        );
+        let uc = use_cases(vec![sole_owner], Arc::new(RecordingRegistry::default()));
+        let service = CallerContext::Service(ServiceIdentity::recorder());
+
+        assert!(
+            uc.revoke_all_access(&service, &alice, &org).await.is_err(),
+            "stripping the only owner of an organization must be refused"
+        );
+    }
+
+    #[tokio::test]
+    async fn revoke_all_access_disconnects_a_machine_principal() {
+        // An App that just lost its access must not keep running on an
+        // already-open stream.
+        let app = Principal::App(AppId::new("agent-1"));
+        let project = Scope::Project(ProjectId::new("p1"));
+        let reg = Arc::new(RecordingRegistry::default());
+        let uc = use_cases(vec![], reg.clone());
+
+        uc.revoke_all_access(
+            &CallerContext::Service(ServiceIdentity::recorder()),
+            &app,
+            &project,
+        )
+        .await
+        .expect("revoke all");
+
+        assert_eq!(reg.disconnected(), vec!["agent-1".to_string()]);
     }
 }

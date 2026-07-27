@@ -7,7 +7,7 @@
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::ResourceRef;
-use cedar_policy::{Entity, EntityUid};
+use cedar_policy::EntityUid;
 use std::collections::HashSet;
 use std::str::FromStr;
 
