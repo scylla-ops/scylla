@@ -73,15 +73,24 @@ where
             // Re-assemble the dispatch via the SAME path the immediate run uses
             // (resolve secrets + overlay the job's persisted inputs), so a job
             // placed here is byte-for-byte what it would have been on dispatch.
-            let dispatch =
-                match assemble_dispatch(&*self.pipeline_repo, &*self.secret_resolver, &job).await {
-                    Ok(dispatch) => dispatch,
-                    Err(e) => {
-                        warn!(job_id = %job.id(), error = %e, "pending-job drain: dispatch assembly failed; skipping");
-                        continue;
-                    }
-                };
-            match self.dispatch_uc.dispatch_job(job.pipeline_id(), &dispatch).await {
+            let dispatch = match assemble_dispatch(
+                &*self.pipeline_repo,
+                &*self.secret_resolver,
+                &job,
+            )
+            .await
+            {
+                Ok(dispatch) => dispatch,
+                Err(e) => {
+                    warn!(job_id = %job.id(), error = %e, "pending-job drain: dispatch assembly failed; skipping");
+                    continue;
+                }
+            };
+            match self
+                .dispatch_uc
+                .dispatch_job(job.pipeline_id(), &dispatch)
+                .await
+            {
                 Ok(DispatchOutcome::Dispatched(app_id)) => {
                     if let Err(e) = self.job_repo.set_agent(job.id(), &app_id).await {
                         warn!(job_id = %job.id(), %app_id, error = %e, "pending-job drain: agent attribution failed");
@@ -153,7 +162,10 @@ mod tests {
         async fn delete(&self, _: &JobId) -> DomainResult<()> {
             unimplemented!()
         }
-        async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
+        async fn list_all(
+            &self,
+            _: Option<&PaginationParams>,
+        ) -> DomainResult<PaginatedResult<Job>> {
             unimplemented!()
         }
         async fn list_by_pipeline(
@@ -301,7 +313,11 @@ mod tests {
             Arc::new(StubResolver),
         );
 
-        assert_eq!(scheduler.drain().await, 1, "the one pending job is dispatched");
+        assert_eq!(
+            scheduler.drain().await,
+            1,
+            "the one pending job is dispatched"
+        );
         assert_eq!(registry.dispatched.lock().unwrap().as_slice(), ["agent-1"]);
         let assigned = jobs.assigned.lock().unwrap();
         assert_eq!(assigned.as_slice(), [(job_id, "agent-1".to_string())]);

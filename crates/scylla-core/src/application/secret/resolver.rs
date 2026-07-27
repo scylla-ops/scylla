@@ -80,9 +80,9 @@ where
                         masked: false,
                     }),
                     EnvSource::Secret(name) => {
-                        let ciphertext = by_name.get(name.as_str()).ok_or_else(|| {
-                            DomainError::not_found("secret", name.as_str())
-                        })?;
+                        let ciphertext = by_name
+                            .get(name.as_str())
+                            .ok_or_else(|| DomainError::not_found("secret", name.as_str()))?;
                         let value = self.cipher.decrypt(ciphertext)?;
                         env.push(DispatchEnv {
                             key: ev.key().to_string(),

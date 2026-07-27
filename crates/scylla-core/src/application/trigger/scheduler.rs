@@ -1,6 +1,6 @@
 use crate::application::trigger::fire::TriggerFiring;
-use crate::application::trigger::schedule::{CronSchedule, next_fire_time};
 use crate::application::trigger::repository::TriggerRepository;
+use crate::application::trigger::schedule::{CronSchedule, next_fire_time};
 use crate::domain::clock;
 use crate::domain::entities::Trigger;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -133,7 +133,9 @@ where
 mod tests {
     use super::*;
     use crate::domain::entities::{Job, PipelineId, Trigger, TriggerId};
-    use crate::domain::value_objects::trigger::{CronSpec, TriggerName, TriggerSource, WebhookSpec};
+    use crate::domain::value_objects::trigger::{
+        CronSpec, TriggerName, TriggerSource, WebhookSpec,
+    };
     use async_trait::async_trait;
     use std::sync::Mutex;
 
@@ -235,7 +237,9 @@ mod tests {
     }
 
     fn a_job() -> Job {
-        use crate::test_support::{jobs::job, organizations::org, pipelines::pipeline, projects::project};
+        use crate::test_support::{
+            jobs::job, organizations::org, pipelines::pipeline, projects::project,
+        };
         job(&pipeline(&project(&org("o"), "p")))
     }
 
@@ -252,8 +256,7 @@ mod tests {
             fired: Mutex::new(vec![]),
             fail: vec![],
         });
-        let scheduler =
-            TriggerCronScheduler::new(repo, firing.clone(), Arc::new(StubSchedule));
+        let scheduler = TriggerCronScheduler::new(repo, firing.clone(), Arc::new(StubSchedule));
 
         assert_eq!(scheduler.tick().await, 2);
         assert_eq!(firing.fired.lock().unwrap().len(), 2);
@@ -274,8 +277,7 @@ mod tests {
             fired: Mutex::new(vec![]),
             fail: vec![fail_id],
         });
-        let scheduler =
-            TriggerCronScheduler::new(repo, firing.clone(), Arc::new(StubSchedule));
+        let scheduler = TriggerCronScheduler::new(repo, firing.clone(), Arc::new(StubSchedule));
 
         // Both are attempted; only the non-failing one counts as fired.
         assert_eq!(scheduler.tick().await, 1);
@@ -294,8 +296,7 @@ mod tests {
             fired: Mutex::new(vec![]),
             fail: vec![],
         });
-        let scheduler =
-            TriggerCronScheduler::new(repo.clone(), firing, Arc::new(StubSchedule));
+        let scheduler = TriggerCronScheduler::new(repo.clone(), firing, Arc::new(StubSchedule));
 
         scheduler.tick().await;
         let updated = repo.updated.lock().unwrap();
@@ -327,6 +328,9 @@ mod tests {
         let scheduler = TriggerCronScheduler::new(repo.clone(), firing, Arc::new(StubSchedule));
 
         scheduler.tick().await;
-        assert!(repo.updated.lock().unwrap().is_empty(), "no update for webhook");
+        assert!(
+            repo.updated.lock().unwrap().is_empty(),
+            "no update for webhook"
+        );
     }
 }

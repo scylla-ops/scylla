@@ -2,8 +2,9 @@ use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use scylla_core::application::{
-    AgentDispatch, AppRepository, HashService, JobRepository, PermissionService, PipelineRepository,
-    PolicyControl, ProjectRepository, TriggerFireUseCases, TriggerRepository, TriggerUseCases,
+    AgentDispatch, AppRepository, HashService, JobRepository, PermissionService,
+    PipelineRepository, PolicyControl, ProjectRepository, TriggerFireUseCases, TriggerRepository,
+    TriggerUseCases,
 };
 use scylla_core::domain::entities::{
     FireObservation, PipelineId, Trigger, TriggerActivation, TriggerId,
@@ -286,7 +287,9 @@ fn proto_inputs_to_domain(inputs: Vec<ProtoTriggerInput>) -> Result<Vec<TriggerI
         .map(|input| {
             let key = EnvKey::new(&input.key).map_err(domain_error_to_status)?;
             match input.source {
-                Some(trigger_input::Source::Literal(value)) => Ok(TriggerInput::literal(key, value)),
+                Some(trigger_input::Source::Literal(value)) => {
+                    Ok(TriggerInput::literal(key, value))
+                }
                 Some(trigger_input::Source::JsonPointer(pointer)) => {
                     TriggerInput::json_pointer(key, pointer).map_err(domain_error_to_status)
                 }

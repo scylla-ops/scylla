@@ -9,7 +9,9 @@ use scylla_core::application::{
     PipelineRepository, PipelineUseCases, ProjectRepository,
 };
 use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
-use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, PipelineName, Shell, Step, WorkingDir};
+use scylla_core::domain::value_objects::pipeline::{
+    EnvKey, EnvVar, NodeId, PipelineName, Shell, Step, WorkingDir,
+};
 use scylla_core::domain::value_objects::secret::SecretName;
 use scylla_protocol::exec::v1 as exec;
 use scylla_protocol::pipeline::v1::{

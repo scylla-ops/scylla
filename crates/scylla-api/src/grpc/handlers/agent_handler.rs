@@ -19,8 +19,8 @@ use scylla_protocol::common::v1 as common;
 use scylla_protocol::exec::v1 as exec;
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::Notify;
 use std::task::{Context, Poll};
+use tokio::sync::Notify;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status, Streaming};
@@ -215,7 +215,9 @@ fn dispatch_to_proto(dispatch: &JobDispatch) -> AgentDown {
         .nodes
         .iter()
         .map(|n| AgentNode {
-            node_id: Some(common::NodeId { value: n.id.clone() }),
+            node_id: Some(common::NodeId {
+                value: n.id.clone(),
+            }),
             deps: n
                 .deps
                 .iter()

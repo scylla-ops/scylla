@@ -1,7 +1,7 @@
 use crate::application::JobRepository;
+use crate::domain::entities::JobState;
 use crate::domain::entities::{AppId, Job, JobId, JobNode, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::entities::JobState;
 use crate::domain::value_objects::job::{JobOrigin, JobStatus};
 use crate::domain::value_objects::{PaginatedResult, PaginationParams};
 use async_trait::async_trait;

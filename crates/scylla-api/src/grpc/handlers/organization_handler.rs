@@ -170,7 +170,8 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let (orgs, metadata) = result.into_parts();
-        let organizations: Vec<ProtoOrganization> = orgs.iter().map(organization_to_proto).collect();
+        let organizations: Vec<ProtoOrganization> =
+            orgs.iter().map(organization_to_proto).collect();
 
         Ok(Response::new(ListOrganizationsResponse {
             organizations,
@@ -222,7 +223,8 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        let organizations: Vec<ProtoOrganization> = orgs.iter().map(organization_to_proto).collect();
+        let organizations: Vec<ProtoOrganization> =
+            orgs.iter().map(organization_to_proto).collect();
 
         Ok(Response::new(ListUserOrganizationsResponse {
             organizations,

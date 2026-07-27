@@ -8,7 +8,9 @@ use tonic::{Code, Request};
 use tracing::{error, info, warn};
 
 use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir};
+use scylla_core::domain::value_objects::pipeline::{
+    EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir,
+};
 use scylla_protocol::agent::v1::agent_service_client::AgentServiceClient;
 use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
 use scylla_protocol::app::v1::IssueTokenRequest;
@@ -193,8 +195,7 @@ impl Agent {
                                 // `pending` forever (it is already assigned to
                                 // this agent) — fail it upstream instead.
                                 warn!(%job_id, error = %e, "invalid dispatch nodes, failing job");
-                                let publisher =
-                                    StatusPublisher::new(up_tx.clone(), job_id.clone());
+                                let publisher = StatusPublisher::new(up_tx.clone(), job_id.clone());
                                 if let Err(pe) = publisher.emit(JobEvent::JobStarted).await {
                                     warn!(%job_id, error = %pe, "failed to report job start");
                                 } else if let Err(pe) = publisher
@@ -269,7 +270,8 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
     nodes
         .into_iter()
         .map(|n| {
-            let id = NodeId::new(&n.node_id.unwrap_or_default().value).map_err(|e| e.to_string())?;
+            let id =
+                NodeId::new(&n.node_id.unwrap_or_default().value).map_err(|e| e.to_string())?;
             let deps = n
                 .deps
                 .iter()
@@ -294,7 +296,8 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                     Step::exec(e.command, e.args).map_err(|err| err.to_string())?
                 }
                 Some(agent_node::Step::Script(s)) => {
-                    Step::script(s.script, shell_from_proto(s.shell)).map_err(|err| err.to_string())?
+                    Step::script(s.script, shell_from_proto(s.shell))
+                        .map_err(|err| err.to_string())?
                 }
                 None => return Err("dispatch node is missing its step".to_string()),
             };

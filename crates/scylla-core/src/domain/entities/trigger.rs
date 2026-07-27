@@ -15,7 +15,9 @@ pub enum TriggerActivation {
     Disabled,
     /// Fires. `next_fire_at` is the next due occurrence (cron only, once the
     /// scheduler has computed it); `None` for a webhook or a not-yet-seeded cron.
-    Enabled { next_fire_at: Option<DateTime<Utc>> },
+    Enabled {
+        next_fire_at: Option<DateTime<Utc>>,
+    },
 }
 
 /// The outcome of the most recent fire attempt. The timestamp and its status

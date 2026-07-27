@@ -115,7 +115,10 @@ mod tests {
     }
 
     fn env_of(node: &DispatchNode) -> Vec<(String, String)> {
-        node.env.iter().map(|e| (e.key.clone(), e.value.clone())).collect()
+        node.env
+            .iter()
+            .map(|e| (e.key.clone(), e.value.clone()))
+            .collect()
     }
 
     #[test]

@@ -129,7 +129,8 @@ mod tests {
             trigger_id: TriggerId::new("t1"),
             delivery_id: None,
         };
-        let back: JobOrigin = serde_json::from_str(&serde_json::to_string(&origin).unwrap()).unwrap();
+        let back: JobOrigin =
+            serde_json::from_str(&serde_json::to_string(&origin).unwrap()).unwrap();
         assert_eq!(back, origin);
     }
 }

@@ -208,10 +208,7 @@ pub mod queries {
 
     /// Read just the encrypted webhook secret (ingress path); normal reads never
     /// select this column.
-    pub async fn webhook_secret<'e, E>(
-        executor: E,
-        id: &TriggerId,
-    ) -> DomainResult<Option<Vec<u8>>>
+    pub async fn webhook_secret<'e, E>(executor: E, id: &TriggerId) -> DomainResult<Option<Vec<u8>>>
     where
         E: PgExecutor<'e>,
     {
