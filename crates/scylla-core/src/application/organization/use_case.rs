@@ -1,10 +1,7 @@
 use crate::application::authz::grant::{
-    Grant, GrantRepository, Principal, Scope, removal_orphans_scope,
+    Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope, removal_orphans_scope,
 };
 use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::{
-    DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
-};
 use crate::application::caller::CallerContext;
 use crate::application::{
     OrganizationRepository, PermissionService, UserOrganizationRepository, UserRepository,
@@ -13,6 +10,7 @@ use crate::domain::entities::{Organization, OrganizationId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use crate::domain::value_objects::permission::Permission;
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
@@ -32,7 +30,6 @@ pub struct OrganizationUseCases<
     grant_repo: Arc<dyn GrantRepository>,
     permission_service: Arc<PS>,
     policy_control: Arc<PC>,
-    default_roles: Arc<dyn DefaultRoleBindingRepository>,
 }
 
 impl<
@@ -67,9 +64,7 @@ impl<
         // callers create nothing to enroll, so they just get the bare org.
         match caller {
             CallerContext::User(user_id) => {
-                let role =
-                    resolve_default_role(self.default_roles.as_ref(), DefaultRoleSlot::OrgCreation)
-                        .await?;
+                let role = RoleName::new(ORGANIZATION_ADMIN_ROLE)?;
                 let grant = Grant::new(
                     Principal::User(user_id.clone()),
                     role,
@@ -154,7 +149,12 @@ impl<
             .check(caller, Permission::DeleteOrganization(id.clone()))
             .await?;
         self.org_repo.find_by_id(id).await?;
-        self.org_repo.delete(id).await
+        // The row delete cascades the whole subtree, and DB triggers drop the
+        // grants bound to it (the org's own scope, its projects', and those held
+        // by its apps). Reload so the live policy set stops carrying the dead
+        // links those rows produced.
+        self.org_repo.delete(id).await?;
+        self.policy_control.reload().await
     }
 
     #[instrument(skip(self, caller))]

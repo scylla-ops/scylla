@@ -135,10 +135,10 @@ async fn remove_member_and_grants_revokes_only_the_members_scoped_grants(pool: P
 /// scoped to the one org the user is leaving.
 #[sqlx::test(migrations = "../../migrations")]
 async fn remove_member_and_grants_purges_the_whole_org_subtree(pool: PgPool) {
-    use crate::application::{UserOrganizationRepository, UserProjectRepository};
     use crate::application::authz::grant::{
-        Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
+        Grant, GrantRepository, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, Principal, Scope,
     };
+    use crate::application::{UserOrganizationRepository, UserProjectRepository};
     use crate::domain::value_objects::role::name::RoleName;
     use crate::infrastructure::persistence::postgres::{
         PgGrantRepository, PgUserOrganizationRepository, PgUserProjectRepository,
@@ -173,9 +173,9 @@ async fn remove_member_and_grants_purges_the_whole_org_subtree(pool: PgPool) {
         admin_role(),
         Scope::Project(project.id().clone()),
     );
-    let child_perm_grant = Grant::with_permission(
+    let child_agent_grant = Grant::new(
         Principal::User(victim.id().clone()),
-        "runPipeline",
+        RoleName::new(PROJECT_AGENT_ROLE).unwrap(),
         Scope::Project(project.id().clone()),
     );
     let other_org_grant = Grant::new(
@@ -184,7 +184,7 @@ async fn remove_member_and_grants_purges_the_whole_org_subtree(pool: PgPool) {
         Scope::Project(other_project.id().clone()),
     );
     grants.create(&child_role_grant).await.unwrap();
-    grants.create(&child_perm_grant).await.unwrap();
+    grants.create(&child_agent_grant).await.unwrap();
     grants.create(&other_org_grant).await.unwrap();
 
     PgOrganizationRepository::new(pool.clone())
@@ -210,7 +210,7 @@ async fn remove_member_and_grants_purges_the_whole_org_subtree(pool: PgPool) {
     assert!(
         remaining
             .iter()
-            .all(|g| g.id != child_role_grant.id && g.id != child_perm_grant.id),
+            .all(|g| g.id != child_role_grant.id && g.id != child_agent_grant.id),
         "grants on the org's projects must be deleted with the org membership",
     );
     assert!(

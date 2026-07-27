@@ -40,7 +40,6 @@ message SecretId { string value = 1; }
 message TriggerId { string value = 1; }
 // Identifies a runtime Cedar authorization policy. NOT a ULID: an opaque
 // Cedar-assigned policy id.
-message PolicyId { string value = 1; }
 // Identifies a scoped grant ("principal holds target within scope").
 message GrantId { string value = 1; }
 // Identifies a role. NOT a ULID for builtins, where it equals the stable role

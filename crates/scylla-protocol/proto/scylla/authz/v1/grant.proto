@@ -5,7 +5,7 @@ package scylla.authz.v1;
 import "scylla/authz/v1/permission.proto";
 import "scylla/common/v1/common.proto";
 
-// Scoped grants — an explicit "principal holds target within scope" assignment,
+// Scoped grants — an explicit "principal holds role within scope" assignment,
 // linked as a Cedar template instance. Applied live (hot-reload). Requires the
 // scope-appropriate manage-grants permission (manageSystemGrants /
 // manageOrgGrants / manageProjectGrants).
@@ -25,25 +25,21 @@ message Grant {
   PrincipalRef principal = 2;
   // Where it applies, carrying the bound entity.
   ScopeRef scope = 3;
-  // What is granted, mirroring the domain `GrantTarget`: a whole role or a
-  // single direct permission — exactly one, never both nor neither.
-  oneof target {
-    scylla.common.v1.RoleId role = 4;
-    // A direct single-permission grant, additive to the principal's roles.
-    Permission permission = 5;
-  }
+  // The role granted within that scope. Anything narrower than a role is
+  // expressed by creating a role with exactly the permissions wanted.
+  scylla.common.v1.RoleId role = 4;
+  // 5 was a direct single-permission target, dropped when the grant target
+  // collapsed to a role. Never reuse the number.
+  reserved 5;
 }
 
 message CreateGrantRequest {
   PrincipalRef principal = 1;
   ScopeRef scope = 2;
-  // What to grant — a role or a single permission (additive to the principal's
-  // roles, e.g. "Alice may runPipeline within Org A"). Both go through the same
-  // anti-escalation check. Mirrors the domain `GrantTarget`.
-  oneof target {
-    scylla.common.v1.RoleId role = 3;
-    Permission permission = 4;
-  }
+  // The role to grant. It must exist and declare the scope kind this grant binds
+  // to; it also goes through the anti-escalation check.
+  scylla.common.v1.RoleId role = 3;
+  reserved 4;
 }
 
 message CreateGrantResponse { Grant grant = 1; }

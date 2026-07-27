@@ -36,7 +36,7 @@ namespace Scylla {
            "createOrganization", "listOrganizations",
            "listProjects", "listPipelines",
            "createJob", "listJobs",
-           "managePolicies", "manageRoles"
+           "manageRoles"
         appliesTo { principal: [User, Service], resource: [System] };
 
     // Grant management is scope-aware, one action per scope so `appliesTo` pins

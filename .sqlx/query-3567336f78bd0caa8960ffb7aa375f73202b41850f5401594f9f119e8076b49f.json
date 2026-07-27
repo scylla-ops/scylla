@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id FROM grants",
+  "query": "SELECT id, principal_kind, principal_id, role_id, scope_kind, scope_id FROM grants",
   "describe": {
     "columns": [
       {
@@ -38,28 +38,17 @@
       },
       {
         "ordinal": 3,
-        "name": "target_kind",
+        "name": "role_id",
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "grants",
-            "name": "target_kind"
+            "name": "role_id"
           }
         }
       },
       {
         "ordinal": 4,
-        "name": "target",
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "grants",
-            "name": "target"
-          }
-        }
-      },
-      {
-        "ordinal": 5,
         "name": "scope_kind",
         "type_info": "Text",
         "origin": {
@@ -70,7 +59,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "scope_id",
         "type_info": "Text",
         "origin": {
@@ -90,9 +79,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "fb727b229770da02aebdf0f042b5b08f5acd46e147912765aa643d75f1a63936"
+  "hash": "3567336f78bd0caa8960ffb7aa375f73202b41850f5401594f9f119e8076b49f"
 }

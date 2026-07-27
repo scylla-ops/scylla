@@ -30,9 +30,6 @@ async fn use_cases(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
-            Arc::new(
-                crate::infrastructure::persistence::postgres::PgPolicyRepository::new(pool.clone()),
-            ),
             Arc::new(NoopAuditLog),
         )
         .await

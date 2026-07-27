@@ -121,7 +121,6 @@ define_id!(SessionId);
 define_id!(AppId);
 define_id!(AppTokenId);
 define_id!(AppCredentialId);
-define_id!(CedarPolicyId);
 define_id!(InvitationId);
 define_id!(SecretId);
 define_id!(TriggerId);

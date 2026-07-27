@@ -25,7 +25,7 @@ pub struct BootstrapUseCases<
     G: GrantRepository,
     PC: PolicyControl,
 > {
-    user_uc: Arc<UserUseCases<U, H, PS>>,
+    user_uc: Arc<UserUseCases<U, H, PS, PC>>,
     grant_uc: Arc<GrantUseCases<G, PC, PS>>,
 }
 

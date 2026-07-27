@@ -160,9 +160,7 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::domain::value_objects::organization::OrganizationName;
     use crate::domain::value_objects::permission::Permission;
     use crate::domain::value_objects::user::{Email, Password, Username};
-    use crate::infrastructure::persistence::postgres::{
-        PgDefaultRoleBindingRepository, PgPolicyRepository, PgSessionRepository,
-    };
+    use crate::infrastructure::persistence::postgres::PgSessionRepository;
     use crate::infrastructure::{Argon2HashService, CedarPermissionService, PgAuthzEntityProvider};
     use std::sync::Arc;
 
@@ -174,7 +172,6 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
-            Arc::new(PgPolicyRepository::new(pool.clone())),
             Arc::new(NoopAuditLog),
         )
         .await
@@ -185,7 +182,6 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
         Arc::new(PgSessionRepository::new(pool.clone())),
         Arc::new(Argon2HashService::new()),
         permission.clone(),
-        Arc::new(PgDefaultRoleBindingRepository::new(pool.clone())),
     );
 
     let outcome = signup_uc

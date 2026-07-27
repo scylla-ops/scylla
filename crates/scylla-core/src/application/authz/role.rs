@@ -1,14 +1,12 @@
-use crate::application::authz::grant::{
-    GrantRepository, GrantTarget, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, Principal, Scope,
-    ScopeKind,
-};
+use crate::application::authz::grant::{GrantRepository, Principal, Scope, ScopeKind};
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::entities::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::{Permission, permission_resource_type};
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::value_objects::permission::{
+    PERMISSION_CATALOG, Permission, permission_resource_type,
+};
 use async_trait::async_trait;
 use derive_more::Constructor;
 use std::collections::{BTreeSet, HashMap};
@@ -150,8 +148,7 @@ pub trait RoleRepository: Send + Sync {
     async fn create(&self, role: &Role) -> DomainResult<()>;
     /// Replace a role's name / description / permission set atomically.
     async fn update(&self, role: &Role) -> DomainResult<()>;
-    /// Delete a role (its permissions cascade). May fail if the role is still
-    /// pointed at by a default-role binding (`ON DELETE RESTRICT`).
+    /// Delete a role (its permissions cascade).
     async fn delete(&self, id: &str) -> DomainResult<()>;
 }
 
@@ -187,6 +184,21 @@ where
             .check(caller, Permission::ManageRoles)
             .await?;
         self.role_repo.list_all().await
+    }
+
+    /// The authorization vocabulary a role may reference: every permission key
+    /// paired with the resource type it targets (the caller derives each
+    /// permission's coherent scope from that). Static — compiled into the
+    /// binary, no DB. Gated by `ManageRoles`, like the rest of role editing.
+    #[instrument(skip(self, caller))]
+    pub async fn authz_vocabulary(
+        &self,
+        caller: &CallerContext,
+    ) -> DomainResult<&'static [(&'static str, &'static str)]> {
+        self.permission_service
+            .check(caller, Permission::ManageRoles)
+            .await?;
+        Ok(PERMISSION_CATALOG.as_slice())
     }
 
     #[instrument(skip(self, caller))]
@@ -266,10 +278,7 @@ where
         // Refuse to orphan grants: a role still granted to someone must be
         // unassigned first, otherwise those grants would silently stop working.
         let grants = self.grant_repo.list_all().await?;
-        if grants
-            .iter()
-            .any(|g| matches!(&g.target, GrantTarget::Role(r) if r.as_str() == id))
-        {
+        if grants.iter().any(|g| g.role.as_str() == id) {
             return Err(DomainError::business_rule(
                 "role is still granted to one or more principals; revoke those grants first",
             ));
@@ -279,7 +288,7 @@ where
     }
 
     /// Resolve a principal's effective permissions, grouped by the scope each
-    /// grant binds to (role grants expanded, direct permission grants included).
+    /// grant binds to (each grant's role expanded to its permission set).
     /// Powers the "what can this principal do" matrix. Gated by `manageGrants`.
     ///
     /// Note: this returns grants AS BOUND per scope; it does not expand scope
@@ -306,12 +315,10 @@ where
 
         let mut groups: Vec<(Scope, BTreeSet<String>)> = Vec::new();
         for grant in grants.iter().filter(|g| g.principal == *principal) {
-            let perms: Vec<String> = match &grant.target {
-                GrantTarget::Role(role) => {
-                    role_perms.get(role.as_str()).cloned().unwrap_or_default()
-                }
-                GrantTarget::Permission(key) => vec![key.clone()],
-            };
+            let perms: Vec<String> = role_perms
+                .get(grant.role.as_str())
+                .cloned()
+                .unwrap_or_default();
             if let Some(idx) = groups.iter().position(|(s, _)| *s == grant.scope) {
                 groups[idx].1.extend(perms);
             } else {
@@ -345,11 +352,8 @@ mod tests {
     fn validate_role_permissions_accepts_keys_and_wildcard_rejects_others() {
         // runPipeline/readJob target pipeline/job (home Project) — valid at System.
         assert!(
-            validate_role_permissions(
-                &["runPipeline".into(), "readJob".into()],
-                ScopeKind::System
-            )
-            .is_ok()
+            validate_role_permissions(&["runPipeline".into(), "readJob".into()], ScopeKind::System)
+                .is_ok()
         );
         assert!(validate_role_permissions(&[FULL_CONTROL.into()], ScopeKind::Project).is_ok());
         // Empty set and unknown keys are rejected.
@@ -360,7 +364,9 @@ mod tests {
     #[test]
     fn validate_role_permissions_enforces_scope_coherence() {
         // createOrganization targets `system` → only usable in a System role.
-        assert!(validate_role_permissions(&["createOrganization".into()], ScopeKind::System).is_ok());
+        assert!(
+            validate_role_permissions(&["createOrganization".into()], ScopeKind::System).is_ok()
+        );
         assert!(
             validate_role_permissions(&["createOrganization".into()], ScopeKind::Organization)
                 .is_err()
@@ -370,64 +376,16 @@ mod tests {
         );
 
         // createProject targets `organization` (home Org) → Org/System, not Project.
-        assert!(validate_role_permissions(&["createProject".into()], ScopeKind::Organization).is_ok());
+        assert!(
+            validate_role_permissions(&["createProject".into()], ScopeKind::Organization).is_ok()
+        );
         assert!(validate_role_permissions(&["createProject".into()], ScopeKind::Project).is_err());
 
         // runPipeline targets `pipeline` (home Project) → usable at every scope.
         assert!(validate_role_permissions(&["runPipeline".into()], ScopeKind::Project).is_ok());
-        assert!(validate_role_permissions(&["runPipeline".into()], ScopeKind::Organization).is_ok());
+        assert!(
+            validate_role_permissions(&["runPipeline".into()], ScopeKind::Organization).is_ok()
+        );
         assert!(validate_role_permissions(&["runPipeline".into()], ScopeKind::System).is_ok());
-    }
-}
-
-/// A "default role" slot: a named pointer the creation flows resolve to decide
-/// which role to grant the creator, decoupling them from a hard-coded role name.
-/// An admin can rebind a slot to a custom role.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DefaultRoleSlot {
-    /// Role granted to the creator of an organization.
-    OrgCreation,
-    /// Role granted to the creator of a project.
-    ProjectCreation,
-}
-
-impl DefaultRoleSlot {
-    /// The `default_role_bindings.slot` column value.
-    #[must_use]
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::OrgCreation => "org_creation",
-            Self::ProjectCreation => "project_creation",
-        }
-    }
-
-    /// The builtin role key this slot falls back to when no binding is set.
-    #[must_use]
-    pub fn builtin_role(self) -> &'static str {
-        match self {
-            Self::OrgCreation => ORGANIZATION_ADMIN_ROLE,
-            Self::ProjectCreation => PROJECT_ADMIN_ROLE,
-        }
-    }
-}
-
-/// Read access to the configurable default-role pointers (`default_role_bindings`).
-#[async_trait]
-pub trait DefaultRoleBindingRepository: Send + Sync {
-    /// The role bound to `slot`, if the binding exists and its role still exists;
-    /// `None` lets the caller fall back to the slot's builtin role.
-    async fn role_for_slot(&self, slot: DefaultRoleSlot) -> DomainResult<Option<RoleName>>;
-}
-
-/// Resolve the role a default slot points to, falling back to the slot's builtin
-/// role when no binding is set. The creation flows call this instead of naming a
-/// role directly, so the assigned role stays configurable.
-pub async fn resolve_default_role(
-    bindings: &dyn DefaultRoleBindingRepository,
-    slot: DefaultRoleSlot,
-) -> DomainResult<RoleName> {
-    match bindings.role_for_slot(slot).await? {
-        Some(role) => Ok(role),
-        None => RoleName::new(slot.builtin_role()),
     }
 }

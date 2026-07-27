@@ -1,5 +1,5 @@
 //! Pure, `self`-free helpers for the Cedar adapter: entity-UID construction,
-//! request-entity building, the anti-lockout `forbid` guard, and audit-mapping.
+//! request-entity building, and audit-mapping.
 //! Extracted from `cedar_permission_service.rs` so each concern is isolated and
 //! independently readable; the service module keeps only the orchestration
 //! (`check`, policy-set build/reload, the trait impls).
@@ -8,37 +8,13 @@ use crate::application::authz::entity_provider::PrincipalAuthz;
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::ResourceRef;
-use cedar_policy::{ActionConstraint, Entity, EntityUid, Policy, RestrictedExpression};
+use cedar_policy::{Entity, EntityUid, RestrictedExpression};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
 pub(crate) fn euid(type_name: &str, id: &str) -> DomainResult<EntityUid> {
     EntityUid::from_str(&format!("{type_name}::\"{id}\""))
         .map_err(|e| DomainError::Internal(format!("cedar uid {type_name}::{id}: {e}")))
-}
-
-/// Actions a runtime `forbid` may never deny — denying any of these could lock
-/// an admin out of fixing policies (the recovery path itself). A forbid that
-/// touches one of these, or whose action scope is unconstrained, is rejected on
-/// write and skipped on load.
-pub(crate) const GUARDED_ACTIONS: &[&str] = &["managePolicies", "manageSystemGrants"];
-
-/// A runtime `forbid` is safe only if its action scope is concrete and excludes
-/// the guarded admin actions. An unconstrained (`Any`) action is a catch-all
-/// that would deny everyone — including recovery — so it is never allowed.
-pub(crate) fn forbid_is_safe(policy: &Policy) -> bool {
-    match policy.action_constraint() {
-        ActionConstraint::Any => false,
-        ActionConstraint::Eq(uid) => !is_guarded_action(&uid),
-        ActionConstraint::In(uids) => !uids.iter().any(is_guarded_action),
-    }
-}
-
-pub(crate) fn is_guarded_action(uid: &EntityUid) -> bool {
-    GUARDED_ACTIONS
-        .iter()
-        .filter_map(|a| euid("Scylla::Action", a).ok())
-        .any(|guarded| &guarded == uid)
 }
 
 pub(crate) fn parent_set(parent: Option<&EntityUid>) -> HashSet<EntityUid> {

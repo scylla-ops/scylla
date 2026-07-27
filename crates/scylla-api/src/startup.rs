@@ -1,34 +1,33 @@
 use crate::config::CoreConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
-use tokio::sync::Notify;
+#[cfg(feature = "register")]
+use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases,
     BootstrapUseCases, CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
     InvitationUseCases, JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer,
     NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PipelineUseCases,
-    PolicyUseCases, ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
+    ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
     TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
     WebhookIngressUseCases,
 };
-#[cfg(feature = "register")]
-use scylla_core::application::SignupUseCases;
 use scylla_core::infrastructure::LettreMailer;
 use scylla_core::infrastructure::{
     Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
-    GitHubOAuthProvider,
-    InMemoryAgentRegistry, InMemoryJobLogStream, PgAgentRepository, PgAppCredentialRepository,
-    PgAppRepository, PgAppTokenRepository, PgAuditLog, PgAuthzEntityProvider,
-    PgDefaultRoleBindingRepository, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
+    GitHubOAuthProvider, InMemoryAgentRegistry, InMemoryJobLogStream, PgAgentRepository,
+    PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository, PgAuditLog,
+    PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
     PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
-    PgPolicyRepository, PgProjectRepository, PgRoleRepository, PgSecretRepository,
-    PgSessionRepository, PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
+    PgProjectRepository, PgRoleRepository, PgSecretRepository, PgSessionRepository,
+    PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
     PgUserOrganizationRepository, PgUserProjectRepository, PgUserRepository,
 };
 use sqlx::PgPool;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tokio::sync::Notify;
 use tower_http::cors::CorsLayer;
 
 // ── Concrete type aliases ──────────────────────────────────────────────
@@ -39,8 +38,6 @@ pub type SharedGrantUc =
     Arc<GrantUseCases<PgGrantRepository, PermissionChecker, PermissionChecker>>;
 pub type SharedRoleUc =
     Arc<RoleUseCases<PgRoleRepository, PgGrantRepository, PermissionChecker, PermissionChecker>>;
-pub type SharedPolicyUc =
-    Arc<PolicyUseCases<PgPolicyRepository, PermissionChecker, PermissionChecker>>;
 
 pub type SharedAuthUc = Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
 #[cfg(feature = "register")]
@@ -69,7 +66,8 @@ pub type SharedOAuthUc = Arc<
         PermissionChecker,
     >,
 >;
-pub type SharedUserUc = Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker>>;
+pub type SharedUserUc =
+    Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker, PermissionChecker>>;
 pub type SharedOrgUc = Arc<
     OrganizationUseCases<
         PgOrganizationRepository,
@@ -97,7 +95,13 @@ pub type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionCheck
 pub type SharedJobLogStreamUc =
     Arc<JobLogStreamUseCase<PgJobLogRepository, InMemoryJobLogStream, PermissionChecker>>;
 pub type SharedAppUc = Arc<
-    AppUseCases<PgAppRepository, PgAppCredentialRepository, Argon2HashService, PermissionChecker>,
+    AppUseCases<
+        PgAppRepository,
+        PgAppCredentialRepository,
+        Argon2HashService,
+        PermissionChecker,
+        PermissionChecker,
+    >,
 >;
 pub type SharedAppTokenUc = Arc<
     AppTokenUseCases<
@@ -173,7 +177,6 @@ pub struct Services {
     pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
     pub role_uc: SharedRoleUc,
-    pub policy_uc: SharedPolicyUc,
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
@@ -201,9 +204,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let user_project_repo = Arc::new(PgUserProjectRepository::new(db.clone()));
     let authz_provider = Arc::new(PgAuthzEntityProvider::new(db.clone()));
     let role_repo = Arc::new(PgRoleRepository::new(db.clone()));
-    let default_role_repo = Arc::new(PgDefaultRoleBindingRepository::new(db.clone()));
     let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
-    let policy_repo = Arc::new(PgPolicyRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
 
     // Project-secret encryption. Disabled (errors on use) when no master key is
@@ -224,7 +225,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
             authz_provider.clone(),
             role_repo.clone(),
             grant_repo.clone(),
-            policy_repo.clone(),
             audit_log,
         )
         .await
@@ -242,11 +242,11 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         session_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
-        default_role_repo.clone(),
     ));
     let user_uc = Arc::new(UserUseCases::new(
         user_repo.clone(),
         hash_service.clone(),
+        permission_checker.clone(),
         permission_checker.clone(),
     ));
     let org_uc = Arc::new(OrganizationUseCases::new(
@@ -256,7 +256,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         grant_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        default_role_repo.clone(),
     ));
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
@@ -265,7 +264,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         grant_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        default_role_repo.clone(),
         scylla_core::application::Quotas {
             max_projects_per_org: config.metering.max_projects_per_org,
         },
@@ -299,6 +297,7 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         hash_service.clone(),
         permission_checker.clone(),
         agent_registry.clone(),
+        permission_checker.clone(),
     ));
     let app_token_uc = Arc::new(AppTokenUseCases::new(
         app_repo.clone(),
@@ -325,11 +324,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
     let role_uc = Arc::new(RoleUseCases::new(
         role_repo.clone(),
         grant_repo.clone(),
-        permission_checker.clone(),
-        permission_checker.clone(),
-    ));
-    let policy_uc = Arc::new(PolicyUseCases::new(
-        policy_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
     ));
@@ -384,7 +378,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
                 session_repo.clone(),
                 hash_service.clone(),
                 permission_checker.clone(),
-                default_role_repo.clone(),
             )))
         }
         None => None,
@@ -534,7 +527,6 @@ pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError
         job_log_stream,
         grant_uc,
         role_uc,
-        policy_uc,
         permission_checker,
         session_repo,
         app_token_repo,
@@ -627,14 +619,14 @@ pub async fn run_grpc<F>(
 where
     F: Future<Output = ()> + Send + 'static,
 {
+    #[cfg(feature = "register")]
+    use crate::grpc::RegistrationHandler;
     use crate::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
         InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
-        PolicyHandler, ProjectHandler, RoleHandler, SecretHandler,
-        TriggerHandler, UserHandler, auth_interceptor::AuthInterceptor,
+        ProjectHandler, RoleHandler, SecretHandler, TriggerHandler, UserHandler,
+        auth_interceptor::AuthInterceptor,
     };
-    #[cfg(feature = "register")]
-    use crate::grpc::RegistrationHandler;
     use scylla_protocol::invitation::v1::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
         invitation_service_server::InvitationServiceServer,
@@ -651,7 +643,6 @@ where
         app::v1::app_service_server::AppServiceServer,
         auth::v1::auth_service_server::AuthServiceServer,
         authz::v1::grant_service_server::GrantServiceServer,
-        authz::v1::policy_service_server::PolicyServiceServer,
         authz::v1::role_service_server::RoleServiceServer,
         job::v1::job_service_server::JobServiceServer,
         organization::v1::organization_service_server::OrganizationServiceServer,
@@ -698,7 +689,6 @@ where
         services.pending_signal.clone(),
     );
     let agent_admin_handler = AgentAdminHandler::new(services.agent_uc.clone());
-    let policy_handler = PolicyHandler::new(services.policy_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
     let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());
@@ -786,10 +776,6 @@ where
         .layer(auth_interceptor.clone())
         .service(AgentAdminServiceServer::new(agent_admin_handler));
 
-    let policy_service = ServiceBuilder::new()
-        .layer(auth_interceptor.clone())
-        .service(PolicyServiceServer::new(policy_handler));
-
     let grant_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(GrantServiceServer::new(grant_handler));
@@ -822,7 +808,6 @@ where
         .add_service(app_service)
         .add_service(agent_service)
         .add_service(agent_admin_service)
-        .add_service(policy_service)
         .add_service(grant_service)
         .add_service(role_service)
         .add_service(invitation_service)

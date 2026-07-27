@@ -1,7 +1,4 @@
-use super::{
-    Grant, GrantRepository, GrantTarget, Principal, Scope, is_owner_role, validate_permission_key,
-    validate_role_in_db,
-};
+use super::{Grant, GrantRepository, Principal, Scope, is_owner_role, validate_role_in_db};
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::authz::entity_provider::AuthzEntityProvider;
 use crate::application::authz::policy::PolicyControl;
@@ -10,6 +7,7 @@ use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::{Permission, ResourceRef};
+use crate::domain::value_objects::role::RoleName;
 use derive_more::Constructor;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
@@ -84,15 +82,10 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         self.permission_service
             .check(caller, Self::manage_perm(&grant.scope))
             .await?;
-        // Validate the target before persisting so a stored grant is always
-        // emittable into Cedar: a role grant names an existing role valid at its
-        // scope; a permission grant names a known permission key.
-        match &grant.target {
-            GrantTarget::Role(role) => {
-                validate_role_in_db(&*self.role_repo, role, &grant.scope).await?;
-            }
-            GrantTarget::Permission(key) => validate_permission_key(key)?,
-        }
+        // Validate the role before persisting so a stored grant is always
+        // emittable into Cedar: it must name an existing role valid at the
+        // grant's scope.
+        validate_role_in_db(&*self.role_repo, &grant.role, &grant.scope).await?;
         self.require_grantee_membership(grant).await?;
         self.check_no_escalation(caller, grant).await?;
         self.grant_repo.create(grant).await?;
@@ -151,7 +144,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
 
         let allowed = match (
             self.holding_at(&principal, &grant.scope).await?,
-            self.target_keys(&grant.target).await?,
+            self.role_keys(&grant.role).await?,
         ) {
             (Holding::Full, _) => true,
             // Can't confer full control without holding it.
@@ -167,16 +160,13 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         }
     }
 
-    /// The permission keys a grant target confers, or `None` for full control.
-    async fn target_keys(&self, target: &GrantTarget) -> DomainResult<Option<BTreeSet<String>>> {
-        match target {
-            GrantTarget::Permission(key) => Ok(Some(BTreeSet::from([key.clone()]))),
-            GrantTarget::Role(role) => match self.role_repo.get(role.as_str()).await? {
-                Some(r) if r.is_full_control() => Ok(None),
-                Some(r) => Ok(Some(r.permissions.into_iter().collect())),
-                // Unknown role confers nothing; an empty set is trivially a subset.
-                None => Ok(Some(BTreeSet::new())),
-            },
+    /// The permission keys a role confers, or `None` for full control.
+    async fn role_keys(&self, role: &RoleName) -> DomainResult<Option<BTreeSet<String>>> {
+        match self.role_repo.get(role.as_str()).await? {
+            Some(r) if r.is_full_control() => Ok(None),
+            Some(r) => Ok(Some(r.permissions.into_iter().collect())),
+            // Unknown role confers nothing; an empty set is trivially a subset.
+            None => Ok(Some(BTreeSet::new())),
         }
     }
 
@@ -197,12 +187,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
             if !(matches!(g.scope, Scope::System) || &g.scope == scope) {
                 continue;
             }
-            let perms: Vec<String> = match &g.target {
-                GrantTarget::Role(role) => {
-                    role_perms.get(role.as_str()).cloned().unwrap_or_default()
-                }
-                GrantTarget::Permission(key) => vec![key.clone()],
-            };
+            let perms: Vec<String> = role_perms.get(g.role.as_str()).cloned().unwrap_or_default();
             if perms.iter().any(|p| p == FULL_CONTROL) {
                 return Ok(Holding::Full);
             }
@@ -232,15 +217,14 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         // to administer it). If this is the final human owner, block the revoke
         // rather than orphan the org/project.
         if let Some(g) = &grant
-            && let GrantTarget::Role(role) = &g.target
-            && is_owner_role(role)
+            && is_owner_role(&g.role)
             && matches!(g.principal, Principal::User(_))
         {
             let other_human_owners = grants
                 .iter()
                 .filter(|o| {
                     o.id != g.id
-                        && o.target == g.target
+                        && o.role == g.role
                         && o.scope == g.scope
                         && matches!(o.principal, Principal::User(_))
                 })
@@ -291,9 +275,6 @@ mod tests {
     struct StubPolicy;
     #[async_trait]
     impl PolicyControl for StubPolicy {
-        async fn validate_policy(&self, _text: &str) -> DomainResult<()> {
-            Ok(())
-        }
         async fn reload(&self) -> DomainResult<()> {
             Ok(())
         }
@@ -439,48 +420,37 @@ mod tests {
     }
 
     #[test]
-    fn validate_permission_key_accepts_catalog_rejects_unknown() {
-        // A real permission key validates; an invented one is rejected, so a
-        // direct permission grant can never name something Cedar can't emit.
-        assert!(validate_permission_key("runPipeline").is_ok());
-        assert!(validate_permission_key("readJob").is_ok());
-        assert!(validate_permission_key("flyToTheMoon").is_err());
-    }
-
-    #[test]
-    fn grant_target_constructors_set_kind_and_value() {
-        let role = Grant::new(
+    fn grant_carries_the_role_it_confers() {
+        let grant = Grant::new(
             Principal::User(UserId::new("u1")),
             RoleName::new(ORGANIZATION_ADMIN_ROLE).unwrap(),
             Scope::Organization(OrganizationId::new("o1")),
         );
-        assert_eq!(role.target.kind(), "role");
-        assert_eq!(role.target.value(), ORGANIZATION_ADMIN_ROLE);
-
-        let perm = Grant::with_permission(
-            Principal::User(UserId::new("u1")),
-            "runPipeline",
-            Scope::Organization(OrganizationId::new("o1")),
-        );
-        assert_eq!(perm.target.kind(), "permission");
-        assert_eq!(perm.target.value(), "runPipeline");
+        assert_eq!(grant.role.as_str(), ORGANIZATION_ADMIN_ROLE);
     }
 
     #[tokio::test]
     async fn anti_escalation_blocks_granting_more_than_you_hold() {
         let org = Scope::Organization(OrganizationId::new("o1"));
-        // Bob holds only `manageOrgGrants` on the org; Carol holds the
-        // full-control organization-admin role there.
-        let roles = vec![test_role(
-            ORGANIZATION_ADMIN_ROLE,
-            ScopeKind::Organization,
-            &[FULL_CONTROL],
-        )];
+        // Bob holds a narrow role conferring only `manageOrgGrants` on the org;
+        // Carol holds the full-control organization-admin role there.
+        let roles = vec![
+            test_role(
+                ORGANIZATION_ADMIN_ROLE,
+                ScopeKind::Organization,
+                &[FULL_CONTROL],
+            ),
+            test_role(
+                "grant-manager",
+                ScopeKind::Organization,
+                &["manageOrgGrants"],
+            ),
+        ];
         let uc = use_cases_with(
             vec![
-                Grant::with_permission(
+                Grant::new(
                     Principal::User(UserId::new("bob")),
-                    "manageOrgGrants",
+                    RoleName::new("grant-manager").unwrap(),
                     org.clone(),
                 ),
                 Grant::new(
@@ -510,19 +480,19 @@ mod tests {
             "escalation to full control must be blocked",
         );
 
-        // Bob CAN delegate a permission he himself holds.
+        // Bob CAN delegate the narrow role he himself holds.
         assert!(
             uc.grant(
                 &bob,
-                &Grant::with_permission(
+                &Grant::new(
                     Principal::User(UserId::new("alice")),
-                    "manageOrgGrants",
+                    RoleName::new("grant-manager").unwrap(),
                     org.clone(),
                 ),
             )
             .await
             .is_ok(),
-            "delegating a permission you hold is allowed",
+            "delegating a role whose permissions you hold is allowed",
         );
 
         // Carol (full control) may grant the org-admin role.
@@ -711,10 +681,10 @@ mod tests {
     fn removal_orphans_scope_ignores_non_owner_members() {
         let org = Scope::Organization(OrganizationId::new("o1"));
         let victim = Principal::User(UserId::new("u1"));
-        // The victim holds only a single permission, never an owner role.
-        let grants = vec![Grant::with_permission(
+        // The victim holds a non-owner role, so removing them orphans nothing.
+        let grants = vec![Grant::new(
             victim.clone(),
-            "readOrganization",
+            RoleName::new(ORGANIZATION_AGENT_ROLE).unwrap(),
             org.clone(),
         )];
         assert!(

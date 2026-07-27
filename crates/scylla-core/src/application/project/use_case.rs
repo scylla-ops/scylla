@@ -1,10 +1,7 @@
 use crate::application::authz::grant::{
-    Grant, GrantRepository, Principal, Scope, removal_orphans_scope,
+    Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope, removal_orphans_scope,
 };
 use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::{
-    DefaultRoleBindingRepository, DefaultRoleSlot, resolve_default_role,
-};
 use crate::application::caller::CallerContext;
 use crate::application::{
     PermissionService, ProjectRepository, UserProjectRepository, UserRepository,
@@ -13,15 +10,12 @@ use crate::domain::entities::{OrganizationId, Project, ProjectId, User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::Permission;
 use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
+use crate::domain::value_objects::role::RoleName;
 use crate::domain::value_objects::{PaginatedResult, PaginationMetadata, PaginationParams};
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;
 
-// One collaborator per port plus quotas: the derived `new` takes 8 args, which
-// trips too_many_arguments. Splitting a use case's ports into a bundle struct
-// buys nothing here, so allow it locally rather than widen the workspace lint.
-#[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct ProjectUseCases<
     P: ProjectRepository,
@@ -36,7 +30,6 @@ pub struct ProjectUseCases<
     grant_repo: Arc<dyn GrantRepository>,
     permission_service: Arc<PS>,
     policy_control: Arc<PC>,
-    default_roles: Arc<dyn DefaultRoleBindingRepository>,
     /// Per-org limits enforced on project creation.
     quotas: crate::application::quota::Quotas,
 }
@@ -82,11 +75,7 @@ impl<
         // callers have no human to enroll, so they just get the bare project.
         match caller {
             CallerContext::User(user_id) => {
-                let role = resolve_default_role(
-                    self.default_roles.as_ref(),
-                    DefaultRoleSlot::ProjectCreation,
-                )
-                .await?;
+                let role = RoleName::new(PROJECT_ADMIN_ROLE)?;
                 let grant = Grant::new(
                     Principal::User(user_id.clone()),
                     role,
@@ -161,7 +150,10 @@ impl<
             .check(caller, Permission::DeleteProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await?;
-        self.project_repo.delete(id).await
+        // A DB trigger drops the project-scoped grants with the row; reload so
+        // the live policy set stops carrying their dead links.
+        self.project_repo.delete(id).await?;
+        self.policy_control.reload().await
     }
 
     #[instrument(skip(self, caller))]

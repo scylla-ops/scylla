@@ -1,21 +1,19 @@
 use super::cedar_authz::{
-    euid, forbid_is_safe, parent_set, principal_parts, resource_parts, resource_uid, user_entity,
+    euid, parent_set, principal_parts, resource_parts, resource_uid, user_entity,
 };
 use crate::application::PermissionService;
 use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
 use crate::application::authz::entity_provider::{AuthzEntityProvider, PrincipalAuthz};
-use crate::application::authz::grant::{
-    Grant, GrantRepository, GrantTarget, Principal, Scope, ScopeKind,
-};
-use crate::application::authz::policy::{PolicyControl, PolicyDefinition, PolicyRepository};
+use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope, ScopeKind};
+use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::role::{Role, RoleRepository};
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::permission::{Permission, ResourceRef};
 use async_trait::async_trait;
 use cedar_policy::{
-    Authorizer, Context, Decision, Effect, Entities, Entity, EntityUid, Policy, PolicyId,
-    PolicySet, Request, Schema, SlotId, Template, ValidationMode, Validator,
+    Authorizer, Context, Decision, Entities, Entity, EntityUid, PolicyId, PolicySet, Request,
+    Schema, SlotId, Template, ValidationMode, Validator,
 };
 use chrono::Utc;
 use std::collections::{HashMap, HashSet};
@@ -68,8 +66,8 @@ fn role_template_src(role: &Role) -> Option<String> {
 
 /// Cedar-backed authorization. Static policies + schema are compiled into the
 /// binary and validated at construction; per-role templates are generated from
-/// the role store and explicit scoped grants are emitted from the grant store —
-/// role grants as template instances, permission grants as direct permits. The
+/// the role store and each stored grant links an instance of its role's
+/// template. The
 /// principal's org/project memberships, plus the resource's ancestor chain, are
 /// materialised per request via the [`AuthzEntityProvider`].
 pub struct CedarPermissionService<EP: AuthzEntityProvider> {
@@ -83,7 +81,6 @@ pub struct CedarPermissionService<EP: AuthzEntityProvider> {
     /// Roles supply the per-role template bodies; grants link instances of them.
     role_repo: Arc<dyn RoleRepository>,
     grant_repo: Arc<dyn GrantRepository>,
-    policy_repo: Arc<dyn PolicyRepository>,
     audit: Arc<dyn AuditLog>,
 }
 
@@ -95,13 +92,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         entity_provider: Arc<EP>,
         role_repo: Arc<dyn RoleRepository>,
         grant_repo: Arc<dyn GrantRepository>,
-        policy_repo: Arc<dyn PolicyRepository>,
         audit: Arc<dyn AuditLog>,
     ) -> DomainResult<Self> {
         let roles = role_repo.list_all().await?;
         let grants = grant_repo.list_all().await?;
-        let db_policies = policy_repo.list_enabled().await?;
-        let policies = Self::build_policy_set(&roles, &grants, &db_policies)?;
+        let policies = Self::build_policy_set(&roles, &grants)?;
 
         Ok(Self {
             policies: RwLock::new(Arc::new(policies)),
@@ -109,20 +104,15 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             entity_provider,
             role_repo,
             grant_repo,
-            policy_repo,
             audit,
         })
     }
 
-    /// Assemble a complete policy set: static base + scoped-role templates +
-    /// enabled runtime (DB) policies, validated against the schema, then the
-    /// stored grants linked as template instances. Shared by `new` and `reload`;
-    /// on any error the caller keeps the previous live set.
-    fn build_policy_set(
-        roles: &[Role],
-        grants: &[Grant],
-        db_policies: &[PolicyDefinition],
-    ) -> DomainResult<PolicySet> {
+    /// Assemble a complete policy set: static base + scoped-role templates,
+    /// validated against the schema, then the stored grants linked as template
+    /// instances. Shared by `new` and `reload`; on any error the caller keeps the
+    /// previous live set.
+    fn build_policy_set(roles: &[Role], grants: &[Grant]) -> DomainResult<PolicySet> {
         let (schema, _warnings) = Schema::from_cedarschema_str(SCHEMA_SRC)
             .map_err(|e| DomainError::Internal(format!("cedar schema parse: {e}")))?;
 
@@ -144,21 +134,6 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             policies.add_template(template).map_err(|e| {
                 DomainError::Internal(format!("cedar add template {}: {e}", role.id))
             })?;
-        }
-
-        // Runtime policies: permits are always allowed (additive); forbids only
-        // if scoped safely (see `forbid_is_safe`). The write path enforces this;
-        // re-checked here as defence in depth against rows inserted out of band.
-        for p in db_policies {
-            let policy = Policy::parse(Some(PolicyId::new(p.id.as_str())), &p.text)
-                .map_err(|e| DomainError::Internal(format!("cedar policy parse {}: {e}", p.id)))?;
-            if policy.effect() == Effect::Forbid && !forbid_is_safe(&policy) {
-                warn!(policy_id = %p.id, "skipping unsafe forbid runtime policy");
-                continue;
-            }
-            policies
-                .add(policy)
-                .map_err(|e| DomainError::Internal(format!("cedar add policy {}: {e}", p.id)))?;
         }
 
         let result = Validator::new(schema).validate(&policies, ValidationMode::Strict);
@@ -183,10 +158,9 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         Ok(policies)
     }
 
-    /// Emit a stored grant into the policy set. A **role** grant links a template
-    /// instance (template id == role id; `?principal` → the principal, `?resource`
-    /// → the granted scope). A **permission** grant emits a direct permit for that
-    /// one action within the scope. Both are keyed `grant-<id>`.
+    /// Emit a stored grant into the policy set: link an instance of its role's
+    /// template (template id == role id; `?principal` → the principal,
+    /// `?resource` → the granted scope), keyed `grant-<id>`.
     fn link_grant(policies: &mut PolicySet, grant: &Grant) -> DomainResult<()> {
         let principal_uid = match &grant.principal {
             Principal::User(id) => euid("Scylla::User", id.as_str())?,
@@ -199,42 +173,17 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             Scope::Organization(id) => euid("Scylla::Organization", id.as_str())?,
             Scope::Project(id) => euid("Scylla::Project", id.as_str())?,
         };
-        let policy_id = format!("grant-{}", grant.id);
-        match &grant.target {
-            GrantTarget::Role(role) => {
-                let vals = HashMap::from([
-                    (SlotId::principal(), principal_uid),
-                    (SlotId::resource(), resource_uid),
-                ]);
-                policies
-                    .link(PolicyId::new(role.as_str()), PolicyId::new(policy_id), vals)
-                    .map_err(|e| DomainError::Internal(format!("cedar link: {e}")))
-            }
-            GrantTarget::Permission(key) => {
-                // Direct permission grant: permit exactly this action for this
-                // principal within the granted scope (the resource hierarchy
-                // bounds it, just like a role template's `resource in ?resource`).
-                // A human grantee is gated on live org membership, like any
-                // org/project-scoped role template (see MEMBER_GUARD); the
-                // principal is concrete here, so the guard reduces to the
-                // User arm.
-                let guard = match (&grant.principal, &grant.scope) {
-                    (Principal::User(_), Scope::Organization(_) | Scope::Project(_)) => {
-                        " when { resource in principal.memberOrgs }"
-                    }
-                    _ => "",
-                };
-                let text = format!(
-                    "permit (principal == {principal_uid}, action == Scylla::Action::\"{key}\", resource in {resource_uid}){guard};"
-                );
-                let policy = Policy::parse(Some(PolicyId::new(policy_id)), &text).map_err(|e| {
-                    DomainError::Internal(format!("cedar permission-grant parse: {e}"))
-                })?;
-                policies
-                    .add(policy)
-                    .map_err(|e| DomainError::Internal(format!("cedar add permission-grant: {e}")))
-            }
-        }
+        let vals = HashMap::from([
+            (SlotId::principal(), principal_uid),
+            (SlotId::resource(), resource_uid),
+        ]);
+        policies
+            .link(
+                PolicyId::new(grant.role.as_str()),
+                PolicyId::new(format!("grant-{}", grant.id)),
+                vals,
+            )
+            .map_err(|e| DomainError::Internal(format!("cedar link: {e}")))
     }
 
     /// Build the principal entity (+ role entities) for the caller. Returns the
@@ -470,45 +419,6 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
 
 #[async_trait]
 impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService<EP> {
-    /// Parse + typecheck a candidate policy against the schema. Permits are
-    /// additive; forbids are allowed only if scoped safely (anti-lockout guard,
-    /// see `forbid_is_safe`). Errors carry Cedar's diagnostics for the admin.
-    /// This is the validate-on-write gate: the safety net moved from build to
-    /// write.
-    #[instrument(skip(self, text))]
-    async fn validate_policy(&self, text: &str) -> DomainResult<()> {
-        let policy = text
-            .parse::<Policy>()
-            .map_err(|e| DomainError::Validation(format!("cedar policy parse: {e}")))?;
-
-        if policy.effect() == Effect::Forbid && !forbid_is_safe(&policy) {
-            return Err(DomainError::Validation(
-                "forbid must target a specific action and may not target \
-                 managePolicies / manageSystemGrants / manageRoles (anti-lockout guard)"
-                    .to_string(),
-            ));
-        }
-
-        let (schema, _warnings) = Schema::from_cedarschema_str(SCHEMA_SRC)
-            .map_err(|e| DomainError::Internal(format!("cedar schema parse: {e}")))?;
-        let mut set = PolicySet::new();
-        set.add(policy)
-            .map_err(|e| DomainError::Internal(format!("cedar add policy: {e}")))?;
-
-        let result = Validator::new(schema).validate(&set, ValidationMode::Strict);
-        if !result.validation_passed() {
-            let errs: Vec<String> = result
-                .validation_errors()
-                .map(ToString::to_string)
-                .collect();
-            return Err(DomainError::Validation(format!(
-                "cedar policy validation failed: {}",
-                errs.join("; ")
-            )));
-        }
-        Ok(())
-    }
-
     /// Rebuild the live policy set from the stores and swap it in atomically.
     /// On failure the previous set is kept, so a check is never served by a
     /// broken or partial set.
@@ -516,8 +426,7 @@ impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService
     async fn reload(&self) -> DomainResult<()> {
         let roles = self.role_repo.list_all().await?;
         let grants = self.grant_repo.list_all().await?;
-        let db_policies = self.policy_repo.list_enabled().await?;
-        let policies = Self::build_policy_set(&roles, &grants, &db_policies)?;
+        let policies = Self::build_policy_set(&roles, &grants)?;
         *self.policies.write().expect("policy set lock poisoned") = Arc::new(policies);
         info!(target: "audit", "authorization policy set reloaded");
         Ok(())
@@ -529,14 +438,12 @@ mod tests {
     use super::*;
     use crate::application::authz::entity_provider::ResourceAncestors;
     use crate::application::authz::grant::{
-        ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE,
-        SYSTEM_ADMIN_ROLE, ScopeKind,
+        ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE, ORGANIZATION_TRIGGER_RUNNER_ROLE,
+        PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, SYSTEM_ADMIN_ROLE, ScopeKind,
     };
     use crate::application::authz::role::FULL_CONTROL;
     use crate::application::caller::ServiceIdentity;
-    use crate::domain::entities::{
-        AppId, CedarPolicyId, OrganizationId, PipelineId, ProjectId, UserId,
-    };
+    use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
     use crate::domain::value_objects::role::RoleName;
 
     /// The five builtin roles as the seed migration defines them: admin roles
@@ -572,12 +479,23 @@ mod tests {
             .map(ToString::to_string)
             .collect(),
         };
+        let runner = Role {
+            id: ORGANIZATION_TRIGGER_RUNNER_ROLE.to_string(),
+            key: Some(ORGANIZATION_TRIGGER_RUNNER_ROLE.to_string()),
+            name: ORGANIZATION_TRIGGER_RUNNER_ROLE.to_string(),
+            description: String::new(),
+            scope: ScopeKind::Organization,
+            owner_org: None,
+            builtin: true,
+            permissions: vec!["runPipeline".to_string()],
+        };
         vec![
             admin(SYSTEM_ADMIN_ROLE, ScopeKind::System),
             admin(ORGANIZATION_ADMIN_ROLE, ScopeKind::Organization),
             admin(PROJECT_ADMIN_ROLE, ScopeKind::Project),
             agent(ORGANIZATION_AGENT_ROLE, ScopeKind::Organization),
             agent(PROJECT_AGENT_ROLE, ScopeKind::Project),
+            runner,
         ]
     }
 
@@ -639,55 +557,10 @@ mod tests {
         }
     }
 
-    struct StubPolicies(Vec<PolicyDefinition>);
-
-    #[async_trait]
-    impl PolicyRepository for StubPolicies {
-        async fn list_enabled(&self) -> DomainResult<Vec<PolicyDefinition>> {
-            Ok(self.0.clone())
-        }
-        async fn list_all(&self) -> DomainResult<Vec<PolicyDefinition>> {
-            Ok(self.0.clone())
-        }
-        async fn get(&self, _id: &CedarPolicyId) -> DomainResult<PolicyDefinition> {
-            Err(DomainError::not_found("CedarPolicy", "stub"))
-        }
-        async fn create(&self, _policy: &PolicyDefinition) -> DomainResult<()> {
-            Ok(())
-        }
-        async fn update(&self, _policy: &PolicyDefinition) -> DomainResult<()> {
-            Ok(())
-        }
-        async fn delete(&self, _id: &CedarPolicyId) -> DomainResult<()> {
-            Ok(())
-        }
-    }
-
-    fn policy_def(id: &str, text: &str) -> PolicyDefinition {
-        PolicyDefinition {
-            id: CedarPolicyId::new(id),
-            description: "test".to_string(),
-            text: text.to_string(),
-            enabled: true,
-            created_by: "test".to_string(),
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
-
     async fn service(
         authz: PrincipalAuthz,
         ancestors: ResourceAncestors,
         grants: Vec<Grant>,
-    ) -> CedarPermissionService<StubProvider> {
-        service_with(authz, ancestors, grants, vec![]).await
-    }
-
-    async fn service_with(
-        authz: PrincipalAuthz,
-        ancestors: ResourceAncestors,
-        grants: Vec<Grant>,
-        policies: Vec<PolicyDefinition>,
     ) -> CedarPermissionService<StubProvider> {
         CedarPermissionService::new(
             Arc::new(StubProvider {
@@ -697,7 +570,6 @@ mod tests {
             }),
             Arc::new(StubRoles(builtin_roles())),
             Arc::new(StubGrants(grants)),
-            Arc::new(StubPolicies(policies)),
             Arc::new(crate::application::audit::NoopAuditLog),
         )
         .await
@@ -718,7 +590,6 @@ mod tests {
             }),
             Arc::new(StubRoles(builtin_roles())),
             Arc::new(StubGrants(grants)),
-            Arc::new(StubPolicies(vec![])),
             Arc::new(crate::application::audit::NoopAuditLog),
         )
         .await
@@ -893,9 +764,9 @@ mod tests {
             role("project-admin"),
             Scope::Project(ProjectId::new("p1")),
         );
-        let org_grant = Grant::with_permission(
+        let org_grant = Grant::new(
             Principal::User(UserId::new("u1")),
-            "runPipeline",
+            role(ORGANIZATION_TRIGGER_RUNNER_ROLE),
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
@@ -987,14 +858,15 @@ mod tests {
 
     #[tokio::test]
     async fn trigger_runner_app_grant_allows_run_pipeline_in_scope() {
-        // The per-org trigger-runner App holds a direct `runPipeline` grant at
-        // org scope. This is the load-bearing authz path for triggers: it must
-        // authorize firing any pipeline beneath the org — which only links/
-        // typechecks because the schema widened `runPipeline` to allow App
-        // principals. The runner must NOT thereby gain trigger management.
-        let grant = Grant::with_permission(
+        // The per-org trigger-runner App holds the `organization-trigger-runner`
+        // role at org scope, which confers `runPipeline` and nothing else. This is
+        // the load-bearing authz path for triggers: it must authorize firing any
+        // pipeline beneath the org — which only links/typechecks because the
+        // schema widened `runPipeline` to allow App principals. The runner must
+        // NOT thereby gain trigger management.
+        let grant = Grant::new(
             Principal::App(AppId::new("trigger-runner-1")),
-            "runPipeline",
+            role(ORGANIZATION_TRIGGER_RUNNER_ROLE),
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
@@ -1023,13 +895,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn direct_permission_grant_allows_only_that_action_in_scope() {
-        // "Alice may runPipeline within Org A" — a single permission granted
-        // directly (additive to any roles). She may run pipelines beneath the org
-        // but the grant confers no other action there.
-        let grant = Grant::with_permission(
+    async fn narrow_role_grant_allows_only_its_actions_in_scope() {
+        // A role conferring only `runPipeline`, granted to Alice on Org A. She may
+        // run pipelines beneath the org but the grant confers no other action
+        // there.
+        let grant = Grant::new(
             Principal::User(UserId::new("alice")),
-            "runPipeline",
+            role(ORGANIZATION_TRIGGER_RUNNER_ROLE),
             Scope::Organization(OrganizationId::new("o1")),
         );
         let svc = service(
@@ -1443,120 +1315,5 @@ mod tests {
                 .await
                 .is_err()
         );
-    }
-
-    // ── runtime (DB) policies ──────────────────────────────────────────────
-
-    #[tokio::test]
-    async fn runtime_permit_policy_grants_access() {
-        // With no role/membership the user is denied listUsers; an enabled
-        // runtime permit policy targeting them flips the decision to allow.
-        let text = r#"permit (principal == Scylla::User::"u-ci", action == Scylla::Action::"listUsers", resource);"#;
-        let svc = service_with(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-            vec![policy_def("01ci", text)],
-        )
-        .await;
-        let caller = CallerContext::User(UserId::new("u-ci"));
-        assert!(svc.check(&caller, Permission::ListUsers).await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn validate_policy_accepts_valid_permit() {
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
-        let text = r#"permit (principal, action == Scylla::Action::"listUsers", resource);"#;
-        assert!(svc.validate_policy(text).await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn validate_policy_rejects_catchall_forbid() {
-        // Unconstrained action = catch-all that would deny everyone (lockout).
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
-        assert!(
-            svc.validate_policy(r"forbid (principal, action, resource);")
-                .await
-                .is_err()
-        );
-    }
-
-    #[tokio::test]
-    async fn validate_policy_rejects_forbid_on_admin_action() {
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
-        let text = r#"forbid (principal, action == Scylla::Action::"managePolicies", resource);"#;
-        assert!(svc.validate_policy(text).await.is_err());
-    }
-
-    #[tokio::test]
-    async fn validate_policy_accepts_scoped_forbid() {
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
-        let text = r#"forbid (principal, action == Scylla::Action::"deletePipeline", resource);"#;
-        assert!(svc.validate_policy(text).await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn runtime_forbid_overrides_permit() {
-        // Admin permits everything; a scoped forbid still denies deletePipeline.
-        let forbid = policy_def(
-            "01forbid",
-            r#"forbid (principal, action == Scylla::Action::"deletePipeline", resource);"#,
-        );
-        let svc = service_with(
-            PrincipalAuthz::default(),
-            // pl1 resolves under p1 ∈ o1 ∈ System, so the system-admin grant's
-            // permit applies — and the runtime forbid then overrides it.
-            ResourceAncestors {
-                organization: Some(OrganizationId::new("o1")),
-                project: Some(ProjectId::new("p1")),
-                pipeline: None,
-            },
-            vec![Grant::new(
-                Principal::User(UserId::new("u-admin")),
-                role("system-admin"),
-                Scope::System,
-            )],
-            vec![forbid],
-        )
-        .await;
-        let caller = CallerContext::User(UserId::new("u-admin"));
-        assert!(
-            svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
-                .await
-                .is_err()
-        );
-        assert!(svc.check(&caller, Permission::ListUsers).await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn validate_policy_rejects_unknown_action() {
-        let svc = service(
-            PrincipalAuthz::default(),
-            ResourceAncestors::default(),
-            vec![],
-        )
-        .await;
-        let text = r#"permit (principal, action == Scylla::Action::"nope", resource);"#;
-        assert!(svc.validate_policy(text).await.is_err());
     }
 }

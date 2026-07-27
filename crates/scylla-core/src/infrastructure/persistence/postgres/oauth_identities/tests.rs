@@ -4,9 +4,8 @@ use crate::application::oauth::{AccountOutcome, OAuthProvider, OAuthUseCases, OA
 use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::user::Email;
 use crate::infrastructure::persistence::postgres::{
-    PgAuthzEntityProvider, PgDefaultRoleBindingRepository, PgGrantRepository,
-    PgOAuthIdentityRepository, PgPolicyRepository, PgRoleRepository, PgSessionRepository,
-    PgSignupRepository, PgUserOrganizationRepository, PgUserRepository,
+    PgAuthzEntityProvider, PgGrantRepository, PgOAuthIdentityRepository, PgRoleRepository,
+    PgSessionRepository, PgSignupRepository, PgUserOrganizationRepository, PgUserRepository,
 };
 use crate::infrastructure::{Argon2HashService, CedarPermissionService};
 use crate::test_support::prelude::*;
@@ -46,7 +45,6 @@ async fn use_cases(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool.clone())),
-            Arc::new(PgPolicyRepository::new(pool.clone())),
             Arc::new(NoopAuditLog),
         )
         .await
@@ -60,7 +58,6 @@ async fn use_cases(
         Arc::new(PgSessionRepository::new(pool.clone())),
         Arc::new(Argon2HashService::new()),
         permission,
-        Arc::new(PgDefaultRoleBindingRepository::new(pool.clone())),
     )
 }
 

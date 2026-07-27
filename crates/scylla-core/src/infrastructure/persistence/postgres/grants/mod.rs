@@ -1,4 +1,4 @@
-use crate::application::authz::grant::{Grant, GrantRepository, GrantTarget, Principal, Scope};
+use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::role::RoleName;
@@ -16,13 +16,11 @@ const SCOPE_PROJECT: &str = "project";
 const SYSTEM_SCOPE_ID: &str = "system";
 const PRINCIPAL_USER: &str = "user";
 const PRINCIPAL_APP: &str = "app";
-const TARGET_ROLE: &str = "role";
-const TARGET_PERMISSION: &str = "permission";
 
 /// Insert a grant on any executor (pool or transaction). Idempotent via the
-/// `(principal_kind, principal_id, target_kind, target, scope_kind, scope_id)`
-/// unique constraint, so re-running a signup or grant call is a no-op rather than
-/// a conflict. Shared by the pool-backed repo and the atomic signup transaction.
+/// `(principal_kind, principal_id, role_id, scope_kind, scope_id)` unique
+/// constraint, so re-running a signup or grant call is a no-op rather than a
+/// conflict. Shared by the pool-backed repo and the atomic signup transaction.
 pub async fn insert<'e, E>(executor: E, grant: &Grant) -> DomainResult<()>
 where
     E: PgExecutor<'e>,
@@ -33,16 +31,13 @@ where
         Scope::Project(id) => (SCOPE_PROJECT, id.as_str()),
     };
     sqlx::query!(
-        "INSERT INTO grants \
-             (id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7) \
-         ON CONFLICT (principal_kind, principal_id, target_kind, target, scope_kind, scope_id) \
-             DO NOTHING",
+        "INSERT INTO grants (id, principal_kind, principal_id, role_id, scope_kind, scope_id) \
+         VALUES ($1, $2, $3, $4, $5, $6) \
+         ON CONFLICT (principal_kind, principal_id, role_id, scope_kind, scope_id) DO NOTHING",
         grant.id.as_str(),
         grant.principal.kind(),
         grant.principal.id(),
-        grant.target.kind(),
-        grant.target.value(),
+        grant.role.as_str(),
         scope_kind,
         scope_id,
     )
@@ -134,8 +129,7 @@ impl GrantRepository for PgGrantRepository {
     #[instrument(skip(self))]
     async fn list_all(&self) -> DomainResult<Vec<Grant>> {
         let rows = sqlx::query!(
-            "SELECT id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id \
-             FROM grants",
+            "SELECT id, principal_kind, principal_id, role_id, scope_kind, scope_id FROM grants",
         )
         .fetch_all(&self.pool)
         .await
@@ -152,15 +146,6 @@ impl GrantRepository for PgGrantRepository {
                         )));
                     }
                 };
-                let target = match r.target_kind.as_str() {
-                    TARGET_ROLE => GrantTarget::Role(RoleName::new(r.target)?),
-                    TARGET_PERMISSION => GrantTarget::Permission(r.target),
-                    other => {
-                        return Err(DomainError::Infrastructure(format!(
-                            "unknown grant target_kind '{other}'"
-                        )));
-                    }
-                };
                 let scope = match r.scope_kind.as_str() {
                     SCOPE_SYSTEM => Scope::System,
                     SCOPE_ORGANIZATION => Scope::Organization(OrganizationId::new(r.scope_id)),
@@ -174,7 +159,7 @@ impl GrantRepository for PgGrantRepository {
                 Ok(Grant {
                     id: r.id,
                     principal,
-                    target,
+                    role: RoleName::new(r.role_id)?,
                     scope,
                 })
             })
@@ -193,5 +178,149 @@ impl GrantRepository for PgGrantRepository {
             .await
             .to_domain()?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PgGrantRepository;
+    use crate::application::authz::grant::{
+        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE,
+        PROJECT_ADMIN_ROLE, Principal, SYSTEM_ADMIN_ROLE, Scope,
+    };
+    use crate::domain::entities::AppId;
+    use crate::domain::value_objects::role::RoleName;
+    use crate::test_support::prelude::*;
+    use sqlx::PgPool;
+
+    fn role(name: &str) -> RoleName {
+        RoleName::new(name).unwrap()
+    }
+
+    async fn seed_app(pool: &PgPool, org: &crate::domain::entities::Organization) -> AppId {
+        let id = AppId::generate();
+        sqlx::query!(
+            "INSERT INTO apps (id, organization_id, name) VALUES ($1, $2, 'runner')",
+            id.as_str(),
+            org.id().as_str(),
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+        id
+    }
+
+    /// `grants.principal_id` / `scope_id` are polymorphic, so Postgres cannot
+    /// cascade them; DB triggers do. Deleting an organization must clear every
+    /// grant bound to it, to the projects it cascades away, and to the apps it
+    /// cascades away — while another org's identical holdings survive.
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn deleting_an_organization_clears_the_grants_of_its_whole_subtree(pool: PgPool) {
+        let org = seed_org(&pool, "acme").await;
+        let other_org = seed_org(&pool, "globex").await;
+        let project = seed_project(&pool, &org, "apollo").await;
+        let other_project = seed_project(&pool, &other_org, "zeus").await;
+        let user = seed_user(&pool, "alice").await;
+        let app = seed_app(&pool, &org).await;
+
+        let repo = PgGrantRepository::new(pool.clone());
+        let doomed = [
+            Grant::new(
+                Principal::User(user.id().clone()),
+                role(ORGANIZATION_ADMIN_ROLE),
+                Scope::Organization(org.id().clone()),
+            ),
+            Grant::new(
+                Principal::User(user.id().clone()),
+                role(PROJECT_ADMIN_ROLE),
+                Scope::Project(project.id().clone()),
+            ),
+            // Held by an app of the doomed org: the app row cascades away, so the
+            // principal-side trigger is what clears this one.
+            Grant::new(
+                Principal::App(app.clone()),
+                role(ORGANIZATION_AGENT_ROLE),
+                Scope::Organization(org.id().clone()),
+            ),
+        ];
+        let survivors = [
+            Grant::new(
+                Principal::User(user.id().clone()),
+                role(ORGANIZATION_ADMIN_ROLE),
+                Scope::Organization(other_org.id().clone()),
+            ),
+            Grant::new(
+                Principal::User(user.id().clone()),
+                role(PROJECT_ADMIN_ROLE),
+                Scope::Project(other_project.id().clone()),
+            ),
+        ];
+        for g in doomed.iter().chain(survivors.iter()) {
+            repo.create(g).await.unwrap();
+        }
+
+        sqlx::query!("DELETE FROM organizations WHERE id = $1", org.id().as_str())
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let remaining = repo.list_all().await.unwrap();
+        for g in &doomed {
+            assert!(
+                !remaining.iter().any(|r| r.id == g.id),
+                "grant {} should have gone with the organization",
+                g.id,
+            );
+        }
+        for g in &survivors {
+            assert!(
+                remaining.iter().any(|r| r.id == g.id),
+                "grant {} belongs to another org and must survive",
+                g.id,
+            );
+        }
+    }
+
+    /// Deleting a principal clears every grant it held, at any scope — including
+    /// the System scope, which has no table to hang a foreign key on and no
+    /// membership guard to make a leftover row inert.
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn deleting_a_user_clears_their_grants_at_every_scope(pool: PgPool) {
+        let org = seed_org(&pool, "acme").await;
+        let user = seed_user(&pool, "alice").await;
+        let keeper = seed_user(&pool, "bob").await;
+
+        let repo = PgGrantRepository::new(pool.clone());
+        let system = Grant::new(
+            Principal::User(user.id().clone()),
+            role(SYSTEM_ADMIN_ROLE),
+            Scope::System,
+        );
+        let scoped = Grant::new(
+            Principal::User(user.id().clone()),
+            role(ORGANIZATION_ADMIN_ROLE),
+            Scope::Organization(org.id().clone()),
+        );
+        let others = Grant::new(
+            Principal::User(keeper.id().clone()),
+            role(ORGANIZATION_ADMIN_ROLE),
+            Scope::Organization(org.id().clone()),
+        );
+        for g in [&system, &scoped, &others] {
+            repo.create(g).await.unwrap();
+        }
+
+        sqlx::query!("DELETE FROM users WHERE id = $1", user.id().as_str())
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let remaining = repo.list_all().await.unwrap();
+        assert_eq!(
+            remaining.len(),
+            1,
+            "only the other user's grant should be left",
+        );
+        assert_eq!(remaining[0].id, others.id);
     }
 }

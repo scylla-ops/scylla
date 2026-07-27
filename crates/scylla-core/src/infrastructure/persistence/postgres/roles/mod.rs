@@ -1,10 +1,7 @@
 use crate::application::authz::grant::ScopeKind;
-use crate::application::authz::role::{
-    DefaultRoleBindingRepository, DefaultRoleSlot, Role, RoleRepository,
-};
+use crate::application::authz::role::{Role, RoleRepository};
 use crate::domain::entities::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::role::RoleName;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use tracing::instrument;
@@ -177,8 +174,7 @@ impl RoleRepository for PgRoleRepository {
 
     #[instrument(skip(self))]
     async fn delete(&self, id: &str) -> DomainResult<()> {
-        // `role_permissions` cascades; a role still pointed at by a
-        // default-role binding is blocked by that FK's ON DELETE RESTRICT.
+        // `role_permissions` cascades.
         sqlx::query!("DELETE FROM roles WHERE id = $1", id)
             .execute(&self.pool)
             .await
@@ -187,46 +183,11 @@ impl RoleRepository for PgRoleRepository {
     }
 }
 
-/// Reads the configurable default-role pointers (`default_role_bindings`).
-#[derive(Clone)]
-pub struct PgDefaultRoleBindingRepository {
-    pool: PgPool,
-}
-
-impl PgDefaultRoleBindingRepository {
-    #[must_use]
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool }
-    }
-}
-
-#[async_trait]
-impl DefaultRoleBindingRepository for PgDefaultRoleBindingRepository {
-    #[instrument(skip(self))]
-    async fn role_for_slot(&self, slot: DefaultRoleSlot) -> DomainResult<Option<RoleName>> {
-        // Join through `roles` so a binding whose role no longer exists reads as
-        // `None` (the caller then falls back to the builtin).
-        let row = sqlx::query!(
-            "SELECT b.role_id FROM default_role_bindings b \
-             JOIN roles r ON r.id = b.role_id \
-             WHERE b.slot = $1",
-            slot.as_str(),
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .to_domain()?;
-
-        row.map(|r| RoleName::new(r.role_id)).transpose()
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{PgDefaultRoleBindingRepository, PgRoleRepository};
+    use super::PgRoleRepository;
     use crate::application::authz::grant::ScopeKind;
-    use crate::application::authz::role::{
-        DefaultRoleBindingRepository, DefaultRoleSlot, Role, RoleRepository, resolve_default_role,
-    };
+    use crate::application::authz::role::{Role, RoleRepository};
     use sqlx::PgPool;
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -285,9 +246,6 @@ mod tests {
         struct NoopPolicy;
         #[async_trait::async_trait]
         impl PolicyControl for NoopPolicy {
-            async fn validate_policy(&self, _t: &str) -> DomainResult<()> {
-                Ok(())
-            }
             async fn reload(&self) -> DomainResult<()> {
                 Ok(())
             }
@@ -309,11 +267,25 @@ mod tests {
             .await
             .unwrap();
         }
-        // Alice holds the role at project p1, and a direct deleteJob at org o1.
+        // A second role, held at org scope, so the two grants group separately.
         sqlx::query!(
-            "INSERT INTO grants (id, principal_kind, principal_id, target_kind, target, scope_kind, scope_id) \
-             VALUES ('g1', 'user', 'alice', 'role', 'ci', 'project', 'p1'), \
-                    ('g2', 'user', 'alice', 'permission', 'deleteJob', 'organization', 'o1')"
+            "INSERT INTO roles (id, name, scope_kind, builtin) \
+             VALUES ('janitor', 'Janitor', 'organization', FALSE)"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query!(
+            "INSERT INTO role_permissions (role_id, permission) VALUES ('janitor', 'deleteJob')"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        // Alice holds `ci` at project p1 and `janitor` at org o1.
+        sqlx::query!(
+            "INSERT INTO grants (id, principal_kind, principal_id, role_id, scope_kind, scope_id) \
+             VALUES ('g1', 'user', 'alice', 'ci', 'project', 'p1'), \
+                    ('g2', 'user', 'alice', 'janitor', 'organization', 'o1')"
         )
         .execute(&pool)
         .await
@@ -344,61 +316,5 @@ mod tests {
             .find(|s| matches!(&s.scope, Scope::Organization(o) if o.as_str() == "o1"))
             .expect("org o1 scope");
         assert_eq!(org.permissions, vec!["deleteJob".to_string()]);
-    }
-
-    #[sqlx::test(migrations = "../../migrations")]
-    async fn default_binding_resolves_to_seeded_builtin(pool: PgPool) {
-        let repo = PgDefaultRoleBindingRepository::new(pool);
-        let role = repo
-            .role_for_slot(DefaultRoleSlot::OrgCreation)
-            .await
-            .unwrap();
-        assert_eq!(role.unwrap().as_str(), "organization-admin");
-    }
-
-    #[sqlx::test(migrations = "../../migrations")]
-    async fn rebound_slot_resolves_to_the_custom_role(pool: PgPool) {
-        // Seed a custom org-scoped role and rebind org_creation to it.
-        sqlx::query!(
-            "INSERT INTO roles (id, name, scope_kind, builtin) \
-             VALUES ('custom-1', 'Custom', 'organization', FALSE)"
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-        sqlx::query!(
-            "UPDATE default_role_bindings SET role_id = 'custom-1' WHERE slot = 'org_creation'"
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        let repo = PgDefaultRoleBindingRepository::new(pool);
-        let role = resolve_default_role(&repo, DefaultRoleSlot::OrgCreation)
-            .await
-            .unwrap();
-        assert_eq!(role.as_str(), "custom-1");
-    }
-
-    #[sqlx::test(migrations = "../../migrations")]
-    async fn missing_binding_falls_back_to_builtin(pool: PgPool) {
-        sqlx::query!("DELETE FROM default_role_bindings WHERE slot = 'org_creation'")
-            .execute(&pool)
-            .await
-            .unwrap();
-
-        let repo = PgDefaultRoleBindingRepository::new(pool);
-        // The binding is gone, so the repo reads `None`...
-        assert!(
-            repo.role_for_slot(DefaultRoleSlot::OrgCreation)
-                .await
-                .unwrap()
-                .is_none()
-        );
-        // ...and resolution falls back to the slot's builtin role.
-        let role = resolve_default_role(&repo, DefaultRoleSlot::OrgCreation)
-            .await
-            .unwrap();
-        assert_eq!(role.as_str(), "organization-admin");
     }
 }

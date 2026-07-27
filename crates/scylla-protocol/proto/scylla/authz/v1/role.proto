@@ -19,6 +19,10 @@ service RoleService {
   // by the scope each grant binds to. Backs a permission matrix. Requires
   // `manageSystemGrants`.
   rpc GetEffectivePermissions(GetEffectivePermissionsRequest) returns (GetEffectivePermissionsResponse);
+  // The authorization vocabulary a role may reference: every permission, with
+  // the narrowest scope kind it is coherent at. Read-only — lets a role editor
+  // enumerate real permissions instead of guessing names.
+  rpc ListAuthzVocabulary(ListAuthzVocabularyRequest) returns (ListAuthzVocabularyResponse);
 }
 
 message Role {
@@ -87,3 +91,7 @@ message EffectiveScope {
 }
 
 message GetEffectivePermissionsResponse { repeated EffectiveScope scopes = 1; }
+
+message ListAuthzVocabularyRequest {}
+
+message ListAuthzVocabularyResponse { repeated AuthzAction actions = 1; }

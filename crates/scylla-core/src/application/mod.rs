@@ -33,11 +33,10 @@ pub use app::{
 pub use audit::{AuditDecision, AuditEntry, AuditLog, NoopAuditLog};
 pub use auth::{AuthUseCases, HashService, SessionRepository};
 pub use authz::{
-    AuthzEntityProvider, EffectiveScope, FULL_CONTROL, Grant, GrantRepository, GrantTarget,
-    GrantUseCases, GrantableRole, PermissionService, PolicyControl, PolicyDefinition,
-    PolicyRepository, PolicyUseCases, Principal, PrincipalAuthz, ResourceAncestors, Role, RoleKind,
-    RoleRepository, RoleUseCases, Scope, ScopeKind, grantable_roles, resource_home_scope,
-    validate_role_in_db,
+    AuthzEntityProvider, EffectiveScope, FULL_CONTROL, Grant, GrantRepository, GrantUseCases,
+    GrantableRole, ORGANIZATION_TRIGGER_RUNNER_ROLE, PermissionService, PolicyControl, Principal,
+    PrincipalAuthz, ResourceAncestors, Role, RoleKind, RoleRepository, RoleUseCases, Scope,
+    ScopeKind, grantable_roles, resource_home_scope, validate_role_in_db,
 };
 pub use bootstrap::BootstrapUseCases;
 pub use caller::{CallerContext, ServiceIdentity};

@@ -106,7 +106,7 @@ export enum Permission {
   MANAGE_SYSTEM_GRANTS = 54,
   MANAGE_ORG_GRANTS = 55,
   MANAGE_PROJECT_GRANTS = 56,
-  MANAGE_POLICIES = 57,
+  // 57 was MANAGE_POLICIES, dropped with the runtime Cedar policy escape hatch.
   MANAGE_ROLES = 58,
   CREATE_SECRET = 59,
   LIST_SECRETS = 60,

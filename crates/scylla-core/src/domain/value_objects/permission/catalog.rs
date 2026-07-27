@@ -115,7 +115,6 @@ pub enum Permission {
     ManageOrgGrants(OrganizationId),
     /// Manage grants whose scope is this project (project-admins).
     ManageProjectGrants(ProjectId),
-    ManagePolicies,
     /// Create / edit / delete roles (the dynamic role catalog). System-scoped.
     ManageRoles,
 }
@@ -198,7 +197,6 @@ impl Permission {
             Self::ManageSystemGrants => "manageSystemGrants",
             Self::ManageOrgGrants(_) => "manageOrgGrants",
             Self::ManageProjectGrants(_) => "manageProjectGrants",
-            Self::ManagePolicies => "managePolicies",
             Self::ManageRoles => "manageRoles",
         }
     }
@@ -219,7 +217,6 @@ impl Permission {
             | Self::CreateJob
             | Self::ListJobs
             | Self::ManageSystemGrants
-            | Self::ManagePolicies
             | Self::ManageRoles => ResourceRef::System,
 
             // User-targeted
@@ -387,11 +384,10 @@ fn catalog_variants() -> Vec<Permission> {
         // agent
         Permission::CreateAgent(org.clone()),
         Permission::ListAgents(org.clone()),
-        // grants / policies / roles
+        // grants / roles
         Permission::ManageSystemGrants,
         Permission::ManageOrgGrants(org.clone()),
         Permission::ManageProjectGrants(project),
-        Permission::ManagePolicies,
         Permission::ManageRoles,
     ]
 }

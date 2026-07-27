@@ -12,7 +12,6 @@ pub mod job_handler;
 pub mod oauth_handler;
 pub mod organization_handler;
 pub mod pipeline_handler;
-pub mod policy_handler;
 pub mod project_handler;
 #[cfg(feature = "register")]
 pub mod registration_handler;
@@ -32,7 +31,6 @@ pub use job_handler::JobHandler;
 pub use oauth_handler::OAuthHandler;
 pub use organization_handler::OrganizationHandler;
 pub use pipeline_handler::PipelineHandler;
-pub use policy_handler::PolicyHandler;
 pub use project_handler::ProjectHandler;
 #[cfg(feature = "register")]
 pub use registration_handler::RegistrationHandler;
