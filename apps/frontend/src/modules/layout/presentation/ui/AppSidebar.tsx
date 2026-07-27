@@ -17,6 +17,7 @@ import {
   SidebarRail,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { NavUser } from '@/modules/layout/presentation/ui/NavUser.tsx';
+import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { ContextSelector } from '@/modules/layout/presentation/ui/context-selector/ContextSelector.tsx';
 import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
 import { AddOrganizationDialog } from '@/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx';
@@ -28,10 +29,10 @@ import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
-const useNavSections = (): NavSection[] => {
+const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
   const orgName = useContextStore(state => state.organization.name);
   const prefix = orgName ? `/${slugifyOrgName(orgName)}` : '';
-  const { can } = useAuthorization();
+  const { can, ready } = useAuthorization();
 
   const sections: NavSection[] = [
     {
@@ -41,7 +42,6 @@ const useNavSections = (): NavSection[] => {
           title: 'Projects',
           url: `${prefix}/projects`,
           icon: WorkflowIcon,
-          permission: Permission.LIST_PROJECTS_BY_ORGANIZATION,
         },
         {
           title: 'Agents',
@@ -78,18 +78,21 @@ const useNavSections = (): NavSection[] => {
 
   // Drop entries the current user can't access (in the current org), then any
   // section left empty. `can` defaults its target to the active org/project.
-  return sections
-    .map(section => ({
-      ...section,
-      items: section.items.filter(item => !item.permission || can(item.permission)),
-    }))
-    .filter(section => section.items.length > 0);
+  return {
+    ready,
+    sections: sections
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => !item.permission || can(item.permission)),
+      }))
+      .filter(section => section.items.length > 0),
+  };
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useLingui();
   const organization = useContextStore(state => state.organization);
-  const navSections = useNavSections();
+  const { sections: navSections, ready } = useNavSections();
 
   return (
     <Sidebar variant={'inset'} collapsible='icon' {...props}>
@@ -108,7 +111,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain sections={navSections} />
+        {ready ? (
+          <NavMain sections={navSections} />
+        ) : (
+          // Permissions still loading — skeleton entries, never a flash of
+          // links the user may not hold.
+          <div className='flex flex-col gap-2 px-3 py-4'>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className='flex items-center gap-2'>
+                <Skeleton className='size-4 rounded' />
+                <Skeleton className='h-4 flex-1' />
+              </div>
+            ))}
+          </div>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

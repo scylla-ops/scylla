@@ -2,29 +2,34 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import type { CreateGrantInput } from '@/modules/features/permission/domain/usecases/create-grant.use-case.ts';
 
-const GRANTS_QUERY_KEY = 'authz-grants';
+const GRANTS_QUERY_KEY = 'permission-grants';
 
 /**
  * List every grant (system-admin view) plus create/revoke mutations.
  */
 export function useGrants() {
-  const { authz } = useDependencies();
+  const { permission } = useDependencies();
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: [GRANTS_QUERY_KEY] });
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: [GRANTS_QUERY_KEY] });
+    // A grant change may alter what the current user can see — refresh the
+    // cached effective permissions that drive nav/button gating.
+    void queryClient.invalidateQueries({ queryKey: ['permission-effective'] });
+  };
 
   const grantsQuery = useQuery({
     queryKey: [GRANTS_QUERY_KEY],
-    queryFn: async () => (await authz.listGrants.execute()).unwrap(),
+    queryFn: async () => (await permission.listGrants.execute()).unwrap(),
   });
 
   const createGrant = useMutation({
     mutationFn: async (input: CreateGrantInput) =>
-      (await authz.createGrant.execute(input)).unwrap(),
+      (await permission.createGrant.execute(input)).unwrap(),
     onSuccess: invalidate,
   });
 
   const revokeGrant = useMutation({
-    mutationFn: async (id: string) => (await authz.revokeGrant.execute(id)).unwrap(),
+    mutationFn: async (id: string) => (await permission.revokeGrant.execute(id)).unwrap(),
     onSuccess: invalidate,
   });
 

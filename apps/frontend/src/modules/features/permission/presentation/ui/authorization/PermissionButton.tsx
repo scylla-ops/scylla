@@ -28,10 +28,15 @@ export const PermissionButton = ({
   disabled,
   ...buttonProps
 }: PermissionButtonProps) => {
-  const { can } = useAuthorization();
+  const { can, ready } = useAuthorization();
 
   if (can(permission, target)) {
     return <Button disabled={disabled} {...buttonProps} />;
+  }
+
+  // Still resolving permissions — disable quietly, without claiming a denial.
+  if (!ready) {
+    return <Button {...buttonProps} disabled />;
   }
 
   return (

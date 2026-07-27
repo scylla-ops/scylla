@@ -64,6 +64,7 @@ const SYSTEM_LEVEL: Permission[] = [
   Permission.DELETE_USER,
   Permission.CREATE_AGENT,
   Permission.MANAGE_ROLES,
+  Permission.MANAGE_SYSTEM_GRANTS,
   // Global rollups across every tenant
   Permission.LIST_PIPELINES,
   Permission.LIST_JOBS,

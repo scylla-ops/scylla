@@ -70,7 +70,7 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
       const { response } = await this._organizationClient.listOrganizationMembers({
         organizationId: wrapId(organizationId),
       });
-      return response.members.map(GrpcOrganizationMemberMapper.toDomain);
+      return response.members.map(member => GrpcOrganizationMemberMapper.toDomain(member));
     }, 'Failed to fetch organization members.');
   }
 

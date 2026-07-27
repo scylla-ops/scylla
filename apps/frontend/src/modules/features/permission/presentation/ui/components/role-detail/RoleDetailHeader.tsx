@@ -4,7 +4,7 @@ import { Badge } from '@shadcn';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import { PermissionButton } from '@/modules/features/permission/presentation/ui/authorization/PermissionButton.tsx';
-import { scopeName } from '@/modules/features/permission/presentation/utils/authz-labels.ts';
+import { scopeName } from '@/modules/features/permission/presentation/utils/permission-labels.ts';
 
 interface RoleDetailHeaderProps {
   role: RoleEntity;

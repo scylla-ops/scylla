@@ -77,18 +77,20 @@ export const PipelineEditor = ({
   }, [isDirty]);
 
   return (
-    <Tabs key='editor' defaultValue='blueprint' className='flex h-full flex-col gap-4'>
-      <div className='flex w-full items-center justify-between gap-4'>
-        <PipelineEditorHeader
-          onSubmit={handleSubmit}
-          submitLabel={submitLabel}
-          mode={mode}
-          submitDisabled={!isValid}
-          blueprintDisabled={!isValid}
-          isDirty={isDirty}
-          isSaving={isSubmitPending}
-        />
-      </div>
+    <Tabs
+      key='editor'
+      defaultValue='blueprint'
+      className='flex w-full h-full flex-col gap-4 overflow-visible'
+    >
+      <PipelineEditorHeader
+        onSubmit={handleSubmit}
+        submitLabel={submitLabel}
+        mode={mode}
+        submitDisabled={!isValid}
+        blueprintDisabled={!isValid}
+        isDirty={isDirty}
+        isSaving={isSubmitPending}
+      />
       <TabsContent value='scripting' className='h-full overflow-hidden' forceMount>
         <div className='flex h-full flex-col gap-2'>
           <div className={'overflow-auto p-2'}>

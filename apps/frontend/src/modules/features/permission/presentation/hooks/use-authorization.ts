@@ -12,9 +12,10 @@ import { useMyPermissions } from '@/modules/features/permission/presentation/hoo
  * a synchronous check that defaults the target to the current org/project context
  * — so `can(Permission.CREATE_PIPELINE)` asks "in the org/project I'm looking at".
  *
- * While the effective permissions are still loading (or the lookup failed) `can`
- * is **permissive**, so a slow/broken lookup never hides the whole UI. The backend
- * still enforces access — this only shapes what we bother showing.
+ * `can` **denies while the effective permissions are unknown** (still loading or
+ * failed): gated UI must never flash content the user may not hold. Consumers
+ * that want a loading state instead of a denial read `ready` — false only while
+ * the lookup is still in flight.
  */
 export const useAuthorization = () => {
   const { effective, isLoading, isError } = useMyPermissions();
@@ -23,7 +24,7 @@ export const useAuthorization = () => {
 
   const can = useCallback(
     (permission: Permission, target?: PermissionTarget): boolean => {
-      if (!effective) return true; // not yet known → don't gate
+      if (!effective) return false; // unknown → deny; the backend is the enforcer anyway
       return canAccess(effective, permission, {
         organizationId: target?.organizationId ?? orgId ?? undefined,
         projectId: target?.projectId ?? projectId ?? undefined,
@@ -32,7 +33,10 @@ export const useAuthorization = () => {
     [effective, orgId, projectId],
   );
 
-  return { can, isLoading, isError, ready: !!effective };
+  // Settled: we have an answer (data) or a definitive failure (treated as denied).
+  const ready = effective !== undefined || isError;
+
+  return { can, isLoading, isError, ready };
 };
 
 /** Convenience: the boolean result of a single {@link useAuthorization} check. */

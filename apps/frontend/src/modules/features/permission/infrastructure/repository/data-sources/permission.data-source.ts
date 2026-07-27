@@ -42,5 +42,5 @@ export interface PermissionDataSource {
   listGrantableRoles(scopeKind?: ScopeKind): Promise<ScyllaResult<GrantableRole[]>>;
 
   // ── Vocabulary ─────────────────────────────────────────────────────────────
-  listAuthzVocabulary(): Promise<ScyllaResult<AuthzAction[]>>;
+  listPermissionVocabulary(): Promise<ScyllaResult<AuthzAction[]>>;
 }

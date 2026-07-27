@@ -10,12 +10,12 @@ import { ListGrantsUseCase } from '@/modules/features/permission/domain/usecases
 import { CreateGrantUseCase } from '@/modules/features/permission/domain/usecases/create-grant.use-case.ts';
 import { RevokeGrantUseCase } from '@/modules/features/permission/domain/usecases/revoke-grant.use-case.ts';
 import { ListGrantableRolesUseCase } from '@/modules/features/permission/domain/usecases/list-grantable-roles.use-case.ts';
-import { ListAuthzVocabularyUseCase } from '@/modules/features/permission/domain/usecases/list-authz-vocabulary.use-case.ts';
+import { ListPermissionVocabularyUseCase } from '@/modules/features/permission/domain/usecases/list-permission-vocabulary.use-case.ts';
 
 const dataSource = new GrpcPermissionRemoteDataSource(CoreModule.data.grpcTransport);
 const repository = new DefaultPermissionRepository(dataSource);
 
-export const PermissonModule = {
+export const PermissionModule = {
   domain: {
     listRoles: new ListRolesUseCase(repository),
     createRole: new CreateRoleUseCase(repository),
@@ -26,6 +26,6 @@ export const PermissonModule = {
     createGrant: new CreateGrantUseCase(repository),
     revokeGrant: new RevokeGrantUseCase(repository),
     listGrantableRoles: new ListGrantableRolesUseCase(repository),
-    listAuthzVocabulary: new ListAuthzVocabularyUseCase(repository),
+    listPermissionVocabulary: new ListPermissionVocabularyUseCase(repository),
   },
 };

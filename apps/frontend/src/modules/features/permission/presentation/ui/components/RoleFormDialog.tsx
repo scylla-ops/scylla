@@ -31,7 +31,7 @@ import {
   ALL_SCOPES,
   permissionName,
   scopeName,
-} from '@/modules/features/permission/presentation/utils/authz-labels.ts';
+} from '@/modules/features/permission/presentation/utils/permission-labels.ts';
 import { PERMISSIONS_BY_SCOPE } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
 
 type AccessKind = 'fullControl' | 'restricted';
@@ -154,7 +154,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
               value={String(scope)}
               disabled={isEdit || isPending}
               onValueChange={value => {
-                const next = Number(value) as PermissionScope;
+                const next: PermissionScope = Number(value);
                 setScope(next);
                 // Drop any selected permissions that aren't coherent at the new scope.
                 const allowed = new Set(PERMISSIONS_BY_SCOPE.get(next) ?? []);

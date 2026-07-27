@@ -1,6 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { Badge } from '@shadcn';
-import { permissionName } from '@/modules/features/permission/presentation/utils/authz-labels.ts';
+import { permissionName } from '@/modules/features/permission/presentation/utils/permission-labels.ts';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
 
 interface RoleDetailPermissionsProps {

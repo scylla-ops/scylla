@@ -13,7 +13,7 @@ import type {
 } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/permission/domain/entities/grantable-role.entity.ts';
 import type { EffectivePermissionsEntity } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
-import type { AuthzVocabularyEntity } from '@/modules/features/permission/domain/entities/authz-vocabulary.entity.ts';
+import type { PermissionVocabularyEntity } from '@/modules/features/permission/domain/entities/permission-vocabulary.entity.ts';
 
 /**
  * Domain-level input for creating a grant.
@@ -52,5 +52,5 @@ export interface PermissionRepository {
   listGrantableRoles(scope?: PermissionScope): Promise<ScyllaResult<GrantableRoleEntity[]>>;
 
   // ── Permission vocabulary ──────────────────────────────────────────────────
-  listAuthzVocabulary(): Promise<ScyllaResult<AuthzVocabularyEntity>>;
+  listPermissionVocabulary(): Promise<ScyllaResult<PermissionVocabularyEntity>>;
 }
