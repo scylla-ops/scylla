@@ -41,50 +41,28 @@ permit (
     principal is Scylla::User && principal == resource
 };
 
-// ── Organization members (ABAC) ────────────────────────────────────────
-// A user may perform read/list operations on an organization it belongs to.
-// `principal is User` narrows the type so `principal.memberOrgs` typechecks.
+// ── Organization membership (ABAC) ─────────────────────────────────────
+// The one thing membership confers, and deliberately the only one: you may see
+// the organization you belong to, and who else is in it. Everything else comes
+// from a grant (see docs/src/access-model.md). Without this a member would need
+// a grant merely to see their own organization, which reads as a bug rather
+// than as a security boundary.
+//
+// Note what is NOT here: listing an organization's projects. That is what makes
+// "in an organization without seeing all its projects" expressible — the project
+// list is filtered by the grants you actually hold.
 @id("org-member")
 permit (
     principal,
     action in [
         Scylla::Action::"readOrganization",
-        Scylla::Action::"listOrganizationMembers",
-        Scylla::Action::"listProjectsByOrganization",
-        Scylla::Action::"listPipelinesByOrganization",
-        Scylla::Action::"listJobsByOrganization"
+        Scylla::Action::"listOrganizationMembers"
     ],
     resource
 ) when {
     principal is Scylla::User && resource in principal.memberOrgs
 };
 
-// ── Project members (ABAC) ─────────────────────────────────────────────
-// A user may operate within a project it belongs to. Resources below a member
-// project (pipelines, jobs) match via the entity hierarchy. Also gated on the
-// enclosing organization's membership: leaving (or being removed from) the org
-// cuts project access immediately, even if a stale project-membership row
-// lingers.
-@id("project-member")
-permit (
-    principal,
-    action in [
-        Scylla::Action::"readProject",
-        Scylla::Action::"listProjectMembers",
-        Scylla::Action::"createPipeline",
-        Scylla::Action::"readPipeline",
-        Scylla::Action::"updatePipeline",
-        Scylla::Action::"deletePipeline",
-        Scylla::Action::"runPipeline",
-        Scylla::Action::"listPipelinesByProject",
-        Scylla::Action::"readJob",
-        Scylla::Action::"listJobsByProject",
-        Scylla::Action::"listJobsByPipeline",
-        Scylla::Action::"readJobLogs"
-    ],
-    resource
-) when {
-    principal is Scylla::User &&
-    resource in principal.memberProjects &&
-    resource in principal.memberOrgs
-};
+// There is no project counterpart to the policy above. Being on a project means
+// holding a role on it, so a project confers nothing on its own; what you may do
+// there is exactly what your role says.

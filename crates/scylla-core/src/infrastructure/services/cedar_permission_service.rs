@@ -439,7 +439,8 @@ mod tests {
     use crate::application::authz::entity_provider::ResourceAncestors;
     use crate::application::authz::grant::{
         ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE, ORGANIZATION_TRIGGER_RUNNER_ROLE,
-        PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, SYSTEM_ADMIN_ROLE, ScopeKind,
+        PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, PROJECT_DEVELOPER_ROLE, SYSTEM_ADMIN_ROLE,
+        ScopeKind,
     };
     use crate::application::authz::role::FULL_CONTROL;
     use crate::application::caller::ServiceIdentity;
@@ -489,6 +490,19 @@ mod tests {
             builtin: true,
             permissions: vec!["runPipeline".to_string()],
         };
+        let developer = Role {
+            id: PROJECT_DEVELOPER_ROLE.to_string(),
+            key: Some(PROJECT_DEVELOPER_ROLE.to_string()),
+            name: PROJECT_DEVELOPER_ROLE.to_string(),
+            description: String::new(),
+            scope: ScopeKind::Project,
+            owner_org: None,
+            builtin: true,
+            permissions: ["readPipeline", "runPipeline", "createPipeline"]
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
+        };
         vec![
             admin(SYSTEM_ADMIN_ROLE, ScopeKind::System),
             admin(ORGANIZATION_ADMIN_ROLE, ScopeKind::Organization),
@@ -496,6 +510,7 @@ mod tests {
             agent(ORGANIZATION_AGENT_ROLE, ScopeKind::Organization),
             agent(PROJECT_AGENT_ROLE, ScopeKind::Project),
             runner,
+            developer,
         ]
     }
 
@@ -651,7 +666,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn project_member_allowed_within_scope() {
+    async fn project_membership_alone_confers_nothing() {
+        // No implicit project tier: belonging to a project grants no capability,
+        // every right comes from a grant. The same call succeeds in the test
+        // below once a role is actually held.
         let svc = service(
             PrincipalAuthz {
                 member_orgs: vec![OrganizationId::new("o1")],
@@ -669,7 +687,41 @@ mod tests {
         assert!(
             svc.check(&caller, Permission::RunPipeline(PipelineId::new("pl1")))
                 .await
-                .is_ok()
+                .is_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn a_project_role_is_what_confers_rights() {
+        let svc = service(
+            PrincipalAuthz {
+                member_orgs: vec![OrganizationId::new("o1")],
+                member_projects: vec![ProjectId::new("p1")],
+            },
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![Grant::new(
+                Principal::User(UserId::new("u1")),
+                role(PROJECT_DEVELOPER_ROLE),
+                Scope::Project(ProjectId::new("p1")),
+            )],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+        assert!(
+            svc.check(&caller, Permission::RunPipeline(PipelineId::new("pl1")))
+                .await
+                .is_ok(),
+            "the developer role confers runPipeline"
+        );
+        assert!(
+            svc.check(&caller, Permission::DeleteProject(ProjectId::new("p1")))
+                .await
+                .is_err(),
+            "and stops there: deleting the project is an admin action"
         );
     }
 
