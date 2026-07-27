@@ -24,23 +24,34 @@ use tracing::{info, instrument, warn};
 const SCHEMA_SRC: &str = include_str!("cedar/schema.cedarschema");
 const POLICIES_SRC: &str = include_str!("cedar/policies.cedar");
 
-/// Cedar guard appended to every org/project-scoped permit for a *human*
-/// principal: the permit only applies while the user is still a member of the
-/// organization the resource lives under. `memberOrgs` is materialised live on
-/// every check, so removing a user from an organization instantly cuts all
-/// their authority beneath it — org-scoped and project-scoped grants alike —
-/// even if a stale grant row lingers in the store. Machine Apps are owned by
-/// an org, never members of one, so they pass unguarded.
-const MEMBER_GUARD: &str =
+/// Cedar guard appended to every org-scoped permit for a *human* principal: the
+/// permit only applies while the user is still a member of the organization the
+/// resource lives under. `memberOrgs` is materialised live on every check, so
+/// removing a user from an organization instantly cuts all their authority
+/// beneath it, even if a stale grant row lingers in the store. Machine Apps are
+/// owned by an org, never members of one, so they pass unguarded.
+const ORG_MEMBER_GUARD: &str =
     "principal is Scylla::App || (principal is Scylla::User && resource in principal.memberOrgs)";
+
+/// Same, one level down: a project-scoped role only authorizes a human who
+/// belongs to that project. A grant binds authority at a scope, and membership
+/// is what makes a scope yours, so the rule is uniform with the org level rather
+/// than skipping a rung. The enclosing organization is checked too, mirroring
+/// the static `project-member` policy: leaving the org cuts project access at
+/// once even if a stale `user_project` row lingers.
+const PROJECT_MEMBER_GUARD: &str = "principal is Scylla::App \
+     || (principal is Scylla::User \
+         && resource in principal.memberProjects \
+         && resource in principal.memberOrgs)";
 
 /// The Cedar permit body for a role, instantiated per grant via the `?principal`
 /// / `?resource` slots. A full-control role (`*` permission set) gets an
 /// unconstrained action; any other role lists its permission keys explicitly.
-/// Org/project-scoped roles carry the [`MEMBER_GUARD`]; System-scoped roles
-/// (system-admin) authorize across every org without membership. Returns `None`
-/// for a role that confers nothing (empty permission set): it gets no template,
-/// so a grant of it links to nothing (and is logged as unlinkable).
+/// Org- and project-scoped roles carry the matching membership guard;
+/// System-scoped roles (system-admin) authorize across every org without
+/// membership. Returns `None` for a role that confers nothing (empty permission
+/// set): it gets no template, so a grant of it links to nothing (and is logged
+/// as unlinkable).
 fn role_template_src(role: &Role) -> Option<String> {
     let action = if role.is_full_control() {
         "action".to_string()
@@ -57,7 +68,8 @@ fn role_template_src(role: &Role) -> Option<String> {
     };
     let guard = match role.scope {
         ScopeKind::System => String::new(),
-        ScopeKind::Organization | ScopeKind::Project => format!("\nwhen {{ {MEMBER_GUARD} }}"),
+        ScopeKind::Organization => format!("\nwhen {{ {ORG_MEMBER_GUARD} }}"),
+        ScopeKind::Project => format!("\nwhen {{ {PROJECT_MEMBER_GUARD} }}"),
     };
     Some(format!(
         "permit (\n    principal == ?principal,\n    {action},\n    resource in ?resource\n){guard};\n"
@@ -734,7 +746,7 @@ mod tests {
         let svc = service(
             PrincipalAuthz {
                 member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
+                member_projects: vec![ProjectId::new("p1")],
             },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
@@ -1202,6 +1214,38 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn project_grant_is_inert_without_project_membership() {
+        // The mirror of the test above: same grant, same org membership, but the
+        // holder does not belong to p1. A project-scoped grant binds authority at
+        // the project, so org membership alone must not carry it. The write path
+        // refuses to create such a row; this is the runtime half of the rule.
+        let grant = Grant::new(
+            Principal::User(UserId::new("u1")),
+            role("project-admin"),
+            Scope::Project(ProjectId::new("p1")),
+        );
+        let svc = service(
+            PrincipalAuthz {
+                member_orgs: vec![OrganizationId::new("o1")],
+                member_projects: vec![],
+            },
+            ResourceAncestors {
+                organization: Some(OrganizationId::new("o1")),
+                project: Some(ProjectId::new("p1")),
+                pipeline: None,
+            },
+            vec![grant],
+        )
+        .await;
+        let caller = CallerContext::User(UserId::new("u1"));
+        assert!(
+            svc.check(&caller, Permission::DeletePipeline(PipelineId::new("pl1")))
+                .await
+                .is_err()
+        );
+    }
+
+    #[tokio::test]
     async fn project_admin_cannot_escalate_to_org_grants() {
         let grant = Grant::new(
             Principal::User(UserId::new("u1")),
@@ -1211,7 +1255,7 @@ mod tests {
         let svc = service(
             PrincipalAuthz {
                 member_orgs: vec![OrganizationId::new("o1")],
-                member_projects: vec![],
+                member_projects: vec![ProjectId::new("p1")],
             },
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),

@@ -286,10 +286,11 @@ impl<
             .check(caller, Permission::RemoveProjectMember(project_id.clone()))
             .await?;
 
-        // A user removed from a project may still be an org member, so their
-        // project-scoped grants must be deleted with the membership row —
-        // atomically — or they would keep authorizing. Guard the scope's last
-        // human owner before stripping anyone.
+        // Dropping the membership row is what cuts the user's authority here:
+        // every project-scoped permit is gated on live project membership. The
+        // grants go with it — atomically — so re-adding the user later starts
+        // from a clean slate instead of silently restoring their old authority.
+        // Guard the scope's last human owner before stripping anyone.
         let scope = Scope::Project(project_id.clone());
         let principal = Principal::User(user_id.clone());
         let grants = self.grant_repo.list_all().await?;
@@ -302,8 +303,8 @@ impl<
         self.project_repo
             .remove_member_and_grants(user_id, project_id)
             .await?;
-        // Deleted grant rows only stop authorizing once the policy set is
-        // rebuilt.
+        // The membership gate already denies the ex-member; deleted grant rows
+        // additionally leave the live policy set on rebuild.
         self.policy_control.reload().await
     }
 }
