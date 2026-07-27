@@ -406,7 +406,7 @@ mod tests {
     fn grantable_roles_filter_by_scope_kind() {
         assert_eq!(grantable_roles(None).len(), GRANTABLE_ROLES.len());
         let project = grantable_roles(Some(ScopeKind::Project));
-        assert_eq!(project.len(), 2);
+        assert_eq!(project.len(), 4);
         assert!(
             project
                 .iter()

@@ -128,6 +128,7 @@ fn grantable_role_to_proto(r: &GrantableRole) -> ProtoGrantableRole {
 fn role_kind_to_proto(kind: RoleKind) -> ProtoRoleKind {
     match kind {
         RoleKind::Admin => ProtoRoleKind::Admin,
+        RoleKind::Member => ProtoRoleKind::Member,
         RoleKind::Agent => ProtoRoleKind::Agent,
     }
 }

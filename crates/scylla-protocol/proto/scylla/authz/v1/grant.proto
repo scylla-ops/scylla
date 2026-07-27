@@ -62,14 +62,17 @@ message ListGrantableRolesRequest {
   optional ScopeKind scope_kind = 1;
 }
 
-// Whether a grantable role confers full control of its scope or a restricted
-// capability set. Closed and code-owned — the catalog is compiled in.
+// What a grantable role is for, so a client can group the catalog sensibly.
+// Descriptive only: what a role actually confers is its permission set, never
+// this tag. Closed and code-owned — the catalog is compiled in.
 enum RoleKind {
   ROLE_KIND_UNSPECIFIED = 0;
-  // Full control over the scope it is granted on.
+  // Runs the scope it is granted on: full control, including its accesses.
   ROLE_KIND_ADMIN = 1;
-  // A restricted capability set (e.g. an agent that may only execute jobs).
+  // A machine app (e.g. an agent that may only execute jobs).
   ROLE_KIND_AGENT = 2;
+  // A human working inside the scope, short of administering it.
+  ROLE_KIND_MEMBER = 3;
 }
 
 // A role that may be assigned through a grant. The catalog is compiled in, so

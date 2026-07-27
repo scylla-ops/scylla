@@ -352,7 +352,10 @@ INSERT INTO roles (id, key, name, description, scope_kind, builtin) VALUES
     ('project-admin',      'project-admin',      'Project Admin',      'Owner of a project and everything beneath it.',                  'project',      TRUE),
     ('organization-agent', 'organization-agent', 'Organization Agent', 'Machine app scoped to an organization: pull and run its jobs.', 'organization', TRUE),
     ('project-agent',      'project-agent',      'Project Agent',      'Machine app scoped to a project: pull and run its jobs.',        'project',      TRUE),
-    ('organization-trigger-runner', 'organization-trigger-runner', 'Organization Trigger Runner', 'Machine app that fires the triggers of an organization: run its pipelines.', 'organization', TRUE);
+    ('organization-trigger-runner', 'organization-trigger-runner', 'Organization Trigger Runner', 'Machine app that fires the triggers of an organization: run its pipelines.', 'organization', TRUE),
+    ('organization-viewer', 'organization-viewer', 'Organization Viewer', 'Read every project and run in the organization, change nothing.',        'organization', TRUE),
+    ('project-developer',   'project-developer',   'Project Developer',   'Build in a project: create, edit and run its pipelines.',                'project',      TRUE),
+    ('project-viewer',      'project-viewer',      'Project Viewer',      'Read a project, its pipelines and its runs, change nothing.',            'project',      TRUE);
 
 INSERT INTO role_permissions (role_id, permission) VALUES
     ('system-admin',       '*'),
@@ -366,4 +369,43 @@ INSERT INTO role_permissions (role_id, permission) VALUES
     ('project-agent',      'executeJob'),
     ('project-agent',      'writeJobStatus'),
     ('project-agent',      'appendJobLog'),
-    ('organization-trigger-runner', 'runPipeline');
+    ('organization-trigger-runner', 'runPipeline'),
+    -- Read-only tiers. Kept explicit rather than derived: a role is a list of
+    -- permissions, and a viewer that silently gained a write permission through
+    -- some clever inheritance is exactly the bug this table exists to prevent.
+    ('organization-viewer', 'readOrganization'),
+    ('organization-viewer', 'listOrganizationMembers'),
+    ('organization-viewer', 'listProjectsByOrganization'),
+    ('organization-viewer', 'listPipelinesByOrganization'),
+    ('organization-viewer', 'listJobsByOrganization'),
+    ('organization-viewer', 'readProject'),
+    ('organization-viewer', 'readPipeline'),
+    ('organization-viewer', 'listPipelinesByProject'),
+    ('organization-viewer', 'readJob'),
+    ('organization-viewer', 'listJobsByProject'),
+    ('organization-viewer', 'listJobsByPipeline'),
+    ('organization-viewer', 'readJobLogs'),
+    ('project-viewer',    'readProject'),
+    ('project-viewer',    'listProjectMembers'),
+    ('project-viewer',    'readPipeline'),
+    ('project-viewer',    'listPipelinesByProject'),
+    ('project-viewer',    'readJob'),
+    ('project-viewer',    'listJobsByProject'),
+    ('project-viewer',    'listJobsByPipeline'),
+    ('project-viewer',    'readJobLogs'),
+    -- Developer = viewer plus the build/run verbs. Secrets are listed, never
+    -- created or deleted: handling credentials is an administrator's call.
+    ('project-developer', 'readProject'),
+    ('project-developer', 'listProjectMembers'),
+    ('project-developer', 'readPipeline'),
+    ('project-developer', 'listPipelinesByProject'),
+    ('project-developer', 'readJob'),
+    ('project-developer', 'listJobsByProject'),
+    ('project-developer', 'listJobsByPipeline'),
+    ('project-developer', 'readJobLogs'),
+    ('project-developer', 'createPipeline'),
+    ('project-developer', 'updatePipeline'),
+    ('project-developer', 'deletePipeline'),
+    ('project-developer', 'runPipeline'),
+    ('project-developer', 'listSecrets'),
+    ('project-developer', 'manageTriggers');
