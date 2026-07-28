@@ -1,9 +1,6 @@
-mod config;
-mod runtime;
-
 use anyhow::{Context, Result};
 use clap::Parser;
-use config::ControlPlaneConfig;
+use scylla_control_plane::config::{ControlPlaneConfig, MASTER_KEY_ENV};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Scylla control-plane (gRPC API)")]
@@ -22,7 +19,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "audit=info,scylla_control_plane=info,scylla_api=info,scylla_core=info,warn".into()
+                "audit=info,scylla_control_plane=info,scylla_core=info,warn".into()
             }),
         )
         .init();
@@ -46,13 +43,13 @@ async fn run(args: Args) -> Result<()> {
     // password, SMTP and OAuth secrets. Log only which optional subsystems are
     // configured.
     tracing::info!(
-        secrets = config.api.secrets.is_some(),
-        mail = config.api.mail.is_some(),
-        github_oauth = config.api.oauth.github.is_some(),
-        webhook = config.api.webhook.is_some(),
+        secrets = config.secrets.is_some(),
+        mail = config.mail.is_some(),
+        github_oauth = config.oauth.github.is_some(),
+        webhook = config.webhook.is_some(),
         "configuration loaded",
     );
-    runtime::run(config).await
+    scylla_control_plane::runtime::run(config).await
 }
 
 fn load_config(args: &Args) -> Result<ControlPlaneConfig> {
@@ -75,7 +72,7 @@ fn load_config(args: &Args) -> Result<ControlPlaneConfig> {
         tracing::error!(
             "SECURITY: project secrets are encrypted with the PUBLIC dev master key, so they are \
              NOT confidential. Set {} to a unique 64-hex-char key before exposing this instance.",
-            scylla_api::config::MASTER_KEY_ENV,
+            MASTER_KEY_ENV,
         );
     }
 

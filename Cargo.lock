@@ -2694,12 +2694,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "scylla-api"
+name = "scylla-control-plane"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "axum",
  "chrono",
+ "clap",
  "derive_more",
  "futures-util",
  "http",
@@ -2712,6 +2714,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
+ "tokio-util",
  "toml",
  "tonic",
  "tonic-async-interceptor",
@@ -2719,22 +2722,6 @@ dependencies = [
  "tonic-web",
  "tower",
  "tower-http 0.7.0",
- "tracing",
-]
-
-[[package]]
-name = "scylla-control-plane"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "scylla-api",
- "scylla-core",
- "serde",
- "thiserror 2.0.18",
- "tokio",
- "tokio-util",
- "toml",
  "tracing",
  "tracing-subscriber",
 ]

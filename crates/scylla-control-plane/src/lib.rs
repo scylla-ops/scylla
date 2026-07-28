@@ -2,6 +2,7 @@ pub mod bootstrap;
 pub mod config;
 pub mod error;
 pub mod rest;
+pub mod runtime;
 pub mod startup;
 
 pub mod grpc;
@@ -14,7 +15,7 @@ pub use grpc::{
 };
 
 pub use config::GrpcConfig;
-pub use config::{BootstrapConfig, CoreConfig, CorsConfig};
+pub use config::{BootstrapConfig, ControlPlaneConfig, CorsConfig};
 pub use error::{BootstrapError, ConfigError, StartupError};
 pub use startup::{
     Services, SharedAuthUc, SharedGrantUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc,

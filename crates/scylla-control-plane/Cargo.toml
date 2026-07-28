@@ -3,34 +3,59 @@ name = "scylla-control-plane"
 version = "0.1.0"
 edition = "2024"
 
+# The shipped binary. Its name is load-bearing: the Dockerfile builds
+# `-p ${PACKAGE}` then copies `target/release/${PACKAGE}`, so the package name
+# and the binary name must stay identical.
 [[bin]]
 name = "scylla-control-plane"
 path = "src/main.rs"
 
 [features]
-# Forward the public self-service signup gate to scylla-api. Off by default: the
-# shipped binary is invite-only / OAuth-only unless built with `--features register`.
-register = ["scylla-api/register"]
+# Public self-service signup (the gRPC RegistrationService). Off by default so a
+# deployment stays invite-only / OAuth-only unless it opts in.
+register = []
 
 [dependencies]
-# workspace subsystems composed in-process
+# shared
 scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
-scylla-api = { path = "../scylla-api" }
+tokio.workspace = true
+async-trait.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+http.workspace = true
+serde.workspace = true
+toml.workspace = true
+chrono.workspace = true
+prost-types.workspace = true
+tracing.workspace = true
+derive_more.workspace = true
+thiserror.workspace = true
 
-# async runtime + cancellation
+tokio-stream = { workspace = true }
+futures-util.workspace = true
+serde_json.workspace = true
+
+# webhook ingress HTTP server (separate listener from the gRPC port)
+axum.workspace = true
+
+# database
+sqlx.workspace = true
+
+# grpc
+tonic.workspace = true
+tonic-web.workspace = true
+tonic-reflection.workspace = true
+tonic-async-interceptor.workspace = true
+scylla-protocol.workspace = true
+
+# binary: cli, cancellation, top-level error reporting
+clap.workspace = true
+tokio-util.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+
+[dev-dependencies]
 tokio = { workspace = true }
-tokio-util = { workspace = true }
-
-# config + cli + tracing
-serde = { workspace = true }
-toml = { workspace = true }
-clap = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-
-# error
-anyhow = { workspace = true }
-thiserror = { workspace = true }
 
 [lints]
 workspace = true

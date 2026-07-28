@@ -10,7 +10,7 @@ use tracing::info;
 pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     let token = CancellationToken::new();
 
-    let services = scylla_api::init_services(&config.api)
+    let services = crate::init_services(&config)
         .await
         .context("init_services failed")?;
     let db_pool = services.db.clone();
@@ -18,17 +18,17 @@ pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     // ── Ctrl+C / SIGTERM → cancel root token ───────────────────────────
     let signal_token = token.clone();
     tokio::spawn(async move {
-        scylla_api::shutdown_signal().await;
+        crate::shutdown_signal().await;
         signal_token.cancel();
     });
 
     // ── Webhook ingress (separate HTTP port, optional) ─────────────────
     // Runs concurrently with the gRPC server and shuts down on the same token.
-    let webhook_handle = config.api.webhook.clone().map(|wh| {
+    let webhook_handle = config.webhook.clone().map(|wh| {
         let ingress = services.webhook_ingress_uc.clone();
         let wh_token = token.clone();
         tokio::spawn(async move {
-            scylla_api::run_webhook(wh.address, ingress, async move {
+            crate::run_webhook(wh.address, ingress, async move {
                 wh_token.cancelled().await;
             })
             .await
@@ -37,7 +37,7 @@ pub async fn run(config: ControlPlaneConfig) -> Result<()> {
 
     // ── API gRPC server (blocks until token cancelled) ─────────────────
     let api_token = token.clone();
-    let api_result = scylla_api::run_grpc(&config.api, &services, async move {
+    let api_result = crate::run_grpc(&config, &services, async move {
         api_token.cancelled().await;
     })
     .await;

@@ -1,4 +1,4 @@
-use crate::config::CoreConfig;
+use crate::config::ControlPlaneConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
 #[cfg(feature = "register")]
@@ -175,7 +175,7 @@ pub struct Services {
     pub mailer: Arc<dyn Mailer>,
 }
 
-pub async fn init_services(config: &CoreConfig) -> Result<Services, StartupError> {
+pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, StartupError> {
     let db = scylla_core::infrastructure::init_db(&config.database).await?;
 
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
@@ -598,7 +598,7 @@ pub async fn shutdown_signal() {
 // ── gRPC server ────────────────────────────────────────────────────────
 
 pub async fn run_grpc<F>(
-    config: &CoreConfig,
+    config: &ControlPlaneConfig,
     services: &Services,
     shutdown: F,
 ) -> Result<(), StartupError>

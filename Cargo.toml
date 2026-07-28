@@ -2,7 +2,6 @@
 resolver = "3"
 members = [
     "crates/scylla-core",
-    "crates/scylla-api",
     "crates/scylla-protocol",
     "crates/scylla-agent",
     "crates/scylla-control-plane",
