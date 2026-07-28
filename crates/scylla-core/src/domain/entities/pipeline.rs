@@ -352,4 +352,48 @@ mod tests {
     fn rejects_empty_action_command() {
         assert!(Step::exec("   ".into(), vec![]).is_err());
     }
+
+    /// Golden test for the `pipelines.nodes` JSONB column.
+    ///
+    /// The blob below is the on-disk shape. Renaming a field, changing a serde
+    /// tag, or dropping one of the two `#[serde(default)]` attributes would make
+    /// every pipeline already stored in a deployed database unreadable, and the
+    /// failure would surface as an opaque decode error at query time rather than
+    /// at compile time. This test is the only thing that turns that into a build
+    /// failure, so update it only together with a deliberate migration.
+    #[test]
+    fn pipeline_nodes_jsonb_shape_is_stable() {
+        const STORED: &str = r#"[
+            {"id":"build","deps":[],"working_dir":"crates/api",
+             "env":[{"key":"RUST_LOG","source":{"literal":"debug"}}],
+             "step":{"kind":"exec","command":"cargo","args":["build"]}},
+            {"id":"test","deps":["build"],"working_dir":null,"env":[],
+             "step":{"kind":"script","script":"cargo test\n","shell":"bash"}}
+        ]"#;
+
+        let nodes: Vec<PipelineNode> = serde_json::from_str(STORED).unwrap();
+        assert_eq!(nodes.len(), 2);
+        assert_eq!(nodes[0].id().as_str(), "build");
+        assert_eq!(nodes[0].working_dir().unwrap().as_str(), "crates/api");
+        assert_eq!(nodes[0].env().len(), 1);
+        assert!(nodes[1].working_dir().is_none());
+        assert_eq!(nodes[1].deps(), &[node_id("build")]);
+
+        let round_tripped: serde_json::Value =
+            serde_json::from_str(&serde_json::to_string(&nodes).unwrap()).unwrap();
+        let original: serde_json::Value = serde_json::from_str(STORED).unwrap();
+        assert_eq!(round_tripped, original, "serialized shape drifted");
+    }
+
+    /// Rows written before `working_dir` and `env` existed omit both keys.
+    /// The two `#[serde(default)]` attributes are what keeps them readable.
+    #[test]
+    fn pipeline_nodes_jsonb_tolerates_missing_optional_keys() {
+        const LEGACY: &str =
+            r#"[{"id":"a","deps":[],"step":{"kind":"script","script":"ls","shell":"sh"}}]"#;
+
+        let nodes: Vec<PipelineNode> = serde_json::from_str(LEGACY).unwrap();
+        assert!(nodes[0].working_dir().is_none());
+        assert!(nodes[0].env().is_empty());
+    }
 }

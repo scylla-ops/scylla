@@ -845,4 +845,50 @@ mod tests {
         assert!(!job.can_cancel());
         assert!(job.cancel().is_err());
     }
+
+    /// Golden test for the `jobs.node_executions` JSONB column.
+    ///
+    /// `NodeExecution` is an internally tagged enum, so its variant names are
+    /// part of the on-disk format, not just an implementation detail. Renaming
+    /// a variant or a field would silently orphan the execution history of every
+    /// job already recorded in a deployed database. See the equivalent test on
+    /// `PipelineNode` for the same guarantee on `pipelines.nodes`.
+    #[test]
+    fn job_nodes_jsonb_shape_is_stable() {
+        const STORED: &str = r#"[
+            {"node_id":"a","execution":{"state":"pending"}},
+            {"node_id":"b","execution":{"state":"running","started_at":"2026-01-15T10:30:00Z"}},
+            {"node_id":"c","execution":{"state":"finished","started_at":"2026-01-15T10:30:00Z",
+             "finished_at":"2026-01-15T10:30:00Z","outcome":"completed"}},
+            {"node_id":"d","execution":{"state":"finished","started_at":null,
+             "finished_at":"2026-01-15T10:30:00Z","outcome":"skipped"}}
+        ]"#;
+
+        let nodes: Vec<JobNode> = serde_json::from_str(STORED).unwrap();
+        assert_eq!(nodes.len(), 4);
+        assert!(matches!(nodes[0].execution(), NodeExecution::Pending));
+        assert!(matches!(nodes[1].execution(), NodeExecution::Running { .. }));
+        assert!(matches!(
+            nodes[2].execution(),
+            NodeExecution::Finished {
+                outcome: NodeOutcome::Completed,
+                started_at: Some(_),
+                ..
+            }
+        ));
+        // A node skipped before it ever ran has no start timestamp.
+        assert!(matches!(
+            nodes[3].execution(),
+            NodeExecution::Finished {
+                outcome: NodeOutcome::Skipped,
+                started_at: None,
+                ..
+            }
+        ));
+
+        let round_tripped: serde_json::Value =
+            serde_json::from_str(&serde_json::to_string(&nodes).unwrap()).unwrap();
+        let original: serde_json::Value = serde_json::from_str(STORED).unwrap();
+        assert_eq!(round_tripped, original, "serialized shape drifted");
+    }
 }
