@@ -28,7 +28,7 @@ use scylla_protocol::agent::v1::{AgentUp, JobLogLine, agent_up};
 use scylla_protocol::common::v1 as common;
 
 use crate::error::ExecutionError;
-use crate::plan::DagPlan;
+use scylla_core::domain::dag::DagPlan;
 use crate::reporter::{JobReporter, StatusPublisher};
 
 /// Executes a pipeline DAG by walking nodes in topological order, spawning

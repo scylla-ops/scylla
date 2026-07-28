@@ -1,9 +1,15 @@
 //! DAG bookkeeping for pipeline execution.
 //!
 //! Tracks in-degree, dependents, ready set, and pending set as nodes complete.
-//! Kept separate from the executor so the DAG math is independently testable.
+//!
+//! This is the workspace's single implementation of Kahn's algorithm, and it
+//! serves both sides on purpose. The control plane runs it once to reject a
+//! pipeline containing a cycle ([`DagPlan::drains_completely`]); an agent runs
+//! it incrementally to decide what to launch next. Two implementations could
+//! disagree about what "ready" means, and the disagreement would only show up
+//! at execution time, on a pipeline the server had already accepted.
 
-use scylla_core::domain::entities::PipelineNode;
+use crate::domain::entities::PipelineNode;
 use std::collections::{BTreeSet, HashMap};
 
 /// Topological planner for a pipeline DAG.
@@ -108,12 +114,36 @@ impl<'a> DagPlan<'a> {
     pub fn lookup(&self, id: &str) -> &'a PipelineNode {
         self.nodes[id]
     }
+
+    /// Drain the whole plan as if every node succeeded, and report whether every
+    /// node was reached.
+    ///
+    /// A node that never becomes ready is one whose in-degree never falls to
+    /// zero, which is exactly what a dependency cycle produces. This is the
+    /// cycle check used by `Pipeline::create`.
+    ///
+    /// It assumes the structural checks have already run: with a dangling or
+    /// duplicated dependency a node also stays blocked forever, and would be
+    /// reported here as a cycle. `Pipeline::validate_nodes` rejects both before
+    /// reaching this point.
+    #[must_use]
+    pub fn drains_completely(mut self) -> bool {
+        loop {
+            let batch = self.drain_ready();
+            if batch.is_empty() {
+                return self.is_exhausted();
+            }
+            for id in batch {
+                self.mark_completed(id);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_core::domain::value_objects::pipeline::{NodeId, Step};
+    use crate::domain::value_objects::pipeline::{NodeId, Step};
 
     fn node(id: &str, deps: &[&str]) -> PipelineNode {
         PipelineNode::new(
@@ -173,6 +203,35 @@ mod tests {
         plan.mark_completed("d");
 
         assert!(plan.is_exhausted());
+    }
+
+    #[test]
+    fn drains_completely_accepts_an_acyclic_graph() {
+        let nodes = vec![
+            node("a", &[]),
+            node("b", &["a"]),
+            node("c", &["a"]),
+            node("d", &["b", "c"]),
+        ];
+        assert!(DagPlan::build(&nodes).drains_completely());
+    }
+
+    #[test]
+    fn drains_completely_rejects_a_cycle() {
+        // a -> b -> c -> a: no node ever reaches in-degree 0.
+        let nodes = vec![node("a", &["c"]), node("b", &["a"]), node("c", &["b"])];
+        assert!(!DagPlan::build(&nodes).drains_completely());
+    }
+
+    #[test]
+    fn drains_completely_rejects_a_cycle_hanging_off_a_valid_root() {
+        // `root` runs fine, but x and y deadlock on each other.
+        let nodes = vec![
+            node("root", &[]),
+            node("x", &["root", "y"]),
+            node("y", &["x"]),
+        ];
+        assert!(!DagPlan::build(&nodes).drains_completely());
     }
 
     #[test]

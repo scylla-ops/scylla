@@ -3,7 +3,8 @@ use crate::domain::entities::{PipelineId, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::value_objects::pipeline::{EnvVar, NodeId, PipelineName, Step, WorkingDir};
 use chrono::{DateTime, Utc};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use crate::domain::dag::DagPlan;
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PipelineNode {
@@ -174,40 +175,11 @@ impl Pipeline {
             }
         }
 
-        // cycle detection, Kahn's algorithm
-        let mut in_degree: HashMap<&NodeId, usize> =
-            nodes.iter().map(|n| (n.id(), n.deps().len())).collect();
-
-        let mut adjacency: HashMap<&NodeId, Vec<&NodeId>> =
-            nodes.iter().map(|n| (n.id(), Vec::new())).collect();
-        for node in nodes {
-            for dep_id in node.deps() {
-                adjacency.get_mut(dep_id).unwrap().push(node.id());
-            }
-        }
-
-        let mut ready: BTreeSet<&NodeId> = in_degree
-            .iter()
-            .filter(|(_, deg)| **deg == 0)
-            .map(|(id, _)| *id)
-            .collect();
-
-        let mut visited = 0usize;
-
-        while let Some(current) = ready.pop_first() {
-            visited += 1;
-            if let Some(dependents) = adjacency.get(current) {
-                for dependent in dependents {
-                    let deg = in_degree.get_mut(dependent).unwrap();
-                    *deg -= 1;
-                    if *deg == 0 {
-                        ready.insert(dependent);
-                    }
-                }
-            }
-        }
-
-        if visited != nodes.len() {
+        // Cycle detection runs last, on purpose: DagPlan reports a node that can
+        // never become ready, and a dangling or duplicated dependency produces
+        // that same symptom. The checks above rule both out first, so anything
+        // still stuck here really is a cycle.
+        if !DagPlan::build(nodes).drains_completely() {
             return Err(DomainError::business_rule("Cycle detected in pipeline"));
         }
 

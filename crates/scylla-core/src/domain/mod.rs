@@ -5,6 +5,7 @@
 #![deny(clippy::wildcard_enum_match_arm)]
 
 pub mod clock;
+pub mod dag;
 pub mod entities;
 pub mod errors;
 pub mod value_objects;
