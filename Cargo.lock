@@ -2720,7 +2720,6 @@ dependencies = [
  "http",
  "humantime-serde",
  "lettre",
- "nutype",
  "oauth2",
  "prost-types",
  "reqwest",

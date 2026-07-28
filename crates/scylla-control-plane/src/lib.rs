@@ -11,6 +11,12 @@
 /// resolving now that the model lives in its own crate. Extracting the kernel
 /// would otherwise have meant rewriting 484 import sites for no behavioural
 /// gain, and buried the actual change under the churn.
+///
+/// `no_inline` on purpose: without it rustdoc copies all 119 pages of the model
+/// into this crate's documentation, and a reader would reasonably conclude the
+/// domain belongs here. The link points at the kernel instead, which is the
+/// whole message of the split.
+#[doc(no_inline)]
 pub use scylla_core::domain;
 
 pub mod application;

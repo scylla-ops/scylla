@@ -63,7 +63,6 @@ croner.workspace = true
 humantime-serde.workspace = true
 uuid.workspace = true
 ulid.workspace = true
-nutype.workspace = true
 bon.workspace = true
 futures-core.workspace = true
 

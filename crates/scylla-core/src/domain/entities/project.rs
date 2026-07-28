@@ -72,8 +72,7 @@ impl Project {
 
     /// Set the active flag to an explicit value. Idempotent on purpose: setting
     /// it to what it already is succeeds and is a no-op, so a retried or
-    /// double-submitted request lands on the state the caller asked for. Unlike
-    /// [`Self::activate`] / [`Self::deactivate`], it never errors on a no-op.
+    /// double-submitted request lands on the state the caller asked for.
     pub fn set_active(&mut self, is_active: bool) {
         if self.is_active == is_active {
             return;

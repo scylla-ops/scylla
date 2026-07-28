@@ -381,7 +381,7 @@ fn catalog_variants() -> Vec<Permission> {
 /// validation. **Derived** from the [`Permission`] enum — `key()` gives the id,
 /// `resource_type()` the target type — so the resource type can never drift from
 /// the actual Cedar target (no hand-maintained second column). One row per
-/// [`catalog_variants`] entry.
+/// `catalog_variants()` entry.
 pub static PERMISSION_CATALOG: LazyLock<Vec<(&'static str, &'static str)>> = LazyLock::new(|| {
     catalog_variants()
         .iter()

@@ -199,13 +199,7 @@ The identity that made a request, threaded through the authorization layer. Vari
 The shape a pipeline's nodes must form. Validated at pipeline creation via cycle detection.
 
 ### Topological order
-A linear ordering of nodes consistent with dependencies (each node appears after its deps). Scylla uses **Kahn's algorithm** over a `BTreeSet` for deterministic output.
-
-### Kahn's algorithm
-Iterative topological sort: repeatedly pop nodes with in-degree zero, decrement in-degree of their dependents. Used here for both validation (cycle detection) and ordering.
-
-### Adjacency (map)
-Forward edge map from a node to its dependents. Computed on demand from `nodes[].deps`.
+A linear ordering of nodes consistent with dependencies (each node appears after its deps). Scylla never materializes one: [`DagPlan`](#kahns-algorithm) hands out whole batches of ready nodes instead, so independent nodes run in parallel. `BTreeSet` keeps the batch order deterministic.
 
 ### Dependency (`deps`)
 A prerequisite node ID. A node only becomes runnable once all its deps are in a successful terminal state.
@@ -287,7 +281,7 @@ The hexagon is split across two crates. The model sits in the kernel; every laye
 A trait describing something the use cases need from the outside world (persistence, hashing, permission checks), declared next to its use case in `application/<feature>/`. Examples: `PipelineRepository`, `HashService`, `PermissionService`.
 
 ### Adapter
-A concrete implementation of a port. All adapters live under `crates/scylla-control-plane/src/infrastructure/`: `persistence/postgres/*` for repositories, `services/cedar_permission_service.rs`, `services/argon2_hash_service.rs`.
+A concrete implementation of a port. **Driven** adapters, the ones the use cases call out to, live under `crates/scylla-control-plane/src/infrastructure/`: `persistence/postgres/*` for repositories, `services/cedar_permission_service.rs`, `services/argon2_hash_service.rs`. **Driving** adapters, the ones that call into the use cases, sit at the crate root next to the composition root: `grpc/` and `rest/`.
 
 ### Use case
 A struct in `application/<feature>/use_case.rs` grouping operations on one aggregate (e.g. `PipelineUseCases`, `JobUseCases`). Holds `Arc<dyn Port>` fields and exposes async methods. The gRPC handlers call these.

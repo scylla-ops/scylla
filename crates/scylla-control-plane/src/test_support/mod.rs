@@ -1,5 +1,5 @@
-//! Test scaffolding for `scylla-core`, exposed to downstream test crates via
-//! the `test-utils` feature.
+//! Test scaffolding for `scylla-control-plane`, exposed to downstream test
+//! crates via the `test-utils` feature.
 //!
 //! Each sub-module owns one aggregate:
 //! - a `*Builder` for chainable, in-memory construction with sensible defaults,
@@ -10,8 +10,8 @@
 //!
 //! Pull everything in at once via [`prelude`]:
 //! ```ignore
-//! use scylla_core::test_support::prelude::*;
-//! let user = UserBuilder::new("alice").inactive().build();
+//! use scylla_control_plane::test_support::prelude::*;
+//! let user = UserBuilder::new("alice").is_active(false).build();
 //! ```
 
 pub mod authz;

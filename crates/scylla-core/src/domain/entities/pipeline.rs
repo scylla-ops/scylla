@@ -175,10 +175,13 @@ impl Pipeline {
             }
         }
 
-        // Cycle detection runs last, on purpose: DagPlan reports a node that can
-        // never become ready, and a dangling or duplicated dependency produces
-        // that same symptom. The checks above rule both out first, so anything
-        // still stuck here really is a cycle.
+        // Cycle detection runs last, on purpose: a dangling or self dependency
+        // also leaves a node permanently unready, so running those checks first
+        // is what makes the error below accurate.
+        //
+        // The duplicate-id and duplicate-dependency checks above are NOT made
+        // redundant by this one: both of those graphs drain cleanly. Removing
+        // either check would let them through silently. See DagPlan::drains_completely.
         if !DagPlan::build(nodes).drains_completely() {
             return Err(DomainError::business_rule("Cycle detected in pipeline"));
         }
@@ -269,6 +272,17 @@ mod tests {
         assert!(pipeline.get_node(&node_id("z")).is_none());
     }
 
+    fn create_err(nodes: Vec<PipelineNode>) -> DomainError {
+        Pipeline::create(pipeline_name(), project_id(), nodes).unwrap_err()
+    }
+
+    // The four tests below assert the error *variant*, not just `is_err()`.
+    // Structural problems are `Validation`, a cycle is a `BusinessRule`, and the
+    // gRPC mapper turns those into InvalidArgument and FailedPrecondition
+    // respectively: one tells a client its request is malformed, the other
+    // suggests retrying. Moving the cycle check ahead of the structural ones
+    // would silently swap them, and `is_err()` alone would stay green.
+
     #[test]
     fn rejects_cycle() {
         let nodes = vec![
@@ -276,25 +290,28 @@ mod tests {
             action("b", &["a"]),
             action("c", &["b"]),
         ];
-        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+        assert!(matches!(create_err(nodes), DomainError::BusinessRule(_)));
     }
 
     #[test]
     fn rejects_invalid_dependency() {
         let nodes = vec![action("a", &["nonexistent"])];
-        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+        assert!(matches!(create_err(nodes), DomainError::Validation(_)));
     }
 
     #[test]
     fn rejects_duplicate_ids() {
+        // Not caught by cycle detection: this graph drains cleanly. This check
+        // is the only thing rejecting it. See DagPlan::drains_completely.
         let nodes = vec![action("a", &[]), action("a", &[])];
-        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+        assert!(matches!(create_err(nodes), DomainError::Validation(_)));
     }
 
     #[test]
     fn rejects_duplicate_deps() {
+        // Same: a repeated dependency drains cleanly, so only this check stops it.
         let nodes = vec![action("a", &[]), action("b", &["a", "a"])];
-        assert!(Pipeline::create(pipeline_name(), project_id(), nodes).is_err());
+        assert!(matches!(create_err(nodes), DomainError::Validation(_)));
     }
 
     #[test]

@@ -23,7 +23,7 @@ fn validate(s: &str) -> Result<(), DomainError> {
 
 /// Plaintext App credential, presented once at creation and again by the App
 /// when it exchanges credentials for a token. Held only transiently; the stored
-/// form is an [`AppSecretHash`](super::AppSecretHash). `Debug` / `Display` are
+/// form is an [`AppSecretHash`](crate::domain::value_objects::app::AppSecretHash). `Debug` / `Display` are
 /// masked so it never leaks into logs.
 #[nutype(
     validate(with = validate, error = DomainError),

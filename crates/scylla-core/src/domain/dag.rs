@@ -122,10 +122,20 @@ impl<'a> DagPlan<'a> {
     /// zero, which is exactly what a dependency cycle produces. This is the
     /// cycle check used by `Pipeline::create`.
     ///
-    /// It assumes the structural checks have already run: with a dangling or
-    /// duplicated dependency a node also stays blocked forever, and would be
-    /// reported here as a cycle. `Pipeline::validate_nodes` rejects both before
-    /// reaching this point.
+    /// It assumes the structural checks have already run, and the two families
+    /// behave differently, so neither check may be dropped as redundant:
+    ///
+    /// - A **dangling** dependency (pointing at no node) or a **self**
+    ///   dependency leaves a node blocked forever, and is reported here as a
+    ///   cycle. Running those checks first is what makes the error message
+    ///   accurate.
+    /// - A **duplicated** dependency or a **duplicated node id** drains
+    ///   perfectly cleanly. A repeated dependency raises the in-degree twice and
+    ///   also lands twice in the dependents list, so both decrements happen; a
+    ///   repeated id is a single map key. This function returns `true` for both,
+    ///   which makes `Pipeline::validate_nodes` their only rejection point.
+    ///   Duplicated ids matter beyond validation: [`DagPlan::lookup`] would hand
+    ///   an agent whichever node landed in the map last.
     #[must_use]
     pub fn drains_completely(mut self) -> bool {
         loop {
@@ -221,6 +231,33 @@ mod tests {
         // a -> b -> c -> a: no node ever reaches in-degree 0.
         let nodes = vec![node("a", &["c"]), node("b", &["a"]), node("c", &["b"])];
         assert!(!DagPlan::build(&nodes).drains_completely());
+    }
+
+    /// The counterpart of the two tests above, and the reason
+    /// `Pipeline::validate_nodes` cannot drop its structural checks: these two
+    /// malformed graphs drain perfectly cleanly, so cycle detection waves them
+    /// through. A repeated dependency raises the in-degree twice and also lands
+    /// twice in the dependents list, so both decrements happen. A repeated node
+    /// id is a single map key.
+    #[test]
+    fn drains_completely_does_not_catch_structural_problems() {
+        let duplicated_dep = vec![node("a", &[]), node("b", &["a", "a"])];
+        assert!(DagPlan::build(&duplicated_dep).drains_completely());
+
+        let duplicated_id = vec![node("a", &[]), node("a", &[])];
+        assert!(DagPlan::build(&duplicated_id).drains_completely());
+    }
+
+    /// A dangling or self dependency, on the other hand, does look exactly like
+    /// a cycle here. That is why the structural checks run first: they own the
+    /// accurate error message.
+    #[test]
+    fn drains_completely_reports_unreachable_dependencies_as_a_cycle() {
+        let dangling = vec![node("a", &[]), node("b", &["ghost"])];
+        assert!(!DagPlan::build(&dangling).drains_completely());
+
+        let self_dep = vec![node("a", &["a"])];
+        assert!(!DagPlan::build(&self_dep).drains_completely());
     }
 
     #[test]

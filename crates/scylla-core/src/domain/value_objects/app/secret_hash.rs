@@ -15,7 +15,7 @@ fn validate(s: &str) -> Result<(), DomainError> {
 }
 
 /// Hashed App secret (PHC string format). Type-level guarantee that the wrapped
-/// value is a hash, not the plaintext [`AppSecret`](super::AppSecret). `Debug` /
+/// value is a hash, not the plaintext [`AppSecret`](crate::domain::value_objects::app::AppSecret). `Debug` /
 /// `Display` are masked.
 #[nutype(
     validate(with = validate, error = DomainError),
