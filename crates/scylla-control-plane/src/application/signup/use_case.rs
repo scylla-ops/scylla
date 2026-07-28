@@ -52,7 +52,7 @@ where
     H: HashService,
     PC: PolicyControl,
 {
-    #[instrument(skip(self, password), fields(username = %username, org = %organization_name))]
+    #[instrument(skip_all, fields(username = %username, org = %organization_name))]
     pub async fn signup(
         &self,
         username: Username,

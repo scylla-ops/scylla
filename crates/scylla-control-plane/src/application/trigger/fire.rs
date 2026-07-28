@@ -99,7 +99,7 @@ where
     /// `RunPipeline` on the trigger's pipeline (the run itself still executes as
     /// the org's trigger-runner App). No webhook payload, so only literal inputs
     /// apply.
-    #[instrument(skip(self, caller), fields(trigger_id = %trigger_id))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
     pub async fn fire_now(
         &self,
         caller: &CallerContext,
@@ -120,7 +120,7 @@ where
     /// cron / manual fires, where only literal inputs apply. `delivery_id` is the
     /// webhook delivery key, recorded in the job's `Webhook` origin. Mints +
     /// dispatches a job exactly like a manual run and records the fire outcome.
-    #[instrument(skip(self, payload, delivery_id), fields(trigger_id = %trigger_id))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
     pub async fn fire(
         &self,
         trigger_id: &TriggerId,

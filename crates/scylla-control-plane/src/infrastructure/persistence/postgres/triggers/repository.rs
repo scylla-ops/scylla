@@ -24,7 +24,7 @@ impl PgTriggerRepository {
 
 #[async_trait]
 impl TriggerRepository for PgTriggerRepository {
-    #[instrument(skip(self, trigger, webhook_secret_enc), fields(trigger_id = %trigger.id()))]
+    #[instrument(skip_all, fields(trigger_id = %trigger.id()))]
     async fn create(
         &self,
         trigger: &Trigger,
@@ -33,27 +33,27 @@ impl TriggerRepository for PgTriggerRepository {
         queries::create(&self.pool, trigger, webhook_secret_enc).await
     }
 
-    #[instrument(skip(self), fields(trigger_id = %id))]
+    #[instrument(skip_all, fields(trigger_id = %id))]
     async fn find_by_id(&self, id: &TriggerId) -> DomainResult<Trigger> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self), fields(trigger_id = %id))]
+    #[instrument(skip_all, fields(trigger_id = %id))]
     async fn webhook_secret(&self, id: &TriggerId) -> DomainResult<Option<Vec<u8>>> {
         queries::webhook_secret(&self.pool, id).await
     }
 
-    #[instrument(skip(self, trigger), fields(trigger_id = %trigger.id()))]
+    #[instrument(skip_all, fields(trigger_id = %trigger.id()))]
     async fn update(&self, trigger: &Trigger) -> DomainResult<Trigger> {
         queries::update(&self.pool, trigger).await
     }
 
-    #[instrument(skip(self), fields(trigger_id = %id))]
+    #[instrument(skip_all, fields(trigger_id = %id))]
     async fn delete(&self, id: &TriggerId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
     }
 
-    #[instrument(skip(self), fields(pipeline_id = %pipeline_id))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline_id))]
     async fn list_by_pipeline(&self, pipeline_id: &PipelineId) -> DomainResult<Vec<Trigger>> {
         queries::list_by_pipeline(&self.pool, pipeline_id).await
     }
@@ -63,7 +63,7 @@ impl TriggerRepository for PgTriggerRepository {
         queries::list_unscheduled_cron(&self.pool).await
     }
 
-    #[instrument(skip(self, compute_next), fields(now = %now, limit))]
+    #[instrument(skip_all, fields(now = %now, limit))]
     async fn claim_due_cron(
         &self,
         now: DateTime<Utc>,

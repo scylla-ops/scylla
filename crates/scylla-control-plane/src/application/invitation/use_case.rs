@@ -75,7 +75,7 @@ where
     S: SessionRepository,
     PC: PolicyControl,
 {
-    #[instrument(skip(self, caller), fields(org_id = %organization_id, email = %email))]
+    #[instrument(skip_all, fields(org_id = %organization_id, email = %email))]
     pub async fn create_invite(
         &self,
         caller: &CallerContext,
@@ -134,7 +134,7 @@ where
         Ok(invite)
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     pub async fn list_pending(
         &self,
         caller: &CallerContext,
@@ -149,7 +149,7 @@ where
         self.invite_repo.list_pending(organization_id).await
     }
 
-    #[instrument(skip(self, caller), fields(invite_id = %invite_id))]
+    #[instrument(skip_all, fields(invite_id = %invite_id))]
     pub async fn revoke(
         &self,
         caller: &CallerContext,
@@ -169,7 +169,7 @@ where
     /// Public accept: the token is the credential. Creates the user if their
     /// email is new, adds them to the org, mints the optional role grant, and
     /// issues a session — atomically.
-    #[instrument(skip(self, password, token), fields(username = %username))]
+    #[instrument(skip_all, fields(username = %username))]
     pub async fn accept(
         &self,
         token: &str,
@@ -207,13 +207,7 @@ where
         );
 
         self.invite_repo
-            .accept_atomic(
-                invite.id(),
-                new_user.as_ref(),
-                &user_id,
-                invite.organization_id(),
-                &grant,
-            )
+            .accept_atomic(invite.id(), new_user.as_ref(), &user_id, &grant)
             .await?;
 
         self.policy_control.reload().await?;

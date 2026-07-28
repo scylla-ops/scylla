@@ -31,7 +31,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         self.job_repo.create(job).await
     }
 
-    #[instrument(skip(self, caller), fields(job_id = %id))]
+    #[instrument(skip_all, fields(job_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &JobId) -> DomainResult<Job> {
         self.permission_service
             .check(caller, Permission::ReadJob(id.clone()))
@@ -51,7 +51,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
     /// Gated by a single [`Permission::WriteJobStatus`] check (the agent role
     /// confers it); the load/update repo calls deliberately bypass per-step
     /// Cedar so an agent needs only `writeJobStatus`, not `readJob`/`updateJob`.
-    #[instrument(skip(self, caller), fields(job_id = %job_id))]
+    #[instrument(skip_all, fields(job_id = %job_id))]
     pub async fn record_status(
         &self,
         caller: &CallerContext,
@@ -87,7 +87,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         Ok(())
     }
 
-    #[instrument(skip(self, caller), fields(job_id = %id))]
+    #[instrument(skip_all, fields(job_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &JobId) -> DomainResult<()> {
         self.permission_service
             .check(caller, Permission::DeleteJob(id.clone()))
@@ -96,7 +96,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         self.job_repo.delete(id).await
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip(self, caller, pagination))]
     pub async fn list(
         &self,
         caller: &CallerContext,
@@ -108,7 +108,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         self.job_repo.list_all(pagination).await
     }
 
-    #[instrument(skip(self, caller), fields(pipeline_id = %pipeline_id))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline_id))]
     pub async fn list_by_pipeline(
         &self,
         caller: &CallerContext,
@@ -123,7 +123,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
             .await
     }
 
-    #[instrument(skip(self, caller), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     pub async fn list_by_project(
         &self,
         caller: &CallerContext,
@@ -136,7 +136,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         self.job_repo.list_by_project(project_id, pagination).await
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     pub async fn list_by_organization(
         &self,
         caller: &CallerContext,

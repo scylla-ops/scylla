@@ -77,7 +77,7 @@ where
     /// generated, encrypted at rest, and returned ONCE as the second tuple element
     /// (the caller surfaces it to the user; it is never readable again). Cron
     /// triggers return `None`.
-    #[instrument(skip(self, caller, source, inputs), fields(pipeline_id = %pipeline_id, name = %name))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline_id, name = %name))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -124,7 +124,7 @@ where
         Ok((stored, secret_plaintext))
     }
 
-    #[instrument(skip(self, caller), fields(trigger_id = %trigger_id))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
     pub async fn get(
         &self,
         caller: &CallerContext,
@@ -140,7 +140,7 @@ where
         Ok(trigger)
     }
 
-    #[instrument(skip(self, caller), fields(pipeline_id = %pipeline_id))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline_id))]
     pub async fn list_by_pipeline(
         &self,
         caller: &CallerContext,
@@ -152,7 +152,7 @@ where
         self.trigger_repo.list_by_pipeline(pipeline_id).await
     }
 
-    #[instrument(skip(self, caller, source, inputs), fields(trigger_id = %trigger_id))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
     pub async fn update(
         &self,
         caller: &CallerContext,
@@ -184,7 +184,7 @@ where
         self.trigger_repo.update(&trigger).await
     }
 
-    #[instrument(skip(self, caller), fields(trigger_id = %trigger_id, enabled))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id, enabled))]
     pub async fn set_enabled(
         &self,
         caller: &CallerContext,
@@ -209,7 +209,7 @@ where
         self.trigger_repo.update(&trigger).await
     }
 
-    #[instrument(skip(self, caller), fields(trigger_id = %trigger_id))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
     pub async fn delete(&self, caller: &CallerContext, trigger_id: &TriggerId) -> DomainResult<()> {
         let trigger = self.trigger_repo.find_by_id(trigger_id).await?;
         self.permission_service

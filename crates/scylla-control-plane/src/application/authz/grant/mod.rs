@@ -96,6 +96,19 @@ impl Scope {
     }
 }
 
+/// `system` / `organization:01ky…` / `project:01ky…`. Same reason as
+/// [`Principal`]'s: `%scope` in a tracing field instead of the derived `Debug`,
+/// which spells out `Organization(OrganizationId("01ky…"))`.
+impl std::fmt::Display for Scope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::System => write!(f, "system"),
+            Self::Organization(id) => write!(f, "organization:{}", id.as_str()),
+            Self::Project(id) => write!(f, "project:{}", id.as_str()),
+        }
+    }
+}
+
 /// Which kind of scope a role/grant binds to, without the concrete id. The
 /// catalog declares one of these per role; a grant is valid only when its role's
 /// declared `ScopeKind` matches its scope.
@@ -315,6 +328,16 @@ impl Principal {
             Self::User(id) => id.as_str(),
             Self::App(id) => id.as_str(),
         }
+    }
+}
+
+/// `user:01ky…` / `app:01ky…`, matching how [`CallerContext`] renders. Exists so
+/// tracing fields can use `%principal` instead of the derived `Debug`, which
+/// spells out `User(UserId("01ky…"))` and is reprinted on every event inside the
+/// span.
+impl std::fmt::Display for Principal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.kind(), self.id())
     }
 }
 

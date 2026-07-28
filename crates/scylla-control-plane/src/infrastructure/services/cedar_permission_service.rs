@@ -319,7 +319,12 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
 
 #[async_trait]
 impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionService<EP> {
-    #[instrument(skip(self, caller, perm), fields(caller = ?caller, action = perm.key()))]
+    // Deliberately field-free. The span used to carry `caller` and `action`, but
+    // the only event emitted inside it is the audit record, which already names
+    // both, and names them better: `%caller` renders `user:01ky…` where the span
+    // used `?caller` and spelled out `User(UserId("01ky…"))`. The span stays for
+    // the nesting and the timing.
+    #[instrument(skip_all)]
     async fn check(&self, caller: &CallerContext, perm: Permission) -> DomainResult<()> {
         let resource = perm.resource();
 

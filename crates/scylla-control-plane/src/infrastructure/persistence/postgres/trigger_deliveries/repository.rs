@@ -22,7 +22,7 @@ impl PgTriggerDeliveryRepository {
 
 #[async_trait]
 impl TriggerDeliveryRepository for PgTriggerDeliveryRepository {
-    #[instrument(skip(self), fields(trigger_id = %trigger_id, delivery_id))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id, delivery_id))]
     async fn record_or_detect(
         &self,
         trigger_id: &TriggerId,

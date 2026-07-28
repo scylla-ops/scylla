@@ -26,22 +26,22 @@ impl PgJobRepository {
 
 #[async_trait]
 impl JobRepository for PgJobRepository {
-    #[instrument(skip(self, job), fields(job_id = %job.id()))]
+    #[instrument(skip_all, fields(job_id = %job.id()))]
     async fn create(&self, job: &Job) -> DomainResult<Job> {
         queries::create(&self.pool, job).await
     }
 
-    #[instrument(skip(self), fields(job_id = %id))]
+    #[instrument(skip_all, fields(job_id = %id))]
     async fn find_by_id(&self, id: &JobId) -> DomainResult<Job> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self, job), fields(job_id = %job.id()))]
+    #[instrument(skip_all, fields(job_id = %job.id()))]
     async fn update(&self, job: &Job) -> DomainResult<Job> {
         queries::update(&self.pool, job).await
     }
 
-    #[instrument(skip(self), fields(job_id = %job_id, app_id = %app_id))]
+    #[instrument(skip_all, fields(job_id = %job_id, app_id = %app_id))]
     async fn set_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
         queries::set_agent(&self.pool, job_id, app_id).await
     }
@@ -51,17 +51,17 @@ impl JobRepository for PgJobRepository {
         queries::list_pending_unassigned(&self.pool).await
     }
 
-    #[instrument(skip(self, connected), fields(connected = connected.len()))]
+    #[instrument(skip_all, fields(connected = connected.len()))]
     async fn orphan_running_without_agents(&self, connected: &[AppId]) -> DomainResult<u64> {
         queries::orphan_running_without_agents(&self.pool, connected).await
     }
 
-    #[instrument(skip(self), fields(job_id = %id))]
+    #[instrument(skip_all, fields(job_id = %id))]
     async fn delete(&self, id: &JobId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, pagination))]
     async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
@@ -72,7 +72,7 @@ impl JobRepository for PgJobRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(pipeline_id = %pipeline_id))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline_id))]
     async fn list_by_pipeline(
         &self,
         pipeline_id: &PipelineId,
@@ -84,7 +84,7 @@ impl JobRepository for PgJobRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     async fn list_by_project(
         &self,
         project_id: &ProjectId,
@@ -96,7 +96,7 @@ impl JobRepository for PgJobRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     async fn list_by_organization(
         &self,
         organization_id: &OrganizationId,

@@ -25,42 +25,42 @@ impl PgUserRepository {
 
 #[async_trait]
 impl UserRepository for PgUserRepository {
-    #[instrument(skip(self, user), fields(user_id = %user.id()))]
+    #[instrument(skip_all, fields(user_id = %user.id()))]
     async fn create(&self, user: &User) -> DomainResult<User> {
         queries::create(&self.pool, user).await
     }
 
-    #[instrument(skip(self), fields(user_id = %id))]
+    #[instrument(skip_all, fields(user_id = %id))]
     async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self, ids), fields(n = ids.len()))]
+    #[instrument(skip_all, fields(n = ids.len()))]
     async fn find_by_ids(&self, ids: &[UserId]) -> DomainResult<Vec<User>> {
         queries::find_by_ids(&self.pool, ids).await
     }
 
-    #[instrument(skip(self), fields(username = %username))]
+    #[instrument(skip_all, fields(username = %username))]
     async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
         queries::find_by_username(&self.pool, username).await
     }
 
-    #[instrument(skip(self), fields(email = %email))]
+    #[instrument(skip_all, fields(email = %email))]
     async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
         queries::find_by_email(&self.pool, email).await
     }
 
-    #[instrument(skip(self, user), fields(user_id = %user.id()))]
+    #[instrument(skip_all, fields(user_id = %user.id()))]
     async fn update(&self, user: &User) -> DomainResult<User> {
         queries::update(&self.pool, user).await
     }
 
-    #[instrument(skip(self), fields(user_id = %id))]
+    #[instrument(skip_all, fields(user_id = %id))]
     async fn delete(&self, id: &UserId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, pagination))]
     async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
@@ -71,7 +71,7 @@ impl UserRepository for PgUserRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(username = %username))]
+    #[instrument(skip_all, fields(username = %username))]
     async fn username_exists(&self, username: &Username) -> DomainResult<bool> {
         queries::username_exists(&self.pool, username).await
     }

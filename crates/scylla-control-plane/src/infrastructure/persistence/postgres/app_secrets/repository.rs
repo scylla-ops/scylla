@@ -50,12 +50,12 @@ impl PgAppCredentialRepository {
 
 #[async_trait]
 impl AppCredentialRepository for PgAppCredentialRepository {
-    #[instrument(skip(self, credential), fields(secret_id = %credential.id(), app_id = %credential.app_id()))]
+    #[instrument(skip_all, fields(secret_id = %credential.id(), app_id = %credential.app_id()))]
     async fn create(&self, credential: &AppCredential) -> DomainResult<()> {
         insert(&self.pool, credential).await
     }
 
-    #[instrument(skip(self), fields(secret_id = %id))]
+    #[instrument(skip_all, fields(secret_id = %id))]
     async fn find_by_id(&self, id: &AppCredentialId) -> DomainResult<AppCredential> {
         let rec = sqlx::query!(
             r#"
@@ -79,7 +79,7 @@ impl AppCredentialRepository for PgAppCredentialRepository {
         )
     }
 
-    #[instrument(skip(self), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     async fn list_by_app(&self, app_id: &AppId) -> DomainResult<Vec<AppCredential>> {
         let rows = sqlx::query!(
             r#"
@@ -108,7 +108,7 @@ impl AppCredentialRepository for PgAppCredentialRepository {
             .collect()
     }
 
-    #[instrument(skip(self), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     async fn list_enabled_by_app(&self, app_id: &AppId) -> DomainResult<Vec<AppCredential>> {
         let rows = sqlx::query!(
             r#"
@@ -137,7 +137,7 @@ impl AppCredentialRepository for PgAppCredentialRepository {
             .collect()
     }
 
-    #[instrument(skip(self), fields(secret_id = %id, enabled))]
+    #[instrument(skip_all, fields(secret_id = %id, enabled))]
     async fn set_enabled(&self, id: &AppCredentialId, enabled: bool) -> DomainResult<()> {
         sqlx::query!(
             "UPDATE app_secrets SET enabled = $2, updated_at = NOW() WHERE id = $1",
@@ -150,7 +150,7 @@ impl AppCredentialRepository for PgAppCredentialRepository {
         Ok(())
     }
 
-    #[instrument(skip(self), fields(secret_id = %id))]
+    #[instrument(skip_all, fields(secret_id = %id))]
     async fn delete(&self, id: &AppCredentialId) -> DomainResult<()> {
         sqlx::query!("DELETE FROM app_secrets WHERE id = $1", id.as_str())
             .execute(&self.pool)

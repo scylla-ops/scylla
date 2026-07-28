@@ -46,7 +46,7 @@ impl PgAgentRepository {
 
 #[async_trait]
 impl AgentRepository for PgAgentRepository {
-    #[instrument(skip(self), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     async fn find_by_app_id(&self, app_id: &AppId) -> DomainResult<Agent> {
         let rec = sqlx::query!(
             r#"
@@ -66,7 +66,7 @@ impl AgentRepository for PgAgentRepository {
         ))
     }
 
-    #[instrument(skip(self), fields(org_id = %org_id))]
+    #[instrument(skip_all, fields(org_id = %org_id))]
     async fn list_by_organization(&self, org_id: &OrganizationId) -> DomainResult<Vec<Agent>> {
         let rows = sqlx::query!(
             r#"
@@ -87,7 +87,7 @@ impl AgentRepository for PgAgentRepository {
             .collect())
     }
 
-    #[instrument(skip(self), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     async fn touch_last_seen(&self, app_id: &AppId, at: DateTime<Utc>) -> DomainResult<()> {
         // Upsert so an agent connecting without a row (legacy / pre-migration)
         // self-heals — presence must never depend on this table existing.
@@ -106,7 +106,7 @@ impl AgentRepository for PgAgentRepository {
         Ok(())
     }
 
-    #[instrument(skip(self), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     async fn agent_stats(&self, app_id: &AppId) -> DomainResult<AgentStats> {
         let rec = sqlx::query!(
             r#"

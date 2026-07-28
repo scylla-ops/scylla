@@ -30,7 +30,7 @@ pub struct OrganizationUseCases<
 impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: PolicyControl>
     OrganizationUseCases<O, U, PS, PC>
 {
-    #[instrument(skip(self, caller), fields(name = %name))]
+    #[instrument(skip_all, fields(name = %name))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -72,7 +72,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         Ok(org)
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %id))]
+    #[instrument(skip_all, fields(org_id = %id))]
     pub async fn get(
         &self,
         caller: &CallerContext,
@@ -84,7 +84,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         self.org_repo.find_by_id(id).await
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %id))]
+    #[instrument(skip_all, fields(org_id = %id))]
     pub async fn update(
         &self,
         caller: &CallerContext,
@@ -114,7 +114,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
     /// Set the active flag to an explicit value and return the updated
     /// organization. Idempotent, so a retried call is safe — see
     /// [`Organization::set_active`].
-    #[instrument(skip(self, caller), fields(org_id = %id))]
+    #[instrument(skip_all, fields(org_id = %id))]
     pub async fn set_active(
         &self,
         caller: &CallerContext,
@@ -130,7 +130,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         Ok(org)
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %id))]
+    #[instrument(skip_all, fields(org_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &OrganizationId) -> DomainResult<()> {
         self.permission_service
             .check(caller, Permission::DeleteOrganization(id.clone()))
@@ -144,7 +144,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         self.policy_control.reload().await
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip(self, caller, pagination))]
     pub async fn list(
         &self,
         caller: &CallerContext,
@@ -160,7 +160,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
     /// on it or on one of its projects. There is no membership roster to read
     /// from, so the grants themselves answer "who is here", which also means the
     /// answer can never disagree with what those people can actually do.
-    #[instrument(skip(self, caller), fields(org_id = %org_id))]
+    #[instrument(skip_all, fields(org_id = %org_id))]
     pub async fn list_users(
         &self,
         caller: &CallerContext,
@@ -196,7 +196,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
     /// deliberately not expanded here: a platform operator reaching every
     /// organization is not a member of each one, and listing them all under
     /// "my organizations" would be noise.
-    #[instrument(skip(self, caller), fields(user_id = %user_id))]
+    #[instrument(skip_all, fields(user_id = %user_id))]
     pub async fn list_user_orgs(
         &self,
         caller: &CallerContext,

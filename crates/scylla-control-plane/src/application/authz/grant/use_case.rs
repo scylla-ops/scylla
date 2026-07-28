@@ -67,7 +67,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
 
     /// Grants bound to a specific scope — manageable by an admin of that scope
     /// (or a system admin). Backs per-org / per-project permission views.
-    #[instrument(skip(self, caller))]
+    #[instrument(skip_all, fields(scope = %scope))]
     pub async fn list_by_scope(
         &self,
         caller: &CallerContext,
@@ -80,7 +80,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
         Ok(grants.into_iter().filter(|g| &g.scope == scope).collect())
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip_all, fields(principal = %grant.principal, role = %grant.role, scope = %grant.scope))]
     pub async fn grant(&self, caller: &CallerContext, grant: &Grant) -> DomainResult<()> {
         self.permission_service
             .check(caller, Self::manage_perm(&grant.scope))
@@ -223,7 +223,7 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
     ///
     /// Returns how many grants were removed, so a caller can tell "removed
     /// three" from "there was nothing to remove".
-    #[instrument(skip(self, caller))]
+    #[instrument(skip_all, fields(principal = %principal, scope = %scope))]
     pub async fn revoke_all_access(
         &self,
         caller: &CallerContext,

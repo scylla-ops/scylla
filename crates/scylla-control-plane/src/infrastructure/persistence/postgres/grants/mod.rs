@@ -225,12 +225,12 @@ impl GrantRepository for PgGrantRepository {
             .collect()
     }
 
-    #[instrument(skip(self, grant), fields(grant_id = %grant.id))]
+    #[instrument(skip_all, fields(grant_id = %grant.id))]
     async fn create(&self, grant: &Grant) -> DomainResult<()> {
         insert(&self.pool, grant).await
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, fields(principal = %principal, scope = %scope))]
     async fn revoke_all(&self, principal: &Principal, scope: &Scope) -> DomainResult<u64> {
         delete_under_scope(&self.pool, principal, scope).await
     }

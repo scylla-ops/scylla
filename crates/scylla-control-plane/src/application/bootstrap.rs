@@ -42,7 +42,7 @@ where
     /// already present (the grant insert is idempotent). Any other failure
     /// (validation, infrastructure, forbidden) bubbles up as [`DomainError`] for
     /// the caller to map at the layer boundary.
-    #[instrument(skip(self, password))]
+    #[instrument(skip_all, fields(username = %username.as_str(), role = %role.as_str()))]
     pub async fn bootstrap_admin(
         &self,
         username: Username,

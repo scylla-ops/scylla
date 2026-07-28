@@ -210,7 +210,7 @@ where
             .ok_or_else(|| DomainError::not_found("role", id))
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip_all, fields(name = %name, scope = scope.as_str(), permissions = permissions.len()))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -229,7 +229,7 @@ where
         Ok(role)
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip_all, fields(role_id = %id, name = %name, permissions = permissions.len()))]
     pub async fn update(
         &self,
         caller: &CallerContext,
@@ -289,7 +289,7 @@ where
     /// each grant binds to. Powers the admin "what can this principal do" matrix,
     /// so it is gated by `manageSystemGrants`. To read your own, call
     /// [`Self::my_permissions`], which needs no permission at all.
-    #[instrument(skip(self, caller))]
+    #[instrument(skip_all, fields(principal = %principal))]
     pub async fn effective_permissions(
         &self,
         caller: &CallerContext,

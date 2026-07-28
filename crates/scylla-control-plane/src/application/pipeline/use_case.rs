@@ -33,7 +33,7 @@ pub struct PipelineUseCases<
 impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: PermissionService>
     PipelineUseCases<P, PR, J, PS>
 {
-    #[instrument(skip(self, caller, nodes), fields(name = %name, project_id = %project_id))]
+    #[instrument(skip_all, fields(name = %name, project_id = %project_id))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -49,7 +49,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         self.pipeline_repo.create(&pipeline).await
     }
 
-    #[instrument(skip(self, caller), fields(pipeline_id = %id))]
+    #[instrument(skip_all, fields(pipeline_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &PipelineId) -> DomainResult<Pipeline> {
         self.permission_service
             .check(caller, Permission::ReadPipeline(id.clone()))
@@ -61,7 +61,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
     // get-check; replaced by the consolidated `run()` method below which does a
     // single `Permission::RunPipeline` check and reads the pipeline via the repo.
 
-    #[instrument(skip(self, caller, nodes), fields(pipeline_id = %id))]
+    #[instrument(skip_all, fields(pipeline_id = %id))]
     pub async fn update(
         &self,
         caller: &CallerContext,
@@ -85,7 +85,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         self.pipeline_repo.update(&pipeline).await
     }
 
-    #[instrument(skip(self, caller), fields(pipeline_id = %id))]
+    #[instrument(skip_all, fields(pipeline_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &PipelineId) -> DomainResult<()> {
         self.permission_service
             .check(caller, Permission::DeletePipeline(id.clone()))
@@ -94,7 +94,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         self.pipeline_repo.delete(id).await
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip(self, caller, pagination))]
     pub async fn list(
         &self,
         caller: &CallerContext,
@@ -106,7 +106,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
         self.pipeline_repo.list_all(pagination).await
     }
 
-    #[instrument(skip(self, caller), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     pub async fn list_by_project(
         &self,
         caller: &CallerContext,
@@ -124,7 +124,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
             .await
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     pub async fn list_by_organization(
         &self,
         caller: &CallerContext,
@@ -178,7 +178,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
     /// literal (unmasked) env, merged AFTER secret resolution. A node's own env
     /// wins on a key collision, and inputs are plain literals that can never
     /// reference a secret. Same single `RunPipeline` check as `run`.
-    #[instrument(skip(self, caller, inputs, origin), fields(pipeline_id = %pipeline_id, inputs = inputs.len()))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline_id, inputs = inputs.len()))]
     pub async fn run_with_inputs(
         &self,
         caller: &CallerContext,
@@ -203,7 +203,7 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
     /// Record which agent the job was dispatched to. An internal continuation
     /// of the already-authorized `run` (the handler calls this once an agent
     /// accepts the dispatch), so it carries no extra Cedar check.
-    #[instrument(skip(self), fields(job_id = %job_id, app_id = %app_id))]
+    #[instrument(skip_all, fields(job_id = %job_id, app_id = %app_id))]
     pub async fn assign_agent(&self, job_id: &JobId, app_id: &AppId) -> DomainResult<()> {
         self.job_repo.set_agent(job_id, app_id).await
     }

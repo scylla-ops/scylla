@@ -68,7 +68,7 @@ where
     PS: PermissionService,
     PC: PolicyControl,
 {
-    #[instrument(skip(self, caller), fields(org_id = %organization_id, name = %name))]
+    #[instrument(skip_all, fields(org_id = %organization_id, name = %name))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -96,7 +96,7 @@ where
         Ok(CreatedApp { app, secret })
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     pub async fn list(
         &self,
         caller: &CallerContext,
@@ -111,7 +111,7 @@ where
         self.app_repo.list_by_organization(&organization_id).await
     }
 
-    #[instrument(skip(self, caller), fields(app_id = %id))]
+    #[instrument(skip_all, fields(app_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: AppId) -> DomainResult<App> {
         self.permission_service
             .check(caller, Permission::ReadApp(id.clone()))
@@ -119,7 +119,7 @@ where
         self.app_repo.find_by_id(&id).await
     }
 
-    #[instrument(skip(self, caller), fields(app_id = %id))]
+    #[instrument(skip_all, fields(app_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: AppId) -> DomainResult<()> {
         self.permission_service
             .check(caller, Permission::DeleteApp(id.clone()))
@@ -135,7 +135,7 @@ where
     /// on `is_active`); every privileged action is denied at the permission
     /// chokepoint, which re-checks `is_active` per request (so a live stream
     /// can't keep acting); and any open agent stream is dropped immediately.
-    #[instrument(skip(self, caller), fields(app_id = %id, active))]
+    #[instrument(skip_all, fields(app_id = %id, active))]
     pub async fn set_active(
         &self,
         caller: &CallerContext,
@@ -159,7 +159,7 @@ where
     // --- Secret management -------------------------------------------------
 
     /// Create (regenerate) a new secret for an app. Returns the plaintext once.
-    #[instrument(skip(self, caller), fields(app_id = %app_id, label = %label))]
+    #[instrument(skip_all, fields(app_id = %app_id, label = %label))]
     pub async fn create_secret(
         &self,
         caller: &CallerContext,
@@ -181,7 +181,7 @@ where
     }
 
     /// List an app's secrets (metadata only — never the plaintext).
-    #[instrument(skip(self, caller), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     pub async fn list_secrets(
         &self,
         caller: &CallerContext,
@@ -197,7 +197,7 @@ where
     /// any agent currently streaming under this app is dropped at once so it
     /// can't keep running on its already-open (token-authed) stream — it will
     /// fail to re-auth on reconnect.
-    #[instrument(skip(self, caller), fields(secret_id = %secret_id))]
+    #[instrument(skip_all, fields(secret_id = %secret_id))]
     pub async fn revoke_secret(
         &self,
         caller: &CallerContext,
@@ -219,7 +219,7 @@ where
     /// Enable or disable a secret. A disabled secret is kept but rejected at
     /// auth. Returns the updated record. Disabling also drops any live agent
     /// stream of this app (see `revoke_secret`).
-    #[instrument(skip(self, caller), fields(secret_id = %secret_id, enabled))]
+    #[instrument(skip_all, fields(secret_id = %secret_id, enabled))]
     pub async fn set_secret_enabled(
         &self,
         caller: &CallerContext,

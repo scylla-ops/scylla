@@ -79,7 +79,7 @@ where
     /// `WebhookSpec`, defaulting to [`DEFAULT_SIGNATURE_HEADER`]); `delivery_id` is
     /// the sender's idempotency key when present (else the signature is used);
     /// `raw_body` is the exact bytes the signature was computed over.
-    #[instrument(skip(self, get_header, raw_body), fields(trigger_id = %trigger_id))]
+    #[instrument(skip_all, fields(trigger_id = %trigger_id))]
     pub async fn ingest(
         &self,
         trigger_id: &TriggerId,

@@ -24,7 +24,6 @@ pub trait InvitationRepository: Send + Sync {
         invite_id: &InvitationId,
         new_user: Option<&User>,
         member: &UserId,
-        organization_id: &OrganizationId,
         grant: &Grant,
     ) -> DomainResult<()>;
 }

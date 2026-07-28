@@ -28,7 +28,7 @@ where
     S: JobLogStreamPort + 'static,
     PS: PermissionService + 'static,
 {
-    #[instrument(skip(self, caller), fields(job_id = %job_id, node_id = ?node_id))]
+    #[instrument(skip_all, fields(job_id = %job_id, node_id = ?node_id))]
     pub async fn stream(
         &self,
         caller: &CallerContext,

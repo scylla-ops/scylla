@@ -23,7 +23,7 @@ pub struct UserUseCases<U: UserRepository, H: HashService, PS: PermissionService
 impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl>
     UserUseCases<U, H, PS, PC>
 {
-    #[instrument(skip(self, password, caller), fields(username = %username))]
+    #[instrument(skip_all, fields(username = %username))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -44,7 +44,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl
         self.user_repo.create(&user).await
     }
 
-    #[instrument(skip(self, caller), fields(user_id = %id))]
+    #[instrument(skip_all, fields(user_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &UserId) -> DomainResult<User> {
         self.permission_service
             .check(caller, Permission::ReadUser(id.clone()))
@@ -55,7 +55,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl
     /// Look up a user by their username, gated by the all-users read policy.
     /// Bootstrap uses this on the conflict branch to recover the existing
     /// admin user's id when the username already exists.
-    #[instrument(skip(self, caller), fields(username = %username))]
+    #[instrument(skip_all, fields(username = %username))]
     pub async fn get_by_username(
         &self,
         caller: &CallerContext,
@@ -67,7 +67,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl
         self.user_repo.find_by_username(username).await
     }
 
-    #[instrument(skip(self, caller), fields(user_id = %id))]
+    #[instrument(skip_all, fields(user_id = %id))]
     pub async fn update(
         &self,
         caller: &CallerContext,
@@ -92,7 +92,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl
         self.user_repo.update(&user).await
     }
 
-    #[instrument(skip(self, caller), fields(user_id = %id))]
+    #[instrument(skip_all, fields(user_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &UserId) -> DomainResult<()> {
         self.permission_service
             .check(caller, Permission::DeleteUser(id.clone()))
@@ -104,7 +104,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl
         self.policy_control.reload().await
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip(self, caller, pagination))]
     pub async fn list(
         &self,
         caller: &CallerContext,

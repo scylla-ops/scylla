@@ -40,7 +40,7 @@ where
         }
     }
 
-    #[instrument(skip(self, caller, value), fields(project_id = %project_id, name = %name))]
+    #[instrument(skip_all, fields(project_id = %project_id, name = %name))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -58,7 +58,7 @@ where
         Ok(secret)
     }
 
-    #[instrument(skip(self, caller), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     pub async fn list(
         &self,
         caller: &CallerContext,
@@ -70,7 +70,7 @@ where
         self.secret_repo.list_by_project(project_id).await
     }
 
-    #[instrument(skip(self, caller), fields(secret_id = %secret_id))]
+    #[instrument(skip_all, fields(secret_id = %secret_id))]
     pub async fn delete(&self, caller: &CallerContext, secret_id: &SecretId) -> DomainResult<()> {
         // Load first so we can authorize against the owning project.
         let secret = self.secret_repo.find_by_id(secret_id).await?;

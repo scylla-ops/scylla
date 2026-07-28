@@ -25,27 +25,27 @@ impl PgPipelineRepository {
 
 #[async_trait]
 impl PipelineRepository for PgPipelineRepository {
-    #[instrument(skip(self, pipeline), fields(pipeline_id = %pipeline.id()))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline.id()))]
     async fn create(&self, pipeline: &Pipeline) -> DomainResult<Pipeline> {
         queries::create(&self.pool, pipeline).await
     }
 
-    #[instrument(skip(self), fields(pipeline_id = %id))]
+    #[instrument(skip_all, fields(pipeline_id = %id))]
     async fn find_by_id(&self, id: &PipelineId) -> DomainResult<Pipeline> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self, pipeline), fields(pipeline_id = %pipeline.id()))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline.id()))]
     async fn update(&self, pipeline: &Pipeline) -> DomainResult<Pipeline> {
         queries::update(&self.pool, pipeline).await
     }
 
-    #[instrument(skip(self), fields(pipeline_id = %id))]
+    #[instrument(skip_all, fields(pipeline_id = %id))]
     async fn delete(&self, id: &PipelineId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, pagination))]
     async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
@@ -56,7 +56,7 @@ impl PipelineRepository for PgPipelineRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     async fn list_by_project(
         &self,
         project_id: &ProjectId,
@@ -68,7 +68,7 @@ impl PipelineRepository for PgPipelineRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     async fn list_by_organization(
         &self,
         organization_id: &OrganizationId,

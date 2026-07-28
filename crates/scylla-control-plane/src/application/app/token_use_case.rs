@@ -46,7 +46,7 @@ where
     C: AppCredentialRepository,
     H: HashService,
 {
-    #[instrument(skip(self, secret), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     pub async fn issue(&self, app_id: AppId, secret: AppSecret) -> DomainResult<AppTokenOutcome> {
         let invalid = || DomainError::unauthorized("Invalid app credentials");
         let app = self

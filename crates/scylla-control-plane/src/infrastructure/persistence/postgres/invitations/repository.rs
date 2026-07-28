@@ -25,12 +25,12 @@ impl PgInvitationRepository {
 
 #[async_trait]
 impl InvitationRepository for PgInvitationRepository {
-    #[instrument(skip(self, invite), fields(invite_id = %invite.id()))]
+    #[instrument(skip_all, fields(invite_id = %invite.id()))]
     async fn create(&self, invite: &Invitation) -> DomainResult<()> {
         queries::create(&self.pool, invite).await
     }
 
-    #[instrument(skip(self), fields(invite_id = %id))]
+    #[instrument(skip_all, fields(invite_id = %id))]
     async fn find_by_id(&self, id: &InvitationId) -> DomainResult<Invitation> {
         queries::find_by_id(&self.pool, id).await
     }
@@ -40,23 +40,22 @@ impl InvitationRepository for PgInvitationRepository {
         queries::find_by_token(&self.pool, token).await
     }
 
-    #[instrument(skip(self), fields(org_id = %org_id))]
+    #[instrument(skip_all, fields(org_id = %org_id))]
     async fn list_pending(&self, org_id: &OrganizationId) -> DomainResult<Vec<Invitation>> {
         queries::list_pending(&self.pool, org_id).await
     }
 
-    #[instrument(skip(self), fields(invite_id = %id))]
+    #[instrument(skip_all, fields(invite_id = %id))]
     async fn revoke(&self, id: &InvitationId) -> DomainResult<()> {
         queries::revoke(&self.pool, id).await
     }
 
-    #[instrument(skip(self, new_user, grant), fields(invite_id = %invite_id, member = %member))]
+    #[instrument(skip_all, fields(invite_id = %invite_id, member = %member))]
     async fn accept_atomic(
         &self,
         invite_id: &InvitationId,
         new_user: Option<&User>,
         member: &UserId,
-        organization_id: &OrganizationId,
         grant: &Grant,
     ) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;

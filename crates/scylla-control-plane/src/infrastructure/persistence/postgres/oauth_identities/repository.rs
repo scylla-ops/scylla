@@ -21,7 +21,7 @@ impl PgOAuthIdentityRepository {
 
 #[async_trait]
 impl OAuthIdentityRepository for PgOAuthIdentityRepository {
-    #[instrument(skip(self), fields(provider, provider_user_id))]
+    #[instrument(skip_all, fields(provider, provider_user_id))]
     async fn find_user_id(
         &self,
         provider: &str,
@@ -30,7 +30,7 @@ impl OAuthIdentityRepository for PgOAuthIdentityRepository {
         queries::find_user_id(&self.pool, provider, provider_user_id).await
     }
 
-    #[instrument(skip(self), fields(user_id = %user_id, provider))]
+    #[instrument(skip_all, fields(user_id = %user_id, provider))]
     async fn link(
         &self,
         user_id: &UserId,

@@ -26,17 +26,17 @@ impl PgJobLogRepository {
 
 #[async_trait]
 impl JobLogRepository for PgJobLogRepository {
-    #[instrument(skip(self, log), fields(job_id = %log.job_id()))]
+    #[instrument(skip_all, fields(job_id = %log.job_id()))]
     async fn create(&self, log: &JobLog) -> DomainResult<JobLog> {
         queries::create(&self.pool, log).await
     }
 
-    #[instrument(skip(self), fields(log_id = %id))]
+    #[instrument(skip_all, fields(log_id = %id))]
     async fn find_by_id(&self, id: &JobLogId) -> DomainResult<JobLog> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self), fields(job_id = %job_id))]
+    #[instrument(skip_all, fields(job_id = %job_id))]
     async fn list_by_job(
         &self,
         job_id: &JobId,
@@ -48,7 +48,7 @@ impl JobLogRepository for PgJobLogRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(job_id = %job_id, node_id = %node_id))]
+    #[instrument(skip_all, fields(job_id = %job_id, node_id = %node_id))]
     async fn list_by_job_and_node(
         &self,
         job_id: &JobId,
@@ -61,7 +61,7 @@ impl JobLogRepository for PgJobLogRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(job_id = %job_id))]
+    #[instrument(skip_all, fields(job_id = %job_id))]
     async fn list_all_by_job(
         &self,
         job_id: &JobId,

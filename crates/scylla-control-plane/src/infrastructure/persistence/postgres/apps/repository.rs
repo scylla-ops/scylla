@@ -27,7 +27,7 @@ impl PgAppRepository {
 
 #[async_trait]
 impl AppRepository for PgAppRepository {
-    #[instrument(skip(self, app, credential), fields(app_id = %app.id(), org_id = %app.organization_id()))]
+    #[instrument(skip_all, fields(app_id = %app.id(), org_id = %app.organization_id()))]
     async fn create_app(&self, app: &App, credential: &AppCredential) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         queries::create(&mut *tx, app).await?;
@@ -36,7 +36,7 @@ impl AppRepository for PgAppRepository {
         Ok(())
     }
 
-    #[instrument(skip(self, app, credential, agent, grant), fields(app_id = %app.id(), org_id = %app.organization_id()))]
+    #[instrument(skip_all, fields(app_id = %app.id(), org_id = %app.organization_id()))]
     async fn provision_agent(
         &self,
         app: &App,
@@ -53,7 +53,7 @@ impl AppRepository for PgAppRepository {
         Ok(())
     }
 
-    #[instrument(skip(self, app, credential, grant), fields(app_id = %app.id(), org_id = %app.organization_id()))]
+    #[instrument(skip_all, fields(app_id = %app.id(), org_id = %app.organization_id()))]
     async fn provision(
         &self,
         app: &App,
@@ -68,12 +68,12 @@ impl AppRepository for PgAppRepository {
         Ok(())
     }
 
-    #[instrument(skip(self), fields(app_id = %id))]
+    #[instrument(skip_all, fields(app_id = %id))]
     async fn find_by_id(&self, id: &AppId) -> DomainResult<App> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     async fn list_by_organization(
         &self,
         organization_id: &OrganizationId,
@@ -81,12 +81,12 @@ impl AppRepository for PgAppRepository {
         queries::list_by_organization(&self.pool, organization_id).await
     }
 
-    #[instrument(skip(self), fields(app_id = %id, active))]
+    #[instrument(skip_all, fields(app_id = %id, active))]
     async fn set_active(&self, id: &AppId, active: bool) -> DomainResult<()> {
         queries::set_active(&self.pool, id, active).await
     }
 
-    #[instrument(skip(self), fields(app_id = %id))]
+    #[instrument(skip_all, fields(app_id = %id))]
     async fn delete(&self, id: &AppId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
     }

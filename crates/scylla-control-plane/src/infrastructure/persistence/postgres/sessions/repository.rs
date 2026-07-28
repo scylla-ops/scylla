@@ -22,7 +22,7 @@ impl PgSessionRepository {
 
 #[async_trait]
 impl SessionRepository for PgSessionRepository {
-    #[instrument(skip(self, session), fields(session_id = %session.id()))]
+    #[instrument(skip_all, fields(session_id = %session.id()))]
     async fn create(&self, session: &Session) -> DomainResult<Session> {
         queries::create(&self.pool, session).await
     }
@@ -32,7 +32,7 @@ impl SessionRepository for PgSessionRepository {
         queries::find_by_token(&self.pool, token).await
     }
 
-    #[instrument(skip(self, session), fields(session_id = %session.id()))]
+    #[instrument(skip_all, fields(session_id = %session.id()))]
     async fn update(&self, session: &Session) -> DomainResult<Session> {
         queries::update(&self.pool, session).await
     }
@@ -47,7 +47,7 @@ impl SessionRepository for PgSessionRepository {
         queries::delete_expired(&self.pool).await
     }
 
-    #[instrument(skip(self), fields(user_id = %user_id))]
+    #[instrument(skip_all, fields(user_id = %user_id))]
     async fn list_for_user(&self, user_id: &UserId) -> DomainResult<Vec<Session>> {
         queries::list_for_user(&self.pool, user_id).await
     }

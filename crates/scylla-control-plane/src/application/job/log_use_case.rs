@@ -38,7 +38,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         self.repo.create(log).await
     }
 
-    #[instrument(skip(self, caller), fields(id = %id))]
+    #[instrument(skip_all, fields(id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &JobLogId) -> DomainResult<JobLog> {
         // Reading a single log line is gated by its job's read-logs grant; we
         // load first because the id alone does not carry the job context.
@@ -49,7 +49,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         Ok(log)
     }
 
-    #[instrument(skip(self, caller), fields(job_id = %job_id))]
+    #[instrument(skip_all, fields(job_id = %job_id))]
     pub async fn list_by_job(
         &self,
         caller: &CallerContext,
@@ -62,7 +62,7 @@ impl<R: JobLogRepository, PS: PermissionService> JobLogUseCases<R, PS> {
         self.repo.list_by_job(job_id, pagination).await
     }
 
-    #[instrument(skip(self, caller), fields(job_id = %job_id, node_id = %node_id))]
+    #[instrument(skip_all, fields(job_id = %job_id, node_id = %node_id))]
     pub async fn list_by_job_and_node(
         &self,
         caller: &CallerContext,

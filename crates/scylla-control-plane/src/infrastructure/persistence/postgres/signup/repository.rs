@@ -27,7 +27,7 @@ impl PgSignupRepository {
 
 #[async_trait]
 impl SignupRepository for PgSignupRepository {
-    #[instrument(skip(self, user, organization, grant), fields(user_id = %user.id(), org_id = %organization.id()))]
+    #[instrument(skip_all, fields(user_id = %user.id(), org_id = %organization.id()))]
     async fn provision_account(
         &self,
         user: &User,
@@ -44,7 +44,7 @@ impl SignupRepository for PgSignupRepository {
         Ok(())
     }
 
-    #[instrument(skip(self, user, organization, grant), fields(user_id = %user.id(), org_id = %organization.id(), provider))]
+    #[instrument(skip_all, fields(user_id = %user.id(), org_id = %organization.id(), provider))]
     async fn provision_account_with_identity(
         &self,
         user: &User,

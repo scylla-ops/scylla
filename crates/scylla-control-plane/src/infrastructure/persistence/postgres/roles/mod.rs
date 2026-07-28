@@ -110,7 +110,7 @@ impl RoleRepository for PgRoleRepository {
         .transpose()
     }
 
-    #[instrument(skip(self, role), fields(role_id = %role.id))]
+    #[instrument(skip_all, fields(role_id = %role.id))]
     async fn create(&self, role: &Role) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         sqlx::query!(
@@ -140,7 +140,7 @@ impl RoleRepository for PgRoleRepository {
         tx.commit().await.to_domain()
     }
 
-    #[instrument(skip(self, role), fields(role_id = %role.id))]
+    #[instrument(skip_all, fields(role_id = %role.id))]
     async fn update(&self, role: &Role) -> DomainResult<()> {
         // The role's scope kind / builtin / owner are immutable; only name,
         // description and the permission set change. Replace the permission set

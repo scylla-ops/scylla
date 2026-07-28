@@ -58,7 +58,7 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
     /// rotating the starting point each call so eligible agents share the load.
     /// Best-effort: if none is connected+authorized the job stays pending
     /// (`NoAgentAvailable`) rather than failing the run.
-    #[instrument(skip(self, dispatch), fields(pipeline_id = %pipeline_id, job_id = %dispatch.job_id))]
+    #[instrument(skip_all, fields(pipeline_id = %pipeline_id, job_id = %dispatch.job_id))]
     pub async fn dispatch_job(
         &self,
         pipeline_id: &PipelineId,
@@ -162,7 +162,7 @@ where
     PC: PolicyControl,
     PS: PermissionService,
 {
-    #[instrument(skip(self, caller), fields(org_id = %organization_id, name = %name))]
+    #[instrument(skip_all, fields(org_id = %organization_id, name = %name))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -199,7 +199,7 @@ where
         Ok(CreatedAgent { app, secret })
     }
 
-    #[instrument(skip(self, caller), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     pub async fn list(
         &self,
         caller: &CallerContext,
@@ -233,7 +233,7 @@ where
         Ok(views)
     }
 
-    #[instrument(skip(self, caller), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     pub async fn get(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentView> {
         self.permission_service
             .check(caller, Permission::ReadApp(app_id.clone()))
@@ -253,7 +253,7 @@ where
         })
     }
 
-    #[instrument(skip(self, caller), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     pub async fn stats(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentStats> {
         self.permission_service
             .check(caller, Permission::ReadAppStats(app_id.clone()))
@@ -261,7 +261,7 @@ where
         self.agent_repo.agent_stats(&app_id).await
     }
 
-    #[instrument(skip(self, caller), fields(app_id = %app_id))]
+    #[instrument(skip_all, fields(app_id = %app_id))]
     pub async fn delete(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<()> {
         self.permission_service
             .check(caller, Permission::DeleteApp(app_id.clone()))

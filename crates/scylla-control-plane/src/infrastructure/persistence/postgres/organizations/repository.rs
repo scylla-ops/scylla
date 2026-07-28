@@ -27,12 +27,12 @@ impl PgOrganizationRepository {
 
 #[async_trait]
 impl OrganizationRepository for PgOrganizationRepository {
-    #[instrument(skip(self, organization), fields(org_id = %organization.id()))]
+    #[instrument(skip_all, fields(org_id = %organization.id()))]
     async fn create(&self, organization: &Organization) -> DomainResult<Organization> {
         queries::create(&self.pool, organization).await
     }
 
-    #[instrument(skip(self, organization, grant), fields(org_id = %organization.id()))]
+    #[instrument(skip_all, fields(org_id = %organization.id()))]
     async fn provision_with_owner(
         &self,
         organization: &Organization,
@@ -45,7 +45,7 @@ impl OrganizationRepository for PgOrganizationRepository {
         Ok(())
     }
 
-    #[instrument(skip(self), fields(org_id = %org_id))]
+    #[instrument(skip_all, fields(org_id = %org_id))]
     async fn list_principals(
         &self,
         org_id: &OrganizationId,
@@ -57,7 +57,7 @@ impl OrganizationRepository for PgOrganizationRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(user_id = %user_id))]
+    #[instrument(skip_all, fields(user_id = %user_id))]
     async fn list_for_user(
         &self,
         user_id: &UserId,
@@ -69,32 +69,32 @@ impl OrganizationRepository for PgOrganizationRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(org_id = %id))]
+    #[instrument(skip_all, fields(org_id = %id))]
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self, ids), fields(n = ids.len()))]
+    #[instrument(skip_all, fields(n = ids.len()))]
     async fn find_by_ids(&self, ids: &[OrganizationId]) -> DomainResult<Vec<Organization>> {
         queries::find_by_ids(&self.pool, ids).await
     }
 
-    #[instrument(skip(self), fields(name = %name))]
+    #[instrument(skip_all, fields(name = %name))]
     async fn find_by_name(&self, name: &OrganizationName) -> DomainResult<Organization> {
         queries::find_by_name(&self.pool, name).await
     }
 
-    #[instrument(skip(self, organization), fields(org_id = %organization.id()))]
+    #[instrument(skip_all, fields(org_id = %organization.id()))]
     async fn update(&self, organization: &Organization) -> DomainResult<Organization> {
         queries::update(&self.pool, organization).await
     }
 
-    #[instrument(skip(self), fields(org_id = %id))]
+    #[instrument(skip_all, fields(org_id = %id))]
     async fn delete(&self, id: &OrganizationId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, pagination))]
     async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
@@ -105,7 +105,7 @@ impl OrganizationRepository for PgOrganizationRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, pagination))]
     async fn list_active(
         &self,
         pagination: Option<&PaginationParams>,
@@ -116,7 +116,7 @@ impl OrganizationRepository for PgOrganizationRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(name = %name))]
+    #[instrument(skip_all, fields(name = %name))]
     async fn name_exists(&self, name: &OrganizationName) -> DomainResult<bool> {
         queries::name_exists(&self.pool, name).await
     }

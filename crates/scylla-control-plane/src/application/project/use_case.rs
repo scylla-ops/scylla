@@ -36,7 +36,7 @@ pub struct ProjectUseCases<
 impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyControl>
     ProjectUseCases<P, U, PS, PC>
 {
-    #[instrument(skip(self, caller), fields(name = %name, org_id = %organization_id))]
+    #[instrument(skip_all, fields(name = %name, org_id = %organization_id))]
     pub async fn create(
         &self,
         caller: &CallerContext,
@@ -86,7 +86,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         }
     }
 
-    #[instrument(skip(self, caller), fields(project_id = %id))]
+    #[instrument(skip_all, fields(project_id = %id))]
     pub async fn get(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<Project> {
         self.permission_service
             .check(caller, Permission::ReadProject(id.clone()))
@@ -94,7 +94,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         self.project_repo.find_by_id(id).await
     }
 
-    #[instrument(skip(self, caller), fields(project_id = %id))]
+    #[instrument(skip_all, fields(project_id = %id))]
     pub async fn update(
         &self,
         caller: &CallerContext,
@@ -120,7 +120,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
 
     /// Set the active flag to an explicit value and return the updated project.
     /// Idempotent, so a retried call is safe — see [`Project::set_active`].
-    #[instrument(skip(self, caller), fields(project_id = %id))]
+    #[instrument(skip_all, fields(project_id = %id))]
     pub async fn set_active(
         &self,
         caller: &CallerContext,
@@ -137,7 +137,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         Ok(project)
     }
 
-    #[instrument(skip(self, caller), fields(project_id = %id))]
+    #[instrument(skip_all, fields(project_id = %id))]
     pub async fn delete(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<()> {
         self.permission_service
             .check(caller, Permission::DeleteProject(id.clone()))
@@ -149,7 +149,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         self.policy_control.reload().await
     }
 
-    #[instrument(skip(self, caller))]
+    #[instrument(skip(self, caller, pagination))]
     pub async fn list(
         &self,
         caller: &CallerContext,
@@ -169,7 +169,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
     /// whole listing — they should see their own project and nothing else,
     /// which is what the filter expresses. Reading the organization at all is
     /// still required, so this is not an open endpoint.
-    #[instrument(skip(self, caller), fields(organization_id = %organization_id))]
+    #[instrument(skip_all, fields(organization_id = %organization_id))]
     pub async fn list_by_organization(
         &self,
         caller: &CallerContext,
@@ -210,7 +210,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
     /// Holders of an organization-wide grant are not listed — they administer
     /// the organization rather than work here, and the scope hierarchy already
     /// gives them the access they need.
-    #[instrument(skip(self, caller), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     pub async fn list_users(
         &self,
         caller: &CallerContext,
@@ -245,7 +245,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
 
     /// The projects a user works on: granted directly, or through a grant on the
     /// owning organization.
-    #[instrument(skip(self, caller), fields(user_id = %user_id))]
+    #[instrument(skip_all, fields(user_id = %user_id))]
     pub async fn list_user_projects(
         &self,
         caller: &CallerContext,

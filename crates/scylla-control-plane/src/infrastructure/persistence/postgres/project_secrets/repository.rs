@@ -51,7 +51,7 @@ impl TryFrom<SecretRow> for Secret {
 
 #[async_trait]
 impl SecretRepository for PgSecretRepository {
-    #[instrument(skip(self, secret), fields(secret_id = %secret.id()))]
+    #[instrument(skip_all, fields(secret_id = %secret.id()))]
     async fn create(&self, secret: &Secret) -> DomainResult<()> {
         sqlx::query!(
             r#"
@@ -73,7 +73,7 @@ impl SecretRepository for PgSecretRepository {
         Ok(())
     }
 
-    #[instrument(skip(self), fields(secret_id = %id))]
+    #[instrument(skip_all, fields(secret_id = %id))]
     async fn find_by_id(&self, id: &SecretId) -> DomainResult<Secret> {
         sqlx::query_as!(
             SecretRow,
@@ -90,7 +90,7 @@ impl SecretRepository for PgSecretRepository {
         .try_into()
     }
 
-    #[instrument(skip(self), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     async fn list_by_project(&self, project_id: &ProjectId) -> DomainResult<Vec<Secret>> {
         let rows: Vec<SecretRow> = sqlx::query_as!(
             SecretRow,
@@ -108,7 +108,7 @@ impl SecretRepository for PgSecretRepository {
         rows.into_iter().map(Secret::try_from).collect()
     }
 
-    #[instrument(skip(self), fields(secret_id = %id))]
+    #[instrument(skip_all, fields(secret_id = %id))]
     async fn delete(&self, id: &SecretId) -> DomainResult<()> {
         sqlx::query!("DELETE FROM project_secrets WHERE id = $1", id.as_str())
             .execute(&self.pool)

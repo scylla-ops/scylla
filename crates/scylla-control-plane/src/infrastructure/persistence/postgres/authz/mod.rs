@@ -26,7 +26,7 @@ impl PgAuthzEntityProvider {
 
 #[async_trait]
 impl AuthzEntityProvider for PgAuthzEntityProvider {
-    #[instrument(skip(self))]
+    #[instrument(skip_all, fields(resource = %resource))]
     async fn resource_ancestors(&self, resource: &ResourceRef) -> DomainResult<ResourceAncestors> {
         match resource {
             ResourceRef::Project(id) => {
@@ -103,7 +103,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
         }
     }
 
-    #[instrument(skip(self), fields(app_id = %app))]
+    #[instrument(skip_all, fields(app_id = %app))]
     async fn app_is_active(&self, app: &AppId) -> DomainResult<bool> {
         let row = sqlx::query!("SELECT is_active FROM apps WHERE id = $1", app.as_str())
             .fetch_optional(&self.pool)

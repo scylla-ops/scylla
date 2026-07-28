@@ -22,7 +22,7 @@ impl PgAppTokenRepository {
 
 #[async_trait]
 impl AppTokenRepository for PgAppTokenRepository {
-    #[instrument(skip(self, token), fields(token_id = %token.id()))]
+    #[instrument(skip_all, fields(token_id = %token.id()))]
     async fn create(&self, token: &AppToken) -> DomainResult<()> {
         queries::create(&self.pool, token).await
     }

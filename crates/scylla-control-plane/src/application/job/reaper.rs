@@ -27,7 +27,7 @@ impl<J: JobRepository> JobReaper<J> {
     /// Orphan every `running` job whose agent is not in `connected`. Best-effort:
     /// a failed reconciliation is logged and retried on the next tick, never
     /// propagated. Returns how many jobs were orphaned this pass.
-    #[instrument(skip(self, connected), fields(connected = connected.len()))]
+    #[instrument(skip_all, fields(connected = connected.len()))]
     pub async fn reap(&self, connected: &[AppId]) -> u64 {
         match self.job_repo.orphan_running_without_agents(connected).await {
             Ok(0) => 0,

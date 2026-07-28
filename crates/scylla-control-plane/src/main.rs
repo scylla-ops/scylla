@@ -19,7 +19,15 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "audit=info,scylla_control_plane=info,scylla_core=info,warn".into()
+                // `audit=warn` shows denials and hides grants. Every authorization
+                // decision is also written to the `audit_log` table, which stays
+                // complete either way, so the log copy of a *granted* action is
+                // duplicate detail that drowns everything else: it accounted for
+                // 244 of 303 lines on a ten-minute run with almost no traffic.
+                // Denials stay visible because they are what someone reads logs for.
+                //
+                // `RUST_LOG=audit=info` brings the full trail back with no rebuild.
+                "audit=warn,scylla_control_plane=info,scylla_core=info,warn".into()
             }),
         )
         .init();

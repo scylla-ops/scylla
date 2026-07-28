@@ -28,12 +28,12 @@ impl PgProjectRepository {
 
 #[async_trait]
 impl ProjectRepository for PgProjectRepository {
-    #[instrument(skip(self, project), fields(project_id = %project.id()))]
+    #[instrument(skip_all, fields(project_id = %project.id()))]
     async fn create(&self, project: &Project) -> DomainResult<Project> {
         queries::create(&self.pool, project).await
     }
 
-    #[instrument(skip(self, project, grant), fields(project_id = %project.id()))]
+    #[instrument(skip_all, fields(project_id = %project.id()))]
     async fn provision_with_owner(&self, project: &Project, grant: &Grant) -> DomainResult<()> {
         let mut tx = self.pool.begin().await.to_domain()?;
         queries::create(&mut *tx, project).await?;
@@ -42,7 +42,7 @@ impl ProjectRepository for PgProjectRepository {
         Ok(())
     }
 
-    #[instrument(skip(self), fields(project_id = %project_id))]
+    #[instrument(skip_all, fields(project_id = %project_id))]
     async fn list_principals(
         &self,
         project_id: &ProjectId,
@@ -54,7 +54,7 @@ impl ProjectRepository for PgProjectRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(user_id = %user_id))]
+    #[instrument(skip_all, fields(user_id = %user_id))]
     async fn list_for_user(
         &self,
         user_id: &UserId,
@@ -66,27 +66,27 @@ impl ProjectRepository for PgProjectRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(project_id = %id))]
+    #[instrument(skip_all, fields(project_id = %id))]
     async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> {
         queries::find_by_id(&self.pool, id).await
     }
 
-    #[instrument(skip(self, ids), fields(n = ids.len()))]
+    #[instrument(skip_all, fields(n = ids.len()))]
     async fn find_by_ids(&self, ids: &[ProjectId]) -> DomainResult<Vec<Project>> {
         queries::find_by_ids(&self.pool, ids).await
     }
 
-    #[instrument(skip(self, project), fields(project_id = %project.id()))]
+    #[instrument(skip_all, fields(project_id = %project.id()))]
     async fn update(&self, project: &Project) -> DomainResult<Project> {
         queries::update(&self.pool, project).await
     }
 
-    #[instrument(skip(self), fields(project_id = %id))]
+    #[instrument(skip_all, fields(project_id = %id))]
     async fn delete(&self, id: &ProjectId) -> DomainResult<()> {
         queries::delete(&self.pool, id).await
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, pagination))]
     async fn list_all(
         &self,
         pagination: Option<&PaginationParams>,
@@ -98,7 +98,7 @@ impl ProjectRepository for PgProjectRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, pagination))]
     async fn list_active(
         &self,
         pagination: Option<&PaginationParams>,
@@ -110,7 +110,7 @@ impl ProjectRepository for PgProjectRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     async fn list_by_organization(
         &self,
         organization_id: &OrganizationId,
@@ -129,7 +129,7 @@ impl ProjectRepository for PgProjectRepository {
         Ok(PaginatedResult::new(items, &params, total))
     }
 
-    #[instrument(skip(self), fields(org_id = %organization_id))]
+    #[instrument(skip_all, fields(org_id = %organization_id))]
     async fn count_by_organization(&self, organization_id: &OrganizationId) -> DomainResult<u64> {
         queries::count(
             &self.pool,
