@@ -10,11 +10,8 @@ use crate::grpc::mappers::{
 };
 use scylla_core::domain::ids::{OrganizationId, PipelineId, ProjectId};
 use scylla_core::domain::pipeline::PipelineNode;
-use scylla_core::domain::pipeline::{
-    EnvKey, EnvVar, NodeId, PipelineName, Shell, Step, WorkingDir,
-};
+use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, PipelineName, Step, WorkingDir};
 use scylla_core::domain::secret::SecretName;
-use scylla_protocol::exec::v1 as exec;
 use scylla_protocol::pipeline::v1::{
     CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse,
     EnvVar as ProtoEnvVar, GetPipelineRequest, GetPipelineResponse,
@@ -302,9 +299,11 @@ fn proto_node_to_domain(n: ProtoPipelineNode) -> Result<PipelineNode, Status> {
         Some(pipeline_node::Step::Exec(e)) => {
             Step::exec(e.command, e.args).map_err(domain_error_to_status)?
         }
-        Some(pipeline_node::Step::Script(s)) => {
-            Step::script(s.script, proto_shell(s.shell)).map_err(domain_error_to_status)?
-        }
+        Some(pipeline_node::Step::Script(s)) => Step::script(
+            s.script,
+            scylla_protocol::convert::shell_from_proto(s.shell),
+        )
+        .map_err(domain_error_to_status)?,
         None => {
             return Err(Status::invalid_argument(
                 "pipeline node is missing its step (exec or script)",
@@ -328,12 +327,5 @@ fn proto_env_to_domain(e: ProtoEnvVar) -> Result<EnvVar, Status> {
             "env var `{}` has no value",
             e.key
         ))),
-    }
-}
-
-fn proto_shell(raw: i32) -> Shell {
-    match exec::Shell::try_from(raw).unwrap_or_default() {
-        exec::Shell::Bash => Shell::Bash,
-        exec::Shell::Sh | exec::Shell::Unspecified => Shell::Sh,
     }
 }

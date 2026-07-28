@@ -113,5 +113,9 @@ pub mod trigger {
     }
 }
 
+/// Conversions between the kernel types and their wire form, shared by the
+/// control plane and the agents so the two halves cannot drift apart.
+pub mod convert;
+
 /// Serialized descriptors for every compiled proto, for gRPC reflection.
 pub const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("scylla_descriptor");

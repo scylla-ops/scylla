@@ -11,7 +11,6 @@ use scylla_protocol::authz::v1::{
     Permission, PrincipalRef, ScopeKind as ProtoScopeKind, ScopeRef, principal_ref, scope_ref,
 };
 use scylla_protocol::common::v1 as common;
-use scylla_protocol::common::v1::LogStream;
 use tonic::Status;
 
 /// A proto wrapper message (`common.v1.*Id` / `common.v1.Email`) — a single `value`.
@@ -85,27 +84,6 @@ pub fn dt(ts: Option<Timestamp>) -> Option<DateTime<Utc>> {
 }
 
 // ── Log stream ───────────────────────────────────────────────────────────────
-
-/// Domain stream name (`"stdout"` / `"stderr"`) → the proto enum. Anything else
-/// is `UNSPECIFIED` rather than a silent guess.
-#[must_use]
-pub fn log_stream_to_proto(name: &str) -> LogStream {
-    match name {
-        "stdout" => LogStream::Stdout,
-        "stderr" => LogStream::Stderr,
-        _ => LogStream::Unspecified,
-    }
-}
-
-/// Proto enum → the domain stream name. `UNSPECIFIED` and unknown values fall
-/// back to `"stdout"`, matching how an unlabelled line was treated before.
-#[must_use]
-pub fn log_stream_from_proto(raw: i32) -> &'static str {
-    match LogStream::try_from(raw) {
-        Ok(LogStream::Stderr) => "stderr",
-        _ => "stdout",
-    }
-}
 
 // ── Authz enum ⇄ catalog-key conversions ─────────────────────────────────────
 // The proto `Permission` enum mirrors the backend `Permission` catalog: each

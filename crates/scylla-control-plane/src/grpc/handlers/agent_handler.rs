@@ -5,16 +5,15 @@ use crate::application::{
 };
 use crate::application::{JobDispatch, JobEvent};
 use crate::extract_auth_context;
-use crate::grpc::convert::{dt, log_stream_from_proto};
+use crate::grpc::convert::dt;
 use crate::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use derive_more::Constructor;
 use scylla_core::domain::ids::{AppId, JobId};
 use scylla_core::domain::job::JobLog;
-use scylla_core::domain::job::LogStream;
-use scylla_core::domain::pipeline::{NodeId, Shell, Step};
+use scylla_core::domain::pipeline::{NodeId, Step};
 use scylla_protocol::agent::v1::{
     AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, ResolvedEnv, agent_down,
-    agent_node, agent_service_server::AgentService, agent_up, job_status,
+    agent_node, agent_service_server::AgentService, agent_up,
 };
 use scylla_protocol::common::v1 as common;
 use scylla_protocol::exec::v1 as exec;
@@ -130,7 +129,7 @@ async fn read_reports<J, L, PS>(
         match up.payload {
             Some(agent_up::Payload::Status(status)) => {
                 let job_id = JobId::new(status.job_id.clone().unwrap_or_default().value);
-                if let Some(event) = status_to_event(&status) {
+                if let Some(event) = scylla_protocol::convert::status_to_job_event(&status) {
                     if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
                         warn!(app_id = %app_id, job_id = %job_id, error = %e, "failed to record job status");
                     }
@@ -260,39 +259,9 @@ fn step_to_proto(step: &Step) -> agent_node::Step {
         }),
         Step::Script { script, shell } => agent_node::Step::Script(exec::ScriptStep {
             script: script.clone(),
-            shell: match shell {
-                Shell::Sh => exec::Shell::Sh,
-                Shell::Bash => exec::Shell::Bash,
-            } as i32,
+            shell: scylla_protocol::convert::shell_to_proto(*shell) as i32,
         }),
     }
-}
-
-fn status_to_event(status: &scylla_protocol::agent::v1::JobStatus) -> Option<JobEvent> {
-    use job_status::Event;
-    let node_id = |id: &Option<common::NodeId>| id.clone().unwrap_or_default().value;
-    // An absent oneof is a malformed report, not a valid state — drop it (the
-    // caller logs the skip). The variant now carries exactly this event's fields.
-    Some(match status.event.as_ref()? {
-        Event::JobStarted(_) => JobEvent::JobStarted,
-        Event::NodeStarted(e) => JobEvent::NodeStarted {
-            node_id: node_id(&e.node_id),
-        },
-        Event::NodeCompleted(e) => JobEvent::NodeCompleted {
-            node_id: node_id(&e.node_id),
-        },
-        Event::NodeFailed(e) => JobEvent::NodeFailed {
-            node_id: node_id(&e.node_id),
-            error: e.error.clone(),
-        },
-        Event::NodeSkipped(e) => JobEvent::NodeSkipped {
-            node_id: node_id(&e.node_id),
-        },
-        Event::JobCompleted(_) => JobEvent::JobCompleted,
-        Event::JobFailed(e) => JobEvent::JobFailed {
-            error: e.error.clone(),
-        },
-    })
 }
 
 fn log_line_to_domain(line: &scylla_protocol::agent::v1::JobLogLine) -> Option<JobLog> {
@@ -300,9 +269,9 @@ fn log_line_to_domain(line: &scylla_protocol::agent::v1::JobLogLine) -> Option<J
     let node_id = NodeId::new(&node_id_str)
         .map_err(|e| warn!(node_id = %node_id_str, error = %e, "invalid node_id in agent log"))
         .ok()?;
-    // `log_stream_from_proto` already folds UNSPECIFIED/unknown to "stdout", so
-    // the domain parse below can never actually fail.
-    let stream = LogStream::new(log_stream_from_proto(line.stream)).unwrap_or(LogStream::Stdout);
+    // Total: unspecified and unknown both fold to stdout, so there is nothing to
+    // fail on. Shared with the agent, which encodes the same enum on the way out.
+    let stream = scylla_protocol::convert::log_stream_from_proto(line.stream);
     // An agent that omits the timestamp gets server-side now, as before.
     let timestamp = dt(line.timestamp).unwrap_or_else(chrono::Utc::now);
     Some(JobLog::new(

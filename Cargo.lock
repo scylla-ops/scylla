@@ -2762,8 +2762,10 @@ dependencies = [
 name = "scylla-protocol"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "prost",
  "prost-types",
+ "scylla-core",
  "tonic",
  "tonic-prost",
  "tonic-prost-build",

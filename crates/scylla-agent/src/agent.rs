@@ -8,13 +8,12 @@ use tonic::{Code, Request};
 use tracing::{error, info, warn};
 
 use scylla_core::domain::pipeline::PipelineNode;
-use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir};
+use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, Step, WorkingDir};
 use scylla_protocol::agent::v1::agent_service_client::AgentServiceClient;
 use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
 use scylla_protocol::app::v1::IssueTokenRequest;
 use scylla_protocol::app::v1::app_auth_service_client::AppAuthServiceClient;
 use scylla_protocol::common::v1 as common;
-use scylla_protocol::exec::v1 as exec;
 
 use crate::config::AgentConfig;
 use crate::error::AgentError;
@@ -293,20 +292,14 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                 Some(agent_node::Step::Exec(e)) => {
                     Step::exec(e.command, e.args).map_err(|err| err.to_string())?
                 }
-                Some(agent_node::Step::Script(s)) => {
-                    Step::script(s.script, shell_from_proto(s.shell))
-                        .map_err(|err| err.to_string())?
-                }
+                Some(agent_node::Step::Script(s)) => Step::script(
+                    s.script,
+                    scylla_protocol::convert::shell_from_proto(s.shell),
+                )
+                .map_err(|err| err.to_string())?,
                 None => return Err("dispatch node is missing its step".to_string()),
             };
             Ok(PipelineNode::new(id, deps, step, working_dir, env))
         })
         .collect()
-}
-
-fn shell_from_proto(raw: i32) -> Shell {
-    match exec::Shell::try_from(raw).unwrap_or_default() {
-        exec::Shell::Bash => Shell::Bash,
-        exec::Shell::Sh | exec::Shell::Unspecified => Shell::Sh,
-    }
 }

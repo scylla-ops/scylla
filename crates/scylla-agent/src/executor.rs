@@ -554,26 +554,6 @@ where
     })
 }
 
-/// Domain log stream → the proto enum. Total: the domain has no "unspecified".
-const fn log_stream_to_proto(stream: LogStream) -> common::LogStream {
-    match stream {
-        LogStream::Stdout => common::LogStream::Stdout,
-        LogStream::Stderr => common::LogStream::Stderr,
-    }
-}
-
-/// Wall-clock now as a protobuf `Timestamp`. Mirrors the control plane's
-/// `grpc::convert::ts`. The agent does not depend on the control plane, and
-/// must not: the shared home for this would be `scylla-protocol`, the one crate
-/// both sides already link.
-fn now_timestamp() -> Option<prost_types::Timestamp> {
-    let now = Utc::now();
-    Some(prost_types::Timestamp {
-        seconds: now.timestamp(),
-        nanos: i32::try_from(now.timestamp_subsec_nanos()).unwrap_or(0),
-    })
-}
-
 /// Replace any secret-sourced value with `***` so secrets don't leak into logs.
 fn redact(mut line: String, masked: &[String]) -> String {
     for secret in masked {
@@ -602,9 +582,9 @@ async fn publish_log_line(
         node_id: Some(common::NodeId {
             value: node_id.to_string(),
         }),
-        stream: log_stream_to_proto(stream) as i32,
+        stream: scylla_protocol::convert::log_stream_to_proto(stream) as i32,
         line,
-        timestamp: now_timestamp(),
+        timestamp: scylla_protocol::convert::timestamp(Utc::now()),
     };
     if up_tx
         .send(AgentUp {

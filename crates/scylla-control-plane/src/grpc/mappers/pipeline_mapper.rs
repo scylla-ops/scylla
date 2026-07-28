@@ -1,5 +1,5 @@
 use crate::grpc::convert::{ts, wrap};
-use scylla_core::domain::pipeline::{EnvSource, EnvVar as DomainEnvVar, NodeId, Shell, Step};
+use scylla_core::domain::pipeline::{EnvSource, EnvVar as DomainEnvVar, NodeId, Step};
 use scylla_core::domain::pipeline::{Pipeline, PipelineNode as DomainPipelineNode};
 use scylla_protocol::common::v1 as common;
 use scylla_protocol::exec::v1 as exec;
@@ -71,14 +71,7 @@ fn step_to_proto(step: &Step) -> pipeline_node::Step {
         }),
         Step::Script { script, shell } => pipeline_node::Step::Script(exec::ScriptStep {
             script: script.clone(),
-            shell: shell_to_proto(*shell) as i32,
+            shell: scylla_protocol::convert::shell_to_proto(*shell) as i32,
         }),
-    }
-}
-
-fn shell_to_proto(shell: Shell) -> exec::Shell {
-    match shell {
-        Shell::Sh => exec::Shell::Sh,
-        Shell::Bash => exec::Shell::Bash,
     }
 }
