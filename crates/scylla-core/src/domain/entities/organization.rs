@@ -1,6 +1,6 @@
 use crate::domain::clock;
 use crate::domain::entities::ids::OrganizationId;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
 use chrono::{DateTime, Utc};
 
@@ -75,26 +75,6 @@ impl Organization {
         }
         self.is_active = is_active;
         self.updated_at = clock::now();
-    }
-
-    pub fn deactivate(&mut self) -> DomainResult<()> {
-        if !self.is_active {
-            return Err(DomainError::business_rule(
-                "Organization is already inactive",
-            ));
-        }
-        self.is_active = false;
-        self.updated_at = clock::now();
-        Ok(())
-    }
-
-    pub fn activate(&mut self) -> DomainResult<()> {
-        if self.is_active {
-            return Err(DomainError::business_rule("Organization is already active"));
-        }
-        self.is_active = true;
-        self.updated_at = clock::now();
-        Ok(())
     }
 
     #[must_use]

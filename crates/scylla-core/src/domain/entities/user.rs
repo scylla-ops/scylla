@@ -1,6 +1,6 @@
 use crate::domain::clock;
 use crate::domain::entities::UserId;
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::errors::DomainResult;
 use crate::domain::value_objects::user::{Email, PasswordHash, Username};
 use chrono::{DateTime, Utc};
 
@@ -70,24 +70,6 @@ impl User {
     pub fn update_password_hash(&mut self, password_hash: PasswordHash) {
         self.password_hash = password_hash;
         self.updated_at = clock::now();
-    }
-
-    pub fn deactivate(&mut self) -> DomainResult<()> {
-        if !self.is_active {
-            return Err(DomainError::business_rule("User is already inactive"));
-        }
-        self.is_active = false;
-        self.updated_at = clock::now();
-        Ok(())
-    }
-
-    pub fn activate(&mut self) -> DomainResult<()> {
-        if self.is_active {
-            return Err(DomainError::business_rule("User is already active"));
-        }
-        self.is_active = true;
-        self.updated_at = clock::now();
-        Ok(())
     }
 
     #[must_use]

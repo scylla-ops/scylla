@@ -7,7 +7,6 @@ use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct CoreConfig {
-    #[cfg(feature = "grpc")]
     #[serde(default)]
     pub grpc: GrpcConfig,
 
@@ -103,7 +102,6 @@ fn default_smtp_port() -> u16 {
     465
 }
 
-#[cfg(feature = "grpc")]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GrpcConfig {
     pub address: SocketAddr,
@@ -202,7 +200,6 @@ fn default_max_age() -> u64 {
     600
 }
 
-#[cfg(feature = "grpc")]
 impl Default for GrpcConfig {
     fn default() -> Self {
         Self {

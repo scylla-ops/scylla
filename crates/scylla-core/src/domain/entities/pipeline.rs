@@ -214,64 +214,6 @@ impl Pipeline {
         Ok(())
     }
 
-    /// compute forward adjacency map from nodes on demand
-    #[must_use]
-    pub fn adjacency(&self) -> HashMap<NodeId, Vec<NodeId>> {
-        let mut adj: HashMap<NodeId, Vec<NodeId>> = self
-            .nodes
-            .iter()
-            .map(|n| (n.id().clone(), Vec::new()))
-            .collect();
-        for node in &self.nodes {
-            for dep_id in node.deps() {
-                adj.get_mut(dep_id).unwrap().push(node.id().clone());
-            }
-        }
-        adj
-    }
-
-    /// compute topological order via Kahn's algorithm on demand
-    /// uses `BTreeSet` for deterministic ordering
-    #[must_use]
-    pub fn topo_order(&self) -> Vec<NodeId> {
-        let mut in_degree: HashMap<&NodeId, usize> = self
-            .nodes
-            .iter()
-            .map(|n| (n.id(), n.deps().len()))
-            .collect();
-
-        let mut adjacency: HashMap<&NodeId, Vec<&NodeId>> =
-            self.nodes.iter().map(|n| (n.id(), Vec::new())).collect();
-        for node in &self.nodes {
-            for dep_id in node.deps() {
-                adjacency.get_mut(dep_id).unwrap().push(node.id());
-            }
-        }
-
-        let mut ready: BTreeSet<&NodeId> = in_degree
-            .iter()
-            .filter(|(_, deg)| **deg == 0)
-            .map(|(id, _)| *id)
-            .collect();
-
-        let mut order = Vec::with_capacity(self.nodes.len());
-
-        while let Some(current) = ready.pop_first() {
-            order.push(current.clone());
-            if let Some(dependents) = adjacency.get(current) {
-                for dependent in dependents {
-                    let deg = in_degree.get_mut(dependent).unwrap();
-                    *deg -= 1;
-                    if *deg == 0 {
-                        ready.insert(dependent);
-                    }
-                }
-            }
-        }
-
-        order
-    }
-
     #[must_use]
     pub fn id(&self) -> &PipelineId {
         &self.id
@@ -305,11 +247,6 @@ impl Pipeline {
     #[must_use]
     pub fn get_node(&self, node_id: &NodeId) -> Option<&PipelineNode> {
         self.nodes.iter().find(|n| n.id() == node_id)
-    }
-
-    #[must_use]
-    pub fn get_node_dependencies(&self, node_id: &NodeId) -> Option<Vec<NodeId>> {
-        self.get_node(node_id).map(|n| n.deps().to_vec())
     }
 }
 
@@ -349,43 +286,6 @@ mod tests {
         ];
         let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
         assert_eq!(pipeline.nodes().len(), 3);
-    }
-
-    #[test]
-    fn topo_order_respects_dependencies() {
-        let nodes = vec![
-            action("a", &[]),
-            action("b", &["a"]),
-            action("c", &["a", "b"]),
-        ];
-        let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
-        let order = pipeline.topo_order();
-
-        let pos = |id: &str| order.iter().position(|n| n.as_str() == id).unwrap();
-        assert!(pos("a") < pos("b"));
-        assert!(pos("a") < pos("c"));
-        assert!(pos("b") < pos("c"));
-    }
-
-    #[test]
-    fn topo_order_is_deterministic() {
-        let nodes = vec![action("c", &[]), action("a", &[]), action("b", &[])];
-        let p1 = Pipeline::create(pipeline_name(), project_id(), nodes.clone()).unwrap();
-        let p2 = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
-        assert_eq!(p1.topo_order(), p2.topo_order());
-    }
-
-    #[test]
-    fn adjacency_maps_forward_edges() {
-        let nodes = vec![action("a", &[]), action("b", &["a"]), action("c", &["a"])];
-        let pipeline = Pipeline::create(pipeline_name(), project_id(), nodes).unwrap();
-        let adj = pipeline.adjacency();
-
-        let dependents_of_a: HashSet<&NodeId> = adj[&node_id("a")].iter().collect();
-        assert!(dependents_of_a.contains(&node_id("b")));
-        assert!(dependents_of_a.contains(&node_id("c")));
-        assert!(adj[&node_id("b")].is_empty());
-        assert!(adj[&node_id("c")].is_empty());
     }
 
     #[test]
@@ -436,15 +336,16 @@ mod tests {
     }
 
     #[test]
-    fn update_nodes_recomputes_topology() {
+    fn update_nodes_replaces_the_whole_set() {
         let mut pipeline =
             Pipeline::create(pipeline_name(), project_id(), vec![action("a", &[])]).unwrap();
 
         let new_nodes = vec![action("x", &[]), action("y", &["x"])];
         pipeline.update_nodes(new_nodes).unwrap();
 
-        assert_eq!(pipeline.topo_order().len(), 2);
-        assert!(pipeline.adjacency().contains_key(&node_id("x")));
+        assert_eq!(pipeline.nodes().len(), 2);
+        assert!(pipeline.get_node(&node_id("x")).is_some());
+        assert!(pipeline.get_node(&node_id("a")).is_none());
     }
 
     #[test]

@@ -4,19 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["grpc"]
-grpc = [
-    "dep:tonic",
-    "dep:tonic-web",
-    "dep:tonic-reflection",
-    "dep:tonic-async-interceptor",
-    "dep:scylla-protocol",
-]
-
 # Public self-service signup (the gRPC RegistrationService). Off by default so a
-# deployment stays invite-only / OAuth-only unless it opts in. gRPC-only, so it
-# pulls in `grpc` (and its tonic / scylla-protocol deps).
-register = ["grpc"]
+# deployment stays invite-only / OAuth-only unless it opts in.
+register = []
 
 [dependencies]
 # shared
@@ -44,20 +34,15 @@ axum.workspace = true
 # database
 sqlx.workspace = true
 
-# grpc-only (optional)
-tonic = { workspace = true, optional = true }
-tonic-web = { workspace = true, optional = true }
-tonic-reflection = { workspace = true, optional = true }
-tonic-async-interceptor = { workspace = true, optional = true }
-scylla-protocol = { workspace = true, optional = true }
+# grpc
+tonic.workspace = true
+tonic-web.workspace = true
+tonic-reflection.workspace = true
+tonic-async-interceptor.workspace = true
+scylla-protocol.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true }
-tonic = { workspace = true }
-scylla-protocol = { workspace = true }
-tokio-stream = { workspace = true }
-tonic-async-interceptor = { workspace = true }
-scylla-core = { workspace = true, features = ["postgres", "hash", "permission", "test-utils"] }
 
 [lints]
 workspace = true

@@ -43,34 +43,6 @@ impl JobStatus {
         }
     }
 
-    #[must_use]
-    pub fn is_terminal(&self) -> bool {
-        matches!(
-            self,
-            Self::Completed | Self::Failed | Self::Cancelled | Self::Orphaned
-        )
-    }
-
-    pub fn transition_to(&self, target: &JobStatus) -> DomainResult<()> {
-        let valid = match self {
-            Self::Pending => matches!(target, Self::Running | Self::Cancelled),
-            Self::Running => {
-                matches!(
-                    target,
-                    Self::Completed | Self::Failed | Self::Cancelled | Self::Orphaned
-                )
-            }
-            Self::Completed | Self::Failed | Self::Cancelled | Self::Orphaned => false,
-        };
-
-        if !valid {
-            return Err(DomainError::business_rule(format!(
-                "Invalid status transition from {self} to {target}"
-            )));
-        }
-
-        Ok(())
-    }
 }
 
 impl fmt::Display for JobStatus {

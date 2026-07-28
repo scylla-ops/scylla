@@ -4,10 +4,8 @@ pub mod error;
 pub mod rest;
 pub mod startup;
 
-#[cfg(feature = "grpc")]
 pub mod grpc;
 
-#[cfg(feature = "grpc")]
 pub use grpc::{
     AuthContext, AuthHandler, JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler,
     UserHandler, auth_interceptor, domain_error_to_status, domain_to_proto_metadata, job_to_proto,
@@ -15,7 +13,6 @@ pub use grpc::{
     proto_to_domain_pagination, user_to_proto,
 };
 
-#[cfg(feature = "grpc")]
 pub use config::GrpcConfig;
 pub use config::{BootstrapConfig, CoreConfig, CorsConfig};
 pub use error::{BootstrapError, ConfigError, StartupError};

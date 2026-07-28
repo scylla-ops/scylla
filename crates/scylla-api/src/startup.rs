@@ -597,7 +597,6 @@ pub async fn shutdown_signal() {
 
 // ── gRPC server ────────────────────────────────────────────────────────
 
-#[cfg(feature = "grpc")]
 pub async fn run_grpc<F>(
     config: &CoreConfig,
     services: &Services,

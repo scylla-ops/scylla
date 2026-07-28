@@ -43,13 +43,6 @@ impl NodeState {
         }
     }
 
-    #[must_use]
-    pub fn is_terminal(&self) -> bool {
-        matches!(
-            self,
-            Self::Completed | Self::Failed | Self::Cancelled | Self::Skipped
-        )
-    }
 }
 
 impl fmt::Display for NodeState {
