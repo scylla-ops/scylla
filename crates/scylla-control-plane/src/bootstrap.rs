@@ -1,8 +1,8 @@
 use crate::config::BootstrapConfig;
 use crate::error::BootstrapError;
-use scylla_core::application::authz::grant::SYSTEM_ADMIN_ROLE;
-use scylla_core::application::authz::policy::PolicyControl;
-use scylla_core::application::{
+use crate::application::authz::grant::SYSTEM_ADMIN_ROLE;
+use crate::application::authz::policy::PolicyControl;
+use crate::application::{
     BootstrapUseCases, GrantRepository, HashService, PermissionService, UserRepository,
 };
 use scylla_core::domain::errors::DomainError;

@@ -11,9 +11,9 @@ use axum::{
     http::{HeaderMap, StatusCode},
     routing::post,
 };
-use scylla_core::application::{IngestOutcome, WebhookError, WebhookIngressUseCases};
+use crate::application::{IngestOutcome, WebhookError, WebhookIngressUseCases};
 use scylla_core::domain::entities::TriggerId;
-use scylla_core::infrastructure::{PgTriggerDeliveryRepository, PgTriggerRepository};
+use crate::infrastructure::{PgTriggerDeliveryRepository, PgTriggerRepository};
 use std::sync::Arc;
 
 /// Concrete ingress use case wired to the Postgres repositories.

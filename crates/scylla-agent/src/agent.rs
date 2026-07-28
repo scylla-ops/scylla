@@ -22,7 +22,7 @@ use crate::config::AgentConfig;
 use crate::error::AgentError;
 use crate::executor::Executor;
 use crate::reporter::StatusPublisher;
-use scylla_core::application::JobEvent;
+use scylla_core::JobEvent;
 
 pub struct Agent {
     config: AgentConfig,

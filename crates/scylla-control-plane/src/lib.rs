@@ -1,3 +1,21 @@
+//! The Scylla control plane: use cases, adapters, the gRPC and HTTP surfaces,
+//! and the binary that composes them.
+//!
+//! The domain model itself lives in the `scylla-core` kernel, which the agents
+//! also depend on. It is re-exported below so that `crate::domain::...` keeps
+//! naming it from anywhere in this crate.
+
+/// The domain model, re-exported from the [`scylla_core`] kernel.
+///
+/// This is what lets every `crate::domain::...` path in this crate keep
+/// resolving now that the model lives in its own crate. Extracting the kernel
+/// would otherwise have meant rewriting 484 import sites for no behavioural
+/// gain, and buried the actual change under the churn.
+pub use scylla_core::domain;
+
+pub mod application;
+pub mod infrastructure;
+
 pub mod bootstrap;
 pub mod config;
 pub mod error;
@@ -6,6 +24,9 @@ pub mod runtime;
 pub mod startup;
 
 pub mod grpc;
+
+#[cfg(any(test, feature = "test-utils"))]
+pub mod test_support;
 
 pub use grpc::{
     AuthContext, AuthHandler, JobHandler, OrganizationHandler, PipelineHandler, ProjectHandler,

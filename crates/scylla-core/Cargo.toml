@@ -3,60 +3,20 @@ name = "scylla-core"
 version = "0.1.0"
 edition = "2024"
 
-[features]
-default = ["postgres", "hash", "permission"]
-
-# database backend
-postgres = ["dep:sqlx"]
-
-# infrastructure services
-hash = ["dep:argon2"]
-permission = ["dep:cedar-policy", "postgres"]
-
-# Exposes `test_support` builders / seeders to downstream test crates. Off by
-# default; turned on via dev-dependencies in `scylla-api` etc.
-test-utils = []
-
+# No features, and no heavy dependencies. This crate is shared by the control
+# plane and by every agent, so anything that opens a socket, talks to a database
+# or does crypto belongs in scylla-control-plane, not here. See src/lib.rs.
 [dependencies]
-# domain
-async-trait.workspace = true
-thiserror.workspace = true
-derive_more.workspace = true
-nutype.workspace = true
-bon.workspace = true
+serde = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-ulid.workspace = true
+nutype = { workspace = true }
+ulid = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
 
-# application
-croner.workspace = true
-uuid.workspace = true
-tokio.workspace = true
-tokio-stream.workspace = true
-tracing.workspace = true
-futures-core.workspace = true
-futures-util.workspace = true
-
-# infrastructure (postgres feature-gated)
-sqlx = { workspace = true, optional = true }
-serde.workspace = true
-serde_json.workspace = true
-humantime-serde.workspace = true
-
-# infrastructure optional services
-argon2 = { workspace = true, optional = true }
-chacha20poly1305 = { workspace = true }
-hmac = { workspace = true }
-sha2 = { workspace = true }
-subtle = { workspace = true }
-hex = { workspace = true }
-cedar-policy = { workspace = true, optional = true }
-lettre = { workspace = true }
-oauth2 = { workspace = true }
-reqwest = { workspace = true }
+[dev-dependencies]
+# Only the golden tests that pin the JSONB on-disk shapes need to parse JSON.
+serde_json = { workspace = true }
 
 [lints]
 workspace = true
-
-[dev-dependencies]
-sqlx = { workspace = true }
-tokio = { workspace = true, features = ["test-util"] }

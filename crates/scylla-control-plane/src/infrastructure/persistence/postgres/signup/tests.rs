@@ -143,7 +143,6 @@ async fn login_by_email_or_username(pool: PgPool) {
 /// their own org (can update it) yet denied on any other org — the core tenant
 /// isolation guarantee. Exercises the full Cedar path: signup links the grant,
 /// reload makes it live, and a real `check` honours it.
-#[cfg(feature = "permission")]
 #[sqlx::test(migrations = "../../migrations")]
 async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;

@@ -5,7 +5,7 @@
 
 use crate::grpc::mappers::{domain_error_to_status, job_log_to_proto};
 use futures_util::StreamExt;
-use scylla_core::application::JobLogLiveStream;
+use crate::application::JobLogLiveStream;
 use scylla_protocol::job::v1::TailJobLogsResponse;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;

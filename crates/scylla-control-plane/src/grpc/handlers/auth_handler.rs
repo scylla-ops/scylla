@@ -1,7 +1,7 @@
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
+use crate::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::user::Password;
 use scylla_protocol::auth::v1::{

@@ -6,7 +6,7 @@
 //! `JobCompleted`/`JobFailed` fires via [`JobReporter::finalize`] at the end of
 //! the run — regardless of which path the executor took.
 
-use scylla_core::application::JobEvent;
+use scylla_core::JobEvent;
 use scylla_protocol::agent::v1::job_status::{
     JobCompleted, JobFailed, JobStarted, NodeCompleted, NodeFailed, NodeSkipped, NodeStarted,
 };

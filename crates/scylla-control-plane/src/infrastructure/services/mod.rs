@@ -1,17 +1,12 @@
-#[cfg(feature = "hash")]
 pub mod argon2_hash_service;
-#[cfg(feature = "permission")]
 pub(crate) mod cedar_authz;
-#[cfg(feature = "permission")]
 pub mod cedar_permission_service;
 pub mod chacha_secret_cipher;
 pub mod cron_schedule;
 pub mod github_oauth_provider;
 pub mod lettre_mailer;
 
-#[cfg(feature = "hash")]
 pub use argon2_hash_service::Argon2HashService;
-#[cfg(feature = "permission")]
 pub use cedar_permission_service::CedarPermissionService;
 pub use chacha_secret_cipher::ChaChaSecretCipher;
 pub use cron_schedule::CronScheduleService;

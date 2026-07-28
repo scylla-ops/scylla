@@ -4,7 +4,7 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, pipeline_to_proto, pipeline_to_proto_summary,
     proto_to_domain_pagination,
 };
-use scylla_core::application::{
+use crate::application::{
     AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PermissionService,
     PipelineRepository, PipelineUseCases, ProjectRepository,
 };

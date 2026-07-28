@@ -40,7 +40,6 @@ pub fn org(name: &str) -> Organization {
     OrgBuilder::new(name).build()
 }
 
-#[cfg(feature = "postgres")]
 pub async fn seed_org(pool: &sqlx::PgPool, name: &str) -> Organization {
     use crate::application::OrganizationRepository;
     use crate::infrastructure::persistence::postgres::PgOrganizationRepository;

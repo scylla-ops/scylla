@@ -1,5 +1,5 @@
 use crate::error::ConfigError;
-use scylla_core::infrastructure::DatabaseConfig;
+use crate::infrastructure::DatabaseConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::net::SocketAddr;

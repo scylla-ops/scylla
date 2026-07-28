@@ -41,7 +41,6 @@ pub fn job_log(job_id: &JobId, node_id: &str, line: &str) -> JobLog {
     JobLogBuilder::new(job_id, node_id, line).build()
 }
 
-#[cfg(feature = "postgres")]
 pub async fn seed_job_log(
     pool: &sqlx::PgPool,
     job_id: &JobId,

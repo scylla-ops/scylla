@@ -2,8 +2,8 @@ use crate::config::ControlPlaneConfig;
 use crate::error::StartupError;
 use http::{HeaderName, HeaderValue, Method};
 #[cfg(feature = "register")]
-use scylla_core::application::SignupUseCases;
-use scylla_core::application::{
+use crate::application::SignupUseCases;
+use crate::application::{
     AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases,
     BootstrapUseCases, CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
     InvitationUseCases, JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer,
@@ -12,8 +12,8 @@ use scylla_core::application::{
     TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
     WebhookIngressUseCases,
 };
-use scylla_core::infrastructure::LettreMailer;
-use scylla_core::infrastructure::{
+use crate::infrastructure::LettreMailer;
+use crate::infrastructure::{
     Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
     GitHubOAuthProvider, InMemoryAgentRegistry, InMemoryJobLogStream, PgAgentRepository,
     PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository, PgAuditLog,
@@ -176,7 +176,7 @@ pub struct Services {
 }
 
 pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, StartupError> {
-    let db = scylla_core::infrastructure::init_db(&config.database).await?;
+    let db = crate::infrastructure::init_db(&config.database).await?;
 
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
     let session_repo = Arc::new(PgSessionRepository::new(db.clone()));
@@ -251,7 +251,7 @@ pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, Star
         permission_checker.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        scylla_core::application::Quotas {
+        crate::application::Quotas {
             max_projects_per_org: config.metering.max_projects_per_org,
         },
     ));

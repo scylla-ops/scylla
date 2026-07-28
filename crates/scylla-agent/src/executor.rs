@@ -20,7 +20,7 @@ use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
-use scylla_core::application::JobEvent;
+use scylla_core::JobEvent;
 use scylla_core::domain::entities::PipelineNode;
 use scylla_core::domain::value_objects::job::LogStream;
 use scylla_core::domain::value_objects::pipeline::{Shell, Step};

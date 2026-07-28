@@ -53,7 +53,7 @@ pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     }
 
     info!("closing database pool");
-    scylla_core::infrastructure::close_db(&db_pool).await;
+    crate::infrastructure::close_db(&db_pool).await;
 
     api_result.context("api run_grpc failed")?;
     Ok(())

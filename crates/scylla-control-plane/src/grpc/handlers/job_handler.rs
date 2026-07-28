@@ -6,10 +6,10 @@ use crate::grpc::mappers::{
 };
 use crate::grpc::streaming::spawn_log_forwarder;
 use derive_more::Constructor;
-use scylla_core::application::{
+use crate::application::{
     JobLogRepository, JobLogStreamPort, JobRepository, PermissionService,
 };
-use scylla_core::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
+use crate::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
 use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId};
 use scylla_core::domain::value_objects::PaginationMetadata;
 use scylla_core::domain::value_objects::pipeline::NodeId;

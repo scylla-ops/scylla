@@ -65,7 +65,6 @@ pub fn project(org: &Organization, name: &str) -> Project {
     ProjectBuilder::new(org, name).build()
 }
 
-#[cfg(feature = "postgres")]
 pub async fn seed_project(pool: &sqlx::PgPool, org: &Organization, name: &str) -> Project {
     use crate::application::ProjectRepository;
     use crate::infrastructure::persistence::postgres::PgProjectRepository;

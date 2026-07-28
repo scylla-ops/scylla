@@ -1,7 +1,7 @@
 use crate::grpc::convert::{required, ts};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::{
+use crate::application::{
     AppCredentialRepository, AppRepository, AppTokenRepository, AppTokenUseCases, HashService,
 };
 use scylla_core::domain::entities::AppId;

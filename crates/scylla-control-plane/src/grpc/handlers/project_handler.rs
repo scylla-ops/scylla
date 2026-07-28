@@ -4,9 +4,9 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
 };
 use derive_more::Constructor;
-use scylla_core::application::ProjectUseCases;
-use scylla_core::application::authz::policy::PolicyControl;
-use scylla_core::application::{PermissionService, ProjectRepository, UserRepository};
+use crate::application::ProjectUseCases;
+use crate::application::authz::policy::PolicyControl;
+use crate::application::{PermissionService, ProjectRepository, UserRepository};
 use scylla_core::domain::entities::{OrganizationId, ProjectId, UserId};
 use scylla_core::domain::value_objects::project::{ProjectDescription, ProjectName};
 use scylla_protocol::project::v1::{

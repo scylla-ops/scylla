@@ -32,7 +32,7 @@ pub mod trigger_deliveries;
 pub mod triggers;
 pub mod users;
 
-// Flat re-exports so call sites can keep `scylla_core::infrastructure::PgUserRepository`
+// Flat re-exports so call sites can keep `crate::infrastructure::PgUserRepository`
 // without leaking the internal sub-module layout.
 pub use agents::PgAgentRepository;
 pub use app_secrets::PgAppCredentialRepository;

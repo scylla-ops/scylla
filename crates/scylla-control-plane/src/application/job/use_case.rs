@@ -1,5 +1,5 @@
 use crate::application::caller::CallerContext;
-use crate::application::job::event::JobEvent;
+use crate::application::job::JobEvent;
 use crate::application::{JobRepository, PermissionService};
 use crate::domain::entities::{Job, JobId, NodeOutcome, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;

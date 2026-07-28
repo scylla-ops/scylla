@@ -74,7 +74,6 @@ pub fn pipeline(project: &Project) -> Pipeline {
     PipelineBuilder::new(project).build()
 }
 
-#[cfg(feature = "postgres")]
 pub async fn seed_pipeline(pool: &sqlx::PgPool, project: &Project) -> Pipeline {
     use crate::application::PipelineRepository;
     use crate::infrastructure::persistence::postgres::PgPipelineRepository;

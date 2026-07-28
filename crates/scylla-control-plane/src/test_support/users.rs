@@ -46,7 +46,6 @@ pub fn user(name: &str) -> User {
     UserBuilder::new(name).build()
 }
 
-#[cfg(feature = "postgres")]
 pub async fn seed_user(pool: &sqlx::PgPool, name: &str) -> User {
     use crate::application::UserRepository;
     use crate::infrastructure::persistence::postgres::PgUserRepository;

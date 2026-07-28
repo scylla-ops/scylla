@@ -1,7 +1,7 @@
 use crate::extract_auth_context;
 use crate::grpc::convert::required;
 use crate::grpc::mappers::{domain_error_to_status, secret_to_proto};
-use scylla_core::application::{PermissionService, SecretRepository, SecretUseCases};
+use crate::application::{PermissionService, SecretRepository, SecretUseCases};
 use scylla_core::domain::entities::{ProjectId, SecretId};
 use scylla_core::domain::value_objects::secret::SecretName;
 use scylla_protocol::secret::v1::{

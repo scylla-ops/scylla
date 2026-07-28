@@ -4,8 +4,8 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
 };
 use derive_more::Constructor;
-use scylla_core::application::UserUseCases;
-use scylla_core::application::{HashService, PermissionService, PolicyControl, UserRepository};
+use crate::application::UserUseCases;
+use crate::application::{HashService, PermissionService, PolicyControl, UserRepository};
 use scylla_core::domain::entities::UserId;
 use scylla_core::domain::value_objects::user::{Email, Password, Username};
 use scylla_protocol::user::v1::{

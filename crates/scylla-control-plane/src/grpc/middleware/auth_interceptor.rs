@@ -1,6 +1,6 @@
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::{AppTokenRepository, CallerContext, SessionRepository};
+use crate::application::{AppTokenRepository, CallerContext, SessionRepository};
 use std::sync::Arc;
 use tonic::{Request, Status};
 use tonic_async_interceptor::AsyncInterceptor;
@@ -117,7 +117,7 @@ mod tests {
     use super::*;
     use async_trait::async_trait;
     use chrono::Duration;
-    use scylla_core::application::{AppTokenRepository, SessionRepository};
+    use crate::application::{AppTokenRepository, SessionRepository};
     use scylla_core::domain::entities::{AppCredentialId, AppId, AppToken, Session, UserId};
     use scylla_core::domain::errors::{DomainError, DomainResult};
     use std::sync::Arc;

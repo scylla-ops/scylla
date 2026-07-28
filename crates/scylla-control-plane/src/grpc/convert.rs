@@ -5,7 +5,7 @@
 
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
-use scylla_core::application::{Principal, Scope, ScopeKind};
+use crate::application::{Principal, Scope, ScopeKind};
 use scylla_core::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use scylla_protocol::authz::v1::{
     Permission, PrincipalRef, ScopeKind as ProtoScopeKind, ScopeRef, principal_ref, scope_ref,

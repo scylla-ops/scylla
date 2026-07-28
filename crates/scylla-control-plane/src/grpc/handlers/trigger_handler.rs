@@ -1,7 +1,7 @@
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
-use scylla_core::application::{
+use crate::application::{
     AgentDispatch, AppRepository, HashService, JobRepository, PermissionService,
     PipelineRepository, PolicyControl, ProjectRepository, TriggerFireUseCases, TriggerRepository,
     TriggerUseCases,

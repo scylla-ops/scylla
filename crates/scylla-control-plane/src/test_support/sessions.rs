@@ -53,7 +53,6 @@ pub fn session(user_id: &UserId) -> Session {
     SessionBuilder::new(user_id).build()
 }
 
-#[cfg(feature = "postgres")]
 pub async fn seed_session(pool: &sqlx::PgPool, user_id: &UserId) -> Session {
     use crate::application::SessionRepository;
     use crate::infrastructure::persistence::postgres::PgSessionRepository;

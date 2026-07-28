@@ -33,7 +33,6 @@ async fn count_by_organization_reflects_inserts(pool: PgPool) {
 
 /// Project creation must cap projects per org. Uses a Service caller to
 /// bypass Cedar and isolate the quota check.
-#[cfg(feature = "permission")]
 #[sqlx::test(migrations = "../../migrations")]
 async fn project_quota_enforced(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;

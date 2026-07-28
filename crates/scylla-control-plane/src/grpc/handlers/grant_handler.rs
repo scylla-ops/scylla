@@ -5,7 +5,7 @@ use crate::grpc::convert::{
 };
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_core::application::{
+use crate::application::{
     Grant, GrantRepository, GrantUseCases, GrantableRole, PermissionService, PolicyControl,
     RoleKind, grantable_roles,
 };
