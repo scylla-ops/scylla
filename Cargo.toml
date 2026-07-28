@@ -2,7 +2,6 @@
 resolver = "3"
 members = [
     "crates/scylla-core",
-    "crates/scylla-api",
     "crates/scylla-protocol",
     "crates/scylla-agent",
     "crates/scylla-control-plane",
@@ -45,7 +44,7 @@ sqlx = { version = "0.9", default-features = false, features = [
 ] }
 
 # workspace crates
-scylla-core = { path = "crates/scylla-core", default-features = false }
+scylla-core = { path = "crates/scylla-core" }
 
 # domain / utilities
 thiserror = "2.0.18"

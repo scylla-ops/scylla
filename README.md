@@ -11,7 +11,9 @@ Distributed CI/CD platform.
 | `scylla-agent`         | —              | Worker installed per machine; registered as an "App" in the UI, run out-of-band |
 | `postgres`             | `5432`         | Primary datastore (PostgreSQL 18)                                 |
 
-Two binaries ship: `scylla-control-plane` (central brain) and `scylla-agent` (remote workers). Agents connect to the control plane's gRPC API (`50051`) over a persistent worker stream — there is no message broker. `scylla-api` is a library composed inside the control plane.
+Two binaries ship: `scylla-control-plane` (central brain) and `scylla-agent` (remote workers). Agents connect to the control plane's gRPC API (`50051`) over a persistent worker stream, there is no message broker.
+
+The workspace is four crates: `scylla-control-plane` (use cases, adapters, gRPC and HTTP surfaces, and the binary), `scylla-agent` (the worker binary), `scylla-core` (the shared kernel: the domain model plus the types the two binaries exchange) and `scylla-protocol` (the `.proto` files and their generated bindings, which the frontend also consumes). Only the last two are shared, and `scylla-core` deliberately links no database, no gRPC stack and no crypto so an agent can depend on it cheaply.
 
 ## Prerequisites
 
@@ -104,5 +106,5 @@ just local
 
 ## Further reading
 
-- [Glossary](GLOSSARY.md) — every Scylla-specific term, grouped by topic.
-- [Releasing images](docs/release.md) — how the multi-arch Docker images are built and pushed to Docker Hub (manual, via `just release`).
+- [Glossary](GLOSSARY.md), every Scylla-specific term, grouped by topic.
+- Releasing images: `just release` builds and pushes the multi-arch Docker images to Docker Hub. Run `just --list` for the individual recipes.
