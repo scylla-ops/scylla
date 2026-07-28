@@ -1,4 +1,4 @@
-use crate::domain::entities::AppToken;
+use crate::domain::app::AppToken;
 use crate::domain::errors::DomainResult;
 use async_trait::async_trait;
 

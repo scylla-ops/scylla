@@ -4,9 +4,10 @@ use bon::bon;
 use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
-use crate::domain::entities::{JobId, JobLog, JobLogId};
-use crate::domain::value_objects::job::LogStream;
-use crate::domain::value_objects::pipeline::NodeId;
+use crate::domain::ids::{JobId, JobLogId};
+use crate::domain::job::JobLog;
+use crate::domain::job::LogStream;
+use crate::domain::pipeline::NodeId;
 
 pub struct JobLogBuilder;
 

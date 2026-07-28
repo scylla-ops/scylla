@@ -1,13 +1,14 @@
-use crate::extract_auth_context;
-use crate::grpc::convert::{required, ts, wrap};
-use crate::grpc::mappers::domain_error_to_status;
-use derive_more::Constructor;
 use crate::application::{
     AppCredentialRepository, AppRepository, AppUseCases, HashService, PermissionService,
     PolicyControl,
 };
-use scylla_core::domain::entities::{App, AppCredential, AppCredentialId, AppId, OrganizationId};
-use scylla_core::domain::value_objects::app::{AppName, AppSecretLabel};
+use crate::extract_auth_context;
+use crate::grpc::convert::{required, ts, wrap};
+use crate::grpc::mappers::domain_error_to_status;
+use derive_more::Constructor;
+use scylla_core::domain::app::{App, AppCredential};
+use scylla_core::domain::app::{AppName, AppSecretLabel};
+use scylla_core::domain::ids::{AppCredentialId, AppId, OrganizationId};
 use scylla_protocol::app::v1::{
     App as ProtoApp, AppSecret as ProtoAppSecret, CreateAppRequest, CreateAppResponse,
     CreateAppSecretRequest, CreateAppSecretResponse, DeleteAppRequest, DeleteAppResponse,

@@ -1,13 +1,13 @@
-use crate::config::BootstrapConfig;
-use crate::error::BootstrapError;
 use crate::application::authz::grant::SYSTEM_ADMIN_ROLE;
 use crate::application::authz::policy::PolicyControl;
 use crate::application::{
     BootstrapUseCases, GrantRepository, HashService, PermissionService, UserRepository,
 };
+use crate::config::BootstrapConfig;
+use crate::error::BootstrapError;
 use scylla_core::domain::errors::DomainError;
-use scylla_core::domain::value_objects::role::RoleName;
-use scylla_core::domain::value_objects::user::{Email, Password, Username};
+use scylla_core::domain::role::RoleName;
+use scylla_core::domain::user::{Email, Password, Username};
 
 /// Validate the on-disk bootstrap config into domain value objects and run the
 /// [`BootstrapUseCases`]. Orchestration (create-or-fetch user, assign role)

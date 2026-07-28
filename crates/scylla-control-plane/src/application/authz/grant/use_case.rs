@@ -9,8 +9,8 @@ use crate::application::authz::role::{FULL_CONTROL, RoleRepository};
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::{Permission, ResourceRef};
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::permission::{Permission, ResourceRef};
+use crate::domain::role::RoleName;
 use derive_more::Constructor;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
@@ -313,7 +313,7 @@ mod tests {
     use crate::application::authz::entity_provider::ResourceAncestors;
     use crate::application::authz::role::Role;
     use crate::application::caller::ServiceIdentity;
-    use crate::domain::entities::{AppId, OrganizationId, UserId};
+    use crate::domain::ids::{AppId, OrganizationId, UserId};
     use async_trait::async_trait;
     use std::sync::Mutex;
 

@@ -1,5 +1,5 @@
 use crate::application::job::repository::JobRepository;
-use crate::domain::entities::AppId;
+use crate::domain::ids::AppId;
 use std::sync::Arc;
 use tracing::{instrument, warn};
 
@@ -49,9 +49,10 @@ impl<J: JobRepository> JobReaper<J> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::entities::{Job, JobId, OrganizationId, PipelineId, ProjectId};
+    use crate::application::pagination::{PaginatedResult, PaginationParams};
     use crate::domain::errors::DomainResult;
-    use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+    use crate::domain::ids::{JobId, OrganizationId, PipelineId, ProjectId};
+    use crate::domain::job::Job;
     use async_trait::async_trait;
     use std::sync::Mutex;
 

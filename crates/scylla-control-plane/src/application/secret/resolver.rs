@@ -1,9 +1,10 @@
 use crate::application::agent::dispatch::{DispatchEnv, DispatchNode};
 use crate::application::secret::SecretCipher;
 use crate::application::secret::repository::SecretRepository;
-use crate::domain::entities::{PipelineNode, ProjectId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::pipeline::EnvSource;
+use crate::domain::ids::ProjectId;
+use crate::domain::pipeline::EnvSource;
+use crate::domain::pipeline::PipelineNode;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;

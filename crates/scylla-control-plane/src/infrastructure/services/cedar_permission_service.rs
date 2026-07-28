@@ -10,7 +10,7 @@ use crate::application::authz::visibility::{
 };
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::{Permission, ResourceRef};
+use crate::domain::permission::{Permission, ResourceRef};
 use async_trait::async_trait;
 use cedar_policy::{
     Authorizer, Context, Decision, Entities, Entity, EntityUid, PolicyId, PolicySet, Request,
@@ -476,8 +476,8 @@ mod tests {
     };
     use crate::application::authz::role::FULL_CONTROL;
     use crate::application::caller::ServiceIdentity;
-    use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
-    use crate::domain::value_objects::role::RoleName;
+    use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
+    use crate::domain::role::RoleName;
 
     /// The five builtin roles as the seed migration defines them: admin roles
     /// confer full control (`*`), agent roles the four job-execution

@@ -2,11 +2,14 @@ use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal
 use crate::application::authz::policy::PolicyControl;
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{HashService, SessionRepository};
-use crate::domain::entities::{Organization, OrganizationId, Session, User, UserId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::organization::OrganizationName;
-use crate::domain::value_objects::role::RoleName;
-use crate::domain::value_objects::user::{Email, Password, Username};
+use crate::domain::ids::{OrganizationId, UserId};
+use crate::domain::organization::Organization;
+use crate::domain::organization::OrganizationName;
+use crate::domain::role::RoleName;
+use crate::domain::session::Session;
+use crate::domain::user::User;
+use crate::domain::user::{Email, Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;
 use std::sync::Arc;

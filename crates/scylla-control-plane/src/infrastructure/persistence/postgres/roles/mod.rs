@@ -1,7 +1,7 @@
 use crate::application::authz::grant::ScopeKind;
 use crate::application::authz::role::{Role, RoleRepository};
-use crate::domain::entities::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::OrganizationId;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use tracing::instrument;
@@ -230,9 +230,9 @@ mod tests {
         use crate::application::authz::policy::PolicyControl;
         use crate::application::authz::{Principal, RoleUseCases, Scope};
         use crate::application::caller::{CallerContext, ServiceIdentity};
-        use crate::domain::entities::UserId;
         use crate::domain::errors::DomainResult;
-        use crate::domain::value_objects::permission::Permission;
+        use crate::domain::ids::UserId;
+        use crate::domain::permission::Permission;
         use crate::infrastructure::persistence::postgres::PgGrantRepository;
         use std::sync::Arc;
 
@@ -327,9 +327,9 @@ mod tests {
         use crate::application::authz::policy::PolicyControl;
         use crate::application::authz::{Principal, RoleUseCases, Scope};
         use crate::application::caller::{CallerContext, ServiceIdentity};
-        use crate::domain::entities::UserId;
         use crate::domain::errors::{DomainError, DomainResult};
-        use crate::domain::value_objects::permission::Permission;
+        use crate::domain::ids::UserId;
+        use crate::domain::permission::Permission;
         use crate::infrastructure::persistence::postgres::PgGrantRepository;
         use std::sync::Arc;
 

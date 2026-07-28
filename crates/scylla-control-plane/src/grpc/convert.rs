@@ -3,10 +3,10 @@
 //! `String` ids / `chrono` timestamps / sum types the domain uses. Centralised
 //! here so each mapper and handler site stays a one-liner.
 
+use crate::application::{Principal, Scope, ScopeKind};
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
-use crate::application::{Principal, Scope, ScopeKind};
-use scylla_core::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
+use scylla_core::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
 use scylla_protocol::authz::v1::{
     Permission, PrincipalRef, ScopeKind as ProtoScopeKind, ScopeRef, principal_ref, scope_ref,
 };
@@ -261,7 +261,7 @@ pub fn principal_ref_from_proto(principal: Option<PrincipalRef>) -> Result<Princ
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_core::domain::value_objects::permission::PERMISSION_CATALOG;
+    use scylla_core::domain::permission::PERMISSION_CATALOG;
 
     #[test]
     fn permission_catalog_matches_proto_enum() {

@@ -3,11 +3,14 @@ use crate::application::authz::grant::{
     Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
 };
 use crate::application::{AgentRepository, AppRepository, JobRepository};
+use crate::domain::agent::Agent;
+use crate::domain::app::{App, AppCredential};
+use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
 use crate::domain::clock;
-use crate::domain::entities::{Agent, App, AppCredential, Job, JobId, OrganizationId};
-use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
-use crate::domain::value_objects::job::JobStatus;
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::ids::{JobId, OrganizationId};
+use crate::domain::job::Job;
+use crate::domain::job::JobStatus;
+use crate::domain::role::RoleName;
 use crate::infrastructure::persistence::postgres::{
     PgAppRepository, PgGrantRepository, PgJobRepository,
 };
@@ -152,8 +155,7 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
             | JobStatus::Orphaned => (Some(now - chrono::Duration::seconds(1)), Some(now)),
         };
         let state =
-            crate::domain::entities::JobState::from_columns(status, started_at, finished_at)
-                .unwrap();
+            crate::domain::job::JobState::from_columns(status, started_at, finished_at).unwrap();
         Job::from_persistence(
             JobId::generate(),
             pipeline.id().clone(),
@@ -161,7 +163,7 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
             Some(app.id().clone()),
             vec![],
             vec![],
-            crate::domain::value_objects::job::JobOrigin::App {
+            crate::domain::job::JobOrigin::App {
                 app_id: app.id().clone(),
             },
             now,
@@ -199,7 +201,7 @@ async fn deleting_agent_keeps_jobs_and_nulls_attribution(pool: PgPool) {
 
     let mut job = Job::create_from_pipeline(
         &pipeline,
-        crate::domain::value_objects::job::JobOrigin::App {
+        crate::domain::job::JobOrigin::App {
             app_id: app.id().clone(),
         },
     );

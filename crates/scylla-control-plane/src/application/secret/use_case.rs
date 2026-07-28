@@ -2,10 +2,11 @@ use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::application::secret::SecretCipher;
 use crate::application::secret::repository::SecretRepository;
-use crate::domain::entities::{ProjectId, Secret, SecretId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::secret::SecretName;
+use crate::domain::ids::{ProjectId, SecretId};
+use crate::domain::permission::Permission;
+use crate::domain::secret::Secret;
+use crate::domain::secret::SecretName;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -86,8 +87,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::entities::UserId;
     use crate::domain::errors::DomainError;
+    use crate::domain::ids::UserId;
     use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
     use async_trait::async_trait;
 

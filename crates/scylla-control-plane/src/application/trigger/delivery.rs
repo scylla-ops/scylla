@@ -1,5 +1,5 @@
-use crate::domain::entities::TriggerId;
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::TriggerId;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 

@@ -1,8 +1,8 @@
 use super::PgTriggerDeliveryRepository;
 use crate::application::{TriggerDeliveryRepository, TriggerRepository};
 use crate::domain::clock;
-use crate::domain::entities::Trigger;
-use crate::domain::value_objects::trigger::{TriggerName, TriggerSource, WebhookSpec};
+use crate::domain::trigger::Trigger;
+use crate::domain::trigger::{TriggerName, TriggerSource, WebhookSpec};
 use crate::infrastructure::persistence::postgres::PgTriggerRepository;
 use crate::test_support::prelude::*;
 use sqlx::PgPool;

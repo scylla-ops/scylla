@@ -6,7 +6,8 @@ use uuid::Uuid;
 
 use crate::domain::clock;
 
-use crate::domain::entities::{Session, SessionId, UserId};
+use crate::domain::ids::{SessionId, UserId};
+use crate::domain::session::Session;
 
 pub struct SessionBuilder;
 

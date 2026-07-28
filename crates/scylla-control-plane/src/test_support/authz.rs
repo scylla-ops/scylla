@@ -10,7 +10,7 @@
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use std::sync::Mutex;
 

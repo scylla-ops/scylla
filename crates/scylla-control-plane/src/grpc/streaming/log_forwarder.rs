@@ -3,9 +3,9 @@
 //! dropping lines, so the full history replay + live tail reach the client
 //! intact; the task exits cleanly when the client disconnects.
 
+use crate::application::JobLogLiveStream;
 use crate::grpc::mappers::{domain_error_to_status, job_log_to_proto};
 use futures_util::StreamExt;
-use crate::application::JobLogLiveStream;
 use scylla_protocol::job::v1::TailJobLogsResponse;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -70,10 +70,11 @@ mod tests {
     use super::*;
     use chrono::Utc;
     use futures_util::stream;
-    use scylla_core::domain::entities::{JobId, JobLog};
     use scylla_core::domain::errors::DomainResult;
-    use scylla_core::domain::value_objects::job::LogStream;
-    use scylla_core::domain::value_objects::pipeline::NodeId;
+    use scylla_core::domain::ids::JobId;
+    use scylla_core::domain::job::JobLog;
+    use scylla_core::domain::job::LogStream;
+    use scylla_core::domain::pipeline::NodeId;
 
     fn make_log(line: &str) -> JobLog {
         JobLog::new(

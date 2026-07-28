@@ -1,5 +1,6 @@
-use crate::domain::entities::{Session, UserId};
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::UserId;
+use crate::domain::session::Session;
 use async_trait::async_trait;
 
 #[async_trait]

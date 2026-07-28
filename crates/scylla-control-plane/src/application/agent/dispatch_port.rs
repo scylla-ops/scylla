@@ -1,6 +1,6 @@
 use crate::application::agent::dispatch::JobDispatch;
-use crate::domain::entities::AppId;
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::AppId;
 use async_trait::async_trait;
 
 /// Registry of currently-connected agent Apps. Presence is the open agent

@@ -1,10 +1,11 @@
 use crate::application::caller::CallerContext;
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{JobLogRepository, PermissionService};
-use crate::domain::entities::{JobId, JobLog, JobLogId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::pipeline::NodeId;
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{JobId, JobLogId};
+use crate::domain::job::JobLog;
+use crate::domain::permission::Permission;
+use crate::domain::pipeline::NodeId;
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;

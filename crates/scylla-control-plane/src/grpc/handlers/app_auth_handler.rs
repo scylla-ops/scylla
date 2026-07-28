@@ -1,11 +1,11 @@
-use crate::grpc::convert::{required, ts};
-use crate::grpc::mappers::domain_error_to_status;
-use derive_more::Constructor;
 use crate::application::{
     AppCredentialRepository, AppRepository, AppTokenRepository, AppTokenUseCases, HashService,
 };
-use scylla_core::domain::entities::AppId;
-use scylla_core::domain::value_objects::app::AppSecret;
+use crate::grpc::convert::{required, ts};
+use crate::grpc::mappers::domain_error_to_status;
+use derive_more::Constructor;
+use scylla_core::domain::app::AppSecret;
+use scylla_core::domain::ids::AppId;
 use scylla_protocol::app::v1::{
     IssueTokenRequest, IssueTokenResponse, app_auth_service_server::AppAuthService,
 };

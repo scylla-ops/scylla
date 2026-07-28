@@ -4,8 +4,10 @@ use bon::bon;
 use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
-use crate::domain::entities::{Organization, OrganizationId, Project, ProjectId};
-use crate::domain::value_objects::project::{ProjectDescription, ProjectName};
+use crate::domain::ids::{OrganizationId, ProjectId};
+use crate::domain::organization::Organization;
+use crate::domain::project::Project;
+use crate::domain::project::{ProjectDescription, ProjectName};
 
 pub struct ProjectBuilder;
 

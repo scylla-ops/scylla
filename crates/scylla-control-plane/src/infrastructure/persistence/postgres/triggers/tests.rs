@@ -1,12 +1,11 @@
 use super::PgTriggerRepository;
 use crate::application::{PipelineRepository, TriggerRepository};
 use crate::domain::clock;
-use crate::domain::entities::{Pipeline, Trigger};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::pipeline::EnvKey;
-use crate::domain::value_objects::trigger::{
-    CronSpec, TriggerInput, TriggerName, TriggerSource, WebhookSpec,
-};
+use crate::domain::pipeline::EnvKey;
+use crate::domain::pipeline::Pipeline;
+use crate::domain::trigger::Trigger;
+use crate::domain::trigger::{CronSpec, TriggerInput, TriggerName, TriggerSource, WebhookSpec};
 use crate::infrastructure::persistence::postgres::PgPipelineRepository;
 use crate::test_support::prelude::*;
 use chrono::{DateTime, Duration, Utc};

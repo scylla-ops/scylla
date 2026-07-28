@@ -1,16 +1,17 @@
-use crate::extract_auth_context;
-use crate::grpc::convert::{dt, log_stream_from_proto};
-use derive_more::Constructor;
 use crate::application::caller::CallerContext;
 use crate::application::{
     AgentDispatch, AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
     PermissionService,
 };
 use crate::application::{JobDispatch, JobEvent};
-use scylla_core::domain::entities::{AppId, JobId, JobLog};
-use scylla_core::domain::value_objects::job::LogStream;
-use scylla_core::domain::value_objects::pipeline::{NodeId, Shell, Step};
+use crate::extract_auth_context;
+use crate::grpc::convert::{dt, log_stream_from_proto};
 use crate::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
+use derive_more::Constructor;
+use scylla_core::domain::ids::{AppId, JobId};
+use scylla_core::domain::job::JobLog;
+use scylla_core::domain::job::LogStream;
+use scylla_core::domain::pipeline::{NodeId, Shell, Step};
 use scylla_protocol::agent::v1::{
     AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, ResolvedEnv, agent_down,
     agent_node, agent_service_server::AgentService, agent_up, job_status,

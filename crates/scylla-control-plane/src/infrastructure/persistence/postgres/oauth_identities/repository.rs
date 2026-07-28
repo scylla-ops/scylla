@@ -1,6 +1,6 @@
 use crate::application::oauth::OAuthIdentityRepository;
-use crate::domain::entities::UserId;
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::UserId;
 use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;

@@ -1,5 +1,6 @@
-use crate::domain::entities::{AppCredential, AppCredentialId, AppId};
+use crate::domain::app::AppCredential;
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{AppCredentialId, AppId};
 use async_trait::async_trait;
 
 /// Persistence for App secrets (`app_secrets` table). An App can hold several;

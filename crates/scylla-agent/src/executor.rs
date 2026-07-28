@@ -8,7 +8,7 @@
 //!
 //! Status and log events are sent as `AgentUp` messages on the agent stream.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
 use chrono::Utc;
@@ -21,14 +21,13 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
 use scylla_core::JobEvent;
-use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::job::LogStream;
-use scylla_core::domain::value_objects::pipeline::{Shell, Step};
+use scylla_core::domain::job::LogStream;
+use scylla_core::domain::pipeline::{DagPlan, PipelineNode, Shell, Step};
 use scylla_protocol::agent::v1::{AgentUp, JobLogLine, agent_up};
 use scylla_protocol::common::v1 as common;
 
 use crate::error::ExecutionError;
-use scylla_core::domain::dag::DagPlan;
+
 use crate::reporter::{JobReporter, StatusPublisher};
 
 /// Executes a pipeline DAG by walking nodes in topological order, spawning
@@ -272,7 +271,23 @@ async fn run_node(
 ) -> Result<(), ExecutionError> {
     // Resolve and create the working directory inside the workspace.
     let requested = match spec.working_dir() {
-        Some(wd) => workspace.join(wd.as_str()),
+        Some(wd) => {
+            // Checked before anything is created. A `..` or a leading `/` in the
+            // requested path makes the join below land outside the workspace, and
+            // `create_dir_all` would materialize those directories for real before
+            // the canonical check further down ever gets to reject them. The
+            // control plane already refuses both when validating `WorkingDir`, so
+            // this is the second lock on the same door, not the first.
+            if Path::new(wd.as_str())
+                .components()
+                .any(|c| matches!(c, Component::ParentDir | Component::RootDir))
+            {
+                return Err(ExecutionError::WorkspaceEscape {
+                    node_id: node_id.to_string(),
+                });
+            }
+            workspace.join(wd.as_str())
+        }
         None => workspace.to_path_buf(),
     };
     if let Err(e) = fs::create_dir_all(&requested).await {
@@ -607,7 +622,7 @@ async fn publish_log_line(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, WorkingDir};
+    use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, WorkingDir};
     use scylla_protocol::agent::v1::{JobStatus as ProtoJobStatus, job_status::Event};
 
     /// Name the oneof event variant carried by a status, for order/`contains`

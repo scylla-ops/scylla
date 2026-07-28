@@ -1,7 +1,7 @@
 use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
-use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
+use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
@@ -252,8 +252,8 @@ mod tests {
         Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE,
         PROJECT_ADMIN_ROLE, Principal, SYSTEM_ADMIN_ROLE, Scope,
     };
-    use crate::domain::entities::AppId;
-    use crate::domain::value_objects::role::RoleName;
+    use crate::domain::ids::AppId;
+    use crate::domain::role::RoleName;
     use crate::test_support::prelude::*;
     use sqlx::PgPool;
 
@@ -261,7 +261,7 @@ mod tests {
         RoleName::new(name).unwrap()
     }
 
-    async fn seed_app(pool: &PgPool, org: &crate::domain::entities::Organization) -> AppId {
+    async fn seed_app(pool: &PgPool, org: &crate::domain::organization::Organization) -> AppId {
         let id = AppId::generate();
         sqlx::query!(
             "INSERT INTO apps (id, organization_id, name) VALUES ($1, $2, 'runner')",

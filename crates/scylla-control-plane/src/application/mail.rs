@@ -1,5 +1,5 @@
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::user::Email;
+use crate::domain::user::Email;
 use async_trait::async_trait;
 
 /// Outbound transactional email. Kept dependency-free (no `lettre` here) so it

@@ -1,7 +1,7 @@
 use crate::application::authz::entity_provider::{AuthzEntityProvider, ResourceAncestors};
-use crate::domain::entities::{AppId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::ResourceRef;
+use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId};
+use crate::domain::permission::ResourceRef;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use tracing::instrument;

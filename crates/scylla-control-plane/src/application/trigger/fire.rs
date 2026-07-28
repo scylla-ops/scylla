@@ -6,11 +6,13 @@ use crate::application::{
     PipelineRepository, PipelineUseCases, ProjectRepository, TriggerRepository,
 };
 use crate::domain::clock;
-use crate::domain::entities::{AppId, Job, OrganizationId, Trigger, TriggerId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::job::JobOrigin;
-use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::trigger::{TriggerInputSource, TriggerSource};
+use crate::domain::ids::{AppId, OrganizationId, TriggerId};
+use crate::domain::job::Job;
+use crate::domain::job::JobOrigin;
+use crate::domain::permission::Permission;
+use crate::domain::trigger::Trigger;
+use crate::domain::trigger::{TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
 use std::sync::Arc;
 use tracing::{instrument, warn};
@@ -258,11 +260,9 @@ fn json_value_to_env(value: &serde_json::Value) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::entities::PipelineId;
-    use crate::domain::value_objects::pipeline::EnvKey;
-    use crate::domain::value_objects::trigger::{
-        CronSpec, TriggerInput, TriggerName, TriggerSource, WebhookSpec,
-    };
+    use crate::domain::ids::PipelineId;
+    use crate::domain::pipeline::EnvKey;
+    use crate::domain::trigger::{CronSpec, TriggerInput, TriggerName, TriggerSource, WebhookSpec};
     use serde_json::json;
 
     fn webhook_trigger(inputs: Vec<TriggerInput>) -> Trigger {

@@ -1,5 +1,5 @@
-use crate::domain::entities::UserId;
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::UserId;
 use async_trait::async_trait;
 
 /// Persistence for external identity links (`user_oauth_identities`).

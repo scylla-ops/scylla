@@ -1,8 +1,8 @@
 use crate::application::authz::grant::{Grant, Scope};
 use crate::application::authz::role::FULL_CONTROL;
 use crate::application::caller::CallerContext;
-use crate::domain::entities::{OrganizationId, ProjectId};
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{OrganizationId, ProjectId};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -99,8 +99,8 @@ pub fn visibility_from_grants<S: std::hash::BuildHasher>(
 mod tests {
     use super::*;
     use crate::application::authz::grant::Principal;
-    use crate::domain::entities::UserId;
-    use crate::domain::value_objects::role::RoleName;
+    use crate::domain::ids::UserId;
+    use crate::domain::role::RoleName;
 
     fn roles() -> HashMap<String, Vec<String>> {
         HashMap::from([

@@ -3,7 +3,9 @@
 
 use sqlx::PgPool;
 
-use crate::domain::entities::{Organization, Pipeline, Project};
+use crate::domain::organization::Organization;
+use crate::domain::pipeline::Pipeline;
+use crate::domain::project::Project;
 
 /// Seed `org -> project -> pipeline` chain. Returns all three so a test can
 /// reference any link without re-querying.

@@ -117,12 +117,12 @@ mod tests {
     use super::*;
     use crate::application::agent::dispatch::{DispatchNode, JobDispatch};
     use crate::application::caller::CallerContext;
-    use crate::domain::entities::{
-        AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
-    };
+    use crate::application::pagination::{PaginatedResult, PaginationParams};
     use crate::domain::errors::DomainResult;
-    use crate::domain::value_objects::permission::Permission;
-    use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+    use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
+    use crate::domain::job::Job;
+    use crate::domain::permission::Permission;
+    use crate::domain::pipeline::{Pipeline, PipelineNode};
     use crate::test_support::organizations::org;
     use crate::test_support::pipelines::pipeline;
     use crate::test_support::projects::project;

@@ -7,11 +7,13 @@ use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
-use crate::domain::entities::{Agent, App, AppCredential, AppId, OrganizationId, PipelineId};
+use crate::domain::agent::Agent;
+use crate::domain::app::{App, AppCredential};
+use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::app::{AppName, AppSecret, AppSecretLabel};
-use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::ids::{AppId, OrganizationId, PipelineId};
+use crate::domain::permission::Permission;
+use crate::domain::role::RoleName;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
 use std::collections::HashSet;

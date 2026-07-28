@@ -1,7 +1,7 @@
 use super::PgPipelineRepository;
 use crate::application::{PipelineRepository, ProjectRepository};
 use crate::domain::errors::DomainError;
-use crate::domain::value_objects::pipeline::NodeId;
+use crate::domain::pipeline::NodeId;
 use crate::infrastructure::persistence::postgres::PgProjectRepository;
 use crate::test_support::prelude::*;
 use sqlx::PgPool;

@@ -1,6 +1,8 @@
+pub mod agent;
 pub mod app;
 pub mod audit;
 pub mod auth;
+pub mod authz;
 pub mod bootstrap;
 pub mod caller;
 pub mod invitation;
@@ -8,8 +10,7 @@ pub mod job;
 pub mod mail;
 pub mod oauth;
 pub mod organization;
-pub mod agent;
-pub mod authz;
+pub mod pagination;
 pub mod pipeline;
 pub mod project;
 pub mod quota;

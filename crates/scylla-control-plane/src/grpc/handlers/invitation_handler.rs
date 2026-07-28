@@ -1,16 +1,17 @@
-use crate::extract_auth_context;
-use crate::grpc::convert::{optional, required, ts, wrap};
-use crate::grpc::mappers::domain_error_to_status;
-use derive_more::Constructor;
 use crate::application::authz::policy::PolicyControl;
 use crate::application::{
     HashService, InvitationRepository, InvitationUseCases, OrganizationRepository,
     PermissionService, SessionRepository, UserRepository,
 };
-use scylla_core::domain::entities::{Invitation, InvitationId, OrganizationId};
-use scylla_core::domain::value_objects::invitation::InvitationStatus as DomainInvitationStatus;
-use scylla_core::domain::value_objects::role::RoleName;
-use scylla_core::domain::value_objects::user::{Email, Password, Username};
+use crate::extract_auth_context;
+use crate::grpc::convert::{optional, required, ts, wrap};
+use crate::grpc::mappers::domain_error_to_status;
+use derive_more::Constructor;
+use scylla_core::domain::ids::{InvitationId, OrganizationId};
+use scylla_core::domain::invitation::Invitation;
+use scylla_core::domain::invitation::InvitationStatus as DomainInvitationStatus;
+use scylla_core::domain::role::RoleName;
+use scylla_core::domain::user::{Email, Password, Username};
 use scylla_protocol::invitation::v1::{
     AcceptInvitationRequest, AcceptInvitationResponse, CreateInvitationRequest,
     CreateInvitationResponse, Invitation as ProtoInvitation, InvitationStatus,

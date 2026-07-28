@@ -1,4 +1,4 @@
-use scylla_core::domain::value_objects::{PaginationMetadata, PaginationParams};
+use crate::application::pagination::{PaginationMetadata, PaginationParams};
 use scylla_protocol::common::v1::{
     PaginationMetadata as ProtoPaginationMetadata, PaginationRequest as ProtoPaginationRequest,
 };

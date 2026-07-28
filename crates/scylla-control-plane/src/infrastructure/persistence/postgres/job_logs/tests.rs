@@ -1,6 +1,6 @@
 use super::PgJobLogRepository;
 use crate::application::{JobLogRepository, JobRepository};
-use crate::domain::entities::JobLog;
+use crate::domain::job::JobLog;
 use crate::infrastructure::persistence::postgres::PgJobRepository;
 use crate::test_support::prelude::*;
 use chrono::{Duration, Utc};
@@ -56,7 +56,7 @@ async fn list_by_job_and_node_filters_other_nodes(pool: PgPool) {
         .await
         .unwrap();
 
-    let target = crate::domain::value_objects::pipeline::NodeId::new("a").unwrap();
+    let target = crate::domain::pipeline::NodeId::new("a").unwrap();
     let scoped = repo.list_all_by_job(job.id(), Some(&target)).await.unwrap();
     assert_eq!(scoped.len(), 2);
     assert!(scoped.iter().all(|l| l.node_id().as_str() == "a"));

@@ -1,7 +1,8 @@
 use crate::application::secret::SecretRepository;
-use crate::domain::entities::{ProjectId, Secret, SecretId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::secret::SecretName;
+use crate::domain::ids::{ProjectId, SecretId};
+use crate::domain::secret::Secret;
+use crate::domain::secret::SecretName;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;

@@ -1,6 +1,6 @@
-use crate::domain::entities::Trigger;
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::trigger::TriggerSource;
+use crate::domain::trigger::Trigger;
+use crate::domain::trigger::TriggerSource;
 use chrono::{DateTime, Utc};
 
 /// Computes cron occurrences. Kept as an application port so the domain stays
@@ -35,9 +35,9 @@ pub fn next_fire_time(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::entities::PipelineId;
     use crate::domain::errors::DomainError;
-    use crate::domain::value_objects::trigger::{CronSpec, TriggerName, WebhookSpec};
+    use crate::domain::ids::PipelineId;
+    use crate::domain::trigger::{CronSpec, TriggerName, WebhookSpec};
 
     /// Fixed +1h for any expression, except one starting with `99` (semantically
     /// invalid but 5-field-shaped) which it rejects like the real service would.

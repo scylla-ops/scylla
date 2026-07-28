@@ -1,7 +1,8 @@
 use crate::application::{HashService, SessionRepository, UserRepository};
-use crate::domain::entities::{Session, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::user::{Email, Password, Username};
+use crate::domain::ids::UserId;
+use crate::domain::session::Session;
+use crate::domain::user::{Email, Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;
 use std::sync::Arc;

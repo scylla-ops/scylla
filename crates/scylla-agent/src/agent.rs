@@ -7,10 +7,8 @@ use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Code, Request};
 use tracing::{error, info, warn};
 
-use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::pipeline::{
-    EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir,
-};
+use scylla_core::domain::pipeline::PipelineNode;
+use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir};
 use scylla_protocol::agent::v1::agent_service_client::AgentServiceClient;
 use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
 use scylla_protocol::app::v1::IssueTokenRequest;

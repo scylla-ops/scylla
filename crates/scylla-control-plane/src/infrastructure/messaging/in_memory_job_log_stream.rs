@@ -1,7 +1,8 @@
 use crate::application::{JobLogLiveStream, JobLogStreamPort};
-use crate::domain::entities::{JobId, JobLog};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::pipeline::NodeId;
+use crate::domain::ids::JobId;
+use crate::domain::job::JobLog;
+use crate::domain::pipeline::NodeId;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -129,7 +130,7 @@ impl JobLogStreamPort for InMemoryJobLogStream {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::value_objects::job::LogStream;
+    use crate::domain::job::LogStream;
     use chrono::Utc;
     use tokio_stream::StreamExt;
 

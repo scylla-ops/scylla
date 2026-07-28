@@ -1,5 +1,6 @@
-use crate::domain::entities::{ProjectId, Secret, SecretId};
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{ProjectId, SecretId};
+use crate::domain::secret::Secret;
 use async_trait::async_trait;
 
 /// Persistence for project secrets. Stores ciphertext only; plaintext is never

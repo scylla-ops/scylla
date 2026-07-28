@@ -1,6 +1,8 @@
 use crate::application::authz::grant::Grant;
-use crate::domain::entities::{Invitation, InvitationId, OrganizationId, User, UserId};
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{InvitationId, OrganizationId, UserId};
+use crate::domain::invitation::Invitation;
+use crate::domain::user::User;
 use async_trait::async_trait;
 
 /// Persistence for invitations. `accept_atomic` performs the join (optionally

@@ -1,3 +1,7 @@
+use crate::application::{
+    EffectiveScope, FULL_CONTROL, GrantRepository, PermissionService, PolicyControl, Role,
+    RoleRepository, RoleUseCases, resource_home_scope,
+};
 use crate::extract_auth_context;
 use crate::grpc::convert::{
     permission_from_key, permission_key, principal_ref_from_proto, required, scope_kind_from_proto,
@@ -5,10 +9,6 @@ use crate::grpc::convert::{
 };
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use crate::application::{
-    EffectiveScope, FULL_CONTROL, GrantRepository, PermissionService, PolicyControl, Role,
-    RoleRepository, RoleUseCases, resource_home_scope,
-};
 use scylla_protocol::authz::v1::{
     Access, AuthzAction, CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest,
     DeleteRoleResponse, EffectiveScope as ProtoEffectiveScope, GetEffectivePermissionsRequest,

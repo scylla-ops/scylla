@@ -1,9 +1,10 @@
 use crate::application::JobRepository;
-use crate::domain::entities::JobState;
-use crate::domain::entities::{AppId, Job, JobId, JobNode, OrganizationId, PipelineId, ProjectId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::job::{JobOrigin, JobStatus};
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
+use crate::domain::job::JobState;
+use crate::domain::job::{Job, JobNode};
+use crate::domain::job::{JobOrigin, JobStatus};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool, types::Json};

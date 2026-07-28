@@ -1,7 +1,8 @@
-use crate::domain::entities::{User, UserId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::user::{Email, Username};
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::UserId;
+use crate::domain::user::User;
+use crate::domain::user::{Email, Username};
 use async_trait::async_trait;
 
 #[async_trait]

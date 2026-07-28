@@ -1,5 +1,5 @@
 use crate::grpc::convert::{ts, wrap};
-use scylla_core::domain::entities::Organization;
+use scylla_core::domain::organization::Organization;
 use scylla_protocol::organization::v1::Organization as ProtoOrganization;
 
 pub fn organization_to_proto(org: &Organization) -> ProtoOrganization {

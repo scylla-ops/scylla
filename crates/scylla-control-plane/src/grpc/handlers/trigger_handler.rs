@@ -1,18 +1,17 @@
-use crate::extract_auth_context;
-use crate::grpc::convert::{required, ts, wrap};
-use crate::grpc::mappers::domain_error_to_status;
 use crate::application::{
     AgentDispatch, AppRepository, HashService, JobRepository, PermissionService,
     PipelineRepository, PolicyControl, ProjectRepository, TriggerFireUseCases, TriggerRepository,
     TriggerUseCases,
 };
-use scylla_core::domain::entities::{
-    FireObservation, PipelineId, Trigger, TriggerActivation, TriggerId,
-};
-use scylla_core::domain::value_objects::pipeline::EnvKey;
-use scylla_core::domain::value_objects::trigger::{
+use crate::extract_auth_context;
+use crate::grpc::convert::{required, ts, wrap};
+use crate::grpc::mappers::domain_error_to_status;
+use scylla_core::domain::ids::{PipelineId, TriggerId};
+use scylla_core::domain::pipeline::EnvKey;
+use scylla_core::domain::trigger::{
     CronSpec, TriggerInput, TriggerInputSource, TriggerName, TriggerSource, WebhookSpec,
 };
+use scylla_core::domain::trigger::{FireObservation, Trigger, TriggerActivation};
 use scylla_protocol::trigger::v1::{
     CreateTriggerRequest, CreateTriggerResponse, CronSpec as ProtoCronSpec, DeleteTriggerRequest,
     DeleteTriggerResponse, FireObservation as ProtoFireObservation, FireTriggerNowRequest,

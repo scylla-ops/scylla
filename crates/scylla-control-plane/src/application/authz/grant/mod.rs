@@ -1,8 +1,8 @@
 use crate::application::authz::role::RoleRepository;
 use crate::application::caller::CallerContext;
-use crate::domain::entities::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
+use crate::domain::role::RoleName;
 
 // Canonical builtin role keys — the stable ids grants reference and the default
 // seed inserts. Convention: `<scope>-<role>`, kebab-case, scope ∈ {system,

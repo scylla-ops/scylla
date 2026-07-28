@@ -1,5 +1,5 @@
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::user::Email;
+use crate::domain::user::Email;
 use async_trait::async_trait;
 
 pub const PROVIDER_GITHUB: &str = "github";

@@ -1,17 +1,17 @@
 use crate::application::agent::dispatch::assemble_dispatch;
 use crate::application::caller::CallerContext;
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
     JobDispatch, JobRepository, PermissionService, PipelineRepository, ProjectRepository,
     SecretResolver,
 };
-use crate::domain::entities::{
-    AppId, Job, JobId, OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId,
-};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::job::JobOrigin;
-use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::pipeline::PipelineName;
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
+use crate::domain::job::Job;
+use crate::domain::job::JobOrigin;
+use crate::domain::permission::Permission;
+use crate::domain::pipeline::PipelineName;
+use crate::domain::pipeline::{Pipeline, PipelineNode};
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;

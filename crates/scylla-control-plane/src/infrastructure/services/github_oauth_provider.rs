@@ -1,6 +1,6 @@
 use crate::application::oauth::{OAuthProvider, OAuthUserInfo};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::user::Email;
+use crate::domain::user::Email;
 use async_trait::async_trait;
 use oauth2::basic::BasicClient;
 use oauth2::{

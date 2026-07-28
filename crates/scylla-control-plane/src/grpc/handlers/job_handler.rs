@@ -1,3 +1,6 @@
+use crate::application::pagination::PaginationMetadata;
+use crate::application::{JobLogRepository, JobLogStreamPort, JobRepository, PermissionService};
+use crate::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
 use crate::extract_auth_context;
 use crate::grpc::convert::{optional, required};
 use crate::grpc::mappers::{
@@ -6,13 +9,8 @@ use crate::grpc::mappers::{
 };
 use crate::grpc::streaming::spawn_log_forwarder;
 use derive_more::Constructor;
-use crate::application::{
-    JobLogRepository, JobLogStreamPort, JobRepository, PermissionService,
-};
-use crate::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
-use scylla_core::domain::entities::{JobId, OrganizationId, PipelineId, ProjectId};
-use scylla_core::domain::value_objects::PaginationMetadata;
-use scylla_core::domain::value_objects::pipeline::NodeId;
+use scylla_core::domain::ids::{JobId, OrganizationId, PipelineId, ProjectId};
+use scylla_core::domain::pipeline::NodeId;
 use scylla_protocol::job::v1::{
     DeleteJobRequest, DeleteJobResponse, GetJobRequest, GetJobResponse, Job, ListJobLogsRequest,
     ListJobLogsResponse, ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest,

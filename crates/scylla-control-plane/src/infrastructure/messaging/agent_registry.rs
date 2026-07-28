@@ -1,7 +1,7 @@
 use crate::application::agent::dispatch::JobDispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
-use crate::domain::entities::AppId;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::AppId;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Mutex;

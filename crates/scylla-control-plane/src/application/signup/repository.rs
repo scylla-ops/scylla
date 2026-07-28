@@ -1,6 +1,7 @@
 use crate::application::authz::grant::Grant;
-use crate::domain::entities::{Organization, User};
 use crate::domain::errors::DomainResult;
+use crate::domain::organization::Organization;
+use crate::domain::user::User;
 use async_trait::async_trait;
 
 /// Atomic provisioning of a brand-new account. The four inserts (user,

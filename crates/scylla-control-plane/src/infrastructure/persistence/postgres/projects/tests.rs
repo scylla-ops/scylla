@@ -38,7 +38,7 @@ async fn project_quota_enforced(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;
     use crate::application::caller::CallerContext;
     use crate::application::{ProjectUseCases, Quotas, ServiceIdentity};
-    use crate::domain::value_objects::project::ProjectName;
+    use crate::domain::project::ProjectName;
     use crate::infrastructure::CedarPermissionService;
     use crate::infrastructure::persistence::postgres::{
         PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
@@ -180,7 +180,7 @@ async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
     use crate::application::authz::grant::{
         Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
     };
-    use crate::domain::value_objects::role::RoleName;
+    use crate::domain::role::RoleName;
     use crate::infrastructure::persistence::postgres::PgGrantRepository;
 
     let org = seed_org(&pool, "acme").await;
@@ -219,7 +219,7 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
     use crate::application::authz::grant::{
         Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
     };
-    use crate::domain::value_objects::role::RoleName;
+    use crate::domain::role::RoleName;
     use crate::infrastructure::persistence::postgres::PgGrantRepository;
 
     // Note what this no longer proves: it used to fail on a dangling owner,
@@ -266,7 +266,7 @@ async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
     };
     use crate::application::authz::{Visibility, VisibilityResolver};
     use crate::application::caller::CallerContext;
-    use crate::domain::value_objects::role::RoleName;
+    use crate::domain::role::RoleName;
     use crate::infrastructure::CedarPermissionService;
     use crate::infrastructure::persistence::postgres::{
         PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository,

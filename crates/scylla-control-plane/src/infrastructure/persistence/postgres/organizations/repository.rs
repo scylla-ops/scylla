@@ -1,9 +1,10 @@
 use crate::application::OrganizationRepository;
 use crate::application::authz::grant::Grant;
-use crate::domain::entities::{Organization, OrganizationId, UserId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::organization::{OrganizationDescription, OrganizationName};
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{OrganizationId, UserId};
+use crate::domain::organization::Organization;
+use crate::domain::organization::{OrganizationDescription, OrganizationName};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool};

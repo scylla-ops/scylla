@@ -4,8 +4,10 @@ use bon::bon;
 use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
-use crate::domain::entities::{Job, JobId, JobNode, JobState, NodeExecution, Pipeline, UserId};
-use crate::domain::value_objects::job::{JobOrigin, JobStatus};
+use crate::domain::ids::{JobId, UserId};
+use crate::domain::job::{Job, JobNode, JobState, NodeExecution};
+use crate::domain::job::{JobOrigin, JobStatus};
+use crate::domain::pipeline::Pipeline;
 
 pub struct JobBuilder;
 

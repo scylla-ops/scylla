@@ -2,7 +2,7 @@ use crate::application::audit::NoopAuditLog;
 use crate::application::authz::grant::{GrantRepository, Principal, Scope};
 use crate::application::oauth::{AccountOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::user::Email;
+use crate::domain::user::Email;
 use crate::infrastructure::persistence::postgres::{
     PgAuthzEntityProvider, PgGrantRepository, PgOAuthIdentityRepository, PgRoleRepository,
     PgSessionRepository, PgSignupRepository, PgUserRepository,

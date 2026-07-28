@@ -1,11 +1,11 @@
-use crate::grpc::convert::wrap;
-use crate::grpc::mappers::domain_error_to_status;
-use derive_more::Constructor;
 use crate::application::authz::policy::PolicyControl;
 use crate::application::{
     AccountOutcome, HashService, OAuthIdentityRepository, OAuthOutcome, OAuthProvider,
     OAuthUseCases, SessionRepository, SignupRepository, UserRepository,
 };
+use crate::grpc::convert::wrap;
+use crate::grpc::mappers::domain_error_to_status;
+use derive_more::Constructor;
 use scylla_protocol::oauth::v1::{
     CallbackRequest, CallbackResponse, GetAuthUrlRequest, GetAuthUrlResponse, callback_response,
     callback_response::{ExistingAccount, NewAccount},

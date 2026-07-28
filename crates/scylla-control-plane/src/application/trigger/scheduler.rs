@@ -2,8 +2,8 @@ use crate::application::trigger::fire::TriggerFiring;
 use crate::application::trigger::repository::TriggerRepository;
 use crate::application::trigger::schedule::{CronSchedule, next_fire_time};
 use crate::domain::clock;
-use crate::domain::entities::Trigger;
 use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::trigger::Trigger;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tracing::{info, instrument, warn};
@@ -132,10 +132,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::entities::{Job, PipelineId, Trigger, TriggerId};
-    use crate::domain::value_objects::trigger::{
-        CronSpec, TriggerName, TriggerSource, WebhookSpec,
-    };
+    use crate::domain::ids::{PipelineId, TriggerId};
+    use crate::domain::job::Job;
+    use crate::domain::trigger::Trigger;
+    use crate::domain::trigger::{CronSpec, TriggerName, TriggerSource, WebhookSpec};
     use async_trait::async_trait;
     use std::sync::Mutex;
 

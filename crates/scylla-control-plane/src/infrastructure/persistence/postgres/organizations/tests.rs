@@ -1,6 +1,6 @@
 use super::PgOrganizationRepository;
 use crate::application::OrganizationRepository;
-use crate::domain::value_objects::organization::OrganizationDescription;
+use crate::domain::organization::OrganizationDescription;
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
 
@@ -80,7 +80,7 @@ async fn revoke_all_access_strips_the_whole_org_subtree(pool: PgPool) {
         Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE,
         Principal, SYSTEM_ADMIN_ROLE, Scope,
     };
-    use crate::domain::value_objects::role::name::RoleName;
+    use crate::domain::role::RoleName;
     use crate::infrastructure::persistence::postgres::PgGrantRepository;
 
     let org = seed_org(&pool, "acme").await;

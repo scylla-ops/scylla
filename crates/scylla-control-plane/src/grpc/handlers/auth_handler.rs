@@ -1,9 +1,9 @@
+use crate::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use crate::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
-use scylla_core::domain::entities::UserId;
-use scylla_core::domain::value_objects::user::Password;
+use scylla_core::domain::ids::UserId;
+use scylla_core::domain::user::Password;
 use scylla_protocol::auth::v1::{
     LoginRequest, LoginResponse, RevokeTokenRequest, RevokeTokenResponse, ValidateTokenRequest,
     ValidateTokenResponse, auth_service_server::AuthService, validate_token_response,

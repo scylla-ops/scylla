@@ -1,5 +1,6 @@
-use crate::domain::entities::{PipelineId, Trigger, TriggerId};
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{PipelineId, TriggerId};
+use crate::domain::trigger::Trigger;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 

@@ -1,7 +1,9 @@
 use crate::application::authz::grant::Grant;
 use crate::application::invitation::InvitationRepository;
-use crate::domain::entities::{Invitation, InvitationId, OrganizationId, User, UserId};
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{InvitationId, OrganizationId, UserId};
+use crate::domain::invitation::Invitation;
+use crate::domain::user::User;
 use async_trait::async_trait;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
@@ -73,9 +75,9 @@ impl InvitationRepository for PgInvitationRepository {
 #[allow(clippy::wildcard_imports)]
 pub mod queries {
     use super::*;
-    use crate::domain::value_objects::invitation::InvitationStatus;
-    use crate::domain::value_objects::role::RoleName;
-    use crate::domain::value_objects::user::Email;
+    use crate::domain::invitation::InvitationStatus;
+    use crate::domain::role::RoleName;
+    use crate::domain::user::Email;
     use crate::infrastructure::persistence::postgres::error::DbFieldExt;
     use chrono::{DateTime, Utc};
 

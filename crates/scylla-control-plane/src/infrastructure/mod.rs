@@ -14,9 +14,10 @@ pub use services::Argon2HashService;
 pub use services::CedarPermissionService;
 
 pub use persistence::postgres::{
-    PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository, PgAuditLog,
-    PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
-    PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
-    PgProjectRepository, PgRoleRepository, PgSecretRepository, PgSessionRepository,
-    PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository, PgUserRepository,
+    PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
+    PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository,
+    PgJobLogRepository, PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository,
+    PgPipelineRepository, PgProjectRepository, PgRoleRepository, PgSecretRepository,
+    PgSessionRepository, PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
+    PgUserRepository,
 };

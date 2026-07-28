@@ -4,6 +4,8 @@
 //! status code. Authentication (HMAC over the raw body), dedupe, and firing all
 //! happen in the use case.
 
+use crate::application::{IngestOutcome, WebhookError, WebhookIngressUseCases};
+use crate::infrastructure::{PgTriggerDeliveryRepository, PgTriggerRepository};
 use axum::{
     Router,
     body::Bytes,
@@ -11,9 +13,7 @@ use axum::{
     http::{HeaderMap, StatusCode},
     routing::post,
 };
-use crate::application::{IngestOutcome, WebhookError, WebhookIngressUseCases};
-use scylla_core::domain::entities::TriggerId;
-use crate::infrastructure::{PgTriggerDeliveryRepository, PgTriggerRepository};
+use scylla_core::domain::ids::TriggerId;
 use std::sync::Arc;
 
 /// Concrete ingress use case wired to the Postgres repositories.

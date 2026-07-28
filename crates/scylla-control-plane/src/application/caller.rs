@@ -1,4 +1,4 @@
-use crate::domain::entities::{AppId, UserId};
+use crate::domain::ids::{AppId, UserId};
 
 /// Identity of the principal invoking a use-case.
 ///

@@ -1,7 +1,8 @@
 use crate::application::authz::grant::Grant;
 use crate::application::signup::repository::SignupRepository;
-use crate::domain::entities::{Organization, User};
 use crate::domain::errors::DomainResult;
+use crate::domain::organization::Organization;
+use crate::domain::user::User;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use tracing::instrument;

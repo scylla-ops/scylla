@@ -1,6 +1,6 @@
 use crate::application::caller::CallerContext;
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::permission::Permission;
+use crate::domain::permission::Permission;
 
 /// Identity-aware authorization check. Given the caller and the operation they
 /// want to perform (`Permission` carries both the action and the concrete

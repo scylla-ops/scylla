@@ -1,6 +1,6 @@
 use crate::grpc::convert::{log_stream_to_proto, ts, wrap};
-use scylla_core::domain::entities::JobLog;
-use scylla_core::domain::value_objects::job::LogStream;
+use scylla_core::domain::job::JobLog;
+use scylla_core::domain::job::LogStream;
 use scylla_protocol::job::v1::JobLogEntry;
 
 pub fn job_log_to_proto(log: &JobLog) -> JobLogEntry {

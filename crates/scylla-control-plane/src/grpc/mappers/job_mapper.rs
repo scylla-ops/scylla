@@ -1,8 +1,8 @@
 use crate::grpc::convert::{ts, wrap};
-use scylla_core::domain::entities::{
+use scylla_core::domain::job::JobOrigin;
+use scylla_core::domain::job::{
     Job, JobNode, JobState, NodeExecution, NodeOutcome, TerminalOutcome,
 };
-use scylla_core::domain::value_objects::job::JobOrigin;
 use scylla_protocol::job::v1::{
     Job as ProtoJob, JobNode as ProtoJobNode, JobOutcome, NodeOutcome as ProtoNodeOutcome, job,
     job_node,

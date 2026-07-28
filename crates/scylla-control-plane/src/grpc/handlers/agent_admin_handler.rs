@@ -1,13 +1,13 @@
-use crate::extract_auth_context;
-use crate::grpc::convert::{required, ts, wrap};
-use crate::grpc::mappers::domain_error_to_status;
-use derive_more::Constructor;
 use crate::application::{
     AgentRepository, AgentStats, AgentUseCases, AgentView, AppRepository, HashService,
     PermissionService, PolicyControl,
 };
-use scylla_core::domain::entities::{AppId, OrganizationId};
-use scylla_core::domain::value_objects::app::AppName;
+use crate::extract_auth_context;
+use crate::grpc::convert::{required, ts, wrap};
+use crate::grpc::mappers::domain_error_to_status;
+use derive_more::Constructor;
+use scylla_core::domain::app::AppName;
+use scylla_core::domain::ids::{AppId, OrganizationId};
 use scylla_protocol::agent::v1::{
     Agent as ProtoAgent, AgentStats as ProtoAgentStats, CreateAgentRequest, CreateAgentResponse,
     DailyOutcome as ProtoDailyOutcome, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest,

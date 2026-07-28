@@ -1,6 +1,7 @@
-use crate::domain::entities::{AppId, Job, JobId, OrganizationId, PipelineId, ProjectId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
+use crate::domain::job::Job;
 use async_trait::async_trait;
 
 #[async_trait]

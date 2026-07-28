@@ -1,8 +1,9 @@
 use crate::application::authz::Visibility;
 use crate::application::authz::grant::Grant;
-use crate::domain::entities::{OrganizationId, Project, ProjectId, UserId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{OrganizationId, ProjectId, UserId};
+use crate::domain::project::Project;
 use async_trait::async_trait;
 
 #[async_trait]

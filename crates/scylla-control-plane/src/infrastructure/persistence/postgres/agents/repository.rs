@@ -1,6 +1,7 @@
 use crate::application::agent::repository::{AgentRepository, AgentStats};
-use crate::domain::entities::{Agent, AppId, OrganizationId};
+use crate::domain::agent::Agent;
 use crate::domain::errors::DomainResult;
+use crate::domain::ids::{AppId, OrganizationId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool};

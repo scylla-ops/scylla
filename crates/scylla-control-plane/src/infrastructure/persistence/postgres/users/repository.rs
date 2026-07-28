@@ -1,8 +1,9 @@
 use crate::application::UserRepository;
-use crate::domain::entities::{User, UserId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::user::{Email, PasswordHash, Username};
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::UserId;
+use crate::domain::user::User;
+use crate::domain::user::{Email, PasswordHash, Username};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool};

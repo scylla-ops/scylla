@@ -3,8 +3,8 @@ use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope}
 use crate::application::caller::CallerContext;
 use crate::application::invitation::InvitationUseCases;
 use crate::application::{Mailer, NoopMailer};
-use crate::domain::value_objects::role::RoleName;
-use crate::domain::value_objects::user::{Email, Password, Username};
+use crate::domain::role::RoleName;
+use crate::domain::user::{Email, Password, Username};
 use crate::infrastructure::persistence::postgres::{
     PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgOrganizationRepository,
     PgRoleRepository, PgSessionRepository, PgUserRepository,

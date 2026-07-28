@@ -1,5 +1,5 @@
 use crate::grpc::convert::{ts, wrap};
-use scylla_core::domain::entities::Secret as DomainSecret;
+use scylla_core::domain::secret::Secret as DomainSecret;
 use scylla_protocol::secret::v1::Secret;
 
 /// Domain secret → proto. Metadata only; the value is never included.

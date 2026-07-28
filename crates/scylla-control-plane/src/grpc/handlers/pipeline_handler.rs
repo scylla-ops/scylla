@@ -1,18 +1,19 @@
+use crate::application::{
+    AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PermissionService,
+    PipelineRepository, PipelineUseCases, ProjectRepository,
+};
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, pipeline_to_proto, pipeline_to_proto_summary,
     proto_to_domain_pagination,
 };
-use crate::application::{
-    AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PermissionService,
-    PipelineRepository, PipelineUseCases, ProjectRepository,
-};
-use scylla_core::domain::entities::{OrganizationId, PipelineId, PipelineNode, ProjectId};
-use scylla_core::domain::value_objects::pipeline::{
+use scylla_core::domain::ids::{OrganizationId, PipelineId, ProjectId};
+use scylla_core::domain::pipeline::PipelineNode;
+use scylla_core::domain::pipeline::{
     EnvKey, EnvVar, NodeId, PipelineName, Shell, Step, WorkingDir,
 };
-use scylla_core::domain::value_objects::secret::SecretName;
+use scylla_core::domain::secret::SecretName;
 use scylla_protocol::exec::v1 as exec;
 use scylla_protocol::pipeline::v1::{
     CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse,

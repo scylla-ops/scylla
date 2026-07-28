@@ -4,7 +4,7 @@ use crate::application::authz::grant::{
 };
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{OrganizationRepository, UserRepository};
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::role::RoleName;
 use crate::infrastructure::persistence::postgres::{
     PgGrantRepository, PgOrganizationRepository, PgRoleRepository, PgUserRepository,
 };
@@ -12,8 +12,8 @@ use crate::test_support::prelude::*;
 use sqlx::PgPool;
 
 fn org_admin_grant(
-    user_id: crate::domain::entities::UserId,
-    org_id: crate::domain::entities::OrganizationId,
+    user_id: crate::domain::ids::UserId,
+    org_id: crate::domain::ids::OrganizationId,
 ) -> Grant {
     Grant::new(
         Principal::User(user_id),
@@ -92,8 +92,8 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
 async fn login_by_email_or_username(pool: PgPool) {
     use crate::application::auth::use_case::AuthUseCases;
     use crate::application::{HashService, UserRepository};
-    use crate::domain::entities::User;
-    use crate::domain::value_objects::user::{Email, Password, Username};
+    use crate::domain::user::User;
+    use crate::domain::user::{Email, Password, Username};
     use crate::infrastructure::Argon2HashService;
     use crate::infrastructure::persistence::postgres::PgSessionRepository;
     use std::sync::Arc;
@@ -148,9 +148,9 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;
     use crate::application::caller::CallerContext;
     use crate::application::{PermissionService, SignupUseCases};
-    use crate::domain::value_objects::organization::OrganizationName;
-    use crate::domain::value_objects::permission::Permission;
-    use crate::domain::value_objects::user::{Email, Password, Username};
+    use crate::domain::organization::OrganizationName;
+    use crate::domain::permission::Permission;
+    use crate::domain::user::{Email, Password, Username};
     use crate::infrastructure::persistence::postgres::PgSessionRepository;
     use crate::infrastructure::{Argon2HashService, CedarPermissionService, PgAuthzEntityProvider};
     use std::sync::Arc;

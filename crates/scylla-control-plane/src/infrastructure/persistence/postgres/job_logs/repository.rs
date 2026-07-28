@@ -1,9 +1,10 @@
 use crate::application::JobLogRepository;
-use crate::domain::entities::{JobId, JobLog, JobLogId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::job::LogStream;
-use crate::domain::value_objects::pipeline::NodeId;
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{JobId, JobLogId};
+use crate::domain::job::JobLog;
+use crate::domain::job::LogStream;
+use crate::domain::pipeline::NodeId;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool};

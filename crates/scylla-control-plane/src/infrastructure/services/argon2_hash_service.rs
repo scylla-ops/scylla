@@ -1,7 +1,7 @@
 use crate::application::HashService;
+use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::app::{AppSecret, AppSecretHash};
-use crate::domain::value_objects::user::{Password, PasswordHash};
+use crate::domain::user::{Password, PasswordHash};
 use argon2::{
     Argon2,
     password_hash::phc::PasswordHash as Argon2PasswordHash,

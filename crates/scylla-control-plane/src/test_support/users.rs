@@ -4,8 +4,9 @@ use bon::bon;
 use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
-use crate::domain::entities::{User, UserId};
-use crate::domain::value_objects::user::{Email, PasswordHash, Username};
+use crate::domain::ids::UserId;
+use crate::domain::user::User;
+use crate::domain::user::{Email, PasswordHash, Username};
 
 /// A PHC-format Argon2id hash that satisfies `PasswordHash::new`. Constant so
 /// builders don't pay the hashing cost in tests.

@@ -1,5 +1,5 @@
 use crate::grpc::convert::{ts, wrap};
-use scylla_core::domain::entities::User;
+use scylla_core::domain::user::User;
 use scylla_protocol::common::v1 as common;
 use scylla_protocol::user::v1::User as ProtoUser;
 
@@ -19,7 +19,7 @@ pub fn user_to_proto(user: &User) -> ProtoUser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_core::domain::value_objects::user::{PasswordHash, Username};
+    use scylla_core::domain::user::{PasswordHash, Username};
 
     #[test]
     fn user_to_proto_maps_all_fields() {

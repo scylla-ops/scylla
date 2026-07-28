@@ -1,8 +1,6 @@
 use crate::grpc::convert::{ts, wrap};
-use scylla_core::domain::entities::{Pipeline, PipelineNode as DomainPipelineNode};
-use scylla_core::domain::value_objects::pipeline::{
-    EnvSource, EnvVar as DomainEnvVar, NodeId, Shell, Step,
-};
+use scylla_core::domain::pipeline::{EnvSource, EnvVar as DomainEnvVar, NodeId, Shell, Step};
+use scylla_core::domain::pipeline::{Pipeline, PipelineNode as DomainPipelineNode};
 use scylla_protocol::common::v1 as common;
 use scylla_protocol::exec::v1 as exec;
 use scylla_protocol::pipeline::v1::{

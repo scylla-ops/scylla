@@ -1,8 +1,10 @@
 use crate::application::app::AppRepository;
 use crate::application::authz::grant::Grant;
-use crate::domain::entities::{Agent, App, AppCredential, AppId, OrganizationId};
+use crate::domain::agent::Agent;
+use crate::domain::app::AppName;
+use crate::domain::app::{App, AppCredential};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::app::AppName;
+use crate::domain::ids::{AppId, OrganizationId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool};

@@ -1,3 +1,7 @@
+use crate::application::{
+    Grant, GrantRepository, GrantUseCases, GrantableRole, PermissionService, PolicyControl,
+    RoleKind, grantable_roles,
+};
 use crate::extract_auth_context;
 use crate::grpc::convert::{
     principal_ref_from_proto, principal_ref_to_proto, required, scope_kind_from_proto,
@@ -5,11 +9,7 @@ use crate::grpc::convert::{
 };
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use crate::application::{
-    Grant, GrantRepository, GrantUseCases, GrantableRole, PermissionService, PolicyControl,
-    RoleKind, grantable_roles,
-};
-use scylla_core::domain::value_objects::role::RoleName;
+use scylla_core::domain::role::RoleName;
 use scylla_protocol::authz::v1::{
     CreateGrantRequest, CreateGrantResponse, Grant as ProtoGrant,
     GrantableRole as ProtoGrantableRole, ListGrantableRolesRequest, ListGrantableRolesResponse,

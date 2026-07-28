@@ -1,5 +1,5 @@
 use crate::grpc::convert::{ts, wrap};
-use scylla_core::domain::entities::Project;
+use scylla_core::domain::project::Project;
 use scylla_protocol::project::v1::Project as ProtoProject;
 
 pub fn project_to_proto(project: &Project) -> ProtoProject {

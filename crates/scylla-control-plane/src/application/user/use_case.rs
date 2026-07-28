@@ -1,11 +1,12 @@
 use crate::application::authz::policy::PolicyControl;
 use crate::application::caller::CallerContext;
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{HashService, PermissionService, UserRepository};
-use crate::domain::entities::{User, UserId};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::Permission;
-use crate::domain::value_objects::user::{Email, Password, Username};
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::UserId;
+use crate::domain::permission::Permission;
+use crate::domain::user::User;
+use crate::domain::user::{Email, Password, Username};
 use derive_more::Constructor;
 use std::sync::Arc;
 use tracing::instrument;

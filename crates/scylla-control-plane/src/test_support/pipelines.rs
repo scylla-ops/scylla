@@ -4,8 +4,10 @@ use bon::bon;
 use chrono::{DateTime, Utc};
 
 use crate::domain::clock;
-use crate::domain::entities::{Pipeline, PipelineId, PipelineNode, Project, ProjectId};
-use crate::domain::value_objects::pipeline::{NodeId, PipelineName, Step};
+use crate::domain::ids::{PipelineId, ProjectId};
+use crate::domain::pipeline::{NodeId, PipelineName, Step};
+use crate::domain::pipeline::{Pipeline, PipelineNode};
+use crate::domain::project::Project;
 
 /// Build a single pipeline node with the given id and deps. Defaults to an
 /// `echo <id>` exec step — non-empty by Pipeline rules.

@@ -1,6 +1,6 @@
+use crate::domain::app::{AppSecret, AppSecretHash};
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::app::{AppSecret, AppSecretHash};
-use crate::domain::value_objects::user::{Password, PasswordHash};
+use crate::domain::user::{Password, PasswordHash};
 use async_trait::async_trait;
 
 #[async_trait]

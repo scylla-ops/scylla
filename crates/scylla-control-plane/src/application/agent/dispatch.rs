@@ -1,8 +1,8 @@
 use crate::application::pipeline::repository::PipelineRepository;
 use crate::application::secret::SecretResolver;
-use crate::domain::entities::Job;
 use crate::domain::errors::DomainResult;
-use crate::domain::value_objects::pipeline::Step;
+use crate::domain::job::Job;
+use crate::domain::pipeline::Step;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 

@@ -2,11 +2,9 @@ use crate::application::authz::grant::{GrantRepository, Principal, Scope, ScopeK
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
-use crate::domain::entities::OrganizationId;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::permission::{
-    PERMISSION_CATALOG, Permission, permission_resource_type,
-};
+use crate::domain::ids::OrganizationId;
+use crate::domain::permission::{PERMISSION_CATALOG, Permission, permission_resource_type};
 use async_trait::async_trait;
 use derive_more::Constructor;
 use std::collections::{BTreeSet, HashMap};
@@ -40,7 +38,7 @@ pub struct Role {
     /// Owning organization for a tenant custom role; `None` = global (builtin).
     pub owner_org: Option<OrganizationId>,
     pub builtin: bool,
-    /// Permission keys ([`crate::domain::value_objects::permission::Permission::key`]),
+    /// Permission keys ([`crate::domain::permission::Permission::key`]),
     /// or a single [`FULL_CONTROL`] entry.
     pub permissions: Vec<String>,
 }

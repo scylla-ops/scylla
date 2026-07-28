@@ -9,8 +9,11 @@
 //! Concretely: nothing here may depend on `sqlx`, `tonic`, `cedar-policy`,
 //! `reqwest`, `lettre`, `oauth2` or `argon2`. Reaching for one of those is the
 //! signal that the code belongs on the other side of the boundary.
+//!
+//! See [`domain`] for where a new file goes.
 
 pub mod domain;
 
-mod job_event;
-pub use job_event::JobEvent;
+/// The agent-to-control-plane event vocabulary, re-exported at the root because
+/// it is the one type an agent reaches for without caring which subject owns it.
+pub use domain::job::JobEvent;

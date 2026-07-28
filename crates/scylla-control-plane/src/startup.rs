@@ -1,6 +1,3 @@
-use crate::config::ControlPlaneConfig;
-use crate::error::StartupError;
-use http::{HeaderName, HeaderValue, Method};
 #[cfg(feature = "register")]
 use crate::application::SignupUseCases;
 use crate::application::{
@@ -12,6 +9,8 @@ use crate::application::{
     TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
     WebhookIngressUseCases,
 };
+use crate::config::ControlPlaneConfig;
+use crate::error::StartupError;
 use crate::infrastructure::LettreMailer;
 use crate::infrastructure::{
     Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
@@ -22,6 +21,7 @@ use crate::infrastructure::{
     PgProjectRepository, PgRoleRepository, PgSecretRepository, PgSessionRepository,
     PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository, PgUserRepository,
 };
+use http::{HeaderName, HeaderValue, Method};
 use sqlx::PgPool;
 use std::future::Future;
 use std::net::SocketAddr;

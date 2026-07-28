@@ -3,9 +3,9 @@ use crate::application::app::AppRepository;
 use crate::application::authz::grant::{
     Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
 };
-use crate::domain::entities::{App, AppCredential};
-use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
-use crate::domain::value_objects::role::RoleName;
+use crate::domain::app::{App, AppCredential};
+use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
+use crate::domain::role::RoleName;
 use crate::infrastructure::persistence::postgres::{PgGrantRepository, PgOrganizationRepository};
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
@@ -13,7 +13,7 @@ use sqlx::PgPool;
 const TEST_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$aGFzaGhhc2g";
 
 fn agent_app(
-    org_id: &crate::domain::entities::OrganizationId,
+    org_id: &crate::domain::ids::OrganizationId,
     name: &str,
 ) -> (App, AppCredential, Grant) {
     let app = App::create(org_id.clone(), AppName::new(name).unwrap());

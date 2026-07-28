@@ -1,8 +1,8 @@
 use super::PgJobRepository;
 use crate::application::{JobRepository, PipelineRepository};
-use crate::domain::entities::TriggerId;
 use crate::domain::errors::DomainError;
-use crate::domain::value_objects::job::{JobOrigin, JobStatus};
+use crate::domain::ids::TriggerId;
+use crate::domain::job::{JobOrigin, JobStatus};
 use crate::infrastructure::persistence::postgres::PgPipelineRepository;
 use crate::test_support::prelude::*;
 use chrono::Utc;
@@ -64,9 +64,10 @@ async fn update_persists_started_finished_timestamps(pool: PgPool) {
 async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: PgPool) {
     use crate::application::AppRepository;
     use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
-    use crate::domain::entities::{Agent, App, AppCredential};
-    use crate::domain::value_objects::app::{AppName, AppSecretHash, AppSecretLabel};
-    use crate::domain::value_objects::role::name::RoleName;
+    use crate::domain::agent::Agent;
+    use crate::domain::app::{App, AppCredential};
+    use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
+    use crate::domain::role::RoleName;
     use crate::infrastructure::persistence::postgres::PgAppRepository;
 
     let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "reap").await;
@@ -130,7 +131,7 @@ async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: Pg
     assert_eq!(status(&repo, owned.id()).await, JobStatus::Orphaned);
 }
 
-async fn status(repo: &PgJobRepository, id: &crate::domain::entities::JobId) -> JobStatus {
+async fn status(repo: &PgJobRepository, id: &crate::domain::ids::JobId) -> JobStatus {
     repo.find_by_id(id).await.unwrap().status()
 }
 

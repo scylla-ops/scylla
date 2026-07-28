@@ -1,9 +1,9 @@
 use super::PgUserRepository;
 use crate::application::UserRepository;
-use crate::domain::entities::UserId;
+use crate::application::pagination::PaginationParams;
 use crate::domain::errors::DomainError;
-use crate::domain::value_objects::PaginationParams;
-use crate::domain::value_objects::user::{Email, Username};
+use crate::domain::ids::UserId;
+use crate::domain::user::{Email, Username};
 use crate::test_support::prelude::*;
 use sqlx::PgPool;
 

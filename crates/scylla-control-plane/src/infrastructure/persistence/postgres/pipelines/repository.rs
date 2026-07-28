@@ -1,8 +1,9 @@
 use crate::application::PipelineRepository;
-use crate::domain::entities::{OrganizationId, Pipeline, PipelineId, PipelineNode, ProjectId};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::value_objects::pipeline::PipelineName;
-use crate::domain::value_objects::{PaginatedResult, PaginationParams};
+use crate::domain::ids::{OrganizationId, PipelineId, ProjectId};
+use crate::domain::pipeline::PipelineName;
+use crate::domain::pipeline::{Pipeline, PipelineNode};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool, types::Json};
