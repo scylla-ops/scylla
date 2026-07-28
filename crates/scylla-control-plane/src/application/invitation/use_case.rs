@@ -6,6 +6,7 @@ use crate::application::authz::role::RoleRepository;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
 use crate::application::invitation::repository::InvitationRepository;
+use crate::application::invitation::token::mint_invitation_token;
 use crate::application::mail::Mailer;
 use crate::application::{HashService, OrganizationRepository, SessionRepository, UserRepository};
 use crate::domain::errors::{DomainError, DomainResult};
@@ -105,7 +106,13 @@ where
             CallerContext::User(id) => id.clone(),
             _ => UserId::new("system"),
         };
-        let invite = Invitation::create(organization_id, email, role, invited_by);
+        let invite = Invitation::create(
+            organization_id,
+            email,
+            role,
+            invited_by,
+            mint_invitation_token(),
+        );
         self.invite_repo.create(&invite).await?;
 
         let body = format!(

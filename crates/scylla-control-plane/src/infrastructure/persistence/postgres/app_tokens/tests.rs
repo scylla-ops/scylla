@@ -50,7 +50,7 @@ fn use_cases(
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn issue_with_correct_secret_then_token_resolves(pool: PgPool) {
-    let secret = AppSecret::generate();
+    let secret = crate::application::app::mint_app_secret();
     let app = seed_app(&pool, &secret).await;
 
     let outcome = use_cases(&pool)
@@ -68,11 +68,11 @@ async fn issue_with_correct_secret_then_token_resolves(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn issue_with_wrong_secret_is_unauthorized(pool: PgPool) {
-    let secret = AppSecret::generate();
+    let secret = crate::application::app::mint_app_secret();
     let app = seed_app(&pool, &secret).await;
 
     let result = use_cases(&pool)
-        .issue(app.id().clone(), AppSecret::generate())
+        .issue(app.id().clone(), crate::application::app::mint_app_secret())
         .await;
     assert!(matches!(
         result,

@@ -1,10 +1,19 @@
 use std::fmt;
 
+/// A fresh lowercase ULID, the identifier format every Scylla row uses.
+///
+/// Exposed because three rows carry an id that has no newtype yet (roles,
+/// grants, audit entries) and each had copied this one line. Reach for a
+/// [`define_id!`] type when the id has one; call this when it does not.
+#[must_use]
+pub fn new_id() -> String {
+    ulid::Ulid::new().to_string().to_lowercase()
+}
+
 /// Generate a type-safe ID wrapper for a domain entity.
 ///
-/// Produces the newtype, generation API, common trait impls
-/// (`Display`, `From<String>`, `From<&str>`, `From<Self> for String`, `AsRef<str>`)
-/// and the `EntityId` marker.
+/// Produces the newtype, its generation API, and the common trait impls:
+/// `Display`, `From<String>`, `From<&str>`, `From<Self> for String`, `AsRef<str>`.
 ///
 /// IDs deliberately carry no `sqlx` integration: every query passes them as
 /// `&str` via `as_str()`, so binding them directly is never needed and the
@@ -22,7 +31,7 @@ macro_rules! define_id {
 
             /// Generate a fresh lowercase ULID.
             pub fn generate() -> Self {
-                Self(ulid::Ulid::new().to_string().to_lowercase())
+                Self($crate::domain::ids::new_id())
             }
 
             pub fn as_str(&self) -> &str {
@@ -59,13 +68,8 @@ macro_rules! define_id {
                 &self.0
             }
         }
-
-        impl EntityId for $name {}
-        impl EntityId for &$name {}
     };
 }
-
-pub trait EntityId: fmt::Display + AsRef<str> + Send + Sync {}
 
 // Define ID types for all domain entities
 define_id!(UserId);

@@ -173,7 +173,7 @@ where
             .check(caller, Permission::CreateAgent(organization_id.clone()))
             .await?;
 
-        let secret = AppSecret::generate();
+        let secret = crate::application::app::mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
         let app = App::create(organization_id.clone(), name);
         let credential = AppCredential::create(

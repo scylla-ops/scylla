@@ -26,12 +26,19 @@ pub struct Invitation {
 }
 
 impl Invitation {
+    /// Assemble a pending invitation.
+    ///
+    /// `token` is supplied by the caller rather than generated here. It is the
+    /// secret that lets whoever holds the link join the organization, so picking
+    /// a random source is a security decision, and the kernel is a crate every
+    /// agent links. The control plane mints it; see `mint_invitation_token`.
     #[must_use]
     pub fn create(
         organization_id: OrganizationId,
         email: Email,
         role: Option<RoleName>,
         invited_by: UserId,
+        token: String,
     ) -> Self {
         let now = clock::now();
         Self {
@@ -39,7 +46,7 @@ impl Invitation {
             organization_id,
             email,
             role,
-            token: uuid::Uuid::new_v4().to_string(),
+            token,
             status: InvitationStatus::Pending,
             invited_by,
             expires_at: now + Duration::days(INVITE_TTL_DAYS),

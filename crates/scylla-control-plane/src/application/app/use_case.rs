@@ -79,7 +79,7 @@ where
             .check(caller, Permission::CreateApp(organization_id.clone()))
             .await?;
 
-        let secret = AppSecret::generate();
+        let secret = crate::application::app::mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
         let app = App::create(organization_id, name);
         let credential = AppCredential::create(
@@ -172,7 +172,7 @@ where
         // Ensure the app exists (surfaces NOT_FOUND rather than a dangling secret).
         self.app_repo.find_by_id(&app_id).await?;
 
-        let secret = AppSecret::generate();
+        let secret = crate::application::app::mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
         let credential = AppCredential::create(app_id, label, secret_hash);
         self.credential_repo.create(&credential).await?;

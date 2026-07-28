@@ -5,7 +5,7 @@ use crate::application::{
     SecretCipher, TriggerRepository, next_fire_time,
 };
 use crate::domain::app::{App, AppCredential};
-use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
+use crate::domain::app::{AppName, AppSecretLabel};
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, PipelineId, TriggerId};
@@ -247,7 +247,7 @@ where
             organization_id.clone(),
             AppName::new(TRIGGER_RUNNER_APP_NAME)?,
         );
-        let secret = AppSecret::generate();
+        let secret = crate::application::app::mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;
         let credential = AppCredential::create(
             app.id().clone(),

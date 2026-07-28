@@ -1,7 +1,6 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use nutype::nutype;
 use std::fmt;
-use uuid::Uuid;
 
 const SECRET_MIN_LENGTH: usize = 32;
 const SECRET_MAX_LENGTH: usize = 512;
@@ -36,14 +35,6 @@ impl AppSecret {
         Self::try_new(value.into())
     }
 
-    /// Generate a fresh high-entropy secret (256 bits, hex-encoded).
-    #[must_use]
-    pub fn generate() -> Self {
-        let raw = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
-        // 64 hex chars always satisfies the length bounds.
-        Self::try_new(raw).expect("generated secret is always valid")
-    }
-
     #[must_use]
     pub fn as_str(&self) -> &str {
         <Self as AsRef<str>>::as_ref(self)
@@ -68,12 +59,8 @@ impl fmt::Display for AppSecret {
 mod tests {
     use super::*;
 
-    #[test]
-    fn generate_is_valid_and_unique() {
-        let a = AppSecret::generate();
-        let b = AppSecret::generate();
-        assert_eq!(a.as_str().len(), 64);
-        assert_ne!(a.as_str(), b.as_str());
+    fn a_secret() -> AppSecret {
+        AppSecret::new("0123456789abcdef0123456789abcdef").unwrap()
     }
 
     #[test]
@@ -83,7 +70,7 @@ mod tests {
 
     #[test]
     fn debug_and_display_are_masked() {
-        let s = AppSecret::generate();
+        let s = a_secret();
         assert!(!format!("{s:?}").contains(s.as_str()));
         assert_eq!(format!("{s}"), "[REDACTED]");
     }

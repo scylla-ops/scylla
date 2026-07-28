@@ -335,7 +335,7 @@ impl Grant {
     #[must_use]
     pub fn new(principal: Principal, role: RoleName, scope: Scope) -> Self {
         Self {
-            id: ulid::Ulid::new().to_string().to_lowercase(),
+            id: scylla_core::domain::ids::new_id(),
             principal,
             role,
             scope,

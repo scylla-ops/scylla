@@ -2743,7 +2743,6 @@ dependencies = [
  "tower-http 0.7.0",
  "tracing",
  "tracing-subscriber",
- "ulid",
  "uuid",
 ]
 
@@ -2757,7 +2756,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "ulid",
- "uuid",
 ]
 
 [[package]]

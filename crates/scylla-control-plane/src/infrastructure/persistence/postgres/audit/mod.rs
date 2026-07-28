@@ -42,7 +42,7 @@ async fn writer_loop(pool: PgPool, mut rx: mpsc::UnboundedReceiver<AuditEntry>) 
 }
 
 async fn insert(pool: &PgPool, entry: &AuditEntry) -> Result<(), sqlx::Error> {
-    let id = ulid::Ulid::new().to_string().to_lowercase();
+    let id = scylla_core::domain::ids::new_id();
     sqlx::query(
         "INSERT INTO audit_log \
          (id, occurred_at, principal_kind, principal_id, action, resource_kind, resource_id, decision, policies, reason) \

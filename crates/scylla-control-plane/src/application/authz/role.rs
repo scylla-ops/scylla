@@ -59,7 +59,7 @@ impl Role {
         permissions: Vec<String>,
     ) -> Self {
         Self {
-            id: ulid::Ulid::new().to_string().to_lowercase(),
+            id: scylla_core::domain::ids::new_id(),
             key: None,
             name,
             description,
