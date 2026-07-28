@@ -9,7 +9,7 @@
 //!
 //! These are wire DTOs, not domain types: message fields arrive as `Option`,
 //! enums as `i32`, ids as wrapper messages. Convert at the boundary (the
-//! `scylla-api` mappers) and keep them out of business logic.
+//! `scylla-control-plane` gRPC mappers) and keep them out of business logic.
 
 /// Leaf value objects shared by every package: ids, `Email`, pagination.
 pub mod common {

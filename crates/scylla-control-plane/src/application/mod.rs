@@ -8,10 +8,6 @@ pub mod job;
 pub mod mail;
 pub mod oauth;
 pub mod organization;
-// The `PermissionService` trait carries no heavy deps (no cedar, no sqlx) and is
-// a hard dependency of every use case, so it must compile regardless of which
-// features a downstream crate (e.g. scylla-agent with default-features=false)
-// enables. Only the concrete Cedar adapter stays behind the `permission` feature.
 pub mod agent;
 pub mod authz;
 pub mod pipeline;

@@ -547,9 +547,10 @@ const fn log_stream_to_proto(stream: LogStream) -> common::LogStream {
     }
 }
 
-/// Wall-clock now as a protobuf `Timestamp`. Mirrors `scylla-api`'s
-/// `convert::ts`; scylla-agent does not depend on scylla-api so it cannot
-/// reuse it.
+/// Wall-clock now as a protobuf `Timestamp`. Mirrors the control plane's
+/// `grpc::convert::ts`. The agent does not depend on the control plane, and
+/// must not: the shared home for this would be `scylla-protocol`, the one crate
+/// both sides already link.
 fn now_timestamp() -> Option<prost_types::Timestamp> {
     let now = Utc::now();
     Some(prost_types::Timestamp {
