@@ -21,12 +21,17 @@ import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
+import { usePermissionSync } from '@/modules/features/permission/presentation/hooks/use-permission-sync.ts';
 
 export const Layout = () => {
   const { organizations, isLoading } = useOrganizations();
   const createOrganization = useCreateOrganization();
   const navigate = useNavigate();
   const setOrganization = useContextStore(state => state.setOrganization);
+
+  // One place loads the signed-in user's permissions into the context store
+  // (at login, then on org/project switch); every `can()` reads from there.
+  usePermissionSync();
 
   if (isLoading) {
     return (

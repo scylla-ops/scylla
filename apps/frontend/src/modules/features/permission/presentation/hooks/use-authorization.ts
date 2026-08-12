@@ -5,20 +5,20 @@ import {
   canAccess,
   type PermissionTarget,
 } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
-import { useMyPermissions } from '@/modules/features/permission/presentation/hooks/use-my-permissions.ts';
 
 /**
  * App-wide authorization for the current user. Returns `can(permission, target?)`,
  * a synchronous check that defaults the target to the current org/project context
  * — so `can(Permission.CREATE_PIPELINE)` asks "in the org/project I'm looking at".
  *
- * `can` **denies while the effective permissions are unknown** (still loading or
- * failed): gated UI must never flash content the user may not hold. Consumers
- * that want a loading state instead of a denial read `ready` — false only while
- * the lookup is still in flight.
+ * Reads the effective permissions loaded into the shared context store by
+ * {@link usePermissionSync} — no backend call per check. `can` **denies while
+ * the permissions are unknown** (store not yet populated): gated UI must never
+ * flash content the user may not hold. Consumers that want a loading state
+ * instead of a denial read `ready`.
  */
 export const useAuthorization = () => {
-  const { effective, isLoading, isError } = useMyPermissions();
+  const effective = useContextStore(state => state.permissions);
   const orgId = useContextStore(state => state.organization.id);
   const projectId = useContextStore(state => state.project.id);
 
@@ -33,10 +33,7 @@ export const useAuthorization = () => {
     [effective, orgId, projectId],
   );
 
-  // Settled: we have an answer (data) or a definitive failure (treated as denied).
-  const ready = effective !== undefined || isError;
-
-  return { can, isLoading, isError, ready };
+  return { can, ready: effective !== null };
 };
 
 /** Convenience: the boolean result of a single {@link useAuthorization} check. */

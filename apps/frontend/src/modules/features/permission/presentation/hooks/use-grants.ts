@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import type { CreateGrantInput } from '@/modules/features/permission/domain/usecases/create-grant.use-case.ts';
+import { useRefreshMyPermissions } from '@/modules/features/permission/presentation/hooks/use-refresh-my-permissions.ts';
 
 const GRANTS_QUERY_KEY = 'permission-grants';
 
@@ -10,11 +11,12 @@ const GRANTS_QUERY_KEY = 'permission-grants';
 export function useGrants() {
   const { permission } = useDependencies();
   const queryClient = useQueryClient();
+  const refreshMyPermissions = useRefreshMyPermissions();
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: [GRANTS_QUERY_KEY] });
-    // A grant change may alter what the current user can see — refresh the
-    // cached effective permissions that drive nav/button gating.
-    void queryClient.invalidateQueries({ queryKey: ['permission-effective'] });
+    // A grant change may alter what the current user can see — reload the
+    // stored effective permissions that drive nav/button gating.
+    void refreshMyPermissions();
   };
 
   const grantsQuery = useQuery({
