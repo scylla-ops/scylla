@@ -27,4 +27,4 @@ msgstr "Rechercher"
 
 #: src/modules/features/marketplace/presentation/ui/Marketplace.page.tsx:9
 msgid "This feature will be available soon"
-msgstr ""
+msgstr "Cette fonctionnalité sera bientôt disponible"

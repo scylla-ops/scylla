@@ -18,22 +18,58 @@ msgstr ""
 msgid "{0}"
 msgstr "{0}"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:105
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:58
+msgid "Admin"
+msgstr "Admin"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:46
+msgid "Agents"
+msgstr "Agents"
+
+#: src/modules/layout/presentation/ui/Layout.tsx:91
+msgid "Create"
+msgstr "Create"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:103
+msgid "Language"
+msgstr "Language"
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:108
 msgid "Log out"
 msgstr "Log out"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:69
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:73
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:38
+msgid "Main"
+msgstr "Main"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:51
+msgid "Marketplace"
+msgstr "Marketplace"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:84
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:88
 msgid "Organization"
 msgstr "Organization"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:72
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:41
+msgid "Projects"
+msgstr "Projects"
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:87
 msgid "Select Organization"
 msgstr "Select Organization"
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:94
+msgid "Settings"
+msgstr "Settings"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:69
 msgid "To get started, please create your first organization."
 msgstr "To get started, please create your first organization."
+
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
+msgid "Users"
+msgstr "Users"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:66
 msgid "Welcome to Scylla!"

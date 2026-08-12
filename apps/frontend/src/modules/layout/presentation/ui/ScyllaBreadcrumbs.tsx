@@ -74,7 +74,7 @@ export const ScyllaBreadcrumbs = () => {
             <React.Fragment key={crumb.path}>
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage className='text-slate-900 font-semibold text-sm px-2 py-1 rounded-md bg-slate-50 flex gap-1 items-center'>
+                  <BreadcrumbPage className='font-semibold text-sm px-2 py-1 rounded-md bg-muted text-foreground flex gap-1 items-center'>
                     {id ? (
                       <>
                         <span className='whitespace-nowrap'>{beforeId}</span>
@@ -88,7 +88,7 @@ export const ScyllaBreadcrumbs = () => {
                 ) : (
                   <BreadcrumbLink
                     asChild
-                    className='text-slate-600 hover:text-primary font-medium text-sm px-2 py-1 rounded-md hover:bg-primary/5 transition-all duration-200'
+                    className='text-muted-foreground hover:text-primary font-medium text-sm px-2 py-1 rounded-md hover:bg-primary/10 transition-all duration-200'
                   >
                     <Link to={crumb.path}>{crumb.label}</Link>
                   </BreadcrumbLink>
@@ -96,7 +96,7 @@ export const ScyllaBreadcrumbs = () => {
               </BreadcrumbItem>
               {!isLast && (
                 <BreadcrumbSeparator>
-                  <ChevronRight className='w-4 h-4 text-slate-400' />
+                  <ChevronRight className='w-4 h-4 text-muted-foreground' />
                 </BreadcrumbSeparator>
               )}
             </React.Fragment>

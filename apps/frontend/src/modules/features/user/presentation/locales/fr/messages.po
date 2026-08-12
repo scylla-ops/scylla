@@ -20,7 +20,7 @@ msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:129
 msgid "Active account"
-msgstr ""
+msgstr "Compte actif"
 
 #: src/modules/features/user_settings/presentation/ui/AddUserDialog.tsx:36
 #~ msgid "Add UserModel"
@@ -58,7 +58,7 @@ msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:74
 msgid "Error loading user information"
-msgstr ""
+msgstr "Erreur lors du chargement des informations utilisateur"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:95
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:143
@@ -71,7 +71,7 @@ msgstr ""
 
 #: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:54
 msgid "Loading user information..."
-msgstr ""
+msgstr "Chargement des informations utilisateur..."
 
 #: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:29
 #: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:49
@@ -150,7 +150,7 @@ msgstr "Informations utilisateur"
 
 #: src/modules/features/user_settings/presentation/ui/UserInformation.tsx:34
 msgid "UserModel information not available"
-msgstr ""
+msgstr "Informations UserModel non disponibles"
 
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:89
 #: src/modules/features/user_settings/presentation/ui/Organization.tsx:137
