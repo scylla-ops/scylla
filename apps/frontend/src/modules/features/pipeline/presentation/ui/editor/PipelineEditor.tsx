@@ -77,34 +77,35 @@ export const PipelineEditor = ({
   }, [isDirty]);
 
   return (
-    <Tabs
-      key='editor'
-      defaultValue='blueprint'
-      className='flex w-full h-full flex-col gap-4 overflow-visible'
-    >
-      <PipelineEditorHeader
-        onSubmit={handleSubmit}
-        submitLabel={submitLabel}
-        mode={mode}
-        submitDisabled={!isValid}
-        blueprintDisabled={!isValid}
-        isDirty={isDirty}
-        isSaving={isSubmitPending}
-      />
+    <Tabs key='editor' defaultValue='blueprint' className='flex h-full flex-col gap-4'>
+      <div className='flex w-full items-center justify-between gap-4'>
+        <PipelineEditorHeader
+          onSubmit={handleSubmit}
+          submitLabel={submitLabel}
+          mode={mode}
+          submitDisabled={!isValid}
+          blueprintDisabled={!isValid}
+          isDirty={isDirty}
+          isSaving={isSubmitPending}
+        />
+      </div>
+
       <TabsContent value='scripting' className='h-full overflow-hidden' forceMount>
         <div className='flex h-full flex-col gap-2'>
-          <div className={'overflow-auto p-2'}>
-            <Card className='min-h-0 flex-1 p-0'>
-              <ReactCodeMirror
-                value={script}
-                onChange={setScript}
-                className='h-full'
-                height='100%'
-                extensions={[
-                  StreamLanguage.define(json),
-                  parseError ? codeMirrorErrorTheme : codeMirrorTheme,
-                ]}
-              />
+          <div className='overflow-auto p-2'>
+            <Card className='min-h-0 flex-1 p-0 bg-card'>
+              <div className='h-full rounded-[inherit] bg-background text-foreground'>
+                <ReactCodeMirror
+                  value={script}
+                  onChange={setScript}
+                  className='h-full [&_.cm-editor]:bg-background [&_.cm-scroller]:bg-background [&_.cm-content]:text-foreground'
+                  height='100%'
+                  extensions={[
+                    StreamLanguage.define(json),
+                    parseError ? codeMirrorErrorTheme : codeMirrorTheme,
+                  ]}
+                />
+              </div>
             </Card>
           </div>
           {parseError && (
@@ -114,8 +115,9 @@ export const PipelineEditor = ({
           )}
         </div>
       </TabsContent>
+
       <TabsContent value='blueprint' className='h-full'>
-        <Card className='h-full p-0'>
+        <Card className='h-full p-0 bg-card'>
           <PipelineBlueprint
             steps={steps}
             pipelineName={pipelineName}

@@ -93,7 +93,7 @@ export const Layout = () => {
                       );
                     }
                   }}
-                  buttonLabel={'Create'}
+                  buttonLabel={<Trans>Create</Trans>}
                 />
               </CardContent>
             </Card>

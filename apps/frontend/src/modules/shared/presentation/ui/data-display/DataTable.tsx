@@ -75,14 +75,13 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className='w-full h-full border border-slate-200 bg-white shadow-sm rounded-xl overflow-auto'>
-      <table className={cn('w-full caption-bottom text-sm relative', tableLayoutFixed && 'table-fixed')}>
-        <TableHeader className='bg-slate-50 sticky top-0 z-10'>
+    <div className='w-full h-full border border-border bg-card shadow-sm rounded-xl overflow-auto'>
+      <table
+        className={cn('w-full caption-bottom text-sm relative', tableLayoutFixed && 'table-fixed')}
+      >
+        <TableHeader className='bg-muted/70 sticky top-0 z-10'>
           {table.getHeaderGroups().map(headerGroup => (
-            <TableRow
-              key={headerGroup.id}
-              className='hover:bg-transparent border-b border-slate-200'
-            >
+            <TableRow key={headerGroup.id} className='hover:bg-transparent border-b border-border'>
               {headerGroup.headers.map(header => {
                 const align =
                   header.column.columnDef.meta?.align ?? (alignColumnsCenter ? 'center' : 'left');
@@ -96,7 +95,7 @@ export function DataTable<TData, TValue>({
                         : undefined,
                     }}
                     className={cn(
-                      'h-12 px-4 text-slate-600 font-semibold bg-slate-50 text-xs uppercase tracking-wider',
+                      'h-12 px-4 text-muted-foreground font-semibold bg-muted/70 text-xs uppercase tracking-wider',
                       alignClass[align],
                     )}
                   >
@@ -122,9 +121,9 @@ export function DataTable<TData, TValue>({
                     data-state={isSelected ? 'selected' : undefined}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      'border-b [&>td:first-child]:border-l-[3px] border-slate-100 [&>td:first-child]:border-l-transparent transition-colors duration-150',
+                      'border-b [&>td:first-child]:border-l-[3px] border-border/70 [&>td:first-child]:border-l-transparent transition-colors duration-150',
                       onRowClick && 'cursor-pointer',
-                      onRowClick && !isSelected && 'hover:bg-slate-50',
+                      onRowClick && !isSelected && 'hover:bg-muted/50',
                       isSelected &&
                         '[&>td]:bg-primary/6 [&>td:first-child]:border-l-[3px] [&>td:first-child]:border-l-primary hover:bg-primary/9',
                     )}
@@ -155,7 +154,7 @@ export function DataTable<TData, TValue>({
                   {isExpanded && expandedContent && (
                     <TableRow
                       key={`${row.id}-expanded`}
-                      className='border-b border-slate-200 bg-slate-50/50'
+                      className='border-b border-border bg-muted/50'
                     >
                       <TableCell colSpan={columns.length} className='p-0'>
                         {expandedContent(row)}
@@ -167,7 +166,10 @@ export function DataTable<TData, TValue>({
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className='h-24 text-center text-slate-500'>
+              <TableCell
+                colSpan={columns.length}
+                className='h-24 text-center text-muted-foreground'
+              >
                 No results.
               </TableCell>
             </TableRow>

@@ -28,29 +28,40 @@ import type { NavSection } from '@/modules/layout/presentation/structs/nav-secti
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { LanguagesIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/modules/shared/presentation/ui/shadcn/dropdown-menu.tsx';
+import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
+import { setAppLocale, type SupportedLocale } from '@shared/presentation/utils/i18n.ts';
 
 const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
+  const { t } = useLingui();
+
   const orgName = useContextStore(state => state.organization.name);
   const prefix = orgName ? `/${slugifyOrgName(orgName)}` : '';
   const { can, ready } = useAuthorization();
 
   const sections: NavSection[] = [
     {
-      title: 'Main',
+      title: t`Main`,
       items: [
         {
-          title: 'Projects',
+          title: t`Projects`,
           url: `${prefix}/projects`,
           icon: WorkflowIcon,
         },
         {
-          title: 'Agents',
+          title: t`Agents`,
           url: `${prefix}/agents`,
           icon: HardDriveIcon,
           permission: Permission.LIST_AGENTS,
         },
         {
-          title: 'Marketplace',
+          title: t`Marketplace`,
           url: `${prefix}/marketplace`,
           icon: ShoppingCartIcon,
           permission: Permission.LIST_APPS_BY_ORGANIZATION,
@@ -58,10 +69,10 @@ const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
       ],
     },
     {
-      title: 'Admin',
+      title: t`Admin`,
       items: [
         {
-          title: 'Users',
+          title: t`Users`,
           url: `${prefix}/users`,
           icon: UsersIcon,
           permission: Permission.LIST_USERS,
@@ -90,10 +101,14 @@ const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const organization = useContextStore(state => state.organization);
   const { sections: navSections, ready } = useNavSections();
+  const currentLocale = (i18n.locale as SupportedLocale | undefined) ?? 'en';
 
+  const handleLocaleChange = (locale: SupportedLocale) => {
+    setAppLocale(locale);
+  };
   return (
     <Sidebar variant={'inset'} collapsible='icon' {...props}>
       <SidebarHeader>
@@ -126,7 +141,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
         )}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className='flex flex-col gap-2'>
+        <div className='flex items-center justify-between rounded-lg border border-sidebar-border/70 bg-sidebar/40 px-3 py-2'>
+          <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+            <LanguagesIcon className='size-4' />
+            <span>{t`Language`}</span>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type='button' variant='ghost' size='sm' className='h-8 px-2'>
+                {currentLocale === 'fr' ? 'FR' : 'EN'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              <DropdownMenuItem onClick={() => handleLocaleChange('en')}>English</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleLocaleChange('fr')}>Français</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <NavUser />
       </SidebarFooter>
       <SidebarRail />
