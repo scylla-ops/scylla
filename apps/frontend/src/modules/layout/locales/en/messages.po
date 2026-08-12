@@ -22,19 +22,19 @@ msgstr "{0}"
 msgid "Log out"
 msgstr "Log out"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:98
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:102
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:101
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:105
 msgid "Organization"
 msgstr "Organization"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:101
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:104
 msgid "Select Organization"
 msgstr "Select Organization"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:69
+#: src/modules/layout/presentation/ui/Layout.tsx:74
 msgid "To get started, please create your first organization."
 msgstr "To get started, please create your first organization."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:66
+#: src/modules/layout/presentation/ui/Layout.tsx:71
 msgid "Welcome to Scylla!"
 msgstr "Welcome to Scylla!"
