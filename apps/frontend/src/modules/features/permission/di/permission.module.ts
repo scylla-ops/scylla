@@ -6,6 +6,7 @@ import { CreateRoleUseCase } from '@/modules/features/permission/domain/usecases
 import { UpdateRoleUseCase } from '@/modules/features/permission/domain/usecases/update-role.use-case.ts';
 import { DeleteRoleUseCase } from '@/modules/features/permission/domain/usecases/delete-role.use-case.ts';
 import { GetEffectivePermissionsUseCase } from '@/modules/features/permission/domain/usecases/get-effective-permissions.use-case.ts';
+import { GetMyPermissionsUseCase } from '@/modules/features/permission/domain/usecases/get-my-permissions.use-case.ts';
 import { ListGrantsUseCase } from '@/modules/features/permission/domain/usecases/list-grants.use-case.ts';
 import { CreateGrantUseCase } from '@/modules/features/permission/domain/usecases/create-grant.use-case.ts';
 import { RevokeGrantUseCase } from '@/modules/features/permission/domain/usecases/revoke-grant.use-case.ts';
@@ -22,6 +23,7 @@ export const PermissionModule = {
     updateRole: new UpdateRoleUseCase(repository),
     deleteRole: new DeleteRoleUseCase(repository),
     getEffectivePermissions: new GetEffectivePermissionsUseCase(repository),
+    getMyPermissions: new GetMyPermissionsUseCase(repository),
     listGrants: new ListGrantsUseCase(repository),
     createGrant: new CreateGrantUseCase(repository),
     revokeGrant: new RevokeGrantUseCase(repository),

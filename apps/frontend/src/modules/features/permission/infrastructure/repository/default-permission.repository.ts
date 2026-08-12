@@ -65,6 +65,10 @@ export class DefaultPermissionRepository implements PermissionRepository {
     ).map(GrpcEffectivePermissionsMapper.toDomain);
   }
 
+  public async getMyPermissions(): Promise<ScyllaResult<EffectivePermissionsEntity>> {
+    return (await this._dataSource.getMyPermissions()).map(GrpcEffectivePermissionsMapper.toDomain);
+  }
+
   // ── Grants ─────────────────────────────────────────────────────────────────
 
   public async listGrants(

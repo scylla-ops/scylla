@@ -16,9 +16,19 @@ service RoleService {
   rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
   // "What can this principal do" — the principal's resolved permissions grouped
-  // by the scope each grant binds to. Backs a permission matrix. Requires
-  // `manageSystemGrants`.
+  // by the scope each grant binds to. Backs an admin permission matrix over
+  // *other* principals, so it requires `manageSystemGrants`. To read your own,
+  // call GetMyPermissions.
   rpc GetEffectivePermissions(GetEffectivePermissionsRequest) returns (GetEffectivePermissionsResponse);
+  // The caller's own resolved permissions, same shape as above. Takes no
+  // principal on purpose: reading your own access needs no permission, and
+  // asking for someone else's is unrepresentable rather than rejected at
+  // runtime. Backs the "my access" view and client-side affordances.
+  rpc GetMyPermissions(GetMyPermissionsRequest) returns (GetMyPermissionsResponse);
+  // The authorization vocabulary a role may reference: every permission, with
+  // the narrowest scope kind it is coherent at. Read-only — lets a role editor
+  // enumerate real permissions instead of guessing names.
+  rpc ListAuthzVocabulary(ListAuthzVocabularyRequest) returns (ListAuthzVocabularyResponse);
 }
 
 message Role {
@@ -87,3 +97,11 @@ message EffectiveScope {
 }
 
 message GetEffectivePermissionsResponse { repeated EffectiveScope scopes = 1; }
+
+message GetMyPermissionsRequest {}
+
+message GetMyPermissionsResponse { repeated EffectiveScope scopes = 1; }
+
+message ListAuthzVocabularyRequest {}
+
+message ListAuthzVocabularyResponse { repeated AuthzAction actions = 1; }

@@ -5,13 +5,17 @@ package scylla.authz.v1;
 import "scylla/authz/v1/permission.proto";
 import "scylla/common/v1/common.proto";
 
-// Scoped grants — an explicit "principal holds target within scope" assignment,
+// Scoped grants — an explicit "principal holds role within scope" assignment,
 // linked as a Cedar template instance. Applied live (hot-reload). Requires the
 // scope-appropriate manage-grants permission (manageSystemGrants /
 // manageOrgGrants / manageProjectGrants).
 service GrantService {
   rpc CreateGrant(CreateGrantRequest) returns (CreateGrantResponse);
   rpc RevokeGrant(RevokeGrantRequest) returns (RevokeGrantResponse);
+  // Strip every access a principal holds at a scope and below it, in one call:
+  // how someone leaves an organization or a project. System-scoped grants are
+  // never touched, so an org admin cannot strip a platform operator.
+  rpc RevokeAllAccess(RevokeAllAccessRequest) returns (RevokeAllAccessResponse);
   rpc ListGrants(ListGrantsRequest) returns (ListGrantsResponse);
   // The static catalog of roles assignable via CreateGrant. The optional
   // scope_kind filter narrows to roles valid on that scope kind (e.g. PROJECT →
@@ -25,25 +29,21 @@ message Grant {
   PrincipalRef principal = 2;
   // Where it applies, carrying the bound entity.
   ScopeRef scope = 3;
-  // What is granted, mirroring the domain `GrantTarget`: a whole role or a
-  // single direct permission — exactly one, never both nor neither.
-  oneof target {
-    scylla.common.v1.RoleId role = 4;
-    // A direct single-permission grant, additive to the principal's roles.
-    Permission permission = 5;
-  }
+  // The role granted within that scope. Anything narrower than a role is
+  // expressed by creating a role with exactly the permissions wanted.
+  scylla.common.v1.RoleId role = 4;
+  // 5 was a direct single-permission target, dropped when the grant target
+  // collapsed to a role. Never reuse the number.
+  reserved 5;
 }
 
 message CreateGrantRequest {
   PrincipalRef principal = 1;
   ScopeRef scope = 2;
-  // What to grant — a role or a single permission (additive to the principal's
-  // roles, e.g. "Alice may runPipeline within Org A"). Both go through the same
-  // anti-escalation check. Mirrors the domain `GrantTarget`.
-  oneof target {
-    scylla.common.v1.RoleId role = 3;
-    Permission permission = 4;
-  }
+  // The role to grant. It must exist and declare the scope kind this grant binds
+  // to; it also goes through the anti-escalation check.
+  scylla.common.v1.RoleId role = 3;
+  reserved 4;
 }
 
 message CreateGrantResponse { Grant grant = 1; }
@@ -51,6 +51,18 @@ message CreateGrantResponse { Grant grant = 1; }
 message RevokeGrantRequest { scylla.common.v1.GrantId grant_id = 1; }
 
 message RevokeGrantResponse {}
+
+message RevokeAllAccessRequest {
+  PrincipalRef principal = 1;
+  // The scope to clear, inclusive of everything beneath it.
+  ScopeRef scope = 2;
+}
+
+message RevokeAllAccessResponse {
+  // How many grants were removed, so a caller can tell "removed three" from
+  // "there was nothing to remove".
+  uint64 revoked = 1;
+}
 
 message ListGrantsRequest {
   // Optional scope filter. Set → list the grants bound to exactly that scope
@@ -66,14 +78,17 @@ message ListGrantableRolesRequest {
   optional ScopeKind scope_kind = 1;
 }
 
-// Whether a grantable role confers full control of its scope or a restricted
-// capability set. Closed and code-owned — the catalog is compiled in.
+// What a grantable role is for, so a client can group the catalog sensibly.
+// Descriptive only: what a role actually confers is its permission set, never
+// this tag. Closed and code-owned — the catalog is compiled in.
 enum RoleKind {
   ROLE_KIND_UNSPECIFIED = 0;
-  // Full control over the scope it is granted on.
+  // Runs the scope it is granted on: full control, including its accesses.
   ROLE_KIND_ADMIN = 1;
-  // A restricted capability set (e.g. an agent that may only execute jobs).
+  // A machine app (e.g. an agent that may only execute jobs).
   ROLE_KIND_AGENT = 2;
+  // A human working inside the scope, short of administering it.
+  ROLE_KIND_MEMBER = 3;
 }
 
 // A role that may be assigned through a grant. The catalog is compiled in, so

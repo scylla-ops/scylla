@@ -91,6 +91,13 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
     );
   }
 
+  public getMyPermissions(): Promise<ScyllaResult<EffectiveScope[]>> {
+    return ScyllaResult.tryAsync(
+      async () => (await this._roles.getMyPermissions({})).response.scopes,
+      'Failed to fetch your own permissions.',
+    );
+  }
+
   public listGrants(scope?: ScopeRef): Promise<ScyllaResult<Grant[]>> {
     return ScyllaResult.tryAsync(
       async () => (await this._grants.listGrants({ scope })).response.grants,
@@ -120,7 +127,6 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
 
   public listPermissionVocabulary(): Promise<ScyllaResult<AuthzAction[]>> {
     return ScyllaResult.tryAsync(
-      // `listAuthzVocabulary` is the generated RPC name (scylla.authz.v1).
       async () => (await this._policies.listAuthzVocabulary({})).response.actions,
       'Failed to load the permission vocabulary.',
     );

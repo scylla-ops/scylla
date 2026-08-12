@@ -9,7 +9,6 @@ import type {
 } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import type {
   GrantEntity,
-  GrantTargetSpec,
 } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/permission/domain/entities/grantable-role.entity.ts';
 import type { EffectivePermissionsEntity } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
@@ -23,7 +22,8 @@ import type { PermissionVocabularyEntity } from '@/modules/features/permission/d
 export interface CreateGrantInput {
   principal: PrincipalEntity;
   /** The role, or the single permission, to grant. */
-  target: GrantTargetSpec;
+  /** The role to grant within the scope. */
+  roleId: string;
   scope: PermissionScope;
   scopeId: string;
 }
@@ -44,6 +44,8 @@ export interface PermissionRepository {
   getEffectivePermissions(
     principal: PrincipalEntity,
   ): Promise<ScyllaResult<EffectivePermissionsEntity>>;
+  /** The signed-in caller's own access. Needs no permission, unlike the above. */
+  getMyPermissions(): Promise<ScyllaResult<EffectivePermissionsEntity>>;
 
   // ── Grants (principal holds role|permission within scope) ──────────────────
   listGrants(scope?: PermissionScope, scopeId?: string): Promise<ScyllaResult<GrantEntity[]>>;

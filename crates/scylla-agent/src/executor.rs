@@ -8,7 +8,7 @@
 //!
 //! Status and log events are sent as `AgentUp` messages on the agent stream.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
 use chrono::Utc;
@@ -20,15 +20,14 @@ use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
-use scylla_core::application::JobEvent;
-use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::job::LogStream;
-use scylla_core::domain::value_objects::pipeline::{Shell, Step};
+use scylla_core::JobEvent;
+use scylla_core::domain::job::LogStream;
+use scylla_core::domain::pipeline::{DagPlan, PipelineNode, Shell, Step};
 use scylla_protocol::agent::v1::{AgentUp, JobLogLine, agent_up};
 use scylla_protocol::common::v1 as common;
 
 use crate::error::ExecutionError;
-use crate::plan::DagPlan;
+
 use crate::reporter::{JobReporter, StatusPublisher};
 
 /// Executes a pipeline DAG by walking nodes in topological order, spawning
@@ -272,7 +271,23 @@ async fn run_node(
 ) -> Result<(), ExecutionError> {
     // Resolve and create the working directory inside the workspace.
     let requested = match spec.working_dir() {
-        Some(wd) => workspace.join(wd.as_str()),
+        Some(wd) => {
+            // Checked before anything is created. A `..` or a leading `/` in the
+            // requested path makes the join below land outside the workspace, and
+            // `create_dir_all` would materialize those directories for real before
+            // the canonical check further down ever gets to reject them. The
+            // control plane already refuses both when validating `WorkingDir`, so
+            // this is the second lock on the same door, not the first.
+            if Path::new(wd.as_str())
+                .components()
+                .any(|c| matches!(c, Component::ParentDir | Component::RootDir))
+            {
+                return Err(ExecutionError::WorkspaceEscape {
+                    node_id: node_id.to_string(),
+                });
+            }
+            workspace.join(wd.as_str())
+        }
         None => workspace.to_path_buf(),
     };
     if let Err(e) = fs::create_dir_all(&requested).await {
@@ -539,25 +554,6 @@ where
     })
 }
 
-/// Domain log stream → the proto enum. Total: the domain has no "unspecified".
-const fn log_stream_to_proto(stream: LogStream) -> common::LogStream {
-    match stream {
-        LogStream::Stdout => common::LogStream::Stdout,
-        LogStream::Stderr => common::LogStream::Stderr,
-    }
-}
-
-/// Wall-clock now as a protobuf `Timestamp`. Mirrors `scylla-api`'s
-/// `convert::ts`; scylla-agent does not depend on scylla-api so it cannot
-/// reuse it.
-fn now_timestamp() -> Option<prost_types::Timestamp> {
-    let now = Utc::now();
-    Some(prost_types::Timestamp {
-        seconds: now.timestamp(),
-        nanos: i32::try_from(now.timestamp_subsec_nanos()).unwrap_or(0),
-    })
-}
-
 /// Replace any secret-sourced value with `***` so secrets don't leak into logs.
 fn redact(mut line: String, masked: &[String]) -> String {
     for secret in masked {
@@ -586,9 +582,9 @@ async fn publish_log_line(
         node_id: Some(common::NodeId {
             value: node_id.to_string(),
         }),
-        stream: log_stream_to_proto(stream) as i32,
+        stream: scylla_protocol::convert::log_stream_to_proto(stream) as i32,
         line,
-        timestamp: now_timestamp(),
+        timestamp: scylla_protocol::convert::timestamp(Utc::now()),
     };
     if up_tx
         .send(AgentUp {
@@ -606,7 +602,7 @@ async fn publish_log_line(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, WorkingDir};
+    use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, WorkingDir};
     use scylla_protocol::agent::v1::{JobStatus as ProtoJobStatus, job_status::Event};
 
     /// Name the oneof event variant carried by a status, for order/`contains`

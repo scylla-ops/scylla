@@ -19,11 +19,13 @@ export enum PrincipalKind {
   APP = 2,
 }
 
-/** Mirrors the wire `RoleKind`: full-control admin vs restricted agent role. */
+/** Mirrors the wire `RoleKind`: what a builtin role is for. Descriptive only. */
 export enum RoleKind {
   UNSPECIFIED = 0,
   ADMIN = 1,
   AGENT = 2,
+  /** A human working inside the scope, short of administering it. */
+  MEMBER = 3,
 }
 
 /** A grant holder: a user or an app, identified by its plain string id. */
@@ -106,7 +108,7 @@ export enum Permission {
   MANAGE_SYSTEM_GRANTS = 54,
   MANAGE_ORG_GRANTS = 55,
   MANAGE_PROJECT_GRANTS = 56,
-  MANAGE_POLICIES = 57,
+  // 57 was MANAGE_POLICIES, dropped with the runtime Cedar policy escape hatch.
   MANAGE_ROLES = 58,
   CREATE_SECRET = 59,
   LIST_SECRETS = 60,

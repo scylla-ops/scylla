@@ -9,7 +9,7 @@
 //!
 //! These are wire DTOs, not domain types: message fields arrive as `Option`,
 //! enums as `i32`, ids as wrapper messages. Convert at the boundary (the
-//! `scylla-api` mappers) and keep them out of business logic.
+//! `scylla-control-plane` gRPC mappers) and keep them out of business logic.
 
 /// Leaf value objects shared by every package: ids, `Email`, pagination.
 pub mod common {
@@ -112,6 +112,10 @@ pub mod trigger {
         tonic::include_proto!("scylla.trigger.v1");
     }
 }
+
+/// Conversions between the kernel types and their wire form, shared by the
+/// control plane and the agents so the two halves cannot drift apart.
+pub mod convert;
 
 /// Serialized descriptors for every compiled proto, for gRPC reflection.
 pub const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("scylla_descriptor");

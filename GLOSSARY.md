@@ -5,16 +5,17 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 ## Platform services
 
 ### `scylla-control-plane`
-Single binary that boots the central brain: the gRPC API on `50051` (user APIs, app token exchange, and the agent worker stream). Composition root for `scylla-api`. Job dispatch and log fan-out are in-process — there is no message broker and no recorder. Config lives in `crates/scylla-control-plane/config/*.toml`.
+The central brain, as one crate and one binary: use cases (`application/`), adapters (`infrastructure/`, including Postgres, Cedar, Argon2, SMTP and OAuth), the gRPC surface (`grpc/`), the webhook HTTP ingress (`rest/`), the `Services` composition struct, and the `main.rs` that boots them. Serves the gRPC API on `50051` (user APIs, app token exchange, and the agent worker stream). Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `crates/scylla-control-plane/config/*.toml`.
 
-### `scylla-api`
-Library crate exposing the gRPC handlers (auth, organizations, projects, pipelines, jobs, apps, the worker stream, permissions) plus the `Services` composition struct and a `run_grpc` runner. Composed inside `scylla-control-plane`.
+The package name, the binary name and the config directory path are load-bearing: the Dockerfile builds `-p ${PACKAGE}` then copies `target/release/${PACKAGE}`, and `docker-compose.yaml` bind-mounts `crates/scylla-control-plane/config`. Renaming any of the three breaks the image build or the container at runtime, not the `cargo` build.
 
 ### `scylla-agent`
 Worker binary installed on each pipeline-executing machine. Authenticates as its [App](#app) (`--app-id` / `--app-secret` exchanged for a bearer token), opens the control plane's `WorkerService` stream over `50051`, receives `JobDispatch` messages, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status + log events back on the same stream. Presence is simply the open stream — no heartbeats.
 
 ### `scylla-core`
-Library crate containing the domain model (entities, value objects, use cases, ports). Not a service — it's imported by `scylla-api` and `scylla-control-plane`.
+The shared kernel, and the only Rust code both binaries run. Holds the domain model (entities, value objects, `DomainError`, the DAG planner) plus [`JobEvent`](#jobevent), the command vocabulary the agent reports and the control plane applies.
+
+Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `uuid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-control-plane`. The crate has no Cargo features at all.
 
 ### `scylla-protocol`
 Library crate holding shared `.proto` definitions and their generated Rust + TypeScript bindings. Both the backend and the frontend import these.
@@ -25,10 +26,10 @@ Primary datastore. PostgreSQL 18 in the compose stack, listening on port `5432`.
 ## Domain entities
 
 ### Organization
-Top-level tenant. Carries a `name`, optional `description`, and an `is_active` flag. Owns projects; users join via the `user_organization` table.
+Top-level tenant. Carries a `name`, optional `description`, and an `is_active` flag. Owns projects. People reach it by holding a grant on it or on one of its projects; there is no membership table.
 
 ### Project
-A unit of work inside an organization. Carries a `name`, optional `description`, `organization_id`, and `is_active` flag. Owns pipelines and jobs; users join via the `user_project` table.
+A unit of work inside an organization. Carries a `name`, optional `description`, `organization_id`, and `is_active` flag. Owns pipelines and jobs. Being on a project means holding a grant scoped to it.
 
 ### Pipeline
 A directed acyclic graph (DAG) of **nodes** describing what to run. A pipeline is a blueprint — running it produces a **job**.
@@ -48,8 +49,8 @@ A machine principal owned by an organization (an agent / automation). Identified
 ### Session
 An authenticated user session. Carries an opaque `token`, `user_id`, `created_at`, `expires_at`, and `last_active_at`. Created on login; the auth interceptor looks it up by token on each gRPC call and rejects expired sessions.
 
-### User / Membership
-A user account. Membership is modeled via the `user_organization` and `user_project` join tables — each row is just `(user_id, org_id)` or `(user_id, project_id)`. No role or permission is stored on the row itself (see [Authorization](#authorization)).
+### User
+A user account. A user is related to the tenancy tree only through **grants**: holding a role on a scope is what puts them there, so "who is in this organization" and "what may they do" are the same rows (see [Authorization](#authorization) and `docs/src/access-model.md`).
 
 ## States & status values
 
@@ -64,17 +65,16 @@ A user account. Membership is modeled via the `user_organization` and `user_proj
 Terminal: `Completed`, `Failed`, `Cancelled`, `Orphaned`. Legal transitions: `Pending → Running | Cancelled`; `Running → Completed | Failed | Cancelled | Orphaned`.
 
 ### `NodeState`
-Per-node execution state: `Pending`, `Running`, `Completed`, `Failed`, `Cancelled`. Terminal: `Completed`, `Failed`, `Cancelled`. (Unlike `JobStatus`, there is no `Orphaned` node state.)
+Per-node execution state: `Pending`, `Running`, `Completed`, `Failed`, `Cancelled`, `Skipped`. Terminal: everything but `Pending` and `Running`. Unlike `JobStatus` there is no `Orphaned`; conversely `Skipped` has no job-level equivalent, it marks a node whose dependency failed so it never ran.
 
 ### Terminal state
 A state from which no transition is possible. A job or node in a terminal state is done.
 
 ## Authorization
 
-The vocabulary below is the **single source of truth** for authorization words —
-one word per concept, used identically in code, proto, DB, and UI. The model is
-mid-refactor toward dynamic RBAC; see [`docs/authz-refactor.md`](docs/authz-refactor.md)
-for the target model, phased plan, and status.
+The vocabulary below is the **single source of truth** for authorization words:
+one word per concept, used identically in code, proto, DB, and UI. See
+[`docs/src/access-model.md`](docs/src/access-model.md) for the model itself.
 
 **The seven words:** **Permission** (atomic capability) · **Role** (bundle of
 permissions) · **Scope** (System/Organization/Project) · **Grant** (P holds X in
@@ -86,21 +86,28 @@ only as Cedar's wire term inside the infra adapter.
 ### Role naming convention
 Builtin role names follow **`<scope>-<role>`**, kebab-case, with scope ∈ {`system`,
 `organization`, `project`}. Single source of truth: the `*_ROLE` constants in
-`application/authz/grant.rs`.
+`application/authz/grant/mod.rs`.
 
 **Unified model:** there is ONE authorization mechanism — the **grant** (`grants`), a `(principal, role, scope)` triple linked as a Cedar role-template instance. A "global role" is just a grant on the **System** scope (the tenancy root: `Organization`/`User` are `in [System]`, so a System grant reaches everything). There is no separate `user_roles` table and no `RoleService` — `GrantService.CreateGrant(user, role, GRANT_SCOPE_SYSTEM)` replaces the old `AssignRole`.
 
-Canonical roles (all stored in `grants`):
+Canonical roles (all stored in `grants`). `GRANTABLE_ROLES` in
+`application/authz/grant/mod.rs` is the single source of truth: there are no
+runtime-defined roles, so this list is exhaustive.
 
-| Role | Scope | Cedar template | Confers |
-|------|-------|----------------|---------|
-| `system-admin` | System | full-control | everything, every scope (System is the root) |
-| `organization-admin` | Organization | full-control | all actions on the org + everything beneath |
-| `project-admin` | Project | full-control | all actions on the project + everything beneath |
-| `organization-agent` | Organization | restricted agent | `readPipeline`/`executeJob`/`writeJobStatus`/`appendJobLog` within the org |
-| `project-agent` | Project | restricted agent | same, within a project |
+| Role | Scope | Confers |
+|------|-------|---------|
+| `system-admin` | System | global super-user: full control over every scope (System is the root) |
+| `organization-admin` | Organization | owner of an organization and everything beneath it |
+| `organization-viewer` | Organization | read every project and run in the organization, change nothing |
+| `organization-member` | Organization | belongs to the organization: sees it exists, nothing more |
+| `organization-agent` | Organization | machine app scoped to an organization: pull and run its jobs |
+| `organization-trigger-runner` | Organization | machine app that fires the organization's triggers: run its pipelines |
+| `project-admin` | Project | owner of a project and everything beneath it |
+| `project-developer` | Project | build in a project: create, edit and run its pipelines |
+| `project-viewer` | Project | read a project, its pipelines and its runs, change nothing |
+| `project-agent` | Project | machine app scoped to a project: pull and run its jobs |
 
-**Implicit tiers (NOT named roles):** `system-member` (a plain user with no grant), `organization-member` / `project-member` (membership via the `user_organization` / `user_project` tables, granted read/operate access through ABAC policies). They follow the same naming vocabulary but are realized as membership/ABAC, not stored grants.
+**No implicit tiers.** Belonging somewhere confers nothing on its own, so every level of access is a role in the table above — down to `organization-member`, which grants only the ability to see that the organization exists. A principal with no grant can do nothing.
 
 ### Permission
 The atomic capability — a verb on a resource type, e.g. `runPipeline` on a
@@ -119,8 +126,7 @@ A few permissions encode a scope in their name on purpose — `manageSystemGrant
 / `list*ByProject` / `list*ByPipeline` families. Each member is a **distinct Cedar
 action** with its own `appliesTo` resource type; that split is the anti-escalation
 fence (a single shared action would let one over-broad permit authorize every
-scope, and the ABAC member policies rely on the per-scope ids to confine listing
-to a tenant subtree). They look redundant but are **load-bearing — do not collapse
+scope). They look redundant but are **load-bearing — do not collapse
 them into one Cedar action.** The UI presents each family as a single concept (one
 "Manage grants", one "List jobs") with a scope selector; the split stays in the
 schema only.
@@ -162,9 +168,10 @@ A grant-holding actor: a human `User` or a machine `App`. Maps to the
 Anonymous, which cannot hold grants.
 
 ### Policy
-**Only** an advanced Cedar escape-hatch rule (a `permit`/`forbid` in the
-`cedar_policies` table), layered on top of the role/grant-derived policy set for
-cases RBAC can't express. Not a synonym for permission or grant.
+A Cedar rule in the live policy set. They come from exactly two places: the
+static base compiled into the binary (`policies.cedar`), and one generated
+template per role, instantiated once per grant. There is no runtime-authored
+policy. Not a synonym for permission or grant.
 
 ### `PermissionService`
 Port (`application/authz/service.rs`) used by every use case to check a
@@ -175,8 +182,8 @@ Cedar, and records an audit-log row.
 
 ### Cedar
 The authorization engine (AWS Cedar). Scylla generates its policy set from the
-RBAC model (roles + grants → `permit` policies), keeps a static ABAC base
-(`policies.cedar`: membership, self-read) and the admin-defined `cedar_policies`.
+model (roles + grants → `permit` policies) plus a small static base
+(`policies.cedar`: internal services, self-read).
 Resolves the scope hierarchy via `in` and yields the allow/deny decision +
 diagnostics.
 
@@ -192,13 +199,7 @@ The identity that made a request, threaded through the authorization layer. Vari
 The shape a pipeline's nodes must form. Validated at pipeline creation via cycle detection.
 
 ### Topological order
-A linear ordering of nodes consistent with dependencies (each node appears after its deps). Scylla uses **Kahn's algorithm** over a `BTreeSet` for deterministic output.
-
-### Kahn's algorithm
-Iterative topological sort: repeatedly pop nodes with in-degree zero, decrement in-degree of their dependents. Used here for both validation (cycle detection) and ordering.
-
-### Adjacency (map)
-Forward edge map from a node to its dependents. Computed on demand from `nodes[].deps`.
+A linear ordering of nodes consistent with dependencies (each node appears after its deps). Scylla never materializes one: [`DagPlan`](#kahns-algorithm) hands out whole batches of ready nodes instead, so independent nodes run in parallel. `BTreeSet` keeps the batch order deterministic.
 
 ### Dependency (`deps`)
 A prerequisite node ID. A node only becomes runnable once all its deps are in a successful terminal state.
@@ -228,12 +229,12 @@ Protobuf code generator used by Tonic. Converts `.proto` → Rust structs.
 TypeScript protobuf toolchain used by the frontend to generate clients from `.proto`.
 
 ### Auth interceptor
-Async Tonic interceptor (`crates/scylla-api/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal — a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
+Async Tonic interceptor (`crates/scylla-control-plane/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal — a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
 
 ## Identifiers
 
 ### Entity IDs
-All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AppId`, `AppTokenId`, `UserOrganizationId`, `UserProjectId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`.
+All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AppId`, `AppTokenId`, `AppCredentialId`, `InvitationId`, `SecretId`, `TriggerId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`. Generated by the `define_id!` macro in `domain/entities/ids.rs`; they carry no `sqlx` integration because every query binds them as `&str` through `as_str()`.
 
 ### `NodeId`
 Caller-supplied ID for each pipeline node. Must be unique within its pipeline. Validated as a lowercase ASCII alphanumeric string plus `-` / `_`, max 128 chars.
@@ -257,33 +258,51 @@ i18n framework used by the frontend. `pnpm extract` / `pnpm compile` manage mess
 
 ## Architecture terms
 
-Scylla's layout inside `scylla-core`:
+The hexagon is split across two crates. The model sits in the kernel; every layer that orchestrates or talks to the outside world sits in the control plane.
 
-- `src/domain/` — entities, value objects, errors (pure, no I/O).
-- `src/application/ports/` — trait definitions (`repositories/`, `services/`).
-- `src/application/use_cases/` — orchestrators that consume ports.
-- `src/infrastructure/` — concrete adapters (PostgreSQL via sqlx, Casbin, Argon2).
+`crates/scylla-core/src/` (the kernel, shared with the agent):
+
+- `domain/entities/` — objects with identity and mutable state.
+- `domain/value_objects/` — immutable validated wrappers.
+- `domain/dag.rs` — the DAG planner, see [Kahn's algorithm](#kahns-algorithm).
+- `domain/errors.rs` — `DomainError` / `DomainResult`.
+- `job_event.rs` — [`JobEvent`](#jobevent).
+
+`crates/scylla-control-plane/src/`:
+
+- `application/<feature>/repository.rs` and `service.rs` — the ports.
+- `application/<feature>/use_case.rs` — the orchestrators that consume them.
+- `infrastructure/` — the adapters: `persistence/postgres/*`, `services/cedar_permission_service.rs`, `services/argon2_hash_service.rs`, and the rest.
+- `grpc/` and `rest/` — the inbound adapters.
+
+`lib.rs` re-exports the kernel's `domain` module, so `crate::domain::...` names the model from anywhere in the control plane even though it lives in another crate.
 
 ### Port
-A trait in `application/ports/` describing something the domain needs from the outside world (persistence, hashing, permission checks). Examples: `PipelineRepository`, `HashService`, `PermissionService`.
+A trait describing something the use cases need from the outside world (persistence, hashing, permission checks), declared next to its use case in `application/<feature>/`. Examples: `PipelineRepository`, `HashService`, `PermissionService`.
 
 ### Adapter
-A concrete implementation of a port. All current adapters live under `scylla-core/src/infrastructure/` — `persistence/postgres/*` for repos, `services/casbin_permission_service.rs`, `services/argon2_hash_service.rs`.
+A concrete implementation of a port. **Driven** adapters, the ones the use cases call out to, live under `crates/scylla-control-plane/src/infrastructure/`: `persistence/postgres/*` for repositories, `services/cedar_permission_service.rs`, `services/argon2_hash_service.rs`. **Driving** adapters, the ones that call into the use cases, sit at the crate root next to the composition root: `grpc/` and `rest/`.
 
 ### Use case
-A struct in `application/use_cases/*.rs` grouping operations on one aggregate (e.g. `PipelineUseCases`, `JobUseCases`). Holds `Arc<dyn Port>` fields and exposes async methods. gRPC handlers in `scylla-api` call these.
+A struct in `application/<feature>/use_case.rs` grouping operations on one aggregate (e.g. `PipelineUseCases`, `JobUseCases`). Holds `Arc<dyn Port>` fields and exposes async methods. The gRPC handlers call these.
 
 ### Entity
 A domain object with an identity and mutable state (e.g. `Pipeline`, `Job`, `App`, `Organization`). Defined in `domain/entities/`.
 
 ### Value object
-An immutable, validated wrapper in `domain/value_objects/` (e.g. `PipelineName`, `Hostname`, `NodeId`, `JobStatus`). Built via a fallible constructor that enforces the invariant.
+An immutable, validated wrapper in `domain/value_objects/` (e.g. `PipelineName`, `NodeId`, `WorkingDir`, `JobStatus`). Built via a fallible constructor that enforces the invariant.
 
 ### Repository
-A port describing persistence for one aggregate (`PipelineRepository`, `JobRepository`, ...). Trait lives in `application/ports/repositories/`; the PostgreSQL implementation lives in `infrastructure/persistence/postgres/` (one `Pg…Repository` per aggregate, queries via `sqlx::query!` / `query_as!`).
+A port describing persistence for one aggregate (`PipelineRepository`, `JobRepository`, ...). The trait lives in `application/<feature>/repository.rs`; the PostgreSQL implementation lives in `infrastructure/persistence/postgres/` (one `Pg…Repository` per aggregate, queries via `sqlx::query!` / `query_as!`).
 
 ### Domain error
-`DomainError` from `domain/errors.rs` with variants like `validation`, `business_rule`, `not_found`. Returned as `DomainResult<T>` from core and mapped to gRPC statuses by handlers in `scylla-api`.
+`DomainError` from `domain/errors.rs` with variants like `validation`, `business_rule`, `not_found`. Returned as `DomainResult<T>` from the kernel and mapped to gRPC statuses by the control plane's handlers.
 
-### Feature flags
-`scylla-core` gates each domain (users, pipelines, jobs, agents, ...) behind a Cargo feature, so downstream crates pull only what they need. See `crates/scylla-core/Cargo.toml`.
+### `JobEvent`
+The lifecycle vocabulary a running agent reports: `JobStarted`, `NodeStarted`, `NodeCompleted`, `NodeFailed`, `NodeSkipped`, `JobCompleted`, `JobFailed`. Defined in the kernel because both binaries must agree on it: the agent emits it, the gRPC adapter maps it to and from its wire form, and `JobUseCases::record_status` applies it to the `Job` aggregate.
+
+### Kahn's algorithm
+The topological-sort routine behind `DagPlan` (`domain/dag.rs`). One implementation serves both sides: the control plane calls `drains_completely()` once to reject a pipeline containing a cycle, and an agent drives the same structure incrementally (`drain_ready` / `mark_completed` / `mark_terminal`) to decide what to launch next. Keeping it single is what stops the two from disagreeing about which nodes are runnable.
+
+### Cargo features
+There are two in the whole workspace, both on `scylla-control-plane`: `register` (exposes the public self-service signup RPC, off by default so a deployment stays invite-only) and `test-utils` (exposes the `test_support` builders). `scylla-core`, `scylla-agent` and `scylla-protocol` have none.

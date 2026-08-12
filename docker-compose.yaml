@@ -34,7 +34,11 @@ services:
       - "50051:50051"
       - "8088:8088"
     environment:
-      RUST_LOG: info
+      # RUST_LOG is deliberately NOT set here, so the binary's own default filter
+      # applies (see main.rs): app logs at info, authorization grants silenced,
+      # denials kept. A bare `RUST_LOG: info` overrode all of that and turned the
+      # audit trail back into one line per authorized call.
+      # To investigate: `RUST_LOG=audit=info docker compose up scylla-control-plane`.
       # Override DatabaseConfig.url via env so secrets stay out of the image.
       DATABASE_URL: postgres://${POSTGRES_USER:-scylla}:${POSTGRES_PASSWORD:-scylla}@postgres:5432/${POSTGRES_DB:-scylla}
       # Project-secret master key. Inject a unique 64-hex-char value here (or in a

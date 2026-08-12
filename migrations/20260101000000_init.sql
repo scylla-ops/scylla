@@ -40,6 +40,9 @@ CREATE TABLE user_oauth_identities (
 CREATE INDEX user_oauth_identities_user_idx ON user_oauth_identities (user_id);
 
 -- ── Tenancy: organizations → projects ─────────────────────────────────────────
+-- There is no membership table. Belonging somewhere means holding a grant on it
+-- or on something that contains it, so `grants` is the only relation between a
+-- principal and the tree. See docs/src/access-model.md.
 
 CREATE TABLE organizations (
     id          TEXT        PRIMARY KEY,
@@ -52,13 +55,6 @@ CREATE TABLE organizations (
 CREATE INDEX organizations_created_at_idx ON organizations (created_at DESC);
 CREATE INDEX organizations_name_idx ON organizations (name);
 
-CREATE TABLE user_organization (
-    user_id         TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    organization_id TEXT NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, organization_id)
-);
-CREATE INDEX user_organization_organization_id_idx ON user_organization (organization_id);
-
 CREATE TABLE projects (
     id              TEXT        PRIMARY KEY,
     name            TEXT        NOT NULL,
@@ -70,13 +66,6 @@ CREATE TABLE projects (
 );
 CREATE INDEX projects_created_at_idx ON projects (created_at DESC);
 CREATE INDEX projects_organization_id_idx ON projects (organization_id);
-
-CREATE TABLE user_project (
-    user_id    TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    project_id TEXT NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, project_id)
-);
-CREATE INDEX user_project_project_id_idx ON user_project (project_id);
 
 -- ── Pipelines ────────────────────────────────────────────────────────────────
 
@@ -268,19 +257,6 @@ CREATE INDEX audit_log_principal_idx ON audit_log (principal_kind, principal_id)
 CREATE INDEX audit_log_resource_idx ON audit_log (resource_kind, resource_id);
 CREATE INDEX audit_log_action_idx ON audit_log (action);
 
--- Advanced Cedar escape-hatch rules, layered on top of the role/grant-generated
--- policy set. Validated on write, hot-reloaded into the live authorizer.
-CREATE TABLE cedar_policies (
-    id          TEXT        PRIMARY KEY,
-    description TEXT        NOT NULL,
-    text        TEXT        NOT NULL,
-    enabled     BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_by  TEXT        NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX cedar_policies_enabled_idx ON cedar_policies (enabled);
-
 -- A role: a named, editable bundle of permissions bound to a scope kind. The
 -- Cedar policy set is generated from these rows. Builtin roles have a stable
 -- key (== id); tenant custom roles set owner_org_id.
@@ -305,35 +281,56 @@ CREATE TABLE role_permissions (
     PRIMARY KEY (role_id, permission)
 );
 
--- An explicit scoped grant: "principal P holds TARGET within scope S", where the
--- target is either a whole role or a single permission (additive to roles). The
--- one authorization mechanism: role grants link a Cedar role-template instance,
--- permission grants generate a direct permit policy.
+-- An explicit scoped grant: "principal P holds ROLE within scope S". The one
+-- authorization mechanism: each row links an instance of the role's Cedar
+-- template, with the principal and the scope in its slots. Anything narrower
+-- than a role is expressed by creating a role with exactly the permissions
+-- wanted, so there is one shape of grant, not two.
+--
+-- `role_id` intentionally carries NO foreign key to `roles`: a role that is
+-- still granted cannot be deleted (guarded in RoleUseCases::delete), and the
+-- grants of a deleted organization's custom roles are removed by the triggers
+-- below before the role rows themselves go.
 CREATE TABLE grants (
     id             TEXT        PRIMARY KEY,
     principal_kind TEXT        NOT NULL CHECK (principal_kind IN ('user', 'app')),
     principal_id   TEXT        NOT NULL,
-    target_kind    TEXT        NOT NULL CHECK (target_kind IN ('role', 'permission')),
-    -- The role id (target_kind='role') or a Permission::key (target_kind='permission').
-    target         TEXT        NOT NULL,
+    role_id        TEXT        NOT NULL,
     scope_kind     TEXT        NOT NULL CHECK (scope_kind IN ('system', 'organization', 'project')),
     scope_id       TEXT        NOT NULL,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (principal_kind, principal_id, target_kind, target, scope_kind, scope_id)
+    UNIQUE (principal_kind, principal_id, role_id, scope_kind, scope_id)
 );
 CREATE INDEX grants_principal_idx ON grants (principal_kind, principal_id);
+CREATE INDEX grants_scope_idx ON grants (scope_kind, scope_id);
 
--- Configurable pointer from a "default role" slot (e.g. the role assigned to the
--- creator on org/project creation) to a role. Decouples the creation flows from
--- a hard-coded role name: an admin can rebind a slot to a custom role.
--- ON DELETE RESTRICT keeps a bound role from being deleted out from under the
--- slot, so the pointer never dangles (rebind first, then delete).
-CREATE TABLE default_role_bindings (
-    -- Mirror of DefaultRoleSlot::as_str — a bad slot would silently never
-    -- resolve, so reject it at write time.
-    slot    TEXT PRIMARY KEY CHECK (slot IN ('org_creation', 'project_creation')),
-    role_id TEXT NOT NULL REFERENCES roles (id) ON DELETE RESTRICT
-);
+-- `principal_id` and `scope_id` are polymorphic (the kind lives in the sibling
+-- column, and the System scope has no table at all), so Postgres cannot express
+-- them as foreign keys and cannot cascade them. These row triggers do it
+-- instead. They fire on cascade deletes too, so dropping an organization also
+-- clears the grants of the projects and apps that go down with it.
+CREATE FUNCTION delete_grants_for_principal() RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM grants WHERE principal_kind = TG_ARGV[0] AND principal_id = OLD.id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE FUNCTION delete_grants_for_scope() RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM grants WHERE scope_kind = TG_ARGV[0] AND scope_id = OLD.id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER users_delete_grants AFTER DELETE ON users
+    FOR EACH ROW EXECUTE FUNCTION delete_grants_for_principal('user');
+CREATE TRIGGER apps_delete_grants AFTER DELETE ON apps
+    FOR EACH ROW EXECUTE FUNCTION delete_grants_for_principal('app');
+CREATE TRIGGER organizations_delete_grants AFTER DELETE ON organizations
+    FOR EACH ROW EXECUTE FUNCTION delete_grants_for_scope('organization');
+CREATE TRIGGER projects_delete_grants AFTER DELETE ON projects
+    FOR EACH ROW EXECUTE FUNCTION delete_grants_for_scope('project');
 
 -- ── Seed: builtin roles ───────────────────────────────────────────────────────
 -- Admin roles confer full control ('*'); agent roles only the job-execution
@@ -343,7 +340,12 @@ INSERT INTO roles (id, key, name, description, scope_kind, builtin) VALUES
     ('organization-admin', 'organization-admin', 'Organization Admin', 'Owner of an organization and everything beneath it.',            'organization', TRUE),
     ('project-admin',      'project-admin',      'Project Admin',      'Owner of a project and everything beneath it.',                  'project',      TRUE),
     ('organization-agent', 'organization-agent', 'Organization Agent', 'Machine app scoped to an organization: pull and run its jobs.', 'organization', TRUE),
-    ('project-agent',      'project-agent',      'Project Agent',      'Machine app scoped to a project: pull and run its jobs.',        'project',      TRUE);
+    ('project-agent',      'project-agent',      'Project Agent',      'Machine app scoped to a project: pull and run its jobs.',        'project',      TRUE),
+    ('organization-trigger-runner', 'organization-trigger-runner', 'Organization Trigger Runner', 'Machine app that fires the triggers of an organization: run its pipelines.', 'organization', TRUE),
+    ('organization-member', 'organization-member', 'Organization Member', 'Belongs to the organization: sees it exists, nothing more.',             'organization', TRUE),
+    ('organization-viewer', 'organization-viewer', 'Organization Viewer', 'Read every project and run in the organization, change nothing.',        'organization', TRUE),
+    ('project-developer',   'project-developer',   'Project Developer',   'Build in a project: create, edit and run its pipelines.',                'project',      TRUE),
+    ('project-viewer',      'project-viewer',      'Project Viewer',      'Read a project, its pipelines and its runs, change nothing.',            'project',      TRUE);
 
 INSERT INTO role_permissions (role_id, permission) VALUES
     ('system-admin',       '*'),
@@ -356,10 +358,47 @@ INSERT INTO role_permissions (role_id, permission) VALUES
     ('project-agent',      'readPipeline'),
     ('project-agent',      'executeJob'),
     ('project-agent',      'writeJobStatus'),
-    ('project-agent',      'appendJobLog');
-
--- ── Seed: default-role slots ──────────────────────────────────────────────────
--- Point each creation flow at its builtin admin role by default; rebindable.
-INSERT INTO default_role_bindings (slot, role_id) VALUES
-    ('org_creation',     'organization-admin'),
-    ('project_creation', 'project-admin');
+    ('project-agent',      'appendJobLog'),
+    ('organization-trigger-runner', 'runPipeline'),
+    -- Read-only tiers. Kept explicit rather than derived: a role is a list of
+    -- permissions, and a viewer that silently gained a write permission through
+    -- some clever inheritance is exactly the bug this table exists to prevent.
+    -- The floor tier: what belonging to an organization used to confer through a
+    -- hardcoded policy is now a role like any other, so a tenant can redefine it.
+    ('organization-member', 'readOrganization'),
+    ('organization-viewer', 'readOrganization'),
+    ('organization-viewer', 'listOrganizationMembers'),
+    ('organization-viewer', 'listProjectsByOrganization'),
+    ('organization-viewer', 'listPipelinesByOrganization'),
+    ('organization-viewer', 'listJobsByOrganization'),
+    ('organization-viewer', 'readProject'),
+    ('organization-viewer', 'readPipeline'),
+    ('organization-viewer', 'listPipelinesByProject'),
+    ('organization-viewer', 'readJob'),
+    ('organization-viewer', 'listJobsByProject'),
+    ('organization-viewer', 'listJobsByPipeline'),
+    ('organization-viewer', 'readJobLogs'),
+    ('project-viewer',    'readProject'),
+    ('project-viewer',    'listProjectMembers'),
+    ('project-viewer',    'readPipeline'),
+    ('project-viewer',    'listPipelinesByProject'),
+    ('project-viewer',    'readJob'),
+    ('project-viewer',    'listJobsByProject'),
+    ('project-viewer',    'listJobsByPipeline'),
+    ('project-viewer',    'readJobLogs'),
+    -- Developer = viewer plus the build/run verbs. Secrets are listed, never
+    -- created or deleted: handling credentials is an administrator's call.
+    ('project-developer', 'readProject'),
+    ('project-developer', 'listProjectMembers'),
+    ('project-developer', 'readPipeline'),
+    ('project-developer', 'listPipelinesByProject'),
+    ('project-developer', 'readJob'),
+    ('project-developer', 'listJobsByProject'),
+    ('project-developer', 'listJobsByPipeline'),
+    ('project-developer', 'readJobLogs'),
+    ('project-developer', 'createPipeline'),
+    ('project-developer', 'updatePipeline'),
+    ('project-developer', 'deletePipeline'),
+    ('project-developer', 'runPipeline'),
+    ('project-developer', 'listSecrets'),
+    ('project-developer', 'manageTriggers');

@@ -18,8 +18,8 @@ service OrganizationService {
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse);
   rpc ListOrganizationMembers(ListOrganizationMembersRequest) returns (ListOrganizationMembersResponse);
   rpc ListUserOrganizations(ListUserOrganizationsRequest) returns (ListUserOrganizationsResponse);
-  rpc AddOrganizationMember(AddOrganizationMemberRequest) returns (AddOrganizationMemberResponse);
-  rpc RemoveOrganizationMember(RemoveOrganizationMemberRequest) returns (RemoveOrganizationMemberResponse);
+  // Adding and removing people is granting and revoking a role: see
+  // scylla.authz.v1.GrantService (CreateGrant / RevokeGrant / RevokeAllAccess).
 }
 
 // A tenant organization.
@@ -95,16 +95,3 @@ message ListUserOrganizationsResponse {
   scylla.common.v1.PaginationMetadata pagination = 2;
 }
 
-message AddOrganizationMemberRequest {
-  scylla.common.v1.OrganizationId organization_id = 1;
-  scylla.common.v1.UserId user_id = 2;
-}
-
-message AddOrganizationMemberResponse {}
-
-message RemoveOrganizationMemberRequest {
-  scylla.common.v1.OrganizationId organization_id = 1;
-  scylla.common.v1.UserId user_id = 2;
-}
-
-message RemoveOrganizationMemberResponse {}

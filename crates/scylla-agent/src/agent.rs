@@ -7,20 +7,19 @@ use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Code, Request};
 use tracing::{error, info, warn};
 
-use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir};
+use scylla_core::domain::pipeline::PipelineNode;
+use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, Step, WorkingDir};
 use scylla_protocol::agent::v1::agent_service_client::AgentServiceClient;
 use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
 use scylla_protocol::app::v1::IssueTokenRequest;
 use scylla_protocol::app::v1::app_auth_service_client::AppAuthServiceClient;
 use scylla_protocol::common::v1 as common;
-use scylla_protocol::exec::v1 as exec;
 
 use crate::config::AgentConfig;
 use crate::error::AgentError;
 use crate::executor::Executor;
 use crate::reporter::StatusPublisher;
-use scylla_core::application::JobEvent;
+use scylla_core::JobEvent;
 
 pub struct Agent {
     config: AgentConfig,
@@ -193,8 +192,7 @@ impl Agent {
                                 // `pending` forever (it is already assigned to
                                 // this agent) — fail it upstream instead.
                                 warn!(%job_id, error = %e, "invalid dispatch nodes, failing job");
-                                let publisher =
-                                    StatusPublisher::new(up_tx.clone(), job_id.clone());
+                                let publisher = StatusPublisher::new(up_tx.clone(), job_id.clone());
                                 if let Err(pe) = publisher.emit(JobEvent::JobStarted).await {
                                     warn!(%job_id, error = %pe, "failed to report job start");
                                 } else if let Err(pe) = publisher
@@ -269,7 +267,8 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
     nodes
         .into_iter()
         .map(|n| {
-            let id = NodeId::new(&n.node_id.unwrap_or_default().value).map_err(|e| e.to_string())?;
+            let id =
+                NodeId::new(&n.node_id.unwrap_or_default().value).map_err(|e| e.to_string())?;
             let deps = n
                 .deps
                 .iter()
@@ -293,19 +292,14 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                 Some(agent_node::Step::Exec(e)) => {
                     Step::exec(e.command, e.args).map_err(|err| err.to_string())?
                 }
-                Some(agent_node::Step::Script(s)) => {
-                    Step::script(s.script, shell_from_proto(s.shell)).map_err(|err| err.to_string())?
-                }
+                Some(agent_node::Step::Script(s)) => Step::script(
+                    s.script,
+                    scylla_protocol::convert::shell_from_proto(s.shell),
+                )
+                .map_err(|err| err.to_string())?,
                 None => return Err("dispatch node is missing its step".to_string()),
             };
             Ok(PipelineNode::new(id, deps, step, working_dir, env))
         })
         .collect()
-}
-
-fn shell_from_proto(raw: i32) -> Shell {
-    match exec::Shell::try_from(raw).unwrap_or_default() {
-        exec::Shell::Bash => Shell::Bash,
-        exec::Shell::Sh | exec::Shell::Unspecified => Shell::Sh,
-    }
 }
