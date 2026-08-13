@@ -16,7 +16,7 @@ export const OrganizationRedirectWrapper = () => {
   const orgName = storedOrgName ?? organizations?.[0]?.name;
 
   if (orgName) {
-    return <Navigate to={`/${slugifyOrgName(orgName)}/projects`} replace />;
+    return <Navigate to={`/${slugifyOrgName(orgName)}/dashboard`} replace />;
   }
 
   // No orgs at all — Layout will show the onboarding screen

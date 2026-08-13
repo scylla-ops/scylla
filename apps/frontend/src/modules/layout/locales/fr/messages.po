@@ -22,12 +22,12 @@ msgstr "{0}"
 msgid "Log out"
 msgstr "Se déconnecter"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:69
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:73
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:74
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:78
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:72
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:77
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 

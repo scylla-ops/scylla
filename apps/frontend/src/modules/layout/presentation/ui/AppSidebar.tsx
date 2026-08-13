@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon, HardDriveIcon } from 'lucide-react';
+import { Building2, ShoppingCartIcon, UsersIcon, WorkflowIcon, HardDriveIcon, LayoutDashboard } from 'lucide-react';
 
 import { NavMain } from '@/modules/layout/presentation/ui/NavMain.tsx';
 import {
@@ -27,6 +27,11 @@ const useNavSections = (): NavSection[] => {
     {
       title: 'Main',
       items: [
+        {
+          title: 'Dashboard',
+          url: `${prefix}/dashboard`,
+          icon: LayoutDashboard,
+        },
         {
           title: 'Projects',
           url: `${prefix}/projects`,
