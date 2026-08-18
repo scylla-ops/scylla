@@ -80,8 +80,7 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
     if (!userId) return ids;
     for (const grant of grants) {
       if (
-        grant.target.kind === 'role' &&
-        grant.target.roleId === role.id &&
+        grant.roleId === role.id &&
         grant.principal.kind === PrincipalKind.USER &&
         grant.principal.id === userId
       ) {
@@ -119,7 +118,7 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
         scopeIds.map(scopeId =>
           createGrant.mutateAsync({
             principal: { kind: PrincipalKind.USER, id: userId },
-            target: { kind: 'role', roleId: role.id },
+            roleId: role.id,
             scope: role.scope,
             scopeId,
           }),

@@ -28,7 +28,7 @@ export const useRoleAssignees = (role: RoleEntity | null) => {
   const assignees: RoleAssignee[] = useMemo(() => {
     if (!role) return [];
     return grants
-      .filter(grant => grant.target.kind === 'role' && grant.target.roleId === role.id)
+      .filter(grant => grant.roleId === role.id)
       .map(grant => ({
         grant,
         label:

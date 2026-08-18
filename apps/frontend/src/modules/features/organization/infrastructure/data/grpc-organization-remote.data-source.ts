@@ -6,8 +6,6 @@ import type {
 } from '@/generated/scylla/organization/v1/organization.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
-import type { OrganizationMemberEntity } from '@/modules/features/organization/domain/entities/organization-member.entity.ts';
-import { GrpcOrganizationMemberMapper } from '@/modules/features/organization/infrastructure/repository/mappers/grpc-organization-member.mapper.ts';
 
 export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizationRemoteDataSource {
   private readonly _organizationClient: OrganizationServiceClient;
@@ -61,35 +59,6 @@ export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizatio
     return ScyllaResult.tryAsync(async () => {
       await this._organizationClient.deleteOrganization({ organizationId: wrapId(organizationId) });
     }, 'Failed to delete organization.');
-  }
-
-  public listMembers(
-    organizationId: string,
-  ): Promise<ScyllaResult<OrganizationMemberEntity[]>> {
-    return ScyllaResult.tryAsync(async () => {
-      const { response } = await this._organizationClient.listOrganizationMembers({
-        organizationId: wrapId(organizationId),
-      });
-      return response.members.map(member => GrpcOrganizationMemberMapper.toDomain(member));
-    }, 'Failed to fetch organization members.');
-  }
-
-  public addMember(organizationId: string, userId: string): Promise<ScyllaResult<void>> {
-    return ScyllaResult.tryAsync(async () => {
-      await this._organizationClient.addOrganizationMember({
-        organizationId: wrapId(organizationId),
-        userId: wrapId(userId),
-      });
-    }, 'Failed to add organization member.');
-  }
-
-  public removeMember(organizationId: string, userId: string): Promise<ScyllaResult<void>> {
-    return ScyllaResult.tryAsync(async () => {
-      await this._organizationClient.removeOrganizationMember({
-        organizationId: wrapId(organizationId),
-        userId: wrapId(userId),
-      });
-    }, 'Failed to remove organization member.');
   }
 }
 

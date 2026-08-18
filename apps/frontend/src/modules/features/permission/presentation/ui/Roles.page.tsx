@@ -9,7 +9,7 @@ import { useGrants } from '@/modules/features/permission/presentation/hooks/use-
 import { RolesHeader } from '@/modules/features/permission/presentation/ui/RolesHeader.tsx';
 import { RoleListItem } from '@/modules/features/permission/presentation/ui/components/RoleListItem.tsx';
 import { RoleDetailPanel } from '@/modules/features/permission/presentation/ui/components/RoleDetailPanel.tsx';
-import { RoleFormDialog } from '@/modules/features/permission/presentation/ui/components/RoleFormDialog.tsx';
+import { RoleFormDialog } from '@/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx';
 
 export const RolesPage = () => {
   const { roles, deleteRole } = useRoles();
@@ -33,9 +33,7 @@ export const RolesPage = () => {
   const memberCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const grant of grants) {
-      if (grant.target.kind === 'role') {
-        counts.set(grant.target.roleId, (counts.get(grant.target.roleId) ?? 0) + 1);
-      }
+      counts.set(grant.roleId, (counts.get(grant.roleId) ?? 0) + 1);
     }
     return counts;
   }, [grants]);

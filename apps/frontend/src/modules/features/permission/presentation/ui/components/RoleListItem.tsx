@@ -4,7 +4,7 @@ import { ListCard } from '@shared/presentation/ui';
 import { Trans } from '@lingui/react/macro';
 import { ShieldCheck } from 'lucide-react';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
-import { scopeName } from '@/modules/features/permission/presentation/utils/permission-labels.ts';
+import { scopeName } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
 
 interface RoleListItemProps {
   role: RoleEntity;

@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { Badge } from '@shadcn';
-import { permissionName } from '@/modules/features/permission/presentation/utils/permission-labels.ts';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
+import { getPermissionLabel } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
 
 interface RoleDetailPermissionsProps {
   role: RoleEntity;
@@ -26,7 +26,7 @@ export const RoleDetailPermissions = ({ role }: RoleDetailPermissionsProps) => {
           <div className='flex flex-wrap gap-1.5'>
             {role.access.permissions.map(permission => (
               <Badge key={permission} variant='outline' className='capitalize font-normal'>
-                {permissionName(permission)}
+                {getPermissionLabel(permission)}
               </Badge>
             ))}
           </div>

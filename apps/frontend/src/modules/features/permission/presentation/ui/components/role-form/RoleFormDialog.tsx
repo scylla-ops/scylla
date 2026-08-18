@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
-  Badge,
   Button,
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Input,
   Label,
   Select,
@@ -16,10 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@shadcn';
-import { Checkbox } from '@shadcn/checkbox.tsx';
-import { ScrollArea } from '@shadcn/scroll-area.tsx';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { ShieldCheck } from 'lucide-react';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import {
   type Permission,
@@ -27,12 +20,13 @@ import {
   type AccessSpec,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import { useRoles } from '@/modules/features/permission/presentation/hooks/use-roles.ts';
+import { RoleDialogHeader } from '@/modules/features/permission/presentation/ui/components/role-form/RoleDialogHeader.tsx';
+import { RoleDialogPermissions } from '@/modules/features/permission/presentation/ui/components/role-form/RoleDialogPermissions.tsx';
 import {
   ALL_SCOPES,
-  permissionName,
+  getPermissionsForScope,
   scopeName,
-} from '@/modules/features/permission/presentation/utils/permission-labels.ts';
-import { PERMISSIONS_BY_SCOPE } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
+} from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
 
 type AccessKind = 'fullControl' | 'restricted';
 
@@ -106,17 +100,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
   return (
     <Dialog open={open} onOpenChange={value => !value && onClose()}>
       <DialogContent className='max-w-xl flex flex-col max-h-[85vh]'>
-        <DialogHeader className='space-y-3'>
-          <DialogTitle className='flex items-center gap-2.5 text-lg font-semibold'>
-            <div className='flex items-center justify-center size-8 rounded-lg bg-primary/10'>
-              <ShieldCheck className='size-4 text-primary' />
-            </div>
-            <span>{isEdit ? <Trans>Edit role</Trans> : <Trans>Create role</Trans>}</span>
-          </DialogTitle>
-          <DialogDescription>
-            <Trans>Define what this role is called and what it can do.</Trans>
-          </DialogDescription>
-        </DialogHeader>
+        <RoleDialogHeader isEdit={isEdit} />
 
         <div className='flex flex-col gap-4 overflow-y-auto pr-1'>
           <div className='flex flex-col gap-1.5'>
@@ -157,7 +141,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
                 const next: PermissionScope = Number(value);
                 setScope(next);
                 // Drop any selected permissions that aren't coherent at the new scope.
-                const allowed = new Set(PERMISSIONS_BY_SCOPE.get(next) ?? []);
+                const allowed = new Set(getPermissionsForScope(next) ?? []);
                 setPermissions(prev => new Set([...prev].filter(p => allowed.has(p))));
               }}
             >
@@ -203,33 +187,12 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
           </div>
 
           {accessKind === 'restricted' && (
-            <div className='flex flex-col gap-1.5'>
-              <div className='flex items-center justify-between'>
-                <Label>
-                  <Trans>Permissions</Trans>
-                </Label>
-                <Badge variant='secondary'>
-                  <Trans>{permissions.size} selected</Trans>
-                </Badge>
-              </div>
-              <ScrollArea className='h-56 rounded-lg border border-slate-200 p-2'>
-                <div className='flex flex-col gap-0.5'>
-                  {PERMISSIONS_BY_SCOPE.get(scope)?.map(permission => (
-                    <label
-                      key={permission}
-                      className='flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer hover:bg-slate-50'
-                    >
-                      <Checkbox
-                        checked={permissions.has(permission)}
-                        disabled={isPending}
-                        onCheckedChange={() => togglePermission(permission)}
-                      />
-                      <span className='text-sm capitalize'>{permissionName(permission)}</span>
-                    </label>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
+            <RoleDialogPermissions
+              scope={scope}
+              permissions={permissions}
+              isPending={isPending}
+              togglePermission={togglePermission}
+            />
           )}
         </div>
 
