@@ -108,6 +108,12 @@ impl AgentRepository for PgAgentRepository {
 
     #[instrument(skip_all, fields(app_id = %app_id))]
     async fn agent_stats(&self, app_id: &AppId) -> DomainResult<AgentStats> {
+        // Every job status gets a bucket so the counters sum back to `total` —
+        // an agent that dies mid-run turns its jobs `orphaned`, and leaving that
+        // out silently broke the arithmetic. Durations cover any job that both
+        // started and finished (a failed run took time too); jobs skipped or
+        // cancelled before starting have no `started_at` and are filtered out
+        // rather than counted as instant.
         let rec = sqlx::query!(
             r#"
             SELECT
@@ -117,7 +123,16 @@ impl AgentRepository for PgAgentRepository {
                 COUNT(*) FILTER (WHERE status = 'completed')      AS "completed!",
                 COUNT(*) FILTER (WHERE status = 'failed')         AS "failed!",
                 COUNT(*) FILTER (WHERE status = 'cancelled')      AS "cancelled!",
-                MAX(created_at)                                   AS "last_run_at"
+                COUNT(*) FILTER (WHERE status = 'orphaned')       AS "orphaned!",
+                MAX(created_at)                                   AS "last_run_at",
+                ROUND((percentile_cont(0.5) WITHIN GROUP (
+                    ORDER BY EXTRACT(EPOCH FROM finished_at - started_at)::double precision * 1000
+                ) FILTER (WHERE started_at IS NOT NULL AND finished_at IS NOT NULL))::numeric)::bigint
+                                                                  AS "median_duration_ms?",
+                ROUND((percentile_cont(0.95) WITHIN GROUP (
+                    ORDER BY EXTRACT(EPOCH FROM finished_at - started_at)::double precision * 1000
+                ) FILTER (WHERE started_at IS NOT NULL AND finished_at IS NOT NULL))::numeric)::bigint
+                                                                  AS "p95_duration_ms?"
             FROM jobs
             WHERE agent_app_id = $1
             "#,
@@ -134,7 +149,12 @@ impl AgentRepository for PgAgentRepository {
                 date_trunc('day', created_at)                AS "day!",
                 COUNT(*) FILTER (WHERE status = 'completed') AS "completed!",
                 COUNT(*) FILTER (WHERE status = 'failed')    AS "failed!",
-                COUNT(*) FILTER (WHERE status = 'cancelled') AS "cancelled!"
+                COUNT(*) FILTER (WHERE status = 'cancelled') AS "cancelled!",
+                COUNT(*) FILTER (WHERE status = 'orphaned')  AS "orphaned!",
+                ROUND((percentile_cont(0.5) WITHIN GROUP (
+                    ORDER BY EXTRACT(EPOCH FROM finished_at - started_at)::double precision * 1000
+                ) FILTER (WHERE started_at IS NOT NULL AND finished_at IS NOT NULL))::numeric)::bigint
+                                                             AS "median_duration_ms?"
             FROM jobs
             WHERE agent_app_id = $1
               AND created_at >= NOW() - INTERVAL '30 days'
@@ -152,6 +172,8 @@ impl AgentRepository for PgAgentRepository {
             completed: r.completed,
             failed: r.failed,
             cancelled: r.cancelled,
+            orphaned: r.orphaned,
+            median_duration_ms: r.median_duration_ms,
         })
         .collect();
         Ok(AgentStats {
@@ -162,7 +184,10 @@ impl AgentRepository for PgAgentRepository {
             completed: rec.completed,
             failed: rec.failed,
             cancelled: rec.cancelled,
+            orphaned: rec.orphaned,
             last_run_at: rec.last_run_at,
+            median_duration_ms: rec.median_duration_ms,
+            p95_duration_ms: rec.p95_duration_ms,
         })
     }
 }

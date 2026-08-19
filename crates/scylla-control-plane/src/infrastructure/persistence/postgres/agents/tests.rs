@@ -188,6 +188,120 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
+async fn agent_stats_partition_total_and_summarize_durations(pool: PgPool) {
+    let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "durations").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+    let job_repo = PgJobRepository::new(pool.clone());
+    let (app, credential, agent, grant) = make_agent(org.id(), "runner");
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
+
+    let now = clock::now();
+    // `ran_for` is the wall-clock duration the job took; `None` means it never
+    // started (cancelled/skipped while queued) and must stay out of the
+    // percentiles instead of counting as a 0 ms run.
+    let mk = |status: JobStatus, ran_for: Option<i64>| {
+        let (started_at, finished_at) = match (status, ran_for) {
+            (JobStatus::Pending, _) => (None, None),
+            (JobStatus::Running, _) => (Some(now), None),
+            (_, Some(ms)) => (Some(now - chrono::Duration::milliseconds(ms)), Some(now)),
+            (_, None) => (None, Some(now)),
+        };
+        let state =
+            crate::domain::job::JobState::from_columns(status, started_at, finished_at).unwrap();
+        Job::from_persistence(
+            JobId::generate(),
+            pipeline.id().clone(),
+            state,
+            Some(app.id().clone()),
+            vec![],
+            vec![],
+            crate::domain::job::JobOrigin::App {
+                app_id: app.id().clone(),
+            },
+            now,
+            now,
+        )
+    };
+
+    // Durations 1s/2s/3s/4s across four different terminal statuses — a failed
+    // or orphaned run took time too, so it belongs in the percentiles.
+    for (status, ran_for) in [
+        (JobStatus::Completed, Some(1000)),
+        (JobStatus::Completed, Some(3000)),
+        (JobStatus::Failed, Some(2000)),
+        (JobStatus::Orphaned, Some(4000)),
+        (JobStatus::Cancelled, None),
+        (JobStatus::Pending, None),
+    ] {
+        job_repo.create(&mk(status, ran_for)).await.unwrap();
+    }
+
+    let stats = agent_repo.agent_stats(app.id()).await.unwrap();
+
+    // The counters partition `total` — this is what the missing `orphaned`
+    // bucket used to break.
+    assert_eq!(stats.total, 6);
+    assert_eq!(
+        stats.pending
+            + stats.running
+            + stats.completed
+            + stats.failed
+            + stats.cancelled
+            + stats.orphaned,
+        stats.total,
+        "status buckets must sum back to total"
+    );
+    assert_eq!(stats.orphaned, 1);
+    assert_eq!(stats.cancelled, 1);
+
+    // percentile_cont interpolates over [1000, 2000, 3000, 4000]: the median
+    // falls between the two middle samples, p95 between the top two. The
+    // never-started cancelled job is absent — with it counted as 0 the median
+    // would drop to 1500.
+    assert_eq!(stats.median_duration_ms, Some(2500));
+    assert_eq!(stats.p95_duration_ms, Some(3850));
+
+    // Same jobs, same day, so the daily bucket agrees with the aggregate.
+    assert_eq!(stats.daily.len(), 1);
+    assert_eq!(stats.daily[0].median_duration_ms, Some(2500));
+    assert_eq!(stats.daily[0].orphaned, 1, "daily carries orphaned too");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn agent_stats_report_no_duration_when_nothing_ran(pool: PgPool) {
+    let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "nodur").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+    let job_repo = PgJobRepository::new(pool.clone());
+    let (app, credential, agent, grant) = make_agent(org.id(), "runner");
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
+
+    let mut job = Job::create_from_pipeline(
+        &pipeline,
+        crate::domain::job::JobOrigin::App {
+            app_id: app.id().clone(),
+        },
+    );
+    job.assign_agent(app.id().clone());
+    job_repo.create(&job).await.unwrap();
+
+    // A queued job has no duration yet: `None`, not `Some(0)` — the UI has to
+    // be able to tell "never ran" from "ran instantly".
+    let stats = agent_repo.agent_stats(app.id()).await.unwrap();
+    assert_eq!(stats.total, 1);
+    assert_eq!(stats.pending, 1);
+    assert_eq!(stats.median_duration_ms, None);
+    assert_eq!(stats.p95_duration_ms, None);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
 async fn deleting_agent_keeps_jobs_and_nulls_attribution(pool: PgPool) {
     let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "del").await;
     let app_repo = PgAppRepository::new(pool.clone());

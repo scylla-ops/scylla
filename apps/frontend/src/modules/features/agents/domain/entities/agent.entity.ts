@@ -10,6 +10,8 @@ export interface AgentEntity {
   connected: boolean;
   /** Last activity timestamp; empty if the agent has never connected. */
   lastSeen: string;
+  /** Jobs currently running on this agent; 0 while disconnected. */
+  inFlight: number;
   createdAt: string;
   updatedAt: string;
 }

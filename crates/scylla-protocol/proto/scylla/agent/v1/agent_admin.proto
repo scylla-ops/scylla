@@ -34,9 +34,14 @@ message Agent {
   google.protobuf.Timestamp last_seen = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
+  // Jobs dispatched to this agent that have not yet reported a terminal status
+  // — its current load. Live from the agent registry like `connected`, so it is
+  // 0 for a disconnected agent rather than a stale count.
+  int32 in_flight = 9;
 }
 
-// Aggregate run stats for an agent, derived from the jobs it executed.
+// Aggregate run stats for an agent, derived from the jobs it executed. The
+// status counters partition `total` exactly — every job status has a bucket.
 message AgentStats {
   int64 total = 1;
   int64 pending = 2;
@@ -48,6 +53,14 @@ message AgentStats {
   // Finished jobs per day over the last 30 days, oldest first. Days with no
   // finished job are absent — consumers zero-fill the gaps.
   repeated DailyOutcome daily = 8;
+  // Jobs left in limbo by an agent that vanished mid-run (the reaper stamps
+  // them). Part of `total` like every other status.
+  int64 orphaned = 9;
+  // Wall-clock run duration over jobs that actually started and finished, all
+  // time. Unset when the agent has no such job yet — a 0 would read as
+  // "instant" rather than "unknown".
+  optional int64 median_duration_ms = 10;
+  optional int64 p95_duration_ms = 11;
 }
 
 // One day of finished-job outcomes for an agent.
@@ -56,6 +69,12 @@ message DailyOutcome {
   int64 completed = 2;
   int64 failed = 3;
   int64 cancelled = 4;
+  // Median run duration that day, over the jobs that started and finished.
+  // Unset when no job that day has both timestamps.
+  optional int64 median_duration_ms = 5;
+  // Orphaned that day. Carried here too, not just in the aggregate, so a
+  // consumer's per-day totals reconcile with `AgentStats`.
+  int64 orphaned = 6;
 }
 
 message CreateAgentRequest {

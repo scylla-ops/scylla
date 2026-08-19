@@ -131,6 +131,10 @@ pub struct AgentView {
     pub app: App,
     pub connected: bool,
     pub last_seen: Option<DateTime<Utc>>,
+    /// Jobs handed to this agent that have not reported a terminal status yet.
+    /// Read live from the registry, so a disconnected agent reports 0 — the
+    /// same source least-loaded dispatch selects on.
+    pub in_flight: usize,
 }
 
 /// Org-scoped management + introspection of Agents (specialized apps that run
@@ -224,10 +228,12 @@ where
         for agent in &agents {
             let app = self.app_repo.find_by_id(agent.app_id()).await?;
             let is_connected = connected.contains(app.id().as_str());
+            let in_flight = self.registry.in_flight(agent.app_id());
             views.push(AgentView {
                 app,
                 connected: is_connected,
                 last_seen: agent.last_seen(),
+                in_flight,
             });
         }
         Ok(views)
@@ -250,6 +256,7 @@ where
             app,
             connected,
             last_seen: agent.last_seen(),
+            in_flight: self.registry.in_flight(&app_id),
         })
     }
 

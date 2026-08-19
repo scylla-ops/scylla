@@ -24,13 +24,26 @@ import {
 } from '@shadcn/alert-dialog.tsx';
 import { Cpu } from 'lucide-react';
 import { cn } from '@shared/presentation/utils';
-import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
+import { formatDate, formatDurationMs, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { Trans } from '@lingui/react/macro';
 
 const StripLabel = ({ children }: { children: React.ReactNode }) => (
   <span className='font-mono text-[10px] uppercase tracking-wide text-muted-foreground'>
     {children}
   </span>
+);
+
+/**
+ * One duration read-out. A null `ms` means the agent has never run a job to
+ * completion — shown as an em dash, since "0s" would claim it ran instantly.
+ */
+const DurationTile = ({ label, ms }: { label: React.ReactNode; ms: number | null }) => (
+  <div className='min-w-[120px] flex-1 rounded-lg border px-3.5 py-2.5'>
+    <StripLabel>{label}</StripLabel>
+    <p className='mt-0.5 font-mono text-lg'>
+      {ms === null ? <span className='text-muted-foreground'>—</span> : formatDurationMs(ms)}
+    </p>
+  </div>
 );
 
 export const AgentDetailsPage = () => {
@@ -90,6 +103,16 @@ export const AgentDetailsPage = () => {
                     <>
                       {' · '}
                       {online ? <Trans>seen</Trans> : <Trans>down</Trans>} {seenLabel}
+                    </>
+                  )}
+                  {/* Load only means something while connected — a disconnected
+                      agent always reports 0, which would read as "idle". */}
+                  {online && agent.inFlight > 0 && (
+                    <>
+                      {' · '}
+                      <span className='text-foreground'>
+                        <Trans>running {agent.inFlight}</Trans>
+                      </span>
                     </>
                   )}
                 </p>
@@ -158,14 +181,21 @@ export const AgentDetailsPage = () => {
 
         <div className='grid gap-3 lg:grid-cols-[380px_1fr]'>
           {stats ? (
-            <OutcomesChart
-              daily={stats.daily}
-              aggregate={{
-                completed: stats.completed,
-                failed: stats.failed,
-                cancelled: stats.cancelled,
-              }}
-            />
+            <>
+              <OutcomesChart
+                daily={stats.daily}
+                aggregate={{
+                  completed: stats.completed,
+                  failed: stats.failed,
+                  cancelled: stats.cancelled,
+                  orphaned: stats.orphaned,
+                }}
+              />
+              <div className='flex flex-wrap content-start gap-3'>
+                <DurationTile label={<Trans>median run</Trans>} ms={stats.medianDurationMs} />
+                <DurationTile label={<Trans>p95 run</Trans>} ms={stats.p95DurationMs} />
+              </div>
+            </>
           ) : (
             <Skeleton className='h-64 w-full rounded-xl' />
           )}

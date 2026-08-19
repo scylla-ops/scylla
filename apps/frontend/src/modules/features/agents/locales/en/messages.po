@@ -22,11 +22,11 @@ msgstr "{0} is ready"
 #~ msgid "A agent is a machine identity an agent connects with to run jobs. You will get a one-time secret."
 #~ msgstr "A agent is a machine identity an agent connects with to run jobs. You will get a one-time secret."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:121
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:144
 msgid "active"
 msgstr "active"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:118
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:141
 msgid "Active"
 msgstr "Active"
 
@@ -34,7 +34,7 @@ msgstr "Active"
 #~ msgid "Agent created"
 #~ msgstr "Agent created"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:134
 msgid "Agent ID"
 msgstr "Agent ID"
 
@@ -46,16 +46,16 @@ msgstr "Agent ID"
 msgid "An agent runs jobs. Create one to get credentials, then start the agent — it'll pull jobs and report back."
 msgstr "An agent runs jobs. Create one to get credentials, then start the agent — it'll pull jobs and report back."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:204
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:234
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:170
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:220
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:244
 msgid "cancelled"
 msgstr "cancelled"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:212
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:236
 msgid "completed"
 msgstr "completed"
 
@@ -67,7 +67,7 @@ msgstr "completed"
 msgid "completed total"
 msgstr "completed total"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:182
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:212
 msgid "connects as this agent's app id"
 msgstr "connects as this agent's app id"
 
@@ -100,22 +100,22 @@ msgstr "Create & reveal secret →"
 msgid "Create your first agent"
 msgstr "Create your first agent"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:125
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:131
 msgid "created"
 msgstr "created"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:127
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:150
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:102
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:216
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:125
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:246
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:178
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:86
 msgid "Delete"
 msgstr "Delete"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:196
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:226
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:162
 msgid "Delete agent?"
 msgstr "Delete agent?"
@@ -124,8 +124,8 @@ msgstr "Delete agent?"
 #~ msgid "Done"
 #~ msgstr "Done"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:92
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:113
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:105
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:119
 msgid "down"
 msgstr "down"
 
@@ -133,7 +133,7 @@ msgstr "down"
 #~ msgid "e.g., ci-runner"
 #~ msgstr "e.g., ci-runner"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:216
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:240
 msgid "failed"
 msgstr "failed"
 
@@ -145,7 +145,7 @@ msgstr "failed"
 msgid "filter"
 msgstr "filter"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:223
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:260
 msgid "finished"
 msgstr "finished"
 
@@ -153,15 +153,19 @@ msgstr "finished"
 msgid "Get credentials to connect an agent."
 msgstr "Get credentials to connect an agent."
 
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:102
+msgid "idle"
+msgstr "idle"
+
 #: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:113
 msgid "idle — no jobs"
 msgstr "idle — no jobs"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:121
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:144
 msgid "inactive"
 msgstr "inactive"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:144
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:167
 msgid "Job stats"
 msgstr "Job stats"
 
@@ -169,7 +173,7 @@ msgstr "Job stats"
 #~ msgid "jobs completed"
 #~ msgstr "jobs completed"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:152
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:175
 msgid "last run"
 msgstr "last run"
 
@@ -201,6 +205,14 @@ msgstr "Logs"
 #~ msgid "Logs ↗"
 #~ msgstr "Logs ↗"
 
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:199
+msgid "median"
+msgstr "median"
+
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:195
+msgid "median run"
+msgstr "median run"
+
 #: src/modules/features/agents/presentation/utils/create-agent-form-items.ts:8
 msgid "my-build-runner"
 msgstr "my-build-runner"
@@ -209,7 +221,7 @@ msgstr "my-build-runner"
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:117
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:123
 msgid "never connected"
 msgstr "never connected"
 
@@ -226,7 +238,7 @@ msgstr "No agents connected"
 #~ msgid "No agents yet. Create one to connect an agent."
 #~ msgstr "No agents yet. Create one to connect an agent."
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:98
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:111
 msgid "No finished jobs in this window."
 msgstr "No finished jobs in this window."
 
@@ -238,15 +250,14 @@ msgstr "No finished jobs in this window."
 #~ msgid "of"
 #~ msgstr "of"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:88
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:101
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:73
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:102
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:108
 msgid "offline"
 msgstr "offline"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:88
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:101
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:69
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:97
 msgid "online"
 msgstr "online"
 
@@ -254,9 +265,17 @@ msgstr "online"
 msgid "open full logs"
 msgstr "open full logs"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:74
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:255
+msgid "orphaned"
+msgstr "orphaned"
+
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:87
 msgid "outcomes · last"
 msgstr "outcomes · last"
+
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:196
+msgid "p95 run"
+msgstr "p95 run"
 
 #: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:122
 msgid "pending"
@@ -274,7 +293,7 @@ msgstr "queue empty"
 #~ msgid "Rename"
 #~ msgstr "Rename"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:101
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:114
 msgid "Run a pipeline on this agent and the chart fills up."
 msgstr "Run a pipeline on this agent and the chart fills up."
 
@@ -282,7 +301,7 @@ msgstr "Run a pipeline on this agent and the chart fills up."
 #~ msgid "Run the agent"
 #~ msgstr "Run the agent"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:179
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:209
 msgid "Run this agent"
 msgstr "Run this agent"
 
@@ -299,7 +318,13 @@ msgstr "running"
 #~ msgid "Running"
 #~ msgstr "Running"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:158
+#. placeholder {0}: agent.inFlight
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:114
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:100
+msgid "running {0}"
+msgstr "running {0}"
+
+#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:171
 msgid "runs"
 msgstr "runs"
 
@@ -315,8 +340,8 @@ msgstr "sample"
 #~ msgid "Secret"
 #~ msgstr "Secret"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:92
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:109
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:105
+#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:115
 msgid "seen"
 msgstr "seen"
 
@@ -324,7 +349,7 @@ msgstr "seen"
 #~ msgid "Service"
 #~ msgstr "Service"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:148
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:171
 msgid "since"
 msgstr "since"
 
@@ -336,7 +361,7 @@ msgstr "Start your agent"
 #~ msgid "Success rate"
 #~ msgstr "Success rate"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:199
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:229
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:165
 msgid "This revokes the agent's grants and disconnects it. Cannot be undone."
 msgstr "This revokes the agent's grants and disconnects it. Cannot be undone."
@@ -357,7 +382,7 @@ msgstr "This revokes the agent's grants and disconnects it. Cannot be undone."
 msgid "Two steps and it picks up jobs."
 msgstr "Two steps and it picks up jobs."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:134
+#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:157
 msgid "Updated"
 msgstr "Updated"
 

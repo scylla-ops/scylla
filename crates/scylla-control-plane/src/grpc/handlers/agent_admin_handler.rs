@@ -56,7 +56,7 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        // A freshly created agent has not connected yet.
+        // A freshly created agent has not connected yet, so it holds no jobs.
         let agent = ProtoAgent {
             agent_id: wrap(created.app.id().to_string()),
             organization_id: wrap(created.app.organization_id().to_string()),
@@ -66,6 +66,7 @@ impl<
             updated_at: ts(created.app.updated_at()),
             connected: false,
             last_seen: None,
+            in_flight: 0,
         };
         Ok(Response::new(CreateAgentResponse {
             agent: Some(agent),
@@ -148,6 +149,9 @@ fn agent_view_to_proto(view: &AgentView) -> ProtoAgent {
         updated_at: ts(view.app.updated_at()),
         connected: view.connected,
         last_seen: view.last_seen.and_then(ts),
+        // Bounded by the registry's dispatch queue, so it always fits — a
+        // saturating cast keeps an absurd count from wrapping negative.
+        in_flight: i32::try_from(view.in_flight).unwrap_or(i32::MAX),
     }
 }
 
@@ -159,7 +163,10 @@ fn stats_to_proto(s: &AgentStats) -> ProtoAgentStats {
         completed: s.completed,
         failed: s.failed,
         cancelled: s.cancelled,
+        orphaned: s.orphaned,
         last_run_at: s.last_run_at.and_then(ts),
+        median_duration_ms: s.median_duration_ms,
+        p95_duration_ms: s.p95_duration_ms,
         daily: s
             .daily
             .iter()
@@ -168,6 +175,8 @@ fn stats_to_proto(s: &AgentStats) -> ProtoAgentStats {
                 completed: d.completed,
                 failed: d.failed,
                 cancelled: d.cancelled,
+                orphaned: d.orphaned,
+                median_duration_ms: d.median_duration_ms,
             })
             .collect(),
     }

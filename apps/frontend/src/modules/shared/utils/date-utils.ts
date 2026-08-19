@@ -52,6 +52,16 @@ export const formatDuration = (seconds: number): string => {
 };
 
 /**
+ * Format a millisecond duration. Stays in ms below a second so a fast step
+ * reads as "420ms" instead of collapsing to "0s"; delegates to
+ * {@link formatDuration} above that.
+ * @param ms - Duration in milliseconds
+ * @returns Formatted string (e.g., "420ms", "45s", "2h 15m")
+ */
+export const formatDurationMs = (ms: number): string =>
+  ms < 1000 ? `${Math.round(ms)}ms` : formatDuration(Math.round(ms / 1000));
+
+/**
  * Get relative time from a date string
  * @param dateString - ISO date string
  * @returns Relative time (e.g., "2m ago", "3h ago", "5d ago")
