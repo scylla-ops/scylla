@@ -1,12 +1,17 @@
 import { Badge, Label } from '@shadcn';
 import { Trans } from '@lingui/react/macro';
 import { ScrollArea } from '@shadcn/scroll-area.tsx';
-import { getPermissionDefinitionsForScope } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
+import {
+  getPermissionDefinitionsForScope,
+  type PermissionDefinition,
+} from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import {
   type Permission,
   type PermissionScope,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { type CheckboxNode, CheckboxTree } from '@shared/presentation/ui/forms/CheckboxTree.tsx';
+import { useRef } from 'react';
 
 interface RoleDialogPermissionsProps {
   scope: PermissionScope;
@@ -15,12 +20,48 @@ interface RoleDialogPermissionsProps {
   togglePermission: (permission: Permission) => void;
 }
 
+const nodesMock: CheckboxNode[] = [
+  {
+    id: '1',
+    label: 'Node 1',
+    children: [
+      { id: '2', label: 'Node 2', children: [] },
+      {
+        id: '2',
+        label: 'Node 2',
+        children: [
+          { id: '2', label: 'Node 2', children: [] },
+          { id: '2', label: 'Node 2', children: [{ id: '2', label: 'Node 2', children: [] }] },
+          { id: '2', label: 'Node 2', children: [{ id: '2', label: 'Node 2', children: [] }] },
+        ],
+      },
+    ],
+  },
+  { id: '3', label: 'Node 3', children: [] },
+];
+
+const checkboxNodesFromPermissions = (
+  permissionDefinitions: PermissionDefinition[],
+): CheckboxNode[] => {
+  return permissionDefinitions.map(def => ({
+    id: def.id.toString(),
+    label: def.label,
+    children: [
+      { id: 'children', label: 'children', children: [{ id: 'children', label: 'children' }] },
+    ],
+  }));
+};
+
 export const RoleDialogPermissions = ({
   scope,
   permissions,
   isPending,
   togglePermission,
 }: RoleDialogPermissionsProps) => {
+  const permissionsNodes = useRef(
+    checkboxNodesFromPermissions(getPermissionDefinitionsForScope(scope)),
+  );
+
   return (
     <div className='flex flex-col gap-1.5'>
       <div className='flex items-center justify-between'>
@@ -33,19 +74,7 @@ export const RoleDialogPermissions = ({
       </div>
       <ScrollArea className='h-56 rounded-lg border border-slate-200 p-2'>
         <div className='flex flex-col gap-0.5'>
-          {getPermissionDefinitionsForScope(scope)?.map(permission => (
-            <label
-              key={permission.id}
-              className='flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer hover:bg-slate-50'
-            >
-              <Checkbox
-                checked={permissions.has(permission.id)}
-                disabled={isPending}
-                onCheckedChange={() => togglePermission(permission.id)}
-              />
-              <span className='text-sm capitalize'>{permission.label}</span>
-            </label>
-          ))}
+          <CheckboxTree nodes={nodesMock} />
         </div>
       </ScrollArea>
     </div>
