@@ -1,6 +1,7 @@
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import { Button, Label } from '@shadcn';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shadcn/collapsible.tsx';
+import { useEffect, useState } from 'react';
 
 export type CheckboxNode = {
   id: string;
@@ -11,13 +12,24 @@ export type CheckboxNode = {
 interface CheckboxTreeProps {
   nodes: CheckboxNode[];
   className?: string;
+  parentChecked?: boolean;
 }
 
-export const CheckboxTree = ({ nodes, className }: CheckboxTreeProps) => {
+export const CheckboxTree = ({ nodes, parentChecked, className }: CheckboxTreeProps) => {
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (parentChecked === false) {
+      setChecked({});
+    }
+  }, [parentChecked, setChecked]);
+
   return (
     <div className='flex flex-col gap-1'>
       {nodes.map(node => {
         const hasChildren = Boolean(node.children && node.children.length > 0);
+
+        const isChecked = parentChecked === false ? false : Boolean(checked[node.id]);
 
         return (
           <Collapsible key={node.id} className={className}>
@@ -37,7 +49,14 @@ export const CheckboxTree = ({ nodes, className }: CheckboxTreeProps) => {
               )}
 
               <div className='flex h-full w-full items-center gap-2'>
-                <Checkbox id={node.id} />
+                <Checkbox
+                  disabled={parentChecked === false}
+                  onCheckedChange={val =>
+                    setChecked(prev => ({ ...prev, [node.id]: val as boolean }))
+                  }
+                  checked={isChecked}
+                  id={node.id}
+                />
                 <Label
                   htmlFor={node.id}
                   className='cursor-pointer text-sm font-medium leading-none capitalize select-none'
@@ -59,24 +78,22 @@ export const CheckboxTree = ({ nodes, className }: CheckboxTreeProps) => {
                         {isChildLast ? (
                           <span
                             aria-hidden='true'
-                            className='absolute left-15 top-0 h-3.5 w-4 rounded-bl-md border-l border-b border-border'
+                            className='absolute left-14 top-0 h-3.5 w-4 rounded-bl-md border-l border-b border-border'
                           />
                         ) : (
                           <>
-                            {/* vertical line */}
                             <span
                               aria-hidden='true'
-                              className='absolute left-15 top-0 h-full w-px bg-border'
+                              className='absolute left-14 top-0 h-full w-px bg-border'
                             />
-                            {/* horizontal line */}
                             <span
                               aria-hidden='true'
-                              className='absolute left-15 top-3.5 h-px w-4 bg-border'
+                              className='absolute left-14 top-3.5 h-px w-4 bg-border'
                             />
                           </>
                         )}
 
-                        <CheckboxTree nodes={[child]} />
+                        <CheckboxTree parentChecked={isChecked} nodes={[child]} />
                       </div>
                     );
                   })}

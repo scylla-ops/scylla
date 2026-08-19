@@ -5,7 +5,6 @@ import {
   getPermissionDefinitionsForScope,
   type PermissionDefinition,
 } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
-import { Checkbox } from '@shadcn/checkbox.tsx';
 import {
   type Permission,
   type PermissionScope,
@@ -74,7 +73,7 @@ export const RoleDialogPermissions = ({
       </div>
       <ScrollArea className='h-56 rounded-lg border border-slate-200 p-2'>
         <div className='flex flex-col gap-0.5'>
-          <CheckboxTree nodes={nodesMock} />
+          <CheckboxTree nodes={permissionsNodes.current} />
         </div>
       </ScrollArea>
     </div>
