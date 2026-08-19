@@ -25,8 +25,8 @@ export const CheckboxTree = ({ nodes, className }: CheckboxTreeProps) => {
               {hasChildren ? (
                 <CollapsibleTrigger asChild>
                   <Button
-                    variant={'secondary'}
-                    className='group z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-background p-0 text-xs font-mono text-muted-foreground ring-1 ring-border select-none hover:bg-muted hover:text-foreground'
+                    variant={'outline'}
+                    className='group z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full p-0 text-xs font-mono text-muted-foreground ring-1 ring-border select-none hover:bg-muted hover:text-foreground'
                   >
                     <span className='group-data-[state=open]:hidden'>+</span>
                     <span className='hidden group-data-[state=open]:inline'>−</span>
@@ -50,31 +50,25 @@ export const CheckboxTree = ({ nodes, className }: CheckboxTreeProps) => {
             {/* Children */}
             {hasChildren && (
               <CollapsibleContent>
-                {/* pas de gap ici : les traits verticaux de chaque enfant doivent se toucher pour former une ligne continue */}
                 <div className='relative flex flex-col pt-1'>
                   {node.children!.map((child, childIndex) => {
                     const isChildLast = childIndex === node.children!.length - 1;
 
                     return (
-                      /* pl-11 décale tout le bloc enfant vers la droite */
                       <div key={child.id} className='relative pl-11'>
-                        {/* Le tronc est centré sur la colonne du bouton +/- (ou son espace réservé) :
-                            le bouton (z-10) passe visuellement au-dessus de la ligne, qui n'a donc
-                            plus besoin de s'étirer pour rejoindre la checkbox quand il n'y a pas de bouton */}
                         {isChildLast ? (
-                          /* Dernier enfant : coin arrondi (└) qui referme proprement la ligne */
                           <span
                             aria-hidden='true'
                             className='absolute left-15 top-0 h-3.5 w-4 rounded-bl-md border-l border-b border-border'
                           />
                         ) : (
                           <>
-                            {/* Ligne verticale continue (├) : rejoint directement le frère suivant, sans coupure */}
+                            {/* vertical line */}
                             <span
                               aria-hidden='true'
                               className='absolute left-15 top-0 h-full w-px bg-border'
                             />
-                            {/* Embranchement horizontal vers la checkbox de l'enfant */}
+                            {/* horizontal line */}
                             <span
                               aria-hidden='true'
                               className='absolute left-15 top-3.5 h-px w-4 bg-border'
