@@ -38,6 +38,23 @@ message Agent {
   // — its current load. Live from the agent registry like `connected`, so it is
   // 0 for a disconnected agent rather than a stale count.
   int32 in_flight = 9;
+  // What the agent said about itself on its last connect (see AgentHello in
+  // agent_stream.proto). Absent until an agent that speaks it has connected
+  // once; it then survives disconnects, describing where the agent last ran.
+  AgentHost host = 10;
+}
+
+// The machine an agent last reported running on. Stored verbatim from the
+// agent's hello — the control plane never derives or validates it.
+message AgentHost {
+  string version = 1;
+  string os = 2;
+  string arch = 3;
+  string hostname = 4;
+  int32 cpu_count = 5;
+  int64 total_memory_mb = 6;
+  // When the agent last introduced itself.
+  google.protobuf.Timestamp reported_at = 7;
 }
 
 // Aggregate run stats for an agent, derived from the jobs it executed. The

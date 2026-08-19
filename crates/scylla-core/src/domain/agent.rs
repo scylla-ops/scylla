@@ -2,11 +2,31 @@ use crate::domain::clock;
 use crate::domain::ids::AppId;
 use chrono::{DateTime, Utc};
 
+/// What an agent reported about the machine it runs on, captured when it opens
+/// its stream. Descriptive only — the control plane stores it verbatim and
+/// never schedules or authorizes on it, so there is nothing here to validate.
+/// `cpu_count` / `total_memory_mb` are `None` when the agent could not read
+/// them, which is distinct from a machine reporting zero.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AgentHost {
+    pub version: String,
+    pub os: String,
+    pub arch: String,
+    pub hostname: String,
+    pub cpu_count: Option<i32>,
+    pub total_memory_mb: Option<i64>,
+    pub reported_at: DateTime<Utc>,
+}
+
 /// The 1:1 specialization of an [`App`] that runs jobs. Its identity and
 /// credential live on the `App`; this aggregate only marks "this app is a
 /// agent" and carries agent-only attributes. `last_seen` is the durable
 /// last-activity timestamp (survives a control-plane restart); live
 /// online/offline presence is read from the in-memory agent registry, not here.
+///
+/// `host` is the last self-description the agent sent. It outlives the
+/// connection on purpose: after a disconnect it still says where the agent last
+/// ran, which is exactly what you want when diagnosing why it went away.
 ///
 /// [`App`]: crate::domain::app::App
 #[derive(Debug, Clone)]
@@ -14,6 +34,7 @@ pub struct Agent {
     app_id: AppId,
     last_seen: Option<DateTime<Utc>>,
     created_at: DateTime<Utc>,
+    host: Option<AgentHost>,
 }
 
 impl Agent {
@@ -22,21 +43,25 @@ impl Agent {
         app_id: AppId,
         last_seen: Option<DateTime<Utc>>,
         created_at: DateTime<Utc>,
+        host: Option<AgentHost>,
     ) -> Self {
         Self {
             app_id,
             last_seen,
             created_at,
+            host,
         }
     }
 
-    /// A freshly registered agent has never been seen connected yet.
+    /// A freshly registered agent has never been seen connected yet, so it has
+    /// not described itself either.
     #[must_use]
     pub fn create(app_id: AppId) -> Self {
         Self {
             app_id,
             last_seen: None,
             created_at: clock::now(),
+            host: None,
         }
     }
 
@@ -53,5 +78,10 @@ impl Agent {
     #[must_use]
     pub fn created_at(&self) -> DateTime<Utc> {
         self.created_at
+    }
+
+    #[must_use]
+    pub fn host(&self) -> Option<&AgentHost> {
+        self.host.as_ref()
     }
 }

@@ -1,8 +1,12 @@
 import type {
   AgentStats as ProtoAgentStats,
   Agent as ProtoAgent,
+  AgentHost as ProtoAgentHost,
 } from '@/generated/scylla/agent/v1/agent_admin.ts';
-import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
+import type {
+  AgentEntity,
+  AgentHost,
+} from '@/modules/features/agents/domain/entities/agent.entity.ts';
 import type { AgentStats } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
@@ -17,8 +21,22 @@ export class GrpcAgentMapper {
       connected: w.connected,
       lastSeen: timestampToIso(w.lastSeen),
       inFlight: w.inFlight,
+      host: w.host ? GrpcAgentMapper.hostToDomain(w.host) : null,
       createdAt: timestampToIso(w.createdAt),
       updatedAt: timestampToIso(w.updatedAt),
+    };
+  }
+
+  /** A `0` probe on the wire means the agent could not read it. */
+  private static hostToDomain(h: ProtoAgentHost): AgentHost {
+    return {
+      version: h.version,
+      os: h.os,
+      arch: h.arch,
+      hostname: h.hostname,
+      cpuCount: h.cpuCount > 0 ? h.cpuCount : null,
+      totalMemoryMb: h.totalMemoryMb > 0n ? Number(h.totalMemoryMb) : null,
+      reportedAt: timestampToIso(h.reportedAt),
     };
   }
 

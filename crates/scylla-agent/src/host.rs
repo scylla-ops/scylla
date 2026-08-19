@@ -1,0 +1,116 @@
+//! What the agent knows about the machine it runs on.
+//!
+//! Sent once per connection as an `AgentHello` so the dashboard can say which
+//! binary is running where. Everything here is best-effort: a field the OS
+//! won't give us is reported empty/zero, which the control plane reads as
+//! "unknown". Nothing in this module is allowed to fail the connection.
+//!
+//! No new dependency — the version and target come from the compiler, the CPU
+//! count from std, and the two POSIX lookups from the `libc` the executor
+//! already links for process-group signalling.
+
+use scylla_protocol::agent::v1::AgentHello;
+
+/// Describe this machine. Cheap enough to call on every (re)connect, which
+/// keeps the reported data fresh if the agent is moved or upgraded in place.
+pub fn hello() -> AgentHello {
+    AgentHello {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
+        hostname: hostname(),
+        cpu_count: cpu_count(),
+        total_memory_mb: total_memory_mb(),
+    }
+}
+
+/// Logical CPUs usable by this process. `available_parallelism` (not a raw core
+/// count) so an agent in a cgroup-limited container reports what it can
+/// actually use. `0` when unavailable.
+fn cpu_count() -> i32 {
+    std::thread::available_parallelism()
+        .ok()
+        .and_then(|n| i32::try_from(n.get()).ok())
+        .unwrap_or(0)
+}
+
+/// Machine host name, or empty when the OS won't tell us.
+#[cfg(unix)]
+#[allow(unsafe_code)]
+fn hostname() -> String {
+    // POSIX bounds host names at 255 bytes; the extra byte leaves room for the
+    // terminator on a name that uses the full length.
+    let mut buf = vec![0u8; 256];
+    // SAFETY: `buf` is a live, writable allocation and we pass its true length,
+    // so gethostname(3) cannot write out of bounds.
+    let rc = unsafe { libc::gethostname(buf.as_mut_ptr().cast(), buf.len()) };
+    if rc != 0 {
+        return String::new();
+    }
+    // On truncation the terminator may be absent, so fall back to the whole
+    // buffer rather than assuming a NUL is there to find.
+    let end = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
+    buf.truncate(end);
+    String::from_utf8_lossy(&buf).into_owned()
+}
+
+#[cfg(not(unix))]
+fn hostname() -> String {
+    String::new()
+}
+
+/// Total physical memory in MB, or `0` when it can't be read.
+#[cfg(unix)]
+#[allow(unsafe_code)]
+fn total_memory_mb() -> i64 {
+    // SAFETY: sysconf(3) takes no pointers and only reads a static system
+    // limit; it returns -1 for an unsupported name, which we treat as unknown.
+    let (pages, page_size) = unsafe {
+        (
+            libc::sysconf(libc::_SC_PHYS_PAGES),
+            libc::sysconf(libc::_SC_PAGE_SIZE),
+        )
+    };
+    if pages <= 0 || page_size <= 0 {
+        return 0;
+    }
+    // sysconf returns c_long, which is i64 on the 64-bit Linux targets agents
+    // ship for. Saturating: the product is bytes, which overflows only on a
+    // machine that does not exist yet.
+    pages.saturating_mul(page_size).saturating_div(1024 * 1024)
+}
+
+#[cfg(not(unix))]
+fn total_memory_mb() -> i64 {
+    0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hello_describes_the_build_and_never_panics() {
+        let h = hello();
+        // The compile-time facts are always present.
+        assert_eq!(h.version, env!("CARGO_PKG_VERSION"));
+        assert!(!h.os.is_empty());
+        assert!(!h.arch.is_empty());
+        // The probed ones are best-effort, so only their invariant holds: never
+        // negative, since the control plane reads a negative as garbage rather
+        // than as unknown.
+        assert!(h.cpu_count >= 0);
+        assert!(h.total_memory_mb >= 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn probed_values_are_populated_on_unix() {
+        // On any machine that runs this suite both lookups work, so a zero here
+        // means the probe broke rather than "the OS declined to answer".
+        let h = hello();
+        assert!(h.cpu_count > 0, "available_parallelism returned nothing");
+        assert!(h.total_memory_mb > 0, "sysconf returned no memory");
+        assert!(!h.hostname.is_empty(), "gethostname returned nothing");
+    }
+}

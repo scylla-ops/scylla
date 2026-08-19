@@ -8,6 +8,7 @@ use crate::extract_auth_context;
 use crate::grpc::convert::dt;
 use crate::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use derive_more::Constructor;
+use scylla_core::domain::agent::AgentHost;
 use scylla_core::domain::ids::{AppId, JobId};
 use scylla_core::domain::job::JobLog;
 use scylla_core::domain::pipeline::{NodeId, Step};
@@ -160,6 +161,16 @@ async fn read_reports<J, L, PS>(
                     }
                 }
             }
+            // The agent introducing itself. Introspection only — nothing
+            // downstream reads it, so a failed write is logged and swallowed
+            // exactly like `touch_last_seen`.
+            Some(agent_up::Payload::Hello(hello)) => {
+                let host = hello_to_domain(&hello);
+                if let Err(e) = agent_repo.record_host(&app_id, &host).await {
+                    warn!(app_id = %app_id, error = %e, "failed to record agent host");
+                }
+                touch_last_seen(&agent_repo, &app_id).await;
+            }
             None => {}
         }
     }
@@ -199,6 +210,22 @@ impl<S: Stream + Unpin> Stream for GuardedStream<S> {
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         Pin::new(&mut self.inner).poll_next(cx)
+    }
+}
+
+/// Map the agent's self-description onto the domain. Stored verbatim — the
+/// control plane makes no decision on it, so there is nothing to validate. A
+/// `0` from the wire means "the agent could not read it", which is `None` here
+/// rather than a machine with no CPU or no memory.
+fn hello_to_domain(hello: &scylla_protocol::agent::v1::AgentHello) -> AgentHost {
+    AgentHost {
+        version: hello.version.clone(),
+        os: hello.os.clone(),
+        arch: hello.arch.clone(),
+        hostname: hello.hostname.clone(),
+        cpu_count: (hello.cpu_count > 0).then_some(hello.cpu_count),
+        total_memory_mb: (hello.total_memory_mb > 0).then_some(hello.total_memory_mb),
+        reported_at: chrono::Utc::now(),
     }
 }
 

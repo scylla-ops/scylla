@@ -1,4 +1,4 @@
-use crate::domain::agent::Agent;
+use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use async_trait::async_trait;
@@ -51,5 +51,9 @@ pub trait AgentRepository: Send + Sync {
     /// Best-effort upsert of the durable last-activity timestamp. Self-heals a
     /// missing row so presence never depends on the introspection table.
     async fn touch_last_seen(&self, app_id: &AppId, at: DateTime<Utc>) -> DomainResult<()>;
+    /// Record what the agent said about its machine on connect, replacing any
+    /// previous report. Self-heals a missing row for the same reason
+    /// `touch_last_seen` does.
+    async fn record_host(&self, app_id: &AppId, host: &AgentHost) -> DomainResult<()>;
     async fn agent_stats(&self, app_id: &AppId) -> DomainResult<AgentStats>;
 }

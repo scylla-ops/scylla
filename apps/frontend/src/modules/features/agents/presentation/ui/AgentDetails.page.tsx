@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
-import { Cpu } from 'lucide-react';
+import { Cpu, Server } from 'lucide-react';
 import { cn } from '@shared/presentation/utils';
 import { formatDate, formatDurationMs, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { Trans } from '@lingui/react/macro';
@@ -32,6 +32,10 @@ const StripLabel = ({ children }: { children: React.ReactNode }) => (
     {children}
   </span>
 );
+
+/** MB as reported by the agent, in GB once it's worth rounding. */
+const formatMemory = (mb: number): string =>
+  mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`;
 
 /**
  * One duration read-out. A null `ms` means the agent has never run a job to
@@ -159,6 +163,60 @@ export const AgentDetailsPage = () => {
           <span className='font-mono text-xs'>{formatDate(agent.updatedAt)}</span>
         </span>
       </div>
+
+      {/* Host strip — only once an agent has introduced itself. An older agent
+          that never sends a hello just doesn't get this row. */}
+      {agent.host && (
+        <div className='flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-dashed px-3.5 py-2'>
+          <span className='flex items-center gap-1.5'>
+            <Server className='h-3.5 w-3.5 text-muted-foreground' />
+            <span className='font-mono text-xs'>
+              {agent.host.hostname || <Trans>unknown host</Trans>}
+            </span>
+          </span>
+          <span className='text-muted-foreground/50'>·</span>
+          <span className='flex items-center gap-1.5'>
+            <StripLabel>
+              <Trans>Version</Trans>
+            </StripLabel>
+            <span className='font-mono text-xs'>{agent.host.version}</span>
+          </span>
+          <span className='text-muted-foreground/50'>·</span>
+          <span className='flex items-center gap-1.5'>
+            <StripLabel>
+              <Trans>Platform</Trans>
+            </StripLabel>
+            <span className='font-mono text-xs'>
+              {agent.host.os}/{agent.host.arch}
+            </span>
+          </span>
+          {agent.host.cpuCount !== null && (
+            <>
+              <span className='text-muted-foreground/50'>·</span>
+              <span className='flex items-center gap-1.5'>
+                <StripLabel>
+                  <Trans>CPU</Trans>
+                </StripLabel>
+                <span className='font-mono text-xs'>{agent.host.cpuCount}</span>
+              </span>
+            </>
+          )}
+          {agent.host.totalMemoryMb !== null && (
+            <>
+              <span className='text-muted-foreground/50'>·</span>
+              <span className='flex items-center gap-1.5'>
+                <StripLabel>
+                  <Trans>Memory</Trans>
+                </StripLabel>
+                <span className='font-mono text-xs'>{formatMemory(agent.host.totalMemoryMb)}</span>
+              </span>
+            </>
+          )}
+          <span className='ml-auto font-mono text-[10px] text-muted-foreground'>
+            <Trans>reported</Trans> {getRelativeTime(agent.host.reportedAt)}
+          </span>
+        </div>
+      )}
 
       {/* Job stats */}
       <div>

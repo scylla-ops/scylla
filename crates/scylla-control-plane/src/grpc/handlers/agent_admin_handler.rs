@@ -6,13 +6,15 @@ use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
+use scylla_core::domain::agent::AgentHost;
 use scylla_core::domain::app::AppName;
 use scylla_core::domain::ids::{AppId, OrganizationId};
 use scylla_protocol::agent::v1::{
-    Agent as ProtoAgent, AgentStats as ProtoAgentStats, CreateAgentRequest, CreateAgentResponse,
-    DailyOutcome as ProtoDailyOutcome, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest,
-    GetAgentResponse, GetAgentStatsRequest, GetAgentStatsResponse, ListAgentsRequest,
-    ListAgentsResponse, agent_admin_service_server::AgentAdminService,
+    Agent as ProtoAgent, AgentHost as ProtoAgentHost, AgentStats as ProtoAgentStats,
+    CreateAgentRequest, CreateAgentResponse, DailyOutcome as ProtoDailyOutcome, DeleteAgentRequest,
+    DeleteAgentResponse, GetAgentRequest, GetAgentResponse, GetAgentStatsRequest,
+    GetAgentStatsResponse, ListAgentsRequest, ListAgentsResponse,
+    agent_admin_service_server::AgentAdminService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -67,6 +69,7 @@ impl<
             connected: false,
             last_seen: None,
             in_flight: 0,
+            host: None,
         };
         Ok(Response::new(CreateAgentResponse {
             agent: Some(agent),
@@ -152,6 +155,21 @@ fn agent_view_to_proto(view: &AgentView) -> ProtoAgent {
         // Bounded by the registry's dispatch queue, so it always fits — a
         // saturating cast keeps an absurd count from wrapping negative.
         in_flight: i32::try_from(view.in_flight).unwrap_or(i32::MAX),
+        host: view.host.as_ref().map(host_to_proto),
+    }
+}
+
+/// Back to the wire, mirroring `hello_to_domain`: an unknown probe becomes `0`,
+/// the value the proto documents as "the agent could not read it".
+fn host_to_proto(h: &AgentHost) -> ProtoAgentHost {
+    ProtoAgentHost {
+        version: h.version.clone(),
+        os: h.os.clone(),
+        arch: h.arch.clone(),
+        hostname: h.hostname.clone(),
+        cpu_count: h.cpu_count.unwrap_or(0),
+        total_memory_mb: h.total_memory_mb.unwrap_or(0),
+        reported_at: ts(h.reported_at),
     }
 }
 

@@ -7,7 +7,7 @@ use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
-use crate::domain::agent::Agent;
+use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::errors::{DomainError, DomainResult};
@@ -135,6 +135,10 @@ pub struct AgentView {
     /// Read live from the registry, so a disconnected agent reports 0 — the
     /// same source least-loaded dispatch selects on.
     pub in_flight: usize,
+    /// Machine the agent last reported. `None` until one has connected and said
+    /// hello; kept after disconnect, since "where did it last run" is the
+    /// question you ask about an agent that just went away.
+    pub host: Option<AgentHost>,
 }
 
 /// Org-scoped management + introspection of Agents (specialized apps that run
@@ -234,6 +238,7 @@ where
                 connected: is_connected,
                 last_seen: agent.last_seen(),
                 in_flight,
+                host: agent.host().cloned(),
             });
         }
         Ok(views)
@@ -257,6 +262,7 @@ where
             connected,
             last_seen: agent.last_seen(),
             in_flight: self.registry.in_flight(&app_id),
+            host: agent.host().cloned(),
         })
     }
 

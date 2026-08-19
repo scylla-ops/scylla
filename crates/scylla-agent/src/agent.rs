@@ -10,7 +10,7 @@ use tracing::{error, info, warn};
 use scylla_core::domain::pipeline::PipelineNode;
 use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, Step, WorkingDir};
 use scylla_protocol::agent::v1::agent_service_client::AgentServiceClient;
-use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
+use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node, agent_up};
 use scylla_protocol::app::v1::IssueTokenRequest;
 use scylla_protocol::app::v1::app_auth_service_client::AppAuthServiceClient;
 use scylla_protocol::common::v1 as common;
@@ -61,6 +61,7 @@ impl Agent {
             match self.connect().await {
                 Ok((inbound, up_tx)) => {
                     info!("agent stream open — waiting for jobs");
+                    send_hello(&up_tx).await;
                     let started = Instant::now();
                     let outcome = self.serve(inbound, up_tx).await;
                     let uptime = started.elapsed();
@@ -230,6 +231,31 @@ impl Agent {
                 }
             }
         }
+    }
+}
+
+/// Introduce this machine to the control plane. Best-effort by design: the
+/// hello is introspection, so a full channel or a stream that died between
+/// connect and now must not stop the agent from taking jobs — the control plane
+/// simply keeps whatever host it recorded last.
+async fn send_hello(up_tx: &mpsc::Sender<AgentUp>) {
+    let hello = crate::host::hello();
+    info!(
+        version = %hello.version,
+        os = %hello.os,
+        arch = %hello.arch,
+        hostname = %hello.hostname,
+        cpus = hello.cpu_count,
+        memory_mb = hello.total_memory_mb,
+        "reporting agent host to control plane"
+    );
+    if let Err(e) = up_tx
+        .send(AgentUp {
+            payload: Some(agent_up::Payload::Hello(hello)),
+        })
+        .await
+    {
+        warn!(error = %e, "failed to report agent host; continuing without it");
     }
 }
 

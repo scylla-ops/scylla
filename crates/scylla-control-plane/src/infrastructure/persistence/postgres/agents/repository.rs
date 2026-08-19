@@ -1,5 +1,5 @@
 use crate::application::agent::repository::{AgentRepository, AgentStats};
-use crate::domain::agent::Agent;
+use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use async_trait::async_trait;
@@ -8,6 +8,29 @@ use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
 use super::super::error::SqlxResultExt;
+
+/// Rebuild the reported host from its columns. `host_reported_at` is the marker
+/// that an agent ever introduced itself: without it the other columns are
+/// leftovers at best, so the whole block reads as absent.
+fn host_from_columns(
+    reported_at: Option<DateTime<Utc>>,
+    version: Option<String>,
+    os: Option<String>,
+    arch: Option<String>,
+    hostname: Option<String>,
+    cpu_count: Option<i32>,
+    total_memory_mb: Option<i64>,
+) -> Option<AgentHost> {
+    Some(AgentHost {
+        version: version.unwrap_or_default(),
+        os: os.unwrap_or_default(),
+        arch: arch.unwrap_or_default(),
+        hostname: hostname.unwrap_or_default(),
+        cpu_count,
+        total_memory_mb,
+        reported_at: reported_at?,
+    })
+}
 
 /// Insert a `agents` extension row on any executor (pool or transaction).
 /// Shared by the pool-backed repo and the atomic `provision_agent` transaction.
@@ -50,7 +73,8 @@ impl AgentRepository for PgAgentRepository {
     async fn find_by_app_id(&self, app_id: &AppId) -> DomainResult<Agent> {
         let rec = sqlx::query!(
             r#"
-            SELECT app_id, last_seen, created_at
+            SELECT app_id, last_seen, created_at, agent_version, host_os, host_arch,
+                   hostname, cpu_count, total_memory_mb, host_reported_at
             FROM agents
             WHERE app_id = $1
             "#,
@@ -63,6 +87,15 @@ impl AgentRepository for PgAgentRepository {
             AppId::new(rec.app_id),
             rec.last_seen,
             rec.created_at,
+            host_from_columns(
+                rec.host_reported_at,
+                rec.agent_version,
+                rec.host_os,
+                rec.host_arch,
+                rec.hostname,
+                rec.cpu_count,
+                rec.total_memory_mb,
+            ),
         ))
     }
 
@@ -70,7 +103,9 @@ impl AgentRepository for PgAgentRepository {
     async fn list_by_organization(&self, org_id: &OrganizationId) -> DomainResult<Vec<Agent>> {
         let rows = sqlx::query!(
             r#"
-            SELECT w.app_id, w.last_seen, w.created_at
+            SELECT w.app_id, w.last_seen, w.created_at, w.agent_version, w.host_os,
+                   w.host_arch, w.hostname, w.cpu_count, w.total_memory_mb,
+                   w.host_reported_at
             FROM agents w
             JOIN apps a ON a.id = w.app_id
             WHERE a.organization_id = $1
@@ -83,7 +118,22 @@ impl AgentRepository for PgAgentRepository {
         .to_domain()?;
         Ok(rows
             .into_iter()
-            .map(|r| Agent::from_persistence(AppId::new(r.app_id), r.last_seen, r.created_at))
+            .map(|r| {
+                Agent::from_persistence(
+                    AppId::new(r.app_id),
+                    r.last_seen,
+                    r.created_at,
+                    host_from_columns(
+                        r.host_reported_at,
+                        r.agent_version,
+                        r.host_os,
+                        r.host_arch,
+                        r.hostname,
+                        r.cpu_count,
+                        r.total_memory_mb,
+                    ),
+                )
+            })
             .collect())
     }
 
@@ -99,6 +149,40 @@ impl AgentRepository for PgAgentRepository {
             "#,
             app_id.as_str(),
             at,
+        )
+        .execute(&self.pool)
+        .await
+        .to_domain()?;
+        Ok(())
+    }
+
+    #[instrument(skip_all, fields(app_id = %app_id, hostname = %host.hostname))]
+    async fn record_host(&self, app_id: &AppId, host: &AgentHost) -> DomainResult<()> {
+        // Same self-healing upsert as `touch_last_seen`, and a full overwrite:
+        // an agent that moved machines must not leave half of the old host
+        // description behind.
+        sqlx::query!(
+            r#"
+            INSERT INTO agents (app_id, created_at, agent_version, host_os, host_arch,
+                                hostname, cpu_count, total_memory_mb, host_reported_at)
+            VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (app_id) DO UPDATE SET
+                agent_version    = $2,
+                host_os          = $3,
+                host_arch        = $4,
+                hostname         = $5,
+                cpu_count        = $6,
+                total_memory_mb  = $7,
+                host_reported_at = $8
+            "#,
+            app_id.as_str(),
+            host.version,
+            host.os,
+            host.arch,
+            host.hostname,
+            host.cpu_count,
+            host.total_memory_mb,
+            host.reported_at,
         )
         .execute(&self.pool)
         .await

@@ -3,7 +3,7 @@ use crate::application::authz::grant::{
     Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
 };
 use crate::application::{AgentRepository, AppRepository, JobRepository};
-use crate::domain::agent::Agent;
+use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
 use crate::domain::clock;
@@ -128,6 +128,78 @@ async fn touch_last_seen_upserts_and_self_heals(pool: PgPool) {
         after_second.last_seen().unwrap().timestamp(),
         t2.timestamp()
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn record_host_upserts_and_fully_overwrites(pool: PgPool) {
+    let org = seed_org(&pool, "Acme").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+
+    // No agents row yet: recording a host must self-heal one, same as
+    // `touch_last_seen`, so a hello can never be lost to a missing row.
+    let app = App::create(org.id().clone(), AppName::new("legacy").unwrap());
+    app_repo
+        .create_app(&app, &default_credential(&app))
+        .await
+        .unwrap();
+    assert!(agent_repo.find_by_app_id(app.id()).await.is_err());
+
+    let first = AgentHost {
+        version: "0.4.0".into(),
+        os: "linux".into(),
+        arch: "x86_64".into(),
+        hostname: "builder-01".into(),
+        cpu_count: Some(8),
+        total_memory_mb: Some(16_384),
+        reported_at: clock::now(),
+    };
+    agent_repo.record_host(app.id(), &first).await.unwrap();
+    assert_eq!(
+        agent_repo.find_by_app_id(app.id()).await.unwrap().host(),
+        Some(&first)
+    );
+
+    // The agent moved to a machine whose probes came back empty. Every column
+    // has to follow, or the UI would show the new hostname beside the old
+    // machine's CPU and RAM.
+    let moved = AgentHost {
+        version: "0.5.0".into(),
+        os: "linux".into(),
+        arch: "aarch64".into(),
+        hostname: "builder-02".into(),
+        cpu_count: None,
+        total_memory_mb: None,
+        reported_at: clock::now(),
+    };
+    agent_repo.record_host(app.id(), &moved).await.unwrap();
+    assert_eq!(
+        agent_repo.find_by_app_id(app.id()).await.unwrap().host(),
+        Some(&moved)
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn agent_that_never_said_hello_has_no_host(pool: PgPool) {
+    let org = seed_org(&pool, "Acme").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+    let (app, credential, agent, grant) = make_agent(org.id(), "silent");
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
+
+    // An older agent binary connects and reports jobs but never a hello: it is
+    // fully functional, it just has nothing to say about its machine.
+    agent_repo
+        .touch_last_seen(app.id(), clock::now())
+        .await
+        .unwrap();
+
+    let found = agent_repo.find_by_app_id(app.id()).await.unwrap();
+    assert!(found.last_seen().is_some(), "presence still tracked");
+    assert!(found.host().is_none(), "no host without a hello");
 }
 
 #[sqlx::test(migrations = "../../migrations")]
