@@ -99,6 +99,7 @@ export const RoleDialogPermissions = ({
           <CheckboxTree
             allDisabled={isPending}
             nodes={permissionsNodes}
+            defaultCheckedIds={permissions}
             onCheckedChange={onPermissionsChange}
           />
         </div>

@@ -1,7 +1,7 @@
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import { Button, Label } from '@shadcn';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shadcn/collapsible.tsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type CheckboxNode<T extends string | number = string> = {
   id: T;
@@ -12,7 +12,16 @@ export type CheckboxNode<T extends string | number = string> = {
 interface CheckboxTreeProps<T extends string | number = string> {
   nodes: CheckboxNode<T>[];
   className?: string;
+  /**
+   * Ids checked on mount — the state to restore when editing an existing
+   * record. Ids whose parent chain isn't checked are dropped, so the seeded
+   * state always matches what the tree can actually render. Passing a set that
+   * differs from the current selection re-seeds the tree, which makes it safe
+   * to feed the value back from `onCheckedChange`.
+   */
+  defaultCheckedIds?: T[];
   onCheckedChange?: (checkedIds: T[]) => void;
+  /** Disables every checkbox without altering the current selection. */
   allDisabled?: boolean;
 }
 
@@ -20,6 +29,7 @@ interface TreeNodeProps<T extends string | number = string> {
   nodes: CheckboxNode<T>[];
   className?: string;
   parentChecked?: boolean;
+  disabled?: boolean;
   checkedMap: Record<T, boolean>;
   onToggle: (id: T, checked: boolean) => void;
 }
@@ -48,11 +58,42 @@ const findNode = <T extends string | number>(
   return null;
 };
 
+const toCheckedMap = <T extends string | number>(ids: T[]): Record<T, boolean> => {
+  const map = {} as Record<T, boolean>;
+  ids.forEach(id => {
+    map[id] = true;
+  });
+  return map;
+};
+
+/**
+ * Walks the tree in render order and collects the ids that actually read as
+ * checked: a node counts only when its own box and its whole parent chain are
+ * checked. A node reachable through several parents (multiple `dependsOn`)
+ * appears once.
+ */
+const collectCheckedIds = <T extends string | number>(
+  nodes: CheckboxNode<T>[],
+  checkedMap: Record<T, boolean>,
+  collected: Set<T> = new Set<T>(),
+): Set<T> => {
+  nodes.forEach(node => {
+    if (!checkedMap[node.id]) return;
+    collected.add(node.id);
+    if (node.children) collectCheckedIds(node.children, checkedMap, collected);
+  });
+  return collected;
+};
+
+const sameIds = <T extends string | number>(a: Set<T>, b: Set<T>): boolean =>
+  a.size === b.size && [...a].every(id => b.has(id));
+
 // Correction : Ajout de la contrainte | number manquante sur le composant TreeNode
 const TreeNode = <T extends string | number>({
   nodes,
   parentChecked,
   className,
+  disabled,
   checkedMap,
   onToggle,
 }: TreeNodeProps<T>) => {
@@ -81,7 +122,7 @@ const TreeNode = <T extends string | number>({
 
               <div className='flex h-full w-full items-center gap-2'>
                 <Checkbox
-                  disabled={parentChecked === false}
+                  disabled={disabled || parentChecked === false}
                   onCheckedChange={val => onToggle(node.id, Boolean(val))}
                   checked={isChecked}
                   id={node.id.toString()} // Correction : Conversion string requise pour le DOM HTML
@@ -123,6 +164,7 @@ const TreeNode = <T extends string | number>({
 
                         <TreeNode
                           parentChecked={isChecked}
+                          disabled={disabled}
                           nodes={[child]}
                           checkedMap={checkedMap}
                           onToggle={onToggle}
@@ -142,11 +184,23 @@ const TreeNode = <T extends string | number>({
 
 export const CheckboxTree = <T extends string | number>({
   nodes,
+  defaultCheckedIds,
   onCheckedChange,
   allDisabled,
   className,
 }: CheckboxTreeProps<T>) => {
-  const [checkedMap, setCheckedMap] = useState<Record<T, boolean>>({} as Record<T, boolean>);
+  const [checkedMap, setCheckedMap] = useState<Record<T, boolean>>(() =>
+    toCheckedMap([...collectCheckedIds(nodes, toCheckedMap(defaultCheckedIds ?? []))]),
+  );
+
+  // Re-seed when the caller hands over a different selection (another role, a
+  // scope change). Feeding back the selection we just emitted is a no-op.
+  useEffect(() => {
+    setCheckedMap(prev => {
+      const seeded = collectCheckedIds(nodes, toCheckedMap(defaultCheckedIds ?? []));
+      return sameIds(collectCheckedIds(nodes, prev), seeded) ? prev : toCheckedMap([...seeded]);
+    });
+  }, [nodes, defaultCheckedIds]);
 
   const handleToggle = (id: T, checked: boolean) => {
     const targetNode = findNode(nodes, id);
@@ -157,7 +211,6 @@ export const CheckboxTree = <T extends string | number>({
     if (!checked) {
       const idsToUpdate = getAllDescendantIds(targetNode);
 
-      console.log(idsToUpdate);
       idsToUpdate.forEach(nodeId => {
         nextMap[nodeId] = false;
       });
@@ -167,20 +220,14 @@ export const CheckboxTree = <T extends string | number>({
 
     setCheckedMap(nextMap);
 
-    const checkedIds = Object.keys(nextMap)
-      .filter(key => nextMap[key as unknown as T])
-      .map(key => {
-        return (isNaN(Number(key)) ? key : Number(key)) as unknown as T;
-      });
-
-    onCheckedChange?.(checkedIds);
+    onCheckedChange?.([...collectCheckedIds(nodes, nextMap)]);
   };
 
   return (
     <TreeNode
-      parentChecked={allDisabled ? false : undefined}
       nodes={nodes}
       className={className}
+      disabled={allDisabled}
       checkedMap={checkedMap}
       onToggle={handleToggle}
     />
