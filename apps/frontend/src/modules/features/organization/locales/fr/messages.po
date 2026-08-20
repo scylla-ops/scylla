@@ -41,7 +41,7 @@ msgstr "Créer l'organisation"
 #~ msgid "Creating..."
 #~ msgstr "Création en cours..."
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:141
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:123
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -58,7 +58,7 @@ msgstr "ex. Mon organisation"
 msgid "e.g., Our company's main organization"
 msgstr "ex. L'organisation principale de notre entreprise"
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:122
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:104
 msgid "Edit"
 msgstr "Modifier"
 
@@ -79,8 +79,8 @@ msgid "Loading members…"
 msgstr ""
 
 #: src/modules/features/organization/presentation/ui/OrganizationList.tsx:104
-msgid "Members"
-msgstr ""
+#~ msgid "Members"
+#~ msgstr ""
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:70
 msgid "Members of {organizationName}"

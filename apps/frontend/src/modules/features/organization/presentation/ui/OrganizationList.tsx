@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/ContextItem.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
-import { Building2, Pencil, Trash, Users } from 'lucide-react';
+import { Building2, Pencil, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { IconButton } from '@shared/presentation/ui';
 import { EditOrganizationDialog } from '@/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx';
@@ -95,24 +95,6 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
               />
             </div>
             <div className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
-              <Can
-                permission={Permission.LIST_ORGANIZATION_MEMBERS}
-                target={{ organizationId: idValue(organisation.organizationId) }}
-              >
-                <IconButton
-                  icon={Users}
-                  tooltip={<Trans>Members</Trans>}
-                  onClick={e => {
-                    e.stopPropagation();
-                    setMembersOrg({
-                      id: idValue(organisation.organizationId),
-                      name: organisation.name,
-                    });
-                  }}
-                  className='h-7 w-7'
-                  iconClassName='h-3.5 w-3.5'
-                />
-              </Can>
               <Can
                 permission={Permission.UPDATE_ORGANIZATION}
                 target={{ organizationId: idValue(organisation.organizationId) }}

@@ -28,6 +28,8 @@ export interface PermissionDefinition {
   scope: PermissionScope;
   /** Permissions requises pour que celle-ci ait du sens */
   dependsOn?: Permission[];
+
+  hidden?: boolean; // temprorary for basic v1 permissions (only for users and not apps)
 }
 
 export const PERMISSION_DEFINITIONS: Record<Permission, PermissionDefinition> = {
@@ -48,6 +50,11 @@ export const PERMISSION_DEFINITIONS: Record<Permission, PermissionDefinition> = 
     label: 'Supprimer un utilisateur',
     scope: PermissionScope.SYSTEM,
     dependsOn: [Permission.READ_USER],
+  },
+  [Permission.MANAGE_ROLES]: {
+    id: Permission.MANAGE_ROLES,
+    label: 'Gérer les rôles',
+    scope: PermissionScope.SYSTEM,
   },
 
   // --- ORGANIZATIONS ---
@@ -129,7 +136,49 @@ export const PERMISSION_DEFINITIONS: Record<Permission, PermissionDefinition> = 
     dependsOn: [Permission.READ_PIPELINE],
   },
 
-  // ... Compléter avec le reste si nécessaire
+  // --- JOBS --- //
+  [Permission.READ_JOB]: {
+    id: Permission.READ_JOB,
+    label: 'Voir le détail des jobs',
+    scope: PermissionScope.PROJECT,
+    dependsOn: [Permission.READ_PIPELINE],
+  },
+  [Permission.CREATE_JOB]: {
+    id: Permission.CREATE_JOB,
+    label: 'Créer un job',
+    scope: PermissionScope.PROJECT,
+    dependsOn: [Permission.READ_JOB],
+  },
+  [Permission.EXECUTE_JOB]: {
+    id: Permission.EXECUTE_JOB,
+    label: 'Lancer un job',
+    scope: PermissionScope.PROJECT,
+    dependsOn: [Permission.READ_JOB],
+  },
+  [Permission.DELETE_JOB]: {
+    id: Permission.DELETE_JOB,
+    label: 'Supprimer un job',
+    scope: PermissionScope.PROJECT,
+    dependsOn: [Permission.READ_JOB],
+  },
+  [Permission.WRITE_JOB_LOGS]: {
+    id: Permission.WRITE_JOB_LOGS,
+    label: "Ecrire les logs d'un job",
+    scope: PermissionScope.PROJECT,
+    hidden: true,
+  },
+  [Permission.APPEND_JOB_LOG]: {
+    id: Permission.APPEND_JOB_LOG,
+    label: "Concatener le log d'un job",
+    scope: PermissionScope.PROJECT,
+    hidden: true,
+  },
+  [Permission.WRITE_JOB_STATUS]: {
+    id: Permission.WRITE_JOB_STATUS,
+    label: "Ecrire le statut d'un job",
+    scope: PermissionScope.PROJECT,
+    hidden: true,
+  },
 } as Record<Permission, PermissionDefinition>;
 
 const SCOPE_HIERARCHY: Record<PermissionScope, PermissionScope[]> = {
@@ -160,5 +209,6 @@ export function getPermissionsForScope(scope: PermissionScope): Permission[] {
 
 export function getPermissionLabel(permission: Permission): string {
   const perm = PERMISSION_DEFINITIONS[permission];
+
   return perm ? perm.label : 'Unknown Permission';
 }

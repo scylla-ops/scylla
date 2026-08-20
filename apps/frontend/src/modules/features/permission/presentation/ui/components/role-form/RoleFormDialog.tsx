@@ -46,7 +46,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
   const [description, setDescription] = useState('');
   const [scope, setScope] = useState<PermissionScope>(PermissionScope.ORGANIZATION);
   const [accessKind, setAccessKind] = useState<AccessKind>('restricted');
-  const [permissions, setPermissions] = useState<Set<Permission>>(new Set());
+  const [permissions, setPermissions] = useState<Permission[]>([]);
 
   // Re-seed the form whenever the dialog opens for a different role (or for create).
   useEffect(() => {
@@ -56,26 +56,21 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
     setScope(role?.scope ?? PermissionScope.ORGANIZATION);
     if (role?.access.kind === 'fullControl') {
       setAccessKind('fullControl');
-      setPermissions(new Set());
+      setPermissions([]);
     } else if (role?.access.kind === 'restricted') {
       setAccessKind('restricted');
-      setPermissions(new Set(role.access.permissions));
+      setPermissions([...role.access.permissions]);
     } else {
       setAccessKind('restricted');
-      setPermissions(new Set());
+      setPermissions([]);
     }
   }, [open, role]);
 
-  const togglePermission = (permission: Permission) =>
-    setPermissions(prev => {
-      const next = new Set(prev);
-      if (next.has(permission)) next.delete(permission);
-      else next.add(permission);
-      return next;
-    });
+  const isValid =
+    name.trim().length > 0 && (accessKind === 'fullControl' || permissions.length > 0);
 
-  const isValid = name.trim().length > 0 && (accessKind === 'fullControl' || permissions.size > 0);
-  const isPending = createRole.isPending || updateRole.isPending;
+  const isPending =
+    createRole.isPending || updateRole.isPending || createRole.isSuccess || updateRole.isSuccess; // isSucess because there is a little time before it close the dialog
 
   const buildAccess = (): AccessSpec =>
     accessKind === 'fullControl'
@@ -87,12 +82,26 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
     if (isEdit) {
       updateRole.mutate(
         { id: role.id, name: name.trim(), description: description.trim(), access: buildAccess() },
-        { onSuccess: onClose },
+        {
+          onSuccess: () => {
+            onClose();
+            setTimeout(() => {
+              updateRole.reset();
+            }, 300);
+          },
+        },
       );
     } else {
       createRole.mutate(
         { name: name.trim(), description: description.trim(), scope, access: buildAccess() },
-        { onSuccess: onClose },
+        {
+          onSuccess: () => {
+            onClose();
+            setTimeout(() => {
+              updateRole.reset();
+            }, 300);
+          },
+        },
       );
     }
   };
@@ -142,7 +151,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
                 setScope(next);
                 // Drop any selected permissions that aren't coherent at the new scope.
                 const allowed = new Set(getPermissionsForScope(next) ?? []);
-                setPermissions(prev => new Set([...prev].filter(p => allowed.has(p))));
+                setPermissions(prev => [...prev].filter(p => allowed.has(p)));
               }}
             >
               <SelectTrigger id='role-scope' className='w-full'>
@@ -191,7 +200,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
               scope={scope}
               permissions={permissions}
               isPending={isPending}
-              togglePermission={togglePermission}
+              onPermissionsChange={setPermissions}
             />
           )}
         </div>
