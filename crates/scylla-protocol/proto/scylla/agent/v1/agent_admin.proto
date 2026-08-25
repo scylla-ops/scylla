@@ -34,18 +34,15 @@ message Agent {
   google.protobuf.Timestamp last_seen = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
-  // Jobs dispatched to this agent that have not yet reported a terminal status
-  // — its current load. Live from the agent registry like `connected`, so it is
-  // 0 for a disconnected agent rather than a stale count.
+  // Current load. Live from the agent registry like `connected`, so a
+  // disconnected agent is 0 rather than a stale count.
   int32 in_flight = 9;
-  // What the agent said about itself on its last connect (see AgentHello in
-  // agent_stream.proto). Absent until an agent that speaks it has connected
-  // once; it then survives disconnects, describing where the agent last ran.
+  // Last reported machine; unset until an agent has sent an AgentHello. Kept
+  // across disconnects.
   AgentHost host = 10;
 }
 
-// The machine an agent last reported running on. Stored verbatim from the
-// agent's hello — the control plane never derives or validates it.
+// The machine an agent last reported running on (see AgentHello).
 message AgentHost {
   string version = 1;
   string os = 2;
@@ -53,12 +50,11 @@ message AgentHost {
   string hostname = 4;
   int32 cpu_count = 5;
   int64 total_memory_mb = 6;
-  // When the agent last introduced itself.
   google.protobuf.Timestamp reported_at = 7;
 }
 
-// Aggregate run stats for an agent, derived from the jobs it executed. The
-// status counters partition `total` exactly — every job status has a bucket.
+// Aggregate run stats for an agent, derived from the jobs it executed. Every
+// job status has a bucket, so the counters sum back to `total`.
 message AgentStats {
   int64 total = 1;
   int64 pending = 2;
@@ -70,12 +66,9 @@ message AgentStats {
   // Finished jobs per day over the last 30 days, oldest first. Days with no
   // finished job are absent — consumers zero-fill the gaps.
   repeated DailyOutcome daily = 8;
-  // Jobs left in limbo by an agent that vanished mid-run (the reaper stamps
-  // them). Part of `total` like every other status.
   int64 orphaned = 9;
-  // Wall-clock run duration over jobs that actually started and finished, all
-  // time. Unset when the agent has no such job yet — a 0 would read as
-  // "instant" rather than "unknown".
+  // Over jobs that started and finished. Unset means no job has run yet, as
+  // opposed to a 0 ms run.
   optional int64 median_duration_ms = 10;
   optional int64 p95_duration_ms = 11;
 }
@@ -86,11 +79,8 @@ message DailyOutcome {
   int64 completed = 2;
   int64 failed = 3;
   int64 cancelled = 4;
-  // Median run duration that day, over the jobs that started and finished.
-  // Unset when no job that day has both timestamps.
+  // Unset when no job that day started and finished.
   optional int64 median_duration_ms = 5;
-  // Orphaned that day. Carried here too, not just in the aggregate, so a
-  // consumer's per-day totals reconcile with `AgentStats`.
   int64 orphaned = 6;
 }
 

@@ -161,9 +161,6 @@ async fn read_reports<J, L, PS>(
                     }
                 }
             }
-            // The agent introducing itself. Introspection only — nothing
-            // downstream reads it, so a failed write is logged and swallowed
-            // exactly like `touch_last_seen`.
             Some(agent_up::Payload::Hello(hello)) => {
                 let host = hello_to_domain(&hello);
                 if let Err(e) = agent_repo.record_host(&app_id, &host).await {
@@ -213,10 +210,6 @@ impl<S: Stream + Unpin> Stream for GuardedStream<S> {
     }
 }
 
-/// Map the agent's self-description onto the domain. Stored verbatim — the
-/// control plane makes no decision on it, so there is nothing to validate. A
-/// `0` from the wire means "the agent could not read it", which is `None` here
-/// rather than a machine with no CPU or no memory.
 fn hello_to_domain(hello: &scylla_protocol::agent::v1::AgentHello) -> AgentHost {
     AgentHost {
         version: hello.version.clone(),

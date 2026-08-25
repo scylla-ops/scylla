@@ -234,10 +234,6 @@ impl Agent {
     }
 }
 
-/// Introduce this machine to the control plane. Best-effort by design: the
-/// hello is introspection, so a full channel or a stream that died between
-/// connect and now must not stop the agent from taking jobs — the control plane
-/// simply keeps whatever host it recorded last.
 async fn send_hello(up_tx: &mpsc::Sender<AgentUp>) {
     let hello = crate::host::hello();
     info!(

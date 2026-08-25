@@ -131,13 +131,7 @@ pub struct AgentView {
     pub app: App,
     pub connected: bool,
     pub last_seen: Option<DateTime<Utc>>,
-    /// Jobs handed to this agent that have not reported a terminal status yet.
-    /// Read live from the registry, so a disconnected agent reports 0 — the
-    /// same source least-loaded dispatch selects on.
     pub in_flight: usize,
-    /// Machine the agent last reported. `None` until one has connected and said
-    /// hello; kept after disconnect, since "where did it last run" is the
-    /// question you ask about an agent that just went away.
     pub host: Option<AgentHost>,
 }
 

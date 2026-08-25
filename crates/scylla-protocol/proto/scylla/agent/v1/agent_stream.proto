@@ -34,22 +34,15 @@ message AgentUp {
   }
 }
 
-// Self-description an agent sends once, right after opening the stream, so the
-// dashboard can answer "what is this machine and what is it running". Purely
-// informational: the control plane stores it and never schedules on it.
-//
-// Optional in practice — an older agent that never sends one keeps working, and
-// its fields simply stay empty. Presence is still the open stream, not this.
+// Self-description an agent sends once after opening the stream. Informational
+// only; the control plane stores it and never schedules on it. Optional — an
+// older agent that never sends one keeps working, presence is the open stream.
 message AgentHello {
-  // Agent binary version (its crate version).
   string version = 1;
-  // Build target of the running binary, e.g. "linux" / "aarch64".
   string os = 2;
   string arch = 3;
-  // Machine hostname, best-effort — empty when the OS won't tell us.
   string hostname = 4;
-  // Logical CPUs and total physical memory visible to the agent. `0` means
-  // unknown rather than "a machine with no CPU".
+  // `0` means unknown, not "a machine with no CPU".
   int32 cpu_count = 5;
   int64 total_memory_mb = 6;
 }

@@ -136,8 +136,6 @@ async fn record_host_upserts_and_fully_overwrites(pool: PgPool) {
     let app_repo = PgAppRepository::new(pool.clone());
     let agent_repo = PgAgentRepository::new(pool.clone());
 
-    // No agents row yet: recording a host must self-heal one, same as
-    // `touch_last_seen`, so a hello can never be lost to a missing row.
     let app = App::create(org.id().clone(), AppName::new("legacy").unwrap());
     app_repo
         .create_app(&app, &default_credential(&app))
@@ -160,9 +158,6 @@ async fn record_host_upserts_and_fully_overwrites(pool: PgPool) {
         Some(&first)
     );
 
-    // The agent moved to a machine whose probes came back empty. Every column
-    // has to follow, or the UI would show the new hostname beside the old
-    // machine's CPU and RAM.
     let moved = AgentHost {
         version: "0.5.0".into(),
         os: "linux".into(),
@@ -190,8 +185,6 @@ async fn agent_that_never_said_hello_has_no_host(pool: PgPool) {
         .await
         .unwrap();
 
-    // An older agent binary connects and reports jobs but never a hello: it is
-    // fully functional, it just has nothing to say about its machine.
     agent_repo
         .touch_last_seen(app.id(), clock::now())
         .await
@@ -272,9 +265,6 @@ async fn agent_stats_partition_total_and_summarize_durations(pool: PgPool) {
         .unwrap();
 
     let now = clock::now();
-    // `ran_for` is the wall-clock duration the job took; `None` means it never
-    // started (cancelled/skipped while queued) and must stay out of the
-    // percentiles instead of counting as a 0 ms run.
     let mk = |status: JobStatus, ran_for: Option<i64>| {
         let (started_at, finished_at) = match (status, ran_for) {
             (JobStatus::Pending, _) => (None, None),
@@ -299,8 +289,6 @@ async fn agent_stats_partition_total_and_summarize_durations(pool: PgPool) {
         )
     };
 
-    // Durations 1s/2s/3s/4s across four different terminal statuses — a failed
-    // or orphaned run took time too, so it belongs in the percentiles.
     for (status, ran_for) in [
         (JobStatus::Completed, Some(1000)),
         (JobStatus::Completed, Some(3000)),
@@ -314,8 +302,6 @@ async fn agent_stats_partition_total_and_summarize_durations(pool: PgPool) {
 
     let stats = agent_repo.agent_stats(app.id()).await.unwrap();
 
-    // The counters partition `total` — this is what the missing `orphaned`
-    // bucket used to break.
     assert_eq!(stats.total, 6);
     assert_eq!(
         stats.pending
@@ -330,14 +316,11 @@ async fn agent_stats_partition_total_and_summarize_durations(pool: PgPool) {
     assert_eq!(stats.orphaned, 1);
     assert_eq!(stats.cancelled, 1);
 
-    // percentile_cont interpolates over [1000, 2000, 3000, 4000]: the median
-    // falls between the two middle samples, p95 between the top two. The
-    // never-started cancelled job is absent — with it counted as 0 the median
-    // would drop to 1500.
+    // percentile_cont interpolates over [1000, 2000, 3000, 4000]; the
+    // never-started cancelled job is excluded.
     assert_eq!(stats.median_duration_ms, Some(2500));
     assert_eq!(stats.p95_duration_ms, Some(3850));
 
-    // Same jobs, same day, so the daily bucket agrees with the aggregate.
     assert_eq!(stats.daily.len(), 1);
     assert_eq!(stats.daily[0].median_duration_ms, Some(2500));
     assert_eq!(stats.daily[0].orphaned, 1, "daily carries orphaned too");
@@ -364,8 +347,6 @@ async fn agent_stats_report_no_duration_when_nothing_ran(pool: PgPool) {
     job.assign_agent(app.id().clone());
     job_repo.create(&job).await.unwrap();
 
-    // A queued job has no duration yet: `None`, not `Some(0)` — the UI has to
-    // be able to tell "never ran" from "ran instantly".
     let stats = agent_repo.agent_stats(app.id()).await.unwrap();
     assert_eq!(stats.total, 1);
     assert_eq!(stats.pending, 1);

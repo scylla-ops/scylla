@@ -27,7 +27,6 @@ export class GrpcAgentMapper {
     };
   }
 
-  /** A `0` probe on the wire means the agent could not read it. */
   private static hostToDomain(h: ProtoAgentHost): AgentHost {
     return {
       version: h.version,
@@ -64,10 +63,6 @@ export class GrpcAgentMapper {
   }
 }
 
-/**
- * An absent proto int64 means "unknown", which has to survive as `null` —
- * `Number(undefined)` would yield NaN and a plain `?? 0` would claim the job
- * ran instantly.
- */
+/** Absent on the wire means unknown, which must stay `null` and not become 0. */
 const optionalCount = (v: bigint | undefined): number | null =>
   v === undefined ? null : Number(v);

@@ -658,8 +658,6 @@ mod tests {
                     logs.push_str(&l.line);
                     logs.push('\n');
                 }
-                // The executor never emits a hello — that is the connection's
-                // job, and these tests drive the executor directly.
                 Some(agent_up::Payload::Hello(_)) | None => {}
             }
         }

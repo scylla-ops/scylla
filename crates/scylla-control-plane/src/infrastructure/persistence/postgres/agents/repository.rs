@@ -9,9 +9,8 @@ use tracing::instrument;
 
 use super::super::error::SqlxResultExt;
 
-/// Rebuild the reported host from its columns. `host_reported_at` is the marker
-/// that an agent ever introduced itself: without it the other columns are
-/// leftovers at best, so the whole block reads as absent.
+/// `None` unless `host_reported_at` is set: that column is the marker that an
+/// agent ever introduced itself.
 fn host_from_columns(
     reported_at: Option<DateTime<Utc>>,
     version: Option<String>,
@@ -158,9 +157,6 @@ impl AgentRepository for PgAgentRepository {
 
     #[instrument(skip_all, fields(app_id = %app_id, hostname = %host.hostname))]
     async fn record_host(&self, app_id: &AppId, host: &AgentHost) -> DomainResult<()> {
-        // Same self-healing upsert as `touch_last_seen`, and a full overwrite:
-        // an agent that moved machines must not leave half of the old host
-        // description behind.
         sqlx::query!(
             r#"
             INSERT INTO agents (app_id, created_at, agent_version, host_os, host_arch,
@@ -192,12 +188,6 @@ impl AgentRepository for PgAgentRepository {
 
     #[instrument(skip_all, fields(app_id = %app_id))]
     async fn agent_stats(&self, app_id: &AppId) -> DomainResult<AgentStats> {
-        // Every job status gets a bucket so the counters sum back to `total` —
-        // an agent that dies mid-run turns its jobs `orphaned`, and leaving that
-        // out silently broke the arithmetic. Durations cover any job that both
-        // started and finished (a failed run took time too); jobs skipped or
-        // cancelled before starting have no `started_at` and are filtered out
-        // rather than counted as instant.
         let rec = sqlx::query!(
             r#"
             SELECT

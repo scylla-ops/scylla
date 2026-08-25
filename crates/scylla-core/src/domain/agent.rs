@@ -2,11 +2,7 @@ use crate::domain::clock;
 use crate::domain::ids::AppId;
 use chrono::{DateTime, Utc};
 
-/// What an agent reported about the machine it runs on, captured when it opens
-/// its stream. Descriptive only — the control plane stores it verbatim and
-/// never schedules or authorizes on it, so there is nothing here to validate.
-/// `cpu_count` / `total_memory_mb` are `None` when the agent could not read
-/// them, which is distinct from a machine reporting zero.
+/// What an agent reported about the machine it runs on, stored verbatim.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AgentHost {
     pub version: String,
@@ -23,10 +19,6 @@ pub struct AgentHost {
 /// agent" and carries agent-only attributes. `last_seen` is the durable
 /// last-activity timestamp (survives a control-plane restart); live
 /// online/offline presence is read from the in-memory agent registry, not here.
-///
-/// `host` is the last self-description the agent sent. It outlives the
-/// connection on purpose: after a disconnect it still says where the agent last
-/// ran, which is exactly what you want when diagnosing why it went away.
 ///
 /// [`App`]: crate::domain::app::App
 #[derive(Debug, Clone)]
@@ -53,8 +45,7 @@ impl Agent {
         }
     }
 
-    /// A freshly registered agent has never been seen connected yet, so it has
-    /// not described itself either.
+    /// A freshly registered agent has never been seen connected yet.
     #[must_use]
     pub fn create(app_id: AppId) -> Self {
         Self {

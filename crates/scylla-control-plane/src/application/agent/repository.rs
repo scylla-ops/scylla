@@ -5,9 +5,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
 /// Aggregate run statistics for a single agent, derived from the `jobs` it
-/// executed (counted by status). Not stored — computed on read. The status
-/// counters partition `total`: every `JobStatus` variant has a bucket, so a
-/// consumer summing them gets `total` back.
+/// executed (counted by status). Computed on read.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AgentStats {
     pub total: i64,
@@ -16,14 +14,11 @@ pub struct AgentStats {
     pub completed: i64,
     pub failed: i64,
     pub cancelled: i64,
-    /// Jobs the reaper stamped after their agent vanished mid-run.
     pub orphaned: i64,
     pub last_run_at: Option<DateTime<Utc>>,
     /// Finished jobs per day over the last 30 days, oldest first. Days with
     /// no finished job are absent — consumers zero-fill the gaps.
     pub daily: Vec<DailyOutcome>,
-    /// Wall-clock run duration over all jobs that both started and finished.
-    /// `None` when the agent has none yet — distinct from a 0 ms run.
     pub median_duration_ms: Option<i64>,
     pub p95_duration_ms: Option<i64>,
 }
@@ -36,8 +31,6 @@ pub struct DailyOutcome {
     pub failed: i64,
     pub cancelled: i64,
     pub orphaned: i64,
-    /// Median run duration that day; `None` if no job that day has both
-    /// timestamps (e.g. every one was skipped or cancelled before starting).
     pub median_duration_ms: Option<i64>,
 }
 
@@ -51,9 +44,8 @@ pub trait AgentRepository: Send + Sync {
     /// Best-effort upsert of the durable last-activity timestamp. Self-heals a
     /// missing row so presence never depends on the introspection table.
     async fn touch_last_seen(&self, app_id: &AppId, at: DateTime<Utc>) -> DomainResult<()>;
-    /// Record what the agent said about its machine on connect, replacing any
-    /// previous report. Self-heals a missing row for the same reason
-    /// `touch_last_seen` does.
+    /// Best-effort upsert of the last reported host. Self-heals a missing row
+    /// like `touch_last_seen`.
     async fn record_host(&self, app_id: &AppId, host: &AgentHost) -> DomainResult<()>;
     async fn agent_stats(&self, app_id: &AppId) -> DomainResult<AgentStats>;
 }

@@ -58,7 +58,6 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        // A freshly created agent has not connected yet, so it holds no jobs.
         let agent = ProtoAgent {
             agent_id: wrap(created.app.id().to_string()),
             organization_id: wrap(created.app.organization_id().to_string()),
@@ -152,15 +151,11 @@ fn agent_view_to_proto(view: &AgentView) -> ProtoAgent {
         updated_at: ts(view.app.updated_at()),
         connected: view.connected,
         last_seen: view.last_seen.and_then(ts),
-        // Bounded by the registry's dispatch queue, so it always fits — a
-        // saturating cast keeps an absurd count from wrapping negative.
         in_flight: i32::try_from(view.in_flight).unwrap_or(i32::MAX),
         host: view.host.as_ref().map(host_to_proto),
     }
 }
 
-/// Back to the wire, mirroring `hello_to_domain`: an unknown probe becomes `0`,
-/// the value the proto documents as "the agent could not read it".
 fn host_to_proto(h: &AgentHost) -> ProtoAgentHost {
     ProtoAgentHost {
         version: h.version.clone(),
