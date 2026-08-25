@@ -3,7 +3,7 @@ use crate::application::authz::grant::{
     Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
 };
 use crate::application::{AgentRepository, AppRepository, JobRepository};
-use crate::domain::agent::Agent;
+use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
 use crate::domain::clock;
@@ -131,6 +131,71 @@ async fn touch_last_seen_upserts_and_self_heals(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
+async fn record_host_upserts_and_fully_overwrites(pool: PgPool) {
+    let org = seed_org(&pool, "Acme").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+
+    let app = App::create(org.id().clone(), AppName::new("legacy").unwrap());
+    app_repo
+        .create_app(&app, &default_credential(&app))
+        .await
+        .unwrap();
+    assert!(agent_repo.find_by_app_id(app.id()).await.is_err());
+
+    let first = AgentHost {
+        version: "0.4.0".into(),
+        os: "linux".into(),
+        arch: "x86_64".into(),
+        hostname: "builder-01".into(),
+        cpu_count: Some(8),
+        total_memory_mb: Some(16_384),
+        reported_at: clock::now(),
+    };
+    agent_repo.record_host(app.id(), &first).await.unwrap();
+    assert_eq!(
+        agent_repo.find_by_app_id(app.id()).await.unwrap().host(),
+        Some(&first)
+    );
+
+    let moved = AgentHost {
+        version: "0.5.0".into(),
+        os: "linux".into(),
+        arch: "aarch64".into(),
+        hostname: "builder-02".into(),
+        cpu_count: None,
+        total_memory_mb: None,
+        reported_at: clock::now(),
+    };
+    agent_repo.record_host(app.id(), &moved).await.unwrap();
+    assert_eq!(
+        agent_repo.find_by_app_id(app.id()).await.unwrap().host(),
+        Some(&moved)
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn agent_that_never_said_hello_has_no_host(pool: PgPool) {
+    let org = seed_org(&pool, "Acme").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+    let (app, credential, agent, grant) = make_agent(org.id(), "silent");
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
+
+    agent_repo
+        .touch_last_seen(app.id(), clock::now())
+        .await
+        .unwrap();
+
+    let found = agent_repo.find_by_app_id(app.id()).await.unwrap();
+    assert!(found.last_seen().is_some(), "presence still tracked");
+    assert!(found.host().is_none(), "no host without a hello");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
 async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
     let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "stats").await;
     let app_repo = PgAppRepository::new(pool.clone());
@@ -185,6 +250,108 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
     assert_eq!(stats.failed, 1);
     assert_eq!(stats.running, 1);
     assert!(stats.last_run_at.is_some());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn agent_stats_partition_total_and_summarize_durations(pool: PgPool) {
+    let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "durations").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+    let job_repo = PgJobRepository::new(pool.clone());
+    let (app, credential, agent, grant) = make_agent(org.id(), "runner");
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
+
+    let now = clock::now();
+    let mk = |status: JobStatus, ran_for: Option<i64>| {
+        let (started_at, finished_at) = match (status, ran_for) {
+            (JobStatus::Pending, _) => (None, None),
+            (JobStatus::Running, _) => (Some(now), None),
+            (_, Some(ms)) => (Some(now - chrono::Duration::milliseconds(ms)), Some(now)),
+            (_, None) => (None, Some(now)),
+        };
+        let state =
+            crate::domain::job::JobState::from_columns(status, started_at, finished_at).unwrap();
+        Job::from_persistence(
+            JobId::generate(),
+            pipeline.id().clone(),
+            state,
+            Some(app.id().clone()),
+            vec![],
+            vec![],
+            crate::domain::job::JobOrigin::App {
+                app_id: app.id().clone(),
+            },
+            now,
+            now,
+        )
+    };
+
+    for (status, ran_for) in [
+        (JobStatus::Completed, Some(1000)),
+        (JobStatus::Completed, Some(3000)),
+        (JobStatus::Failed, Some(2000)),
+        (JobStatus::Orphaned, Some(4000)),
+        (JobStatus::Cancelled, None),
+        (JobStatus::Pending, None),
+    ] {
+        job_repo.create(&mk(status, ran_for)).await.unwrap();
+    }
+
+    let stats = agent_repo.agent_stats(app.id()).await.unwrap();
+
+    assert_eq!(stats.total, 6);
+    assert_eq!(
+        stats.pending
+            + stats.running
+            + stats.completed
+            + stats.failed
+            + stats.cancelled
+            + stats.orphaned,
+        stats.total,
+        "status buckets must sum back to total"
+    );
+    assert_eq!(stats.orphaned, 1);
+    assert_eq!(stats.cancelled, 1);
+
+    // percentile_cont interpolates over [1000, 2000, 3000, 4000]; the
+    // never-started cancelled job is excluded.
+    assert_eq!(stats.median_duration_ms, Some(2500));
+    assert_eq!(stats.p95_duration_ms, Some(3850));
+
+    assert_eq!(stats.daily.len(), 1);
+    assert_eq!(stats.daily[0].median_duration_ms, Some(2500));
+    assert_eq!(stats.daily[0].orphaned, 1, "daily carries orphaned too");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn agent_stats_report_no_duration_when_nothing_ran(pool: PgPool) {
+    let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "nodur").await;
+    let app_repo = PgAppRepository::new(pool.clone());
+    let agent_repo = PgAgentRepository::new(pool.clone());
+    let job_repo = PgJobRepository::new(pool.clone());
+    let (app, credential, agent, grant) = make_agent(org.id(), "runner");
+    app_repo
+        .provision_agent(&app, &credential, &agent, &grant)
+        .await
+        .unwrap();
+
+    let mut job = Job::create_from_pipeline(
+        &pipeline,
+        crate::domain::job::JobOrigin::App {
+            app_id: app.id().clone(),
+        },
+    );
+    job.assign_agent(app.id().clone());
+    job_repo.create(&job).await.unwrap();
+
+    let stats = agent_repo.agent_stats(app.id()).await.unwrap();
+    assert_eq!(stats.total, 1);
+    assert_eq!(stats.pending, 1);
+    assert_eq!(stats.median_duration_ms, None);
+    assert_eq!(stats.p95_duration_ms, None);
 }
 
 #[sqlx::test(migrations = "../../migrations")]

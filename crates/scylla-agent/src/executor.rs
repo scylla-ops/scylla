@@ -658,7 +658,7 @@ mod tests {
                     logs.push_str(&l.line);
                     logs.push('\n');
                 }
-                None => {}
+                Some(agent_up::Payload::Hello(_)) | None => {}
             }
         }
         (statuses, logs)

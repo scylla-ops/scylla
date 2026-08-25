@@ -34,9 +34,27 @@ message Agent {
   google.protobuf.Timestamp last_seen = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
+  // Current load. Live from the agent registry like `connected`, so a
+  // disconnected agent is 0 rather than a stale count.
+  int32 in_flight = 9;
+  // Last reported machine; unset until an agent has sent an AgentHello. Kept
+  // across disconnects.
+  AgentHost host = 10;
 }
 
-// Aggregate run stats for an agent, derived from the jobs it executed.
+// The machine an agent last reported running on (see AgentHello).
+message AgentHost {
+  string version = 1;
+  string os = 2;
+  string arch = 3;
+  string hostname = 4;
+  int32 cpu_count = 5;
+  int64 total_memory_mb = 6;
+  google.protobuf.Timestamp reported_at = 7;
+}
+
+// Aggregate run stats for an agent, derived from the jobs it executed. Every
+// job status has a bucket, so the counters sum back to `total`.
 message AgentStats {
   int64 total = 1;
   int64 pending = 2;
@@ -48,6 +66,11 @@ message AgentStats {
   // Finished jobs per day over the last 30 days, oldest first. Days with no
   // finished job are absent — consumers zero-fill the gaps.
   repeated DailyOutcome daily = 8;
+  int64 orphaned = 9;
+  // Over jobs that started and finished. Unset means no job has run yet, as
+  // opposed to a 0 ms run.
+  optional int64 median_duration_ms = 10;
+  optional int64 p95_duration_ms = 11;
 }
 
 // One day of finished-job outcomes for an agent.
@@ -56,6 +79,9 @@ message DailyOutcome {
   int64 completed = 2;
   int64 failed = 3;
   int64 cancelled = 4;
+  // Unset when no job that day started and finished.
+  optional int64 median_duration_ms = 5;
+  int64 orphaned = 6;
 }
 
 message CreateAgentRequest {

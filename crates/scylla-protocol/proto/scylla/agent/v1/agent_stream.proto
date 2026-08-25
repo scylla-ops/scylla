@@ -30,7 +30,21 @@ message AgentUp {
   oneof payload {
     JobStatus status = 1;
     JobLogLine log = 2;
+    AgentHello hello = 3;
   }
+}
+
+// Self-description an agent sends once after opening the stream. Informational
+// only; the control plane stores it and never schedules on it. Optional — an
+// older agent that never sends one keeps working, presence is the open stream.
+message AgentHello {
+  string version = 1;
+  string os = 2;
+  string arch = 3;
+  string hostname = 4;
+  // `0` means unknown, not "a machine with no CPU".
+  int32 cpu_count = 5;
+  int64 total_memory_mb = 6;
 }
 
 // A job handed to the agent for execution, with every node fully resolved.

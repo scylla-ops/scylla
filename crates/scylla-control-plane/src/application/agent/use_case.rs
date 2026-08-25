@@ -7,7 +7,7 @@ use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal
 use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::service::PermissionService;
 use crate::application::caller::CallerContext;
-use crate::domain::agent::Agent;
+use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::errors::{DomainError, DomainResult};
@@ -131,6 +131,8 @@ pub struct AgentView {
     pub app: App,
     pub connected: bool,
     pub last_seen: Option<DateTime<Utc>>,
+    pub in_flight: usize,
+    pub host: Option<AgentHost>,
 }
 
 /// Org-scoped management + introspection of Agents (specialized apps that run
@@ -224,10 +226,13 @@ where
         for agent in &agents {
             let app = self.app_repo.find_by_id(agent.app_id()).await?;
             let is_connected = connected.contains(app.id().as_str());
+            let in_flight = self.registry.in_flight(agent.app_id());
             views.push(AgentView {
                 app,
                 connected: is_connected,
                 last_seen: agent.last_seen(),
+                in_flight,
+                host: agent.host().cloned(),
             });
         }
         Ok(views)
@@ -250,6 +255,8 @@ where
             app,
             connected,
             last_seen: agent.last_seen(),
+            in_flight: self.registry.in_flight(&app_id),
+            host: agent.host().cloned(),
         })
     }
 

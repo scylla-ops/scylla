@@ -6,13 +6,15 @@ use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
+use scylla_core::domain::agent::AgentHost;
 use scylla_core::domain::app::AppName;
 use scylla_core::domain::ids::{AppId, OrganizationId};
 use scylla_protocol::agent::v1::{
-    Agent as ProtoAgent, AgentStats as ProtoAgentStats, CreateAgentRequest, CreateAgentResponse,
-    DailyOutcome as ProtoDailyOutcome, DeleteAgentRequest, DeleteAgentResponse, GetAgentRequest,
-    GetAgentResponse, GetAgentStatsRequest, GetAgentStatsResponse, ListAgentsRequest,
-    ListAgentsResponse, agent_admin_service_server::AgentAdminService,
+    Agent as ProtoAgent, AgentHost as ProtoAgentHost, AgentStats as ProtoAgentStats,
+    CreateAgentRequest, CreateAgentResponse, DailyOutcome as ProtoDailyOutcome, DeleteAgentRequest,
+    DeleteAgentResponse, GetAgentRequest, GetAgentResponse, GetAgentStatsRequest,
+    GetAgentStatsResponse, ListAgentsRequest, ListAgentsResponse,
+    agent_admin_service_server::AgentAdminService,
 };
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
@@ -56,7 +58,6 @@ impl<
             .await
             .map_err(domain_error_to_status)?;
 
-        // A freshly created agent has not connected yet.
         let agent = ProtoAgent {
             agent_id: wrap(created.app.id().to_string()),
             organization_id: wrap(created.app.organization_id().to_string()),
@@ -66,6 +67,8 @@ impl<
             updated_at: ts(created.app.updated_at()),
             connected: false,
             last_seen: None,
+            in_flight: 0,
+            host: None,
         };
         Ok(Response::new(CreateAgentResponse {
             agent: Some(agent),
@@ -148,6 +151,20 @@ fn agent_view_to_proto(view: &AgentView) -> ProtoAgent {
         updated_at: ts(view.app.updated_at()),
         connected: view.connected,
         last_seen: view.last_seen.and_then(ts),
+        in_flight: i32::try_from(view.in_flight).unwrap_or(i32::MAX),
+        host: view.host.as_ref().map(host_to_proto),
+    }
+}
+
+fn host_to_proto(h: &AgentHost) -> ProtoAgentHost {
+    ProtoAgentHost {
+        version: h.version.clone(),
+        os: h.os.clone(),
+        arch: h.arch.clone(),
+        hostname: h.hostname.clone(),
+        cpu_count: h.cpu_count.unwrap_or(0),
+        total_memory_mb: h.total_memory_mb.unwrap_or(0),
+        reported_at: ts(h.reported_at),
     }
 }
 
@@ -159,7 +176,10 @@ fn stats_to_proto(s: &AgentStats) -> ProtoAgentStats {
         completed: s.completed,
         failed: s.failed,
         cancelled: s.cancelled,
+        orphaned: s.orphaned,
         last_run_at: s.last_run_at.and_then(ts),
+        median_duration_ms: s.median_duration_ms,
+        p95_duration_ms: s.p95_duration_ms,
         daily: s
             .daily
             .iter()
@@ -168,6 +188,8 @@ fn stats_to_proto(s: &AgentStats) -> ProtoAgentStats {
                 completed: d.completed,
                 failed: d.failed,
                 cancelled: d.cancelled,
+                orphaned: d.orphaned,
+                median_duration_ms: d.median_duration_ms,
             })
             .collect(),
     }
