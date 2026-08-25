@@ -92,15 +92,9 @@ export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
         {/* status row */}
         <div className='mt-3 flex items-center justify-between gap-2'>
           {agent.connected ? (
-            // An idle agent and a saturated one look identical without the
-            // count, which is the thing you scan this list for.
             <Badge className='gap-1 bg-success/15 text-success hover:bg-success/15'>
               <span className='h-1.5 w-1.5 rounded-full bg-success' />
-              {agent.inFlight > 0 ? (
-                <Trans>running {agent.inFlight}</Trans>
-              ) : (
-                <Trans>idle</Trans>
-              )}
+              <Trans>online</Trans>
             </Badge>
           ) : (
             <Badge variant='secondary' className='gap-1 text-destructive'>

@@ -2,14 +2,13 @@ import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Card, CardContent } from '@shadcn';
 import { cn } from '@shared/presentation/utils';
-import { formatDurationMs } from '@shared/utils/date-utils.ts';
 import type { DailyOutcome } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 
 interface OutcomesChartProps {
   /** Per-day finished-job outcomes from the stats endpoint (gap days absent). */
   daily: DailyOutcome[];
   /** All-time aggregates for the legend (from the stats endpoint). */
-  aggregate: { completed: number; failed: number; cancelled: number; orphaned: number };
+  aggregate: { completed: number; failed: number; cancelled: number };
 }
 
 type OutcomeRange = '7d' | '14d' | '30d';
@@ -21,8 +20,6 @@ interface Bucket {
   completed: number;
   failed: number;
   cancelled: number;
-  orphaned: number;
-  medianDurationMs: number | null;
 }
 
 /** Local calendar date (yyyy-mm-dd) of an ISO timestamp. */
@@ -47,8 +44,6 @@ const fillBuckets = (daily: DailyOutcome[], days: number): Bucket[] => {
       completed: hit?.completed ?? 0,
       failed: hit?.failed ?? 0,
       cancelled: hit?.cancelled ?? 0,
-      orphaned: hit?.orphaned ?? 0,
-      medianDurationMs: hit?.medianDurationMs ?? null,
     };
   });
 };
@@ -57,23 +52,15 @@ const SEGMENTS = [
   { key: 'completed', color: 'var(--success)' },
   { key: 'failed', color: 'var(--destructive)' },
   { key: 'cancelled', color: 'var(--warning)' },
-  { key: 'orphaned', color: 'var(--muted-foreground)' },
 ] as const;
-
-/**
- * Bar height, y-axis scale and window total all have to count the same thing —
- * derive them from one place so a new outcome can't be added to the stack while
- * silently missing from the scale.
- */
-const bucketTotal = (b: Bucket): number => SEGMENTS.reduce((n, seg) => n + b[seg.key], 0);
 
 export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
   const [range, setRange] = useState<OutcomeRange>('14d');
   const [hover, setHover] = useState<number | null>(null);
 
   const buckets = useMemo(() => fillBuckets(daily, RANGE_DAYS[range]), [daily, range]);
-  const windowTotal = buckets.reduce((n, b) => n + bucketTotal(b), 0);
-  const max = Math.max(1, ...buckets.map(bucketTotal));
+  const windowTotal = buckets.reduce((n, b) => n + b.completed + b.failed + b.cancelled, 0);
+  const max = Math.max(1, ...buckets.map(b => b.completed + b.failed + b.cancelled));
 
   const monthLabel = buckets.length
     ? new Date(buckets[0].day).toLocaleString('en-US', { month: 'short' })
@@ -133,7 +120,7 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
 
               <div className='flex h-full items-end gap-px'>
                 {buckets.map((b, i) => {
-                  const total = bucketTotal(b);
+                  const total = b.completed + b.failed + b.cancelled;
                   return (
                     <div
                       key={b.day}
@@ -141,7 +128,7 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
                       // resolves against this wrapper — without it every bar
                       // computes to 0 and the chart renders empty.
                       className='group relative flex h-full flex-1 flex-col justify-end'
-                      title={`${b.day}: ${b.completed} completed, ${b.failed} failed, ${b.cancelled} cancelled, ${b.orphaned} orphaned`}
+                      title={`${b.day}: ${b.completed} completed, ${b.failed} failed, ${b.cancelled} cancelled`}
                       onMouseEnter={() => setHover(i)}
                       onMouseLeave={() => setHover(h => (h === i ? null : h))}
                     >
@@ -188,17 +175,6 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
                               {b.cancelled}
                             </p>
                           )}
-                          {b.orphaned > 0 && (
-                            <p>
-                              <span style={{ color: 'var(--muted-foreground)' }}>●</span> orphaned{' '}
-                              {b.orphaned}
-                            </p>
-                          )}
-                          {b.medianDurationMs !== null && (
-                            <p className='mt-0.5 border-t border-background/20 pt-0.5'>
-                              <Trans>median</Trans> {formatDurationMs(b.medianDurationMs)}
-                            </p>
-                          )}
                         </div>
                       )}
                     </div>
@@ -243,21 +219,8 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
             <span className='h-2.5 w-2.5 rounded-sm' style={{ background: 'var(--warning)' }} />
             <span className='font-semibold'>{aggregate.cancelled}</span> <Trans>cancelled</Trans>
           </span>
-          {aggregate.orphaned > 0 && (
-            <span
-              className='flex items-center gap-1.5'
-              title='Jobs stranded when their agent disappeared mid-run.'
-            >
-              <span
-                className='h-2.5 w-2.5 rounded-sm'
-                style={{ background: 'var(--muted-foreground)' }}
-              />
-              <span className='font-semibold'>{aggregate.orphaned}</span> <Trans>orphaned</Trans>
-            </span>
-          )}
           <span className='ml-auto font-mono text-[11px] text-muted-foreground'>
-            {aggregate.completed + aggregate.failed + aggregate.cancelled + aggregate.orphaned}{' '}
-            <Trans>finished</Trans>
+            {aggregate.completed + aggregate.failed + aggregate.cancelled} <Trans>finished</Trans>
           </span>
         </div>
       </CardContent>
