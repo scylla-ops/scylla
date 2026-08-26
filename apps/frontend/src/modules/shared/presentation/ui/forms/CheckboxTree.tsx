@@ -125,11 +125,12 @@ const TreeNode = <T extends string | number>({
                   disabled={disabled || parentChecked === false}
                   onCheckedChange={val => onToggle(node.id, Boolean(val))}
                   checked={isChecked}
-                  id={node.id.toString()} // Correction : Conversion string requise pour le DOM HTML
+                  id={node.id.toString()}
                 />
                 <Label
-                  htmlFor={node.id.toString()} // Correction : Conversion string requise pour le DOM HTML
-                  className='cursor-pointer text-sm font-medium leading-none capitalize select-none'
+                  htmlFor={node.id.toString()}
+                  // No `capitalize`: labels arrive already cased by the caller.
+                  className='cursor-pointer text-sm font-medium leading-none select-none'
                 >
                   {node.label}
                 </Label>

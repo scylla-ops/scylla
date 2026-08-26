@@ -1,13 +1,15 @@
 import { Trans } from '@lingui/react/macro';
 import { Badge } from '@shadcn';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
-import { getPermissionLabel } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
+import { usePermissionLabels } from '@/modules/features/permission/presentation/hooks/use-permission-labels.ts';
 
 interface RoleDetailPermissionsProps {
   role: RoleEntity;
 }
 
 export const RoleDetailPermissions = ({ role }: RoleDetailPermissionsProps) => {
+  const { permissionLabel } = usePermissionLabels();
+
   return (
     <section className='flex flex-col gap-2'>
       <h3 className='text-xs font-semibold uppercase tracking-wider text-slate-500'>
@@ -25,8 +27,8 @@ export const RoleDetailPermissions = ({ role }: RoleDetailPermissionsProps) => {
         ) : (
           <div className='flex flex-wrap gap-1.5'>
             {role.access.permissions.map(permission => (
-              <Badge key={permission} variant='outline' className='capitalize font-normal'>
-                {getPermissionLabel(permission)}
+              <Badge key={permission} variant='outline' className='font-normal'>
+                {permissionLabel(permission)}
               </Badge>
             ))}
           </div>

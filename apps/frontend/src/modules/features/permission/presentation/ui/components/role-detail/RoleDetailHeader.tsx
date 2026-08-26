@@ -4,7 +4,7 @@ import { Badge } from '@shadcn';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import { PermissionButton } from '@/modules/features/permission/presentation/ui/authorization/PermissionButton.tsx';
-import { scopeName } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
+import { usePermissionLabels } from '@/modules/features/permission/presentation/hooks/use-permission-labels.ts';
 
 interface RoleDetailHeaderProps {
   role: RoleEntity;
@@ -23,6 +23,8 @@ const originLabel = (role: RoleEntity) => {
 };
 
 export const RoleDetailHeader = ({ role, onEdit }: RoleDetailHeaderProps) => {
+  const { scopeLabel } = usePermissionLabels();
+
   return (
     <section className={'flex flex-col gap-4'}>
       <div className='flex items-start justify-between gap-4'>
@@ -49,7 +51,7 @@ export const RoleDetailHeader = ({ role, onEdit }: RoleDetailHeaderProps) => {
         </PermissionButton>
       </div>
       <div className='flex flex-wrap gap-2'>
-        <Badge variant='secondary'>{scopeName(role.scope)}</Badge>
+        <Badge variant='secondary'>{scopeLabel(role.scope)}</Badge>
         <Badge variant='outline'>{originLabel(role)}</Badge>
         {role.access.kind === 'fullControl' && (
           <Badge>

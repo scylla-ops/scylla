@@ -6,8 +6,11 @@ import type {
 } from '@/generated/scylla/organization/v1/organization.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
+import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/organization-remote.data-source.ts';
 
-export default class GrpcOrganizationRemoteDataSource implements GrpcOrganizationRemoteDataSource {
+// `implements OrganizationRemoteDataSource` — it used to name itself, so a
+// missing method only surfaced later, at the DI wiring site.
+export default class GrpcOrganizationRemoteDataSource implements OrganizationRemoteDataSource {
   private readonly _organizationClient: OrganizationServiceClient;
 
   constructor(transport: CoreGrpcTransport) {

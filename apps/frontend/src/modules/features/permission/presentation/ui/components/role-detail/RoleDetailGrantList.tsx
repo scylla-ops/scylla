@@ -5,9 +5,11 @@ import { AppWindow, Building2, FolderGit2, Globe, User, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
 import {
+  Permission,
   PermissionScope,
   PrincipalKind,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import { useRoleAssignees } from '@/modules/features/permission/presentation/hooks/use-role-assignees.ts';
 import {
@@ -50,6 +52,8 @@ const ScopeTargetBadge = ({
 export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
   const { assignees, removeAssignee } = useRoleAssignees(role);
   const { labelFor } = useGrantTargetLabels(role.scope);
+  // Revoking is the mirror of granting: system-wide, administrators only.
+  const canRevoke = useCan(Permission.MANAGE_SYSTEM_GRANTS);
 
   return (
     <section className='flex flex-col gap-2 min-h-0'>
@@ -88,7 +92,14 @@ export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
                   </div>
                   <IconButton
                     icon={X}
-                    tooltip={<Trans>Remove</Trans>}
+                    tooltip={
+                      canRevoke ? (
+                        <Trans>Remove</Trans>
+                      ) : (
+                        <Trans>You don't have permission to revoke grants.</Trans>
+                      )
+                    }
+                    disabled={!canRevoke}
                     className='ml-auto hover:text-destructive'
                     onClick={() => removeAssignee(grant.id)}
                   />

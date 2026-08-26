@@ -8,7 +8,6 @@ import { Building2, Pencil, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { IconButton } from '@shared/presentation/ui';
 import { EditOrganizationDialog } from '@/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx';
-import { OrganizationMembersDialog } from '@/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx';
 import { useDeleteOrganization } from '@/modules/features/organization/presentation/hooks/use-delete-organization.ts';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { Trans } from '@lingui/react/macro';
@@ -31,7 +30,6 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
   const [editOrg, setEditOrg] = useState<{ id: string; name: string; description?: string } | null>(
     null,
   );
-  const [membersOrg, setMembersOrg] = useState<{ id: string; name: string } | null>(null);
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
 
   const onDeleteOrganization = useCallback(async () => {
@@ -141,17 +139,6 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
             if (!open) setEditOrg(null);
           }}
           organization={editOrg}
-        />
-      )}
-
-      {membersOrg && (
-        <OrganizationMembersDialog
-          open={!!membersOrg}
-          onOpenChange={open => {
-            if (!open) setMembersOrg(null);
-          }}
-          organizationId={membersOrg.id}
-          organizationName={membersOrg.name}
         />
       )}
 

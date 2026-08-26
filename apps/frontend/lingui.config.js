@@ -49,6 +49,10 @@ export default defineConfig({
       include: ['src/modules/features/triggers/'],
     },
     {
+      path: '<rootDir>/src/modules/features/permission/locales/{locale}/messages',
+      include: ['src/modules/features/permission/'],
+    },
+    {
       path: '<rootDir>/src/modules/core/locales/{locale}/messages',
       include: ['src/modules/core/'],
     },

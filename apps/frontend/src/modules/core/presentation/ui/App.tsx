@@ -21,6 +21,7 @@ import { messages as appsMessages } from '@/modules/features/apps/locales/en/mes
 import { messages as agentsMessages } from '@/modules/features/agents/locales/en/messages.ts';
 import { messages as secretMessages } from '@/modules/features/secret/locales/en/messages.ts';
 import { messages as triggersMessages } from '@/modules/features/triggers/locales/en/messages.ts';
+import { messages as permissionMessages } from '@/modules/features/permission/locales/en/messages.ts';
 import { messages as loginFrMessages } from '@/modules/features/login/locales/fr/messages.ts';
 import { messages as projectFrMessages } from '@/modules/features/project/locales/fr/messages.ts';
 import { messages as pipelineFrMessages } from '@/modules/features/pipeline/locales/fr/messages.ts';
@@ -34,6 +35,7 @@ import { messages as appsFrMessages } from '@/modules/features/apps/locales/fr/m
 import { messages as agentsFrMessages } from '@/modules/features/agents/locales/fr/messages.ts';
 import { messages as secretFrMessages } from '@/modules/features/secret/locales/fr/messages.ts';
 import { messages as triggersFrMessages } from '@/modules/features/triggers/locales/fr/messages.ts';
+import { messages as permissionFrMessages } from '@/modules/features/permission/locales/fr/messages.ts';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
@@ -54,6 +56,7 @@ i18n.load('en', {
   ...agentsMessages,
   ...secretMessages,
   ...triggersMessages,
+  ...permissionMessages,
 });
 i18n.load('fr', {
   ...loginFrMessages,
@@ -69,6 +72,7 @@ i18n.load('fr', {
   ...agentsFrMessages,
   ...secretFrMessages,
   ...triggersFrMessages,
+  ...permissionFrMessages,
 });
 initializeAppLocale();
 

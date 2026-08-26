@@ -49,6 +49,14 @@ export type AccessSpec =
  */
 export type AccessEntity = AccessSpec | { kind: 'unknown' };
 
+/**
+ * The wire permission vocabulary, mirroring the proto enum value for value.
+ * It is a *mapping*, not a product decision: the backend may send any of these
+ * in a role's permission set, so every proto value must be representable here.
+ *
+ * What a human can actually toggle in the role editor is a deliberately smaller
+ * subset — see `presentation/utils/permission-mapping.ts`.
+ */
 export enum Permission {
   UNSPECIFIED = 0,
   CREATE_USER = 1,
@@ -62,6 +70,8 @@ export enum Permission {
   DELETE_ORGANIZATION = 9,
   LIST_ORGANIZATIONS = 10,
   LIST_ORGANIZATION_MEMBERS = 11,
+  ADD_ORGANIZATION_MEMBER = 12,
+  REMOVE_ORGANIZATION_MEMBER = 13,
   MANAGE_INVITATIONS = 14,
   LIST_USER_ORGANIZATIONS = 15,
   CREATE_PROJECT = 16,

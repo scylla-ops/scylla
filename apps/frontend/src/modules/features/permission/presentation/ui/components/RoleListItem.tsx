@@ -4,13 +4,15 @@ import { ListCard } from '@shared/presentation/ui';
 import { Trans } from '@lingui/react/macro';
 import { ShieldCheck } from 'lucide-react';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
-import { scopeName } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
+import { usePermissionLabels } from '@/modules/features/permission/presentation/hooks/use-permission-labels.ts';
 
 interface RoleListItemProps {
   role: RoleEntity;
   memberCount: number;
   active: boolean;
   selected: boolean;
+  /** False for roles that can't be bulk-deleted (builtins, or without rights). */
+  selectable: boolean;
   onOpen: () => void;
   onToggleSelect: () => void;
 }
@@ -20,9 +22,12 @@ export const RoleListItem = ({
   memberCount,
   active,
   selected,
+  selectable,
   onOpen,
   onToggleSelect,
 }: RoleListItemProps) => {
+  const { scopeLabel } = usePermissionLabels();
+
   return (
     <ListCard
       onClick={onOpen}
@@ -38,7 +43,11 @@ export const RoleListItem = ({
           noSeparator: true,
           content: (
             <div className='flex items-center justify-center' onClick={e => e.stopPropagation()}>
-              <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
+              <Checkbox
+                checked={selected}
+                disabled={!selectable}
+                onCheckedChange={onToggleSelect}
+              />
             </div>
           ),
         },
@@ -64,7 +73,7 @@ export const RoleListItem = ({
           noSeparator: true,
           content: (
             <div className='flex items-center  gap-1.5'>
-              <Badge variant='secondary'>{scopeName(role.scope)}</Badge>
+              <Badge variant='secondary'>{scopeLabel(role.scope)}</Badge>
               <Badge variant='outline'>
                 <Trans>{memberCount} members</Trans>
               </Badge>

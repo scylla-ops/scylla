@@ -5,9 +5,6 @@ import GrpcOrganizationRemoteDataSource from '@/modules/features/organization/in
 import CreateOrganizationUseCase from '@/modules/features/organization/domain/usecases/create-organization.use-case.ts';
 import UpdateOrganizationUseCase from '@/modules/features/organization/domain/usecases/update-organization.use-case.ts';
 import DeleteOrganizationUseCase from '@/modules/features/organization/domain/usecases/delete-organization.use-case.ts';
-import ListOrganizationMembersUseCase from '@/modules/features/organization/domain/usecases/list-organization-members.use-case.ts';
-import AddOrganizationMemberUseCase from '@/modules/features/organization/domain/usecases/add-organization-member.use-case.ts';
-import RemoveOrganizationMemberUseCase from '@/modules/features/organization/domain/usecases/remove-organization-member.use-case.ts';
 import { CoreModule } from '@core/di/core.module.ts';
 
 const organizationRemoteDataSource = new GrpcOrganizationRemoteDataSource(
@@ -20,9 +17,6 @@ const getUserOrganizationsUseCase = new GetUserOrganizationsUseCase(organization
 const createOrganizationUseCase = new CreateOrganizationUseCase(organizationRepository);
 const updateOrganizationUseCase = new UpdateOrganizationUseCase(organizationRepository);
 const deleteOrganizationUseCase = new DeleteOrganizationUseCase(organizationRepository);
-const listOrganizationMembersUseCase = new ListOrganizationMembersUseCase(organizationRepository);
-const addOrganizationMemberUseCase = new AddOrganizationMemberUseCase(organizationRepository);
-const removeOrganizationMemberUseCase = new RemoveOrganizationMemberUseCase(organizationRepository);
 
 export const OrganizationModule = {
   domain: {
@@ -31,8 +25,5 @@ export const OrganizationModule = {
     createOrganization: createOrganizationUseCase,
     updateOrganization: updateOrganizationUseCase,
     deleteOrganization: deleteOrganizationUseCase,
-    listOrganizationMembers: listOrganizationMembersUseCase,
-    addOrganizationMember: addOrganizationMemberUseCase,
-    removeOrganizationMember: removeOrganizationMemberUseCase,
   },
 };

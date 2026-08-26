@@ -23,9 +23,16 @@ export const RolesPage = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleEntity | null>(null);
 
+  // Builtin roles are compiled into the backend and can't be deleted, so they
+  // stay out of the selection entirely rather than failing on submit.
+  const deletableRoleIds = useMemo(
+    () => roles.filter(role => role.origin.kind === 'custom').map(role => role.id),
+    [roles],
+  );
+
   const { isSelected, select, headerProps } = useFeatureSelection(
     'roles',
-    useMemo(() => roles.map(role => role.id), [roles]),
+    deletableRoleIds,
     canManageRoles ? { deleteItem: (id: string) => deleteRole.mutateAsync(id) } : {},
   );
 
@@ -73,6 +80,7 @@ export const RolesPage = () => {
                 memberCount={memberCounts.get(role.id) ?? 0}
                 active={role.id === activeRoleId}
                 selected={isSelected(role.id)}
+                selectable={canManageRoles && role.origin.kind === 'custom'}
                 onOpen={() => setActiveRoleId(role.id)}
                 onToggleSelect={() => {
                   select(role.id);

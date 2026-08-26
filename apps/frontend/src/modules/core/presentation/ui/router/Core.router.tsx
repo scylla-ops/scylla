@@ -52,7 +52,14 @@ export const CoreRouter = createBrowserRouter([
                 children: [
                   {
                     index: true,
-                    element: <ProjectPage />,
+                    element: (
+                      // Reading the organization is the real gate: the backend
+                      // then returns every project (with LIST_PROJECTS_BY_ORGANIZATION)
+                      // or just the ones the caller holds a grant on.
+                      <RequirePermission permission={Permission.READ_ORGANIZATION}>
+                        <ProjectPage />
+                      </RequirePermission>
+                    ),
                   },
                   {
                     element: <ContextCleanerWrapper />,

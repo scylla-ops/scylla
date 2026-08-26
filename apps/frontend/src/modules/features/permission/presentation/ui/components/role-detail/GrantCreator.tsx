@@ -19,7 +19,7 @@ import {
 } from '@shadcn';
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import { ScrollArea } from '@shadcn/scroll-area.tsx';
-import { Globe, Plus, X } from 'lucide-react';
+import { Globe, Info, Plus, X } from 'lucide-react';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import {
@@ -29,6 +29,7 @@ import {
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import { PermissionButton } from '@/modules/features/permission/presentation/ui/authorization/PermissionButton.tsx';
 import { useGrants } from '@/modules/features/permission/presentation/hooks/use-grants.ts';
+import { useProjectGrantEligibility } from '@/modules/features/permission/presentation/hooks/use-project-grant-eligibility.ts';
 import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts';
@@ -43,6 +44,13 @@ interface TargetOption {
   name: string;
 }
 
+/** A user offered in the picker; `disabledReason` greys it out and says why. */
+interface UserOption {
+  id: string;
+  name: string;
+  disabledReason?: ReactNode;
+}
+
 /**
  * Grants a role to a user within the scope the role requires:
  * - SYSTEM       → the user, system-wide (no scope id).
@@ -50,6 +58,12 @@ interface TargetOption {
  * - PROJECT      → the user, on one or more projects of a chosen organization.
  *
  * One grant is created per selected scope target.
+ *
+ * Project grants follow the backend's tenant boundary: a user may only receive
+ * one once the organization owning the project has already admitted them, i.e.
+ * they hold a grant bound to that organization. The picker therefore asks for
+ * the organization first and offers only the users it has admitted — turning a
+ * server-side rejection into a constraint you can see.
  */
 export const GrantCreator = ({ role }: GrantCreatorProps) => {
   const { t } = useLingui();
@@ -72,7 +86,44 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
     setBrowseOrgId(null);
   }, [open]);
 
-  const userItems = users?.items ?? [];
+  const isProjectScope = role.scope === PermissionScope.PROJECT;
+
+  const userItems: UserOption[] = useMemo(
+    () => (users?.items ?? []).map(user => ({ id: user.userId, name: user.username })),
+    [users],
+  );
+
+  const { eligibilityFor } = useProjectGrantEligibility(browseOrgId);
+
+  /**
+   * Everyone stays in the list; those who can't receive this grant are greyed
+   * out with the reason, so the constraint is visible rather than a silently
+   * shorter list.
+   */
+  const selectableUsers: UserOption[] = useMemo(() => {
+    if (!isProjectScope || !browseOrgId) return userItems;
+    return userItems.map(user => {
+      switch (eligibilityFor(user.id)) {
+        case 'not-admitted':
+          return {
+            ...user,
+            disabledReason: <Trans>don't have the right to see the organization's projects</Trans>,
+          };
+        case 'cannot-see-projects':
+          return { ...user, disabledReason: <Trans>can't see this organization</Trans> };
+        default:
+          return user;
+      }
+    });
+  }, [isProjectScope, browseOrgId, userItems, eligibilityFor]);
+
+  const hasSelectableUser = selectableUsers.some(user => !user.disabledReason);
+
+  // Switching organization changes who is eligible — drop a now-invalid pick.
+  useEffect(() => {
+    if (!isProjectScope || userId === '') return;
+    if (selectableUsers.some(user => user.id === userId && user.disabledReason)) setUserId('');
+  }, [isProjectScope, selectableUsers, userId]);
 
   // Scope ids where this user already holds this role — offered as disabled.
   const alreadyGranted = useMemo(() => {
@@ -102,14 +153,6 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
   const isValid = userId !== '' && (!needsTargets || selected.size > 0);
   const isPending = createGrant.isPending;
 
-  // Granting a role requires the "manage grants" permission for its scope.
-  const managePermission =
-    role.scope === PermissionScope.PROJECT
-      ? Permission.MANAGE_PROJECT_GRANTS
-      : role.scope === PermissionScope.ORGANIZATION
-        ? Permission.MANAGE_ORG_GRANTS
-        : Permission.MANAGE_SYSTEM_GRANTS;
-
   const handleSubmit = async () => {
     if (!isValid) return;
     const scopeIds = role.scope === PermissionScope.SYSTEM ? [''] : [...selected.keys()];
@@ -131,10 +174,24 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
     }
   };
 
+  const userPicker = (
+    <UserPicker
+      value={userId}
+      onChange={setUserId}
+      options={selectableUsers}
+      disabled={isPending || (isProjectScope && !browseOrgId)}
+      placeholder={
+        isProjectScope && !browseOrgId ? t`Pick an organization first` : t`Select a user`
+      }
+    />
+  );
+
   return (
     <>
+      {/* Grants are administered system-wide in this build — one permission for
+          every scope, held by system administrators only. */}
       <PermissionButton
-        permission={managePermission}
+        permission={Permission.MANAGE_SYSTEM_GRANTS}
         size='sm'
         onClick={() => setOpen(true)}
         deniedReason={<Trans>You don't have permission to grant this role.</Trans>}
@@ -155,46 +212,35 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
           </DialogHeader>
 
           <div className='flex flex-col gap-4 overflow-y-auto pr-1'>
-            {/* User picker */}
-            <div className='flex flex-col gap-1.5'>
-              <Label htmlFor='grant-user'>
-                <Trans>User</Trans>
-              </Label>
-              <Select value={userId} disabled={isPending} onValueChange={setUserId}>
-                <SelectTrigger id='grant-user' className='w-full'>
-                  <SelectValue placeholder={t`Select a user`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {userItems.map(user => (
-                    <SelectItem key={user.userId} value={user.userId}>
-                      {user.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {role.scope === PermissionScope.SYSTEM && (
-              <div className='flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-muted-foreground'>
-                <Globe className='size-4 shrink-0' />
-                <Trans>This role grants access across the whole system.</Trans>
-              </div>
+              <>
+                {userPicker}
+                <div className='flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-muted-foreground'>
+                  <Globe className='size-4 shrink-0' />
+                  <Trans>This role grants access across the whole system.</Trans>
+                </div>
+              </>
             )}
 
             {role.scope === PermissionScope.ORGANIZATION && (
-              <OrganizationTargets
-                disabled={isPending}
-                selected={selected}
-                alreadyGranted={alreadyGranted}
-                onToggle={toggle}
-              />
+              <>
+                {userPicker}
+                <OrganizationTargets
+                  disabled={isPending}
+                  selected={selected}
+                  alreadyGranted={alreadyGranted}
+                  onToggle={toggle}
+                />
+              </>
             )}
 
-            {role.scope === PermissionScope.PROJECT && (
-              <ProjectTargets
+            {isProjectScope && (
+              <ProjectScopeFields
                 disabled={isPending}
                 browseOrgId={browseOrgId}
                 onBrowseOrg={setBrowseOrgId}
+                userPicker={userPicker}
+                hasSelectableUser={hasSelectableUser}
                 selected={selected}
                 alreadyGranted={alreadyGranted}
                 onToggle={toggle}
@@ -246,6 +292,48 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
   );
 };
 
+// ── User picker ───────────────────────────────────────────────────────────────
+
+interface UserPickerProps {
+  value: string;
+  onChange: (userId: string) => void;
+  options: UserOption[];
+  disabled: boolean;
+  placeholder: string;
+}
+
+/**
+ * A disabled `SelectItem` carries `pointer-events-none`, so a hover tooltip
+ * would never fire on it — the reason is rendered inline instead, which also
+ * saves the reader a hover to find out why a name is greyed out.
+ */
+const UserPicker = ({ value, onChange, options, disabled, placeholder }: UserPickerProps) => (
+  <div className='flex flex-col gap-1.5'>
+    <Label htmlFor='grant-user'>
+      <Trans>User</Trans>
+    </Label>
+    <Select value={value} disabled={disabled} onValueChange={onChange}>
+      <SelectTrigger id='grant-user' className='w-full'>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map(user => (
+          <SelectItem key={user.id} value={user.id} disabled={!!user.disabledReason}>
+            <span className='flex w-full items-center gap-2'>
+              <span className='truncate'>{user.name}</span>
+              {user.disabledReason && (
+                <span className='ml-auto shrink-0 text-xs text-muted-foreground italic'>
+                  {user.disabledReason}
+                </span>
+              )}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
 // ── Organization scope ────────────────────────────────────────────────────────
 
 interface TargetsProps {
@@ -278,19 +366,28 @@ const OrganizationTargets = ({ disabled, selected, alreadyGranted, onToggle }: T
 
 // ── Project scope ─────────────────────────────────────────────────────────────
 
-interface ProjectTargetsProps extends TargetsProps {
+interface ProjectScopeFieldsProps extends TargetsProps {
   browseOrgId: string | null;
   onBrowseOrg: (orgId: string) => void;
+  /** Rendered between the organization and the project list. */
+  userPicker: ReactNode;
+  hasSelectableUser: boolean;
 }
 
-const ProjectTargets = ({
+/**
+ * Organization → user → projects, in that order: who may receive a project
+ * grant depends on the organization that owns the project.
+ */
+const ProjectScopeFields = ({
   disabled,
   browseOrgId,
   onBrowseOrg,
+  userPicker,
+  hasSelectableUser,
   selected,
   alreadyGranted,
   onToggle,
-}: ProjectTargetsProps) => {
+}: ProjectScopeFieldsProps) => {
   const { organizations, isLoading: orgsLoading } = useOrganizations();
   const { projects, isLoading: projectsLoading } = useProjects(browseOrgId);
 
@@ -300,7 +397,7 @@ const ProjectTargets = ({
   }));
 
   return (
-    <div className='flex flex-col gap-3'>
+    <div className='flex flex-col gap-4'>
       <div className='flex flex-col gap-1.5'>
         <Label htmlFor='grant-org'>
           <Trans>Organization</Trans>
@@ -323,7 +420,19 @@ const ProjectTargets = ({
         </Select>
       </div>
 
-      {browseOrgId && (
+      {userPicker}
+
+      {browseOrgId && !hasSelectableUser && (
+        <div className='flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-muted-foreground'>
+          <Info className='size-4 shrink-0 mt-0.5' />
+          <Trans>
+            Nobody can receive a project grant here yet. Grant an organization-scoped role that
+            confers “View the organization” first — otherwise the project stays out of reach.
+          </Trans>
+        </div>
+      )}
+
+      {browseOrgId && hasSelectableUser && (
         <TargetChecklist
           label={<Trans>Projects</Trans>}
           empty={<Trans>No projects in this organization.</Trans>}

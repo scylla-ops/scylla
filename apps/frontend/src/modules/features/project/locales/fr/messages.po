@@ -46,7 +46,7 @@ msgstr "ex. Une courte description du projet"
 msgid "e.g., My project"
 msgstr "ex. Mon projet"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:46
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:50
 msgid "Edit"
 msgstr "Modifier"
 
@@ -62,11 +62,11 @@ msgstr "Entrez un nom pour votre nouveau projet et sélectionnez l'organisation 
 #~ msgid "in total"
 #~ msgstr "au total"
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:27
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:34
 msgid "New project"
 msgstr "Nouveau projet"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:79
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:84
 msgid "No description"
 msgstr "Aucune description"
 
@@ -103,7 +103,7 @@ msgstr "Enregistrer"
 msgid "Saving..."
 msgstr "Enregistrement..."
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:67
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:72
 msgid "Select"
 msgstr "Sélectionner"
 
@@ -122,3 +122,11 @@ msgstr "Mettez à jour le nom du projet et sa description."
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:42
 #~ msgid "Update the project name."
 #~ msgstr ""
+
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:36
+msgid "You don't have permission to create projects."
+msgstr ""
+
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:38
+msgid "You don't have permission to delete projects."
+msgstr ""

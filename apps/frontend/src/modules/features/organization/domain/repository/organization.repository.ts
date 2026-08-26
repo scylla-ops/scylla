@@ -3,7 +3,6 @@ import type {
   Organization,
 } from '@/generated/scylla/organization/v1/organization.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { OrganizationMemberEntity } from '@/modules/features/organization/domain/entities/organization-member.entity.ts';
 
 export interface OrganizationRepository {
   getAll(): Promise<ScyllaResult<ListOrganizationsResponse>>;
@@ -15,9 +14,4 @@ export interface OrganizationRepository {
     description?: string,
   ) => Promise<ScyllaResult<Organization>>;
   delete: (organizationId: string) => Promise<ScyllaResult<void>>;
-
-  // ── Members ────────────────────────────────────────────────────────────────
-  listMembers: (organizationId: string) => Promise<ScyllaResult<OrganizationMemberEntity[]>>;
-  addMember: (organizationId: string, userId: string) => Promise<ScyllaResult<void>>;
-  removeMember: (organizationId: string, userId: string) => Promise<ScyllaResult<void>>;
 }

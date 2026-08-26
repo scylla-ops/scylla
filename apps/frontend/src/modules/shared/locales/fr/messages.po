@@ -29,7 +29,7 @@ msgstr ""
 #~ msgid "Add this signing secret to your webhook sender's HMAC configuration."
 #~ msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:46
+#: src/modules/shared/utils/toast-messages.ts:44
 msgid "Agent id copied"
 msgstr "ID d'agent copié"
 
@@ -41,7 +41,7 @@ msgstr "Une erreur s'est produite"
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue s'est produite"
 
-#: src/modules/shared/utils/toast-messages.ts:50
+#: src/modules/shared/utils/toast-messages.ts:48
 msgid "App id copied"
 msgstr "ID d'application copié"
 
@@ -62,7 +62,7 @@ msgstr "Effacer"
 msgid "Continue"
 msgstr "Continuer"
 
-#: src/modules/shared/utils/toast-messages.ts:65
+#: src/modules/shared/utils/toast-messages.ts:63
 msgid "Copied"
 msgstr "Copié"
 
@@ -82,7 +82,7 @@ msgstr "Copier"
 msgid "Copy your secret"
 msgstr "Copiez votre secret"
 
-#: src/modules/shared/utils/toast-messages.ts:47
+#: src/modules/shared/utils/toast-messages.ts:45
 msgid "Could not copy — select the id manually"
 msgstr "Impossible de copier — sélectionnez l'ID manuellement"
 
@@ -114,17 +114,17 @@ msgstr "Depuis la source"
 msgid "in total"
 msgstr "au total"
 
-#: src/modules/shared/utils/toast-messages.ts:43
+#: src/modules/shared/utils/toast-messages.ts:41
 msgid "Job queued — no agent connected"
 msgstr "Travail mis en file d'attente — aucun agent connecté"
 
 #: src/modules/shared/utils/toast-messages.ts:29
-msgid "Member added"
-msgstr ""
+#~ msgid "Member added"
+#~ msgstr ""
 
 #: src/modules/shared/utils/toast-messages.ts:30
-msgid "Member removed"
-msgstr ""
+#~ msgid "Member removed"
+#~ msgstr ""
 
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:137
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:143
@@ -147,35 +147,35 @@ msgstr "Organisation supprimée"
 msgid "Organization updated"
 msgstr "Organisation mise à jour"
 
-#: src/modules/shared/utils/toast-messages.ts:39
+#: src/modules/shared/utils/toast-messages.ts:37
 msgid "Pipeline created"
 msgstr "Pipeline créé"
 
-#: src/modules/shared/utils/toast-messages.ts:40
+#: src/modules/shared/utils/toast-messages.ts:38
 msgid "Pipeline deleted"
 msgstr "Pipeline supprimé"
 
-#: src/modules/shared/utils/toast-messages.ts:41
+#: src/modules/shared/utils/toast-messages.ts:39
 msgid "Pipeline edited"
 msgstr "Pipeline modifié"
 
-#: src/modules/shared/utils/toast-messages.ts:42
+#: src/modules/shared/utils/toast-messages.ts:40
 msgid "Pipeline ran"
 msgstr "Pipeline exécuté"
 
-#: src/modules/shared/utils/toast-messages.ts:33
+#: src/modules/shared/utils/toast-messages.ts:31
 msgid "Project created"
 msgstr "Projet créé"
 
-#: src/modules/shared/utils/toast-messages.ts:34
+#: src/modules/shared/utils/toast-messages.ts:32
 msgid "Project deleted"
 msgstr "Projet supprimé"
 
-#: src/modules/shared/utils/toast-messages.ts:36
+#: src/modules/shared/utils/toast-messages.ts:34
 msgid "Project name is required and you must select an organization."
 msgstr "Le nom du projet est requis et vous devez sélectionner une organisation."
 
-#: src/modules/shared/utils/toast-messages.ts:35
+#: src/modules/shared/utils/toast-messages.ts:33
 msgid "Project updated"
 msgstr "Projet mis à jour"
 
@@ -203,11 +203,11 @@ msgstr "Exécuter depuis un clone du dépôt"
 msgid "Run with Docker"
 msgstr "Exécuter avec Docker"
 
-#: src/modules/shared/utils/toast-messages.ts:53
+#: src/modules/shared/utils/toast-messages.ts:51
 msgid "Secret created"
 msgstr "Secret créé"
 
-#: src/modules/shared/utils/toast-messages.ts:54
+#: src/modules/shared/utils/toast-messages.ts:52
 msgid "Secret deleted"
 msgstr "Secret supprimé"
 
@@ -243,27 +243,27 @@ msgstr "L'agent démarre au premier plan : ses journaux s'affichent directement 
 msgid "This action cannot be undone."
 msgstr "Cette action ne peut pas être annulée."
 
-#: src/modules/shared/utils/toast-messages.ts:57
+#: src/modules/shared/utils/toast-messages.ts:55
 msgid "Trigger created"
 msgstr "Déclencheur créé"
 
-#: src/modules/shared/utils/toast-messages.ts:59
+#: src/modules/shared/utils/toast-messages.ts:57
 msgid "Trigger deleted"
 msgstr "Déclencheur supprimé"
 
-#: src/modules/shared/utils/toast-messages.ts:61
+#: src/modules/shared/utils/toast-messages.ts:59
 msgid "Trigger disabled"
 msgstr "Déclencheur désactivé"
 
-#: src/modules/shared/utils/toast-messages.ts:60
+#: src/modules/shared/utils/toast-messages.ts:58
 msgid "Trigger enabled"
 msgstr "Déclencheur activé"
 
-#: src/modules/shared/utils/toast-messages.ts:62
+#: src/modules/shared/utils/toast-messages.ts:60
 msgid "Trigger fired — run started"
 msgstr "Déclencheur déclenché — exécution démarrée"
 
-#: src/modules/shared/utils/toast-messages.ts:58
+#: src/modules/shared/utils/toast-messages.ts:56
 msgid "Trigger updated"
 msgstr "Déclencheur mis à jour"
 

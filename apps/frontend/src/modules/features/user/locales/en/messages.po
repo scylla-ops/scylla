@@ -64,7 +64,7 @@ msgstr "Loading user information..."
 msgid "Manage your account details."
 msgstr "Manage your account details."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:50
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:56
 msgid "New user"
 msgstr "New user"
 
@@ -106,3 +106,11 @@ msgstr "View"
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
 #~ msgid "You cannot delete your own account."
 #~ msgstr "You cannot delete your own account."
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:58
+msgid "You don't have permission to create users."
+msgstr "You don't have permission to create users."
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:60
+msgid "You don't have permission to delete users."
+msgstr "You don't have permission to delete users."

@@ -1,0 +1,414 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-08-26 22:28+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: scopeIds.length
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:170
+msgid "{0} grants created"
+msgstr "{0} attributions créées"
+
+#. placeholder {0}: permissions.length
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleDialogPermissions.tsx:47
+msgid "{0} selected"
+msgstr "{0} sélectionnée(s)"
+
+#: src/modules/features/permission/presentation/ui/components/RoleListItem.tsx:78
+msgid "{memberCount} members"
+msgstr "{memberCount} membres"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:189
+msgid "Access"
+msgstr "Accès"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:200
+msgid "Add grant"
+msgstr "Attribuer"
+
+#: src/modules/features/permission/presentation/ui/authorization/PermissionDenied.tsx:24
+msgid "Ask an administrator to grant you access if you think you should have it."
+msgstr "Demandez à un administrateur de vous accorder l'accès si vous pensez y avoir droit."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:17
+msgid "Built-in"
+msgstr "Intégré"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:113
+msgid "can't see this organization"
+msgstr "ne voit pas cette organisation"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:283
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:223
+msgid "Cancel"
+msgstr "Annuler"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:210
+msgid "Choose who receives this role and where it applies."
+msgstr "Choisissez qui reçoit ce rôle et où il s'applique."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:286
+msgid "Create grant"
+msgstr "Créer l'attribution"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:71
+msgid "Create organizations"
+msgstr "Créer des organisations"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:148
+msgid "Create pipelines"
+msgstr "Créer des pipelines"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:113
+msgid "Create projects"
+msgstr "Créer des projets"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleDialogHeader.tsx:16
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:226
+#: src/modules/features/permission/presentation/ui/RolesHeader.tsx:21
+msgid "Create role"
+msgstr "Créer le rôle"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:206
+msgid "Create secrets"
+msgstr "Créer des secrets"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:61
+msgid "Create users"
+msgstr "Créer des utilisateurs"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:19
+msgid "Custom"
+msgstr "Personnalisé"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleDialogHeader.tsx:19
+msgid "Define what this role is called and what it can do."
+msgstr "Définissez le nom de ce rôle et ce qu'il permet de faire."
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:192
+msgid "Delete jobs"
+msgstr "Supprimer des jobs"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:160
+msgid "Delete pipelines"
+msgstr "Supprimer des pipelines"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:212
+msgid "Delete secrets"
+msgstr "Supprimer des secrets"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:93
+msgid "Delete the organization"
+msgstr "Supprimer l'organisation"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:128
+msgid "Delete the project"
+msgstr "Supprimer le projet"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:67
+msgid "Delete users"
+msgstr "Supprimer des utilisateurs"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:143
+msgid "Description"
+msgstr "Description"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:110
+msgid "don't have the right to see the organization's projects"
+msgstr "n'a pas le droit de voir les projets de organisation"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:136
+msgid "e.g., project-viewer"
+msgstr "ex. : project-viewer"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:50
+msgid "Edit"
+msgstr "Modifier"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:154
+msgid "Edit pipelines"
+msgstr "Modifier les pipelines"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleDialogHeader.tsx:16
+msgid "Edit role"
+msgstr "Modifier le rôle"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:87
+msgid "Edit the organization"
+msgstr "Modifier l'organisation"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:122
+msgid "Edit the project"
+msgstr "Modifier le projet"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:173
+msgid "Failed to create grant"
+msgstr "Échec de la création de l'attribution"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:58
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:201
+msgid "Full control"
+msgstr "Contrôle total"
+
+#. placeholder {0}: role.name
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:207
+msgid "Grant “{0}”"
+msgstr "Attribuer « {0} »"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:79
+msgid "Grant and revoke roles"
+msgstr "Attribuer et révoquer des rôles"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:170
+msgid "Grant created"
+msgstr "Attribution créée"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:91
+#~ msgid "Grant roles on the organization"
+#~ msgstr "Attribuer des rôles sur l'organisation"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:132
+#~ msgid "Grant roles on the project"
+#~ msgstr "Attribuer des rôles sur le projet"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:71
+#~ msgid "Grant roles system-wide"
+#~ msgstr "Attribuer des rôles sur tout le système"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:499
+msgid "Granted"
+msgstr "Attribué"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:62
+msgid "Grants"
+msgstr "Attributions"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:20
+msgid "Grants full control over its scope."
+msgstr "Confère le contrôle total sur sa portée."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:474
+msgid "Loading…"
+msgstr "Chargement…"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:72
+msgid "Manage roles"
+msgstr "Gérer les rôles"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:172
+msgid "Manage triggers"
+msgstr "Gérer les déclencheurs"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:129
+msgid "Name"
+msgstr "Nom"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:38
+#: src/modules/features/permission/presentation/ui/components/RoleListItem.tsx:65
+msgid "No description"
+msgstr "Aucune description"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:69
+msgid "No one holds this role yet."
+msgstr "Personne ne détient encore ce rôle."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:356
+msgid "No organizations available."
+msgstr "Aucune organisation disponible."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:25
+msgid "No permissions."
+msgstr "Aucune permission."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:438
+msgid "No projects in this organization."
+msgstr "Aucun projet dans cette organisation."
+
+#: src/modules/features/permission/presentation/ui/Roles.page.tsx:73
+msgid "No roles yet. Create one to get started."
+msgstr "Aucun rôle pour l'instant. Créez-en un pour commencer."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:428
+msgid "Nobody can receive a project grant here yet. Grant an organization-scoped role that confers “View the organization” first — otherwise the project stays out of reach."
+msgstr "Personne ne peut encore recevoir d'attribution sur un projet ici. Attribuez d'abord un rôle de portée organisation conférant « Voir l'organisation » — sinon le projet restera hors de portée."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:413
+#~ msgid "Nobody has been admitted to this organization yet. Grant an organization-scoped role first — a project grant only goes to someone the organization already accepted."
+#~ msgstr "Personne n'a encore été admis dans cette organisation. Attribuez d'abord un rôle de portée organisation — une attribution sur un projet ne peut aller qu'à quelqu'un que l'organisation a déjà accepté."
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:142
+msgid "Open a pipeline"
+msgstr "Ouvrir une pipeline"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:119
+msgid "Open a project"
+msgstr "Ouvrir un projet"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:403
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:234
+msgid "Organization"
+msgstr "Organisation"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:355
+msgid "Organizations"
+msgstr "Organisations"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:16
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleDialogPermissions.tsx:44
+msgid "Permissions"
+msgstr "Permissions"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:411
+msgid "Pick an organization"
+msgstr "Choisir une organisation"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:184
+msgid "Pick an organization first"
+msgstr "Choisissez d'abord une organisation"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:235
+msgid "Project"
+msgstr "Projet"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:437
+msgid "Projects"
+msgstr "Projets"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:186
+msgid "Read job logs"
+msgstr "Lire les logs des jobs"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:97
+msgid "Remove"
+msgstr "Retirer"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:204
+msgid "Restricted permissions"
+msgstr "Permissions restreintes"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:166
+msgid "Run pipelines"
+msgstr "Lancer des pipelines"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:226
+msgid "Save changes"
+msgstr "Enregistrer"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:156
+msgid "Scope"
+msgstr "Portée"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:182
+msgid "Scope cannot be changed after creation."
+msgstr "La portée ne peut pas être modifiée après la création."
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:107
+msgid "See every project in the organization"
+msgstr "Voir tous les projets de l'organisation"
+
+#: src/modules/features/permission/presentation/ui/components/RoleDetailPanel.tsx:21
+msgid "Select a role to see its permissions and members."
+msgstr "Sélectionnez un rôle pour voir ses permissions et ses membres."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:184
+msgid "Select a user"
+msgstr "Sélectionner un utilisateur"
+
+#. placeholder {0}: selected.size
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:253
+msgid "Selected ({0})"
+msgstr "Sélectionnés ({0})"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:233
+msgid "System"
+msgstr "Système"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleDialogPermissions.tsx:62
+msgid "This role also holds {preservedCount} permission(s) not managed here. They are kept unchanged."
+msgstr "Ce rôle détient aussi {preservedCount} permission(s) non gérée(s) ici. Elles sont conservées telles quelles."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:220
+msgid "This role grants access across the whole system."
+msgstr "Ce rôle donne accès à tout le système."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:21
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:236
+msgid "Unknown"
+msgstr "Inconnue"
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:38
+msgid "Unknown access."
+msgstr "Accès inconnu."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:313
+msgid "User"
+msgstr "Utilisateur"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:99
+msgid "View agents"
+msgstr "Voir les agents"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:91
+#~ msgid "View organization members"
+#~ msgstr "Voir les membres de l'organisation"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:180
+msgid "View pipeline jobs"
+msgstr "Voir les jobs de la pipeline"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:200
+msgid "View project secrets"
+msgstr "Voir les secrets du projet"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:109
+#~ msgid "View the marketplace"
+#~ msgstr "Voir la marketplace"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:84
+msgid "View the organization"
+msgstr "Voir l'organisation"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:136
+msgid "View the pipeline list"
+msgstr "Voir la liste des pipelines"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:103
+#~ msgid "View the project list"
+#~ msgstr "Voir la liste des projets"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:58
+msgid "View users"
+msgstr "Voir les utilisateurs"
+
+#: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:149
+msgid "What is this role for?"
+msgstr "À quoi sert ce rôle ?"
+
+#: src/modules/features/permission/presentation/ui/authorization/PermissionButton.tsx:55
+msgid "You don't have permission to do this."
+msgstr "Vous n'avez pas la permission de faire cela."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:47
+msgid "You don't have permission to edit roles."
+msgstr "Vous n'avez pas la permission de modifier les rôles."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:197
+msgid "You don't have permission to grant this role."
+msgstr "Vous n'avez pas la permission d'attribuer ce rôle."
+
+#: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:99
+msgid "You don't have permission to revoke grants."
+msgstr "Vous n'avez pas la permission de révoquer des attributions."
+
+#: src/modules/features/permission/presentation/ui/authorization/PermissionDenied.tsx:20
+msgid "You don't have the permission"
+msgstr "Vous n'avez pas la permission"

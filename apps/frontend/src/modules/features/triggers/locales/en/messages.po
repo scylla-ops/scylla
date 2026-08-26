@@ -86,7 +86,7 @@ msgstr "Custom"
 msgid "Daily"
 msgstr "Daily"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:25
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:35
 msgid "Delete"
 msgstr "Delete"
 
@@ -98,7 +98,7 @@ msgstr "disabled"
 msgid "disabled — URL returns 404"
 msgstr "disabled — URL returns 404"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:22
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:32
 msgid "Edit"
 msgstr "Edit"
 
@@ -126,7 +126,7 @@ msgstr "Every day"
 msgid "Every hour"
 msgstr "Every hour"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:18
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:28
 msgid "Fire now"
 msgstr "Fire now"
 
@@ -248,3 +248,8 @@ msgstr "Weekly"
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:163
 msgid "Write a cron expression"
 msgstr "Write a cron expression"
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:40
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:42
+msgid "You don't have permission to manage triggers."
+msgstr "You don't have permission to manage triggers."

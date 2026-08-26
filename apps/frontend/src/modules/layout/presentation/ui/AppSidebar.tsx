@@ -27,7 +27,10 @@ import { useLingui } from '@lingui/react/macro';
 import type { NavSection } from '@/modules/layout/presentation/structs/nav-section.struct.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import {
+  useAuthorization,
+  useCan,
+} from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 import { LanguagesIcon } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,6 +56,7 @@ const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
           title: t`Projects`,
           url: `${prefix}/projects`,
           icon: WorkflowIcon,
+          permission: Permission.READ_ORGANIZATION,
         },
         {
           title: t`Agents`,
@@ -105,6 +109,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const organization = useContextStore(state => state.organization);
   const { sections: navSections, ready } = useNavSections();
   const currentLocale = (i18n.locale as SupportedLocale | undefined) ?? 'en';
+  // Creating an organization isn't scoped to one — it's a system capability.
+  const canCreateOrganization = useCan(Permission.CREATE_ORGANIZATION);
 
   const handleLocaleChange = (locale: SupportedLocale) => {
     setAppLocale(locale);
@@ -123,6 +129,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           }
           list={OrganizationList}
           addModal={AddOrganizationDialog}
+          canAdd={canCreateOrganization}
         />
       </SidebarHeader>
       <SidebarContent>

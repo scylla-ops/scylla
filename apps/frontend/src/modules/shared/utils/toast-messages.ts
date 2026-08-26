@@ -26,8 +26,6 @@ export const ToastMessages = {
   ORGANIZATION_CREATE: msg`Organization created`,
   ORGANIZATION_DELETE: msg`Organization deleted`,
   ORGANIZATION_UPDATE: msg`Organization updated`,
-  ORGANIZATION_MEMBER_ADD: msg`Member added`,
-  ORGANIZATION_MEMBER_REMOVE: msg`Member removed`,
 
   // Projects
   PROJECT_CREATE: msg`Project created`,

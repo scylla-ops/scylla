@@ -25,8 +25,9 @@ import { RoleDialogPermissions } from '@/modules/features/permission/presentatio
 import {
   ALL_SCOPES,
   getPermissionsForScope,
-  scopeName,
+  isEditablePermission,
 } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
+import { usePermissionLabels } from '@/modules/features/permission/presentation/hooks/use-permission-labels.ts';
 
 type AccessKind = 'fullControl' | 'restricted';
 
@@ -39,6 +40,7 @@ interface RoleFormDialogProps {
 
 export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => {
   const { t } = useLingui();
+  const { scopeLabel } = usePermissionLabels();
   const { createRole, updateRole } = useRoles();
   const isEdit = role !== null;
 
@@ -47,6 +49,12 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
   const [scope, setScope] = useState<PermissionScope>(PermissionScope.ORGANIZATION);
   const [accessKind, setAccessKind] = useState<AccessKind>('restricted');
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  /**
+   * Permissions the role holds that this build's catalog doesn't expose — set
+   * by the backend, by another client, or by an older build. The editor can't
+   * show them, so it carries them through instead of quietly deleting them.
+   */
+  const [preserved, setPreserved] = useState<Permission[]>([]);
 
   // Re-seed the form whenever the dialog opens for a different role (or for create).
   useEffect(() => {
@@ -57,17 +65,21 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
     if (role?.access.kind === 'fullControl') {
       setAccessKind('fullControl');
       setPermissions([]);
+      setPreserved([]);
     } else if (role?.access.kind === 'restricted') {
       setAccessKind('restricted');
-      setPermissions([...role.access.permissions]);
+      setPermissions(role.access.permissions.filter(isEditablePermission));
+      setPreserved(role.access.permissions.filter(p => !isEditablePermission(p)));
     } else {
       setAccessKind('restricted');
       setPermissions([]);
+      setPreserved([]);
     }
   }, [open, role]);
 
   const isValid =
-    name.trim().length > 0 && (accessKind === 'fullControl' || permissions.length > 0);
+    name.trim().length > 0 &&
+    (accessKind === 'fullControl' || permissions.length + preserved.length > 0);
 
   const isPending =
     createRole.isPending || updateRole.isPending || createRole.isSuccess || updateRole.isSuccess; // isSucess because there is a little time before it close the dialog
@@ -75,7 +87,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
   const buildAccess = (): AccessSpec =>
     accessKind === 'fullControl'
       ? { kind: 'fullControl' }
-      : { kind: 'restricted', permissions: [...permissions] };
+      : { kind: 'restricted', permissions: [...new Set([...preserved, ...permissions])] };
 
   const handleSubmit = () => {
     if (!isValid) return;
@@ -160,7 +172,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
               <SelectContent>
                 {ALL_SCOPES.map(s => (
                   <SelectItem key={s} value={String(s)}>
-                    {scopeName(s)}
+                    {scopeLabel(s)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -199,6 +211,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
             <RoleDialogPermissions
               scope={scope}
               permissions={permissions}
+              preservedCount={preserved.length}
               isPending={isPending}
               onPermissionsChange={setPermissions}
             />

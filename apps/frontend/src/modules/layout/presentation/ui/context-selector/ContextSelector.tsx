@@ -22,6 +22,8 @@ type ContextSelectorProps = {
     Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
   }>;
   addModal: ComponentType<{ open: boolean; setOpen: (open: boolean) => void }>;
+  /** When false, the "Create new …" entry is hidden. Defaults to allowed. */
+  canAdd?: boolean;
 };
 
 export const ContextSelector = ({
@@ -29,6 +31,7 @@ export const ContextSelector = ({
   display,
   list: List,
   addModal: AddModal,
+  canAdd = true,
 }: ContextSelectorProps) => {
   const { isMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -75,19 +78,23 @@ export const ContextSelector = ({
 
               <List Wrapper={DropdownMenuItem} />
 
-              <DropdownMenuSeparator className='bg-border' />
+              {canAdd && (
+                <>
+                  <DropdownMenuSeparator className='bg-border' />
 
-              <DropdownMenuItem
-                onSelect={() => setOpen(true)}
-                className='gap-3 p-2 mx-1 mb-1 rounded-lg cursor-pointer hover:bg-accent group'
-              >
-                <div className='flex size-8 items-center justify-center rounded-md border border-border bg-background group-hover:border-primary transition-colors'>
-                  <Plus className='size-4 text-muted-foreground group-hover:text-primary transition-colors' />
-                </div>
-                <div className='font-medium text-foreground group-hover:text-primary'>
-                  Create new {label.toLowerCase()}
-                </div>
-              </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setOpen(true)}
+                    className='gap-3 p-2 mx-1 mb-1 rounded-lg cursor-pointer hover:bg-accent group'
+                  >
+                    <div className='flex size-8 items-center justify-center rounded-md border border-border bg-background group-hover:border-primary transition-colors'>
+                      <Plus className='size-4 text-muted-foreground group-hover:text-primary transition-colors' />
+                    </div>
+                    <div className='font-medium text-foreground group-hover:text-primary'>
+                      Create new {label.toLowerCase()}
+                    </div>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
