@@ -10,6 +10,7 @@ import { GetMyPermissionsUseCase } from '@/modules/features/permission/domain/us
 import { ListGrantsUseCase } from '@/modules/features/permission/domain/usecases/list-grants.use-case.ts';
 import { CreateGrantUseCase } from '@/modules/features/permission/domain/usecases/create-grant.use-case.ts';
 import { RevokeGrantUseCase } from '@/modules/features/permission/domain/usecases/revoke-grant.use-case.ts';
+import { RevokeAllAccessUseCase } from '@/modules/features/permission/domain/usecases/revoke-all-access.use-case.ts';
 import { ListGrantableRolesUseCase } from '@/modules/features/permission/domain/usecases/list-grantable-roles.use-case.ts';
 import { ListPermissionVocabularyUseCase } from '@/modules/features/permission/domain/usecases/list-permission-vocabulary.use-case.ts';
 
@@ -27,6 +28,7 @@ export const PermissionModule = {
     listGrants: new ListGrantsUseCase(repository),
     createGrant: new CreateGrantUseCase(repository),
     revokeGrant: new RevokeGrantUseCase(repository),
+    revokeAllAccess: new RevokeAllAccessUseCase(repository),
     listGrantableRoles: new ListGrantableRolesUseCase(repository),
     listPermissionVocabulary: new ListPermissionVocabularyUseCase(repository),
   },

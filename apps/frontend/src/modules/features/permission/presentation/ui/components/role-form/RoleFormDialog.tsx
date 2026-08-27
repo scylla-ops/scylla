@@ -26,6 +26,8 @@ import {
   ALL_SCOPES,
   getPermissionsForScope,
   isEditablePermission,
+  isHiddenAtScope,
+  withImplicitPermissions,
 } from '@/modules/features/permission/presentation/utils/permission-mapping.ts';
 import { usePermissionLabels } from '@/modules/features/permission/presentation/hooks/use-permission-labels.ts';
 
@@ -59,16 +61,23 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
   // Re-seed the form whenever the dialog opens for a different role (or for create).
   useEffect(() => {
     if (!open) return;
+    const roleScope = role?.scope ?? PermissionScope.ORGANIZATION;
     setName(role?.name ?? '');
     setDescription(role?.description ?? '');
-    setScope(role?.scope ?? PermissionScope.ORGANIZATION);
+    setScope(roleScope);
     if (role?.access.kind === 'fullControl') {
       setAccessKind('fullControl');
       setPermissions([]);
       setPreserved([]);
     } else if (role?.access.kind === 'restricted') {
       setAccessKind('restricted');
-      setPermissions(role.access.permissions.filter(isEditablePermission));
+      // Hidden ones are re-added on save; keeping them out of the editable set
+      // is what stops the tree and the counter from showing them twice.
+      setPermissions(
+        role.access.permissions.filter(
+          p => isEditablePermission(p) && !isHiddenAtScope(p, roleScope),
+        ),
+      );
       setPreserved(role.access.permissions.filter(p => !isEditablePermission(p)));
     } else {
       setAccessKind('restricted');
@@ -77,9 +86,13 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
     }
   }, [open, role]);
 
+  /** What the role will actually confer: the ticked boxes plus the implicit ones. */
+  const conferred = withImplicitPermissions(scope, permissions);
+
+  // An organization role is never empty: it always carries what belonging means.
   const isValid =
     name.trim().length > 0 &&
-    (accessKind === 'fullControl' || permissions.length + preserved.length > 0);
+    (accessKind === 'fullControl' || conferred.length + preserved.length > 0);
 
   const isPending =
     createRole.isPending || updateRole.isPending || createRole.isSuccess || updateRole.isSuccess; // isSucess because there is a little time before it close the dialog
@@ -87,7 +100,12 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
   const buildAccess = (): AccessSpec =>
     accessKind === 'fullControl'
       ? { kind: 'fullControl' }
-      : { kind: 'restricted', permissions: [...new Set([...preserved, ...permissions])] };
+      : {
+          kind: 'restricted',
+          // The implicit ones never appear in the editor, so they are written
+          // here or nowhere.
+          permissions: [...new Set([...preserved, ...conferred])],
+        };
 
   const handleSubmit = () => {
     if (!isValid) return;
@@ -161,9 +179,13 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
               onValueChange={value => {
                 const next: PermissionScope = Number(value);
                 setScope(next);
-                // Drop any selected permissions that aren't coherent at the new scope.
+                // Drop any selected permission that isn't coherent at the new
+                // scope, and any the new scope now confers implicitly — those
+                // are re-added on save, and would otherwise be counted twice.
                 const allowed = new Set(getPermissionsForScope(next) ?? []);
-                setPermissions(prev => [...prev].filter(p => allowed.has(p)));
+                setPermissions(prev =>
+                  [...prev].filter(p => allowed.has(p) && !isHiddenAtScope(p, next)),
+                );
               }}
             >
               <SelectTrigger id='role-scope' className='w-full'>

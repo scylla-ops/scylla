@@ -3,10 +3,12 @@ import type {
   Organization,
 } from '@/generated/scylla/organization/v1/organization.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
+import type { OrganizationMember } from '@/modules/features/organization/domain/structs/organization-member.struct.ts';
 
 export interface OrganizationRepository {
   getAll(): Promise<ScyllaResult<ListOrganizationsResponse>>;
   getMine(): Promise<ScyllaResult<ListOrganizationsResponse>>;
+  listMembers(organizationId: string): Promise<ScyllaResult<OrganizationMember[]>>;
   create: (name: string, description?: string) => Promise<ScyllaResult<Organization>>;
   update: (
     organizationId: string,

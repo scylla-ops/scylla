@@ -34,6 +34,17 @@ export interface PermissionDefinition {
   id: Permission;
   label: MessageDescriptor;
   /**
+   * Used instead of `label` when the role conferring it is bound to a scope
+   * broader than this permission's own. A project permission held by an
+   * organization role does not apply to *a* project but to every project of the
+   * organization, and the label has to say so — "Edit the project" in an
+   * organization role reads as a narrowing that isn't there.
+   *
+   * Only needed where the singular is baked into the wording; entries already
+   * phrased in the plural ("Run pipelines") read correctly at every scope.
+   */
+  broadLabel?: MessageDescriptor;
+  /**
    * The narrowest scope at which the permission does something. A role bound to
    * that scope — or any broader one — may confer it. Mirrors the backend's
    * `AuthzAction.min_scope`.
@@ -81,7 +92,16 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
   },
 
   // ── Organization ────────────────────────────────────────────────────────────
-  { id: Permission.READ_ORGANIZATION, label: msg`View the organization`, scope: ORGANIZATION },
+  {
+    // Not "a permission you may hand out" at organization scope — it is what
+    // belonging *is*. See IMPLICIT_PERMISSIONS_BY_SCOPE. The label says so, and
+    // is what the role detail panel shows for it.
+    id: Permission.READ_ORGANIZATION,
+    label: msg`Member of the organization`,
+    // At system scope it is not membership at all — it reaches every tenant.
+    broadLabel: msg`See every organization on the instance`,
+    scope: ORGANIZATION,
+  },
   {
     id: Permission.UPDATE_ORGANIZATION,
     label: msg`Edit the organization`,
@@ -103,8 +123,15 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
   {
     // Without it the project list is narrowed to the projects the holder has a
     // grant on — reading the organization is what opens the page at all.
+    //
+    // At organization scope it also stands in for READ_PROJECT, which is what
+    // turns "sees them listed" into "can open them": see
+    // IMPLICIT_PERMISSIONS_BY_SCOPE. The label covers both.
     id: Permission.LIST_PROJECTS_BY_ORGANIZATION,
-    label: msg`See every project in the organization`,
+    label: msg`See and open every project in the organization`,
+    // The stand-in only holds at organization scope; a system role must still
+    // ask for READ_PROJECT separately, so the wording drops "and open".
+    broadLabel: msg`See every project of every organization`,
     scope: ORGANIZATION,
     dependsOn: Permission.READ_ORGANIZATION,
   },
@@ -116,16 +143,30 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
   },
 
   // ── Project ─────────────────────────────────────────────────────────────────
-  { id: Permission.READ_PROJECT, label: msg`Open a project`, scope: PROJECT },
+  {
+    // Visibility, not navigation: it is what puts a project in the holder's
+    // list when they cannot list the whole organization. In an organization
+    // role that already confers `LIST_PROJECTS_BY_ORGANIZATION` it adds
+    // nothing; in a project role it is the entire point.
+    id: Permission.READ_PROJECT,
+    label: msg`View the project`,
+    // Hidden in the organization editor (LIST_PROJECTS_BY_ORGANIZATION stands in
+    // for it), so this shows in a system role's tree and in role detail panels —
+    // it has to read correctly at both scopes.
+    broadLabel: msg`Open any project`,
+    scope: PROJECT,
+  },
   {
     id: Permission.UPDATE_PROJECT,
     label: msg`Edit the project`,
+    broadLabel: msg`Edit every project`,
     scope: PROJECT,
     dependsOn: Permission.READ_PROJECT,
   },
   {
     id: Permission.DELETE_PROJECT,
     label: msg`Delete the project`,
+    broadLabel: msg`Delete every project`,
     scope: PROJECT,
     dependsOn: Permission.READ_PROJECT,
   },
@@ -134,12 +175,14 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
   {
     id: Permission.LIST_PIPELINES_BY_PROJECT,
     label: msg`View the pipeline list`,
+    broadLabel: msg`View the pipelines of every project`,
     scope: PROJECT,
     dependsOn: Permission.READ_PROJECT,
   },
   {
     id: Permission.READ_PIPELINE,
     label: msg`Open a pipeline`,
+    broadLabel: msg`Open any pipeline`,
     scope: PROJECT,
     dependsOn: Permission.LIST_PIPELINES_BY_PROJECT,
   },
@@ -198,6 +241,7 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
   {
     id: Permission.LIST_SECRETS,
     label: msg`View project secrets`,
+    broadLabel: msg`View the secrets of every project`,
     scope: PROJECT,
     dependsOn: Permission.READ_PROJECT,
   },
@@ -254,6 +298,122 @@ export const getPermissionDefinitionsForScope = (
 ): PermissionDefinition[] => {
   const allowed = SCOPE_HIERARCHY[scope] ?? [];
   return PERMISSION_CATALOG.filter(definition => allowed.includes(definition.scope));
+};
+
+/**
+ * A permission the role editor never shows at a given scope, and writes on the
+ * caller's behalf. Two shapes, told apart by `standsIn`.
+ */
+interface ImplicitPermission {
+  /** Never a node, never a toggle, at the scope it is listed under. */
+  id: Permission;
+  /**
+   * The node that takes its place: it adopts `id`'s children in the tree, and
+   * ticking it writes `id` too. Absent → `id` is conferred unconditionally and
+   * shown as a ticked, locked row above the tree.
+   */
+  standsIn?: Permission;
+}
+
+/**
+ * What each scope confers without asking. Both entries exist because at
+ * organization scope the permission in question is not a choice — it is what the
+ * thing above it already means — and offering it as a checkbox only lets an
+ * administrator build a role that is dead on arrival.
+ *
+ * `READ_ORGANIZATION` is unconditional. There is no membership table on the
+ * backend: belonging to an organization *is* holding a grant at its scope, and
+ * `readOrganization` is the entire content of the `organization-member` builtin
+ * that admits people (`policies.cedar`: the old `org-member` policy is gone,
+ * "what belonging used to confer is the `organization-member` builtin role").
+ * Untickable, it would let someone be admitted to an organization they cannot
+ * see.
+ *
+ * `READ_PROJECT` rides on `LIST_PROJECTS_BY_ORGANIZATION`, because the backend
+ * splits the two across RPCs that only make sense together at this scope
+ * (`project/use_case.rs`): `list_by_organization` widens the list to every
+ * project once `listProjectsByOrganization` holds, so `readProject` adds nothing
+ * to *visibility* — but `get` checks `readProject` unconditionally, so without it
+ * the holder lists every project and opens none. An organization-scoped grant
+ * conferring `readProject` covers every project of the organization (Cedar
+ * `resource in ?resource`), which is what makes the pairing exact rather than
+ * approximate.
+ *
+ * Neither applies at SYSTEM scope, where both are genuinely separable: there
+ * they mean "every organization / every project on the instance", capabilities
+ * an administrator should have to ask for. PROJECT scope is untouched — a
+ * project role is about one project, and `READ_PROJECT` is its whole point.
+ */
+const IMPLICIT_PERMISSIONS_BY_SCOPE: Partial<Record<PermissionScope, ImplicitPermission[]>> = {
+  [PermissionScope.ORGANIZATION]: [
+    { id: Permission.READ_ORGANIZATION },
+    { id: Permission.READ_PROJECT, standsIn: Permission.LIST_PROJECTS_BY_ORGANIZATION },
+    { id: Permission.READ_PIPELINE, standsIn: Permission.LIST_PIPELINES_BY_PROJECT },
+  ],
+  [PermissionScope.PROJECT]: [
+    { id: Permission.READ_PIPELINE, standsIn: Permission.LIST_PIPELINES_BY_PROJECT },
+  ],
+};
+
+const getImplicitAtScope = (scope: PermissionScope): ImplicitPermission[] =>
+  IMPLICIT_PERMISSIONS_BY_SCOPE[scope] ?? [];
+
+/**
+ * Conferred unconditionally at `scope` — the ticked, locked rows the editor
+ * shows above the tree.
+ */
+export const getAlwaysGrantedPermissionsForScope = (scope: PermissionScope): Permission[] =>
+  getImplicitAtScope(scope)
+    .filter(entry => entry.standsIn === undefined)
+    .map(entry => entry.id);
+
+/** Whether the editor hides `permission` at `scope`, for either reason. */
+export const isHiddenAtScope = (permission: Permission, scope: PermissionScope): boolean =>
+  getImplicitAtScope(scope).some(entry => entry.id === permission);
+
+/**
+ * Everything a role bound to `scope` confers once `selected` is ticked: the
+ * visible choices, plus what the scope confers by construction, plus the riders
+ * carried by a stand-in that was ticked. This is what gets written — the editor
+ * never shows the difference, so nothing else may compute it.
+ */
+export const withImplicitPermissions = (
+  scope: PermissionScope,
+  selected: Permission[],
+): Permission[] => {
+  const conferred = new Set(selected);
+  for (const entry of getImplicitAtScope(scope)) {
+    if (entry.standsIn === undefined || conferred.has(entry.standsIn)) conferred.add(entry.id);
+  }
+  return [...conferred];
+};
+
+/**
+ * {@link getPermissionDefinitionsForScope} minus the hidden entries — what the
+ * role editor actually renders.
+ *
+ * A child of a hidden entry is re-hung from whatever stands in for it, so the
+ * subtree keeps its shape instead of scattering into roots. With no stand-in the
+ * children become roots, which `buildPermissionTree` already handles.
+ */
+export const getEditablePermissionDefinitionsForScope = (
+  scope: PermissionScope,
+): PermissionDefinition[] => {
+  const implicit = getImplicitAtScope(scope);
+  const hidden = new Set(implicit.map(entry => entry.id));
+  const standInFor = new Map(
+    implicit
+      .filter(entry => entry.standsIn !== undefined)
+      .map(entry => [entry.id, entry.standsIn!] as const),
+  );
+
+  return getPermissionDefinitionsForScope(scope)
+    .filter(definition => !hidden.has(definition.id))
+    .map(definition => {
+      if (definition.dependsOn === undefined) return definition;
+      const substitute = standInFor.get(definition.dependsOn);
+      return substitute === undefined ? definition : { ...definition, dependsOn: substitute };
+    });
 };
 
 /** Same as {@link getPermissionDefinitionsForScope}, reduced to the ids. */

@@ -19,10 +19,18 @@ import {
 export const usePermissionLabels = () => {
   const { i18n } = useLingui();
 
+  /**
+   * `roleScope` is the scope of the role carrying the permission, not the
+   * permission's own. Pass it wherever the reader is looking at one specific
+   * role: a project permission in an organization role applies to every project
+   * of that organization, and gets the plural wording that says so.
+   */
   const permissionLabel = useCallback(
-    (permission: Permission): string => {
+    (permission: Permission, roleScope?: PermissionScope): string => {
       const definition = getPermissionDefinition(permission);
-      return definition ? i18n._(definition.label) : humanizePermission(permission);
+      if (!definition) return humanizePermission(permission);
+      const broadened = roleScope !== undefined && roleScope !== definition.scope;
+      return i18n._(broadened ? (definition.broadLabel ?? definition.label) : definition.label);
     },
     [i18n],
   );

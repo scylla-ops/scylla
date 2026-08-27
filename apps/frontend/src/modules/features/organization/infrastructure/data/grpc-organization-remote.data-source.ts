@@ -3,6 +3,7 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   ListOrganizationsResponse,
   Organization,
+  OrganizationMember,
 } from '@/generated/scylla/organization/v1/organization.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
@@ -34,6 +35,20 @@ export default class GrpcOrganizationRemoteDataSource implements OrganizationRem
       });
       return { organizations: response.organizations, pagination: response.pagination };
     }, 'Failed to fetch organizations.');
+  }
+
+  /**
+   * Who the organization has admitted. A read projection over the grants table
+   * on the backend, so it also lists anyone holding only a project-scoped grant
+   * under this organization.
+   */
+  public listMembers(organizationId: string): Promise<ScyllaResult<OrganizationMember[]>> {
+    return ScyllaResult.tryAsync(async () => {
+      const { response } = await this._organizationClient.listOrganizationMembers({
+        organizationId: wrapId(organizationId),
+      });
+      return response.members;
+    }, 'Failed to fetch organization members.');
   }
 
   public create(name: string, description?: string): Promise<ScyllaResult<Organization>> {

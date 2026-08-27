@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import type { CreateGrantInput } from '@/modules/features/permission/domain/usecases/create-grant.use-case.ts';
+import type { RevokeAllAccessInput } from '@/modules/features/permission/domain/usecases/revoke-all-access.use-case.ts';
 import { useRefreshMyPermissions } from '@/modules/features/permission/presentation/hooks/use-refresh-my-permissions.ts';
 
 const GRANTS_QUERY_KEY = 'permission-grants';
@@ -35,6 +36,18 @@ export function useGrants() {
     onSuccess: invalidate,
   });
 
+  /**
+   * Clears a principal's grants at a scope and beneath it. Distinct from
+   * `revokeGrant`, which drops one grant by id: this is the "remove them from
+   * here entirely" operation, and the only one that leaves no inert
+   * project-scoped grant behind.
+   */
+  const revokeAllAccess = useMutation({
+    mutationFn: async (input: RevokeAllAccessInput) =>
+      (await permission.revokeAllAccess.execute(input)).unwrap(),
+    onSuccess: invalidate,
+  });
+
   return {
     grants: grantsQuery.data ?? [],
     isLoading: grantsQuery.isLoading,
@@ -42,5 +55,6 @@ export function useGrants() {
     error: grantsQuery.error,
     createGrant,
     revokeGrant,
+    revokeAllAccess,
   };
 }

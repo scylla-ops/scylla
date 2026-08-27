@@ -61,9 +61,11 @@ interface UserOption {
  *
  * Project grants follow the backend's tenant boundary: a user may only receive
  * one once the organization owning the project has already admitted them, i.e.
- * they hold a grant bound to that organization. The picker therefore asks for
- * the organization first and offers only the users it has admitted — turning a
- * server-side rejection into a constraint you can see.
+ * they hold a grant bound to that organization — which is exactly what being a
+ * member of it means. The picker therefore asks for the organization first and
+ * offers only the users it has admitted, turning a server-side rejection into a
+ * constraint you can see. Admitting someone is the members dialog's job, in the
+ * organization switcher.
  */
 export const GrantCreator = ({ role }: GrantCreatorProps) => {
   const { t } = useLingui();
@@ -105,12 +107,12 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
     return userItems.map(user => {
       switch (eligibilityFor(user.id)) {
         case 'not-admitted':
+          return { ...user, disabledReason: <Trans>not a member of this organization</Trans> };
+        case 'cannot-see-projects':
           return {
             ...user,
-            disabledReason: <Trans>don't have the right to see the organization's projects</Trans>,
+            disabledReason: <Trans>can't see this organization's projects</Trans>,
           };
-        case 'cannot-see-projects':
-          return { ...user, disabledReason: <Trans>can't see this organization</Trans> };
         default:
           return user;
       }
@@ -426,8 +428,8 @@ const ProjectScopeFields = ({
         <div className='flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-muted-foreground'>
           <Info className='size-4 shrink-0 mt-0.5' />
           <Trans>
-            Nobody can receive a project grant here yet. Grant an organization-scoped role that
-            confers “View the organization” first — otherwise the project stays out of reach.
+            Nobody can receive a project grant here yet. Admit someone to the organization first —
+            from the organization switcher, under “Members” — and they will show up here.
           </Trans>
         </div>
       )}

@@ -13,21 +13,41 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:111
-#~ msgid "Add"
-#~ msgstr ""
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:140
+msgid "{username} removed — {revoked} grant(s) revoked"
+msgstr "{username} retiré — {revoked} attribution(s) révoquée(s)"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:217
+msgid "Add"
+msgstr "Ajouter"
 
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:35
 msgid "Add a description..."
 msgstr "Ajouter une description..."
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:166
+msgid "Add a member"
+msgstr "Ajouter un membre"
+
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:74
 #~ msgid "Add or remove the users that belong to this organization."
 #~ msgstr ""
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:268
+msgid "Anyone holding a role on one of this organization's projects is listed here too."
+msgstr "Toute personne détenant un rôle sur un projet de cette organisation est également listée ici."
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:155
+msgid "Belonging to an organization means holding a role in it. Adding someone grants them the role you pick; removing them revokes every role they hold here, including on its projects."
+msgstr "Appartenir à une organisation, c'est y détenir un rôle. Ajouter quelqu'un lui attribue le rôle choisi ; le retirer révoque tous les rôles qu'il détient ici, y compris sur les projets."
+
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:85
 #~ msgid "Cancel"
 #~ msgstr "Annuler"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:277
+msgid "Close"
+msgstr "Fermer"
 
 #: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:49
 msgid "Create a new organization"
@@ -41,7 +61,7 @@ msgstr "Créer l'organisation"
 #~ msgid "Creating..."
 #~ msgstr "Création en cours..."
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:121
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:141
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -58,7 +78,7 @@ msgstr "ex. Mon organisation"
 msgid "e.g., Our company's main organization"
 msgstr "ex. L'organisation principale de notre entreprise"
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:102
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:122
 msgid "Edit"
 msgstr "Modifier"
 
@@ -70,17 +90,47 @@ msgstr "Modifier l’organisation"
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Entrez un nom et une description pour votre nouvelle organisation. Vous pourrez les modifier plus tard dans les paramètres."
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:295
+msgid "Every role they hold on this organization and on its projects will be revoked. They will lose access immediately."
+msgstr "Tous les rôles qu'il détient sur cette organisation et sur ses projets seront révoqués. Il perdra l'accès immédiatement."
+
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:89
 #~ msgid "Everyone is a member"
 #~ msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:178
+msgid "Everyone is already a member"
+msgstr "Tout le monde est déjà membre"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:125
+msgid "Failed to add the member"
+msgstr "Échec de l'ajout du membre"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:142
+msgid "Failed to remove the member"
+msgstr "Échec du retrait du membre"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:56
 #~ msgid "Loading members…"
 #~ msgstr ""
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:231
+msgid "Loading…"
+msgstr "Chargement…"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:123
+msgid "Member added"
+msgstr "Membre ajouté"
+
 #: src/modules/features/organization/presentation/ui/OrganizationList.tsx:104
-#~ msgid "Members"
-#~ msgstr ""
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:224
+msgid "Members"
+msgstr "Membres"
+
+#. placeholder {0}: organization?.name
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:152
+msgid "Members of “{0}”"
+msgstr "Membres de « {0} »"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:43
 #~ msgid "Members of {organizationName}"
@@ -94,6 +144,10 @@ msgstr "Entrez un nom et une description pour votre nouvelle organisation. Vous 
 #~ msgid "No members yet."
 #~ msgstr ""
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:235
+msgid "Nobody belongs to this organization yet."
+msgstr "Personne n'appartient encore à cette organisation."
+
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:27
 #: src/modules/features/organization/presentation/utils/create-organization-form-items.ts:7
 msgid "Organization name"
@@ -103,6 +157,20 @@ msgstr "Nom de l'organisation"
 #~ msgid "Remove"
 #~ msgstr ""
 
+#. placeholder {0}: pendingRemoval?.username
+#. placeholder {1}: organization?.name
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:290
+msgid "Remove {0} from “{1}”?"
+msgstr "Retirer {0} de « {1} » ?"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:253
+msgid "Remove from the organization"
+msgstr "Retirer de l'organisation"
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:194
+msgid "Role"
+msgstr "Rôle"
+
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:63
 msgid "Save"
 msgstr "Enregistrer"
@@ -110,6 +178,10 @@ msgstr "Enregistrer"
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:64
 msgid "Saving..."
 msgstr "Enregistrement..."
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:179
+msgid "Select a user"
+msgstr "Sélectionner un utilisateur"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:89
 #~ msgid "Select a user to add"
@@ -123,9 +195,17 @@ msgstr "Mettez à jour le nom et la description de l’organisation."
 #~ msgid "Update the organization name."
 #~ msgstr ""
 
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:248
+msgid "You"
+msgstr "Vous"
+
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:106
 #~ msgid "You don't have permission to add members."
 #~ msgstr ""
+
+#: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:214
+msgid "You don't have permission to admit members."
+msgstr "Vous n'avez pas la permission d'admettre des membres."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:147
 #~ msgid "You don't have permission to remove members."

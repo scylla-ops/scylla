@@ -28,7 +28,7 @@ export const RoleDetailPermissions = ({ role }: RoleDetailPermissionsProps) => {
           <div className='flex flex-wrap gap-1.5'>
             {role.access.permissions.map(permission => (
               <Badge key={permission} variant='outline' className='font-normal'>
-                {permissionLabel(permission)}
+                {permissionLabel(permission, role.scope)}
               </Badge>
             ))}
           </div>

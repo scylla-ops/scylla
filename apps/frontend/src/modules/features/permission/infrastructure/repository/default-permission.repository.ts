@@ -99,6 +99,22 @@ export class DefaultPermissionRepository implements PermissionRepository {
     return this._dataSource.revokeGrant(id);
   }
 
+  public async revokeAllAccess(
+    principal: PrincipalEntity,
+    scope: PermissionScope,
+    scopeId: string,
+  ): Promise<ScyllaResult<number>> {
+    return ScyllaResult.try(
+      () => ({
+        principal: GrpcPermissionMapper.principalRefToGrpc(principal),
+        scope: GrpcPermissionMapper.scopeRefToGrpc(scope, scopeId),
+      }),
+      'Failed to map the revocation target to a gRPC request',
+    ).flatMapAsync(({ principal: ref, scope: scopeRef }) =>
+      this._dataSource.revokeAllAccess(ref, scopeRef),
+    );
+  }
+
   public async listGrantableRoles(
     scope?: PermissionScope,
   ): Promise<ScyllaResult<GrantableRoleEntity[]>> {

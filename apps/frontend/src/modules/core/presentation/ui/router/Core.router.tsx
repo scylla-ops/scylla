@@ -54,8 +54,6 @@ export const CoreRouter = createBrowserRouter([
                     index: true,
                     element: (
                       // Reading the organization is the real gate: the backend
-                      // then returns every project (with LIST_PROJECTS_BY_ORGANIZATION)
-                      // or just the ones the caller holds a grant on.
                       <RequirePermission permission={Permission.READ_ORGANIZATION}>
                         <ProjectPage />
                       </RequirePermission>
