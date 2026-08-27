@@ -13,9 +13,13 @@ export const ORGANIZATION_MEMBERS_QUERY_KEY = (organizationId: string) =>
  * this key without coupling the two features — callers that create or revoke a
  * grant therefore call `refetchMembers` themselves.
  */
-export const useOrganizationMembers = (organizationId: string | null) => {
+export const useOrganizationMembers = (
+  organizationId: string | null,
+  options: { enabled?: boolean } = {},
+) => {
   const { listOrganizationMembers } = useDependencies().organization;
   const queryClient = useQueryClient();
+  const { enabled = true } = options;
 
   const {
     data: members,
@@ -24,7 +28,7 @@ export const useOrganizationMembers = (organizationId: string | null) => {
   } = useQuery({
     queryKey: ORGANIZATION_MEMBERS_QUERY_KEY(organizationId ?? ''),
     queryFn: async () => (await listOrganizationMembers.execute(organizationId!)).unwrap(),
-    enabled: !!organizationId,
+    enabled: enabled && !!organizationId,
   });
 
   const refetchMembers = useCallback(() => {

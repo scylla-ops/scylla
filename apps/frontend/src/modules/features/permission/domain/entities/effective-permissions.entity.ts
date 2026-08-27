@@ -1,7 +1,7 @@
 import {
+  Permission,
   PermissionScope,
   type AccessEntity,
-  type Permission,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 /**
@@ -32,13 +32,30 @@ export interface PermissionTarget {
   projectId?: string;
 }
 
+/**
+ * Permissions that another one carries with it, keyed by the permission being
+ * asked about. Holding any of the listed permissions is holding this one.
+ *
+ * Only one entry, and it is a rule rather than a shortcut: editing the role
+ * catalog and handing roles out are a single capability — see
+ * `presentation/utils/permission-mapping.ts`, where ticking "manage roles"
+ * writes `MANAGE_SYSTEM_GRANTS` too. This mirrors that on the read side so a
+ * role saved before the rule existed still opens the doors the rule promises.
+ */
+const IMPLIED_BY: Partial<Record<Permission, Permission[]>> = {
+  [Permission.MANAGE_SYSTEM_GRANTS]: [Permission.MANAGE_ROLES],
+};
+
 /** Whether an access arm confers `permission`. `unknown` never confers. */
 const accessConfers = (access: AccessEntity, permission: Permission): boolean => {
   switch (access.kind) {
     case 'fullControl':
       return true;
     case 'restricted':
-      return access.permissions.includes(permission);
+      return (
+        access.permissions.includes(permission) ||
+        (IMPLIED_BY[permission] ?? []).some(implier => access.permissions.includes(implier))
+      );
     default:
       return false;
   }

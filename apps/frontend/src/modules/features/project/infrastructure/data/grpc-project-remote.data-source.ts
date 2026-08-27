@@ -4,6 +4,7 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   ListOrganizationProjectsResponse,
   Project,
+  ProjectMember,
 } from '@/generated/scylla/project/v1/project.ts';
 
 import {
@@ -41,6 +42,20 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
       });
       return response;
     }, 'Failed to fetch projects.');
+  }
+
+  /**
+   * The project's own members: the backend lists the holders of a grant scoped
+   * to the project and nobody else, so someone reaching it through an
+   * organization role is absent here by design.
+   */
+  public listMembers(projectId: string): Promise<ScyllaResult<ProjectMember[]>> {
+    return ScyllaResult.tryAsync(async () => {
+      const { response } = await this._projectClient.listProjectMembers({
+        projectId: wrapId(projectId),
+      });
+      return response.members;
+    }, 'Failed to fetch project members.');
   }
 
   public create(

@@ -183,6 +183,14 @@ msgstr "Littéral"
 #~ msgid "Loading..."
 #~ msgstr ""
 
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:57
+#~ msgid "Manage members"
+#~ msgstr "Gérer les membres"
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:50
+msgid "Members"
+msgstr ""
+
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:151
 #~ msgid "Modify the node properties."
 #~ msgstr ""

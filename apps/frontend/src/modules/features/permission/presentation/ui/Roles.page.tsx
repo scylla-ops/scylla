@@ -16,7 +16,8 @@ export const RolesPage = () => {
   const { grants } = useGrants();
   const { can } = useAuthorization();
 
-  // Managing roles is an org-level capability; it gates create and bulk delete.
+  // Editing the role catalog is a system capability — and the one that carries
+  // grant management with it, so holding it is what opens this whole page.
   const canManageRoles = can(Permission.MANAGE_ROLES);
 
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);

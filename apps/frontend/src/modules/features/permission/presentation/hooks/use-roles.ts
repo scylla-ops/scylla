@@ -5,8 +5,15 @@ import type { UpdateRoleInput } from '@/modules/features/permission/domain/useca
 
 const ROLES_QUERY_KEY = 'permission-roles';
 
-/** List the dynamic role catalog + create/update/delete mutations. */
-export function useRoles() {
+/**
+ * List the dynamic role catalog + create/update/delete mutations.
+ *
+ * The backend gates the whole catalog behind `MANAGE_ROLES`, so a caller that
+ * only administers one organization or project cannot read it. Such a caller
+ * passes `enabled: false` and works from the grantable-role catalog instead
+ * (see {@link useGrantableRoles}) rather than asking for a denial.
+ */
+export function useRoles(options: { enabled?: boolean } = {}) {
   const { permission } = useDependencies();
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [ROLES_QUERY_KEY] });
@@ -14,6 +21,7 @@ export function useRoles() {
   const query = useQuery({
     queryKey: [ROLES_QUERY_KEY],
     queryFn: async () => (await permission.listRoles.execute()).unwrap(),
+    enabled: options.enabled ?? true,
   });
 
   const createRole = useMutation({

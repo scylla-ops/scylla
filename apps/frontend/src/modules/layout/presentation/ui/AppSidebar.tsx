@@ -3,6 +3,7 @@ import {
   Building2,
   ShoppingCartIcon,
   UsersIcon,
+  UsersRound,
   WorkflowIcon,
   HardDriveIcon,
   ShieldIcon,
@@ -75,6 +76,14 @@ const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
     {
       title: t`Admin`,
       items: [
+        {
+          // Who belongs to the *current* organization — org-scoped, unlike the
+          // system-wide directory below it.
+          title: t`Members`,
+          url: `${prefix}/members`,
+          icon: UsersRound,
+          permission: Permission.LIST_ORGANIZATION_MEMBERS,
+        },
         {
           title: t`Users`,
           url: `${prefix}/users`,

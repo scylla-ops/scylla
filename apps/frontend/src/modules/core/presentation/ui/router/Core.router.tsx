@@ -22,6 +22,8 @@ import { AgentDetailsPage } from '@/modules/features/agents/presentation/ui/Agen
 import { RolesPage } from '@/modules/features/permission/presentation/ui/Roles.page.tsx';
 import { RequirePermission } from '@/modules/features/permission/presentation/ui/authorization/RequirePermission.tsx';
 import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { OrganizationMembersPage } from '@/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx';
+import { ProjectMembersPage } from '@/modules/features/project/presentation/ui/ProjectMembers.page.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -44,6 +46,17 @@ export const CoreRouter = createBrowserRouter([
             path: '/:organizationSlug',
             element: <OrganizationSyncWrapper />,
             children: [
+              {
+                path: 'members',
+                handle: {
+                  breadcrumb: () => 'Members',
+                },
+                element: (
+                  <RequirePermission permission={Permission.LIST_ORGANIZATION_MEMBERS}>
+                    <OrganizationMembersPage />
+                  </RequirePermission>
+                ),
+              },
               {
                 path: 'projects',
                 handle: {
@@ -74,6 +87,17 @@ export const CoreRouter = createBrowserRouter([
                             <DashboardPipelinePage />
                           </RequirePermission>
                         ),
+                      },
+                      {
+                        path: 'members',
+                        element: (
+                          <RequirePermission permission={Permission.LIST_PROJECT_MEMBERS}>
+                            <ProjectMembersPage />
+                          </RequirePermission>
+                        ),
+                        handle: {
+                          breadcrumb: () => 'Members',
+                        },
                       },
                       {
                         path: 'secrets',

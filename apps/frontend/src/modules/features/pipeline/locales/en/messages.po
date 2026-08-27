@@ -183,6 +183,14 @@ msgstr "Literal"
 #~ msgid "Loading..."
 #~ msgstr "Loading..."
 
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:57
+#~ msgid "Manage members"
+#~ msgstr "Manage members"
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:50
+msgid "Members"
+msgstr "Members"
+
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:151
 #~ msgid "Modify the node properties."
 #~ msgstr "Modify the node properties."

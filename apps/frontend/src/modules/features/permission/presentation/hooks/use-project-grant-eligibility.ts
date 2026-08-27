@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import type { RoleEntity } from '@/modules/features/permission/domain/entities/role.entity.ts';
+import { roleConfers } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import {
   Permission,
   PermissionScope,
@@ -19,27 +19,6 @@ import { useRoles } from '@/modules/features/permission/presentation/hooks/use-r
  *                           them and the grant would be dead weight.
  */
 export type GrantEligibility = 'eligible' | 'not-admitted' | 'cannot-see-projects';
-
-/**
- * Whether a role confers `permission`.
- *
- * An access arm this build cannot read — or a role missing from the catalog —
- * counts as conferring. That is the opposite of `canAccess`, deliberately: there,
- * denying on the unknown protects the UI; here, it would lock an administrator
- * out of granting for a reason they cannot see or fix. The backend stays the
- * enforcer either way.
- */
-const roleConfers = (role: RoleEntity | undefined, permission: Permission): boolean => {
-  if (!role) return true;
-  switch (role.access.kind) {
-    case 'fullControl':
-      return true;
-    case 'restricted':
-      return role.access.permissions.includes(permission);
-    default:
-      return true;
-  }
-};
 
 /**
  * Answers, for one organization, whether each user can usefully receive a

@@ -80,14 +80,21 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
     dependsOn: Permission.LIST_USERS,
   },
   { id: Permission.CREATE_ORGANIZATION, label: msg`Create organizations`, scope: SYSTEM },
-  { id: Permission.MANAGE_ROLES, label: msg`Manage roles`, scope: SYSTEM },
   {
-    // The single grant-management permission in this build: roles are created
-    // and handed out by system administrators, at every scope. The narrower
-    // `MANAGE_ORG_GRANTS` / `MANAGE_PROJECT_GRANTS` exist on the wire but are
-    // deliberately not offered here — delegating administration is post-V1.
+    // Editing the role catalog is a system capability, and it carries grant
+    // management with it: whoever writes the roles hands them out too. See
+    // IMPLICIT_PERMISSIONS_BY_SCOPE — MANAGE_SYSTEM_GRANTS is never a separate
+    // toggle at this scope.
+    id: Permission.MANAGE_ROLES,
+    label: msg`Manage roles, and grant them anywhere`,
+    scope: SYSTEM,
+  },
+  {
+    // Hidden at SYSTEM scope (MANAGE_ROLES stands in for it), so this label is
+    // what role detail panels show. The scoped siblings below are what a tenant
+    // administrator gets instead.
     id: Permission.MANAGE_SYSTEM_GRANTS,
-    label: msg`Grant and revoke roles`,
+    label: msg`Grant and revoke roles anywhere`,
     scope: SYSTEM,
   },
 
@@ -141,6 +148,25 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
     scope: ORGANIZATION,
     dependsOn: Permission.LIST_PROJECTS_BY_ORGANIZATION,
   },
+  {
+    id: Permission.LIST_ORGANIZATION_MEMBERS,
+    label: msg`See who belongs to the organization`,
+    broadLabel: msg`See who belongs to any organization`,
+    scope: ORGANIZATION,
+    dependsOn: Permission.READ_ORGANIZATION,
+  },
+  {
+    // Administering the organization's own membership: who belongs, and with
+    // which roles. Bounded to this organization and the projects beneath it by
+    // the backend's Cedar template, so it delegates without escalating.
+    // Hung under the member list because managing a list you cannot read is not
+    // a narrower capability, it is a broken one.
+    id: Permission.MANAGE_ORG_GRANTS,
+    label: msg`Grant and revoke roles in the organization`,
+    broadLabel: msg`Grant and revoke roles in every organization`,
+    scope: ORGANIZATION,
+    dependsOn: Permission.LIST_ORGANIZATION_MEMBERS,
+  },
 
   // ── Project ─────────────────────────────────────────────────────────────────
   {
@@ -169,6 +195,23 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
     broadLabel: msg`Delete every project`,
     scope: PROJECT,
     dependsOn: Permission.READ_PROJECT,
+  },
+  {
+    id: Permission.LIST_PROJECT_MEMBERS,
+    label: msg`See who works on the project`,
+    broadLabel: msg`See who works on any project`,
+    scope: PROJECT,
+    dependsOn: Permission.READ_PROJECT,
+  },
+  {
+    // The project-local counterpart of MANAGE_ORG_GRANTS: distributes access
+    // among the people the organization has already admitted. Same reason for
+    // hanging it under the member list.
+    id: Permission.MANAGE_PROJECT_GRANTS,
+    label: msg`Grant and revoke roles on the project`,
+    broadLabel: msg`Grant and revoke roles on every project`,
+    scope: PROJECT,
+    dependsOn: Permission.LIST_PROJECT_MEMBERS,
   },
 
   // Pipelines
@@ -343,8 +386,18 @@ interface ImplicitPermission {
  * they mean "every organization / every project on the instance", capabilities
  * an administrator should have to ask for. PROJECT scope is untouched — a
  * project role is about one project, and `READ_PROJECT` is its whole point.
+ *
+ * `MANAGE_SYSTEM_GRANTS` follows the same rule at SYSTEM scope, riding on
+ * `MANAGE_ROLES`: whoever writes the role catalog is who hands roles out, so
+ * the two are one capability. Offered separately, a "manage roles" role could
+ * author roles nobody is able to receive — and the narrower
+ * `MANAGE_ORG_GRANTS` / `MANAGE_PROJECT_GRANTS` are what delegating a *part* of
+ * grant administration looks like, so the system-wide one is not a dial.
  */
 const IMPLICIT_PERMISSIONS_BY_SCOPE: Partial<Record<PermissionScope, ImplicitPermission[]>> = {
+  [PermissionScope.SYSTEM]: [
+    { id: Permission.MANAGE_SYSTEM_GRANTS, standsIn: Permission.MANAGE_ROLES },
+  ],
   [PermissionScope.ORGANIZATION]: [
     { id: Permission.READ_ORGANIZATION },
     { id: Permission.READ_PROJECT, standsIn: Permission.LIST_PROJECTS_BY_ORGANIZATION },
