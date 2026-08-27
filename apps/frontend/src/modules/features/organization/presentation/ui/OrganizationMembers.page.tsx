@@ -77,11 +77,11 @@ export const OrganizationMembersPage = () => {
     revokeRole,
     removeMember,
   } = useScopeMembership({
-      scope: PermissionScope.ORGANIZATION,
-      scopeId: organizationId,
-      canManage,
-      onMembershipChanged: refetchMembers,
-    });
+    scope: PermissionScope.ORGANIZATION,
+    scopeId: organizationId,
+    canManage,
+    onMembershipChanged: refetchMembers,
+  });
 
   const [addOpen, setAddOpen] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
@@ -190,12 +190,6 @@ export const OrganizationMembersPage = () => {
           setPendingRemoval({ userId: member.userId, username: nameFor(member.userId) })
         }
       />
-
-      <MembersHint>
-        <Trans>
-          Anyone holding a role on one of this organization's projects is listed here too.
-        </Trans>
-      </MembersHint>
 
       <AddMemberDialog
         open={addOpen}
