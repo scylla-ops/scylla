@@ -72,7 +72,7 @@ export const JobNodesList = ({
                 const isNodeExpanded = expandedNodes.has(nodeId);
 
                 return (
-                  <div key={index} className='rounded-lg overflow-hidden border border-slate-100'>
+                  <div key={index} className='rounded-lg overflow-hidden border'>
                     <Button
                       variant='outline'
                       type='button'
@@ -83,7 +83,7 @@ export const JobNodesList = ({
                       // hover:scale-100 neutralizes the Button base's
                       // hover:scale-108 — a zoom reads fine on small buttons
                       // but is jarring on a full-width row.
-                      className='w-full flex items-center justify-between p-3 h-auto bg-slate-50 hover:bg-slate-100 hover:scale-100 transition-colors cursor-pointer rounded-none'
+                      className='w-full flex items-center justify-between p-3 h-auto hover:bg-secondary hover:scale-100 transition-colors cursor-pointer rounded-none'
                     >
                       <div className='flex items-center gap-3'>
                         {isNodeExpanded ? (
