@@ -11,6 +11,7 @@ import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigat
 import { cn } from '@shared/presentation/utils';
 import { getRelativeTime } from '@shared/utils/date-utils.ts';
 import { useOrgOverview } from '@/modules/features/dashboard/presentation/hooks/use-org-overview.ts';
+import { AgentOutcomesChart } from '@/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 
 const StatCard = ({
@@ -200,6 +201,15 @@ export const DashboardPage = () => {
             </table>
           </div>
         )}
+      </section>
+
+      <Separator />
+
+      <section className='flex flex-col gap-3 pb-4'>
+        <h2 className='text-base font-semibold'>
+          <Trans>Agent Outcomes</Trans>
+        </h2>
+        <AgentOutcomesChart />
       </section>
     </div>
   );
