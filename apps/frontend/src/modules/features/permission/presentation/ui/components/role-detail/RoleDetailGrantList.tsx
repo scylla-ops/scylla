@@ -65,7 +65,7 @@ export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
         <GrantCreator role={role} />
       </div>
       {assignees.length === 0 ? (
-        <p className='rounded-lg border border-dashed border-slate-200 py-6 text-center text-sm text-muted-foreground'>
+        <p className='rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground'>
           <Trans>No one holds this role yet.</Trans>
         </p>
       ) : (
@@ -77,7 +77,7 @@ export const RoleDetailGrantList = ({ role }: RoleDetailGrantsProps) => {
               return (
                 <li
                   key={grant.id}
-                  className='flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2'
+                  className='flex items-center gap-3 rounded-lg border border px-3 py-2'
                 >
                   <div className='flex size-9 items-center justify-center rounded-lg bg-primary/10 shrink-0'>
                     {isUser ? (

@@ -32,15 +32,7 @@ import {
   useAuthorization,
   useCan,
 } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
-import { LanguagesIcon } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/modules/shared/presentation/ui/shadcn/dropdown-menu.tsx';
-import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
-import { setAppLocale, type SupportedLocale } from '@shared/presentation/utils/i18n.ts';
+import { LanguageSelector } from '@/modules/layout/presentation/ui/LanguageSelector.tsx';
 
 const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
   const { t } = useLingui();
@@ -114,16 +106,12 @@ const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { t, i18n } = useLingui();
+  const { t } = useLingui();
   const organization = useContextStore(state => state.organization);
   const { sections: navSections, ready } = useNavSections();
-  const currentLocale = (i18n.locale as SupportedLocale | undefined) ?? 'en';
   // Creating an organization isn't scoped to one — it's a system capability.
   const canCreateOrganization = useCan(Permission.CREATE_ORGANIZATION);
 
-  const handleLocaleChange = (locale: SupportedLocale) => {
-    setAppLocale(locale);
-  };
   return (
     <Sidebar variant={'inset'} collapsible='icon' {...props}>
       <SidebarHeader>
@@ -158,23 +146,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
       </SidebarContent>
       <SidebarFooter className='flex flex-col gap-2'>
-        <div className='flex items-center justify-between rounded-lg border border-sidebar-border/70 bg-sidebar/40 px-3 py-2'>
-          <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-            <LanguagesIcon className='size-4' />
-            <span>{t`Language`}</span>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type='button' variant='ghost' size='sm' className='h-8 px-2'>
-                {currentLocale === 'fr' ? 'FR' : 'EN'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
-              <DropdownMenuItem onClick={() => handleLocaleChange('en')}>English</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleLocaleChange('fr')}>Français</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <LanguageSelector />
         <NavUser />
       </SidebarFooter>
       <SidebarRail />

@@ -217,7 +217,7 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
             {role.scope === PermissionScope.SYSTEM && (
               <>
                 {userPicker}
-                <div className='flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-muted-foreground'>
+                <div className='flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground'>
                   <Globe className='size-4 shrink-0' />
                   <Trans>This role grants access across the whole system.</Trans>
                 </div>
@@ -425,7 +425,7 @@ const ProjectScopeFields = ({
       {userPicker}
 
       {browseOrgId && !hasSelectableUser && (
-        <div className='flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-muted-foreground'>
+        <div className='flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm text-muted-foreground'>
           <Info className='size-4 shrink-0 mt-0.5' />
           <Trans>
             Nobody can receive a project grant here yet. Admit someone to the organization first —
@@ -476,18 +476,18 @@ const TargetChecklist = ({
         <Trans>Loading…</Trans>
       </p>
     ) : options.length === 0 ? (
-      <p className='rounded-lg border border-dashed border-slate-200 py-4 text-center text-sm text-muted-foreground'>
+      <p className='rounded-lg border border-dashed py-4 text-center text-sm text-muted-foreground'>
         {empty}
       </p>
     ) : (
-      <ScrollArea className='max-h-48 rounded-lg border border-slate-200 p-2'>
+      <ScrollArea className='max-h-48 rounded-lg border p-2'>
         <div className='flex flex-col gap-0.5'>
           {options.map(option => {
             const granted = alreadyGranted.has(option.id);
             return (
               <label
                 key={option.id}
-                className='flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer hover:bg-slate-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-60'
+                className='flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer hover:bg-secondary aria-disabled:cursor-not-allowed aria-disabled:opacity-60'
                 aria-disabled={granted || disabled}
               >
                 <Checkbox

@@ -72,7 +72,7 @@ export const RoleDialogPermissions = ({
           <Trans>{conferredCount} selected</Trans>
         </Badge>
       </div>
-      <ScrollArea className='h-56 rounded-lg border border-slate-200 p-2'>
+      <ScrollArea className='h-56 rounded-lg border p-2'>
         <div className='flex flex-col gap-0.5'>
           {alwaysGranted.map(permission => (
             <label
