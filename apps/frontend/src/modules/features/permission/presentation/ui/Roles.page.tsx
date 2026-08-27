@@ -92,7 +92,7 @@ export const RolesPage = () => {
         </div>
 
         {/* Detail: selected role */}
-        <div className='min-h-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm'>
+        <div className='min-h-0 rounded-xl border bg-background p-5 shadow-sm'>
           <RoleDetailPanel role={activeRole} onEdit={openEdit} />
         </div>
       </div>

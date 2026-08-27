@@ -14,7 +14,7 @@ export const RoleDetailPanel = ({ role, onEdit }: RoleDetailPanelProps) => {
   if (!role) {
     return (
       <div className='flex h-full flex-col items-center justify-center gap-3 text-center text-muted-foreground'>
-        <div className='flex size-12 items-center justify-center rounded-xl bg-slate-100'>
+        <div className='flex size-12 items-center justify-center rounded-xl border'>
           <ShieldCheck className='size-6 text-slate-400' />
         </div>
         <p className='text-sm'>
@@ -25,7 +25,7 @@ export const RoleDetailPanel = ({ role, onEdit }: RoleDetailPanelProps) => {
   }
 
   return (
-    <div className='flex h-full flex-col gap-6 overflow-y-auto p-4'>
+    <div className='flex h-full flex-col gap-6 overflow-y-auto p-4 '>
       <RoleDetailHeader role={role} onEdit={onEdit} />
       <RoleDetailPermissions role={role} />
       <RoleDetailGrantList role={role} />
