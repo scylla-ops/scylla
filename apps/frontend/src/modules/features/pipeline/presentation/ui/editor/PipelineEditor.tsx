@@ -6,10 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { Tabs, TabsContent } from '@shadcn/tabs.tsx';
 import { Card } from '@shadcn';
 import { PipelineEditorHeader } from '@/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx';
-import {
-  codeMirrorTheme,
-  codeMirrorErrorTheme,
-} from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
+import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { PipelineBlueprint } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/PipelineBlueprint.tsx';
 import { usePipelineScript } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-script.ts';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
@@ -50,6 +47,8 @@ export const PipelineEditor = ({
     handleStepsChange,
     handleNameChange,
   } = usePipelineScript({ projectId });
+
+  const editorTheme = useCodeMirrorTheme({ hasError: !!parseError });
 
   useEffect(() => {
     if (initialScript) {
@@ -92,21 +91,16 @@ export const PipelineEditor = ({
 
       <TabsContent value='scripting' className='h-full overflow-hidden' forceMount>
         <div className='flex h-full flex-col gap-2'>
-          <div className='overflow-auto p-2'>
-            <Card className='min-h-0 flex-1 p-0 bg-card'>
-              <div className='h-full rounded-[inherit] bg-background text-foreground'>
-                <ReactCodeMirror
-                  value={script}
-                  onChange={setScript}
-                  className='h-full [&_.cm-editor]:bg-background [&_.cm-scroller]:bg-background [&_.cm-content]:text-foreground'
-                  height='100%'
-                  extensions={[
-                    StreamLanguage.define(json),
-                    parseError ? codeMirrorErrorTheme : codeMirrorTheme,
-                  ]}
-                />
-              </div>
-            </Card>
+          {/* The editor theme draws its own frame, so no Card wrapper here. */}
+          <div className='min-h-0 flex-1 overflow-auto p-2'>
+            <ReactCodeMirror
+              value={script}
+              onChange={setScript}
+              className='h-full'
+              height='100%'
+              theme={editorTheme}
+              extensions={[StreamLanguage.define(json)]}
+            />
           </div>
           {parseError && (
             <p className='text-destructive text-sm'>
