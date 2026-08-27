@@ -43,13 +43,21 @@ const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
 
   const sections: NavSection[] = [
     {
-      title: t`Main`,
+      title: t`Organization`,
       items: [
         {
           title: t`Projects`,
           url: `${prefix}/projects`,
           icon: WorkflowIcon,
           permission: Permission.READ_ORGANIZATION,
+        },
+        {
+          // Who belongs to the *current* organization — org-scoped, unlike the
+          // system-wide directory below it.
+          title: t`Members`,
+          url: `${prefix}/members`,
+          icon: UsersRound,
+          permission: Permission.LIST_ORGANIZATION_MEMBERS,
         },
         {
           title: t`Agents`,
@@ -66,16 +74,8 @@ const useNavSections = (): { sections: NavSection[]; ready: boolean } => {
       ],
     },
     {
-      title: t`Admin`,
+      title: t`System`,
       items: [
-        {
-          // Who belongs to the *current* organization — org-scoped, unlike the
-          // system-wide directory below it.
-          title: t`Members`,
-          url: `${prefix}/members`,
-          icon: UsersRound,
-          permission: Permission.LIST_ORGANIZATION_MEMBERS,
-        },
         {
           title: t`Users`,
           url: `${prefix}/users`,
