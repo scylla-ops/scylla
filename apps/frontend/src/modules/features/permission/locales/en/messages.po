@@ -97,7 +97,7 @@ msgstr "Create grant"
 msgid "Create organizations"
 msgstr "Create organizations"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:234
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:236
 msgid "Create pipelines"
 msgstr "Create pipelines"
 
@@ -111,7 +111,7 @@ msgstr "Create projects"
 msgid "Create role"
 msgstr "Create role"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:293
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:295
 msgid "Create secrets"
 msgstr "Create secrets"
 
@@ -127,19 +127,19 @@ msgstr "Custom"
 msgid "Define what this role is called and what it can do."
 msgstr "Define what this role is called and what it can do."
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:195
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:197
 msgid "Delete every project"
 msgstr "Delete every project"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:278
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:280
 msgid "Delete jobs"
 msgstr "Delete jobs"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:246
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:248
 msgid "Delete pipelines"
 msgstr "Delete pipelines"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:299
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:301
 msgid "Delete secrets"
 msgstr "Delete secrets"
 
@@ -147,7 +147,7 @@ msgstr "Delete secrets"
 msgid "Delete the organization"
 msgstr "Delete the organization"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:194
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:196
 msgid "Delete the project"
 msgstr "Delete the project"
 
@@ -171,11 +171,11 @@ msgstr "e.g., project-viewer"
 msgid "Edit"
 msgstr "Edit"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:188
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:190
 msgid "Edit every project"
 msgstr "Edit every project"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:240
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:242
 msgid "Edit pipelines"
 msgstr "Edit pipelines"
 
@@ -187,7 +187,7 @@ msgstr "Edit role"
 msgid "Edit the organization"
 msgstr "Edit the organization"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:187
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:189
 msgid "Edit the project"
 msgstr "Edit the project"
 
@@ -221,11 +221,11 @@ msgstr "Grant and revoke roles in every organization"
 msgid "Grant and revoke roles in the organization"
 msgstr "Grant and revoke roles in the organization"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:212
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:214
 msgid "Grant and revoke roles on every project"
 msgstr "Grant and revoke roles on every project"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:211
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:213
 msgid "Grant and revoke roles on the project"
 msgstr "Grant and revoke roles on the project"
 
@@ -282,7 +282,7 @@ msgstr "Loading…"
 msgid "Manage roles, and grant them anywhere"
 msgstr "Manage roles, and grant them anywhere"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:258
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:260
 msgid "Manage triggers"
 msgstr "Manage triggers"
 
@@ -297,6 +297,10 @@ msgstr "Member"
 #: src/modules/features/permission/presentation/utils/permission-mapping.ts:107
 msgid "Member of the organization"
 msgstr "Member of the organization"
+
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:180
+msgid "Member of the project"
+msgstr "Member of the project"
 
 #: src/modules/features/permission/presentation/ui/components/role-form/RoleFormDialog.tsx:147
 msgid "Name"
@@ -355,7 +359,7 @@ msgstr "Nobody is listed here yet."
 msgid "not a member of this organization"
 msgstr "not a member of this organization"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:227
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:229
 msgid "Open a pipeline"
 msgstr "Open a pipeline"
 
@@ -363,16 +367,16 @@ msgstr "Open a pipeline"
 #~ msgid "Open a project"
 #~ msgstr "Open a project"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:228
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:230
 msgid "Open any pipeline"
 msgstr "Open any pipeline"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:182
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:184
 msgid "Open any project"
 msgstr "Open any project"
 
 #: src/modules/features/permission/presentation/ui/components/role-detail/GrantCreator.tsx:405
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:321
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:323
 msgid "Organization"
 msgstr "Organization"
 
@@ -393,7 +397,7 @@ msgstr "Pick an organization"
 msgid "Pick an organization first"
 msgstr "Pick an organization first"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:322
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:324
 msgid "Project"
 msgstr "Project"
 
@@ -401,7 +405,7 @@ msgstr "Project"
 msgid "Projects"
 msgstr "Projects"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:272
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:274
 msgid "Read job logs"
 msgstr "Read job logs"
 
@@ -429,7 +433,7 @@ msgstr "Role revoked"
 #~ msgid "Roles"
 #~ msgstr "Roles"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:252
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:254
 msgid "Run pipelines"
 msgstr "Run pipelines"
 
@@ -469,11 +473,11 @@ msgstr "See who belongs to any organization"
 msgid "See who belongs to the organization"
 msgstr "See who belongs to the organization"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:202
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:204
 msgid "See who works on any project"
 msgstr "See who works on any project"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:201
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:203
 msgid "See who works on the project"
 msgstr "See who works on the project"
 
@@ -491,7 +495,7 @@ msgstr "Select a user"
 msgid "Selected ({0})"
 msgstr "Selected ({0})"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:320
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:322
 msgid "System"
 msgstr "System"
 
@@ -504,7 +508,7 @@ msgid "This role grants access across the whole system."
 msgstr "This role grants access across the whole system."
 
 #: src/modules/features/permission/presentation/ui/components/role-detail/RoleDetailHeader.tsx:21
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:323
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:325
 msgid "Unknown"
 msgstr "Unknown"
 
@@ -524,11 +528,11 @@ msgstr "View agents"
 #~ msgid "View organization members"
 #~ msgstr "View organization members"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:266
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:268
 msgid "View pipeline jobs"
 msgstr "View pipeline jobs"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:286
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:288
 msgid "View project secrets"
 msgstr "View project secrets"
 
@@ -540,23 +544,23 @@ msgstr "View project secrets"
 #~ msgid "View the organization"
 #~ msgstr "View the organization"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:220
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:222
 msgid "View the pipeline list"
 msgstr "View the pipeline list"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:221
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:223
 msgid "View the pipelines of every project"
 msgstr "View the pipelines of every project"
 
 #: src/modules/features/permission/presentation/utils/permission-mapping.ts:178
-msgid "View the project"
-msgstr "View the project"
+#~ msgid "View the project"
+#~ msgstr "View the project"
 
 #: src/modules/features/permission/presentation/utils/permission-mapping.ts:103
 #~ msgid "View the project list"
 #~ msgstr "View the project list"
 
-#: src/modules/features/permission/presentation/utils/permission-mapping.ts:287
+#: src/modules/features/permission/presentation/utils/permission-mapping.ts:289
 msgid "View the secrets of every project"
 msgstr "View the secrets of every project"
 

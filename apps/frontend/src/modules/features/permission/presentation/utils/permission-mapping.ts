@@ -173,9 +173,11 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
     // Visibility, not navigation: it is what puts a project in the holder's
     // list when they cannot list the whole organization. In an organization
     // role that already confers `LIST_PROJECTS_BY_ORGANIZATION` it adds
-    // nothing; in a project role it is the entire point.
+    // nothing; in a project role it is the entire point — belonging to this
+    // project, the way READ_ORGANIZATION is belonging to the organization, so
+    // the label matches its wording.
     id: Permission.READ_PROJECT,
-    label: msg`View the project`,
+    label: msg`Member of the project`,
     // Hidden in the organization editor (LIST_PROJECTS_BY_ORGANIZATION stands in
     // for it), so this shows in a system role's tree and in role detail panels —
     // it has to read correctly at both scopes.
