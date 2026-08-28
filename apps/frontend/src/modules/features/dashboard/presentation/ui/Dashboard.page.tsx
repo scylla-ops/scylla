@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Folder, Workflow, ChevronRight } from 'lucide-react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Badge } from '@shadcn/badge.tsx';
 import { Skeleton } from '@shadcn/skeleton.tsx';
@@ -13,6 +13,8 @@ import { getRelativeTime } from '@shared/utils/date-utils.ts';
 import { useOrgOverview } from '@/modules/features/dashboard/presentation/hooks/use-org-overview.ts';
 import { AgentOutcomesChart } from '@/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
 
 const StatCard = ({
   icon,
@@ -43,11 +45,12 @@ const StatCard = ({
 );
 
 export const DashboardPage = () => {
+  const { t } = useLingui();
   const { projects, projectsLoading, projectsError, allPipelines, pipelinesLoading } =
     useOrgOverview();
   const navigate = useScyllaNavigate();
 
-  if (projectsError) return <ErrorState message='Unable to load dashboard' />;
+  if (projectsError) return <ErrorState message={t`Unable to load dashboard`} />;
 
   const sortedPipelines = [...allPipelines].sort((a, b) =>
     a.projectName.localeCompare(b.projectName) || a.name.localeCompare(b.name),
@@ -58,18 +61,18 @@ export const DashboardPage = () => {
 
   return (
     <div className='flex flex-col gap-6 w-full h-full overflow-y-auto'>
-      <FeatureHeader label='Dashboard' />
+      <FeatureHeader label={t`Dashboard`} />
 
       <div className='grid grid-cols-2 gap-4 max-w-sm'>
         <StatCard
           icon={<Folder className='h-4 w-4 text-primary' />}
-          label='Projects'
+          label={t`Projects`}
           value={projects.length}
           loading={projectsLoading}
         />
         <StatCard
           icon={<Workflow className='h-4 w-4 text-primary' />}
-          label='Pipelines'
+          label={t`Pipelines`}
           value={allPipelines.length}
           loading={pipelinesLoading || projectsLoading}
         />
@@ -203,14 +206,18 @@ export const DashboardPage = () => {
         )}
       </section>
 
-      <Separator />
+      {/* The chart reads agent stats — hide it whole rather than render a panel
+          that can only fail for a user without agent access. */}
+      <Can permission={Permission.LIST_AGENTS}>
+        <Separator />
 
-      <section className='flex flex-col gap-3 pb-4'>
-        <h2 className='text-base font-semibold'>
-          <Trans>Agent Outcomes</Trans>
-        </h2>
-        <AgentOutcomesChart />
-      </section>
+        <section className='flex flex-col gap-3 pb-4'>
+          <h2 className='text-base font-semibold'>
+            <Trans>Agent Outcomes</Trans>
+          </h2>
+          <AgentOutcomesChart />
+        </section>
+      </Can>
     </div>
   );
 };

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package scylla.oauth.v1;
+
+import "scylla/common/v1/common.proto";
+
+// GitHub OAuth login. Both RPCs are public (no session exists yet): the
+// frontend gets the authorize URL, redirects the user to GitHub, then sends the
+// returned code here to obtain a session. Present only in `oauth-github` builds.
+service OauthService {
+  rpc GetAuthUrl(GetAuthUrlRequest) returns (GetAuthUrlResponse);
+  rpc Callback(CallbackRequest) returns (CallbackResponse);
+}
+
+message GetAuthUrlRequest {
+  // CSRF token, echoed back on callback by the client.
+  string state = 1;
+}
+
+message GetAuthUrlResponse { string url = 1; }
+
+message CallbackRequest { string code = 1; }
+
+message CallbackResponse {
+  // Opaque bearer token for the session.
+  string token = 1;
+  scylla.common.v1.UserId user_id = 2;
+
+  // Exactly one outcome. A first login provisions a new account (carrying its
+  // fresh organization id); any later login resolves to an existing account and
+  // carries no org id. Splitting these makes "new account without an org" and
+  // "existing account with an org" unrepresentable.
+  oneof outcome {
+    NewAccount new_account = 10;
+    ExistingAccount existing_account = 11;
+  }
+
+  // First OAuth login: a brand-new account and its organization were provisioned.
+  message NewAccount { scylla.common.v1.OrganizationId organization_id = 1; }
+  // A later login that resolved to an already-existing account (matched by
+  // linked identity, or by email on first link). Carries no fields.
+  message ExistingAccount {}
+}

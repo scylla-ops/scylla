@@ -26,7 +26,7 @@ export const PipelineUpdatePage = () => {
   if (isError) return <ErrorState message='Failed to load pipeline' />;
 
   return (
-    <div className='flex h-full flex-col gap-4 overflow-hidden'>
+    <div className='flex h-full flex-col gap-4'>
       <PipelineEditor
         mode='edit'
         submitLabel='Save'

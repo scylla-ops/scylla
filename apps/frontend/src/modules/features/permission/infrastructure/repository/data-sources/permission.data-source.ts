@@ -1,46 +1,49 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
+  AuthzAction,
+  PrincipalRef,
+  ScopeKind,
+  ScopeRef,
+} from '@/generated/scylla/authz/v1/permission.ts';
+import type {
   CreateGrantRequest,
-  CreateRoleRequest,
-  DeleteRoleResponse,
-  GetEffectivePermissionsResponse,
   Grant,
-  ListAuthzVocabularyResponse,
-  ListGrantableRolesResponse,
-  ListGrantsResponse,
-  ListRolesResponse,
-  PrincipalKind,
-  RevokeGrantResponse,
+  GrantableRole,
+} from '@/generated/scylla/authz/v1/grant.ts';
+import type {
+  CreateRoleRequest,
+  EffectiveScope,
   Role,
-  Scope,
   UpdateRoleRequest,
-} from '@/generated/permission.ts';
+} from '@/generated/scylla/authz/v1/role.ts';
 
 /**
- * Infrastructure boundary: raw gRPC calls to the permission backend.
- * Returns generated protobuf types directly — mapping to domain types is
- * performed by {@link DefaultPermissionRepository}.
+ * Infrastructure boundary: raw gRPC calls to the authz backend
+ * (`scylla.authz.v1`: RoleService + GrantService + PolicyService).
+ * Every RPC now answers with an `XxxResponse` wrapper; this layer unwraps it so
+ * callers keep receiving plain entities. Mapping to domain types is performed
+ * by {@link DefaultPermissionRepository}.
  */
 export interface PermissionDataSource {
   // ── Roles ──────────────────────────────────────────────────────────────────
-  listRoles(): Promise<ScyllaResult<ListRolesResponse>>;
+  listRoles(): Promise<ScyllaResult<Role[]>>;
   getRoleById(id: string): Promise<ScyllaResult<Role>>;
   createRole(request: CreateRoleRequest): Promise<ScyllaResult<Role>>;
   updateRole(request: UpdateRoleRequest): Promise<ScyllaResult<Role>>;
-  deleteRole(id: string): Promise<ScyllaResult<DeleteRoleResponse>>;
+  deleteRole(id: string): Promise<ScyllaResult<void>>;
 
   // ── Introspection ──────────────────────────────────────────────────────────
-  getEffectivePermissions(
-    principalKind: PrincipalKind,
-    principalId: string,
-  ): Promise<ScyllaResult<GetEffectivePermissionsResponse>>;
+  getEffectivePermissions(principal: PrincipalRef): Promise<ScyllaResult<EffectiveScope[]>>;
+  getMyPermissions(): Promise<ScyllaResult<EffectiveScope[]>>;
 
   // ── Grants ─────────────────────────────────────────────────────────────────
-  listGrants(scope?: Scope, scopeId?: string): Promise<ScyllaResult<ListGrantsResponse>>;
+  listGrants(scope?: ScopeRef): Promise<ScyllaResult<Grant[]>>;
   createGrant(request: CreateGrantRequest): Promise<ScyllaResult<Grant>>;
-  revokeGrant(id: string): Promise<ScyllaResult<RevokeGrantResponse>>;
-  listGrantableRoles(scope?: Scope): Promise<ScyllaResult<ListGrantableRolesResponse>>;
+  revokeGrant(id: string): Promise<ScyllaResult<void>>;
+  /** Clears every grant a principal holds at `scope`, and beneath it. */
+  revokeAllAccess(principal: PrincipalRef, scope: ScopeRef): Promise<ScyllaResult<number>>;
+  listGrantableRoles(scopeKind?: ScopeKind): Promise<ScyllaResult<GrantableRole[]>>;
 
   // ── Vocabulary ─────────────────────────────────────────────────────────────
-  listAuthzVocabulary(): Promise<ScyllaResult<ListAuthzVocabularyResponse>>;
+  listPermissionVocabulary(): Promise<ScyllaResult<AuthzAction[]>>;
 }

@@ -27,7 +27,7 @@ import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/
 import { useSecrets } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 import ReactCodeMirror from '@uiw/react-codemirror';
 import { shell as shellLang } from '@codemirror/legacy-modes/mode/shell';
-import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
+import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { StreamLanguage } from '@codemirror/language';
 
 export type NodeFormValue =
@@ -73,6 +73,7 @@ export function StepNodeFormDialog({
   const { t } = useLingui();
   const { projectId } = useParams();
   const { secrets } = useSecrets(projectId ?? '');
+  const editorTheme = useCodeMirrorTheme();
   const isEditMode = !!editingNode;
 
   const [nodeId, setNodeId] = useState('');
@@ -144,7 +145,7 @@ export function StepNodeFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className='max-w-5xl'>
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? <Trans>Edit node</Trans> : <Trans>Add a new node</Trans>}
@@ -161,7 +162,7 @@ export function StepNodeFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-4'>
+        <div className='min-w-0 space-y-4'>
           {/* Node ID */}
           <div className='space-y-2'>
             <Label htmlFor='node-id'>
@@ -219,7 +220,8 @@ export function StepNodeFormDialog({
                     onChange={value => setScript(value)}
                     placeholder={'cd crates/api\ncargo build --release'}
                     spellCheck={false}
-                    extensions={[StreamLanguage.define(shellLang), codeMirrorTheme]}
+                    theme={editorTheme}
+                    extensions={[StreamLanguage.define(shellLang)]}
                   />
                 </div>
               </div>

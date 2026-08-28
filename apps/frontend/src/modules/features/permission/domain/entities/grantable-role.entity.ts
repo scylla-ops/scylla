@@ -1,4 +1,7 @@
-import type { PermissionScope } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import type {
+  PermissionScope,
+  RoleKind,
+} from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 /**
  * A role that may be assigned via a grant.
@@ -6,10 +9,10 @@ import type { PermissionScope } from '@/modules/features/permission/domain/struc
  * and scope metadata needed to build a grant picker.
  */
 export interface GrantableRoleEntity {
-  /** Role id or stable key (e.g. "organization-admin"). */
-  name: string;
+  /** Role id (value of the protobuf RoleId wrapper). */
+  roleId: string;
   scope: PermissionScope;
-  /** "admin" (full control) | "agent" (restricted) */
-  kind: string;
+  /** ADMIN (full control) | AGENT (restricted). */
+  kind: RoleKind;
   description: string;
 }

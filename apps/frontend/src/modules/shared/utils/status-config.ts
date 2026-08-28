@@ -1,7 +1,24 @@
-import { Ban, CheckCircle2, DiamondMinusIcon, Loader2, SkipForward, XCircle } from 'lucide-react';
+import {
+  Ban,
+  CheckCircle2,
+  CircleHelp,
+  DiamondMinusIcon,
+  Loader2,
+  SkipForward,
+  Unplug,
+  XCircle,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-export type StatusKey = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled';
+export type StatusKey =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'skipped'
+  | 'cancelled'
+  | 'orphaned'
+  | 'unknown';
 
 export interface StatusConfig {
   label: string;
@@ -65,6 +82,28 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     barHoverClassName: 'hover:bg-zinc-500 hover:scale-y-110',
     dotClassName: 'bg-zinc-500',
     textClassName: 'text-zinc-600',
+  },
+  orphaned: {
+    label: 'Orphaned',
+    variant: 'destructive',
+    icon: Unplug,
+    iconClassName: 'text-orange-500',
+    barClassName: 'bg-orange-400/80',
+    barHoverClassName: 'hover:bg-orange-500 hover:scale-y-110',
+    dotClassName: 'bg-orange-500',
+    textClassName: 'text-orange-600',
+  },
+  // The server reported a state this build doesn't know about (a newer oneof
+  // arm or enum value). Shown as-is rather than guessed at.
+  unknown: {
+    label: 'Unknown',
+    variant: 'outline',
+    icon: CircleHelp,
+    iconClassName: 'text-slate-400',
+    barClassName: 'bg-slate-300/80',
+    barHoverClassName: 'hover:bg-slate-400 hover:scale-y-110',
+    dotClassName: 'bg-slate-400',
+    textClassName: 'text-slate-500',
   },
   cancelled: {
     label: 'Cancelled',

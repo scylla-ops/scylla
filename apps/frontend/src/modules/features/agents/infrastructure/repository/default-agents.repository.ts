@@ -27,7 +27,7 @@ export class DefaultAgentsRepository implements AgentsRepository {
     return this.remoteDataSource.createAgent(organizationId, name);
   }
 
-  deleteAgent(agentId: string): Promise<ScyllaResult<boolean>> {
+  deleteAgent(agentId: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.deleteAgent(agentId);
   }
 }

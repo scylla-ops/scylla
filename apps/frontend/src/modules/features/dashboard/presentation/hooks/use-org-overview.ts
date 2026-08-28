@@ -36,8 +36,9 @@ export const useOrgOverview = () => {
   const pipelinesLoading = pipelineQueries.some(q => q.isLoading);
 
   const allPipelines: PipelineWithProject[] = pipelineQueries.flatMap(q => {
-    if (!q.data) return [];
-    return q.data.pipelines.map(p => ({ ...p, projectName: q.data!.projectName }));
+    const data = q.data;
+    if (!data) return [];
+    return data.pipelines.map(p => ({ ...p, projectName: data.projectName }));
   });
 
   return {

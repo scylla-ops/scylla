@@ -1,19 +1,30 @@
 import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { ListUsersResponse, UserResponse, UpdateUserRequest } from '@/generated/user.ts';
-import { UserServiceClient } from '@/generated/user.client.ts';
+import type {
+  ListUsersResponse,
+  UpdateUserRequest,
+  User,
+} from '@/generated/scylla/user/v1/user.ts';
+import { UserServiceClient } from '@/generated/scylla/user/v1/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
-import { GrantServiceClient } from '@/generated/permission.client.ts';
-import { Scope } from '@/generated/permission.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
+
+/**
+ * Every user RPC now answers with a `XxxResponse` wrapper holding the entity in
+ * field 1. The entity is `optional` on the wire, so a response without it means
+ * the server broke its own contract: fail loudly here rather than let an empty
+ * user reach the mappers.
+ */
+function requireUser(user: User | undefined): User {
+  if (!user) throw new Error('Server returned a response without a user.');
+  return user;
+}
 
 export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   private readonly _userClient: UserServiceClient;
-  private readonly _grantClient: GrantServiceClient;
 
   constructor(transport: CoreGrpcTransport) {
     this._userClient = new UserServiceClient(transport.getTransport());
-    this._grantClient = new GrantServiceClient(transport.getTransport());
   }
 
   public async getAll(): Promise<ScyllaResult<ListUsersResponse>> {
@@ -23,34 +34,23 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
     );
   }
 
-  public async getById(userId: string): Promise<ScyllaResult<UserResponse>> {
-    return ScyllaResult.tryAsync<UserResponse>(
-      async () => await this._userClient.getUser({ userId: wrapId(userId) }).response,
+  public async getById(userId: string): Promise<ScyllaResult<User>> {
+    return ScyllaResult.tryAsync<User>(
+      async () =>
+        requireUser((await this._userClient.getUser({ userId: wrapId(userId) }).response).user),
       'Error fetching user',
     );
   }
 
-  public async create(username: string, password: string): Promise<ScyllaResult<UserResponse>> {
-    return ScyllaResult.tryAsync<UserResponse>(async () => {
-      const user = await this._userClient.createUser({ username, password }).response;
-
-      // Temporary: grant full access to the new user via a System-scoped
-      // `system-admin` grant until the permissions system is finalized (a grant
-      // on the System root confers control over the whole tenancy tree).
-      await this._grantClient.createGrant({
-        userId: user.userId,
-        role: 'system-admin',
-        scope: Scope.SYSTEM,
-        scopeId: '',
-      }).response;
-
-      return user;
+  public async create(username: string, password: string): Promise<ScyllaResult<User>> {
+    return ScyllaResult.tryAsync<User>(async () => {
+      return requireUser((await this._userClient.createUser({ username, password }).response).user);
     }, 'Failed to create user.');
   }
 
-  public async update(request: UpdateUserRequest): Promise<ScyllaResult<UserResponse>> {
-    return ScyllaResult.tryAsync<UserResponse>(
-      async () => await this._userClient.updateUser(request).response,
+  public async update(request: UpdateUserRequest): Promise<ScyllaResult<User>> {
+    return ScyllaResult.tryAsync<User>(
+      async () => requireUser((await this._userClient.updateUser(request).response).user),
       'Failed to update user.',
     );
   }

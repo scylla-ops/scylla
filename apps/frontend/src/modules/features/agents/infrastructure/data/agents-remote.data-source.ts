@@ -1,5 +1,5 @@
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
-import { AgentAdminServiceClient } from '@/generated/agent_admin.client.ts';
+import { AgentAdminServiceClient } from '@/generated/scylla/agent/v1/agent_admin.client.ts';
 import type {
   CreatedAgent,
   AgentStats,
@@ -27,16 +27,18 @@ export class AgentsRemoteDataSourceImpl implements AgentsRemoteDataSource {
   getAgent(agentId: string): Promise<ScyllaResult<AgentEntity>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AgentAdminServiceClient(this.grpcTransport.getTransport());
-      const response = await client.getAgent({ id: wrapId(agentId) }).response;
-      return GrpcAgentMapper.toDomain(response);
+      const response = await client.getAgent({ agentId: wrapId(agentId) }).response;
+      if (!response.agent) throw new Error('GetAgent returned no agent');
+      return GrpcAgentMapper.toDomain(response.agent);
     }, 'Failed to fetch agent');
   }
 
   getAgentStats(agentId: string): Promise<ScyllaResult<AgentStats>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AgentAdminServiceClient(this.grpcTransport.getTransport());
-      const response = await client.getAgentStats({ id: wrapId(agentId) }).response;
-      return GrpcAgentMapper.statsToDomain(response);
+      const response = await client.getAgentStats({ agentId: wrapId(agentId) }).response;
+      if (!response.stats) throw new Error('GetAgentStats returned no stats');
+      return GrpcAgentMapper.statsToDomain(response.stats);
     }, 'Failed to fetch agent stats');
   }
 
@@ -50,11 +52,10 @@ export class AgentsRemoteDataSourceImpl implements AgentsRemoteDataSource {
     }, 'Failed to create agent');
   }
 
-  deleteAgent(agentId: string): Promise<ScyllaResult<boolean>> {
+  deleteAgent(agentId: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync(async () => {
       const client = new AgentAdminServiceClient(this.grpcTransport.getTransport());
-      const response = await client.deleteAgent({ id: wrapId(agentId) }).response;
-      return response.deleted;
+      await client.deleteAgent({ agentId: wrapId(agentId) }).response;
     }, 'Failed to delete agent');
   }
 }

@@ -5,7 +5,7 @@ import type { AppsRepository } from '@/modules/features/apps/domain/repository/a
 export class RevokeAppSecretUseCase {
   constructor(private readonly repository: AppsRepository) {}
 
-  execute(secretId: string): Promise<ScyllaResult<boolean>> {
+  execute(secretId: string): Promise<ScyllaResult<void>> {
     return this.repository.revokeAppSecret(secretId);
   }
 }

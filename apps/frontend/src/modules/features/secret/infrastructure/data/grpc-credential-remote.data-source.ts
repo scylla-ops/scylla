@@ -1,5 +1,5 @@
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import { SecretServiceClient } from '@/generated/secret.client.ts';
+import { SecretServiceClient } from '@/generated/scylla/secret/v1/secret.client.ts';
 import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import type {
@@ -33,16 +33,18 @@ export class GrpcSecretRemoteDataSource implements SecretRemoteDataSource {
         value: input.value,
         description: input.description,
       }).response;
-      return GrpcSecretMapper.toDomain(response);
+      // CreateSecret now returns a wrapper; an absent `secret` means the server
+      // answered with a shape this build cannot read.
+      if (!response.secret) throw new Error('CreateSecret returned no secret');
+      return GrpcSecretMapper.toDomain(response.secret);
     }, 'Failed to create secret.');
   }
 
-  public async deleteById(secretId: string): Promise<ScyllaResult<boolean>> {
-    return ScyllaResult.tryAsync<boolean>(async () => {
-      const response = await this._secretClient.deleteSecret({
+  public async deleteById(secretId: string): Promise<ScyllaResult<void>> {
+    return ScyllaResult.tryAsync<void>(async () => {
+      await this._secretClient.deleteSecret({
         secretId: wrapId(secretId),
       }).response;
-      return response.deleted;
     }, 'Error deleting secret');
   }
 }

@@ -95,9 +95,13 @@ export const TriggersPage = () => {
       {revealed && (
         <SecretRevealDialog
           open={true}
-          entityKind='webhook'
-          entity={{ id: revealed.id, name: revealed.name }}
+          title={<Trans>{revealed.name} webhook secret</Trans>}
+          description={<Trans>Copy the secret below — it is shown only once.</Trans>}
           secret={revealed.secret}
+          secretLabel={`Secret`}
+          revealedNote={
+            <Trans>Add this signing secret to your webhook sender's HMAC configuration.</Trans>
+          }
           onClose={() => setRevealed(null)}
         />
       )}

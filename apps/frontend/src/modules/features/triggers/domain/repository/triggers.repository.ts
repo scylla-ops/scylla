@@ -4,7 +4,6 @@ import type {
   TriggerDraft,
   TriggerEntity,
 } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
-import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
 /** Repository interface for pipeline-scoped triggers. */
 export interface TriggersRepository {
@@ -12,8 +11,8 @@ export interface TriggersRepository {
   getById(triggerId: string): Promise<ScyllaResult<TriggerEntity>>;
   create(pipelineId: string, draft: TriggerDraft): Promise<ScyllaResult<CreatedTrigger>>;
   update(triggerId: string, draft: TriggerDraft): Promise<ScyllaResult<TriggerEntity>>;
-  deleteById(triggerId: string): Promise<ScyllaResult<boolean>>;
+  deleteById(triggerId: string): Promise<ScyllaResult<void>>;
   setEnabled(triggerId: string, enabled: boolean): Promise<ScyllaResult<TriggerEntity>>;
-  /** Fire immediately for testing — mints and dispatches a Job, like a real tir. */
-  fireNow(triggerId: string): Promise<ScyllaResult<JobEntity>>;
+  /** Fire immediately for testing — mints and dispatches a Job, and returns its id. */
+  fireNow(triggerId: string): Promise<ScyllaResult<string>>;
 }

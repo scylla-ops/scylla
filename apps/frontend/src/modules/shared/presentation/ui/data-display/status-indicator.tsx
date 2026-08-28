@@ -8,7 +8,8 @@ export type StatusState =
   | 'pending'
   | 'idle'
   | 'skipped'
-  | 'cancelled';
+  | 'cancelled'
+  | 'orphaned';
 
 interface StatusIndicatorProps {
   state: StatusState;
@@ -55,6 +56,13 @@ const getStateColors = (state: StatusIndicatorProps['state']) => {
         ping: 'bg-amber-300',
         container: 'border-amber-200 text-amber-800 dark:border-amber-800 dark:text-amber-300',
         gradient: 'from-amber-400 to-amber-500',
+      };
+    case 'orphaned':
+      return {
+        dot: 'bg-orange-500',
+        ping: 'bg-orange-300',
+        container: 'border-orange-200 text-orange-800 dark:border-orange-800 dark:text-orange-300',
+        gradient: 'from-orange-400 to-orange-500',
       };
     case 'idle':
     default:

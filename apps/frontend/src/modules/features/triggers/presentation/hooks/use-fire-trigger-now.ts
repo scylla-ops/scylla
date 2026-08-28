@@ -8,7 +8,7 @@ import { TRIGGERS_QUERY_KEY } from '@/modules/features/triggers/presentation/hoo
 /**
  * Fire a trigger immediately. Mints a real Job, so we invalidate the pipeline's
  * jobs queries (prefix match covers both the dashboard and the Jobs page) and
- * the triggers list (to refresh `lastFiredAt`/`lastStatus`).
+ * the triggers list (to refresh `lastFiredAt`/`lastResult`).
  */
 export const useFireTriggerNow = (pipelineId: string) => {
   const { fireTriggerNow } = useDependencies().triggers;

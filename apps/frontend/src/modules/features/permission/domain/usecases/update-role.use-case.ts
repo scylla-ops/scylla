@@ -4,14 +4,13 @@ import {
   updateRole,
 } from '@/modules/features/permission/domain/entities/role.entity.ts';
 import { type ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import type { AccessSpec } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 export interface UpdateRoleInput {
   id: string;
   name?: string;
   description?: string;
-  permissions?: Permission[];
-  fullControl?: boolean;
+  access?: AccessSpec;
 }
 
 export class UpdateRoleUseCase {

@@ -11,6 +11,8 @@ import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigat
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
@@ -21,6 +23,10 @@ export const UserAdminPage = () => {
   const { i18n } = useLingui();
 
   const { goToUserSettings } = useScyllaNavigate();
+
+  // Users are a system-level resource — no org/project target to check against.
+  const canCreate = useCan(Permission.CREATE_USER);
+  const canDelete = useCan(Permission.DELETE_USER);
 
   const handleDelete = async () => {
     const currentUserId = localStorage.getItem('userId');
@@ -48,6 +54,10 @@ export const UserAdminPage = () => {
         onDeleteSelection={handleDelete}
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}
+        canNew={canCreate}
+        newDeniedReason={<Trans>You don't have permission to create users.</Trans>}
+        canDelete={canDelete}
+        deleteDeniedReason={<Trans>You don't have permission to delete users.</Trans>}
       />
       <UserTable onView={goToUserSettings} data={users?.items} />
       <AddUserDialog open={openDialog} setOpen={setOpenDialog} />

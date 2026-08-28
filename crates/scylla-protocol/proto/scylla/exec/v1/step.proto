@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package scylla.exec.v1;
+
+// The execution contract: how one unit of work is described. A deliberate leaf
+// package, shared by the side that *defines* work (`scylla.pipeline.v1`) and the
+// side that *runs* it (`scylla.agent.v1`), so neither depends on the other.
+//
+// It lives here rather than in `scylla.common.v1` because a step is a domain
+// concept that will grow new kinds (a container step, a checkout step), and that
+// churn must not touch the package holding `UserId`.
+
+// How a ScriptStep's script is interpreted. The agent runs the script through
+// the named shell with fail-fast semantics.
+enum Shell {
+  // Treated as SHELL_SH.
+  SHELL_UNSPECIFIED = 0;
+  // POSIX /bin/sh — always present in the agent image.
+  SHELL_SH = 1;
+  // /bin/bash — requires bash in the agent base image.
+  SHELL_BASH = 2;
+}
+
+// A direct process execution: `command` is resolved via PATH and `args` is a
+// literal argv vector (never word-split). No shell is involved, so nothing is
+// interpolated — deterministic and injection-proof.
+message ExecStep {
+  string command = 1;
+  repeated string args = 2;
+}
+
+// A shell script run via the chosen shell. The whole (possibly multi-line)
+// script is the unit of execution; the shell parses quoting, pipes, globs,
+// redirects and `$VAR` expansion.
+message ScriptStep {
+  string script = 1;
+  Shell shell = 2;
+}

@@ -1,3 +1,7 @@
+/**
+ * Mirrors the wire `ScopeKind`. `UNSPECIFIED` doubles as "the backend named a
+ * scope this build does not know about".
+ */
 export enum PermissionScope {
   UNSPECIFIED = 0,
   SYSTEM = 1,
@@ -5,14 +9,56 @@ export enum PermissionScope {
   PROJECT = 3,
 }
 
+/**
+ * Who a grant is for. `UNSPECIFIED` doubles as "the backend named a principal
+ * kind this build does not know about".
+ */
 export enum PrincipalKind {
   UNSPECIFIED = 0,
   USER = 1,
   APP = 2,
 }
 
+/** Mirrors the wire `RoleKind`: what a builtin role is for. Descriptive only. */
+export enum RoleKind {
+  UNSPECIFIED = 0,
+  ADMIN = 1,
+  AGENT = 2,
+  /** A human working inside the scope, short of administering it. */
+  MEMBER = 3,
+}
+
+/** A grant holder: a user or an app, identified by its plain string id. */
+export interface PrincipalEntity {
+  kind: PrincipalKind;
+  /** Empty when `kind` is `UNSPECIFIED`. */
+  id: string;
+}
+
+/**
+ * Write-side access: what the caller wants a role to confer. Only the two arms
+ * this build can actually build are representable.
+ */
+export type AccessSpec =
+  | { kind: 'fullControl' }
+  | { kind: 'restricted'; permissions: Permission[] };
+
+/**
+ * Read-side access. `unknown` means the backend sent an access arm newer than
+ * this build — surface it, never read it as "holds no permission".
+ */
+export type AccessEntity = AccessSpec | { kind: 'unknown' };
+
+/**
+ * The wire permission vocabulary, mirroring the proto enum value for value.
+ * It is a *mapping*, not a product decision: the backend may send any of these
+ * in a role's permission set, so every proto value must be representable here.
+ *
+ * What a human can actually toggle in the role editor is a deliberately smaller
+ * subset — see `presentation/utils/permission-mapping.ts`.
+ */
 export enum Permission {
-  PERMISSION_UNSPECIFIED = 0,
+  UNSPECIFIED = 0,
   CREATE_USER = 1,
   READ_USER = 2,
   UPDATE_USER = 3,
@@ -70,7 +116,7 @@ export enum Permission {
   MANAGE_SYSTEM_GRANTS = 54,
   MANAGE_ORG_GRANTS = 55,
   MANAGE_PROJECT_GRANTS = 56,
-  MANAGE_POLICIES = 57,
+  // 57 was MANAGE_POLICIES, dropped with the runtime Cedar policy escape hatch.
   MANAGE_ROLES = 58,
   CREATE_SECRET = 59,
   LIST_SECRETS = 60,

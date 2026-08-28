@@ -1,7 +1,12 @@
 import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
 import { useQuery } from '@tanstack/react-query';
 
-export const useUsers = () => {
+/**
+ * The user directory. Listing it is a system-wide capability (`LIST_USERS`), so
+ * a caller that only administers one organization or project passes
+ * `enabled: false` rather than asking for a denial.
+ */
+export const useUsers = (options: { enabled?: boolean } = {}) => {
   const { getUsers } = useDependencies().user;
 
   const {
@@ -13,6 +18,7 @@ export const useUsers = () => {
     queryFn: async () => {
       return (await getUsers.execute()).unwrap();
     },
+    enabled: options.enabled ?? true,
   });
 
   return {

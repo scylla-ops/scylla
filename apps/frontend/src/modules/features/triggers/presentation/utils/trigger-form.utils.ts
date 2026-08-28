@@ -3,6 +3,7 @@ import type {
   TriggerEntity,
 } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
+import type { TriggerDraftKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 
 /**
  * Décale un champ Cron (Jour du Mois ou Jour de la Semaine) selon un diff (-1, 0, 1)
@@ -176,7 +177,7 @@ export const triggerToDraftInputs = (trigger?: TriggerEntity): DraftInput[] =>
 
 export const buildTriggerDraft = (params: {
   name: string;
-  kind: TriggerKind;
+  kind: TriggerDraftKind;
   cronExpression: string;
   signatureHeader: string;
   inputs: DraftInput[];

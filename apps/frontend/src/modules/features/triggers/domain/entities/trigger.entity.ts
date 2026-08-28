@@ -5,6 +5,15 @@ import type {
 } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 
 /**
+ * Outcome of the last fire. `unknown` means the server reported an outcome arm
+ * newer than this build — shown as such, never guessed at.
+ */
+export type TriggerFireResult =
+  | { kind: 'succeeded' }
+  | { kind: 'failed'; error: string }
+  | { kind: 'unknown' };
+
+/**
  * A stored, pipeline-scoped initiator that launches a run without a human
  * clicking "Run". Identity-bearing — the thing the feature owns.
  */
@@ -19,8 +28,8 @@ export interface TriggerEntity {
   nextFireAt?: string;
   /** Last fire time, for observability. Unset before the first fire. */
   lastFiredAt?: string;
-  /** Last fire result: "" | "ok" | "error: ...". */
-  lastStatus: string;
+  /** Last fire result. Absent until the trigger has fired at least once. */
+  lastResult?: TriggerFireResult;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,9 +43,9 @@ export interface TriggerDraft {
 
 /**
  * Returned only by create. Carries the one-time webhook signing secret in clear
- * (empty for cron) — copy it now, it is never returned again.
+ * — copy it now, it is never returned again. Absent for a cron trigger.
  */
 export interface CreatedTrigger {
   trigger: TriggerEntity;
-  webhookSecret: string;
+  webhookSecret?: string;
 }

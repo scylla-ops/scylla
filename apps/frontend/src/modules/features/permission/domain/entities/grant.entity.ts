@@ -1,20 +1,18 @@
 import type {
-  Permission,
   PermissionScope,
+  PrincipalEntity,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 export interface GrantEntity {
   id: string;
-  /** String value extracted from the protobuf UserId wrapper. */
-  userId?: string;
+  /** Who holds the grant: a user or an app. */
+  principal: PrincipalEntity;
   /**
-   * Role id or key being granted (e.g. "organization-admin").
-   * Empty string when this is a direct single-permission grant.
+   * The role it confers within its scope. A grant carries a role and nothing
+   * else; anything narrower is a role with exactly the permissions wanted.
    */
-  role: string;
+  roleId: string;
   scope: PermissionScope;
   /** The org/project id the grant is bound to; empty for SYSTEM scope. */
   scopeId: string;
-  /** Set instead of `role` when this is a direct single-permission grant. */
-  permission?: Permission;
 }

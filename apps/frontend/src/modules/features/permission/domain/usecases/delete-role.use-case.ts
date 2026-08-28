@@ -4,7 +4,7 @@ import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 export class DeleteRoleUseCase {
   constructor(private readonly _repository: PermissionRepository) {}
 
-  public execute(id: string): Promise<ScyllaResult<boolean>> {
+  public execute(id: string): Promise<ScyllaResult<void>> {
     return this._repository.deleteRole(id);
   }
 }

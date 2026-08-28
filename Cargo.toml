@@ -2,7 +2,6 @@
 resolver = "3"
 members = [
     "crates/scylla-core",
-    "crates/scylla-api",
     "crates/scylla-protocol",
     "crates/scylla-agent",
     "crates/scylla-control-plane",
@@ -45,7 +44,7 @@ sqlx = { version = "0.9", default-features = false, features = [
 ] }
 
 # workspace crates
-scylla-core = { path = "crates/scylla-core", default-features = false }
+scylla-core = { path = "crates/scylla-core" }
 
 # domain / utilities
 thiserror = "2.0.18"
@@ -62,11 +61,12 @@ bon = "3.9"
 argon2 = "0.6.0-rc.8"
 # Reversible AEAD for project secrets (decrypted at dispatch). XChaCha20-Poly1305
 # = 24-byte random nonce, so encrypting many secrets under one key is safe.
-chacha20poly1305 = { version = "0.10", features = ["std"] }
+# (0.11 dropped the `std` feature; default alloc + getrandom is all we use.)
+chacha20poly1305 = "0.11"
 # Webhook HMAC-SHA256 signature verification (constant-time compare via subtle).
-# hmac 0.12 + sha2 0.10 share digest 0.10 (0.13 would need sha2 0.11).
-hmac = "0.12"
-sha2 = "0.10"
+# hmac 0.13 + sha2 0.11 share digest 0.11.
+hmac = "0.13"
+sha2 = "0.11"
 subtle = "2.6"
 hex = "0.4"
 cedar-policy = "4"
@@ -76,6 +76,8 @@ lettre = { version = "0.11", default-features = false, features = [
     "builder",
     "hostname",
 ] }
+# Held at 0.12: oauth2 5.0 (github oauth) links against reqwest 0.12 and its
+# `AsyncHttpClient` impl only covers that version — bump the two together.
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "rustls-tls",

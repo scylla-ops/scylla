@@ -13,24 +13,21 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: entity.name
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:88
-msgid "{0} credentials"
-msgstr "{0} credentials"
+#~ msgid "{0} credentials"
+#~ msgstr "{0} credentials"
 
-#. placeholder {0}: entity.name
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:84
-msgid "{0} is ready"
-msgstr "{0} is ready"
+#~ msgid "{0} is ready"
+#~ msgstr "{0} is ready"
 
-#. placeholder {0}: entity.name
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:86
-msgid "{0} webhook secret"
-msgstr "{0} webhook secret"
+#~ msgid "{0} webhook secret"
+#~ msgstr "{0} webhook secret"
 
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:163
-msgid "Add this signing secret to your webhook sender's HMAC configuration."
-msgstr "Add this signing secret to your webhook sender's HMAC configuration."
+#~ msgid "Add this signing secret to your webhook sender's HMAC configuration."
+#~ msgstr "Add this signing secret to your webhook sender's HMAC configuration."
 
 #: src/modules/shared/utils/toast-messages.ts:44
 msgid "Agent id copied"
@@ -57,7 +54,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
 msgid "Clear"
 msgstr "Clear"
 
@@ -78,10 +75,10 @@ msgid "Copy"
 msgstr "Copy"
 
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:95
-msgid "Copy the secret below — it is shown only once."
-msgstr "Copy the secret below — it is shown only once."
+#~ msgid "Copy the secret below — it is shown only once."
+#~ msgstr "Copy the secret below — it is shown only once."
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:109
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:111
 msgid "Copy your secret"
 msgstr "Copy your secret"
 
@@ -97,11 +94,11 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:108
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:126
 msgid "Delete"
 msgstr "Delete"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:188
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:172
 msgid "Done"
 msgstr "Done"
 
@@ -113,7 +110,7 @@ msgstr "Error"
 msgid "From source"
 msgstr "From source"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:75
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
 msgid "in total"
 msgstr "in total"
 
@@ -121,7 +118,16 @@ msgstr "in total"
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:114
+#: src/modules/shared/utils/toast-messages.ts:29
+#~ msgid "Member added"
+#~ msgstr "Member added"
+
+#: src/modules/shared/utils/toast-messages.ts:30
+#~ msgid "Member removed"
+#~ msgstr "Member removed"
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:137
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:143
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -185,7 +191,7 @@ msgstr "Replace CONTROL_PLANE_URL with the address your agent reaches the contro
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 msgstr "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:134
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:132
 msgid "Reveal"
 msgstr "Reveal"
 
@@ -205,7 +211,7 @@ msgstr "Secret created"
 msgid "Secret deleted"
 msgstr "Secret deleted"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:97
 msgid "Select all"
 msgstr "Select all"
 
@@ -221,13 +227,13 @@ msgstr "Set up an agent"
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Showing {start}-{end} of {totalCount}"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:111
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:113
 msgid "shown once"
 msgstr "shown once"
 
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:154
-msgid "Start your agent"
-msgstr "Start your agent"
+#~ msgid "Start your agent"
+#~ msgstr "Start your agent"
 
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:98
 msgid "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
@@ -262,12 +268,12 @@ msgid "Trigger updated"
 msgstr "Trigger updated"
 
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:93
-msgid "Two steps and it picks up jobs."
-msgstr "Two steps and it picks up jobs."
+#~ msgid "Two steps and it picks up jobs."
+#~ msgstr "Two steps and it picks up jobs."
 
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:167
-msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
-msgstr "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
+#~ msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
+#~ msgstr "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
 
 #: src/modules/shared/utils/toast-messages.ts:19
 msgid "User created"
@@ -289,10 +295,15 @@ msgstr "Username and password are required."
 msgid "You cannot delete your own account."
 msgstr "You cannot delete your own account."
 
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:128
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
+msgid "You don't have permission to do this."
+msgstr "You don't have permission to do this."
+
 #: src/modules/shared/utils/scylla-result.ts:66
 msgid "You don't have permission to perform this action"
 msgstr "You don't have permission to perform this action"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:179
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:163
 msgid "You won't see this secret again."
 msgstr "You won't see this secret again."

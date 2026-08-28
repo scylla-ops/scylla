@@ -13,6 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: revealed.name
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:98
+msgid "{0} webhook secret"
+msgstr "{0} webhook secret"
+
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
 #~ msgid "5-field cron (min hour day month weekday), evaluated in UTC."
 #~ msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
@@ -25,11 +30,11 @@ msgstr "5-field cron (min hour day month weekday), evaluated in your local time.
 #~ msgid "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
 #~ msgstr "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:110
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:114
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "A trigger starts a run of this pipeline automatically."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:71
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:77
 msgid "Actions"
 msgstr "Actions"
 
@@ -41,6 +46,10 @@ msgstr "Add a cron schedule or webhook to start runs automatically."
 msgid "Add input"
 msgstr "Add input"
 
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:103
+msgid "Add this signing secret to your webhook sender's HMAC configuration."
+msgstr "Add this signing secret to your webhook sender's HMAC configuration."
+
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:77
 msgid "at"
 msgstr "at"
@@ -49,7 +58,7 @@ msgstr "at"
 msgid "at minute"
 msgstr "at minute"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:204
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:216
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -57,11 +66,15 @@ msgstr "Cancel"
 #~ msgid "Copied!"
 #~ msgstr "Copied!"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:26
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:99
+msgid "Copy the secret below — it is shown only once."
+msgstr "Copy the secret below — it is shown only once."
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:33
 msgid "Copy url"
 msgstr "Copy url"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:207
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:219
 msgid "Create"
 msgstr "Create"
 
@@ -73,23 +86,23 @@ msgstr "Custom"
 msgid "Daily"
 msgstr "Daily"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:25
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:35
 msgid "Delete"
 msgstr "Delete"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:34
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:39
 msgid "disabled"
 msgstr "disabled"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:32
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:37
 msgid "disabled — URL returns 404"
 msgstr "disabled — URL returns 404"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:22
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:32
 msgid "Edit"
 msgstr "Edit"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:107
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:111
 msgid "Edit trigger"
 msgstr "Edit trigger"
 
@@ -97,7 +110,7 @@ msgstr "Edit trigger"
 msgid "enabled"
 msgstr "enabled"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:60
 msgid "Enabled"
 msgstr "Enabled"
 
@@ -113,11 +126,11 @@ msgstr "Every day"
 msgid "Every hour"
 msgstr "Every hour"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:18
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:28
 msgid "Fire now"
 msgstr "Fire now"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:183
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:195
 msgid "Header carrying the HMAC signature. Leave empty for the Scylla default."
 msgstr "Header carrying the HMAC signature. Leave empty for the Scylla default."
 
@@ -129,7 +142,7 @@ msgstr "Hourly"
 msgid "Inputs"
 msgstr "Inputs"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:46
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:51
 msgid "last"
 msgstr "last"
 
@@ -141,8 +154,8 @@ msgstr "Literal"
 msgid "Monthly"
 msgstr "Monthly"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:117
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:22
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:121
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:28
 msgid "Name"
 msgstr "Name"
 
@@ -150,11 +163,11 @@ msgstr "Name"
 msgid "Never fired"
 msgstr "Never fired"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:107
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:111
 msgid "New trigger"
 msgstr "New trigger"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:40
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:45
 msgid "next"
 msgstr "next"
 
@@ -190,34 +203,39 @@ msgstr "on day"
 msgid "Optional values injected into the run as environment variables."
 msgstr "Optional values injected into the run as environment variables."
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:207
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:219
 msgid "Save"
 msgstr "Save"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:159
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:171
 msgid "Schedule"
 msgstr "Schedule"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:174
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:186
 msgid "Signature header"
 msgstr "Signature header"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:42
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:48
 msgid "Source"
 msgstr "Source"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:48
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:130
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:142
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:134
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:154
 msgid "Type"
 msgstr "Type"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:135
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:147
 msgid "Type can't be changed — delete and recreate to switch."
 msgstr "Type can't be changed — delete and recreate to switch."
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:139
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:30
+msgid "Unknown"
+msgstr "Unknown"
 
 #: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:58
 msgid "webhook endpoints"
@@ -230,3 +248,8 @@ msgstr "Weekly"
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:163
 msgid "Write a cron expression"
 msgstr "Write a cron expression"
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:40
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:42
+msgid "You don't have permission to manage triggers."
+msgstr "You don't have permission to manage triggers."

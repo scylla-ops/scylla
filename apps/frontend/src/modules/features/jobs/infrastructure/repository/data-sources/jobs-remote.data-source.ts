@@ -1,9 +1,9 @@
 import type {
-  ListJobsResponse,
-  JobResponse,
+  Job,
+  ListPipelineJobsResponse,
   ListJobLogsResponse,
   JobLogEntry,
-} from '@/generated/job.ts';
+} from '@/generated/scylla/job/v1/job.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 
@@ -17,8 +17,9 @@ export interface JobsRemoteDataSource {
   getByPipelineId(
     pipelineId: string,
     pagination?: PaginationParams,
-  ): Promise<ScyllaResult<ListJobsResponse>>;
-  getById(jobId: string): Promise<ScyllaResult<JobResponse>>;
+  ): Promise<ScyllaResult<ListPipelineJobsResponse>>;
+  /** Resolves the `Job` itself: the data source unwraps `GetJobResponse`. */
+  getById(jobId: string): Promise<ScyllaResult<Job>>;
   deleteById(jobId: string): Promise<ScyllaResult<void>>;
   getLogs(
     jobId: string,

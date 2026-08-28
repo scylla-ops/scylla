@@ -4,6 +4,7 @@ import { GetProjectsUseCase } from '@/modules/features/project/domain/use-cases/
 import { CreateProjectUseCase } from '@/modules/features/project/domain/use-cases/create-project.use-case.ts';
 import { UpdateProjectUseCase } from '@/modules/features/project/domain/use-cases/update-project.use-case.ts';
 import { DeleteProjectUseCase } from '@/modules/features/project/domain/use-cases/delete-project.use-case.ts';
+import { ListProjectMembersUseCase } from '@/modules/features/project/domain/use-cases/list-project-members.use-case.ts';
 import { CoreModule } from '@core/di/core.module.ts';
 
 const projectRemoteDataSource = new GrpcProjectRemoteDataSource(CoreModule.data.grpcTransport);
@@ -13,6 +14,7 @@ const getProjectsUseCase = new GetProjectsUseCase(projectRepository);
 const createProjectUseCase = new CreateProjectUseCase(projectRepository);
 const updateProjectUseCase = new UpdateProjectUseCase(projectRepository);
 const deleteProjectUseCase = new DeleteProjectUseCase(projectRepository);
+const listProjectMembersUseCase = new ListProjectMembersUseCase(projectRepository);
 
 export const ProjectModule = {
   domain: {
@@ -20,5 +22,6 @@ export const ProjectModule = {
     createProject: createProjectUseCase,
     updateProject: updateProjectUseCase,
     deleteProject: deleteProjectUseCase,
+    listProjectMembers: listProjectMembersUseCase,
   },
 };
