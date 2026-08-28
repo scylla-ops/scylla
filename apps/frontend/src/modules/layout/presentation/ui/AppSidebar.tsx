@@ -7,6 +7,7 @@ import {
   WorkflowIcon,
   HardDriveIcon,
   ShieldIcon,
+  LayoutDashboard,
 } from 'lucide-react';
 
 import {
@@ -52,6 +53,12 @@ const useNavSections = (
       title: t`Organization`,
       header: organizationHeader,
       items: [
+        {
+          title: t`Dashboard`,
+          url: `${prefix}/dashboard`,
+          icon: LayoutDashboard,
+          permission: Permission.READ_ORGANIZATION,
+        },
         {
           title: t`Projects`,
           url: `${prefix}/projects`,

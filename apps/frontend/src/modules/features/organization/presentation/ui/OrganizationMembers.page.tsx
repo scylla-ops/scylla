@@ -14,7 +14,6 @@ import { useAuthorization } from '@/modules/features/permission/presentation/hoo
 import { useScopeMembership } from '@/modules/features/permission/presentation/hooks/use-scope-membership.ts';
 import {
   AddMemberDialog,
-  MembersHint,
   MembersList,
 } from '@/modules/features/permission/presentation/ui/components/members';
 import { useOrganizationMembers } from '@/modules/features/organization/presentation/hooks/use-organization-members.ts';

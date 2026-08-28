@@ -48,7 +48,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
       otherOrganization?.name ?? null,
     );
     if (otherOrganization) {
-      void navigate(`/${slugifyOrgName(otherOrganization.name)}/projects`);
+      void navigate(`/${slugifyOrgName(otherOrganization.name)}/dashboard`);
     }
   }, [
     deleteOrgId,
@@ -81,7 +81,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
           key={idValue(organisation.organizationId)}
           onSelect={() => {
             setOrganization(idValue(organisation.organizationId), organisation.name);
-            void navigate(`/${slugifyOrgName(organisation.name)}/projects`);
+            void navigate(`/${slugifyOrgName(organisation.name)}/dashboard`);
           }}
         >
           <div className='flex items-center w-full'>

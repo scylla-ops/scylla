@@ -31,7 +31,7 @@ export const OrganizationSyncWrapper = () => {
       //todo: navigate to a not found page ?
       const fallback = organizations[0];
       if (fallback) {
-        void navigate(`/${slugifyOrgName(fallback.name)}/projects`, {
+        void navigate(`/${slugifyOrgName(fallback.name)}/dashboard`, {
           replace: true,
         });
         setOrganization(idValue(fallback.organizationId), fallback.name);

@@ -24,6 +24,7 @@ import { RequirePermission } from '@/modules/features/permission/presentation/ui
 import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 import { OrganizationMembersPage } from '@/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx';
 import { ProjectMembersPage } from '@/modules/features/project/presentation/ui/ProjectMembers.page.tsx';
+import { DashboardPage } from '@/modules/features/dashboard/presentation/ui/Dashboard.page.tsx';
 
 //TODO: put each navigations part in a separate file, (module ?)
 export const CoreRouter = createBrowserRouter([
@@ -46,6 +47,19 @@ export const CoreRouter = createBrowserRouter([
             path: '/:organizationSlug',
             element: <OrganizationSyncWrapper />,
             children: [
+              {
+                path: 'dashboard',
+                handle: {
+                  breadcrumb: () => 'Dashboard',
+                },
+                // Same gate as the projects list: the overview is a read of the
+                // organization, and it is where every org-level redirect lands.
+                element: (
+                  <RequirePermission permission={Permission.READ_ORGANIZATION}>
+                    <DashboardPage />
+                  </RequirePermission>
+                ),
+              },
               {
                 path: 'members',
                 handle: {
