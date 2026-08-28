@@ -13,68 +13,72 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:243
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:216
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:238
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:251
 msgid "Agent Outcomes"
 msgstr "Agent Outcomes"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:145
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:176
 msgid "All Pipelines"
 msgstr "All Pipelines"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:64
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:82
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:164
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:198
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:231
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:226
 msgid "No agents found. Connect an agent to see execution history."
 msgstr "No agents found. Connect an agent to see execution history."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:130
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:159
 msgid "No description"
 msgstr "No description"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:125
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:120
 msgid "No finished jobs in this window."
 msgstr "No finished jobs in this window."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:156
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:188
 msgid "No pipelines yet."
 msgstr "No pipelines yet."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:106
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:125
 msgid "No projects yet."
 msgstr "No projects yet."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:170
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:204
 msgid "Nodes"
 msgstr "Nodes"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:75
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:93
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:167
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:201
 msgid "Project"
 msgstr "Project"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:69
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:86
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:87
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:104
 msgid "Projects"
 msgstr "Projects"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:93
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:111
 msgid "See all"
 msgstr "See all"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:53
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:59
 msgid "Unable to load dashboard"
 msgstr "Unable to load dashboard"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:173
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:207
 msgid "Updated"
 msgstr "Updated"
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:136
+msgid "You don't have access to this project's pipelines"
+msgstr "You don't have access to this project's pipelines"

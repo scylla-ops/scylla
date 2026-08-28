@@ -99,7 +99,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
   }, [status]);
 
   if (isLoading) {
-    return <Skeleton className='h-[220px] w-full' />;
+    return <Skeleton className='h-[160px] w-full' />;
   }
 
   return (
@@ -111,22 +111,17 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
           onChange={setStatus}
           label={v => v}
         />
-        <ToggleGroup<Range>
-          options={RANGES}
-          value={range}
-          onChange={setRange}
-          label={v => v}
-        />
+        <ToggleGroup<Range> options={RANGES} value={range} onChange={setRange} label={v => v} />
       </div>
 
       {!hasData ? (
-        <div className='flex h-[180px] items-center justify-center text-center'>
+        <div className='flex h-[160px] items-center justify-center text-center'>
           <p className='text-sm text-muted-foreground'>
             <Trans>No finished jobs in this window.</Trans>
           </p>
         </div>
       ) : (
-        <ChartContainer config={activeConfig} className='h-[220px] w-full'>
+        <ChartContainer config={activeConfig} className='h-[160px] w-full'>
           <AreaChart data={buckets} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
             <defs>
               <linearGradient id='grad-completed' x1='0' y1='0' x2='0' y2='1'>
@@ -217,7 +212,7 @@ export const AgentOutcomesChart = () => {
     return (
       <Card>
         <CardContent className='p-4'>
-          <Skeleton className='h-[280px] w-full' />
+          <Skeleton className='h-[210px] w-full' />
         </CardContent>
       </Card>
     );
@@ -226,7 +221,7 @@ export const AgentOutcomesChart = () => {
   if (agents.length === 0) {
     return (
       <Card>
-        <CardContent className='flex h-[180px] items-center justify-center p-4'>
+        <CardContent className='flex h-[140px] items-center justify-center p-4'>
           <p className='text-sm text-muted-foreground'>
             <Trans>No agents found. Connect an agent to see execution history.</Trans>
           </p>
