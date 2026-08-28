@@ -45,17 +45,10 @@ export const ContextSelector = ({
               <SidebarMenuButton
                 size='lg'
                 className='
-                  bg-background
-                  border border-border
-                  rounded-lg
-                  hover:scale-105
+                  rounded-lg px-2
                   hover:bg-accent
-                  hover:border-primary/40
                   data-[state=open]:bg-accent
-                  data-[state=open]:scale-105
-                  data-[state=open]:border-primary
-                  transition-all duration-200
-                  shadow-sm hover:shadow-md
+                  transition-colors duration-200
                   focus:ring-0 focus:outline-none focus-visible:ring-0
                 '
               >

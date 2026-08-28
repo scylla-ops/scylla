@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
@@ -19,4 +20,11 @@ export interface NavItem {
 export interface NavSection {
   title: string;
   items: NavItem[];
+  /**
+   * Optional node pinned at the top of the section card (above its entries),
+   * for controls that belong to the section itself — e.g. the organization
+   * selector on top of the organization-scoped links.
+   * Rendering it replaces the section label, which it already spells out.
+   */
+  header?: ReactNode;
 }
