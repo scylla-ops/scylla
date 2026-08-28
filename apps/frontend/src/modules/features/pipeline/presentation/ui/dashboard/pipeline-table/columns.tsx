@@ -20,6 +20,7 @@ type PipelineColumnMeta = {
   jobsByPipelineId: Map<string, JobEntity[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
+  canListJobs?: boolean;
 };
 
 export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<PipelineMetadata>[] => [
@@ -42,6 +43,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
           jobs={jobs}
           isLoading={meta.isJobsLoading}
           isError={meta.isJobsError}
+          isForbidden={meta.canListJobs === false}
           maxJobs={10}
         />
       );

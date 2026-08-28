@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import { cn } from '@shared/presentation/utils';
 import { Skeleton } from '@shadcn/skeleton.tsx';
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
@@ -10,15 +11,35 @@ type PipelineChartProps = {
   jobs: JobEntity[];
   isLoading?: boolean;
   isError?: boolean;
+  /** The job history was never fetched — the user may not list this project's jobs. */
+  isForbidden?: boolean;
 };
 
-export const PipelineChart = ({ jobs, isLoading, isError, maxJobs }: PipelineChartProps) => {
+export const PipelineChart = ({
+  jobs,
+  isLoading,
+  isError,
+  isForbidden,
+  maxJobs,
+}: PipelineChartProps) => {
   if (isLoading) {
     return (
       <div className='w-full flex items-center gap-2 h-10 py-1 overflow-hidden rounded-md px-1'>
         {[...Array(maxJobs)].map((_, index) => (
           <Skeleton key={index} className='flex-1 min-w-[4px] h-full rounded-sm' />
         ))}
+      </div>
+    );
+  }
+
+  // Checked before the error state: nothing was requested, so there is no
+  // failure to report — only a permission the user doesn't hold.
+  if (isForbidden) {
+    return (
+      <div className='w-full flex items-center justify-center h-10 py-1'>
+        <span className='text-xs text-muted-foreground italic'>
+          <Trans>You don't have permission to view this pipeline's jobs</Trans>
+        </span>
       </div>
     );
   }

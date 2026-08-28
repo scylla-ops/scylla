@@ -13,7 +13,8 @@ export const DashboardPipelinePage = () => {
     usePipelinesMetadata(projectId!);
 
   const pipelineIds = (pipelines?.items ?? []).map(p => p.id);
-  const { jobsByPipelineId, isJobsError, isJobsLoading } = usePipelineJobs(pipelineIds);
+  const { jobsByPipelineId, isJobsError, isJobsLoading, canListJobs } =
+    usePipelineJobs(pipelineIds);
 
   if (isLoading || !pipelines) {
     return <></>;
@@ -37,6 +38,7 @@ export const DashboardPipelinePage = () => {
               jobsByPipelineId={jobsByPipelineId}
               isJobsError={isJobsError}
               isJobsLoading={isJobsLoading}
+              canListJobs={canListJobs}
             />
           ) : (
             <div className='flex items-center justify-center h-full min-h-100'>

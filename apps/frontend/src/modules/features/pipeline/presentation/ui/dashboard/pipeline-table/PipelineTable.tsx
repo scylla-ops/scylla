@@ -13,6 +13,7 @@ type PipelineTableProps = {
   jobsByPipelineId: Map<string, JobEntity[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
+  canListJobs?: boolean;
 };
 
 export const PipelineTable = ({
@@ -20,6 +21,7 @@ export const PipelineTable = ({
   jobsByPipelineId,
   isJobsLoading,
   isJobsError,
+  canListJobs,
 }: PipelineTableProps) => {
   const { selectedIds, select } = useSelection('pipelines');
   const { goToEditPipeline, goToJobs, goToTriggers } = useScyllaNavigate();
@@ -59,6 +61,7 @@ export const PipelineTable = ({
     jobsByPipelineId,
     isJobsLoading: isJobsLoading,
     isJobsError: isJobsError,
+    canListJobs: canListJobs,
   });
 
   return (

@@ -20,7 +20,7 @@ msgstr ""
 msgid "{submitLabel}"
 msgstr "{submitLabel}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:62
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:64
 msgid "Actions"
 msgstr "Actions"
 
@@ -83,7 +83,7 @@ msgstr "Command"
 #~ msgid "Create"
 #~ msgstr "Create"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:48
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:50
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
@@ -155,7 +155,7 @@ msgstr "Environment variables"
 #~ msgid "Failed to fetch pipeline stats"
 #~ msgstr "Failed to fetch pipeline stats"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:37
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:38
 msgid "History"
 msgstr "History"
 
@@ -171,7 +171,7 @@ msgstr "Invalid JSON"
 msgid "KEY"
 msgstr "KEY"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:53
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:55
 msgid "Last Run"
 msgstr "Last Run"
 
@@ -208,7 +208,7 @@ msgstr "Name"
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:45
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:47
 msgid "No pipeline found"
 msgstr "No pipeline found"
 
@@ -297,7 +297,7 @@ msgstr "Set the name of the pipeline."
 msgid "Shell"
 msgstr "Shell"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:28
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:29
 msgid "Status"
 msgstr "Status"
 
@@ -343,3 +343,7 @@ msgstr "You don't have permission to delete pipelines."
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:115
 msgid "You don't have permission to edit this pipeline."
 msgstr "You don't have permission to edit this pipeline."
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:41
+msgid "You don't have permission to view this pipeline's jobs"
+msgstr "You don't have permission to view this pipeline's jobs"
