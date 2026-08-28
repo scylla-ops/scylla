@@ -1,9 +1,12 @@
 import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { ListUsersResponse, User, UpdateUserRequest } from '@/generated/scylla/user/v1/user.ts';
+import type {
+  ListUsersResponse,
+  UpdateUserRequest,
+  User,
+} from '@/generated/scylla/user/v1/user.ts';
 import { UserServiceClient } from '@/generated/scylla/user/v1/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
-import { GrantServiceClient } from '@/generated/scylla/authz/v1/grant.client.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
 /**
@@ -19,11 +22,9 @@ function requireUser(user: User | undefined): User {
 
 export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   private readonly _userClient: UserServiceClient;
-  private readonly _grantClient: GrantServiceClient;
 
   constructor(transport: CoreGrpcTransport) {
     this._userClient = new UserServiceClient(transport.getTransport());
-    this._grantClient = new GrantServiceClient(transport.getTransport());
   }
 
   public async getAll(): Promise<ScyllaResult<ListUsersResponse>> {
@@ -43,20 +44,7 @@ export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
 
   public async create(username: string, password: string): Promise<ScyllaResult<User>> {
     return ScyllaResult.tryAsync<User>(async () => {
-      const user = requireUser(
-        (await this._userClient.createUser({ username, password }).response).user,
-      );
-
-      // Temporary: grant full access to the new user via a System-scoped
-      // `system-admin` grant until the permissions system is finalized (a grant
-      // on the System root confers control over the whole tenancy tree).
-      await this._grantClient.createGrant({
-        principal: { principal: { oneofKind: 'user', user: { userId: user.userId } } },
-        scope: { scope: { oneofKind: 'system', system: {} } },
-        role: wrapId('system-admin'),
-      }).response;
-
-      return user;
+      return requireUser((await this._userClient.createUser({ username, password }).response).user);
     }, 'Failed to create user.');
   }
 

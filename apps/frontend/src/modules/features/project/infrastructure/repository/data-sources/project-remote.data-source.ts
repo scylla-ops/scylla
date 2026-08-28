@@ -2,6 +2,7 @@ import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   ListOrganizationProjectsResponse,
   Project,
+  ProjectMember,
 } from '@/generated/scylla/project/v1/project.ts';
 import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 
@@ -10,6 +11,7 @@ export interface ProjectRemoteDataSource {
     organizationId: string,
     pagination?: PaginationParams,
   ) => Promise<ScyllaResult<ListOrganizationProjectsResponse>>;
+  listMembers: (projectId: string) => Promise<ScyllaResult<ProjectMember[]>>;
   create: (
     name: string,
     organizationId: string,

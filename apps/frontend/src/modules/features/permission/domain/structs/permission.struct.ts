@@ -49,6 +49,14 @@ export type AccessSpec =
  */
 export type AccessEntity = AccessSpec | { kind: 'unknown' };
 
+/**
+ * The wire permission vocabulary, mirroring the proto enum value for value.
+ * It is a *mapping*, not a product decision: the backend may send any of these
+ * in a role's permission set, so every proto value must be representable here.
+ *
+ * What a human can actually toggle in the role editor is a deliberately smaller
+ * subset — see `presentation/utils/permission-mapping.ts`.
+ */
 export enum Permission {
   UNSPECIFIED = 0,
   CREATE_USER = 1,

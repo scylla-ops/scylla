@@ -10,6 +10,8 @@ import type { SyntheticEvent } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 type JobActionsProps = {
   onView: (e: SyntheticEvent) => void;
@@ -24,6 +26,9 @@ type JobActionsProps = {
 export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompact, setIsCompact] = useState(false);
+
+  const canViewLogs = useCan(Permission.READ_JOB_LOGS);
+  const canDelete = useCan(Permission.DELETE_JOB);
 
   useEffect(() => {
     const observer = new ResizeObserver(entries => {
@@ -62,28 +67,34 @@ export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) 
                 View
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={onDelete} className='text-destructive'>
-              <Trash className='w-4 h-4 mr-2' />
-              Delete
-            </DropdownMenuItem>
+            {canDelete && (
+              <DropdownMenuItem onClick={onDelete} className='text-destructive'>
+                <Trash className='w-4 h-4 mr-2' />
+                Delete
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
         <>
           <IconButton icon={Eye} tooltip={<Trans>View</Trans>} onClick={onView} />
 
-          <IconButton
-            icon={TerminalSquare}
-            tooltip={<Trans>Open logs</Trans>}
-            onClick={onOpenJobLog}
-          />
+          {canViewLogs && (
+            <IconButton
+              icon={TerminalSquare}
+              tooltip={<Trans>Open logs</Trans>}
+              onClick={onOpenJobLog}
+            />
+          )}
 
-          <IconButton
-            icon={Trash}
-            tooltip={<Trans>Delete</Trans>}
-            onClick={onDelete}
-            className='hover:text-destructive hover:bg-destructive/10'
-          />
+          {canDelete && (
+            <IconButton
+              icon={Trash}
+              tooltip={<Trans>Delete</Trans>}
+              onClick={onDelete}
+              className='hover:text-destructive hover:bg-destructive/10'
+            />
+          )}
         </>
       )}
     </div>

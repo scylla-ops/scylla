@@ -7,10 +7,10 @@ import type { PrincipalEntity } from '@/modules/features/permission/domain/struc
  * it runs when the user submits the form, not on mount.
  */
 export function useEffectivePermissions() {
-  const { authz } = useDependencies();
+  const { permission } = useDependencies();
 
   return useMutation({
     mutationFn: async (principal: PrincipalEntity) =>
-      (await authz.getEffectivePermissions.execute(principal)).unwrap(),
+      (await permission.getEffectivePermissions.execute(principal)).unwrap(),
   });
 }

@@ -13,12 +13,12 @@ import type {
 import type { GrantEntity } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/permission/domain/entities/grantable-role.entity.ts';
 import type { EffectivePermissionsEntity } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
-import type { AuthzVocabularyEntity } from '@/modules/features/permission/domain/entities/authz-vocabulary.entity.ts';
+import type { PermissionVocabularyEntity } from '@/modules/features/permission/domain/entities/permission-vocabulary.entity.ts';
 import { GrpcRoleMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-role.mapper.ts';
 import { GrpcGrantMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-grant.mapper.ts';
 import { GrpcGrantableRoleMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-grantable-role.mapper.ts';
 import { GrpcEffectivePermissionsMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-effective-permissions.mapper.ts';
-import { GrpcAuthzVocabularyMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-authz-vocabulary.mapper.ts';
+import { GrpcPermissionVocabularyMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-permission-vocabulary.mapper.ts';
 import { GrpcPermissionMapper } from '@/modules/features/permission/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 export class DefaultPermissionRepository implements PermissionRepository {
   constructor(private readonly _dataSource: GrpcPermissionRemoteDataSource) {}
@@ -99,6 +99,22 @@ export class DefaultPermissionRepository implements PermissionRepository {
     return this._dataSource.revokeGrant(id);
   }
 
+  public async revokeAllAccess(
+    principal: PrincipalEntity,
+    scope: PermissionScope,
+    scopeId: string,
+  ): Promise<ScyllaResult<number>> {
+    return ScyllaResult.try(
+      () => ({
+        principal: GrpcPermissionMapper.principalRefToGrpc(principal),
+        scope: GrpcPermissionMapper.scopeRefToGrpc(scope, scopeId),
+      }),
+      'Failed to map the revocation target to a gRPC request',
+    ).flatMapAsync(({ principal: ref, scope: scopeRef }) =>
+      this._dataSource.revokeAllAccess(ref, scopeRef),
+    );
+  }
+
   public async listGrantableRoles(
     scope?: PermissionScope,
   ): Promise<ScyllaResult<GrantableRoleEntity[]>> {
@@ -112,7 +128,9 @@ export class DefaultPermissionRepository implements PermissionRepository {
 
   // ── Vocabulary ─────────────────────────────────────────────────────────────
 
-  public async listAuthzVocabulary(): Promise<ScyllaResult<AuthzVocabularyEntity>> {
-    return (await this._dataSource.listAuthzVocabulary()).map(GrpcAuthzVocabularyMapper.toDomain);
+  public async listPermissionVocabulary(): Promise<ScyllaResult<PermissionVocabularyEntity>> {
+    return (await this._dataSource.listPermissionVocabulary()).map(
+      GrpcPermissionVocabularyMapper.toDomain,
+    );
   }
 }

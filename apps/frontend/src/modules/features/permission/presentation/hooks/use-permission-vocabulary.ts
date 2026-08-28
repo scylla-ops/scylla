@@ -5,7 +5,7 @@ import {
   PermissionScope,
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
-const VOCAB_QUERY_KEY = 'authz-vocabulary';
+const VOCAB_QUERY_KEY = 'permission-vocabulary';
 
 /**
  * The permission vocabulary as a coherence oracle: `coherentAtScope(p, scope)`
@@ -17,12 +17,12 @@ const VOCAB_QUERY_KEY = 'authz-vocabulary';
  * (SYSTEM=1 < ORGANIZATION=2 < PROJECT=3), so "broader or equal" is
  * simply `scope <= minScope`.
  */
-export function useAuthzVocabulary() {
-  const { authz } = useDependencies();
+export function usePermissionVocabulary() {
+  const { listPermissionVocabulary } = useDependencies().permission;
 
   const query = useQuery({
     queryKey: [VOCAB_QUERY_KEY],
-    queryFn: async () => (await authz.listAuthzVocabulary.execute()).unwrap(),
+    queryFn: async () => (await listPermissionVocabulary.execute()).unwrap(),
     staleTime: Infinity, // closed, code-owned catalog — never goes stale
   });
 

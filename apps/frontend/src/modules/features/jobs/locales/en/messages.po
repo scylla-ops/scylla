@@ -33,7 +33,7 @@ msgstr "Copy ID"
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:83
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:93
 msgid "Delete"
 msgstr "Delete"
 
@@ -53,7 +53,7 @@ msgstr "Job Logs"
 msgid "No jobs found"
 msgstr "No jobs found"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:77
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
 msgid "Open logs"
 msgstr "Open logs"
 
@@ -65,7 +65,7 @@ msgstr "Open logs"
 msgid "queued — waiting for an agent"
 msgstr "queued — waiting for an agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:65
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:74
 msgid "Refresh"
 msgstr "Refresh"
 
@@ -85,6 +85,14 @@ msgstr "Streaming live output"
 msgid "Timeline"
 msgstr "Timeline"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:73
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:80
 msgid "View"
 msgstr "View"
+
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:49
+msgid "You don't have permission to delete jobs."
+msgstr "You don't have permission to delete jobs."
+
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:47
+msgid "You don't have permission to run this pipeline."
+msgstr "You don't have permission to run this pipeline."

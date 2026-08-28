@@ -12,7 +12,7 @@ import type {
 } from '@/modules/features/permission/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/permission/domain/entities/grantable-role.entity.ts';
 import type { EffectivePermissionsEntity } from '@/modules/features/permission/domain/entities/effective-permissions.entity.ts';
-import type { AuthzVocabularyEntity } from '@/modules/features/permission/domain/entities/authz-vocabulary.entity.ts';
+import type { PermissionVocabularyEntity } from '@/modules/features/permission/domain/entities/permission-vocabulary.entity.ts';
 
 /**
  * Domain-level input for creating a grant.
@@ -51,8 +51,24 @@ export interface PermissionRepository {
   listGrants(scope?: PermissionScope, scopeId?: string): Promise<ScyllaResult<GrantEntity[]>>;
   createGrant(input: CreateGrantInput): Promise<ScyllaResult<GrantEntity>>;
   revokeGrant(id: string): Promise<ScyllaResult<void>>;
+  /**
+   * Clears every grant `principal` holds at a scope *and beneath it*, answering
+   * how many were removed.
+   *
+   * This is what removing someone from an organization means: membership is not
+   * stored anywhere, it is derived from the grants held on the organization and
+   * on its projects. Revoking only the organization-scoped ones would leave the
+   * project-scoped ones behind — inert (the backend confers nothing on a project
+   * grant whose organization grant is gone) yet still enough to keep the person
+   * listed as a member.
+   */
+  revokeAllAccess(
+    principal: PrincipalEntity,
+    scope: PermissionScope,
+    scopeId: string,
+  ): Promise<ScyllaResult<number>>;
   listGrantableRoles(scope?: PermissionScope): Promise<ScyllaResult<GrantableRoleEntity[]>>;
 
   // ── Permission vocabulary ──────────────────────────────────────────────────
-  listAuthzVocabulary(): Promise<ScyllaResult<AuthzVocabularyEntity>>;
+  listPermissionVocabulary(): Promise<ScyllaResult<PermissionVocabularyEntity>>;
 }

@@ -40,8 +40,10 @@ export interface PermissionDataSource {
   listGrants(scope?: ScopeRef): Promise<ScyllaResult<Grant[]>>;
   createGrant(request: CreateGrantRequest): Promise<ScyllaResult<Grant>>;
   revokeGrant(id: string): Promise<ScyllaResult<void>>;
+  /** Clears every grant a principal holds at `scope`, and beneath it. */
+  revokeAllAccess(principal: PrincipalRef, scope: ScopeRef): Promise<ScyllaResult<number>>;
   listGrantableRoles(scopeKind?: ScopeKind): Promise<ScyllaResult<GrantableRole[]>>;
 
   // ── Vocabulary ─────────────────────────────────────────────────────────────
-  listAuthzVocabulary(): Promise<ScyllaResult<AuthzAction[]>>;
+  listPermissionVocabulary(): Promise<ScyllaResult<AuthzAction[]>>;
 }

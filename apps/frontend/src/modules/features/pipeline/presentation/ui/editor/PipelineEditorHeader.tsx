@@ -1,10 +1,13 @@
 import { Button } from '@shadcn';
 import { TabsList, TabsTrigger } from '@shadcn/tabs.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@shared/presentation/utils';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 interface PipelineEditorHeaderProps {
   onSubmit: () => void;
@@ -44,6 +47,11 @@ export const PipelineEditorHeader = ({
       : isDirty
         ? 'dirty'
         : 'saved';
+
+  // Creating vs. editing needs a different permission, in the current project context.
+  const canSubmit = useCan(
+    mode === 'create' ? Permission.CREATE_PIPELINE : Permission.UPDATE_PIPELINE,
+  );
 
   return (
     <div className={'flex w-full items-center justify-between gap-3'}>
@@ -85,10 +93,31 @@ export const PipelineEditorHeader = ({
           </AnimatePresence>
         </div>
 
-        <Button onClick={onSubmit} disabled={submitDisabled || isSaving}>
-          {isSaving && <Loader2 className='mr-2 size-4 animate-spin' />}
-          <Trans>{submitLabel}</Trans>
-        </Button>
+        {canSubmit ? (
+          <Button onClick={onSubmit} disabled={submitDisabled || isSaving}>
+            {isSaving && <Loader2 className='mr-2 size-4 animate-spin' />}
+            <Trans>{submitLabel}</Trans>
+          </Button>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className='inline-flex'>
+                <Button disabled className='pointer-events-none'>
+                  <Trans>{submitLabel}</Trans>
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {mode === 'create' ? (
+                  <Trans>You don't have permission to create pipelines.</Trans>
+                ) : (
+                  <Trans>You don't have permission to edit this pipeline.</Trans>
+                )}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

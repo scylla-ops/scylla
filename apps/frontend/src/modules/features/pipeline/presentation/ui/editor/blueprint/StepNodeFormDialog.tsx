@@ -27,7 +27,7 @@ import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/
 import { useSecrets } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
 import ReactCodeMirror from '@uiw/react-codemirror';
 import { shell as shellLang } from '@codemirror/legacy-modes/mode/shell';
-import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
+import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { StreamLanguage } from '@codemirror/language';
 
 export type NodeFormValue =
@@ -73,6 +73,7 @@ export function StepNodeFormDialog({
   const { t } = useLingui();
   const { projectId } = useParams();
   const { secrets } = useSecrets(projectId ?? '');
+  const editorTheme = useCodeMirrorTheme();
   const isEditMode = !!editingNode;
 
   const [nodeId, setNodeId] = useState('');
@@ -219,7 +220,8 @@ export function StepNodeFormDialog({
                     onChange={value => setScript(value)}
                     placeholder={'cd crates/api\ncargo build --release'}
                     spellCheck={false}
-                    extensions={[StreamLanguage.define(shellLang), codeMirrorTheme]}
+                    theme={editorTheme}
+                    extensions={[StreamLanguage.define(shellLang)]}
                   />
                 </div>
               </div>

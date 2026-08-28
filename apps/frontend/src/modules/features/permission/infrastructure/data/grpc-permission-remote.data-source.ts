@@ -115,6 +115,18 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
     }, 'Failed to revoke grant.');
   }
 
+  /**
+   * The count comes back as `uint64`, so protobuf-ts hands it over as a
+   * `bigint`. It counts grants, never more than a handful, so narrowing to
+   * `number` at the boundary is safe and spares every caller above the cast.
+   */
+  public revokeAllAccess(principal: PrincipalRef, scope: ScopeRef): Promise<ScyllaResult<number>> {
+    return ScyllaResult.tryAsync(async () => {
+      const { response } = await this._grants.revokeAllAccess({ principal, scope });
+      return Number(response.revoked);
+    }, 'Failed to revoke access.');
+  }
+
   public listGrantableRoles(scopeKind?: ScopeKind): Promise<ScyllaResult<GrantableRole[]>> {
     return ScyllaResult.tryAsync(
       async () => (await this._grants.listGrantableRoles({ scopeKind })).response.roles,
@@ -122,10 +134,10 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
     );
   }
 
-  public listAuthzVocabulary(): Promise<ScyllaResult<AuthzAction[]>> {
+  public listPermissionVocabulary(): Promise<ScyllaResult<AuthzAction[]>> {
     return ScyllaResult.tryAsync(
       async () => (await this._roles.listAuthzVocabulary({})).response.actions,
-      'Failed to load authz vocabulary.',
+      'Failed to load the permission vocabulary.',
     );
   }
 }

@@ -54,7 +54,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
 msgid "Clear"
 msgstr "Clear"
 
@@ -94,7 +94,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:108
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:126
 msgid "Delete"
 msgstr "Delete"
 
@@ -110,7 +110,7 @@ msgstr "Error"
 msgid "From source"
 msgstr "From source"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:75
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
 msgid "in total"
 msgstr "in total"
 
@@ -118,7 +118,16 @@ msgstr "in total"
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:114
+#: src/modules/shared/utils/toast-messages.ts:29
+#~ msgid "Member added"
+#~ msgstr "Member added"
+
+#: src/modules/shared/utils/toast-messages.ts:30
+#~ msgid "Member removed"
+#~ msgstr "Member removed"
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:137
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:143
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -202,7 +211,7 @@ msgstr "Secret created"
 msgid "Secret deleted"
 msgstr "Secret deleted"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:97
 msgid "Select all"
 msgstr "Select all"
 
@@ -285,6 +294,11 @@ msgstr "Username and password are required."
 #: src/modules/shared/utils/toast-messages.ts:22
 msgid "You cannot delete your own account."
 msgstr "You cannot delete your own account."
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:128
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
+msgid "You don't have permission to do this."
+msgstr "You don't have permission to do this."
 
 #: src/modules/shared/utils/scylla-result.ts:66
 msgid "You don't have permission to perform this action"

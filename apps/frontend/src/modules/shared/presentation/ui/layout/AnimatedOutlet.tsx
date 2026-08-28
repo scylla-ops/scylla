@@ -18,7 +18,7 @@ export const AnimatedOutlet = () => {
           duration: 0.2,
           ease: [0.4, 0, 0.2, 1],
         }}
-        className='flex flex-col h-full w-full p-2 overflow-auto'
+        className='flex flex-col h-full w-full p-2'
       >
         {element}
       </motion.main>

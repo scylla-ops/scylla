@@ -6,6 +6,8 @@ import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { useRunPipeline } from '@/modules/features/pipeline/presentation/hooks/use-run-pipeline.ts';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
@@ -21,6 +23,9 @@ export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: Jobs
   });
 
   const runPipeline = useRunPipeline();
+
+  const canRun = useCan(Permission.RUN_PIPELINE);
+  const canDelete = useCan(Permission.DELETE_JOB);
 
   const handleRunPipeline = async () => {
     try {
@@ -38,6 +43,10 @@ export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: Jobs
         pluralLabel={'Jobs'}
         newLabel={'Run'}
         onNew={handleRunPipeline}
+        canNew={canRun}
+        newDeniedReason={<Trans>You don't have permission to run this pipeline.</Trans>}
+        canDelete={canDelete}
+        deleteDeniedReason={<Trans>You don't have permission to delete jobs.</Trans>}
         {...headerProps}
         underLabel={
           <div className={'flex items-center justify-between'}>

@@ -4,10 +4,10 @@ import type {
 } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 /**
- * One entry of the authz vocabulary: a permission and the narrowest scope
+ * One entry of the permission vocabulary: a permission and the narrowest scope
  * at which it is coherent (i.e. its target resource exists).
  */
-export interface AuthzActionEntity {
+export interface PermissionActionEntity {
   permission: Permission;
   /**
    * The minimal (narrowest) scope a role may bind to and still have this
@@ -20,7 +20,7 @@ export interface AuthzActionEntity {
   minScope: PermissionScope;
 }
 
-/** The full authz vocabulary published by the backend. */
-export interface AuthzVocabularyEntity {
-  actions: AuthzActionEntity[];
+/** The full permission vocabulary published by the backend. */
+export interface PermissionVocabularyEntity {
+  actions: PermissionActionEntity[];
 }

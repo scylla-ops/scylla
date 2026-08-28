@@ -21,12 +21,17 @@ import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
+import { usePermissionSync } from '@/modules/features/permission/presentation/hooks/use-permission-sync.ts';
 
 export const Layout = () => {
   const { organizations, isLoading } = useOrganizations();
   const createOrganization = useCreateOrganization();
   const navigate = useNavigate();
   const setOrganization = useContextStore(state => state.setOrganization);
+
+  // One place loads the signed-in user's permissions into the context store
+  // (at login, then on org/project switch); every `can()` reads from there.
+  usePermissionSync();
 
   if (isLoading) {
     return (
@@ -56,7 +61,7 @@ export const Layout = () => {
             duration: 0.8,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className='flex flex-col h-full w-full p-2 overflow-auto'
+          className='flex flex-col h-full w-full p-2'
         >
           <div className='w-full h-full flex flex-col items-center min-h-screen bg-background'>
             <img src={scyllaLogo} alt='Scylla' className='h-1/6 w-1/6' />
@@ -99,11 +104,11 @@ export const Layout = () => {
   }
 
   return (
-    <SidebarProvider className='w-screen h-screen overflow-hidden'>
+    <SidebarProvider className='w-screen h-screen'>
       <AppSidebar />
-      <SidebarInset className='flex flex-col flex-1 min-w-0 border border-sidebar-border bg-background overflow-hidden'>
+      <SidebarInset className='flex flex-col flex-1 min-w-0 border border-sidebar-border bg-background'>
         <TopBar />
-        <div className='p-4 flex-1 min-h-0 overflow-hidden'>
+        <div className='p-4 flex-1 min-h-0'>
           <AnimatedOutlet />
         </div>
       </SidebarInset>

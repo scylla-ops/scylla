@@ -10,6 +10,8 @@ import { cn } from '@shared/presentation/utils';
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { IconButton } from '@shared/presentation/ui';
+import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
 
 type ProjectCardProps = {
   project: ProjectEntity;
@@ -41,16 +43,19 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
               </CardTitle>
             </div>
             <div className='flex flex-row items-center gap-1 shrink-0'>
-              <IconButton
-                icon={Pencil}
-                tooltip={<Trans>Edit</Trans>}
-                onClick={e => {
-                  e.stopPropagation();
-                  setEditOpen(true);
-                }}
-                className='h-7 w-7 opacity-0 group-hover:opacity-100'
-                iconClassName='h-3.5 w-3.5'
-              />
+              {/* Checked against this card's project, not the active one. */}
+              <Can permission={Permission.UPDATE_PROJECT} target={{ projectId: project.id }}>
+                <IconButton
+                  icon={Pencil}
+                  tooltip={<Trans>Edit</Trans>}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setEditOpen(true);
+                  }}
+                  className='h-7 w-7 opacity-0 group-hover:opacity-100'
+                  iconClassName='h-3.5 w-3.5'
+                />
+              </Can>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className={'mr-2'}>

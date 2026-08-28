@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import type { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
 
 export interface NavItem {
   title: string;
@@ -6,6 +8,11 @@ export interface NavItem {
   url?: string;
   icon?: LucideIcon;
   isActive?: boolean;
+  /**
+   * Permission required (in the current org context) for this entry to be shown.
+   * Omit for entries everyone may see.
+   */
+  permission?: Permission;
   /** Sub-scope entries rendered as a collapsible Pangolin-style sub-menu. */
   items?: NavItem[];
 }
@@ -13,4 +20,11 @@ export interface NavItem {
 export interface NavSection {
   title: string;
   items: NavItem[];
+  /**
+   * Optional node pinned at the top of the section card (above its entries),
+   * for controls that belong to the section itself — e.g. the organization
+   * selector on top of the organization-scoped links.
+   * Rendering it replaces the section label, which it already spells out.
+   */
+  header?: ReactNode;
 }

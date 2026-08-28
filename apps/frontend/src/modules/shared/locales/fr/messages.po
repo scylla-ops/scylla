@@ -54,7 +54,7 @@ msgstr "Êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
 msgid "Clear"
 msgstr "Effacer"
 
@@ -94,7 +94,7 @@ msgstr "Créer"
 msgid "Creating..."
 msgstr "Création..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:108
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:126
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -110,7 +110,7 @@ msgstr "Erreur"
 msgid "From source"
 msgstr "Depuis la source"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:75
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
 msgid "in total"
 msgstr "au total"
 
@@ -118,7 +118,16 @@ msgstr "au total"
 msgid "Job queued — no agent connected"
 msgstr "Travail mis en file d'attente — aucun agent connecté"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:114
+#: src/modules/shared/utils/toast-messages.ts:29
+#~ msgid "Member added"
+#~ msgstr ""
+
+#: src/modules/shared/utils/toast-messages.ts:30
+#~ msgid "Member removed"
+#~ msgstr ""
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:137
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:143
 msgid "New {label}"
 msgstr "Nouveau {label}"
 
@@ -202,7 +211,7 @@ msgstr "Secret créé"
 msgid "Secret deleted"
 msgstr "Secret supprimé"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:97
 msgid "Select all"
 msgstr "Tout sélectionner"
 
@@ -285,6 +294,11 @@ msgstr "Le nom d'utilisateur et le mot de passe sont requis."
 #: src/modules/shared/utils/toast-messages.ts:22
 msgid "You cannot delete your own account."
 msgstr "Vous ne pouvez pas supprimer votre propre compte."
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:128
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
+msgid "You don't have permission to do this."
+msgstr ""
 
 #: src/modules/shared/utils/scylla-result.ts:66
 msgid "You don't have permission to perform this action"
