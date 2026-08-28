@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 export const useRunPipeline = () => {
   const { runPipeline } = useDependencies().pipeline;
   const queryClient = useQueryClient();
-  const { agents } = useAgents();
+  const { agents, canListAgents } = useAgents();
   const navigate = useNavigate();
   const orgName = useContextStore(state => state.organization.name);
   const { i18n } = useLingui();
@@ -23,7 +23,13 @@ export const useRunPipeline = () => {
       // The run itself succeeded either way — the job is created and queued.
       // But with no connected agent it won't start, so say it up front
       // instead of letting the user stare at a pending spinner.
-      if (!agents.some(a => a.connected)) {
+      //
+      // Without LIST_AGENTS the agent list is never fetched (it would only be
+      // denied), so connectivity is unknown here: point at agents as something
+      // to check rather than claim none is connected.
+      if (!canListAgents) {
+        toast.success(i18n._(ToastMessages.PIPELINE_RUN_CHECK_AGENTS));
+      } else if (!agents.some(a => a.connected)) {
         toast.warning(i18n._(ToastMessages.PIPELINE_JOB_QUEUED_WARNING), {
           action: {
             label: 'Agents',

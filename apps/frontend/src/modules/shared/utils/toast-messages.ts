@@ -39,6 +39,7 @@ export const ToastMessages = {
   PIPELINE_UPDATE: msg`Pipeline edited`,
   PIPELINE_RUN: msg`Pipeline ran`,
   PIPELINE_JOB_QUEUED_WARNING: msg`Job queued — no agent connected`,
+  PIPELINE_RUN_CHECK_AGENTS: msg`Pipeline ran — check that your agents are connected`,
 
   // Agents
   AGENT_ID_COPIED: msg`Agent id copied`,

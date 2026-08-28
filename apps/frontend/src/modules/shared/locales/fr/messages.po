@@ -29,7 +29,7 @@ msgstr ""
 #~ msgid "Add this signing secret to your webhook sender's HMAC configuration."
 #~ msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:44
+#: src/modules/shared/utils/toast-messages.ts:45
 msgid "Agent id copied"
 msgstr "ID d'agent copié"
 
@@ -41,7 +41,7 @@ msgstr "Une erreur s'est produite"
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue s'est produite"
 
-#: src/modules/shared/utils/toast-messages.ts:48
+#: src/modules/shared/utils/toast-messages.ts:49
 msgid "App id copied"
 msgstr "ID d'application copié"
 
@@ -62,7 +62,7 @@ msgstr "Effacer"
 msgid "Continue"
 msgstr "Continuer"
 
-#: src/modules/shared/utils/toast-messages.ts:63
+#: src/modules/shared/utils/toast-messages.ts:64
 msgid "Copied"
 msgstr "Copié"
 
@@ -82,7 +82,7 @@ msgstr "Copier"
 msgid "Copy your secret"
 msgstr "Copiez votre secret"
 
-#: src/modules/shared/utils/toast-messages.ts:45
+#: src/modules/shared/utils/toast-messages.ts:46
 msgid "Could not copy — select the id manually"
 msgstr "Impossible de copier — sélectionnez l'ID manuellement"
 
@@ -118,6 +118,10 @@ msgstr "au total"
 msgid "Job queued — no agent connected"
 msgstr "Travail mis en file d'attente — aucun agent connecté"
 
+#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:41
+msgid "Jobs are queued — check that your agents are connected."
+msgstr "Des jobs sont en file d'attente — vérifiez que vos agents sont bien connectés."
+
 #: src/modules/shared/utils/toast-messages.ts:29
 #~ msgid "Member added"
 #~ msgstr ""
@@ -131,7 +135,7 @@ msgstr "Travail mis en file d'attente — aucun agent connecté"
 msgid "New {label}"
 msgstr "Nouveau {label}"
 
-#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:30
+#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:52
 msgid "No agent connected — queued jobs are waiting for one."
 msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
 
@@ -162,6 +166,10 @@ msgstr "Pipeline modifié"
 #: src/modules/shared/utils/toast-messages.ts:40
 msgid "Pipeline ran"
 msgstr "Pipeline exécuté"
+
+#: src/modules/shared/utils/toast-messages.ts:42
+msgid "Pipeline ran — check that your agents are connected"
+msgstr "Pipeline exécutée — vérifiez que vos agents sont bien connectés"
 
 #: src/modules/shared/utils/toast-messages.ts:31
 msgid "Project created"
@@ -203,11 +211,11 @@ msgstr "Exécuter depuis un clone du dépôt"
 msgid "Run with Docker"
 msgstr "Exécuter avec Docker"
 
-#: src/modules/shared/utils/toast-messages.ts:51
+#: src/modules/shared/utils/toast-messages.ts:52
 msgid "Secret created"
 msgstr "Secret créé"
 
-#: src/modules/shared/utils/toast-messages.ts:52
+#: src/modules/shared/utils/toast-messages.ts:53
 msgid "Secret deleted"
 msgstr "Secret supprimé"
 
@@ -219,7 +227,7 @@ msgstr "Tout sélectionner"
 msgid "Server unreachable"
 msgstr "Serveur injoignable"
 
-#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:37
+#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:59
 msgid "Set up an agent"
 msgstr "Configurer un agent"
 
@@ -243,27 +251,27 @@ msgstr "L'agent démarre au premier plan : ses journaux s'affichent directement 
 msgid "This action cannot be undone."
 msgstr "Cette action ne peut pas être annulée."
 
-#: src/modules/shared/utils/toast-messages.ts:55
+#: src/modules/shared/utils/toast-messages.ts:56
 msgid "Trigger created"
 msgstr "Déclencheur créé"
 
-#: src/modules/shared/utils/toast-messages.ts:57
+#: src/modules/shared/utils/toast-messages.ts:58
 msgid "Trigger deleted"
 msgstr "Déclencheur supprimé"
 
-#: src/modules/shared/utils/toast-messages.ts:59
+#: src/modules/shared/utils/toast-messages.ts:60
 msgid "Trigger disabled"
 msgstr "Déclencheur désactivé"
 
-#: src/modules/shared/utils/toast-messages.ts:58
+#: src/modules/shared/utils/toast-messages.ts:59
 msgid "Trigger enabled"
 msgstr "Déclencheur activé"
 
-#: src/modules/shared/utils/toast-messages.ts:60
+#: src/modules/shared/utils/toast-messages.ts:61
 msgid "Trigger fired — run started"
 msgstr "Déclencheur déclenché — exécution démarrée"
 
-#: src/modules/shared/utils/toast-messages.ts:56
+#: src/modules/shared/utils/toast-messages.ts:57
 msgid "Trigger updated"
 msgstr "Déclencheur mis à jour"
 
