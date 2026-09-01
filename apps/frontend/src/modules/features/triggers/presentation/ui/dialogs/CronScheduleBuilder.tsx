@@ -11,6 +11,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '@shadcn/radio-group.tsx';
 import { ToggleGroup, ToggleGroupItem } from '@shadcn/toggle-group.tsx';
 import { Trans } from '@lingui/react/macro';
+import { useLingui } from '@lingui/react';
 import { cn } from '@shared/presentation/utils';
 import {
   buildCron,
@@ -110,6 +111,7 @@ const TimePicker = ({
  * hand-writing cron. The expression is shown live so power users still see it.
  */
 export const CronScheduleBuilder = ({ initialValue, onChange }: CronScheduleBuilderProps) => {
+  const { _, i18n } = useLingui();
   const [model, setModel] = useState<CronModel>(() => parseCron(initialValue));
 
   // Single source of truth: re-emit the rendered cron whenever the model changes
@@ -207,7 +209,7 @@ export const CronScheduleBuilder = ({ initialValue, onChange }: CronScheduleBuil
           >
             {WEEKDAYS.map(day => (
               <ToggleGroupItem key={day.value} value={String(day.value)} className='px-2.5'>
-                {day.label}
+                {_(day.label)}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -263,7 +265,7 @@ export const CronScheduleBuilder = ({ initialValue, onChange }: CronScheduleBuil
 
       {/* Live summary + the resulting expression */}
       <div className='flex flex-wrap items-center gap-2 rounded-md bg-muted/50 px-3 py-2'>
-        <span className='text-xs text-muted-foreground'>{describeCron(model)}</span>
+        <span className='text-xs text-muted-foreground'>{describeCron(model, i18n)}</span>
         <code className='ml-auto font-mono text-xs text-foreground'>{buildCron(model) || '—'}</code>
       </div>
     </div>

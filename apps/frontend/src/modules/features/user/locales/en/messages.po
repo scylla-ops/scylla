@@ -53,6 +53,10 @@ msgstr "Enter a username and password for the new user."
 msgid "Error loading user information"
 msgstr "Error loading user information"
 
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:46
+msgid "Error loading users"
+msgstr "Error loading users"
+
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:75
 msgid "Loading user information..."
 msgstr "Loading user information..."
@@ -64,7 +68,7 @@ msgstr "Loading user information..."
 msgid "Manage your account details."
 msgstr "Manage your account details."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:56
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:57
 msgid "New user"
 msgstr "New user"
 
@@ -72,9 +76,18 @@ msgstr "New user"
 msgid "Password"
 msgstr "Password"
 
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:159
+msgid "Save"
+msgstr "Save"
+
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:52
 msgid "User"
 msgstr "User"
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:113
+msgid "User ID"
+msgstr "User ID"
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67
@@ -92,12 +105,17 @@ msgid "User settings"
 msgstr "User settings"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:104
 msgid "Username"
 msgstr "Username"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
 #~ msgid "Username and password are required."
 #~ msgstr "Username and password are required."
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:53
+msgid "Users"
+msgstr "Users"
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "View"
@@ -107,10 +125,10 @@ msgstr "View"
 #~ msgid "You cannot delete your own account."
 #~ msgstr "You cannot delete your own account."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:58
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:59
 msgid "You don't have permission to create users."
 msgstr "You don't have permission to create users."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:60
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:61
 msgid "You don't have permission to delete users."
 msgstr "You don't have permission to delete users."

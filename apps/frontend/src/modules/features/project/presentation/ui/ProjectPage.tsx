@@ -30,7 +30,7 @@ export const ProjectPage = () => {
   }
 
   if (isError || !projects) {
-    return <ErrorState message='Unable to load projects' />;
+    return <ErrorState message={<Trans>Unable to load projects</Trans>} />;
   }
 
   return (

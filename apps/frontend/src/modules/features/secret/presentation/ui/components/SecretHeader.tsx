@@ -29,10 +29,10 @@ export const SecretHeader = ({
   return (
     <FeatureHeader
       count={activeCount}
-      label={'Secret'}
-      pluralLabel={'Secrets'}
+      label={<Trans>Secret</Trans>}
+      pluralLabel={<Trans>Secrets</Trans>}
       onNew={onAddSecret}
-      newLabel={'New secret'}
+      newLabel={<Trans>New secret</Trans>}
       canNew={canCreate}
       newDeniedReason={<Trans>You don't have permission to create secrets.</Trans>}
       canDelete={canDelete}

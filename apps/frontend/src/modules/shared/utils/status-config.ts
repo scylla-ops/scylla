@@ -9,6 +9,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { msg } from '@lingui/core/macro';
+import type { MessageDescriptor } from '@lingui/core';
 
 export type StatusKey =
   | 'pending'
@@ -21,7 +23,8 @@ export type StatusKey =
   | 'unknown';
 
 export interface StatusConfig {
-  label: string;
+  /** Lazy message: this table is built at import time, outside any i18n context. */
+  label: MessageDescriptor;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   icon: LucideIcon;
   iconClassName: string;
@@ -33,7 +36,7 @@ export interface StatusConfig {
 
 export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   running: {
-    label: 'Running',
+    label: msg`Running`,
     variant: 'default',
     icon: Loader2,
     iconClassName: 'text-blue-500 animate-spin',
@@ -44,7 +47,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
 
   pending: {
-    label: 'Pending',
+    label: msg`Pending`,
     variant: 'secondary',
     icon: DiamondMinusIcon,
     iconClassName: 'text-gray-400',
@@ -54,7 +57,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     textClassName: 'text-gray-600',
   },
   completed: {
-    label: 'Success',
+    label: msg`Success`,
     variant: 'default',
     icon: CheckCircle2,
     iconClassName: 'text-primary',
@@ -64,7 +67,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     textClassName: 'text-emerald-600',
   },
   failed: {
-    label: 'Failed',
+    label: msg`Failed`,
     variant: 'destructive',
     icon: XCircle,
     iconClassName: 'text-destructive',
@@ -74,7 +77,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     textClassName: 'text-red-600',
   },
   skipped: {
-    label: 'Skipped',
+    label: msg`Skipped`,
     variant: 'outline',
     icon: SkipForward,
     iconClassName: 'text-zinc-500',
@@ -84,7 +87,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     textClassName: 'text-zinc-600',
   },
   orphaned: {
-    label: 'Orphaned',
+    label: msg`Orphaned`,
     variant: 'destructive',
     icon: Unplug,
     iconClassName: 'text-orange-500',
@@ -96,7 +99,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   // The server reported a state this build doesn't know about (a newer oneof
   // arm or enum value). Shown as-is rather than guessed at.
   unknown: {
-    label: 'Unknown',
+    label: msg`Unknown`,
     variant: 'outline',
     icon: CircleHelp,
     iconClassName: 'text-slate-400',
@@ -106,7 +109,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     textClassName: 'text-slate-500',
   },
   cancelled: {
-    label: 'Cancelled',
+    label: msg`Cancelled`,
     variant: 'outline',
     icon: Ban,
     iconClassName: 'text-amber-500',

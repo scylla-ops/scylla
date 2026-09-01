@@ -1,4 +1,4 @@
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { Container, Terminal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn/tabs.tsx';
 import { CodeSnippet } from '@shadcn/code-snippet.tsx';
@@ -27,6 +27,7 @@ const DOCKER_IMAGE = 'godlyjaaaaj/scylla-agent:latest';
  * Better an explicit "fill this in" than a copied command that half-works.
  */
 export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProps) => {
+  const { t } = useLingui();
   const secretValue = secret ?? SECRET_PLACEHOLDER;
 
   const cargoCommand = [
@@ -68,7 +69,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
           <CodeSnippet
             multiline
             value={cargoCommand}
-            copyToast='Command copied'
+            copyToast={t`Command copied`}
             label={<Trans>Run from a repo checkout</Trans>}
           />
           <p className='text-xs text-muted-foreground'>
@@ -91,7 +92,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
           <CodeSnippet
             multiline
             value={dockerCommand}
-            copyToast='Command copied'
+            copyToast={t`Command copied`}
             label={<Trans>Run with Docker</Trans>}
           />
           <p className='text-xs text-muted-foreground'>

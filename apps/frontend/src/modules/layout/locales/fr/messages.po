@@ -39,7 +39,11 @@ msgstr "Tableau de bord"
 msgid "Language"
 msgstr "Langue"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:108
+#: src/modules/layout/presentation/ui/NavUser.tsx:41
+msgid "Loading..."
+msgstr "Chargement…"
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:112
 msgid "Log out"
 msgstr "Se déconnecter"
 
@@ -55,6 +59,10 @@ msgstr "Marketplace"
 msgid "Members"
 msgstr "Membres"
 
+#: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:26
+msgid "New feature: Triggers!"
+msgstr "Nouveauté : les déclencheurs !"
+
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:53
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:134
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:138
@@ -65,11 +73,19 @@ msgstr "Organisation"
 msgid "Projects"
 msgstr "Projets"
 
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:100
+msgid "Roles"
+msgstr "Rôles"
+
+#: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:36
+msgid "Seen"
+msgstr "Vu"
+
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:137
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:94
+#: src/modules/layout/presentation/ui/NavUser.tsx:98
 msgid "Settings"
 msgstr "Paramètres"
 
@@ -77,9 +93,17 @@ msgstr "Paramètres"
 msgid "System"
 msgstr "Système"
 
+#: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:29
+msgid "Take a look at the new trigger feature on the pipeline page!"
+msgstr "Découvrez la nouvelle fonctionnalité de déclencheurs sur la page pipeline !"
+
 #: src/modules/layout/presentation/ui/Layout.tsx:74
 msgid "To get started, please create your first organization."
 msgstr "Pour commencer, veuillez créer votre première organisation."
+
+#: src/modules/layout/presentation/ui/ScyllaSidebarTrigger.tsx:33
+msgid "Toggle Sidebar"
+msgstr "Afficher/masquer la barre latérale"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:94
 msgid "Users"

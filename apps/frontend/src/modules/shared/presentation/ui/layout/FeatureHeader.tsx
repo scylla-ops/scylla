@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { plural } from '@lingui/core/macro';
 import { Button } from '@shadcn';
 import { Trash } from 'lucide-react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
@@ -53,13 +54,17 @@ export const FeatureHeader = ({
 }: FeatureHeaderProps) => {
   const displayLabel = count && count > 1 ? (pluralLabel ?? label) : label;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { t } = useLingui();
 
   const handleDelete = async () => {
     try {
       setDeleteDialogOpen(false);
       await onDeleteSelection?.();
-      const itemLabel = typeof label === 'string' ? label : 'item';
-      toast.success(`${selectedCount} ${itemLabel}s deleted`);
+      // Labels are ReactNode, so the entity name can't be spliced into a
+      // translatable sentence — the confirmation stays deliberately generic.
+      toast.success(
+        t`${plural(selectedCount, { one: '# item deleted', other: '# items deleted' })}`,
+      );
     } catch {
       // Toast shown by the global MutationCache onError handler.
       setDeleteDialogOpen(false);

@@ -1,4 +1,5 @@
 import { Trans } from '@lingui/react/macro';
+import { useLingui } from '@lingui/react';
 import { cn } from '@shared/presentation/utils';
 import { Skeleton } from '@shadcn/skeleton.tsx';
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
@@ -22,6 +23,7 @@ export const PipelineChart = ({
   isForbidden,
   maxJobs,
 }: PipelineChartProps) => {
+  const { _ } = useLingui();
   if (isLoading) {
     return (
       <div className='w-full flex items-center gap-2 h-10 py-1 overflow-hidden rounded-md px-1'>
@@ -47,7 +49,9 @@ export const PipelineChart = ({
   if (isError) {
     return (
       <div className='w-full flex items-center justify-center h-10 py-1'>
-        <span className='text-xs text-slate-400 italic'>Error loading jobs</span>
+        <span className='text-xs text-slate-400 italic'>
+          <Trans>Error loading jobs</Trans>
+        </span>
       </div>
     );
   }
@@ -70,7 +74,7 @@ export const PipelineChart = ({
             </div>
             <div className='flex items-center gap-2'>
               <div className={cn('w-2 h-2 rounded-full', config.dotClassName)} />
-              <span className={cn('font-semibold', config.textClassName)}>{config.label}</span>
+              <span className={cn('font-semibold', config.textClassName)}>{_(config.label)}</span>
             </div>
             <span className='text-[10px] text-slate-500 italic border-t border-slate-100 pt-1 mt-1'>
               {job.status === 'running' || job.status === 'pending'
@@ -84,5 +88,5 @@ export const PipelineChart = ({
     })
     .reverse();
 
-  return <StatusBar items={items} emptyLabel='No jobs yet' height='h-10' className='px-1' />;
+  return <StatusBar items={items} emptyLabel={<Trans>No jobs yet</Trans>} height='h-10' className='px-1' />;
 };

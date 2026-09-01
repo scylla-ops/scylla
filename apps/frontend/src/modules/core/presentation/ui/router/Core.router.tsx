@@ -6,6 +6,7 @@ import { Layout } from '@/modules/layout/presentation/ui/Layout.tsx';
 import { AuthGuard } from '@core/presentation/ui/router/Auth.guard.tsx';
 import ProjectPage from '@/modules/features/project/presentation/ui/ProjectPage.tsx';
 import type { BreadcrumbParams } from '@core/presentation/structs/route-handle.struct.ts';
+import { Trans } from '@lingui/react/macro';
 import { ContextCleanerWrapper } from './ContextCleaner.wrapper.tsx';
 import { JobsPage } from '@/modules/features/jobs/presentation/ui/Jobs.page.tsx';
 import { TriggersPage } from '@/modules/features/triggers/presentation/ui/Triggers.page.tsx';
@@ -50,7 +51,7 @@ export const CoreRouter = createBrowserRouter([
               {
                 path: 'dashboard',
                 handle: {
-                  breadcrumb: () => 'Dashboard',
+                  breadcrumb: () => ({ label: <Trans>Dashboard</Trans> }),
                 },
                 // Same gate as the projects list: the overview is a read of the
                 // organization, and it is where every org-level redirect lands.
@@ -63,7 +64,7 @@ export const CoreRouter = createBrowserRouter([
               {
                 path: 'members',
                 handle: {
-                  breadcrumb: () => 'Members',
+                  breadcrumb: () => ({ label: <Trans>Members</Trans> }),
                 },
                 element: (
                   <RequirePermission permission={Permission.LIST_ORGANIZATION_MEMBERS}>
@@ -74,7 +75,7 @@ export const CoreRouter = createBrowserRouter([
               {
                 path: 'projects',
                 handle: {
-                  breadcrumb: () => 'Projects',
+                  breadcrumb: () => ({ label: <Trans>Projects</Trans> }),
                 },
                 children: [
                   {
@@ -91,7 +92,10 @@ export const CoreRouter = createBrowserRouter([
                     //TODO: here add loader: <ContextLoader/> used to fetch the project and pipeline names from ids for the breadcrumbs
                     path: ':projectId',
                     handle: {
-                      breadcrumb: (params: BreadcrumbParams) => `Project #${params.projectName}`,
+                      breadcrumb: ({ projectName }: BreadcrumbParams) => ({
+                        label: <Trans>Project</Trans>,
+                        highlight: projectName,
+                      }),
                     },
                     children: [
                       {
@@ -110,7 +114,7 @@ export const CoreRouter = createBrowserRouter([
                           </RequirePermission>
                         ),
                         handle: {
-                          breadcrumb: () => 'Members',
+                          breadcrumb: () => ({ label: <Trans>Members</Trans> }),
                         },
                       },
                       {
@@ -121,7 +125,7 @@ export const CoreRouter = createBrowserRouter([
                           </RequirePermission>
                         ),
                         handle: {
-                          breadcrumb: () => 'Secrets',
+                          breadcrumb: () => ({ label: <Trans>Secrets</Trans> }),
                         },
                       },
                       {
@@ -132,7 +136,7 @@ export const CoreRouter = createBrowserRouter([
                           </RequirePermission>
                         ),
                         handle: {
-                          breadcrumb: () => `Create`,
+                          breadcrumb: () => ({ label: <Trans>Create</Trans> }),
                         },
                       },
                       {
@@ -143,8 +147,11 @@ export const CoreRouter = createBrowserRouter([
                           </RequirePermission>
                         ),
                         handle: {
-                          breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
-                            `Pipeline #${pipelineName} - Edit`,
+                          breadcrumb: ({ pipelineName }: BreadcrumbParams) => ({
+                            label: <Trans>Pipeline</Trans>,
+                            highlight: pipelineName,
+                            detail: <Trans>Edit</Trans>,
+                          }),
                         },
                       },
                       {
@@ -155,8 +162,11 @@ export const CoreRouter = createBrowserRouter([
                           </RequirePermission>
                         ),
                         handle: {
-                          breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
-                            `Pipeline #${pipelineName} - Jobs`,
+                          breadcrumb: ({ pipelineName }: BreadcrumbParams) => ({
+                            label: <Trans>Pipeline</Trans>,
+                            highlight: pipelineName,
+                            detail: <Trans>Jobs</Trans>,
+                          }),
                         },
                       },
                       {
@@ -167,8 +177,11 @@ export const CoreRouter = createBrowserRouter([
                           </RequirePermission>
                         ),
                         handle: {
-                          breadcrumb: ({ pipelineName }: BreadcrumbParams) =>
-                            `Pipeline #${pipelineName} - Triggers`,
+                          breadcrumb: ({ pipelineName }: BreadcrumbParams) => ({
+                            label: <Trans>Pipeline</Trans>,
+                            highlight: pipelineName,
+                            detail: <Trans>Triggers</Trans>,
+                          }),
                         },
                       },
                     ],
@@ -194,7 +207,7 @@ export const CoreRouter = createBrowserRouter([
                       </RequirePermission>
                     ),
                     handle: {
-                      breadcrumb: () => 'Agents',
+                      breadcrumb: () => ({ label: <Trans>Agents</Trans> }),
                     },
                   },
                   {
@@ -205,7 +218,7 @@ export const CoreRouter = createBrowserRouter([
                       </RequirePermission>
                     ),
                     handle: {
-                      breadcrumb: () => 'Agent details',
+                      breadcrumb: () => ({ label: <Trans>Agent details</Trans> }),
                     },
                   },
                 ],
@@ -213,7 +226,7 @@ export const CoreRouter = createBrowserRouter([
               {
                 path: 'users',
                 handle: {
-                  breadcrumb: () => 'Users',
+                  breadcrumb: () => ({ label: <Trans>Users</Trans> }),
                 },
                 children: [
                   {
@@ -228,7 +241,11 @@ export const CoreRouter = createBrowserRouter([
                     path: ':userId',
                     element: <UserSettingsPage />,
                     handle: {
-                      breadcrumb: ({ userId }: BreadcrumbParams) => `User #${userId} - Detail`,
+                      breadcrumb: ({ userId }: BreadcrumbParams) => ({
+                        label: <Trans>User</Trans>,
+                        highlight: userId,
+                        detail: <Trans>Detail</Trans>,
+                      }),
                     },
                   },
                 ],
@@ -241,7 +258,7 @@ export const CoreRouter = createBrowserRouter([
                   </RequirePermission>
                 ),
                 handle: {
-                  breadcrumb: () => 'Roles',
+                  breadcrumb: () => ({ label: <Trans>Roles</Trans> }),
                 },
               },
             ],

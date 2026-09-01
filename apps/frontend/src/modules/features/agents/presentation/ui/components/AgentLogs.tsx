@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { Button } from '@shadcn';
 import { ExternalLink } from 'lucide-react';
 import {
@@ -22,6 +22,7 @@ const LEVEL_COLOR: Record<LogLevel, string> = {
 // Static preview only. The agent log stream does not exist yet; this renders a
 // fixed sample so the layout reads correctly. Wire the real stream when ready.
 export const AgentLogs = ({ agentId, agentName }: AgentLogsProps) => {
+  const { t } = useLingui();
   const lines = useMemo(() => mockInitialLogs(agentId), [agentId]);
 
   return (
@@ -39,10 +40,10 @@ export const AgentLogs = ({ agentId, agentName }: AgentLogsProps) => {
           <span className='rounded-full border bg-muted px-2 py-0.5 text-[11px] font-mono text-muted-foreground'>
             <Trans>sample</Trans>
           </span>
-          <Button variant='outline' size='sm' disabled title='Coming soon'>
+          <Button variant='outline' size='sm' disabled title={t`Coming soon`}>
             <Trans>filter</Trans> ▾
           </Button>
-          <Button variant='outline' size='sm' disabled title='Coming soon'>
+          <Button variant='outline' size='sm' disabled title={t`Coming soon`}>
             <Trans>open full logs</Trans> <ExternalLink className='ml-1 h-3 w-3' />
           </Button>
         </div>

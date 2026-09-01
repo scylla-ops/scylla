@@ -25,15 +25,19 @@ msgstr ""
 #~ msgid "{0} webhook secret"
 #~ msgstr ""
 
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:66
+msgid "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
+msgstr "{selectedCount, plural, one {# élément supprimé} other {# éléments supprimés}}"
+
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:163
 #~ msgid "Add this signing secret to your webhook sender's HMAC configuration."
 #~ msgstr ""
 
-#: src/modules/shared/utils/toast-messages.ts:45
+#: src/modules/shared/utils/toast-messages.ts:46
 msgid "Agent id copied"
 msgstr "ID d'agent copié"
 
-#: src/modules/shared/presentation/ui/feedback/ErrorState.tsx:12
+#: src/modules/shared/presentation/ui/feedback/ErrorState.tsx:13
 msgid "An error occurred"
 msgstr "Une erreur s'est produite"
 
@@ -41,7 +45,7 @@ msgstr "Une erreur s'est produite"
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue s'est produite"
 
-#: src/modules/shared/utils/toast-messages.ts:49
+#: src/modules/shared/utils/toast-messages.ts:50
 msgid "App id copied"
 msgstr "ID d'application copié"
 
@@ -54,15 +58,24 @@ msgstr "Êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
+#: src/modules/shared/utils/status-config.ts:112
+msgid "Cancelled"
+msgstr "Annulé"
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:107
 msgid "Clear"
 msgstr "Effacer"
+
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:72
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:95
+msgid "Command copied"
+msgstr "Commande copiée"
 
 #: src/modules/shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx:42
 msgid "Continue"
 msgstr "Continuer"
 
-#: src/modules/shared/utils/toast-messages.ts:64
+#: src/modules/shared/utils/toast-messages.ts:65
 msgid "Copied"
 msgstr "Copié"
 
@@ -71,6 +84,7 @@ msgid "Copied!"
 msgstr "Copié !"
 
 #: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:74
+#: src/modules/shared/presentation/ui/shadcn/code-snippet.tsx:89
 msgid "Copy"
 msgstr "Copier"
 
@@ -82,7 +96,7 @@ msgstr "Copier"
 msgid "Copy your secret"
 msgstr "Copiez votre secret"
 
-#: src/modules/shared/utils/toast-messages.ts:46
+#: src/modules/shared/utils/toast-messages.ts:47
 msgid "Could not copy — select the id manually"
 msgstr "Impossible de copier — sélectionnez l'ID manuellement"
 
@@ -94,7 +108,7 @@ msgstr "Créer"
 msgid "Creating..."
 msgstr "Création..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:126
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:131
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -102,15 +116,27 @@ msgstr "Supprimer"
 msgid "Done"
 msgstr "Terminé"
 
-#: src/modules/shared/presentation/ui/feedback/ErrorState.tsx:11
+#: src/modules/shared/presentation/ui/feedback/ErrorState.tsx:12
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:59
+#: src/modules/shared/utils/status-config.ts:70
+msgid "Failed"
+msgstr "Échoué"
+
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:60
 msgid "From source"
 msgstr "Depuis la source"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:86
+#: src/modules/shared/presentation/ui/shadcn/pagination.tsx:96
+msgid "Go to next page"
+msgstr "Aller à la page suivante"
+
+#: src/modules/shared/presentation/ui/shadcn/pagination.tsx:76
+msgid "Go to previous page"
+msgstr "Aller à la page précédente"
+
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
 msgid "in total"
 msgstr "au total"
 
@@ -130,14 +156,26 @@ msgstr "Des jobs sont en file d'attente — vérifiez que vos agents sont bien c
 #~ msgid "Member removed"
 #~ msgstr ""
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:137
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:143
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:142
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
 msgid "New {label}"
 msgstr "Nouveau {label}"
+
+#: src/modules/shared/presentation/ui/shadcn/pagination.tsx:102
+msgid "Next"
+msgstr "Suivant"
 
 #: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:52
 msgid "No agent connected — queued jobs are waiting for one."
 msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
+
+#: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:34
+msgid "No data"
+msgstr "Aucune donnée"
+
+#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:174
+msgid "No results."
+msgstr "Aucun résultat."
 
 #: src/modules/shared/utils/toast-messages.ts:26
 msgid "Organization created"
@@ -151,6 +189,14 @@ msgstr "Organisation supprimée"
 msgid "Organization updated"
 msgstr "Organisation mise à jour"
 
+#: src/modules/shared/utils/status-config.ts:90
+msgid "Orphaned"
+msgstr "Orphelin"
+
+#: src/modules/shared/utils/status-config.ts:50
+msgid "Pending"
+msgstr "En attente"
+
 #: src/modules/shared/utils/toast-messages.ts:37
 msgid "Pipeline created"
 msgstr "Pipeline créé"
@@ -158,6 +204,10 @@ msgstr "Pipeline créé"
 #: src/modules/shared/utils/toast-messages.ts:38
 msgid "Pipeline deleted"
 msgstr "Pipeline supprimé"
+
+#: src/modules/shared/utils/toast-messages.ts:43
+msgid "Pipeline duplicated successfully"
+msgstr "Pipeline dupliquée avec succès"
 
 #: src/modules/shared/utils/toast-messages.ts:39
 msgid "Pipeline edited"
@@ -170,6 +220,10 @@ msgstr "Pipeline exécuté"
 #: src/modules/shared/utils/toast-messages.ts:42
 msgid "Pipeline ran — check that your agents are connected"
 msgstr "Pipeline exécutée — vérifiez que vos agents sont bien connectés"
+
+#: src/modules/shared/presentation/ui/shadcn/pagination.tsx:83
+msgid "Previous"
+msgstr "Précédent"
 
 #: src/modules/shared/utils/toast-messages.ts:31
 msgid "Project created"
@@ -187,15 +241,15 @@ msgstr "Le nom du projet est requis et vous devez sélectionner une organisation
 msgid "Project updated"
 msgstr "Projet mis à jour"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:116
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:117
 msgid "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
 msgstr "Remplacez APP_SECRET par le secret révélé lorsque cet agent a été créé — il ne peut pas être affiché à nouveau. Vous l'avez perdu ? Supprimez cet agent et créez-en un nouveau."
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:107
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:108
 msgid "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
 msgstr "Remplacez CONTROL_PLANE_URL par l'adresse à laquelle votre agent atteint le plan de contrôle — par exemple http://localhost:50051 sur la même machine, ou http://host.docker.internal:50051 depuis l'intérieur de Docker."
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:75
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:76
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 msgstr "Nécessite la chaîne d'outils Rust, à partir d'un clone du <0>référentiel scylla</0> (crate scylla-agent). L'agent s'exécute au premier plan et Ctrl-C l'arrête."
 
@@ -203,23 +257,27 @@ msgstr "Nécessite la chaîne d'outils Rust, à partir d'un clone du <0>référe
 msgid "Reveal"
 msgstr "Révéler"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:72
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:73
 msgid "Run from a repo checkout"
 msgstr "Exécuter depuis un clone du dépôt"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:95
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:96
 msgid "Run with Docker"
 msgstr "Exécuter avec Docker"
 
-#: src/modules/shared/utils/toast-messages.ts:52
+#: src/modules/shared/utils/status-config.ts:39
+msgid "Running"
+msgstr "En cours"
+
+#: src/modules/shared/utils/toast-messages.ts:53
 msgid "Secret created"
 msgstr "Secret créé"
 
-#: src/modules/shared/utils/toast-messages.ts:53
+#: src/modules/shared/utils/toast-messages.ts:54
 msgid "Secret deleted"
 msgstr "Secret supprimé"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:97
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
 msgid "Select all"
 msgstr "Tout sélectionner"
 
@@ -239,11 +297,19 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 msgid "shown once"
 msgstr "montré une seule fois"
 
+#: src/modules/shared/utils/status-config.ts:80
+msgid "Skipped"
+msgstr "Ignoré"
+
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:154
 #~ msgid "Start your agent"
 #~ msgstr ""
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:98
+#: src/modules/shared/utils/status-config.ts:60
+msgid "Success"
+msgstr "Réussi"
+
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:99
 msgid "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
 msgstr "L'agent démarre au premier plan : ses journaux s'affichent directement dans le terminal et Ctrl-C l'arrête."
 
@@ -251,33 +317,43 @@ msgstr "L'agent démarre au premier plan : ses journaux s'affichent directement 
 msgid "This action cannot be undone."
 msgstr "Cette action ne peut pas être annulée."
 
-#: src/modules/shared/utils/toast-messages.ts:56
+#: src/modules/shared/presentation/ui/shadcn/sidebar.tsx:272
+#: src/modules/shared/presentation/ui/shadcn/sidebar.tsx:286
+#: src/modules/shared/presentation/ui/shadcn/sidebar.tsx:289
+msgid "Toggle Sidebar"
+msgstr "Afficher/masquer la barre latérale"
+
+#: src/modules/shared/utils/toast-messages.ts:57
 msgid "Trigger created"
 msgstr "Déclencheur créé"
 
-#: src/modules/shared/utils/toast-messages.ts:58
+#: src/modules/shared/utils/toast-messages.ts:59
 msgid "Trigger deleted"
 msgstr "Déclencheur supprimé"
 
-#: src/modules/shared/utils/toast-messages.ts:60
+#: src/modules/shared/utils/toast-messages.ts:61
 msgid "Trigger disabled"
 msgstr "Déclencheur désactivé"
 
-#: src/modules/shared/utils/toast-messages.ts:59
+#: src/modules/shared/utils/toast-messages.ts:60
 msgid "Trigger enabled"
 msgstr "Déclencheur activé"
 
-#: src/modules/shared/utils/toast-messages.ts:61
+#: src/modules/shared/utils/toast-messages.ts:62
 msgid "Trigger fired — run started"
 msgstr "Déclencheur déclenché — exécution démarrée"
 
-#: src/modules/shared/utils/toast-messages.ts:57
+#: src/modules/shared/utils/toast-messages.ts:58
 msgid "Trigger updated"
 msgstr "Déclencheur mis à jour"
 
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:93
 #~ msgid "Two steps and it picks up jobs."
 #~ msgstr ""
+
+#: src/modules/shared/utils/status-config.ts:102
+msgid "Unknown"
+msgstr "Inconnu"
 
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:167
 #~ msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
@@ -303,10 +379,10 @@ msgstr "Le nom d'utilisateur et le mot de passe sont requis."
 msgid "You cannot delete your own account."
 msgstr "Vous ne pouvez pas supprimer votre propre compte."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:128
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:133
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:153
 msgid "You don't have permission to do this."
-msgstr ""
+msgstr "Vous n'avez pas la permission de faire cela."
 
 #: src/modules/shared/utils/scylla-result.ts:66
 msgid "You don't have permission to perform this action"

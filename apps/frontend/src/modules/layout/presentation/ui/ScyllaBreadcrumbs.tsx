@@ -33,15 +33,10 @@ export const ScyllaBreadcrumbs = () => {
 
   const crumbs = matches
     .filter(match => (match.handle as RouteHandle | undefined)?.breadcrumb)
-    .map(match => {
-      const handle = match.handle as RouteHandle;
-      const label =
-        typeof handle.breadcrumb === 'function' ? handle.breadcrumb(params) : handle.breadcrumb;
-      return {
-        label: String(label),
-        path: match.pathname,
-      };
-    });
+    .map(match => ({
+      ...(match.handle as Required<RouteHandle>).breadcrumb(params),
+      path: match.pathname,
+    }));
 
   if (crumbs.length === 0) return null;
 
@@ -51,46 +46,29 @@ export const ScyllaBreadcrumbs = () => {
         {crumbs.map((crumb, index) => {
           const isLast = index === crumbs.length - 1;
 
-          const firstHashIndex = crumb.label.indexOf('#');
-          let beforeId = crumb.label;
-          let id = '';
-          let afterId = '';
-
-          if (firstHashIndex !== -1) {
-            beforeId = crumb.label.substring(0, firstHashIndex);
-
-            const afterHash = crumb.label.substring(firstHashIndex);
-            const separatorIndex = afterHash.indexOf(' - ');
-
-            if (separatorIndex !== -1) {
-              id = afterHash.substring(0, separatorIndex);
-              afterId = afterHash.substring(separatorIndex);
-            } else {
-              id = afterHash;
-            }
-          }
+          const content = (
+            <>
+              <span className='whitespace-nowrap'>{crumb.label}</span>
+              {crumb.highlight && <span className='text-primary'>#{crumb.highlight}</span>}
+              {crumb.detail && <span className='whitespace-nowrap'>- {crumb.detail}</span>}
+            </>
+          );
 
           return (
             <React.Fragment key={crumb.path}>
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage className='font-semibold text-sm px-2 py-1 rounded-md bg-muted text-foreground flex gap-1 items-center'>
-                    {id ? (
-                      <>
-                        <span className='whitespace-nowrap'>{beforeId}</span>
-                        <span className='text-primary'>{id}</span>
-                        <span className='whitespace-nowrap'>{afterId}</span>
-                      </>
-                    ) : (
-                      <span>{crumb.label}</span>
-                    )}
+                    {content}
                   </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink
                     asChild
                     className='text-muted-foreground hover:text-primary font-medium text-sm px-2 py-1 rounded-md hover:bg-primary/10 transition-all duration-200'
                   >
-                    <Link to={crumb.path}>{crumb.label}</Link>
+                    <Link to={crumb.path} className='flex gap-1 items-center'>
+                      {content}
+                    </Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

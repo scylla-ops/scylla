@@ -39,7 +39,11 @@ msgstr "Dashboard"
 msgid "Language"
 msgstr "Language"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:108
+#: src/modules/layout/presentation/ui/NavUser.tsx:41
+msgid "Loading..."
+msgstr "Loading..."
+
+#: src/modules/layout/presentation/ui/NavUser.tsx:112
 msgid "Log out"
 msgstr "Log out"
 
@@ -55,6 +59,10 @@ msgstr "Marketplace"
 msgid "Members"
 msgstr "Members"
 
+#: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:26
+msgid "New feature: Triggers!"
+msgstr "New feature: Triggers!"
+
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:53
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:134
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:138
@@ -65,11 +73,19 @@ msgstr "Organization"
 msgid "Projects"
 msgstr "Projects"
 
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:100
+msgid "Roles"
+msgstr "Roles"
+
+#: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:36
+msgid "Seen"
+msgstr "Seen"
+
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:137
 msgid "Select Organization"
 msgstr "Select Organization"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:94
+#: src/modules/layout/presentation/ui/NavUser.tsx:98
 msgid "Settings"
 msgstr "Settings"
 
@@ -77,9 +93,17 @@ msgstr "Settings"
 msgid "System"
 msgstr "System"
 
+#: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:29
+msgid "Take a look at the new trigger feature on the pipeline page!"
+msgstr "Take a look at the new trigger feature on the pipeline page!"
+
 #: src/modules/layout/presentation/ui/Layout.tsx:74
 msgid "To get started, please create your first organization."
 msgstr "To get started, please create your first organization."
+
+#: src/modules/layout/presentation/ui/ScyllaSidebarTrigger.tsx:33
+msgid "Toggle Sidebar"
+msgstr "Toggle Sidebar"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:94
 msgid "Users"

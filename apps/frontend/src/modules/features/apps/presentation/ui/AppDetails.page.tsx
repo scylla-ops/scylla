@@ -20,13 +20,17 @@ import { CodeSnippet } from '@shadcn/code-snippet.tsx';
 import { Switch } from '@shadcn/switch.tsx';
 import { KeyRound } from 'lucide-react';
 import { formatDate } from '@shared/utils/date-utils.ts';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { useLingui as useLinguiRuntime } from '@lingui/react';
+import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 const Label = ({ children }: { children: React.ReactNode }) => (
   <dt className='font-mono text-[11px] uppercase tracking-wide text-muted-foreground'>{children}</dt>
 );
 
 export const AppDetailsPage = () => {
+  const { t } = useLingui();
+  const { _ } = useLinguiRuntime();
   const { appId } = useParams<{ appId: string }>();
   const navigate = useNavigate();
   const { data: app, isLoading, isError, error } = useApp(appId ?? '');
@@ -42,7 +46,7 @@ export const AppDetailsPage = () => {
 
   if (redirecting) return null;
   if (isLoading) return <Skeleton className='m-4 h-64 rounded-xl' />;
-  if (isError || !app) return <ErrorState message='Error loading app' />;
+  if (isError || !app) return <ErrorState message={<Trans>Error loading app</Trans>} />;
 
   return (
     <div className='space-y-4 p-4'>
@@ -69,11 +73,11 @@ export const AppDetailsPage = () => {
               checked={app.isActive}
               disabled={setAppActive.isPending}
               onCheckedChange={active => setAppActive.mutate({ appId: app.id, active })}
-              aria-label='Toggle app active'
+              aria-label={t`Toggle app active`}
             />
             {app.isActive ? <Trans>active</Trans> : <Trans>inactive</Trans>}
           </label>
-          <Button variant='outline' disabled title='Coming soon'>
+          <Button variant='outline' disabled title={t`Coming soon`}>
             <Trans>Rename</Trans>
           </Button>
           <Button variant='destructive' onClick={() => setConfirmDelete(true)}>
@@ -91,7 +95,7 @@ export const AppDetailsPage = () => {
                   multiline
                   value={app.id}
                   label={<Trans>App ID</Trans>}
-                  copyToast='App id copied'
+                  copyToast={_(ToastMessages.APP_ID_COPIED)}
                 />
               </dd>
             </div>

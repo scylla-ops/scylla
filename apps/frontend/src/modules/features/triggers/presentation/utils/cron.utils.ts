@@ -1,3 +1,6 @@
+import { msg } from '@lingui/core/macro';
+import type { I18n, MessageDescriptor } from '@lingui/core';
+
 /**
  * A friendly, structured view of a 5-field cron expression (UTC). The builder UI
  * edits this model; {@link buildCron} renders it back to a cron string and
@@ -15,15 +18,18 @@ export interface CronModel {
   custom: string; // raw expression, for `custom`
 }
 
-/** Weekday chips, displayed Mon→Sun; `value` is the cron day-of-week number. */
-export const WEEKDAYS: { value: number; label: string }[] = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 0, label: 'Sun' },
+/**
+ * Weekday chips, displayed Mon→Sun; `value` is the cron day-of-week number.
+ * Labels are lazy messages — this module is imported outside any i18n context.
+ */
+export const WEEKDAYS: { value: number; label: MessageDescriptor }[] = [
+  { value: 1, label: msg`Mon` },
+  { value: 2, label: msg`Tue` },
+  { value: 3, label: msg`Wed` },
+  { value: 4, label: msg`Thu` },
+  { value: 5, label: msg`Fri` },
+  { value: 6, label: msg`Sat` },
+  { value: 0, label: msg`Sun` },
 ];
 
 const DEFAULT_MODEL: CronModel = {
@@ -100,22 +106,27 @@ export const parseCron = (expression: string): CronModel => {
   return toCustom();
 };
 
-/** A plain-language summary of the schedule (English; numbers/days are dynamic). */
-export const describeCron = (model: CronModel): string => {
+/**
+ * A plain-language summary of the schedule. Takes the active `i18n` because it
+ * runs outside the component tree — the caller passes the one from `useLingui`.
+ */
+export const describeCron = (model: CronModel, i18n: I18n): string => {
   const time = `${pad2(model.hour)}:${pad2(model.minute)} UTC`;
   switch (model.frequency) {
     case 'hourly':
-      return `Every hour at :${pad2(model.minute)}`;
+      return i18n._(msg`Every hour at :${pad2(model.minute)}`);
     case 'daily':
-      return `Every day at ${time}`;
+      return i18n._(msg`Every day at ${time}`);
     case 'weekly': {
-      if (model.weekdays.length === 0) return `Pick at least one day`;
-      const labels = WEEKDAYS.filter(d => model.weekdays.includes(d.value)).map(d => d.label);
-      return `${labels.join(', ')} at ${time}`;
+      if (model.weekdays.length === 0) return i18n._(msg`Pick at least one day`);
+      const days = WEEKDAYS.filter(d => model.weekdays.includes(d.value))
+        .map(d => i18n._(d.label))
+        .join(', ');
+      return i18n._(msg`${days} at ${time}`);
     }
     case 'monthly':
-      return `Day ${model.dayOfMonth} of each month at ${time}`;
+      return i18n._(msg`Day ${model.dayOfMonth} of each month at ${time}`);
     case 'custom':
-      return model.custom.trim() ? 'Custom schedule' : 'Incomplete schedule';
+      return model.custom.trim() ? i18n._(msg`Custom schedule`) : i18n._(msg`Incomplete schedule`);
   }
 };

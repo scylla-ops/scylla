@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Trans } from '@lingui/react/macro';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
@@ -24,10 +25,17 @@ const RANGE_DAYS: Record<Range, number> = { '7d': 7, '14d': 14, '30d': 30 };
 const STATUS_FILTERS: StatusFilter[] = ['all', 'completed', 'failed', 'cancelled'];
 
 const CHART_CONFIG = {
-  completed: { label: 'Completed', color: 'var(--success)' },
-  failed: { label: 'Failed', color: 'var(--destructive)' },
-  cancelled: { label: 'Cancelled', color: 'var(--warning)' },
+  completed: { label: <Trans>Completed</Trans>, color: 'var(--success)' },
+  failed: { label: <Trans>Failed</Trans>, color: 'var(--destructive)' },
+  cancelled: { label: <Trans>Cancelled</Trans>, color: 'var(--warning)' },
 } satisfies ChartConfig;
+
+const STATUS_FILTER_LABEL: Record<StatusFilter, ReactNode> = {
+  all: <Trans>all</Trans>,
+  completed: <Trans>completed</Trans>,
+  failed: <Trans>failed</Trans>,
+  cancelled: <Trans>cancelled</Trans>,
+};
 
 const localDay = (iso: string): string => {
   const d = new Date(iso);
@@ -61,7 +69,7 @@ const ToggleGroup = <T extends string>({
   options: T[];
   value: T;
   onChange: (v: T) => void;
-  label: (v: T) => string;
+  label: (v: T) => ReactNode;
 }) => (
   <div className='flex overflow-hidden rounded border text-[11px] font-mono'>
     {options.map(opt => (
@@ -109,7 +117,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
           options={STATUS_FILTERS}
           value={status}
           onChange={setStatus}
-          label={v => v}
+          label={v => STATUS_FILTER_LABEL[v]}
         />
         <ToggleGroup<Range> options={RANGES} value={range} onChange={setRange} label={v => v} />
       </div>

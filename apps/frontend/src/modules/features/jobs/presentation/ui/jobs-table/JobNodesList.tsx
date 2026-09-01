@@ -3,9 +3,11 @@ import type { JobNodeExecution } from '@/modules/features/jobs/domain/structs/jo
 import { ChevronDown, ChevronRight, TerminalSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
+import { useLingui } from '@lingui/react';
 import { useState } from 'react';
 import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx';
 import { IconButton } from '@shared/presentation/ui';
+import { Trans } from '@lingui/react/macro';
 
 type JobNodesListProps = {
   jobId: string;
@@ -38,6 +40,7 @@ export const JobNodesList = ({
   isExpanded,
   onCollapse,
 }: JobNodesListProps) => {
+  const { _ } = useLingui();
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const toggleNode = (nodeId: string) => {
@@ -61,7 +64,7 @@ export const JobNodesList = ({
         >
           <div className='mt-4 px-4 pb-4 border-t pt-4'>
             <h4 className='text-sm font-semibold mb-3 flex items-center gap-2'>
-              <IconButton icon={ChevronDown} tooltip='Collapse' onClick={onCollapse} />
+              <IconButton icon={ChevronDown} tooltip={<Trans>Collapse</Trans>} onClick={onCollapse} />
               Node Executions ({nodeExecutions.length})
             </h4>
             <div className='space-y-1'>
@@ -96,7 +99,7 @@ export const JobNodesList = ({
                           <p className='font-medium text-sm'>{node.id}</p>
                         </div>
                         <Badge variant={config.variant} className='text-xs'>
-                          {config.label}
+                          {_(config.label)}
                         </Badge>
                       </div>
                       <div className='flex items-center gap-3 text-right text-sm text-slate-600'>

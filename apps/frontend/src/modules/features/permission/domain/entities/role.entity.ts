@@ -63,7 +63,7 @@ export const roleConfers = (role: RoleEntity | undefined, permission: Permission
 
 export const updateRole = (role: RoleEntity, changes: Partial<RoleEntity>): RoleEntity => {
   if (changes.name !== undefined && changes.name.trim() === '') {
-    throw new Error('Le nom du rôle ne peut pas être vide');
+    throw new Error('Role name cannot be empty');
   }
 
   return {

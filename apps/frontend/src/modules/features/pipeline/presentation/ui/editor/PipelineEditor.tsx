@@ -10,12 +10,13 @@ import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-t
 import { PipelineBlueprint } from '@/modules/features/pipeline/presentation/ui/editor/blueprint/PipelineBlueprint.tsx';
 import { usePipelineScript } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-script.ts';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
+import type { ReactNode } from 'react';
 
 interface PipelineEditorProps {
   /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
   mode: 'create' | 'edit';
   /** Label for the submit button (e.g. "Create" / "Save"). */
-  submitLabel: string;
+  submitLabel: ReactNode;
   /** Called with the parsed pipeline when the user submits a valid script. */
   onSubmit: (values: { name: string; steps: PipelineStep[] }) => void;
 

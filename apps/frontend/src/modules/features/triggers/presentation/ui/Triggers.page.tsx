@@ -31,7 +31,7 @@ export const TriggersPage = () => {
   const [revealed, setRevealed] = useState<RevealedSecret | null>(null);
 
   if (!pipelineId || !projectId) {
-    return <ErrorState message='Pipeline ID is missing' />;
+    return <ErrorState message={<Trans>Pipeline ID is missing</Trans>} />;
   }
   if (isLoading) {
     return <></>;

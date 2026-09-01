@@ -8,6 +8,7 @@ import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-de
 import { JobNodesList } from './JobNodesList';
 import { JobLogDialog } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
+import { useLingui } from '@lingui/react/macro';
 
 type JobsTableProps = {
   jobs: JobEntity[];
@@ -15,6 +16,7 @@ type JobsTableProps = {
 };
 
 export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
+  const { t } = useLingui();
   const expandedJobId = useJobsStore(state => state.expandedJobId);
   const toggleExpand = useJobsStore(state => state.toggleExpand);
   const { selectedIds, select } = useSelection('jobs');
@@ -76,7 +78,7 @@ export const JobsTable = ({ jobs, pipelineId }: JobsTableProps) => {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onContinue={handleDelete}
-        title='Delete Job'
+        title={t`Delete Job`}
         description={`Are you sure you want to delete job ${jobToDelete}? This action cannot be undone.`}
       />
 

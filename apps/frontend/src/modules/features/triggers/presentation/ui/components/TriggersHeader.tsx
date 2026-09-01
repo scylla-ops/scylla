@@ -31,9 +31,9 @@ export const TriggersHeader = ({
   return (
     <FeatureHeader
       count={count}
-      label='Trigger'
-      pluralLabel='Triggers'
-      newLabel='New trigger'
+      label={<Trans>Trigger</Trans>}
+      pluralLabel={<Trans>Triggers</Trans>}
+      newLabel={<Trans>New trigger</Trans>}
       onNew={onNew}
       isNew={isNew}
       canNew={canManage}
@@ -42,7 +42,9 @@ export const TriggersHeader = ({
       deleteDeniedReason={<Trans>You don't have permission to manage triggers.</Trans>}
       {...headerProps}
       underLabel={
-        <span className='text-sm text-muted-foreground font-medium'>Pipeline ID: {pipelineId}</span>
+        <span className='text-sm text-muted-foreground font-medium'>
+          <Trans>Pipeline ID: {pipelineId}</Trans>
+        </span>
       }
     />
   );

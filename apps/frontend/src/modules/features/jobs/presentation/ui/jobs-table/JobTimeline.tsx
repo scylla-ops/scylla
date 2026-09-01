@@ -2,8 +2,10 @@ import type { JobNodeExecution } from '@/modules/features/jobs/domain/structs/jo
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
 import { useMemo } from 'react';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
+import { useLingui } from '@lingui/react';
 import { cn } from '@shared/presentation/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { Trans } from '@lingui/react/macro';
 
 type JobTimelineProps = {
   nodeExecutions: JobNodeExecution[];
@@ -23,6 +25,7 @@ interface StatusGroup {
  * When there are many nodes, they are grouped by status into proportional segments.
  */
 export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
+  const { _ } = useLingui();
   const shouldCollapse = nodeExecutions.length > COLLAPSE_THRESHOLD;
 
   // Grouped view for large pipelines
@@ -42,7 +45,7 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
   }, [nodeExecutions, shouldCollapse]);
 
   if (nodeExecutions.length === 0) {
-    return <StatusBar items={[]} emptyLabel='No nodes' />;
+    return <StatusBar items={[]} emptyLabel={<Trans>No nodes</Trans>} />;
   }
 
   // Detailed view for small pipelines
@@ -59,7 +62,7 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
         </div>
       ),
     }));
-    return <StatusBar items={items} emptyLabel='No nodes' />;
+    return <StatusBar items={items} emptyLabel={<Trans>No nodes</Trans>} />;
   }
 
   // Collapsed proportional view
@@ -92,7 +95,7 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
               </TooltipTrigger>
               <TooltipContent side='top' className='text-xs p-3 shadow-lg border-slate-200'>
                 <div className='space-y-1'>
-                  <p className='font-semibold capitalize'>{config.label}</p>
+                  <p className='font-semibold capitalize'>{_(config.label)}</p>
                   <p>
                     {group.count} / {total} nodes ({Math.round(pct)}%)
                   </p>

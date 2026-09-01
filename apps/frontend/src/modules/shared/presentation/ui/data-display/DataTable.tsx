@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@/modules/shared/presentation/ui/shadcn/table';
 import { cn } from '@shared/presentation/utils';
+import { Trans } from '@lingui/react/macro';
 
 type ColumnAlign = 'left' | 'center' | 'right';
 
@@ -170,7 +171,7 @@ export function DataTable<TData, TValue>({
                 colSpan={columns.length}
                 className='h-24 text-center text-muted-foreground'
               >
-                No results.
+                <Trans>No results.</Trans>
               </TableCell>
             </TableRow>
           )}

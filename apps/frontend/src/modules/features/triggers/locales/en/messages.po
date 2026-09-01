@@ -18,11 +18,15 @@ msgstr ""
 msgid "{0} webhook secret"
 msgstr "{0} webhook secret"
 
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:125
+msgid "{days} at {time}"
+msgstr "{days} at {time}"
+
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
 #~ msgid "5-field cron (min hour day month weekday), evaluated in UTC."
 #~ msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:261
 msgid "5-field cron (min hour day month weekday), evaluated in your local time."
 msgstr "5-field cron (min hour day month weekday), evaluated in your local time."
 
@@ -50,11 +54,11 @@ msgstr "Add input"
 msgid "Add this signing secret to your webhook sender's HMAC configuration."
 msgstr "Add this signing secret to your webhook sender's HMAC configuration."
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:77
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:78
 msgid "at"
 msgstr "at"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:172
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:174
 msgid "at minute"
 msgstr "at minute"
 
@@ -78,13 +82,22 @@ msgstr "Copy url"
 msgid "Create"
 msgstr "Create"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:162
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:164
 msgid "Custom"
 msgstr "Custom"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:144
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:130
+msgid "Custom schedule"
+msgstr "Custom schedule"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:146
 msgid "Daily"
 msgstr "Daily"
+
+#. placeholder {0}: model.dayOfMonth
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:128
+msgid "Day {0} of each month at {time}"
+msgstr "Day {0} of each month at {time}"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:35
 msgid "Delete"
@@ -118,29 +131,50 @@ msgstr "Enabled"
 msgid "Error"
 msgstr "Error"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:145
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:147
 msgid "Every day"
 msgstr "Every day"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:139
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:119
+msgid "Every day at {time}"
+msgstr "Every day at {time}"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:141
 msgid "Every hour"
 msgstr "Every hour"
+
+#. placeholder {0}: pad2(model.minute)
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:117
+msgid "Every hour at :{0}"
+msgstr "Every hour at :{0}"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:28
 msgid "Fire now"
 msgstr "Fire now"
 
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:30
+msgid "Fri"
+msgstr "Fri"
+
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:195
 msgid "Header carrying the HMAC signature. Leave empty for the Scylla default."
 msgstr "Header carrying the HMAC signature. Leave empty for the Scylla default."
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:138
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:140
 msgid "Hourly"
 msgstr "Hourly"
+
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:130
+msgid "Incomplete schedule"
+msgstr "Incomplete schedule"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:36
 msgid "Inputs"
 msgstr "Inputs"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:70
+msgid "JSON pointer"
+msgstr "JSON pointer"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:51
 msgid "last"
@@ -150,7 +184,11 @@ msgstr "last"
 msgid "Literal"
 msgstr "Literal"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:156
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:26
+msgid "Mon"
+msgstr "Mon"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:158
 msgid "Monthly"
 msgstr "Monthly"
 
@@ -163,6 +201,7 @@ msgstr "Name"
 msgid "Never fired"
 msgstr "Never fired"
 
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:36
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:111
 msgid "New trigger"
 msgstr "New trigger"
@@ -187,21 +226,37 @@ msgstr "No triggers yet"
 msgid "OK"
 msgstr "OK"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:157
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:159
 msgid "On a day of the month"
 msgstr "On a day of the month"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:151
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:153
 msgid "On chosen days"
 msgstr "On chosen days"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:225
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:227
 msgid "on day"
 msgstr "on day"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:46
 msgid "Optional values injected into the run as environment variables."
 msgstr "Optional values injected into the run as environment variables."
+
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:121
+msgid "Pick at least one day"
+msgstr "Pick at least one day"
+
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:34
+msgid "Pipeline ID is missing"
+msgstr "Pipeline ID is missing"
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:46
+msgid "Pipeline ID: {pipelineId}"
+msgstr "Pipeline ID: {pipelineId}"
+
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:31
+msgid "Sat"
+msgstr "Sat"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:219
 msgid "Save"
@@ -223,6 +278,26 @@ msgstr "Source"
 msgid "Status"
 msgstr "Status"
 
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:32
+msgid "Sun"
+msgstr "Sun"
+
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:29
+msgid "Thu"
+msgstr "Thu"
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
+msgid "Trigger"
+msgstr "Trigger"
+
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:35
+msgid "Triggers"
+msgstr "Triggers"
+
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:27
+msgid "Tue"
+msgstr "Tue"
+
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:134
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:154
 msgid "Type"
@@ -241,11 +316,15 @@ msgstr "Unknown"
 msgid "webhook endpoints"
 msgstr "webhook endpoints"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:150
+#: src/modules/features/triggers/presentation/utils/cron.utils.ts:28
+msgid "Wed"
+msgstr "Wed"
+
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:152
 msgid "Weekly"
 msgstr "Weekly"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:163
+#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:165
 msgid "Write a cron expression"
 msgstr "Write a cron expression"
 

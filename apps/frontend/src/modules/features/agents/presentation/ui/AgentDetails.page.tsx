@@ -52,7 +52,7 @@ export const AgentDetailsPage = () => {
 
   if (redirecting) return null;
   if (isLoading) return <Skeleton className='m-4 h-72 rounded-xl' />;
-  if (isError || !agent) return <ErrorState message='Error loading agent' />;
+  if (isError || !agent) return <ErrorState message={<Trans>Error loading agent</Trans>} />;
 
   const seenLabel = agent.lastSeen ? getRelativeTime(agent.lastSeen) : null;
 

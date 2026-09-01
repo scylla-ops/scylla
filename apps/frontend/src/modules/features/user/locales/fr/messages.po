@@ -53,6 +53,10 @@ msgstr "Saisissez un nom d’utilisateur et un mot de passe pour le nouvel utili
 msgid "Error loading user information"
 msgstr "Erreur lors du chargement des informations utilisateur"
 
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:46
+msgid "Error loading users"
+msgstr "Erreur lors du chargement des utilisateurs"
+
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:75
 msgid "Loading user information..."
 msgstr "Chargement des informations utilisateur..."
@@ -64,7 +68,7 @@ msgstr "Chargement des informations utilisateur..."
 msgid "Manage your account details."
 msgstr "Gérez les détails de votre compte."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:56
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:57
 msgid "New user"
 msgstr "Nouvel utilisateur"
 
@@ -72,9 +76,18 @@ msgstr "Nouvel utilisateur"
 msgid "Password"
 msgstr "Mot de passe"
 
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:159
+msgid "Save"
+msgstr "Enregistrer"
+
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:52
 msgid "User"
 msgstr "Utilisateur"
+
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:113
+msgid "User ID"
+msgstr "Identifiant utilisateur"
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67
@@ -92,12 +105,17 @@ msgid "User settings"
 msgstr "Paramètres utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:104
 msgid "Username"
 msgstr "Nom d’utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
 #~ msgid "Username and password are required."
 #~ msgstr ""
+
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:53
+msgid "Users"
+msgstr "Utilisateurs"
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "View"
@@ -107,10 +125,10 @@ msgstr "Voir"
 #~ msgid "You cannot delete your own account."
 #~ msgstr ""
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:58
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:59
 msgid "You don't have permission to create users."
-msgstr ""
+msgstr "Vous n'avez pas la permission de créer des utilisateurs."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:60
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:61
 msgid "You don't have permission to delete users."
-msgstr ""
+msgstr "Vous n'avez pas la permission de supprimer des utilisateurs."

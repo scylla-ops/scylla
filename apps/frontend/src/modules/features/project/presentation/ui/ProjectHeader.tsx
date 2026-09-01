@@ -28,7 +28,8 @@ export const ProjectHeader = ({ numberOfProjects, projectIds }: ProjectHeaderPro
     <>
       <FeatureHeader
         count={numberOfProjects}
-        label='Project'
+        label={<Trans>Project</Trans>}
+        pluralLabel={<Trans>Projects</Trans>}
         {...headerProps}
         onNew={() => setOpen(true)}
         newLabel={<Trans>New project</Trans>}

@@ -66,7 +66,9 @@ export const TriggerInputsEditor = ({
                   <SelectItem value='literal'>
                     <Trans>Literal</Trans>
                   </SelectItem>
-                  <SelectItem value='jsonPointer'>JSON pointer</SelectItem>
+                  <SelectItem value='jsonPointer'>
+                    <Trans>JSON pointer</Trans>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             )}

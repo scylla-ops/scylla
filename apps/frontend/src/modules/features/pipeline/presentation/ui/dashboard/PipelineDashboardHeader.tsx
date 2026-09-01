@@ -31,7 +31,8 @@ export const PipelineDashboardHeader = ({
     <div className='flex items-center gap-4 w-full'>
       <FeatureHeader
         count={numberOfPipelines}
-        label={'Pipeline'}
+        label={<Trans>Pipeline</Trans>}
+        pluralLabel={<Trans>Pipelines</Trans>}
         {...headerProps}
         onNew={goToCreatePipeline}
         newLabel={<Trans>New pipeline</Trans>}
@@ -53,7 +54,7 @@ export const PipelineDashboardHeader = ({
             <Can permission={Permission.LIST_SECRETS}>
               <Button variant={'outline'} onClick={() => goToSubRoute('secrets')}>
                 <KeyIcon className={'text-primary'} />
-                Secrets
+                <Trans>Secrets</Trans>
               </Button>
             </Can>
           </>

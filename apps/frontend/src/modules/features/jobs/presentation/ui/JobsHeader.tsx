@@ -39,9 +39,9 @@ export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: Jobs
     <div className={'flex flex-col gap-3'}>
       <FeatureHeader
         count={numberOfJobs}
-        label={'Job'}
-        pluralLabel={'Jobs'}
-        newLabel={'Run'}
+        label={<Trans>Job</Trans>}
+        pluralLabel={<Trans>Jobs</Trans>}
+        newLabel={<Trans>Run</Trans>}
         onNew={handleRunPipeline}
         canNew={canRun}
         newDeniedReason={<Trans>You don't have permission to run this pipeline.</Trans>}
@@ -52,7 +52,7 @@ export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: Jobs
           <div className={'flex items-center justify-between'}>
             <div className='flex items-baseline gap-2'>
               <span className='text-sm text-muted-foreground font-medium'>
-                Pipeline ID: {pipelineId}
+                <Trans>Pipeline ID: {pipelineId}</Trans>
               </span>
             </div>
           </div>

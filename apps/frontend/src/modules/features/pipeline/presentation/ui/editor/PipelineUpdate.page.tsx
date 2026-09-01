@@ -4,6 +4,7 @@ import { usePipeline } from '@/modules/features/pipeline/presentation/hooks/use-
 import { useUpdatePipeline } from '@/modules/features/pipeline/presentation/hooks/use-update-pipeline.ts';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { PipelineEditor } from '@/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx';
+import { Trans } from '@lingui/react/macro';
 
 export const PipelineUpdatePage = () => {
   const { pipelineId } = useParams();
@@ -23,13 +24,13 @@ export const PipelineUpdatePage = () => {
   );
 
   if (isLoading) return <>Loading...</>;
-  if (isError) return <ErrorState message='Failed to load pipeline' />;
+  if (isError) return <ErrorState message={<Trans>Failed to load pipeline</Trans>} />;
 
   return (
     <div className='flex h-full flex-col gap-4'>
       <PipelineEditor
         mode='edit'
-        submitLabel='Save'
+        submitLabel={<Trans>Save</Trans>}
         projectId={pipeline?.projectId}
         initialScript={initialScript}
         onSubmit={({ name, steps }) =>

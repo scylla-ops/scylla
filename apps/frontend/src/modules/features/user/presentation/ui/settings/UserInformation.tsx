@@ -101,7 +101,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
 
   const FormItems: FormItem[] = [
     {
-      label: 'Username',
+      label: <Trans>Username</Trans>,
       placeholder: user.username,
       id: 'username',
       type: FormItemType.Input,
@@ -110,7 +110,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
       defaultValue: user.username,
     },
     {
-      label: 'User ID',
+      label: <Trans>User ID</Trans>,
       placeholder: user.userId,
       id: 'user-id',
       type: FormItemType.Input,
@@ -156,7 +156,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
         <ScyllaForm
           onSubmit={handleSubmit}
           items={FormItems}
-          buttonLabel={'Save'}
+          buttonLabel={<Trans>Save</Trans>}
           className={'gap-2'}
           isPending={updateUserMutation.isPending}
         />

@@ -97,7 +97,7 @@ const useNavSections = (
           permission: Permission.LIST_USERS,
         },
         {
-          title: 'Roles',
+          title: t`Roles`,
           url: `${prefix}/roles`,
           icon: ShieldIcon,
           permission: Permission.MANAGE_ROLES,

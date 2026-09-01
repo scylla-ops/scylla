@@ -3,8 +3,10 @@ import type { NodeProps } from 'reactflow';
 import { Card } from '@shadcn';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import { Terminal, X } from 'lucide-react';
+import { useLingui } from '@lingui/react/macro';
 
 export const PipelineStepNode = ({ id, data, selected }: NodeProps<PipelineNodeData>) => {
+  const { t } = useLingui();
   const { deleteElements } = useReactFlow();
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -33,7 +35,7 @@ export const PipelineStepNode = ({ id, data, selected }: NodeProps<PipelineNodeD
         <button
           onClick={handleDelete}
           className='p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors'
-          title='Delete node'
+          title={t`Delete node`}
         >
           <X className='w-3.5 h-3.5' />
         </button>

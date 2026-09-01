@@ -64,13 +64,13 @@ export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) 
             {onView && (
               <DropdownMenuItem onClick={onView}>
                 <Eye className='w-4 h-4 mr-2' />
-                View
+                <Trans>View</Trans>
               </DropdownMenuItem>
             )}
             {canDelete && (
               <DropdownMenuItem onClick={onDelete} className='text-destructive'>
                 <Trash className='w-4 h-4 mr-2' />
-                Delete
+                <Trans>Delete</Trans>
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

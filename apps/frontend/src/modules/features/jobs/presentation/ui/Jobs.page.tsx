@@ -13,7 +13,7 @@ export const JobsPage = () => {
     usePipelinesJobs(pipelineId || '');
 
   if (!pipelineId) {
-    return <ErrorState message='Pipeline ID is missing' />;
+    return <ErrorState message={<Trans>Pipeline ID is missing</Trans>} />;
   }
 
   if (isLoading || !jobs) {

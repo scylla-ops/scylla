@@ -123,7 +123,7 @@ msgstr "Membres"
 #~ msgid "Members of “{0}”"
 #~ msgstr "Membres de « {0} »"
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:34
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:35
 msgid "New project"
 msgstr "Nouveau projet"
 
@@ -155,9 +155,9 @@ msgstr "Seuls les membres de l'organisation peuvent être ajoutés — un rôle 
 msgid "Organization administrators also reach this project. Their roles are managed at the organization level and are not listed here."
 msgstr "Les administrateurs de l'organisation ont aussi accès à ce projet. Leurs rôles sont gérés au niveau de l'organisation et ne sont pas listés ici."
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:69
-#~ msgid "Project"
-#~ msgstr "Projet"
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:31
+msgid "Project"
+msgstr "Projet"
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:28
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:24
@@ -171,6 +171,10 @@ msgstr "Nom du projet"
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:261
 msgid "Project roles to grant"
 msgstr "Rôles de projet à attribuer"
+
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:32
+msgid "Projects"
+msgstr "Projets"
 
 #. placeholder {0}: pendingRemoval?.username
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:273
@@ -217,6 +221,10 @@ msgstr "Sélectionner"
 msgid "Select an organization from the sidebar to view its projects"
 msgstr "Sélectionnez une organisation dans la barre latérale pour voir ses projets"
 
+#: src/modules/features/project/presentation/ui/ProjectPage.tsx:33
+msgid "Unable to load projects"
+msgstr "Impossible de charger les projets"
+
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:59
 msgid "Update the project name and description."
 msgstr "Mettez à jour le nom du projet et sa description."
@@ -233,10 +241,10 @@ msgstr "Vous ne pouvez pas parcourir les membres de l'organisation"
 msgid "You don't have permission to add members to this project."
 msgstr "Vous n'avez pas la permission d'ajouter des membres à ce projet."
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:36
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:37
 msgid "You don't have permission to create projects."
 msgstr "Vous n'avez pas la permission de créer des projets."
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:38
+#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:39
 msgid "You don't have permission to delete projects."
 msgstr "Vous n'avez pas la permission de supprimer des projets."

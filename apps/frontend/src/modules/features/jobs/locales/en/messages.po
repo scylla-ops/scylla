@@ -17,9 +17,13 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:30
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:32
 msgid "agent disconnected mid-run"
 msgstr "agent disconnected mid-run"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:67
+msgid "Collapse"
+msgstr "Collapse"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
 #~ msgid "Copied!"
@@ -33,13 +37,26 @@ msgstr "Copy ID"
 msgid "Created"
 msgstr "Created"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:73
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:93
 msgid "Delete"
 msgstr "Delete"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:81
+msgid "Delete Job"
+msgstr "Delete Job"
+
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:61
 msgid "Duration"
 msgstr "Duration"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:27
+msgid "Error loading logs..."
+msgstr "Error loading logs..."
+
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:42
+msgid "Job"
+msgstr "Job"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:47
 msgid "Job ID"
@@ -49,9 +66,22 @@ msgstr "Job ID"
 msgid "Job Logs"
 msgstr "Job Logs"
 
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:43
+msgid "Jobs"
+msgstr "Jobs"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:22
+msgid "Loading..."
+msgstr "Loading..."
+
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:44
 msgid "No jobs found"
 msgstr "No jobs found"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:48
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:65
+msgid "No nodes"
+msgstr "No nodes"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
 msgid "Open logs"
@@ -61,13 +91,25 @@ msgstr "Open logs"
 #~ msgid "OpenJobLog"
 #~ msgstr "OpenJobLog"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:26
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:16
+msgid "Pipeline ID is missing"
+msgstr "Pipeline ID is missing"
+
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:55
+msgid "Pipeline ID: {pipelineId}"
+msgstr "Pipeline ID: {pipelineId}"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:28
 msgid "queued — waiting for an agent"
 msgstr "queued — waiting for an agent"
 
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:74
 msgid "Refresh"
 msgstr "Refresh"
+
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
+msgid "Run"
+msgstr "Run"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "Run your pipeline to create the first job"
@@ -85,6 +127,7 @@ msgstr "Streaming live output"
 msgid "Timeline"
 msgstr "Timeline"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:67
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:80
 msgid "View"
 msgstr "View"

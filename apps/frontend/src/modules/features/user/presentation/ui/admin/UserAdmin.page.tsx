@@ -43,13 +43,14 @@ export const UserAdminPage = () => {
 
   //todo: handle properly
   if (isLoading) return <></>;
-  if (isError) return <ErrorState message='Error loading users' />;
+  if (isError) return <ErrorState message={<Trans>Error loading users</Trans>} />;
 
   return (
     <div className={'flex flex-col gap-4 w-full'}>
       <FeatureHeader
         count={users?.items?.length ?? 0}
-        label='User'
+        label={<Trans>User</Trans>}
+        pluralLabel={<Trans>Users</Trans>}
         {...headerProps}
         onDeleteSelection={handleDelete}
         onNew={() => setOpenDialog(true)}

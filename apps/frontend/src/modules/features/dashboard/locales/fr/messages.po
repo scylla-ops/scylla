@@ -13,24 +13,52 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:238
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:246
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:251
 msgid "Agent Outcomes"
 msgstr "Résultats des agents"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:34
+msgid "all"
+msgstr "tous"
 
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:176
 msgid "All Pipelines"
 msgstr "Tous les pipelines"
 
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:37
+msgid "cancelled"
+msgstr "annulés"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:30
+msgid "Cancelled"
+msgstr "Annulé"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:35
+msgid "completed"
+msgstr "terminés"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:28
+msgid "Completed"
+msgstr "Terminé"
+
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:82
 msgid "Dashboard"
 msgstr "Tableau de bord"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:36
+msgid "failed"
+msgstr "échoués"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:29
+msgid "Failed"
+msgstr "Échoué"
 
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:198
 msgid "Name"
 msgstr "Nom"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:226
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:234
 msgid "No agents found. Connect an agent to see execution history."
 msgstr "Aucun agent trouvé. Connectez un agent pour voir l'historique des exécutions."
 
@@ -38,7 +66,7 @@ msgstr "Aucun agent trouvé. Connectez un agent pour voir l'historique des exéc
 msgid "No description"
 msgstr "Aucune description"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:120
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:128
 msgid "No finished jobs in this window."
 msgstr "Aucun job terminé sur cette période."
 

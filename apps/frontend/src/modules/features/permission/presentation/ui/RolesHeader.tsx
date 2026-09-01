@@ -16,8 +16,8 @@ export const RolesHeader = ({ count, onNew, ...selection }: RolesHeaderProps) =>
   return (
     <FeatureHeader
       count={count}
-      label={'Role'}
-      pluralLabel={'Roles'}
+      label={<Trans>Role</Trans>}
+      pluralLabel={<Trans>Roles</Trans>}
       newLabel={<Trans>Create role</Trans>}
       onNew={onNew}
       {...selection}

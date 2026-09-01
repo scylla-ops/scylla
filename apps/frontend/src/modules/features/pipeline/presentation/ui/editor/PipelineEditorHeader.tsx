@@ -11,7 +11,7 @@ import { useCan } from '@/modules/features/permission/presentation/hooks/use-aut
 
 interface PipelineEditorHeaderProps {
   onSubmit: () => void;
-  submitLabel: string;
+  submitLabel: ReactNode;
   /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
   mode: 'create' | 'edit';
   /** Disables the submit button (e.g. when the script JSON is invalid). */
@@ -96,14 +96,14 @@ export const PipelineEditorHeader = ({
         {canSubmit ? (
           <Button onClick={onSubmit} disabled={submitDisabled || isSaving}>
             {isSaving && <Loader2 className='mr-2 size-4 animate-spin' />}
-            <Trans>{submitLabel}</Trans>
+            {submitLabel}
           </Button>
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
               <span className='inline-flex'>
                 <Button disabled className='pointer-events-none'>
-                  <Trans>{submitLabel}</Trans>
+                  {submitLabel}
                 </Button>
               </span>
             </TooltipTrigger>

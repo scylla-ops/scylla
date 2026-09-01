@@ -2,82 +2,42 @@ import { RouterProvider } from 'react-router-dom';
 import { CoreRouter } from '@core/presentation/ui/router/Core.router.tsx';
 import { StrictMode } from 'react';
 import { I18nProvider } from '@lingui/react';
+import { useLingui } from '@lingui/react/macro';
 import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
-import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
-import { messages as projectMessages } from '@/modules/features/project/locales/en/messages.ts';
-import { messages as pipelineMessages } from '@/modules/features/pipeline/locales/en/messages.ts';
-import { messages as marketplaceMessages } from '@/modules/features/marketplace/locales/en/messages.ts';
-import { messages as organizationMessages } from '@/modules/features/organization/locales/en/messages.ts';
-import { messages as userMessages } from '@/modules/features/user/locales/en/messages.ts';
-import { messages as sharedMessages } from '@/modules/shared/locales/en/messages.ts';
-import { messages as layoutMessages } from '@/modules/layout/locales/en/messages.ts';
-import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
-import { messages as appsMessages } from '@/modules/features/apps/locales/en/messages.ts';
-import { messages as agentsMessages } from '@/modules/features/agents/locales/en/messages.ts';
-import { messages as secretMessages } from '@/modules/features/secret/locales/en/messages.ts';
-import { messages as triggersMessages } from '@/modules/features/triggers/locales/en/messages.ts';
-import { messages as permissionMessages } from '@/modules/features/permission/locales/en/messages.ts';
-import { messages as dashboardMessages } from '@/modules/features/dashboard/locales/en/messages.ts';
-import { messages as loginFrMessages } from '@/modules/features/login/locales/fr/messages.ts';
-import { messages as projectFrMessages } from '@/modules/features/project/locales/fr/messages.ts';
-import { messages as pipelineFrMessages } from '@/modules/features/pipeline/locales/fr/messages.ts';
-import { messages as marketplaceFrMessages } from '@/modules/features/marketplace/locales/fr/messages.ts';
-import { messages as organizationFrMessages } from '@/modules/features/organization/locales/fr/messages.ts';
-import { messages as userFrMessages } from '@/modules/features/user/locales/fr/messages.ts';
-import { messages as sharedFrMessages } from '@/modules/shared/locales/fr/messages.ts';
-import { messages as layoutFrMessages } from '@/modules/layout/locales/fr/messages.ts';
-import { messages as jobFrMessages } from '@/modules/features/jobs/locales/fr/messages.ts';
-import { messages as appsFrMessages } from '@/modules/features/apps/locales/fr/messages.ts';
-import { messages as agentsFrMessages } from '@/modules/features/agents/locales/fr/messages.ts';
-import { messages as secretFrMessages } from '@/modules/features/secret/locales/fr/messages.ts';
-import { messages as triggersFrMessages } from '@/modules/features/triggers/locales/fr/messages.ts';
-import { messages as permissionFrMessages } from '@/modules/features/permission/locales/fr/messages.ts';
-import { messages as dashboardFrMessages } from '@/modules/features/dashboard/locales/fr/messages.ts';
+import type { Messages } from '@lingui/core';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Toaster } from '@shadcn/sonner.tsx';
 import { initializeAppLocale } from '@shared/presentation/utils/i18n.ts';
 
-i18n.load('en', {
-  ...loginMessages,
-  ...userMessages,
-  ...projectMessages,
-  ...pipelineMessages,
-  ...marketplaceMessages,
-  ...organizationMessages,
-  ...sharedMessages,
-  ...jobMessages,
-  ...appsMessages,
-  ...layoutMessages,
-  ...agentsMessages,
-  ...secretMessages,
-  ...triggersMessages,
-  ...permissionMessages,
-  ...dashboardMessages,
+// Every compiled catalog under src/modules is picked up by convention, so a new
+// module (or a new locale) is live as soon as lingui.config.js knows about it.
+// Listing them by hand is how `core` ended up extracted but never loaded.
+const catalogs = import.meta.glob<{ messages: Messages }>('../../../**/locales/*/messages.ts', {
+  eager: true,
 });
-i18n.load('fr', {
-  ...loginFrMessages,
-  ...userFrMessages,
-  ...projectFrMessages,
-  ...pipelineFrMessages,
-  ...marketplaceFrMessages,
-  ...organizationFrMessages,
-  ...sharedFrMessages,
-  ...jobFrMessages,
-  ...appsFrMessages,
-  ...layoutFrMessages,
-  ...agentsFrMessages,
-  ...secretFrMessages,
-  ...triggersFrMessages,
-  ...permissionFrMessages,
-  ...dashboardFrMessages,
-});
+
+const LOCALE_FROM_PATH = /\/locales\/([^/]+)\/messages\.ts$/;
+
+const messagesByLocale = Object.entries(catalogs).reduce<Record<string, Messages>>(
+  (acc, [path, module]) => {
+    const locale = LOCALE_FROM_PATH.exec(path)?.[1];
+    if (locale) acc[locale] = { ...acc[locale], ...module.messages };
+    return acc;
+  },
+  {},
+);
+
+for (const [locale, messages] of Object.entries(messagesByLocale)) {
+  i18n.load(locale, messages);
+}
+
 initializeAppLocale();
 
 //todo: maybe in production, console error only network or non scylla error ?
@@ -133,6 +93,7 @@ const queryClient = new QueryClient({
 });
 
 function ThemeToggle() {
+  const { t } = useLingui();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -142,7 +103,7 @@ function ThemeToggle() {
       variant='outline'
       size='icon'
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      aria-label='Toggle dark mode'
+      aria-label={t`Toggle dark mode`}
       className='fixed right-4 top-4 z-50 h-10 w-10 rounded-full border-border bg-background/90 shadow-sm backdrop-blur'
     >
       {isDark ? (

@@ -421,6 +421,10 @@ msgstr "Permissions restreintes"
 msgid "Revoke {name}"
 msgstr "Révoquer {name}"
 
+#: src/modules/features/permission/presentation/ui/RolesHeader.tsx:19
+msgid "Role"
+msgstr "Rôle"
+
 #: src/modules/features/permission/presentation/hooks/use-scope-membership.ts:87
 msgid "Role granted"
 msgstr "Rôle accordé"
@@ -429,9 +433,9 @@ msgstr "Rôle accordé"
 msgid "Role revoked"
 msgstr "Rôle révoqué"
 
-#: src/modules/features/permission/presentation/ui/components/members/MemberCard.tsx:99
-#~ msgid "Roles"
-#~ msgstr "Rôles"
+#: src/modules/features/permission/presentation/ui/RolesHeader.tsx:20
+msgid "Roles"
+msgstr "Rôles"
 
 #: src/modules/features/permission/presentation/utils/permission-mapping.ts:254
 msgid "Run pipelines"

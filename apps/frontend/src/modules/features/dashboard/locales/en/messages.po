@@ -13,24 +13,52 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:238
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:246
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:251
 msgid "Agent Outcomes"
 msgstr "Agent Outcomes"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:34
+msgid "all"
+msgstr "all"
 
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:176
 msgid "All Pipelines"
 msgstr "All Pipelines"
 
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:37
+msgid "cancelled"
+msgstr "cancelled"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:30
+msgid "Cancelled"
+msgstr "Cancelled"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:35
+msgid "completed"
+msgstr "completed"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:28
+msgid "Completed"
+msgstr "Completed"
+
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:82
 msgid "Dashboard"
 msgstr "Dashboard"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:36
+msgid "failed"
+msgstr "failed"
+
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:29
+msgid "Failed"
+msgstr "Failed"
 
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:198
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:226
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:234
 msgid "No agents found. Connect an agent to see execution history."
 msgstr "No agents found. Connect an agent to see execution history."
 
@@ -38,7 +66,7 @@ msgstr "No agents found. Connect an agent to see execution history."
 msgid "No description"
 msgstr "No description"
 
-#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:120
+#: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:128
 msgid "No finished jobs in this window."
 msgstr "No finished jobs in this window."
 

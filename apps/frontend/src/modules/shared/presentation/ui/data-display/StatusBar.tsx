@@ -2,6 +2,7 @@ import { cn } from '@shared/presentation/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import type { ReactNode } from 'react';
+import { Trans } from '@lingui/react/macro';
 
 export interface StatusBarItem {
   id: string;
@@ -11,7 +12,7 @@ export interface StatusBarItem {
 
 interface StatusBarProps {
   items: StatusBarItem[];
-  emptyLabel?: string;
+  emptyLabel?: ReactNode;
   className?: string;
   height?: string;
 }
@@ -22,14 +23,16 @@ interface StatusBarProps {
  */
 export const StatusBar = ({
   items,
-  emptyLabel = 'No data',
+  emptyLabel,
   className,
   height = 'h-6',
 }: StatusBarProps) => {
   if (items.length === 0) {
     return (
       <div className={cn('w-full flex items-center justify-center py-1', height)}>
-        <span className='text-xs text-slate-400 italic'>{emptyLabel}</span>
+        <span className='text-xs text-slate-400 italic'>
+          {emptyLabel ?? <Trans>No data</Trans>}
+        </span>
       </div>
     );
   }

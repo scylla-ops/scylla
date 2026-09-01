@@ -102,7 +102,7 @@ export const PipelineActions = ({
             {onViewJobs && (
               <DropdownMenuItem onClick={onViewJobs}>
                 <ListChecks className='w-4 h-4 mr-2' />
-                View Jobs
+                <Trans>View Jobs</Trans>
               </DropdownMenuItem>
             )}
             {showTriggers && (
@@ -113,7 +113,7 @@ export const PipelineActions = ({
                   <span className='relative inline-flex ml-2'>
                     <span className='absolute inset-0 animate-ping rounded-full bg-primary opacity-40' />
                     <span className='relative bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none'>
-                      New
+                      <Trans>New</Trans>
                     </span>
                   </span>
                 )}
@@ -139,7 +139,7 @@ export const PipelineActions = ({
             />
           )}
 
-          {canEdit && <IconButton icon={EditIcon} tooltip={'Edit pipeline'} onClick={onEdit} />}
+          {canEdit && <IconButton icon={EditIcon} tooltip={<Trans>Edit pipeline</Trans>} onClick={onEdit} />}
 
           {canDuplicate && (
             <IconButton
@@ -162,7 +162,7 @@ export const PipelineActions = ({
                 <span className='absolute -top-1.5 -right-1.5 flex pointer-events-none'>
                   <span className='absolute inset-0 animate-ping rounded-full bg-primary opacity-40' />
                   <span className='relative bg-primary text-primary-foreground text-[10px] font-bold px-1 py-0.5 rounded-full leading-none'>
-                    New
+                    <Trans>New</Trans>
                   </span>
                 </span>
               )}

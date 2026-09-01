@@ -36,7 +36,11 @@ export function NavUser() {
 
   //todo: better loading (skeleton if loading too slow ?)
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <Trans>Loading...</Trans>
+      </div>
+    );
   }
 
   return (

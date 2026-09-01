@@ -6,6 +6,7 @@ import {
 } from '@shared/utils/date-utils.ts';
 import { useNow } from '@shared/presentation/hooks/use-now.ts';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
+import { Trans } from '@lingui/react/macro';
 
 type PipelineMetadataProps = {
   jobs: JobEntity[];
@@ -26,7 +27,9 @@ export const PipelineLastJob = ({ jobs }: PipelineMetadataProps) => {
           <Clock className='w-3.5 h-3.5' />
           <span>-</span>
         </div>
-        <span className='text-xs italic truncate'>No jobs yet</span>
+        <span className='text-xs italic truncate'>
+          <Trans>No jobs yet</Trans>
+        </span>
       </div>
     );
   }

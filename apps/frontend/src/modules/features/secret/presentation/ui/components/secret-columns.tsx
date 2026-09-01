@@ -31,7 +31,7 @@ export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) =>
     size: 20,
   }),
   columnHelper.accessor('description', {
-    header: 'Description',
+    header: () => <Trans>Description</Trans>,
     cell: info => (
       <div className={'w-full flex justify-center'}>
         <p className='text-xs text-muted-foreground'>{info.row.original.description}</p>
@@ -40,7 +40,7 @@ export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) =>
     size: 300,
   }),
   columnHelper.accessor('createdAt', {
-    header: 'Created',
+    header: () => <Trans>Created</Trans>,
     cell: info => (
       <div className={'flex justify-center'}>
         <span className='text-sm text-muted-foreground whitespace-nowrap'>
@@ -51,7 +51,7 @@ export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) =>
     size: 100,
   }),
   columnHelper.accessor('id', {
-    header: 'Actions',
+    header: () => <Trans>Actions</Trans>,
     cell: info => (
       <div className='flex items-center justify-center gap-1 shrink-0'>
         <Button

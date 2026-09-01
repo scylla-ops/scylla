@@ -6,6 +6,7 @@ import {
   type EdgeProps,
 } from 'reactflow';
 import { Trash2 } from 'lucide-react';
+import { useLingui } from '@lingui/react/macro';
 import { EDGE_COLOR } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 const SELECTED_COLOR = 'oklch(70% 0.3 30)';
 
@@ -20,6 +21,7 @@ export function DeletableEdge({
   selected,
   markerEnd,
 }: EdgeProps) {
+  const { t } = useLingui();
   const { deleteElements } = useReactFlow();
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
@@ -67,7 +69,7 @@ export function DeletableEdge({
               onMouseDown={e => {
                 e.stopPropagation();
               }}
-              title='Delete edge'
+              title={t`Delete edge`}
             >
               <Trash2 className='w-6.5 h-6.5' />
             </button>
