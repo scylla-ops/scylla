@@ -4,6 +4,40 @@ React + TypeScript frontend for Scylla, built on **Clean Architecture** with **T
 
 ---
 
+## Read the module's `AGENTS.md` first
+
+**Every module has an `AGENTS.md` at its root.** Before writing or changing code in a module,
+read that file. It is written for you, and it holds what this document cannot: that module's
+exact public API, its repository methods, its routes and permissions, its file map, and the
+specific mistakes that module invites.
+
+```
+src/modules/features/<feature>/AGENTS.md      the 14 business modules
+src/modules/platform/<capability>/AGENTS.md   authz, context, di, grpc, routing
+src/modules/core/AGENTS.md                    composition root
+src/modules/layout/AGENTS.md                  app shell
+src/modules/shared/AGENTS.md                  generic UI + utils
+```
+
+- Touching one module → read its `AGENTS.md`.
+- Touching several → read each one. Cross-module work is where the rules bite hardest.
+- Consuming another module's hook or type → read *its* `AGENTS.md` to find what the barrel
+  actually exports, instead of guessing or deep-importing.
+
+This file stays authoritative for anything that spans the whole codebase — layering, naming,
+React rules, the commands below. A module's `AGENTS.md` never contradicts it; it makes it
+concrete. **If you find a contradiction, this file wins and the `AGENTS.md` is stale — fix it.**
+
+Each module also has a **`README.md`**, written for humans: what the module is for, and the
+reasoning behind how it is built. Read it when you need the *why*; `AGENTS.md` gives you the
+*what*. The root [`README.md`](README.md) links to all of them.
+
+**Keep both current.** Changing a module's public API, routes, permissions, repository contract
+or structure means updating its `AGENTS.md` in the same change — and its `README.md` too when
+the reasoning changed, not just the code.
+
+---
+
 ## Commands
 
 Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/frontend/`.
@@ -336,4 +370,8 @@ React 18 · TypeScript 5.8 · TanStack Query 5 · Zustand 5 · React Router 7 ·
    `use-<feature>-domain.ts`, and a page only when another module composes it behind its own route.
    Every feature has one, even when nothing consumes it yet: that is where a contributor looks first.
 9. Reuse before adding: check `shared/` and the Shared Patterns section first.
-10. `pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` all clean.
+10. `AGENTS.md` + `README.md` at the module root, and a row in the root `README.md`'s module
+    table. Follow the shape of a neighbouring module's pair: `AGENTS.md` = public API, data
+    contract, file map, routes/nav, the rules that bite there; `README.md` = what it is for and
+    why it is built that way.
+11. `pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` all clean.
