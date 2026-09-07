@@ -11,7 +11,7 @@
   --select: oklch(0 1 89.876);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(65.752% 0.25 180);
+  --primary: oklch(0.627 0.084 155.4);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -45,8 +45,8 @@
   --sidebar-border: oklch(0.61 0 89.876 / 0.25);
   --sidebar-ring: oklch(0.708 0 0);
   --code-editor-bg: oklch(1 0 89.876);
-  --code-editor-line-bg: oklch(0.862 0.149 173.922 / 0.27);
-  --code-editor-selection-bg: oklch(0.862 0.149 173.922 / 0.4);
+  --code-editor-line-bg: oklch(0.627 0.084 155.4 / 0.27);
+  --code-editor-selection-bg: oklch(0.627 0.084 155.4 / 0.4);
 }
 
 .dark {
@@ -56,7 +56,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(65.752% 0.25 180);
+  --primary: oklch(0.627 0.084 155.4);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -82,7 +82,7 @@
   --warning-foreground: oklch(0.145 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(65.752% 0.25 180);
+  --sidebar-primary: oklch(0.627 0.084 155.4);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
@@ -90,8 +90,8 @@
   --sidebar-ring: oklch(0.439 0 0);
   /* Slightly lifted off --background so the editor reads as its own surface. */
   --code-editor-bg: oklch(0.19 0 0);
-  --code-editor-line-bg: oklch(0.862 0.149 173.922 / 0.12);
-  --code-editor-selection-bg: oklch(0.862 0.149 173.922 / 0.25);
+  --code-editor-line-bg: oklch(0.627 0.084 155.4 / 0.12);
+  --code-editor-selection-bg: oklch(0.627 0.084 155.4 / 0.25);
 }
 
 @theme inline {

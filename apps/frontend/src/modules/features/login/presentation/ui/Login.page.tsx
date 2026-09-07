@@ -11,10 +11,9 @@ import LogoScyllaDark from '@/assets/logo_scylla_dark.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/features/login/presentation/hooks/use-login.ts';
 import { type FormEvent } from 'react';
-import { motion } from 'framer-motion';
-import scyllaLogoDark from '@/assets/logo_scylla_dark.png';
-import scyllaLogo from '@/assets/logo_scylla.png';
+
 import { useTheme } from 'next-themes';
+import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 
 /**
  * The wordmark is flat black, unreadable on the dark background — the dark
@@ -34,26 +33,13 @@ const ScyllaLogo = ({ className }: { className: string }) => (
 
 export const LoginPage = () => {
   const { mutate: login, isPending, isSuccess } = useLogin();
-  const isDarkTheme = useTheme().theme === 'dark';
 
   const handleSubmit = (e: FormEvent, loginValue: string, passwordValue: string) => {
     e.preventDefault();
     login({ login: loginValue, password: passwordValue });
   };
 
-  if (isPending || isSuccess)
-    return (
-      <div className='flex items-center justify-center h-screen w-screen bg-background'>
-        <motion.img
-          src={isDarkTheme ? scyllaLogoDark : scyllaLogo}
-          alt='Scylla'
-          className='h-40 w-72'
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: [0, 1, 1, 0.5], scale: [0.8, 1, 1, 0.95] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
-    );
+  if (isPending || isSuccess) return <ScyllaLoadingScreen />;
 
   return (
     <div className={'flex items-center flex-col'}>

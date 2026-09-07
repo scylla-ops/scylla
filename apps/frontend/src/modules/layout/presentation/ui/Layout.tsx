@@ -24,6 +24,7 @@ import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { usePermissionSync } from '@/modules/features/roles';
 import { useTheme } from 'next-themes';
+import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 
 interface LayoutProps {
   /**
@@ -46,18 +47,7 @@ export const Layout = ({ navEntries }: LayoutProps) => {
   usePermissionSync();
 
   if (isLoading) {
-    return (
-      <div className='flex items-center justify-center h-screen w-screen bg-background'>
-        <motion.img
-          src={isDarkTheme ? scyllaLogoDark : scyllaLogo}
-          alt='Scylla'
-          className='h-40 w-72'
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: [0, 1, 1, 0.5], scale: [0.8, 1, 1, 0.95] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
-    );
+    return <ScyllaLoadingScreen />;
   }
 
   //todo: "No organization / first connexion page, move from here"
@@ -76,7 +66,11 @@ export const Layout = ({ navEntries }: LayoutProps) => {
           className='flex flex-col h-full w-full p-2'
         >
           <div className='w-full h-full flex flex-col items-center min-h-screen bg-background'>
-            <img src={scyllaLogo} alt='Scylla' className='h-1/6 w-1/6' />
+            <img
+              src={isDarkTheme ? scyllaLogoDark : scyllaLogo}
+              alt='Scylla'
+              className='h-2/6 w-2/6'
+            />
             <Card className='w-full max-w-md'>
               <CardHeader className='text-center'>
                 <CardTitle className='text-2xl'>
