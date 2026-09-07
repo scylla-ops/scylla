@@ -11,8 +11,6 @@ import LogoScyllaDark from '@/assets/logo_scylla_dark.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/features/login/presentation/hooks/use-login.ts';
 import { type FormEvent } from 'react';
-
-import { useTheme } from 'next-themes';
 import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 
 /**
