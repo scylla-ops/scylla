@@ -17,11 +17,13 @@ import {
   CardTitle,
 } from '@/modules/shared/presentation/ui/shadcn/card.tsx';
 import scyllaLogo from '@/assets/logo_scylla.png';
+import scyllaLogoDark from '@/assets/logo_scylla_dark.png';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { usePermissionSync } from '@/modules/features/roles';
+import { useTheme } from 'next-themes';
 
 interface LayoutProps {
   /**
@@ -37,6 +39,7 @@ export const Layout = ({ navEntries }: LayoutProps) => {
   const createOrganization = useCreateOrganization();
   const navigate = useNavigate();
   const setOrganization = useContextStore(state => state.setOrganization);
+  const isDarkTheme = useTheme().theme === 'dark';
 
   // One place loads the signed-in user's permissions into the context store
   // (at login, then on org/project switch); every `can()` reads from there.
@@ -46,9 +49,9 @@ export const Layout = ({ navEntries }: LayoutProps) => {
     return (
       <div className='flex items-center justify-center h-screen w-screen bg-background'>
         <motion.img
-          src={scyllaLogo}
+          src={isDarkTheme ? scyllaLogoDark : scyllaLogo}
           alt='Scylla'
-          className='h-24 w-24'
+          className='h-40 w-72'
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: [0, 1, 1, 0.5], scale: [0.8, 1, 1, 0.95] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
