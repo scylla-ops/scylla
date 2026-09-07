@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useProjectDomain } from '@/modules/features/project/presentation/hooks/use-project-domain.ts';
 
 export const PROJECT_MEMBERS_QUERY_KEY = (projectId: string) =>
   ['projects', projectId, 'members'] as const;
@@ -17,7 +17,7 @@ export const useProjectMembers = (
   projectId: string | null,
   options: { enabled?: boolean } = {},
 ) => {
-  const { listProjectMembers } = useDependencies().project;
+  const { projectRepository } = useProjectDomain();
   const queryClient = useQueryClient();
   const { enabled = true } = options;
 
@@ -27,7 +27,7 @@ export const useProjectMembers = (
     error,
   } = useQuery({
     queryKey: PROJECT_MEMBERS_QUERY_KEY(projectId ?? ''),
-    queryFn: async () => (await listProjectMembers.execute(projectId!)).unwrap(),
+    queryFn: async () => (await projectRepository.listMembers(projectId!)).unwrap(),
     enabled: enabled && !!projectId,
   });
 

@@ -1,4 +1,4 @@
-import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { type ScyllaGrpcTransport } from '@platform/grpc/index.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   ListUsersResponse,
@@ -23,7 +23,7 @@ function requireUser(user: User | undefined): User {
 export class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   private readonly _userClient: UserServiceClient;
 
-  constructor(transport: CoreGrpcTransport) {
+  constructor(transport: ScyllaGrpcTransport) {
     this._userClient = new UserServiceClient(transport.getTransport());
   }
 

@@ -1,4 +1,4 @@
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context/use-context.store.ts';
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts';

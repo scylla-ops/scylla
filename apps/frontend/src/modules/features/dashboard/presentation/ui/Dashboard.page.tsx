@@ -7,14 +7,14 @@ import { Skeleton } from '@shadcn/skeleton.tsx';
 import { Separator } from '@shadcn/separator.tsx';
 import { FeatureHeader } from '@shared/presentation/ui/layout/FeatureHeader.tsx';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
 import { cn } from '@shared/presentation/utils';
 import { getRelativeTime } from '@shared/utils/date-utils.ts';
 import { useOrgOverview } from '@/modules/features/dashboard/presentation/hooks/use-org-overview.ts';
 import { AgentOutcomesChart } from '@/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
+import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { Can } from '@platform/authz/presentation/ui/Can.tsx';
 
 const StatCard = ({
   icon,
@@ -131,7 +131,7 @@ export const DashboardPage = () => {
                 return (
                   <Card
                     key={project.id}
-                    onClick={openable ? () => navigate.goToProject(project) : undefined}
+                    onClick={openable ? () => navigate.goToProject(project.id, project.name) : undefined}
                     title={
                       openable ? undefined : t`You don't have access to this project's pipelines`
                     }
@@ -214,7 +214,7 @@ export const DashboardPage = () => {
                     return (
                       <tr
                         key={pipeline.id}
-                        onClick={() => project && navigate.goToProject(project)}
+                        onClick={() => project && navigate.goToProject(project.id, project.name)}
                         className={cn(
                           'transition-colors hover:bg-muted/40',
                           project && 'cursor-pointer',

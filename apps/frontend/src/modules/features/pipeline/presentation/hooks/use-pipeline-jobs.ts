@@ -1,13 +1,12 @@
 import { type Query, useQueries } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useJobsDomain } from '@/modules/features/jobs/presentation/hooks/use-jobs-domain.ts';
+import { JOBS_QUERY_KEY } from '@/modules/features/jobs/presentation/hooks/jobs.query-keys.ts';
 import { useMemo } from 'react';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { useAuthorization } from '@platform/authz/presentation/hooks/use-authorization.ts';
 
 const MAX_JOBS_PER_PIPELINE = 10;
-
-export const JOBS_QUERY_KEY = (pipelineId: string) => ['jobs', 'pipeline', pipelineId] as const;
 
 /**
  * Fetches jobs for multiple pipelines in parallel.
@@ -19,7 +18,7 @@ export const JOBS_QUERY_KEY = (pipelineId: string) => ['jobs', 'pipeline', pipel
  * see this". Nothing is asked in that case; callers read `canListJobs` to say so.
  */
 export const usePipelineJobs = (pipelineIds: string[]) => {
-  const { getPipelineJobs } = useDependencies().jobs;
+  const { jobsRepository } = useJobsDomain();
   const { can, ready } = useAuthorization();
 
   // The page is already scoped to one project, so the ambient target is it.
@@ -29,7 +28,7 @@ export const usePipelineJobs = (pipelineIds: string[]) => {
     queries: pipelineIds.map(pipelineId => ({
       queryKey: JOBS_QUERY_KEY(pipelineId),
       queryFn: async () => {
-        const result = await getPipelineJobs.execute(pipelineId, {
+        const result = await jobsRepository.getByPipelineId(pipelineId, {
           page: 1,
           pageSize: MAX_JOBS_PER_PIPELINE,
         });

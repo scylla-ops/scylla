@@ -6,7 +6,7 @@ import type {
   PipelineNode,
 } from '@/generated/scylla/pipeline/v1/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/scylla/pipeline/v1/pipeline.client.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
 import {
   DEFAULT_PAGE_SIZE,
   type PaginationParams,
@@ -27,7 +27,7 @@ function requirePipeline(pipeline: Pipeline | undefined): Pipeline {
 export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
 
-  public constructor(transport: CoreGrpcTransport) {
+  public constructor(transport: ScyllaGrpcTransport) {
     this._pipelineClient = new PipelineServiceClient(transport.getTransport());
   }
 

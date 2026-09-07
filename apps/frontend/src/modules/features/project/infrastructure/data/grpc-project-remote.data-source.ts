@@ -1,4 +1,4 @@
-import { type CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { type ScyllaGrpcTransport } from '@platform/grpc/index.ts';
 import { ProjectServiceClient } from '@/generated/scylla/project/v1/project.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
@@ -27,7 +27,7 @@ function requireProject(project: Project | undefined): Project {
 export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
   private readonly _projectClient: ProjectServiceClient;
 
-  constructor(_transport: CoreGrpcTransport) {
+  constructor(_transport: ScyllaGrpcTransport) {
     this._projectClient = new ProjectServiceClient(_transport.getTransport());
   }
 

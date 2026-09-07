@@ -1,4 +1,4 @@
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
 import { AgentAdminServiceClient } from '@/generated/scylla/agent/v1/agent_admin.client.ts';
 import type {
   CreatedAgent,
@@ -14,7 +14,7 @@ import { GrpcAgentMapper } from './grpc-agent.mapper.ts';
 export type AgentsRemoteDataSource = AgentsRepository;
 
 export class AgentsRemoteDataSourceImpl implements AgentsRemoteDataSource {
-  constructor(private grpcTransport: CoreGrpcTransport) {}
+  constructor(private grpcTransport: ScyllaGrpcTransport) {}
 
   listAgents(organizationId: string): Promise<ScyllaResult<AgentEntity[]>> {
     return ScyllaResult.tryAsync(async () => {

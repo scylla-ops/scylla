@@ -1,6 +1,6 @@
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { SecretServiceClient } from '@/generated/scylla/secret/v1/secret.client.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import type {
   CreateSecretInput,
@@ -12,7 +12,7 @@ import { GrpcSecretMapper } from '@/modules/features/secret/infrastructure/repos
 export class GrpcSecretRemoteDataSource implements SecretRemoteDataSource {
   private readonly _secretClient: SecretServiceClient;
 
-  public constructor(transport: CoreGrpcTransport) {
+  public constructor(transport: ScyllaGrpcTransport) {
     this._secretClient = new SecretServiceClient(transport.getTransport());
   }
 

@@ -84,6 +84,7 @@ msgstr "Annuler"
 msgid "Command"
 msgstr "Commande"
 
+#: src/modules/features/pipeline/pipeline.module.ts:34
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineCreation.page.tsx:28
 msgid "Create"
 msgstr "Créer"
@@ -153,6 +154,7 @@ msgstr "ex. : cargo build && cargo test"
 msgid "e.g., my-pipeline"
 msgstr "ex. : my-pipeline"
 
+#: src/modules/features/pipeline/pipeline.module.ts:47
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:93
 msgid "Edit"
 msgstr "Modifier"
@@ -191,6 +193,10 @@ msgstr "Historique"
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineEditor.tsx:108
 msgid "Invalid JSON"
 msgstr "JSON invalide"
+
+#: src/modules/features/pipeline/pipeline.module.ts:63
+msgid "Jobs"
+msgstr "Jobs"
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:312
 msgid "KEY"
@@ -251,6 +257,8 @@ msgstr "Aucun pipeline trouvé"
 msgid "Node ID"
 msgstr "ID du nœud"
 
+#: src/modules/features/pipeline/pipeline.module.ts:45
+#: src/modules/features/pipeline/pipeline.module.ts:61
 #: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:34
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNode.tsx:14
 msgid "Pipeline"

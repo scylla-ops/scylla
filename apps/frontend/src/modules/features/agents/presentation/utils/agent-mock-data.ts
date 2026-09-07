@@ -149,13 +149,6 @@ export const mockCardStats = (
   return { completed, running, hasRuns };
 };
 
-/** 12 buckets of "runs in the last hour" for the sparkline. */
-export const mockSparkline = (agentId: string, online = true): number[] => {
-  if (!online) return Array.from({ length: 12 }, () => 0);
-  const next = rng(seedFrom(agentId + ':spark'));
-  return Array.from({ length: 12 }, () => Math.floor(next() * 10));
-};
-
 const LOG_TEMPLATES: Array<{ level: LogLevel; msg: (next: () => number) => string }> = [
   { level: 'info', msg: () => 'polling control plane for work' },
   { level: 'info', msg: next => `claimed job ${mockId(next).slice(0, 10)}` },

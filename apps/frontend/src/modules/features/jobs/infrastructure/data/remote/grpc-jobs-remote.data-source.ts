@@ -11,14 +11,14 @@ import type {
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { ScyllaResult as Result } from '@shared/utils/scylla-result.ts';
 import { JobServiceClient } from '@/generated/scylla/job/v1/job.client.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
 import { wrapId, wrapIdOpt } from '@shared/infrastructure/grpc/wrappers.ts';
 import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 
 export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
   private readonly _jobClient: JobServiceClient;
 
-  constructor(grpcTransport: CoreGrpcTransport) {
+  constructor(grpcTransport: ScyllaGrpcTransport) {
     this._jobClient = new JobServiceClient(grpcTransport.getTransport());
   }
 

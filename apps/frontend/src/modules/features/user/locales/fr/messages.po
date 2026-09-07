@@ -100,7 +100,7 @@ msgstr "Informations utilisateur"
 msgid "User information not available"
 msgstr "Informations utilisateur indisponibles"
 
-#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:17
+#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:24
 msgid "User settings"
 msgstr "Paramètres utilisateur"
 
@@ -114,6 +114,8 @@ msgstr "Nom d’utilisateur"
 #~ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:53
+#: src/modules/features/user/user.module.ts:22
+#: src/modules/features/user/user.module.ts:38
 msgid "Users"
 msgstr "Utilisateurs"
 

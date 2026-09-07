@@ -26,12 +26,12 @@ msgid "Add a description..."
 msgstr "Add a description..."
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:197
-msgid "Add a member"
-msgstr "Add a member"
+#~ msgid "Add a member"
+#~ msgstr "Add a member"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:247
-msgid "Add a member to this project"
-msgstr "Add a member to this project"
+#~ msgid "Add a member to this project"
+#~ msgstr "Add a member to this project"
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:113
 #~ msgid "Cancel"
@@ -79,16 +79,16 @@ msgid "Enter a name for your new project and select the organization it belongs 
 msgstr "Enter a name for your new project and select the organization it belongs to."
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:257
-msgid "Every member of the organization is already here"
-msgstr "Every member of the organization is already here"
+#~ msgid "Every member of the organization is already here"
+#~ msgstr "Every member of the organization is already here"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:275
-msgid "Every role they hold on this project will be revoked. Roles inherited from the organization are untouched — they are managed at the organization level."
-msgstr "Every role they hold on this project will be revoked. Roles inherited from the organization are untouched — they are managed at the organization level."
+#~ msgid "Every role they hold on this project will be revoked. Roles inherited from the organization are untouched — they are managed at the organization level."
+#~ msgstr "Every role they hold on this project will be revoked. Roles inherited from the organization are untouched — they are managed at the organization level."
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:190
-msgid "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this page."
-msgstr "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this page."
+#~ msgid "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this page."
+#~ msgstr "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this page."
 
 #: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:218
 #~ msgid "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this view."
@@ -99,25 +99,24 @@ msgstr "Everyone with access to this project, whether granted here or through a 
 #~ msgstr "in total"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:221
-msgid "Managed by a project administrator"
-msgstr "Managed by a project administrator"
+#~ msgid "Managed by a project administrator"
+#~ msgstr "Managed by a project administrator"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:186
-msgid "Member"
-msgstr "Member"
+#~ msgid "Member"
+#~ msgstr "Member"
 
-#. placeholder {0}: roleIds.length
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:170
-msgid "Member added with {0} role(s)"
-msgstr "Member added with {0} role(s)"
+#~ msgid "Member added with {0} role(s)"
+#~ msgstr "Member added with {0} role(s)"
 
 #: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:193
 #~ msgid "Member added with {count} role(s)"
 #~ msgstr "Member added with {count} role(s)"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:187
-msgid "Members"
-msgstr "Members"
+#~ msgid "Members"
+#~ msgstr "Members"
 
 #: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:215
 #~ msgid "Members of “{0}”"
@@ -140,20 +139,20 @@ msgid "No organization selected"
 msgstr "No organization selected"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:205
-msgid "Nobody has access to this project yet."
-msgstr "Nobody has access to this project yet."
+#~ msgid "Nobody has access to this project yet."
+#~ msgstr "Nobody has access to this project yet."
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:249
-msgid "Only members of the organization can be added — a project role granted to anyone else is refused."
-msgstr "Only members of the organization can be added — a project role granted to anyone else is refused."
+#~ msgid "Only members of the organization can be added — a project role granted to anyone else is refused."
+#~ msgstr "Only members of the organization can be added — a project role granted to anyone else is refused."
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:31
 #~ msgid "Organization"
 #~ msgstr "Organization"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:237
-msgid "Organization administrators also reach this project. Their roles are managed at the organization level and are not listed here."
-msgstr "Organization administrators also reach this project. Their roles are managed at the organization level and are not listed here."
+#~ msgid "Organization administrators also reach this project. Their roles are managed at the organization level and are not listed here."
+#~ msgstr "Organization administrators also reach this project. Their roles are managed at the organization level and are not listed here."
 
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:31
 msgid "Project"
@@ -169,21 +168,21 @@ msgstr "Project name"
 #~ msgstr "Project name is required and you must select an organization."
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:261
-msgid "Project roles to grant"
-msgstr "Project roles to grant"
+#~ msgid "Project roles to grant"
+#~ msgstr "Project roles to grant"
 
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:32
+#: src/modules/features/project/project.module.ts:32
 msgid "Projects"
 msgstr "Projects"
 
-#. placeholder {0}: pendingRemoval?.username
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:273
-msgid "Remove {0} from this project?"
-msgstr "Remove {0} from this project?"
+#~ msgid "Remove {0} from this project?"
+#~ msgstr "Remove {0} from this project?"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:225
-msgid "Remove from the project"
-msgstr "Remove from the project"
+#~ msgid "Remove from the project"
+#~ msgstr "Remove from the project"
 
 #: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:197
 #~ msgid "Role granted"
@@ -194,8 +193,8 @@ msgstr "Remove from the project"
 #~ msgstr "Role revoked"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:233
-msgid "Roles badged “Organization” are inherited from the organization and are managed there."
-msgstr "Roles badged “Organization” are inherited from the organization and are managed there."
+#~ msgid "Roles badged “Organization” are inherited from the organization and are managed there."
+#~ msgstr "Roles badged “Organization” are inherited from the organization and are managed there."
 
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:62
 msgid "Save"
@@ -234,12 +233,12 @@ msgstr "Update the project name and description."
 #~ msgstr "Update the project name."
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:258
-msgid "You can't browse the organization's members"
-msgstr "You can't browse the organization's members"
+#~ msgid "You can't browse the organization's members"
+#~ msgstr "You can't browse the organization's members"
 
 #: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:199
-msgid "You don't have permission to add members to this project."
-msgstr "You don't have permission to add members to this project."
+#~ msgid "You don't have permission to add members to this project."
+#~ msgstr "You don't have permission to add members to this project."
 
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:37
 msgid "You don't have permission to create projects."

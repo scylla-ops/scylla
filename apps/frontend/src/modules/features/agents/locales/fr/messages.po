@@ -30,10 +30,16 @@ msgstr "Actif"
 msgid "Agent"
 msgstr "Agent"
 
+#: src/modules/features/agents/agents.module.ts:36
+msgid "Agent details"
+msgstr "Détails de l'agent"
+
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
 msgid "Agent ID"
 msgstr "ID de l'agent"
 
+#: src/modules/features/agents/agents.module.ts:22
+#: src/modules/features/agents/agents.module.ts:47
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:62
 msgid "Agents"
 msgstr "Agents"
@@ -146,6 +152,10 @@ msgstr "inactif"
 msgid "Job stats"
 msgstr "Stats des jobs"
 
+#: src/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx:41
+msgid "Jobs are queued — check that your agents are connected."
+msgstr "Des jobs sont en file d'attente — vérifiez que vos agents sont bien connectés."
+
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:152
 msgid "last run"
 msgstr "dernière exécution"
@@ -174,6 +184,10 @@ msgstr "jamais connecté"
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:132
 msgid "New Agent"
 msgstr "Nouvel agent"
+
+#: src/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx:52
+msgid "No agent connected — queued jobs are waiting for one."
+msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
 
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:100
 msgid "No agents connected"
@@ -264,6 +278,10 @@ msgstr "vu"
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:54
 #~ msgid "Service"
 #~ msgstr "Service"
+
+#: src/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx:59
+msgid "Set up an agent"
+msgstr "Configurer un agent"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:148
 msgid "since"

@@ -5,35 +5,36 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
-import { useRunPipeline } from '@/modules/features/pipeline/presentation/hooks/use-run-pipeline.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { useCan } from '@platform/authz/presentation/hooks/use-authorization.ts';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
   jobIds: string[];
   pipelineId: string;
   onRefresh: () => void;
+  /**
+   * Runs the pipeline these jobs belong to. Injected by whoever owns the route,
+   * because running is a pipeline operation — jobs would otherwise have to
+   * import the pipeline module that already reads jobs.
+   */
+  onRun?: () => Promise<void>;
 }
 
-export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: JobsHeaderProps) => {
+export const JobsHeader = ({
+  numberOfJobs,
+  jobIds,
+  pipelineId,
+  onRefresh,
+  onRun,
+}: JobsHeaderProps) => {
   const deleteJob = useDeleteJobs(pipelineId);
   const { headerProps } = useFeatureSelection('jobs', jobIds, {
     deleteItem: id => deleteJob.mutateAsync(id),
   });
 
-  const runPipeline = useRunPipeline();
-
   const canRun = useCan(Permission.RUN_PIPELINE);
   const canDelete = useCan(Permission.DELETE_JOB);
-
-  const handleRunPipeline = async () => {
-    try {
-      await runPipeline.mutateAsync(pipelineId);
-    } catch {
-      // Toast shown by the global MutationCache onError handler.
-    }
-  };
 
   return (
     <div className={'flex flex-col gap-3'}>
@@ -42,7 +43,7 @@ export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: Jobs
         label={<Trans>Job</Trans>}
         pluralLabel={<Trans>Jobs</Trans>}
         newLabel={<Trans>Run</Trans>}
-        onNew={handleRunPipeline}
+        onNew={onRun ? () => void onRun() : undefined}
         canNew={canRun}
         newDeniedReason={<Trans>You don't have permission to run this pipeline.</Trans>}
         canDelete={canDelete}

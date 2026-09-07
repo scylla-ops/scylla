@@ -2,7 +2,7 @@ import { useMatches, Link, useParams } from 'react-router-dom';
 import type {
   BreadcrumbParams,
   RouteHandle,
-} from '@core/presentation/structs/route-handle.struct.ts';
+} from '@platform/routing/route-handle.struct.ts';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,10 +13,12 @@ import {
 } from '@shadcn/breadcrumb.tsx';
 import { ChevronRight } from 'lucide-react';
 import React from 'react';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useLingui } from '@lingui/react/macro';
+import { useContextStore } from '@platform/context/use-context.store.ts';
 
 export const ScyllaBreadcrumbs = () => {
   const matches = useMatches();
+  const { i18n } = useLingui();
 
   const org = useContextStore(state => state.organization?.name);
   const proj = useContextStore(state => state.project?.name);
@@ -48,9 +50,9 @@ export const ScyllaBreadcrumbs = () => {
 
           const content = (
             <>
-              <span className='whitespace-nowrap'>{crumb.label}</span>
+              <span className='whitespace-nowrap'>{i18n._(crumb.label)}</span>
               {crumb.highlight && <span className='text-primary'>#{crumb.highlight}</span>}
-              {crumb.detail && <span className='whitespace-nowrap'>- {crumb.detail}</span>}
+              {crumb.detail && <span className='whitespace-nowrap'>- {i18n._(crumb.detail)}</span>}
             </>
           );
 

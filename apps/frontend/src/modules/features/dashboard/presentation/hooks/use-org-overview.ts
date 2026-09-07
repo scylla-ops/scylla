@@ -1,10 +1,11 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { usePipelineDomain } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-domain.ts';
+import { useProjectDomain } from '@/modules/features/project/presentation/hooks/use-project-domain.ts';
+import { useContextStore } from '@platform/context/use-context.store.ts';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { useAuthorization } from '@platform/authz/presentation/hooks/use-authorization.ts';
 
 export type PipelineWithProject = PipelineMetadata & { projectName: string };
 
@@ -30,15 +31,15 @@ export const PIPELINES_OVERVIEW_QUERY_KEY = (projectId: string) =>
  * Gating `enabled` on `can(...)` keeps those requests from being made at all.
  */
 export const useOrgOverview = () => {
-  const { getProjects } = useDependencies().project;
-  const { getPipelinesMetadata } = useDependencies().pipeline;
+  const { projectRepository } = useProjectDomain();
+  const { pipelineRepository } = usePipelineDomain();
   const organizationId = useContextStore(state => state.organization.id);
   const { can, ready } = useAuthorization();
 
   const projectsQuery = useQuery({
     queryKey: PROJECTS_OVERVIEW_QUERY_KEY(organizationId),
     queryFn: async () =>
-      (await getProjects.execute(organizationId!, { page: 1, pageSize: 100 })).unwrap(),
+      (await projectRepository.getByOrganizationId(organizationId!, { page: 1, pageSize: 100 })).unwrap(),
     enabled: !!organizationId,
     staleTime: 30_000,
   });
@@ -55,7 +56,7 @@ export const useOrgOverview = () => {
     queries: projects.map(project => ({
       queryKey: PIPELINES_OVERVIEW_QUERY_KEY(project.id),
       queryFn: async () => {
-        const result = await getPipelinesMetadata.execute(project.id, { page: 1, pageSize: 100 });
+        const result = await pipelineRepository.getMetadataByProjectId(project.id, { page: 1, pageSize: 100 });
         return {
           projectId: project.id,
           projectName: project.name,

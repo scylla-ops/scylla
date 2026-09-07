@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context/use-context.store.ts';
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 

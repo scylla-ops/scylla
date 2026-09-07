@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: revealed.name
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:98
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:93
 msgid "{0} webhook secret"
 msgstr "Secret webhook {0}"
 
@@ -42,7 +42,7 @@ msgstr "Un déclencheur lance automatiquement une exécution de ce pipeline."
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:81
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:76
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr "Ajoutez une planification cron ou un webhook pour démarrer des exécutions automatiquement."
 
@@ -50,7 +50,7 @@ msgstr "Ajoutez une planification cron ou un webhook pour démarrer des exécuti
 msgid "Add input"
 msgstr "Ajouter une entrée"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:103
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:98
 msgid "Add this signing secret to your webhook sender's HMAC configuration."
 msgstr "Ajoutez ce secret de signature à la configuration HMAC de votre émetteur de webhook."
 
@@ -70,7 +70,7 @@ msgstr "Annuler"
 #~ msgid "Copied!"
 #~ msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:99
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:94
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copiez le secret ci-dessous — il est affiché une seule fois."
 
@@ -218,7 +218,7 @@ msgstr "prochaine exécution planifiée (heure locale)"
 #~ msgid "next scheduled run (UTC)"
 #~ msgstr ""
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:73
 msgid "No triggers yet"
 msgstr "Aucun déclencheur pour l’instant"
 
@@ -245,6 +245,10 @@ msgstr "Valeurs facultatives injectées dans l’exécution en tant que variable
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:121
 msgid "Pick at least one day"
 msgstr "Choisissez au moins un jour"
+
+#: src/modules/features/triggers/triggers.module.ts:26
+msgid "Pipeline"
+msgstr "Pipeline"
 
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:34
 msgid "Pipeline ID is missing"
@@ -291,6 +295,7 @@ msgid "Trigger"
 msgstr "Déclencheur"
 
 #: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:35
+#: src/modules/features/triggers/triggers.module.ts:28
 msgid "Triggers"
 msgstr "Déclencheurs"
 

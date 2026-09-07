@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useProjectDomain } from '@/modules/features/project/presentation/hooks/use-project-domain.ts';
 import { usePagination } from '@shared/presentation/hooks/use-pagination.ts';
 
 export const useProjects = (organizationId: string | null) => {
-  const { getProjects } = useDependencies().project;
+  const { projectRepository } = useProjectDomain();
   const { page, setPage, paginationParams } = usePagination();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['projects', organizationId, paginationParams],
-    queryFn: async () => (await getProjects.execute(organizationId!, paginationParams)).unwrap(),
+    queryFn: async () => (await projectRepository.getByOrganizationId(organizationId!, paginationParams)).unwrap(),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
   });

@@ -42,6 +42,8 @@ msgstr "completed"
 msgid "Completed"
 msgstr "Completed"
 
+#: src/modules/features/dashboard/dashboard.module.ts:20
+#: src/modules/features/dashboard/dashboard.module.ts:29
 #: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:82
 msgid "Dashboard"
 msgstr "Dashboard"

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DataTable } from '@shared/presentation/ui/data-display/DataTable.tsx';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 import { useDeleteTrigger } from '@/modules/features/triggers/presentation/hooks/use-delete-trigger.ts';
 import { useSetTriggerEnabled } from '@/modules/features/triggers/presentation/hooks/use-set-trigger-enabled.ts';
@@ -13,16 +13,10 @@ import { createTriggerColumns } from './columns.tsx';
 interface TriggersTableProps {
   triggers: TriggerEntity[];
   pipelineId: string;
-  projectId: string;
   pipelineName: string;
 }
 
-export const TriggersTable = ({
-  triggers,
-  pipelineId,
-  projectId,
-  pipelineName,
-}: TriggersTableProps) => {
+export const TriggersTable = ({ triggers, pipelineId, pipelineName }: TriggersTableProps) => {
   const { selectedIds, select } = useSelection('triggers');
   const { goToJobs } = useScyllaNavigate();
   const deleteTrigger = useDeleteTrigger(pipelineId);
@@ -38,7 +32,7 @@ export const TriggersTable = ({
     fireNow
       .mutateAsync(trigger.id)
       // Close the loop: land on the run we just created.
-      .then(() => goToJobs({ id: pipelineId, projectId, name: pipelineName }))
+      .then(() => goToJobs(pipelineId, pipelineName))
       .catch(() => {
         // Toast shown by the global MutationCache onError handler.
       })

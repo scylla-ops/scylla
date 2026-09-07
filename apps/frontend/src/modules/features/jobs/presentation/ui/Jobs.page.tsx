@@ -5,9 +5,14 @@ import { JobsTable } from '@/modules/features/jobs/presentation/ui/jobs-table';
 import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Pagination } from '@shared/presentation/ui/data-display/Pagination.tsx';
-import { NoAgentsBanner } from '@shared/presentation/ui/feedback/NoAgentsBanner.tsx';
+import { NoAgentsBanner } from '@/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx';
 
-export const JobsPage = () => {
+interface JobsPageProps {
+  /** Passed through to {@link JobsHeader} — see the note on its `onRun` prop. */
+  onRun?: () => Promise<void>;
+}
+
+export const JobsPage = ({ onRun }: JobsPageProps) => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
   const { isLoading, jobs, isError, errorMessage, refetch, paginationInfo, setPage } =
     usePipelinesJobs(pipelineId || '');
@@ -31,6 +36,7 @@ export const JobsPage = () => {
         jobIds={jobs.map(job => job.id)}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
+        onRun={onRun}
       />
       <NoAgentsBanner hasPendingJobs={jobs.some(j => j.status === 'pending')} />
       <div className='flex-1 min-h-0 overflow-auto'>

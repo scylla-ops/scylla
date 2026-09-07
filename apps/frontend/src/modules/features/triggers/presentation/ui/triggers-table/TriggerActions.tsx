@@ -2,8 +2,8 @@ import type { SyntheticEvent } from 'react';
 import { EditIcon, Loader2, PlayIcon, Trash2 } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { useCan } from '@platform/authz/presentation/hooks/use-authorization.ts';
 
 interface TriggerActionsProps {
   onFire: (e: SyntheticEvent) => void;

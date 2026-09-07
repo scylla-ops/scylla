@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: revealed.name
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:98
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:93
 msgid "{0} webhook secret"
 msgstr "{0} webhook secret"
 
@@ -42,7 +42,7 @@ msgstr "A trigger starts a run of this pipeline automatically."
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:81
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:76
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr "Add a cron schedule or webhook to start runs automatically."
 
@@ -50,7 +50,7 @@ msgstr "Add a cron schedule or webhook to start runs automatically."
 msgid "Add input"
 msgstr "Add input"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:103
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:98
 msgid "Add this signing secret to your webhook sender's HMAC configuration."
 msgstr "Add this signing secret to your webhook sender's HMAC configuration."
 
@@ -70,7 +70,7 @@ msgstr "Cancel"
 #~ msgid "Copied!"
 #~ msgstr "Copied!"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:99
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:94
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copy the secret below — it is shown only once."
 
@@ -218,7 +218,7 @@ msgstr "next scheduled run (Local time)"
 #~ msgid "next scheduled run (UTC)"
 #~ msgstr "next scheduled run (UTC)"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:78
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:73
 msgid "No triggers yet"
 msgstr "No triggers yet"
 
@@ -245,6 +245,10 @@ msgstr "Optional values injected into the run as environment variables."
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:121
 msgid "Pick at least one day"
 msgstr "Pick at least one day"
+
+#: src/modules/features/triggers/triggers.module.ts:26
+msgid "Pipeline"
+msgstr "Pipeline"
 
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:34
 msgid "Pipeline ID is missing"
@@ -291,6 +295,7 @@ msgid "Trigger"
 msgstr "Trigger"
 
 #: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:35
+#: src/modules/features/triggers/triggers.module.ts:28
 msgid "Triggers"
 msgstr "Triggers"
 

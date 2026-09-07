@@ -1,7 +1,7 @@
 import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts';
 import ProjectCard from '@/modules/features/project/presentation/ui/ProjectCard.tsx';
 import { ProjectHeader } from '@/modules/features/project/presentation/ui/ProjectHeader.tsx';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context/use-context.store.ts';
 import { Pagination } from '@/modules/shared/presentation/ui/data-display/Pagination.tsx';
 import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';

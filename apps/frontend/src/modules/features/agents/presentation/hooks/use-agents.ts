@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { useAgentsDomain } from '@/modules/features/agents/presentation/hooks/use-agents-domain.ts';
+import { useContextStore } from '@platform/context/use-context.store.ts';
+import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { useAuthorization } from '@platform/authz/presentation/hooks/use-authorization.ts';
 
 const WORKERS_QUERY_KEY = 'agents';
 
 export function useAgents() {
-  const { agents } = useDependencies();
+  const { agentsRepository } = useAgentsDomain();
   const organizationId = useContextStore(state => state.organization.id);
   const queryClient = useQueryClient();
   // `ListAgents` is enforced server-side, so asking without LIST_AGENTS is a
@@ -25,7 +25,7 @@ export function useAgents() {
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
     queryFn: async () => {
-      const result = await agents.getAgents.execute(organizationId ?? '');
+      const result = await agentsRepository.listAgents(organizationId ?? '');
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -37,7 +37,7 @@ export function useAgents() {
 
   const createAgent = useMutation({
     mutationFn: async (name: string) => {
-      const result = await agents.createAgent.execute(organizationId ?? '', name);
+      const result = await agentsRepository.createAgent(organizationId ?? '', name);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -51,7 +51,7 @@ export function useAgents() {
 
   const deleteAgent = useMutation({
     mutationFn: async (agentId: string) => {
-      const result = await agents.deleteAgent.execute(agentId);
+      const result = await agentsRepository.deleteAgent(agentId);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -76,7 +76,7 @@ export function useAgents() {
 }
 
 export function useAgent(agentId: string) {
-  const { agents } = useDependencies();
+  const { agentsRepository } = useAgentsDomain();
 
   return useQuery({
     queryKey: [WORKERS_QUERY_KEY, 'detail', agentId],
@@ -84,7 +84,7 @@ export function useAgent(agentId: string) {
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
     queryFn: async () => {
-      const result = await agents.getAgent.execute(agentId);
+      const result = await agentsRepository.getAgent(agentId);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -96,7 +96,7 @@ export function useAgent(agentId: string) {
 }
 
 export function useAgentStats(agentId: string) {
-  const { agents } = useDependencies();
+  const { agentsRepository } = useAgentsDomain();
 
   return useQuery({
     queryKey: [WORKERS_QUERY_KEY, 'stats', agentId],
@@ -104,7 +104,7 @@ export function useAgentStats(agentId: string) {
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
     queryFn: async () => {
-      const result = await agents.getAgentStats.execute(agentId);
+      const result = await agentsRepository.getAgentStats(agentId);
       return result.fold({
         onSuccess: data => data,
         onError: err => {

@@ -1,3 +1,4 @@
+import type { NavEntry } from '@platform/routing/scylla-module.struct.ts';
 import { AppSidebar } from '@/modules/layout/presentation/ui/AppSidebar.tsx';
 import { SidebarInset, SidebarProvider } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { TopBar } from '@/modules/layout/presentation/ui/TopBar.tsx';
@@ -18,12 +19,20 @@ import {
 import scyllaLogo from '@/assets/logo_scylla.png';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context/use-context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
-import { usePermissionSync } from '@/modules/features/permission/presentation/hooks/use-permission-sync.ts';
+import { usePermissionSync } from '@/modules/features/roles/presentation/hooks/use-permission-sync.ts';
 
-export const Layout = () => {
+interface LayoutProps {
+  /**
+   * Sidebar entries collected from the module registry by the router. Passed
+   * in rather than imported: the shell composes the features, never the
+   * reverse.
+   */
+  navEntries: readonly NavEntry[];
+}
+
+export const Layout = ({ navEntries }: LayoutProps) => {
   const { organizations, isLoading } = useOrganizations();
   const createOrganization = useCreateOrganization();
   const navigate = useNavigate();
@@ -85,7 +94,7 @@ export const Layout = () => {
                         { name, description: description || '' },
                         {
                           onSuccess: data => {
-                            const orgId = idValue(data?.organizationId);
+                            const orgId = data?.id;
                             setOrganization(orgId, name);
                             void navigate(`/${slugifyOrgName(name)}/users/me`);
                           },
@@ -105,7 +114,7 @@ export const Layout = () => {
 
   return (
     <SidebarProvider className='w-screen h-screen'>
-      <AppSidebar />
+      <AppSidebar navEntries={navEntries} />
       <SidebarInset className='flex flex-col flex-1 min-w-0 border border-sidebar-border bg-background'>
         <TopBar />
         <div className='p-4 flex-1 min-h-0'>

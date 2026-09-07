@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useAppsDomain } from '@/modules/features/apps/presentation/hooks/use-apps-domain.ts';
+import { useContextStore } from '@platform/context/use-context.store.ts';
 
 const APPS_QUERY_KEY = 'apps';
 
 export function useApps() {
-  const { apps } = useDependencies();
+  const { appsRepository } = useAppsDomain();
   const organizationId = useContextStore(state => state.organization.id);
   const queryClient = useQueryClient();
 
@@ -13,7 +13,7 @@ export function useApps() {
     queryKey: [APPS_QUERY_KEY, organizationId],
     enabled: !!organizationId,
     queryFn: async () => {
-      const result = await apps.getApps.execute(organizationId ?? '');
+      const result = await appsRepository.listApps(organizationId ?? '');
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -25,7 +25,7 @@ export function useApps() {
 
   const createApp = useMutation({
     mutationFn: async (name: string) => {
-      const result = await apps.createApp.execute(organizationId ?? '', name);
+      const result = await appsRepository.createApp(organizationId ?? '', name);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -38,7 +38,7 @@ export function useApps() {
 
   const deleteApp = useMutation({
     mutationFn: async (appId: string) => {
-      const result = await apps.deleteApp.execute(appId);
+      const result = await appsRepository.deleteApp(appId);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -51,7 +51,7 @@ export function useApps() {
 
   const setAppActive = useMutation({
     mutationFn: async ({ appId, active }: { appId: string; active: boolean }) => {
-      const result = await apps.setAppActive.execute(appId, active);
+      const result = await appsRepository.setAppActive(appId, active);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -77,13 +77,13 @@ export function useApps() {
 }
 
 export function useApp(appId: string) {
-  const { apps } = useDependencies();
+  const { appsRepository } = useAppsDomain();
 
   return useQuery({
     queryKey: [APPS_QUERY_KEY, 'detail', appId],
     enabled: !!appId,
     queryFn: async () => {
-      const result = await apps.getApp.execute(appId);
+      const result = await appsRepository.getApp(appId);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -98,7 +98,7 @@ const SECRETS_QUERY_KEY = 'app-secrets';
 
 /** Secrets of one app: list query + create/revoke/enable mutations. */
 export function useAppSecrets(appId: string) {
-  const { apps } = useDependencies();
+  const { appsRepository } = useAppsDomain();
   const queryClient = useQueryClient();
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: [SECRETS_QUERY_KEY, appId] });
@@ -107,7 +107,7 @@ export function useAppSecrets(appId: string) {
     queryKey: [SECRETS_QUERY_KEY, appId],
     enabled: !!appId,
     queryFn: async () => {
-      const result = await apps.listAppSecrets.execute(appId);
+      const result = await appsRepository.listAppSecrets(appId);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -119,7 +119,7 @@ export function useAppSecrets(appId: string) {
 
   const createSecret = useMutation({
     mutationFn: async (label: string) => {
-      const result = await apps.createAppSecret.execute(appId, label);
+      const result = await appsRepository.createAppSecret(appId, label);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -132,7 +132,7 @@ export function useAppSecrets(appId: string) {
 
   const revokeSecret = useMutation({
     mutationFn: async (secretId: string) => {
-      const result = await apps.revokeAppSecret.execute(secretId);
+      const result = await appsRepository.revokeAppSecret(secretId);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
@@ -145,7 +145,7 @@ export function useAppSecrets(appId: string) {
 
   const setSecretEnabled = useMutation({
     mutationFn: async ({ secretId, enabled }: { secretId: string; enabled: boolean }) => {
-      const result = await apps.setAppSecretEnabled.execute(secretId, enabled);
+      const result = await appsRepository.setAppSecretEnabled(secretId, enabled);
       return result.fold({
         onSuccess: data => data,
         onError: err => {
