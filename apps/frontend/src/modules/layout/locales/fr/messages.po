@@ -63,9 +63,9 @@ msgstr "Se déconnecter"
 msgid "New feature: Triggers!"
 msgstr "Nouveauté : les déclencheurs !"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:64
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:104
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:108
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:101
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:105
 msgid "Organization"
 msgstr "Organisation"
 
@@ -81,7 +81,7 @@ msgstr "Organisation"
 msgid "Seen"
 msgstr "Vu"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:107
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:104
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
@@ -89,7 +89,7 @@ msgstr "Sélectionner une organisation"
 msgid "Settings"
 msgstr "Paramètres"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:69
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:66
 msgid "System"
 msgstr "Système"
 

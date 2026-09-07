@@ -5,14 +5,7 @@ import type {
   ScopeKind,
   ScopeRef,
 } from '@/generated/scylla/authz/v1/permission.ts';
-import {
-  type AccessEntity,
-  type AccessSpec,
-  type Permission as PermissionDomain,
-  PermissionScope,
-  type PrincipalEntity,
-  PrincipalKind,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { type AccessEntity, type AccessSpec, type Permission as PermissionDomain, PermissionScope, type PrincipalEntity, PrincipalKind, } from '@platform/authz';
 
 /** A scope as the domain carries it: a kind plus the id it is bound to. */
 export interface ScopeBinding {

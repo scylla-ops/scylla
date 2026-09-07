@@ -1,10 +1,10 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { WorkflowIcon } from 'lucide-react';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { Permission } from '@platform/authz';
 import { GrpcProjectRemoteDataSource } from '@/modules/features/project/infrastructure/data/grpc-project-remote.data-source.ts';
 import { DefaultProjectRepository } from '@/modules/features/project/infrastructure/repository/default-project.repository.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import { grpcTransport } from '@platform/grpc';
 
 const projectRemoteDataSource = new GrpcProjectRemoteDataSource(grpcTransport);
 const projectRepository = new DefaultProjectRepository(projectRemoteDataSource);

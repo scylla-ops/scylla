@@ -24,7 +24,7 @@ import type {
   Shell,
 } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
-import { useSecrets } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
+import { useSecrets } from '@/modules/features/secret';
 import ReactCodeMirror from '@uiw/react-codemirror';
 import { shell as shellLang } from '@codemirror/legacy-modes/mode/shell';
 import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';

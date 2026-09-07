@@ -1,9 +1,4 @@
-import type {
-  AccessEntity,
-  AccessSpec,
-  Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { AccessEntity, AccessSpec, Permission, PermissionScope, } from '@platform/authz';
 
 /**
  * Where a role comes from. `unknown` means the backend sent an origin arm newer

@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
 import { LayoutDashboard } from 'lucide-react';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import { Permission } from '@platform/authz';
+import type { ScyllaModule } from '@platform/routing';
 
 /**
  * The organization overview. It owns no data of its own — it composes other

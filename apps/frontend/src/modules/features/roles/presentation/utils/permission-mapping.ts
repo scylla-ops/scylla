@@ -1,9 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import type { MessageDescriptor } from '@lingui/core';
-import {
-  Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { Permission, PermissionScope, } from '@platform/authz';
 
 /**
  * The V1 permission catalog: the subset of the wire vocabulary a human may

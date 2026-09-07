@@ -1,12 +1,12 @@
 import { DataTable } from '@shared/presentation/ui/data-display/DataTable.tsx';
 import { createPipelineColumns } from './columns.tsx';
-import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import { useRunPipeline } from '../../../hooks/use-run-pipeline.ts';
 import { useDuplicatePipeline } from '../../../hooks/use-duplicate-pipeline.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
 import { useState } from 'react';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
-import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
+import type { JobEntity } from '@/modules/features/jobs';
 
 type PipelineTableProps = {
   pipelines: PipelineMetadata[];

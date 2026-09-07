@@ -21,17 +21,13 @@ import { Checkbox } from '@shadcn/checkbox.tsx';
 import { ScrollArea } from '@shadcn/scroll-area.tsx';
 import { Globe, Info, Plus, X } from 'lucide-react';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
-import {
-  Permission,
-  PermissionScope,
-  PrincipalKind,
-} from '@platform/authz/domain/structs/permission.struct.ts';
-import { PermissionButton } from '@platform/authz/presentation/ui/PermissionButton.tsx';
+import { Permission, PermissionScope, PrincipalKind, } from '@platform/authz';
+import { PermissionButton } from '@platform/authz';
 import { useGrants } from '@/modules/features/roles/presentation/hooks/use-grants.ts';
 import { useProjectGrantEligibility } from '@/modules/features/roles/presentation/hooks/use-project-grant-eligibility.ts';
-import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
-import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
-import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts';
+import { useUsers } from '@/modules/features/user';
+import { useOrganizations } from '@/modules/features/organization';
+import { useProjects } from '@/modules/features/project';
 
 interface GrantCreatorProps {
   role: RoleEntity;

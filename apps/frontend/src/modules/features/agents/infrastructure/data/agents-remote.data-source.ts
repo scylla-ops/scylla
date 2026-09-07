@@ -1,4 +1,4 @@
-import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { AgentAdminServiceClient } from '@/generated/scylla/agent/v1/agent_admin.client.ts';
 import type {
   CreatedAgent,

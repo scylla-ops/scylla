@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
 import { type FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { createOrganizationItems } from '@/modules/features/organization/presentation/utils/create-organization-form-items.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { useNavigate } from 'react-router-dom';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 

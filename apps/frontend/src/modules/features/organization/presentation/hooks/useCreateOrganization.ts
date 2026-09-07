@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useOrganizationDomain } from '@/modules/features/organization/presentation/hooks/use-organization-domain.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 

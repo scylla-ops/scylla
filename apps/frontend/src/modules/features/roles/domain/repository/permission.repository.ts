@@ -1,8 +1,5 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type {
-  PermissionScope,
-  PrincipalEntity,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { PermissionScope, PrincipalEntity, } from '@platform/authz';
 import type {
   RoleCreationData,
   RoleEntity,
@@ -11,7 +8,7 @@ import type {
   GrantEntity,
 } from '@/modules/features/roles/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/roles/domain/entities/grantable-role.entity.ts';
-import type { EffectivePermissionsEntity } from '@platform/authz/domain/entities/effective-permissions.entity.ts';
+import type { EffectivePermissionsEntity } from '@platform/authz';
 import type { PermissionVocabularyEntity } from '@/modules/features/roles/domain/entities/permission-vocabulary.entity.ts';
 
 /**

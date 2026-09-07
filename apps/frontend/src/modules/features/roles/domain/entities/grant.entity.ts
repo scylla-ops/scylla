@@ -1,7 +1,4 @@
-import type {
-  PermissionScope,
-  PrincipalEntity,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { PermissionScope, PrincipalEntity, } from '@platform/authz';
 
 export interface GrantEntity {
   id: string;

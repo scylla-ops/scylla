@@ -3,7 +3,7 @@ import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/organization-remote.data-source.ts';
 import { GrpcOrganizationMemberMapper } from '@/modules/features/organization/infrastructure/repository/mappers/grpc-organization-member.mapper.ts';
 import { GrpcOrganizationMapper } from '@/modules/features/organization/infrastructure/repository/mappers/grpc-organization.mapper.ts';
-import type { UserEntity } from '@/modules/features/user/domain/entities/user.entity.ts';
+import type { UserEntity } from '@/modules/features/user';
 import type { OrganizationEntity } from '@/modules/features/organization/domain/entities/organization.entity.ts';
 
 export default class DefaultOrganizationRepository implements OrganizationRepository {

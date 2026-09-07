@@ -1,7 +1,7 @@
 import type { LoginRemoteDataSource } from '@/modules/features/login/infrastructure/repository/data-sources/login-remote.data-source.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { AuthServiceClient } from '@/generated/scylla/auth/v1/auth.client.ts';
-import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class GrpcLoginRemoteDataSource implements LoginRemoteDataSource {

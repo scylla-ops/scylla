@@ -4,8 +4,8 @@ import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { useDeleteProject } from '@/modules/features/project/presentation/hooks/use-delete-project.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { useCan } from '@platform/authz/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
 
 interface ProjectHeaderProps {
   numberOfProjects: number;

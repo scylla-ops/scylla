@@ -1,9 +1,9 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { Permission } from '@platform/authz';
 import type { SecretRemoteDataSource } from '@/modules/features/secret/infrastructure/repository/data-sources/secret-remote.data-source.ts';
 import { DefaultSecretRepository } from '@/modules/features/secret/infrastructure/repository/default-secret.repository.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import { grpcTransport } from '@platform/grpc';
 import { GrpcSecretRemoteDataSource } from '@/modules/features/secret/infrastructure/data/grpc-credential-remote.data-source.ts';
 
 const secretRemoteDataSource: SecretRemoteDataSource = new GrpcSecretRemoteDataSource(

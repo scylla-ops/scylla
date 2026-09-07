@@ -1,23 +1,26 @@
 import { type Query, useQueries } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useJobsDomain } from '@/modules/features/jobs/presentation/hooks/use-jobs-domain.ts';
 import { JOBS_QUERY_KEY } from '@/modules/features/jobs/presentation/hooks/jobs.query-keys.ts';
-import { useMemo } from 'react';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@platform/authz/presentation/hooks/use-authorization.ts';
+import { Permission, useAuthorization } from '@platform/authz';
 
+/** Enough recent jobs to draw a pipeline's history strip, not its whole log. */
 const MAX_JOBS_PER_PIPELINE = 10;
 
 /**
- * Fetches jobs for multiple pipelines in parallel.
- * Returns a map of pipelineId → JobResponse[] for an easy lookup.
+ * The most recent jobs of several pipelines at once, keyed by pipeline id.
+ *
+ * Part of the module's public API: the pipeline dashboard draws a job history
+ * per row, which is a jobs query. It lives here — with the entity and the query
+ * key it reads — so that `pipeline` depends on `jobs` and never the reverse.
  *
  * `ListJobsByPipeline` is enforced per project, so without the grant this
  * fan-out is one guaranteed `PERMISSION_DENIED` per pipeline — an error toast
  * each, and a row of "failed to load" where the honest answer is "you may not
  * see this". Nothing is asked in that case; callers read `canListJobs` to say so.
  */
-export const usePipelineJobs = (pipelineIds: string[]) => {
+export const useJobsByPipelines = (pipelineIds: string[]) => {
   const { jobsRepository } = useJobsDomain();
   const { can, ready } = useAuthorization();
 

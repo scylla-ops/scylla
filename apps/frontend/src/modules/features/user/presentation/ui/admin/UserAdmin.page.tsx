@@ -7,12 +7,12 @@ import { AddUserDialog } from '@/modules/features/user/presentation/ui/admin/Add
 import { useState } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
-import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { useCan } from '@platform/authz/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();

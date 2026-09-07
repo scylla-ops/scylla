@@ -1,7 +1,7 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import { Permission } from '@platform/authz';
+import { grpcTransport } from '@platform/grpc';
 import type { TriggersRemoteDataSource } from '@/modules/features/triggers/infrastructure/repository/data-sources/triggers-remote.data-source.ts';
 import { GrpcTriggersRemoteDataSource } from '@/modules/features/triggers/infrastructure/data/remote/grpc-triggers-remote.data-source.ts';
 import { DefaultTriggersRepository } from '@/modules/features/triggers/infrastructure/repository/default-triggers.repository.ts';

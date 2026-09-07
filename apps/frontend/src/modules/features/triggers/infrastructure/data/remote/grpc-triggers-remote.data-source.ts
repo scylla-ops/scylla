@@ -1,6 +1,6 @@
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { TriggerServiceClient } from '@/generated/scylla/trigger/v1/trigger.client.ts';
-import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { idValue, wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import type {
   CreateTriggerRequest,

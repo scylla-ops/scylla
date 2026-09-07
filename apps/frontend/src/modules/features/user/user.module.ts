@@ -1,9 +1,9 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { UsersIcon } from 'lucide-react';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { Permission } from '@platform/authz';
 import { UserRemoteDataSourceImpl } from '@/modules/features/user/infrastructure/data/remote/user-remote.data-source.impl.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import { grpcTransport } from '@platform/grpc';
 import { DefaultUserRepository } from '@/modules/features/user/infrastructure/repository/default-user.repository.ts';
 
 const dataSource = new UserRemoteDataSourceImpl(grpcTransport);

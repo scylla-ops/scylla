@@ -1,6 +1,6 @@
 import { type GrantableRole, RoleKind as GrpcRoleKind } from '@/generated/scylla/authz/v1/grant.ts';
 import type { GrantableRoleEntity } from '@/modules/features/roles/domain/entities/grantable-role.entity.ts';
-import { RoleKind } from '@platform/authz/domain/structs/permission.struct.ts';
+import { RoleKind } from '@platform/authz';
 import { GrpcPermissionMapper } from '@/modules/features/roles/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 
 /**

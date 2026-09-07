@@ -2,8 +2,8 @@ import { Pencil, ShieldCheck } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Badge } from '@shadcn';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { PermissionButton } from '@platform/authz/presentation/ui/PermissionButton.tsx';
+import { Permission } from '@platform/authz';
+import { PermissionButton } from '@platform/authz';
 import { usePermissionLabels } from '@/modules/features/roles/presentation/hooks/use-permission-labels.ts';
 
 interface RoleDetailHeaderProps {

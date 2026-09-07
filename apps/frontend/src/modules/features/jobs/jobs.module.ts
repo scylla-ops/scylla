@@ -1,5 +1,5 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import type { ScyllaModule } from '@platform/routing';
+import { grpcTransport } from '@platform/grpc';
 import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
 import { GrpcJobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/data/remote/grpc-jobs-remote.data-source.ts';
 import { DefaultJobsRepository } from '@/modules/features/jobs/infrastructure/repository/default-jobs.repository.ts';

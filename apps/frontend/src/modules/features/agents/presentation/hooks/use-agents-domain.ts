@@ -1,4 +1,4 @@
-import { useModuleDomain } from '@platform/di/index.ts';
+import { useModuleDomain } from '@platform/di';
 import type { AgentsModule } from '../../agents.module.ts';
 
 /** Typed access to the agents module's use cases. */

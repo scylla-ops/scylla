@@ -1,4 +1,4 @@
-import { useModuleDomain } from '@platform/di/index.ts';
+import { useModuleDomain } from '@platform/di';
 import type { RolesModule } from '../../roles.module.ts';
 
 /** Typed access to the roles module's use cases. */

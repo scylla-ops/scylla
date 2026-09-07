@@ -3,29 +3,26 @@ import { useParams } from 'react-router-dom';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import { roleConfers } from '@/modules/features/roles/domain/entities/role.entity.ts';
-import {
-  Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { roleConfers } from '@/modules/features/roles';
+import { Permission, PermissionScope, } from '@platform/authz';
 import {
   buildProjectMembers,
   MemberRoleOrigin,
   type ScopeMember,
 } from '@/modules/features/membership/domain/structs/scope-member.struct.ts';
 import { useAssignableRoles } from '@/modules/features/membership/presentation/hooks/use-assignable-roles.ts';
-import { useAuthorization } from '@platform/authz/presentation/hooks/use-authorization.ts';
-import { useScopedGrants } from '@/modules/features/roles/presentation/hooks/use-grants.ts';
+import { useAuthorization } from '@platform/authz';
+import { useScopedGrants } from '@/modules/features/roles';
 import { useScopeMembership } from '@/modules/features/membership/presentation/hooks/use-scope-membership.ts';
 import {
   AddMemberDialog,
   MembersHint,
   MembersList,
 } from '@/modules/features/membership/presentation/ui/components/index.ts';
-import { useOrganizationMembers } from '@/modules/features/organization/presentation/hooks/use-organization-members.ts';
-import { useProjectMembers } from '@/modules/features/project/presentation/hooks/use-project-members.ts';
+import { useOrganizationMembers } from '@/modules/features/organization';
+import { useProjectMembers } from '@/modules/features/project';
 
 /** Who is being removed — the id to act on, the name to name in the prompt. */
 interface PendingRemoval {

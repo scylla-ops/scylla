@@ -4,7 +4,7 @@ import {
   updateRole,
 } from '@/modules/features/roles/domain/entities/role.entity.ts';
 import { type ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { AccessSpec } from '@platform/authz/domain/structs/permission.struct.ts';
+import type { AccessSpec } from '@platform/authz';
 
 export interface UpdateRoleInput {
   id: string;

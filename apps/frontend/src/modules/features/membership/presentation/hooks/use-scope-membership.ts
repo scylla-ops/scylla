@@ -1,12 +1,9 @@
 import { useCallback } from 'react';
 import { useLingui } from '@lingui/react/macro';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import {
-  PrincipalKind,
-  type PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { PrincipalKind, type PermissionScope, } from '@platform/authz';
 import type { MemberRole } from '@/modules/features/membership/domain/structs/scope-member.struct.ts';
-import { useScopedGrants } from '@/modules/features/roles/presentation/hooks/use-grants.ts';
+import { useScopedGrants } from '@/modules/features/roles';
 
 interface UseScopeMembershipOptions {
   scope: PermissionScope;

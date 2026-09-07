@@ -9,7 +9,7 @@ import {
   FormItemType,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { useNavigate } from 'react-router-dom';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 
 interface AddProjectDialogProps {
   open: boolean;

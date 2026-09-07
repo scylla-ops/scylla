@@ -7,7 +7,7 @@ import {
   MemberRoleOrigin,
   type MemberRole,
 } from '@/modules/features/membership/domain/structs/scope-member.struct.ts';
-import { usePermissionLabels } from '@/modules/features/roles/presentation/hooks/use-permission-labels.ts';
+import { usePermissionLabels } from '@/modules/features/roles';
 
 interface MemberRoleBadgesProps {
   roles: MemberRole[];

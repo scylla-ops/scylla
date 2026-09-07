@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRolesDomain } from '@/modules/features/roles/presentation/hooks/use-roles-domain.ts';
-import type { PrincipalEntity } from '@platform/authz/domain/structs/permission.struct.ts';
+import type { PrincipalEntity } from '@platform/authz';
 
 /**
  * On-demand "what can this principal do" lookup. Modelled as a mutation since

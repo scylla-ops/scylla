@@ -5,7 +5,7 @@ import { JobsTable } from '@/modules/features/jobs/presentation/ui/jobs-table';
 import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Pagination } from '@shared/presentation/ui/data-display/Pagination.tsx';
-import { NoAgentsBanner } from '@/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx';
+import { NoAgentsBanner } from '@/modules/features/agents';
 
 interface JobsPageProps {
   /** Passed through to {@link JobsHeader} — see the note on its `onRun` prop. */

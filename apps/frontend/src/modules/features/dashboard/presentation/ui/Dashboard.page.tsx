@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Folder, Workflow, ChevronRight } from 'lucide-react';
+import { Folder, Workflow, ChevronRight, PlayCircle, Gauge } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Badge } from '@shadcn/badge.tsx';
@@ -7,14 +7,15 @@ import { Skeleton } from '@shadcn/skeleton.tsx';
 import { Separator } from '@shadcn/separator.tsx';
 import { FeatureHeader } from '@shared/presentation/ui/layout/FeatureHeader.tsx';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
-import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import { cn } from '@shared/presentation/utils';
 import { getRelativeTime } from '@shared/utils/date-utils.ts';
 import { useOrgOverview } from '@/modules/features/dashboard/presentation/hooks/use-org-overview.ts';
 import { AgentOutcomesChart } from '@/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx';
-import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { Can } from '@platform/authz/presentation/ui/Can.tsx';
+import { RunActivityCard } from '@/modules/features/dashboard/presentation/ui/RunActivityCard.tsx';
+import type { ProjectEntity } from '@/modules/features/project';
+import { Permission } from '@platform/authz';
+import { Can } from '@platform/authz';
 
 const StatCard = ({
   icon,
@@ -24,7 +25,7 @@ const StatCard = ({
 }: {
   icon: ReactNode;
   label: string;
-  value: number;
+  value: ReactNode;
   loading: boolean;
 }) => (
   <Card className='py-5'>
@@ -52,6 +53,10 @@ export const DashboardPage = () => {
     projectsError,
     allPipelines,
     pipelinesLoading,
+    runs,
+    totalRuns,
+    runsLoading,
+    runsTruncated,
     canOpenProject,
   } = useOrgOverview();
   const navigate = useScyllaNavigate();
@@ -81,7 +86,7 @@ export const DashboardPage = () => {
     <div className='flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto pr-3'>
       <FeatureHeader label={t`Dashboard`} />
 
-      <div className='grid shrink-0 grid-cols-2 gap-4 max-w-sm'>
+      <div className='grid shrink-0 grid-cols-2 gap-4 md:grid-cols-4'>
         <StatCard
           icon={<Folder className='h-4 w-4 text-primary' />}
           label={t`Projects`}
@@ -93,6 +98,28 @@ export const DashboardPage = () => {
           label={t`Pipelines`}
           value={allPipelines.length}
           loading={pipelinesLoading || projectsLoading}
+        />
+        <StatCard
+          icon={<PlayCircle className='h-4 w-4 text-primary' />}
+          label={t`Runs`}
+          value={totalRuns}
+          loading={runsLoading}
+        />
+        <StatCard
+          icon={<Gauge className='h-4 w-4 text-primary' />}
+          label={runsTruncated ? t`Success rate (recent)` : t`Success rate`}
+          // `null` means nothing has finished yet — not a 0 % success rate.
+          value={runs.successRate === null ? '—' : `${Math.round(runs.successRate * 100)}%`}
+          loading={runsLoading}
+        />
+      </div>
+
+      <div className='shrink-0'>
+        <RunActivityCard
+          summary={runs}
+          totalRuns={totalRuns}
+          truncated={runsTruncated}
+          loading={runsLoading}
         />
       </div>
 

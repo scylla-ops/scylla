@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRolesDomain } from '@/modules/features/roles/presentation/hooks/use-roles-domain.ts';
-import type { PermissionScope } from '@platform/authz/domain/structs/permission.struct.ts';
+import type { PermissionScope } from '@platform/authz';
 import type {
   CreateGrantInput,
   RevokeAllAccessInput,

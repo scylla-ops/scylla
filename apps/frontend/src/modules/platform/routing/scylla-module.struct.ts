@@ -1,7 +1,7 @@
 import type { RouteObject } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import type { MessageDescriptor } from '@lingui/core';
-import type { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import type { Permission } from '@platform/authz';
 import type { BreadcrumbParams, Crumb } from './route-handle.struct.ts';
 
 /**

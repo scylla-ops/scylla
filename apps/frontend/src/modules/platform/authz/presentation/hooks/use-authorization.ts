@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { usePermissionsStore } from '@platform/authz/presentation/stores/use-permissions.store.ts';
 import type { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
 import {

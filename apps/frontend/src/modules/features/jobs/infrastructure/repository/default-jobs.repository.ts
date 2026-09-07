@@ -19,6 +19,15 @@ export class DefaultJobsRepository implements JobsRepository {
     );
   }
 
+  public async getByOrganizationId(
+    organizationId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<PaginatedList<JobEntity>>> {
+    return (await this.remoteDataSource.getByOrganizationId(organizationId, pagination)).map(
+      GrpcJobMapper.toDomainList,
+    );
+  }
+
   public async getById(jobId: string): Promise<ScyllaResult<JobEntity>> {
     return (await this.remoteDataSource.getById(jobId)).map(GrpcJobMapper.toDomain);
   }

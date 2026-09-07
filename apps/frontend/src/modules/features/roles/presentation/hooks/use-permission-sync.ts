@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { useRefreshMyPermissions } from '@/modules/features/roles/presentation/hooks/use-refresh-my-permissions.ts';
 
 /**

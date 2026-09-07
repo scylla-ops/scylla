@@ -14,11 +14,7 @@ import {
 } from '@shadcn';
 import { Trans, useLingui } from '@lingui/react/macro';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
-import {
-  type Permission,
-  PermissionScope,
-  type AccessSpec,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { type Permission, PermissionScope, type AccessSpec, } from '@platform/authz';
 import { useRoles } from '@/modules/features/roles/presentation/hooks/use-roles.ts';
 import { RoleDialogHeader } from '@/modules/features/roles/presentation/ui/components/role-form/RoleDialogHeader.tsx';
 import { RoleDialogPermissions } from '@/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx';

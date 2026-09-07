@@ -5,6 +5,7 @@ import { usePagination } from '@shared/presentation/hooks/use-pagination.ts';
 import { useEffect } from 'react';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
+import { PIPELINES_QUERY_KEY } from '@/modules/features/pipeline/presentation/hooks/pipelines.query-keys.ts';
 
 export const usePipelinesMetadata = (projectId: string) => {
   const { pipelineRepository } = usePipelineDomain();
@@ -14,7 +15,7 @@ export const usePipelinesMetadata = (projectId: string) => {
     PaginatedList<PipelineMetadata>,
     ScyllaError
   >({
-    queryKey: ['pipelines', projectId, paginationParams],
+    queryKey: PIPELINES_QUERY_KEY(projectId, paginationParams),
     queryFn: async () => (await pipelineRepository.getMetadataByProjectId(projectId, paginationParams)).unwrap(),
     staleTime: 5 * 1000, // 5 seconds //todo: more long and refresh button?
   });

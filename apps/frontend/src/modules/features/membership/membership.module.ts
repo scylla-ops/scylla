@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
 import { UsersRound } from 'lucide-react';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import { Permission } from '@platform/authz';
+import type { ScyllaModule } from '@platform/routing';
 
 /**
  * Members of an organization or of a project. Both pages read other modules'

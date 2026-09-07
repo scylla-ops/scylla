@@ -5,7 +5,7 @@ import type {
   Organization,
   OrganizationMember,
 } from '@/generated/scylla/organization/v1/organization.ts';
-import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import type { OrganizationRemoteDataSource } from '@/modules/features/organization/infrastructure/repository/data-sources/organization-remote.data-source.ts';
 

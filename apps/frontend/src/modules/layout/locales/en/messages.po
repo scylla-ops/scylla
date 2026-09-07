@@ -63,9 +63,9 @@ msgstr "Log out"
 msgid "New feature: Triggers!"
 msgstr "New feature: Triggers!"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:64
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:104
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:108
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:61
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:101
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:105
 msgid "Organization"
 msgstr "Organization"
 
@@ -81,7 +81,7 @@ msgstr "Organization"
 msgid "Seen"
 msgstr "Seen"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:107
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:104
 msgid "Select Organization"
 msgstr "Select Organization"
 
@@ -89,7 +89,7 @@ msgstr "Select Organization"
 msgid "Settings"
 msgstr "Settings"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:69
+#: src/modules/layout/presentation/ui/AppSidebar.tsx:66
 msgid "System"
 msgstr "System"
 

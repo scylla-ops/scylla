@@ -1,5 +1,5 @@
 import type { MessageDescriptor } from '@lingui/core';
-import type { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import type { Permission } from '@platform/authz';
 
 export interface BreadcrumbParams {
   projectName?: string;

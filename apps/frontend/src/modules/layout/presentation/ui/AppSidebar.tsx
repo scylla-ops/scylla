@@ -16,19 +16,16 @@ import {
 import { NavUser } from '@/modules/layout/presentation/ui/NavUser.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { ContextSelector } from '@/modules/layout/presentation/ui/context-selector/ContextSelector.tsx';
-import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
-import { AddOrganizationDialog } from '@/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx';
+import { OrganizationList } from '@/modules/features/organization';
+import { AddOrganizationDialog } from '@/modules/features/organization';
 import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-selector/CurrentContextDisplay.tsx';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { useLingui } from '@lingui/react/macro';
 import type { NavSection } from '@/modules/layout/presentation/structs/nav-section.struct.ts';
-import type { NavEntry } from '@platform/routing/scylla-module.struct.ts';
+import type { NavEntry } from '@platform/routing';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import {
-  useAuthorization,
-  useCan,
-} from '@platform/authz/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz';
+import { useAuthorization, useCan, } from '@platform/authz';
 import { LanguageSelector } from '@/modules/layout/presentation/ui/LanguageSelector.tsx';
 
 /**

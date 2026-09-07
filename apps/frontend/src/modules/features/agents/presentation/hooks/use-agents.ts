@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgentsDomain } from '@/modules/features/agents/presentation/hooks/use-agents-domain.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@platform/authz/presentation/hooks/use-authorization.ts';
+import { useContextStore } from '@platform/context';
+import { Permission } from '@platform/authz';
+import { useAuthorization } from '@platform/authz';
 
 const WORKERS_QUERY_KEY = 'agents';
 

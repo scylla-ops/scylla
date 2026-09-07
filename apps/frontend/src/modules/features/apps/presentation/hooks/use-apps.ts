@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppsDomain } from '@/modules/features/apps/presentation/hooks/use-apps-domain.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 
 const APPS_QUERY_KEY = 'apps';
 

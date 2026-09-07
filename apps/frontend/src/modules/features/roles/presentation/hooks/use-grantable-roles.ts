@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRolesDomain } from '@/modules/features/roles/presentation/hooks/use-roles-domain.ts';
-import type { PermissionScope } from '@platform/authz/domain/structs/permission.struct.ts';
+import type { PermissionScope } from '@platform/authz';
 
 export const GRANTABLE_ROLES_QUERY_KEY = (scope?: PermissionScope) =>
   ['permission-grantable-roles', scope ?? 'all'] as const;

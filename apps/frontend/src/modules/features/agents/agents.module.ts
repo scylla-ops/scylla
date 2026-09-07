@@ -1,9 +1,9 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { HardDriveIcon } from 'lucide-react';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import { Permission } from '@platform/authz';
 import { AgentsRemoteDataSourceImpl } from '@/modules/features/agents/infrastructure/data/agents-remote.data-source.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import { grpcTransport } from '@platform/grpc';
 import { DefaultAgentsRepository } from '@/modules/features/agents/infrastructure/repository/default-agents.repository.ts';
 
 const dataSource = new AgentsRemoteDataSourceImpl(grpcTransport);

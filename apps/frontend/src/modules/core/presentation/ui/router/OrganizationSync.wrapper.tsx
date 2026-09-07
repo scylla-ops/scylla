@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { useContextStore } from '@platform/context/use-context.store.ts';
-import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
+import { useContextStore } from '@platform/context';
+import { useOrganizations } from '@/modules/features/organization';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 /**

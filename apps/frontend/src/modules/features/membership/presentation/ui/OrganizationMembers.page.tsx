@@ -2,22 +2,19 @@ import { useCallback, useMemo, useState } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import {
-  Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { Permission, PermissionScope, } from '@platform/authz';
 import { buildOrganizationMembers } from '@/modules/features/membership/domain/structs/scope-member.struct.ts';
 import { useAssignableRoles } from '@/modules/features/membership/presentation/hooks/use-assignable-roles.ts';
-import { useAuthorization } from '@platform/authz/presentation/hooks/use-authorization.ts';
+import { useAuthorization } from '@platform/authz';
 import { useScopeMembership } from '@/modules/features/membership/presentation/hooks/use-scope-membership.ts';
 import {
   AddMemberDialog,
   MembersList,
 } from '@/modules/features/membership/presentation/ui/components/index.ts';
-import { useOrganizationMembers } from '@/modules/features/organization/presentation/hooks/use-organization-members.ts';
-import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
+import { useOrganizationMembers } from '@/modules/features/organization';
+import { useUsers } from '@/modules/features/user';
 
 /** The builtin whose whole content is "belongs here, sees it exists". */
 const ORGANIZATION_MEMBER_ROLE_ID = 'organization-member';

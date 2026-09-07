@@ -1,8 +1,8 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { ShieldIcon } from 'lucide-react';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import { Permission } from '@platform/authz';
+import { grpcTransport } from '@platform/grpc';
 import { GrpcPermissionRemoteDataSource } from '@/modules/features/roles/infrastructure/data/grpc-permission-remote.data-source.ts';
 import { DefaultPermissionRepository } from '@/modules/features/roles/infrastructure/repository/default-permission.repository.ts';
 import { UpdateRoleUseCase } from '@/modules/features/roles/domain/use-cases/update-role.use-case.ts';

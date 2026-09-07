@@ -1,5 +1,5 @@
-import type { DomainRegistry } from '@platform/di/index.ts';
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { DomainRegistry } from '@platform/di';
+import type { ScyllaModule } from '@platform/routing';
 import { LoginModule } from '@/modules/features/login/login.module.ts';
 import { MarketplaceModule } from '@/modules/features/marketplace/marketplace.module.ts';
 import { PipelineModule } from '@/modules/features/pipeline/pipeline.module.ts';

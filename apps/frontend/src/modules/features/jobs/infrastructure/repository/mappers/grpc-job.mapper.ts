@@ -16,6 +16,9 @@ import { LogStream } from '@/generated/scylla/common/v1/common.ts';
 import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { JobLogsTailHandleRepo } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
+
+/** What every scoped job listing returns, whatever the scope. */
+type JobListResponse = Pick<ListPipelineJobsResponse, 'jobs' | 'pagination'>;
 import {
   idValue,
   timestampToIso,
@@ -138,7 +141,12 @@ export class GrpcJobMapper {
     };
   }
 
-  static toDomainList(response: ListPipelineJobsResponse): PaginatedList<JobEntity> {
+  /**
+   * Takes the shape rather than one named response: `ListPipelineJobsResponse`,
+   * `ListProjectJobsResponse` and `ListOrganizationJobsResponse` are the same
+   * `{ jobs, pagination }` pair, so one mapper serves all three scopes.
+   */
+  static toDomainList(response: JobListResponse): PaginatedList<JobEntity> {
     return {
       items: response.jobs.map(GrpcJobMapper.toDomain),
       pagination: response.pagination as PaginationInfo,

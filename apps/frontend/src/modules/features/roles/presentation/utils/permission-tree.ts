@@ -1,4 +1,4 @@
-import type { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
+import type { Permission } from '@platform/authz';
 import type { PermissionDefinition } from '@/modules/features/roles/presentation/utils/permission-mapping.ts';
 import type { CheckboxNode } from '@shared/presentation/ui/forms/CheckboxTree.tsx';
 

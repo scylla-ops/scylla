@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useNavigate } from 'react-router-dom';
 import { useAgents } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 interface NoAgentsBannerProps {

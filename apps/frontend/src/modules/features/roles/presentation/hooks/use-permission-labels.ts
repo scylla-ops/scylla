@@ -1,9 +1,6 @@
 import { useCallback } from 'react';
 import { useLingui } from '@lingui/react/macro';
-import type {
-  Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { Permission, PermissionScope, } from '@platform/authz';
 import {
   getPermissionDefinition,
   humanizePermission,

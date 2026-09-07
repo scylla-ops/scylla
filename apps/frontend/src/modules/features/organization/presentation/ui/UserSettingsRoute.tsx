@@ -1,5 +1,5 @@
 import { div } from 'framer-motion/m';
-import { UserSettingsPage } from '@/modules/features/user/presentation/ui/settings/UserSettings.page.tsx';
+import { UserSettingsPage } from '@/modules/features/user';
 import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
 
 /**

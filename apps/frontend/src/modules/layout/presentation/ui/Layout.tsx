@@ -1,14 +1,14 @@
-import type { NavEntry } from '@platform/routing/scylla-module.struct.ts';
+import type { NavEntry } from '@platform/routing';
 import { AppSidebar } from '@/modules/layout/presentation/ui/AppSidebar.tsx';
 import { SidebarInset, SidebarProvider } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { TopBar } from '@/modules/layout/presentation/ui/TopBar.tsx';
 import { AnimatedOutlet } from '@/modules/shared/presentation/ui/layout/AnimatedOutlet.tsx';
 import { NewTriggerFeaturePopup } from '@/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx';
-import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
+import { useOrganizations } from '@/modules/features/organization';
 import { Trans } from '@lingui/react/macro';
-import { useCreateOrganization } from '@/modules/features/organization/presentation/hooks/useCreateOrganization.ts';
+import { useCreateOrganization } from '@/modules/features/organization';
 import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
-import { createOrganizationItems } from '@/modules/features/organization/presentation/utils/create-organization-form-items.ts';
+import { createOrganizationItems } from '@/modules/features/organization';
 import {
   Card,
   CardContent,
@@ -19,9 +19,9 @@ import {
 import scyllaLogo from '@/assets/logo_scylla.png';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { usePermissionSync } from '@/modules/features/roles/presentation/hooks/use-permission-sync.ts';
+import { usePermissionSync } from '@/modules/features/roles';
 
 interface LayoutProps {
   /**

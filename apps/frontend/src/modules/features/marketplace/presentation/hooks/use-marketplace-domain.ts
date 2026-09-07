@@ -1,4 +1,4 @@
-import { useModuleDomain } from '@platform/di/index.ts';
+import { useModuleDomain } from '@platform/di';
 import type { MarketplaceModule } from '../../marketplace.module.ts';
 
 /** Typed access to the marketplace module's use cases. */

@@ -1,4 +1,4 @@
-import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { AppServiceClient } from '@/generated/scylla/app/v1/app.client.ts';
 import type {
   AppEntity,

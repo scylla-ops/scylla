@@ -1,4 +1,4 @@
-import { type ScyllaGrpcTransport } from '@platform/grpc/index.ts';
+import { type ScyllaGrpcTransport } from '@platform/grpc';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   ListUsersResponse,

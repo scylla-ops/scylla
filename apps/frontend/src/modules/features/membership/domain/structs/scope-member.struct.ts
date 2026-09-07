@@ -1,8 +1,5 @@
-import type { GrantEntity } from '@/modules/features/roles/domain/entities/grant.entity.ts';
-import {
-  PermissionScope,
-  PrincipalKind,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { GrantEntity } from '@/modules/features/roles';
+import { PermissionScope, PrincipalKind, } from '@platform/authz';
 
 /**
  * One role a member holds over a scope, and where it comes from.

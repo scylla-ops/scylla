@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { SecretRevealDialog } from '@shared/presentation/ui';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { usePipelineTriggers } from '@/modules/features/triggers/presentation/hooks/use-pipeline-triggers.ts';
 import {
   TriggersHeader,

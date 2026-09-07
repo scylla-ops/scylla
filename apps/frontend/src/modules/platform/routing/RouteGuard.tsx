@@ -1,5 +1,5 @@
 import { Outlet, useMatches } from 'react-router-dom';
-import { RequirePermission } from '@platform/authz/presentation/ui/RequirePermission.tsx';
+import { RequirePermission } from '@platform/authz';
 import type { RouteHandle } from './route-handle.struct.ts';
 
 /**

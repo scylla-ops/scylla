@@ -1,4 +1,4 @@
-import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import type {
   NavItem,
   NavSection,

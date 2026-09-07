@@ -1,9 +1,9 @@
-import type { ScyllaModule } from '@platform/routing/scylla-module.struct.ts';
+import type { ScyllaModule } from '@platform/routing';
 import type { LoginRemoteDataSource } from '@/modules/features/login/infrastructure/repository/data-sources/login-remote.data-source.ts';
 import { GrpcLoginRemoteDataSource } from '@/modules/features/login/infrastructure/data/remote/grpc-login-remote.data-source.ts';
 import type { LoginRepository } from '@/modules/features/login/domain/repository/login.repository.ts';
 import { DefaultLoginRepository } from '@/modules/features/login/infrastructure/repository/default-login.repository.ts';
-import { grpcTransport } from '@platform/grpc/index.ts';
+import { grpcTransport } from '@platform/grpc';
 
 const loginRemoteDataSource: LoginRemoteDataSource = new GrpcLoginRemoteDataSource(
   grpcTransport,

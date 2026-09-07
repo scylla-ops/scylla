@@ -4,12 +4,8 @@ import { ScrollArea } from '@shadcn/scroll-area.tsx';
 import { AppWindow, Building2, FolderGit2, Globe, User, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
-import {
-  Permission,
-  PermissionScope,
-  PrincipalKind,
-} from '@platform/authz/domain/structs/permission.struct.ts';
-import { useCan } from '@platform/authz/presentation/hooks/use-authorization.ts';
+import { Permission, PermissionScope, PrincipalKind, } from '@platform/authz';
+import { useCan } from '@platform/authz';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
 import { useRoleAssignees } from '@/modules/features/roles/presentation/hooks/use-role-assignees.ts';
 import {

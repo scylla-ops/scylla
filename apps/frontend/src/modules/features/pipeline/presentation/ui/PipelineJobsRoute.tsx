@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { JobsPage } from '@/modules/features/jobs/presentation/ui/Jobs.page.tsx';
+import { JobsPage } from '@/modules/features/jobs';
 import { useRunPipeline } from '@/modules/features/pipeline/presentation/hooks/use-run-pipeline.ts';
 
 /**

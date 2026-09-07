@@ -1,8 +1,5 @@
 import type { EffectiveScope } from '@/generated/scylla/authz/v1/role.ts';
-import type {
-  EffectivePermissionsEntity,
-  EffectiveScopeEntity,
-} from '@platform/authz/domain/entities/effective-permissions.entity.ts';
+import type { EffectivePermissionsEntity, EffectiveScopeEntity, } from '@platform/authz';
 import { GrpcPermissionMapper } from '@/modules/features/roles/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 
 export class GrpcEffectivePermissionsMapper {

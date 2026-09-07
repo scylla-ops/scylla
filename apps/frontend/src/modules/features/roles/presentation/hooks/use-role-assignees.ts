@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
 import type { GrantEntity } from '@/modules/features/roles/domain/entities/grant.entity.ts';
-import { PrincipalKind } from '@platform/authz/domain/structs/permission.struct.ts';
+import { PrincipalKind } from '@platform/authz';
 import { useGrants } from '@/modules/features/roles/presentation/hooks/use-grants.ts';
-import { useUsers } from '@/modules/features/user/presentation/hooks/use-users.ts';
+import { useUsers } from '@/modules/features/user';
 
 export interface RoleAssignee {
   grant: GrantEntity;

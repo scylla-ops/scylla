@@ -1,10 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { roleConfers } from '@/modules/features/roles/domain/entities/role.entity.ts';
-import {
-  Permission,
-  PermissionScope,
-  PrincipalKind,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { Permission, PermissionScope, PrincipalKind, } from '@platform/authz';
 import { useGrants } from '@/modules/features/roles/presentation/hooks/use-grants.ts';
 import { useRoles } from '@/modules/features/roles/presentation/hooks/use-roles.ts';
 

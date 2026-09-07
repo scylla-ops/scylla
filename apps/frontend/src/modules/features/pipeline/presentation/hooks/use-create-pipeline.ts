@@ -1,8 +1,8 @@
 import { usePipelineDomain } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-domain.ts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
-import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
+import { useContextStore } from '@platform/context';
+import { useScyllaNavigate } from '@platform/context';
 import type { PipelineEntity } from '@/modules/features/pipeline/domain/entities/pipeline.entity.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';

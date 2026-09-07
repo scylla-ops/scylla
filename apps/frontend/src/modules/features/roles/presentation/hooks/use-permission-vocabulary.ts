@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRolesDomain } from '@/modules/features/roles/presentation/hooks/use-roles-domain.ts';
-import {
-  type Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import { type Permission, PermissionScope, } from '@platform/authz';
 
 const VOCAB_QUERY_KEY = 'permission-vocabulary';
 

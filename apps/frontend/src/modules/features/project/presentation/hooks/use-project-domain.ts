@@ -1,4 +1,4 @@
-import { useModuleDomain } from '@platform/di/index.ts';
+import { useModuleDomain } from '@platform/di';
 import type { ProjectModule } from '../../project.module.ts';
 
 /** Typed access to the project module's use cases. */

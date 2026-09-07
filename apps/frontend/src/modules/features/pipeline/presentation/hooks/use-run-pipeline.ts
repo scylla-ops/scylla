@@ -3,9 +3,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
-import { JOBS_QUERY_KEY } from '@/modules/features/jobs/presentation/hooks/jobs.query-keys.ts';
-import { useAgents } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { JOBS_QUERY_KEY } from '@/modules/features/jobs';
+import { useAgents } from '@/modules/features/agents';
+import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { useNavigate } from 'react-router-dom';
 

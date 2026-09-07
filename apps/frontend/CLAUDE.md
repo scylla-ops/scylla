@@ -17,8 +17,14 @@ Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/fronten
 | `pnpm lint:fix` | ESLint with `--fix` |
 | `pnpm gen-proto` | Generate gRPC/protobuf-ts clients |
 | `pnpm extract` / `pnpm compile` | Lingui: extract messages / compile catalogs |
-| `pnpm depcruise` | Architecture rules (layer boundaries) — **must be clean** |
+| `pnpm depcruise` | Architecture rules: layer direction **and** public-API surface — **must be clean** |
 | `pnpm depcruise:cycles` | Module dependency cycles — **must be zero** |
+
+> `depcruise:cycles` is **not** redundant with `depcruise`'s `no-circular`. That rule works on the
+> *file* graph; a cycle can exist between two folders with no file in a loop (`a/x.ts → b/index.ts`,
+> `b/y.ts → a/index.ts`, where `b/index.ts` never reaches `y.ts`). `scripts/check-module-cycles.mjs`
+> collapses the graph to module granularity and runs Tarjan, which is what catches those. Verified:
+> `no-circular` misses that case, the script reports it. Keep both.
 
 `prebuild` = `gen-proto` + `extract` + `compile`, and runs before `dev` and `build`. **Do not hand-edit generated proto code or compiled locale `messages.ts` files** — regenerate them.
 
@@ -51,12 +57,43 @@ shared/                   generic UI + utils with no business meaning.
 This is machine-enforced (`.dependency-cruiser.cjs`), not a convention. **The module graph is
 cycle-free and must stay that way** — `pnpm depcruise:cycles` is a CI gate.
 
+### Every module is reached through its `index.ts` — nothing else
+
+A module's `index.ts` **is** its public API. Everything else in it is private and free to move.
+
+```typescript
+import { useProjects } from '@/modules/features/project';   // ✅ the public API
+import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts'; // ❌
+import { Permission } from '@platform/authz';               // ✅
+import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';           // ❌
+```
+
+Enforced by six rules in `.dependency-cruiser.cjs`, all `error`: `feature-api-only`,
+`shell-uses-feature-api`, `platform-api-only`, `platform-capability-api-only`,
+`module-declaration-is-private`, `domain-accessor-is-private`.
+
+What a barrel must **not** export:
+- **`<feature>.module.ts`** — it instantiates the feature's data sources at import time, so
+  re-exporting it pulls that feature's gRPC client into the chunk of anyone who imports the
+  barrel. The registry imports it directly by path; that is the only door.
+- **`use-<feature>-domain.ts`** — a feature pins the type of its *own* injection there. Another
+  module calling it queries your repository behind your hooks' back and forks the query cache
+  into two keys for one resource.
+- **Pages**, as a rule. Two exceptions exist and are marked as such (`JobsPage`,
+  `UserSettingsPage`): another module composes them behind its own route, and both consumers
+  are themselves lazily loaded.
+
+Need something from another feature that its `index.ts` does not export? Add the export **to
+that feature**, or ask it for a hook that does the job. Do not reach past the barrel — a
+"temporary" deep import is how the sixteen modules once became one.
+
 Inside a feature, dependencies point **inward**: `presentation → domain ← infrastructure`.
 
 ```
 feature/
 ├── feature.module.ts    → THE module declaration: { id, domain, routes?, nav? }
-├── index.ts             → public API — the ONLY thing other features may import
+│                          private: only core/di/registry.ts imports it
+├── index.ts             → public API — the ONLY thing other modules may import (enforced)
 ├── domain/              → PURE business logic, ZERO external deps (no React, no gRPC, no proto)
 │   ├── repository/      → repository INTERFACES + their input types (the data contract)
 │   ├── entities/        → {Name}Entity — identity-bearing business objects (*.entity.ts)
@@ -295,6 +332,8 @@ React 18 · TypeScript 5.8 · TanStack Query 5 · Zustand 5 · React Router 7 ·
    handler would do.
 7. Declare routes/nav on the module (not in the router); add `locales/{en,fr}/` and register the
    catalog in `lingui.config.js`.
-8. `index.ts`: export only what other modules may use.
+8. `index.ts`: export only what other modules may use — never the `*.module.ts`, never
+   `use-<feature>-domain.ts`, and a page only when another module composes it behind its own route.
+   Every feature has one, even when nothing consumes it yet: that is where a contributor looks first.
 9. Reuse before adding: check `shared/` and the Shared Patterns section first.
 10. `pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` all clean.

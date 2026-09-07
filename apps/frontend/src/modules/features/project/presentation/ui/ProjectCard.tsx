@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Folder, Pencil } from 'lucide-react';
-import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import { Trans } from '@lingui/react/macro';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
@@ -10,8 +10,8 @@ import { cn } from '@shared/presentation/utils';
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { IconButton } from '@shared/presentation/ui';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { Can } from '@platform/authz/presentation/ui/Can.tsx';
+import { Permission } from '@platform/authz';
+import { Can } from '@platform/authz';
 
 type ProjectCardProps = {
   project: ProjectEntity;

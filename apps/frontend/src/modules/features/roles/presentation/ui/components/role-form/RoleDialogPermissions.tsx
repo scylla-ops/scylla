@@ -4,10 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import { ScrollArea } from '@shadcn/scroll-area.tsx';
 import { CheckboxTree } from '@shared/presentation/ui/forms/CheckboxTree.tsx';
-import type {
-  Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { Permission, PermissionScope, } from '@platform/authz';
 import {
   getAlwaysGrantedPermissionsForScope,
   getEditablePermissionDefinitionsForScope,

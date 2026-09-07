@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { usePipelinesMetadata } from '../../hooks/use-pipelines-metadata.ts';
-import { usePipelineJobs } from '../../hooks/use-pipeline-jobs.ts';
+import { useJobsByPipelines } from '@/modules/features/jobs';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Pagination } from '@shared/presentation/ui/data-display/Pagination.tsx';
@@ -14,7 +14,7 @@ export const DashboardPipelinePage = () => {
 
   const pipelineIds = (pipelines?.items ?? []).map(p => p.id);
   const { jobsByPipelineId, isJobsError, isJobsLoading, canListJobs } =
-    usePipelineJobs(pipelineIds);
+    useJobsByPipelines(pipelineIds);
 
   if (isLoading || !pipelines) {
     return <></>;

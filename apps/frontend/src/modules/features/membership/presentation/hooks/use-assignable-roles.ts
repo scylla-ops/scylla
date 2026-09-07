@@ -1,13 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
-import {
-  Permission,
-  type PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
-import { useCan } from '@platform/authz/presentation/hooks/use-authorization.ts';
-import { useGrantableRoles } from '@/modules/features/roles/presentation/hooks/use-grantable-roles.ts';
-import { useRoles } from '@/modules/features/roles/presentation/hooks/use-roles.ts';
-import { humanizeRoleId } from '@/modules/features/roles/presentation/utils/role-label.ts';
+import type { RoleEntity } from '@/modules/features/roles';
+import { Permission, type PermissionScope, } from '@platform/authz';
+import { useCan } from '@platform/authz';
+import { useGrantableRoles } from '@/modules/features/roles';
+import { useRoles } from '@/modules/features/roles';
+import { humanizeRoleId } from '@/modules/features/roles';
 
 /** A role a member view may offer, whichever list it was found in. */
 export interface AssignableRole {

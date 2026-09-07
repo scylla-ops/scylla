@@ -1,7 +1,7 @@
 import { GrantServiceClient } from '@/generated/scylla/authz/v1/grant.client.ts';
 import { RoleServiceClient } from '@/generated/scylla/authz/v1/role.client.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { ScyllaGrpcTransport } from '@platform/grpc/index.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import type {
   AuthzAction,
   PrincipalRef,

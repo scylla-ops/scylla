@@ -1,7 +1,4 @@
-import type {
-  Permission,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { Permission, PermissionScope, } from '@platform/authz';
 
 /**
  * One entry of the permission vocabulary: a permission and the narrowest scope

@@ -1,7 +1,4 @@
-import type {
-  PermissionScope,
-  RoleKind,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { PermissionScope, RoleKind, } from '@platform/authz';
 
 /**
  * A role that may be assigned via a grant.

@@ -5,7 +5,7 @@ import { I18nProvider } from '@lingui/react';
 import { useLingui } from '@lingui/react/macro';
 import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DependenciesProvider } from '@platform/di/index.ts';
+import { DependenciesProvider } from '@platform/di';
 import { dependencies } from '@core/di/registry.ts';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';

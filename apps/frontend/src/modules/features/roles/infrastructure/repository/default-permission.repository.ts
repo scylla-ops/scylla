@@ -1,10 +1,7 @@
 import type { PermissionRepository, RevokeAllAccessInput } from '@/modules/features/roles/domain/repository/permission.repository.ts';
 import type { CreateGrantInput } from '@/modules/features/roles/domain/repository/permission.repository.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type {
-  PrincipalEntity,
-  PermissionScope,
-} from '@platform/authz/domain/structs/permission.struct.ts';
+import type { PrincipalEntity, PermissionScope, } from '@platform/authz';
 import type { GrpcPermissionRemoteDataSource } from '@/modules/features/roles/infrastructure/data/grpc-permission-remote.data-source.ts';
 import type {
   RoleCreationData,
@@ -12,7 +9,7 @@ import type {
 } from '@/modules/features/roles/domain/entities/role.entity.ts';
 import type { GrantEntity } from '@/modules/features/roles/domain/entities/grant.entity.ts';
 import type { GrantableRoleEntity } from '@/modules/features/roles/domain/entities/grantable-role.entity.ts';
-import type { EffectivePermissionsEntity } from '@platform/authz/domain/entities/effective-permissions.entity.ts';
+import type { EffectivePermissionsEntity } from '@platform/authz';
 import type { PermissionVocabularyEntity } from '@/modules/features/roles/domain/entities/permission-vocabulary.entity.ts';
 import { GrpcRoleMapper } from '@/modules/features/roles/infrastructure/repository/mappers/grpc-role.mapper.ts';
 import { GrpcGrantMapper } from '@/modules/features/roles/infrastructure/repository/mappers/grpc-grant.mapper.ts';

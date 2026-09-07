@@ -1,5 +1,5 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
-import type { UserEntity } from '@/modules/features/user/domain/entities/user.entity.ts';
+import type { UserEntity } from '@/modules/features/user';
 import type { OrganizationEntity } from '@/modules/features/organization/domain/entities/organization.entity.ts';
 
 export interface OrganizationRepository {

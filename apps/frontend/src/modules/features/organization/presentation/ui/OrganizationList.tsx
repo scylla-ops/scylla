@@ -1,7 +1,7 @@
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { type ComponentType, type ReactNode, useCallback } from 'react';
 import { useState } from 'react';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { ContextItem } from '@shared/presentation/ui/layout/ContextItem.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { Building2, Pencil, Trash, Users } from 'lucide-react';
@@ -11,8 +11,8 @@ import { useDeleteOrganization } from '@/modules/features/organization/presentat
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { Trans } from '@lingui/react/macro';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';
-import { Can } from '@platform/authz/presentation/ui/Can.tsx';
+import { Permission } from '@platform/authz';
+import { Can } from '@platform/authz';
 import { useNavigate } from 'react-router-dom';
 
 interface OrganizationListProps {

@@ -1,8 +1,14 @@
 /**
  * Architecture rules for src/modules, as a machine check of the contract in
- * CLAUDE.md. These rules describe the architecture we are converging on, so
- * some of them still report violations today — CI runs this in reporting mode
- * until the module graph is cycle-free, then it becomes a gate.
+ * CLAUDE.md. Every rule below is a hard gate in CI (`.github/workflows/frontend.yml`);
+ * none of them is aspirational.
+ *
+ * They come in two families:
+ *  - *direction*  — who may depend on whom (`shared-is-generic`,
+ *    `platform-knows-no-feature`, `domain-is-pure`, …);
+ *  - *surface*    — how they may reach it. A module is reachable only through
+ *    its `index.ts`, so its internals stay free to move (`feature-api-only`,
+ *    `platform-api-only`, …).
  *
  * `pnpm depcruise`       -> validate, human-readable
  * `pnpm depcruise:graph` -> SVG of the module graph (needs graphviz)
@@ -26,6 +32,98 @@ module.exports = {
         // -> (type only) x.module.ts` is expected and is precisely what makes the
         // page a separate chunk. Only flag cycles where every edge is static.
         viaOnly: { dependencyTypesNot: ['dynamic-import'] },
+      },
+    },
+
+    {
+      name: 'feature-api-only',
+      comment:
+        "A feature is reachable only through its `index.ts`. Reaching into another " +
+        "feature's `domain/`, `presentation/` or `infrastructure/` makes every file in " +
+        'it public, so no internal can be moved without breaking someone else — and it ' +
+        'is how the module graph became a single strongly connected component before.',
+      severity: 'error',
+      from: { path: '^src/modules/features/([^/]+)/' },
+      to: {
+        path: '^src/modules/features/[^/]+/.+',
+        pathNot: [
+          // its own internals
+          '^src/modules/features/$1/',
+          // another feature's public API
+          '^src/modules/features/[^/]+/index[.]ts$',
+        ],
+      },
+    },
+
+    {
+      name: 'shell-uses-feature-api',
+      comment:
+        'The shell composes features, so it may import them — but through the same public ' +
+        'API everyone else uses. The one extra door is `<feature>.module.ts`, which the ' +
+        'registry imports on purpose (see `module-declaration-is-private`).',
+      severity: 'error',
+      from: { path: '^src/modules/(core|layout)/' },
+      to: {
+        path: '^src/modules/features/[^/]+/.+',
+        pathNot: [
+          '^src/modules/features/[^/]+/index[.]ts$',
+          '^src/modules/features/[^/]+/[^/]+[.]module[.]ts$',
+        ],
+      },
+    },
+
+    {
+      name: 'platform-api-only',
+      comment:
+        'Same contract as features, for the capabilities below them: import `@platform/authz`, ' +
+        'not `@platform/authz/presentation/stores/…`.',
+      severity: 'error',
+      from: { path: '^src/modules/(features|core|layout)/' },
+      to: {
+        path: '^src/modules/platform/[^/]+/.+',
+        pathNot: '^src/modules/platform/[^/]+/index[.]ts$',
+      },
+    },
+
+    {
+      name: 'platform-capability-api-only',
+      comment:
+        'Platform capabilities are modules too: `routing` reaches `authz` through its ' +
+        'public API, not through its internals.',
+      severity: 'error',
+      from: { path: '^src/modules/platform/([^/]+)/' },
+      to: {
+        path: '^src/modules/platform/[^/]+/.+',
+        pathNot: ['^src/modules/platform/$1/', '^src/modules/platform/[^/]+/index[.]ts$'],
+      },
+    },
+
+    {
+      name: 'module-declaration-is-private',
+      comment:
+        '`<feature>.module.ts` instantiates the module\'s infrastructure at import time, so ' +
+        'importing it eagerly pulls that feature\'s gRPC client into your chunk. Only the ' +
+        'registry (`core/di/registry.ts`) and the feature itself may.',
+      severity: 'error',
+      from: { path: '^src/modules/features/([^/]+)/' },
+      to: {
+        path: '^src/modules/features/[^/]+/[^/]+[.]module[.]ts$',
+        pathNot: '^src/modules/features/$1/',
+      },
+    },
+
+    {
+      name: 'domain-accessor-is-private',
+      comment:
+        '`use-<feature>-domain.ts` is where a feature pins the type of its own injection. ' +
+        'Another module calling it would query that feature\'s repository directly — ' +
+        'bypassing its hooks and forking the query cache into two keys for one resource. ' +
+        'Consume the feature\'s hooks through its `index.ts` instead.',
+      severity: 'error',
+      from: { path: '^src/modules/features/([^/]+)/' },
+      to: {
+        path: '^src/modules/features/[^/]+/presentation/hooks/use-[^/]+-domain[.]ts$',
+        pathNot: '^src/modules/features/$1/',
       },
     },
 

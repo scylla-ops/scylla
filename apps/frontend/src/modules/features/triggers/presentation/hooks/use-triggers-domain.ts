@@ -1,4 +1,4 @@
-import { useModuleDomain } from '@platform/di/index.ts';
+import { useModuleDomain } from '@platform/di';
 import type { TriggersModule } from '../../triggers.module.ts';
 
 /** Typed access to the triggers module's use cases. */

@@ -1,8 +1,5 @@
 import { useMatches, Link, useParams } from 'react-router-dom';
-import type {
-  BreadcrumbParams,
-  RouteHandle,
-} from '@platform/routing/route-handle.struct.ts';
+import type { BreadcrumbParams, RouteHandle, } from '@platform/routing';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,7 +11,7 @@ import {
 import { ChevronRight } from 'lucide-react';
 import React from 'react';
 import { useLingui } from '@lingui/react/macro';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 
 export const ScyllaBreadcrumbs = () => {
   const matches = useMatches();

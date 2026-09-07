@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
-import { useScyllaNavigate } from '@platform/context/use-scylla-navigate.ts';
-import { useContextStore } from '@platform/context/use-context.store.ts';
+import { useScyllaNavigate } from '@platform/context';
+import { useContextStore } from '@platform/context';
 
 interface EditPipelineParams {
   id: string;

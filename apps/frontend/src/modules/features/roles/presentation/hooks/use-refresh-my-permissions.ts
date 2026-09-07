@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useRolesDomain } from '@/modules/features/roles/presentation/hooks/use-roles-domain.ts';
-import { usePermissionsStore } from '@platform/authz/presentation/stores/use-permissions.store.ts';
+import { usePermissionsStore } from '@platform/authz';
 
 /**
  * Fetches the signed-in user's effective permissions and writes them into the
