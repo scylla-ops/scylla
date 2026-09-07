@@ -21,6 +21,10 @@ msgstr "Télécharger"
 msgid "Learn more"
 msgstr "En savoir plus"
 
+#: src/modules/features/marketplace/marketplace.module.ts:29
+msgid "Marketplace"
+msgstr "Marketplace"
+
 #: src/modules/features/marketplace/presentation/ui/MarketplaceTopBar.tsx:16
 msgid "Search"
 msgstr "Rechercher"

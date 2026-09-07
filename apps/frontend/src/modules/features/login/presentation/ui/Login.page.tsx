@@ -7,11 +7,11 @@ import {
   CardTitle,
 } from '@/modules/shared/presentation/ui/shadcn';
 import LogoScylla from '@/assets/logo_scylla.png';
-import LogoScyllaDark from '@/assets/Scylla_Beta_Logo_Black_Theme.png';
+import LogoScyllaDark from '@/assets/logo_scylla_dark.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/features/login/presentation/hooks/use-login.ts';
 import { type FormEvent } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 
 /**
  * The wordmark is flat black, unreadable on the dark background — the dark
@@ -37,17 +37,11 @@ export const LoginPage = () => {
     login({ login: loginValue, password: passwordValue });
   };
 
-  if (isPending || isSuccess)
-    return (
-      <div className='flex flex-col items-center justify-center h-screen gap-4'>
-        <ScyllaLogo className='w-20 h-20 object-contain' />
-        <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
-      </div>
-    );
+  if (isPending || isSuccess) return <ScyllaLoadingScreen />;
 
   return (
     <div className={'flex items-center flex-col'}>
-      <ScyllaLogo className='w-1/6 h-1/6' />
+      <ScyllaLogo className='w-2/6 h-2/6' />
       <Card className='w-full max-w-sm'>
         <CardHeader>
           <CardTitle>

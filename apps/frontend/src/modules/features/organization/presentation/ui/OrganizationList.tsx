@@ -1,8 +1,8 @@
 import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
 import { type ComponentType, type ReactNode, useCallback } from 'react';
 import { useState } from 'react';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { ContextItem } from '@/modules/layout/presentation/ui/context-selector/ContextItem.tsx';
+import { useContextStore } from '@platform/context';
+import { ContextItem } from '@shared/presentation/ui/layout/ContextItem.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { Building2, Pencil, Trash, Users } from 'lucide-react';
 import { IconButton } from '@shared/presentation/ui';
@@ -11,9 +11,8 @@ import { useDeleteOrganization } from '@/modules/features/organization/presentat
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { Trans } from '@lingui/react/macro';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
+import { Permission } from '@platform/authz';
+import { Can } from '@platform/authz';
 import { useNavigate } from 'react-router-dom';
 
 interface OrganizationListProps {
@@ -41,10 +40,10 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
     if (deleteOrgId !== currentOrganizationId) return;
 
     const otherOrganization = organizations?.find(
-      org => idValue(org.organizationId) !== deleteOrgId,
+      org => org.id !== deleteOrgId,
     );
     setOrganization(
-      otherOrganization ? idValue(otherOrganization.organizationId) : null,
+      otherOrganization ? otherOrganization.id : null,
       otherOrganization?.name ?? null,
     );
     if (otherOrganization) {
@@ -78,9 +77,9 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
       {organizations.map(organisation => (
         <Wrapper
           className='group rounded-md transition-colors hover:bg-accent/70'
-          key={idValue(organisation.organizationId)}
+          key={organisation.id}
           onSelect={() => {
-            setOrganization(idValue(organisation.organizationId), organisation.name);
+            setOrganization(organisation.id, organisation.name);
             void navigate(`/${slugifyOrgName(organisation.name)}/dashboard`);
           }}
         >
@@ -95,7 +94,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
             <div className='flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
               <Can
                 permission={Permission.LIST_ORGANIZATION_MEMBERS}
-                target={{ organizationId: idValue(organisation.organizationId) }}
+                target={{ organizationId: organisation.id }}
               >
                 <IconButton
                   icon={Users}
@@ -105,7 +104,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
                     // The members page reads the organization from the context
                     // store, so looking at another org's members means moving
                     // to it — the row's own click does the same thing.
-                    setOrganization(idValue(organisation.organizationId), organisation.name);
+                    setOrganization(organisation.id, organisation.name);
                     void navigate(`/${slugifyOrgName(organisation.name)}/members`);
                   }}
                   className='h-7 w-7'
@@ -114,7 +113,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
               </Can>
               <Can
                 permission={Permission.UPDATE_ORGANIZATION}
-                target={{ organizationId: idValue(organisation.organizationId) }}
+                target={{ organizationId: organisation.id }}
               >
                 <IconButton
                   icon={Pencil}
@@ -122,7 +121,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
                   onClick={e => {
                     e.stopPropagation();
                     setEditOrg({
-                      id: idValue(organisation.organizationId),
+                      id: organisation.id,
                       name: organisation.name,
                       description: organisation.description,
                     });
@@ -133,14 +132,14 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
               </Can>
               <Can
                 permission={Permission.DELETE_ORGANIZATION}
-                target={{ organizationId: idValue(organisation.organizationId) }}
+                target={{ organizationId: organisation.id }}
               >
                 <IconButton
                   icon={Trash}
                   tooltip={<Trans>Delete</Trans>}
                   onClick={e => {
                     e.stopPropagation();
-                    setDeleteOrgId(idValue(organisation.organizationId));
+                    setDeleteOrgId(organisation.id);
                   }}
                   className='h-7 w-7 hover:text-destructive hover:bg-destructive/10'
                   iconClassName='h-3.5 w-3.5'

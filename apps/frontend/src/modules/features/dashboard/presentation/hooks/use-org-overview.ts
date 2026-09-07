@@ -1,91 +1,80 @@
-import { useQuery, useQueries } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
-import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useAuthorization } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { useContextStore } from '@platform/context';
+import { Permission, useAuthorization } from '@platform/authz';
+import { useOrganizationProjects } from '@/modules/features/project';
+import { useOrganizationPipelines, type PipelineMetadata } from '@/modules/features/pipeline';
+import { useOrganizationJobs, type JobsSummary } from '@/modules/features/jobs';
 
+/** A pipeline carrying the name of the project it belongs to. */
 export type PipelineWithProject = PipelineMetadata & { projectName: string };
 
 /** Project ids the user may open — the project route needs this same permission. */
 export type ProjectAccess = (projectId: string) => boolean;
 
-export const PROJECTS_OVERVIEW_QUERY_KEY = (organizationId: string | null) =>
-  ['dashboard', 'projects', organizationId] as const;
-
-export const PIPELINES_OVERVIEW_QUERY_KEY = (projectId: string) =>
-  ['dashboard', 'pipelines', projectId] as const;
-
 /**
- * The organization-wide overview behind the dashboard: every project the user
- * can see, and the pipelines of those projects.
+ * The organization-wide overview behind the dashboard: the projects the user
+ * can see, every pipeline in the organization, and the recent run activity.
  *
- * The project list needs no client-side filter — the backend returns only what
- * the caller may read. The pipeline fan-out does: `ListPipelinesByProject` is
- * enforced per project, so asking about a project the user holds no such grant
- * on is a guaranteed `PERMISSION_DENIED`. That is not harmless here — the app's
- * global `queryCache.onError` toasts every failed query, so an unguarded
- * fan-out means one error toast per inaccessible project on each page visit.
- * Gating `enabled` on `can(...)` keeps those requests from being made at all.
+ * Each half comes from the module that owns it, through its public API — the
+ * dashboard composes, it does not query.
+ *
+ * All three calls are organization-scoped and filtered server-side, so there is
+ * no client-side permission gate on the data itself. That replaced a
+ * per-project fan-out which cost one request per project and produced one
+ * `PERMISSION_DENIED` toast for every project the caller could not read.
+ * `canOpenProject` remains, for a different question: whether a row the user
+ * may *see* leads somewhere they may *enter*.
  */
 export const useOrgOverview = () => {
-  const { getProjects } = useDependencies().project;
-  const { getPipelinesMetadata } = useDependencies().pipeline;
   const organizationId = useContextStore(state => state.organization.id);
-  const { can, ready } = useAuthorization();
+  const { can } = useAuthorization();
 
-  const projectsQuery = useQuery({
-    queryKey: PROJECTS_OVERVIEW_QUERY_KEY(organizationId),
-    queryFn: async () =>
-      (await getProjects.execute(organizationId!, { page: 1, pageSize: 100 })).unwrap(),
-    enabled: !!organizationId,
-    staleTime: 30_000,
-  });
+  const {
+    projects,
+    isLoading: projectsLoading,
+    isError: projectsError,
+  } = useOrganizationProjects(organizationId);
 
-  const projects: ProjectEntity[] = projectsQuery.data?.projects ?? [];
+  const {
+    pipelines,
+    isLoading: pipelinesLoading,
+    isPartialWindow: pipelinesTruncated,
+  } = useOrganizationPipelines(organizationId);
 
-  // Per project, not for the ambient context: `can` defaults its target to the
-  // *currently selected* project, which on an org-level page is either unset or
-  // left over from wherever the user was last.
-  const canListPipelines = (projectId: string) =>
-    can(Permission.LIST_PIPELINES_BY_PROJECT, { projectId });
+  const {
+    jobs: recentJobs,
+    summary: runs,
+    totalCount: totalRuns,
+    isLoading: runsLoading,
+    isPartialWindow: runsTruncated,
+  } = useOrganizationJobs(organizationId);
 
-  const pipelineQueries = useQueries({
-    queries: projects.map(project => ({
-      queryKey: PIPELINES_OVERVIEW_QUERY_KEY(project.id),
-      queryFn: async () => {
-        const result = await getPipelinesMetadata.execute(project.id, { page: 1, pageSize: 100 });
-        return {
-          projectId: project.id,
-          projectName: project.name,
-          pipelines: result.unwrap().items,
-        };
-      },
-      staleTime: 30_000,
-      // Permissions unknown → ask nothing, rather than ask and be denied.
-      enabled: ready && canListPipelines(project.id),
-    })),
-  });
+  // The organization listing carries `projectId` but not the project's name,
+  // so the label is joined here rather than asked of the server again.
+  const projectNameById = new Map(projects.map(project => [project.id, project.name]));
 
-  // Until permissions land every query above is disabled, so "no query is
-  // loading" would otherwise read as "no pipelines" and flash an empty state.
-  const pipelinesLoading = !ready || pipelineQueries.some(q => q.isLoading);
-
-  const allPipelines: PipelineWithProject[] = pipelineQueries.flatMap(q => {
-    const data = q.data;
-    if (!data) return [];
-    return data.pipelines.map(p => ({ ...p, projectName: data.projectName }));
-  });
+  const allPipelines: PipelineWithProject[] = pipelines.map(pipeline => ({
+    ...pipeline,
+    projectName: projectNameById.get(pipeline.projectId) ?? '',
+  }));
 
   return {
     projects,
-    projectsLoading: projectsQuery.isLoading,
-    projectsError: projectsQuery.isError,
+    projectsLoading,
+    projectsError,
     allPipelines,
     pipelinesLoading,
+    /** More pipelines exist than the page fetched — counts are a floor. */
+    pipelinesTruncated,
+    /** Outcome mix over the recent-runs window. */
+    runs: runs satisfies JobsSummary,
+    recentJobs,
+    totalRuns,
+    runsLoading,
+    /** The summary covers a window, not the whole history — say so in the UI. */
+    runsTruncated,
     organizationId,
     /** Whether opening this project would land on something the user may see. */
-    canOpenProject: canListPipelines satisfies ProjectAccess,
+    canOpenProject: ((projectId: string) =>
+      can(Permission.LIST_PIPELINES_BY_PROJECT, { projectId })) satisfies ProjectAccess,
   };
 };

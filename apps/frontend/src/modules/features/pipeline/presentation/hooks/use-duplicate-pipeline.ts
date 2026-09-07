@@ -1,13 +1,13 @@
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { usePipelineDomain } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-domain.ts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/presentation/utils/toast.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useContextStore } from '@platform/context';
+import { useScyllaNavigate } from '@platform/context';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 export const useDuplicatePipeline = () => {
-  const { createPipeline, getPipeline } = useDependencies().pipeline;
+  const { pipelineRepository } = usePipelineDomain();
   const queryClient = useQueryClient();
   const currentProject = useContextStore(state => state.project);
   const { goToProject } = useScyllaNavigate();
@@ -15,10 +15,10 @@ export const useDuplicatePipeline = () => {
 
   return useMutation({
     mutationFn: async (pipelineId: string) => {
-      const pipelineResult = await getPipeline.execute(pipelineId);
+      const pipelineResult = await pipelineRepository.getById(pipelineId);
       const pipeline = pipelineResult.unwrap();
 
-      const createResult = await createPipeline.execute({
+      const createResult = await pipelineRepository.create({
         name: t`${pipeline.name} (copy)`,
         projectId: pipeline.projectId,
         nodes: pipeline.nodes,
@@ -29,7 +29,7 @@ export const useDuplicatePipeline = () => {
       void queryClient.invalidateQueries({ queryKey: ['pipelines'] });
       toast.success(i18n._(ToastMessages.PIPELINE_DUPLICATE));
       if (currentProject.name && currentProject.id) {
-        goToProject({ id: currentProject.id, name: currentProject.name });
+        goToProject(currentProject.id, currentProject.name);
       }
     },
   });

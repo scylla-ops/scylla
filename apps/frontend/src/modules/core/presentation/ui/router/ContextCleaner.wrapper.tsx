@@ -1,7 +1,7 @@
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts';
+import { useProjects } from '@/modules/features/project';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 /**Middleware used to clean the context store depending on the actual route */

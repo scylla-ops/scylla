@@ -1,4 +1,4 @@
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { AppServiceClient } from '@/generated/scylla/app/v1/app.client.ts';
 import type {
   AppEntity,
@@ -17,7 +17,7 @@ import { GrpcAppMapper } from './grpc-app.mapper.ts';
 export type AppsRemoteDataSource = AppsRepository;
 
 export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {
-  constructor(private grpcTransport: CoreGrpcTransport) {}
+  constructor(private grpcTransport: ScyllaGrpcTransport) {}
 
   listApps(organizationId: string): Promise<ScyllaResult<AppEntity[]>> {
     return ScyllaResult.tryAsync(async () => {

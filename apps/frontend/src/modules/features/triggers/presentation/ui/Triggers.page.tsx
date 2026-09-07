@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { SecretRevealDialog } from '@shared/presentation/ui';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { usePipelineTriggers } from '@/modules/features/triggers/presentation/hooks/use-pipeline-triggers.ts';
 import {
   TriggersHeader,
@@ -65,12 +65,7 @@ export const TriggersPage = () => {
 
       <div className='overflow-hidden'>
         {triggers.length > 0 ? (
-          <TriggersTable
-            triggers={triggers}
-            pipelineId={pipelineId}
-            projectId={projectId}
-            pipelineName={pipelineName}
-          />
+          <TriggersTable triggers={triggers} pipelineId={pipelineId} pipelineName={pipelineName} />
         ) : (
           <div className='flex items-center justify-center min-h-[300px]'>
             <div className='text-center space-y-2'>

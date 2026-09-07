@@ -5,7 +5,7 @@ import { Skeleton } from '@shadcn/skeleton.tsx';
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';
-import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
+import type { JobEntity } from '@/modules/features/jobs';
 
 type PipelineChartProps = {
   maxJobs?: number;

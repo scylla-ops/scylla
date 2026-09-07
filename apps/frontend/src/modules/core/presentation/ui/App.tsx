@@ -5,40 +5,18 @@ import { I18nProvider } from '@lingui/react';
 import { useLingui } from '@lingui/react/macro';
 import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
+import { DependenciesProvider } from '@platform/di';
+import { dependencies } from '@core/di/registry.ts';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
-import type { Messages } from '@lingui/core';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Toaster } from '@shadcn/sonner.tsx';
-import { initializeAppLocale } from '@shared/presentation/utils/i18n.ts';
 
-// Every compiled catalog under src/modules is picked up by convention, so a new
-// module (or a new locale) is live as soon as lingui.config.js knows about it.
-// Listing them by hand is how `core` ended up extracted but never loaded.
-const catalogs = import.meta.glob<{ messages: Messages }>('../../../**/locales/*/messages.ts', {
-  eager: true,
-});
-
-const LOCALE_FROM_PATH = /\/locales\/([^/]+)\/messages\.ts$/;
-
-const messagesByLocale = Object.entries(catalogs).reduce<Record<string, Messages>>(
-  (acc, [path, module]) => {
-    const locale = LOCALE_FROM_PATH.exec(path)?.[1];
-    if (locale) acc[locale] = { ...acc[locale], ...module.messages };
-    return acc;
-  },
-  {},
-);
-
-for (const [locale, messages] of Object.entries(messagesByLocale)) {
-  i18n.load(locale, messages);
-}
-
-initializeAppLocale();
+// Catalogs are loaded and the locale activated in `main.tsx`, before the first
+// render — see `initializeAppLocale`.
 
 //todo: maybe in production, console error only network or non scylla error ?
 //todo: domain errors should be only be toasted by module itself
@@ -127,7 +105,7 @@ function App() {
       >
         <I18nProvider i18n={i18n}>
           <QueryClientProvider client={queryClient}>
-            <DependenciesProvider>
+            <DependenciesProvider registry={dependencies}>
               <ThemeToggle />
               <RouterProvider router={CoreRouter} />
               <Toaster />

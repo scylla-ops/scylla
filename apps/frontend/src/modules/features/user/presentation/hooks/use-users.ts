@@ -1,4 +1,4 @@
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useUserDomain } from '@/modules/features/user/presentation/hooks/use-user-domain.ts';
 import { useQuery } from '@tanstack/react-query';
 
 /**
@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
  * `enabled: false` rather than asking for a denial.
  */
 export const useUsers = (options: { enabled?: boolean } = {}) => {
-  const { getUsers } = useDependencies().user;
+  const { userRepository } = useUserDomain();
 
   const {
     data: users,
@@ -16,7 +16,7 @@ export const useUsers = (options: { enabled?: boolean } = {}) => {
   } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      return (await getUsers.execute()).unwrap();
+      return (await userRepository.getAll()).unwrap();
     },
     enabled: options.enabled ?? true,
   });

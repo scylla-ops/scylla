@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useTriggersDomain } from '@/modules/features/triggers/presentation/hooks/use-triggers-domain.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
@@ -11,12 +11,12 @@ import { TRIGGERS_QUERY_KEY } from '@/modules/features/triggers/presentation/hoo
  * the triggers list (to refresh `lastFiredAt`/`lastResult`).
  */
 export const useFireTriggerNow = (pipelineId: string) => {
-  const { fireTriggerNow } = useDependencies().triggers;
+  const { triggersRepository } = useTriggersDomain();
   const queryClient = useQueryClient();
   const { i18n } = useLingui();
 
   return useMutation({
-    mutationFn: async (triggerId: string) => (await fireTriggerNow.execute(triggerId)).unwrap(),
+    mutationFn: async (triggerId: string) => (await triggersRepository.fireNow(triggerId)).unwrap(),
     onSuccess: () => {
       toast.success(i18n._(ToastMessages.TRIGGER_FIRED));
       void queryClient.invalidateQueries({ queryKey: ['jobs', 'pipeline', pipelineId] });

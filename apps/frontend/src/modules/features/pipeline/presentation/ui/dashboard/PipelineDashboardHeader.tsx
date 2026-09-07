@@ -1,13 +1,13 @@
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useDeletePipeline } from '@/modules/features/pipeline/presentation/hooks/use-delete-pipeline.ts';
 import { Button } from '@shadcn';
 import { KeyIcon, Users } from 'lucide-react';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { useCan } from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
-import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
+import { Can } from '@platform/authz';
 
 interface PipelineDashboardHeaderProps {
   numberOfPipelines: number;

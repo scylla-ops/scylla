@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { Folder, Pencil } from 'lucide-react';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import { Trans } from '@lingui/react/macro';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
@@ -10,8 +10,8 @@ import { cn } from '@shared/presentation/utils';
 import { Checkbox } from '@shadcn/checkbox.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { IconButton } from '@shared/presentation/ui';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import { Can } from '@/modules/features/permission/presentation/ui/authorization/Can.tsx';
+import { Permission } from '@platform/authz';
+import { Can } from '@platform/authz';
 
 type ProjectCardProps = {
   project: ProjectEntity;
@@ -26,7 +26,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
   return (
     <>
       <Card
-        onClick={() => navigate.goToProject(project)}
+        onClick={() => navigate.goToProject(project.id, project.name)}
         className={cn(
           'group cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-primary/50 active:scale-[0.98] h-full flex flex-col',
           isSelected && 'ring-2 ring-primary border-primary',

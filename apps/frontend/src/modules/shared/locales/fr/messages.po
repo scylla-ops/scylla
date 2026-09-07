@@ -145,8 +145,8 @@ msgid "Job queued — no agent connected"
 msgstr "Travail mis en file d'attente — aucun agent connecté"
 
 #: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:41
-msgid "Jobs are queued — check that your agents are connected."
-msgstr "Des jobs sont en file d'attente — vérifiez que vos agents sont bien connectés."
+#~ msgid "Jobs are queued — check that your agents are connected."
+#~ msgstr "Des jobs sont en file d'attente — vérifiez que vos agents sont bien connectés."
 
 #: src/modules/shared/utils/toast-messages.ts:29
 #~ msgid "Member added"
@@ -166,8 +166,8 @@ msgid "Next"
 msgstr "Suivant"
 
 #: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:52
-msgid "No agent connected — queued jobs are waiting for one."
-msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
+#~ msgid "No agent connected — queued jobs are waiting for one."
+#~ msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
 
 #: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:34
 msgid "No data"
@@ -286,8 +286,8 @@ msgid "Server unreachable"
 msgstr "Serveur injoignable"
 
 #: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:59
-msgid "Set up an agent"
-msgstr "Configurer un agent"
+#~ msgid "Set up an agent"
+#~ msgstr "Configurer un agent"
 
 #: src/modules/shared/presentation/ui/data-display/Pagination.tsx:81
 msgid "Showing {start}-{end} of {totalCount}"

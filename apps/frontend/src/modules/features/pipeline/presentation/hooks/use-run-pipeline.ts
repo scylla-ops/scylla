@@ -1,16 +1,16 @@
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { usePipelineDomain } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-domain.ts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
-import { JOBS_QUERY_KEY } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-jobs.ts';
-import { useAgents } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { JOBS_QUERY_KEY } from '@/modules/features/jobs';
+import { useAgents } from '@/modules/features/agents';
+import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { useNavigate } from 'react-router-dom';
 
 export const useRunPipeline = () => {
-  const { runPipeline } = useDependencies().pipeline;
+  const { pipelineRepository } = usePipelineDomain();
   const queryClient = useQueryClient();
   const { agents, canListAgents } = useAgents();
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export const useRunPipeline = () => {
   const { i18n } = useLingui();
 
   return useMutation({
-    mutationFn: async (pipelineId: string) => (await runPipeline.execute(pipelineId)).unwrap(),
+    mutationFn: async (pipelineId: string) => (await pipelineRepository.run(pipelineId)).unwrap(),
     onSuccess: (_data, pipelineId) => {
       // The run itself succeeded either way — the job is created and queued.
       // But with no connected agent it won't start, so say it up front

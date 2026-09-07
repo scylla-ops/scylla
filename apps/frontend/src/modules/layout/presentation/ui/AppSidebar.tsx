@@ -1,14 +1,5 @@
 import * as React from 'react';
-import {
-  Building2,
-  ShoppingCartIcon,
-  UsersIcon,
-  UsersRound,
-  WorkflowIcon,
-  HardDriveIcon,
-  ShieldIcon,
-  LayoutDashboard,
-} from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
 import {
   NAV_SECTION_CARD_CLASS,
@@ -25,84 +16,55 @@ import {
 import { NavUser } from '@/modules/layout/presentation/ui/NavUser.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { ContextSelector } from '@/modules/layout/presentation/ui/context-selector/ContextSelector.tsx';
-import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
-import { AddOrganizationDialog } from '@/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx';
+import { OrganizationList } from '@/modules/features/organization';
+import { AddOrganizationDialog } from '@/modules/features/organization';
 import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-selector/CurrentContextDisplay.tsx';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { useLingui } from '@lingui/react/macro';
 import type { NavSection } from '@/modules/layout/presentation/structs/nav-section.struct.ts';
+import type { NavEntry } from '@platform/routing';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
-import {
-  useAuthorization,
-  useCan,
-} from '@/modules/features/permission/presentation/hooks/use-authorization.ts';
+import { Permission } from '@platform/authz';
+import { useAuthorization, useCan, } from '@platform/authz';
 import { LanguageSelector } from '@/modules/layout/presentation/ui/LanguageSelector.tsx';
 
+/**
+ * Turns the entries the modules declared into rendered sidebar sections.
+ *
+ * The shell owns only what is genuinely shell here — the organization prefix,
+ * the section cards, and hiding what the user may not reach. *Which* links exist
+ * is each module's own `di/*.module.ts` declaration, the same one the router
+ * reads, so a link can no longer point at a page that will deny you.
+ */
 const useNavSections = (
+  entries: readonly NavEntry[],
   organizationHeader: React.ReactNode,
 ): { sections: NavSection[]; ready: boolean } => {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
 
   const orgName = useContextStore(state => state.organization.name);
   const prefix = orgName ? `/${slugifyOrgName(orgName)}` : '';
   const { can, ready } = useAuthorization();
 
+  const itemsOf = (section: NavEntry['section']) =>
+    entries
+      .filter(entry => entry.section === section)
+      .map(entry => ({
+        title: i18n._(entry.title),
+        url: `${prefix}/${entry.url}`,
+        icon: entry.icon,
+        permission: entry.permission,
+      }));
+
   const sections: NavSection[] = [
     {
       title: t`Organization`,
       header: organizationHeader,
-      items: [
-        {
-          title: t`Dashboard`,
-          url: `${prefix}/dashboard`,
-          icon: LayoutDashboard,
-          permission: Permission.READ_ORGANIZATION,
-        },
-        {
-          title: t`Projects`,
-          url: `${prefix}/projects`,
-          icon: WorkflowIcon,
-          permission: Permission.READ_ORGANIZATION,
-        },
-        {
-          // Who belongs to the *current* organization — org-scoped, unlike the
-          // system-wide directory below it.
-          title: t`Members`,
-          url: `${prefix}/members`,
-          icon: UsersRound,
-          permission: Permission.LIST_ORGANIZATION_MEMBERS,
-        },
-        {
-          title: t`Agents`,
-          url: `${prefix}/agents`,
-          icon: HardDriveIcon,
-          permission: Permission.LIST_AGENTS,
-        },
-        {
-          title: t`Marketplace`,
-          url: `${prefix}/marketplace`,
-          icon: ShoppingCartIcon,
-          permission: Permission.LIST_APPS_BY_ORGANIZATION,
-        },
-      ],
+      items: itemsOf('organization'),
     },
     {
       title: t`System`,
-      items: [
-        {
-          title: t`Users`,
-          url: `${prefix}/users`,
-          icon: UsersIcon,
-          permission: Permission.LIST_USERS,
-        },
-        {
-          title: t`Roles`,
-          url: `${prefix}/roles`,
-          icon: ShieldIcon,
-          permission: Permission.MANAGE_ROLES,
-        },
-      ],
+      items: itemsOf('system'),
     },
   ];
 
@@ -121,7 +83,12 @@ const useNavSections = (
   };
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  /** Declared by the modules, handed down by the router — see `navEntriesFor`. */
+  navEntries: readonly NavEntry[];
+}
+
+export function AppSidebar({ navEntries, ...props }: AppSidebarProps) {
   const { t } = useLingui();
   const organization = useContextStore(state => state.organization);
   // Creating an organization isn't scoped to one — it's a system capability.
@@ -145,7 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     />
   );
 
-  const { sections: navSections, ready } = useNavSections(organizationSelector);
+  const { sections: navSections, ready } = useNavSections(navEntries, organizationSelector);
 
   return (
     <Sidebar variant={'inset'} collapsible='icon' {...props}>

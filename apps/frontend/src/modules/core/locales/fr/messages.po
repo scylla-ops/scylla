@@ -14,72 +14,72 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:221
-msgid "Agent details"
-msgstr "Détails de l'agent"
+#~ msgid "Agent details"
+#~ msgstr "Détails de l'agent"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:210
-msgid "Agents"
-msgstr "Agents"
+#~ msgid "Agents"
+#~ msgstr "Agents"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:139
-msgid "Create"
-msgstr "Créer"
+#~ msgid "Create"
+#~ msgstr "Créer"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:54
-msgid "Dashboard"
-msgstr "Tableau de bord"
+#~ msgid "Dashboard"
+#~ msgstr "Tableau de bord"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:247
-msgid "Detail"
-msgstr "Détail"
+#~ msgid "Detail"
+#~ msgstr "Détail"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:153
-msgid "Edit"
-msgstr "Modifier"
+#~ msgid "Edit"
+#~ msgstr "Modifier"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:168
-msgid "Jobs"
-msgstr "Jobs"
+#~ msgid "Jobs"
+#~ msgstr "Jobs"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:67
 #: src/modules/core/presentation/ui/router/Core.router.tsx:117
-msgid "Members"
-msgstr "Membres"
+#~ msgid "Members"
+#~ msgstr "Membres"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:151
 #: src/modules/core/presentation/ui/router/Core.router.tsx:166
 #: src/modules/core/presentation/ui/router/Core.router.tsx:181
-msgid "Pipeline"
-msgstr "Pipeline"
+#~ msgid "Pipeline"
+#~ msgstr "Pipeline"
 
-#: src/modules/core/presentation/ui/router/Core.router.tsx:96
+#: src/modules/core/presentation/ui/router/Core.router.tsx:57
 msgid "Project"
 msgstr "Projet"
 
-#: src/modules/core/presentation/ui/router/Core.router.tsx:78
+#: src/modules/core/presentation/ui/router/Core.router.tsx:47
 msgid "Projects"
 msgstr "Projets"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:261
-msgid "Roles"
-msgstr "Rôles"
+#~ msgid "Roles"
+#~ msgstr "Rôles"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:128
-msgid "Secrets"
-msgstr "Secrets"
+#~ msgid "Secrets"
+#~ msgstr "Secrets"
 
-#: src/modules/core/presentation/ui/App.tsx:106
+#: src/modules/core/presentation/ui/App.tsx:84
 msgid "Toggle dark mode"
 msgstr "Basculer le mode sombre"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:183
-msgid "Triggers"
-msgstr "Déclencheurs"
+#~ msgid "Triggers"
+#~ msgstr "Déclencheurs"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:245
-msgid "User"
-msgstr "Utilisateur"
+#~ msgid "User"
+#~ msgstr "Utilisateur"
 
 #: src/modules/core/presentation/ui/router/Core.router.tsx:229
-msgid "Users"
-msgstr "Utilisateurs"
+#~ msgid "Users"
+#~ msgstr "Utilisateurs"

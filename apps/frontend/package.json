@@ -14,6 +14,9 @@
     "compile": "lingui compile --typescript",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
+    "depcruise": "depcruise src --config .dependency-cruiser.cjs",
+    "depcruise:cycles": "depcruise src --config .dependency-cruiser.cjs --output-type json | node scripts/check-module-cycles.mjs",
+    "depcruise:graph": "depcruise src --config .dependency-cruiser.cjs --output-type archi | dot -T svg > dependency-graph.svg",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -72,6 +75,7 @@
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react-swc": "^4.0.1",
     "autoprefixer": "^10.4.21",
+    "dependency-cruiser": "^18.2.0",
     "eslint": "^9.33.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

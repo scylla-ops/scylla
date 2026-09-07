@@ -1,5 +1,6 @@
 import type {
   CreatePipelineRequest,
+  ListOrganizationPipelinesResponse,
   ListProjectPipelinesResponse,
   Pipeline,
   PipelineNode,
@@ -12,6 +13,10 @@ export interface PipelineRemoteDataSource {
     projectId: string,
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<ListProjectPipelinesResponse>>;
+  getByOrganizationId(
+    organizationId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<ListOrganizationPipelinesResponse>>;
   deleteById(id: string): Promise<ScyllaResult<void>>;
   run(id: string): Promise<ScyllaResult<void>>;
   create(request: CreatePipelineRequest): Promise<ScyllaResult<void>>;

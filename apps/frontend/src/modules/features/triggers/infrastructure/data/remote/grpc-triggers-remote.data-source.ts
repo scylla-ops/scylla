@@ -1,6 +1,6 @@
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { TriggerServiceClient } from '@/generated/scylla/trigger/v1/trigger.client.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { idValue, wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import type {
   CreateTriggerRequest,
@@ -21,7 +21,7 @@ function requireTrigger(trigger: Trigger | undefined, rpc: string): Trigger {
 export class GrpcTriggersRemoteDataSource implements TriggersRemoteDataSource {
   private readonly _client: TriggerServiceClient;
 
-  public constructor(transport: CoreGrpcTransport) {
+  public constructor(transport: ScyllaGrpcTransport) {
     this._client = new TriggerServiceClient(transport.getTransport());
   }
 

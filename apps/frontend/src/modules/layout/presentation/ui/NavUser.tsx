@@ -19,9 +19,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
+import { useScyllaNavigate } from '@platform/context';
+import { useContextStore } from '@platform/context';
+import { useUser } from '@/modules/features/user';
 
 export function NavUser() {
   const { isMobile } = useSidebar();

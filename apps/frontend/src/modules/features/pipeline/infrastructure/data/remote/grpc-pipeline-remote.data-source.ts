@@ -1,12 +1,13 @@
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
   CreatePipelineRequest,
+  ListOrganizationPipelinesResponse,
   ListProjectPipelinesResponse,
   Pipeline,
   PipelineNode,
 } from '@/generated/scylla/pipeline/v1/pipeline.ts';
 import { PipelineServiceClient } from '@/generated/scylla/pipeline/v1/pipeline.client.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import {
   DEFAULT_PAGE_SIZE,
   type PaginationParams,
@@ -27,7 +28,7 @@ function requirePipeline(pipeline: Pipeline | undefined): Pipeline {
 export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
   private readonly _pipelineClient: PipelineServiceClient;
 
-  public constructor(transport: CoreGrpcTransport) {
+  public constructor(transport: ScyllaGrpcTransport) {
     this._pipelineClient = new PipelineServiceClient(transport.getTransport());
   }
 
@@ -57,6 +58,23 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
           })
         ).response,
       'Error getting pipelines',
+    );
+  }
+
+  /** Every pipeline of the organization, in one call instead of one per project. */
+  public async getByOrganizationId(
+    organizationId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<ListOrganizationPipelinesResponse>> {
+    return ScyllaResult.tryAsync<ListOrganizationPipelinesResponse>(
+      async () =>
+        (
+          await this._pipelineClient.listOrganizationPipelines({
+            organizationId: wrapId(organizationId),
+            pagination: pagination ?? { page: 1, pageSize: DEFAULT_PAGE_SIZE },
+          })
+        ).response,
+      'Error getting organization pipelines',
     );
   }
 

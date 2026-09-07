@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useOrganizationDomain } from '@/modules/features/organization/presentation/hooks/use-organization-domain.ts';
 
 export const ORGANIZATION_MEMBERS_QUERY_KEY = (organizationId: string) =>
   ['organizations', organizationId, 'members'] as const;
@@ -17,7 +17,7 @@ export const useOrganizationMembers = (
   organizationId: string | null,
   options: { enabled?: boolean } = {},
 ) => {
-  const { listOrganizationMembers } = useDependencies().organization;
+  const { organizationRepository } = useOrganizationDomain();
   const queryClient = useQueryClient();
   const { enabled = true } = options;
 
@@ -27,7 +27,7 @@ export const useOrganizationMembers = (
     error,
   } = useQuery({
     queryKey: ORGANIZATION_MEMBERS_QUERY_KEY(organizationId ?? ''),
-    queryFn: async () => (await listOrganizationMembers.execute(organizationId!)).unwrap(),
+    queryFn: async () => (await organizationRepository.listMembers(organizationId!)).unwrap(),
     enabled: enabled && !!organizationId,
   });
 

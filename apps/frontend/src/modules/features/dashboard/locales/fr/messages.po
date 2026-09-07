@@ -13,8 +13,12 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:61
+msgid "{inFlight} in progress"
+msgstr "{inFlight} en cours"
+
 #: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:246
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:251
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:278
 msgid "Agent Outcomes"
 msgstr "Résultats des agents"
 
@@ -22,7 +26,7 @@ msgstr "Résultats des agents"
 msgid "all"
 msgstr "tous"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:176
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:203
 msgid "All Pipelines"
 msgstr "Tous les pipelines"
 
@@ -31,6 +35,7 @@ msgid "cancelled"
 msgstr "annulés"
 
 #: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:30
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:93
 msgid "Cancelled"
 msgstr "Annulé"
 
@@ -39,10 +44,13 @@ msgid "completed"
 msgstr "terminés"
 
 #: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:28
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:83
 msgid "Completed"
 msgstr "Terminé"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:82
+#: src/modules/features/dashboard/dashboard.module.ts:20
+#: src/modules/features/dashboard/dashboard.module.ts:29
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:87
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
@@ -51,10 +59,16 @@ msgid "failed"
 msgstr "échoués"
 
 #: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:29
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:88
 msgid "Failed"
 msgstr "Échoué"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:198
+#. placeholder {0}: getRelativeTime(summary.lastRunAt)
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:106
+msgid "Last run {0}"
+msgstr "Dernière exécution {0}"
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:225
 msgid "Name"
 msgstr "Nom"
 
@@ -62,7 +76,7 @@ msgstr "Nom"
 msgid "No agents found. Connect an agent to see execution history."
 msgstr "Aucun agent trouvé. Connectez un agent pour voir l'historique des exécutions."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:159
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:186
 msgid "No description"
 msgstr "Aucune description"
 
@@ -70,43 +84,77 @@ msgstr "Aucune description"
 msgid "No finished jobs in this window."
 msgstr "Aucun job terminé sur cette période."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:188
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:76
+msgid "No pipeline has run yet."
+msgstr "Aucun pipeline n'a encore été exécuté."
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:215
 msgid "No pipelines yet."
 msgstr "Aucun pipeline pour le moment."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:125
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:152
 msgid "No projects yet."
 msgstr "Aucun projet pour le moment."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:204
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:231
 msgid "Nodes"
 msgstr "Nœuds"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:93
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:98
+msgid "Orphaned"
+msgstr "Orphelins"
+
+#. placeholder {0}: summary.total
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:115
+msgid "over all {0} runs"
+msgstr "sur l'ensemble des {0} exécutions"
+
+#. placeholder {0}: summary.total
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:111
+msgid "over the last {0} of {totalRuns} runs"
+msgstr "sur les {0} dernières exécutions parmi {totalRuns}"
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:98
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:201
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:228
 msgid "Project"
 msgstr "Projet"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:87
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:104
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:92
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:131
 msgid "Projects"
 msgstr "Projets"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:111
+#: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:56
+msgid "Run activity"
+msgstr "Activité d'exécution"
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:104
+msgid "Runs"
+msgstr "Exécutions"
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:138
 msgid "See all"
 msgstr "Voir tout"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:59
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:110
+msgid "Success rate"
+msgstr "Taux de réussite"
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:110
+msgid "Success rate (recent)"
+msgstr "Taux de réussite (récent)"
+
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:64
 msgid "Unable to load dashboard"
 msgstr "Impossible de charger le tableau de bord"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:207
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:234
 msgid "Updated"
 msgstr "Mis à jour"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:136
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:163
 msgid "You don't have access to this project's pipelines"
 msgstr "Vous n'avez pas accès aux pipelines de ce projet"

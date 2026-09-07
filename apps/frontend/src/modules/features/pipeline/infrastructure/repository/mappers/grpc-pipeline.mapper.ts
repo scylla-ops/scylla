@@ -56,6 +56,9 @@ function envVarFromDomain(entry: EnvEntry): EnvVar {
   return { key: entry.key, source: { oneofKind: 'value', value: entry.value } };
 }
 
+/** What every scoped pipeline listing returns, whatever the scope. */
+type PipelineListResponse = Pick<ListProjectPipelinesResponse, 'pipelines' | 'pagination'>;
+
 export class GrpcPipelineMapper {
   private static nodeToDomain(node: PipelineNode): PipelineStep {
     const base = {
@@ -124,8 +127,12 @@ export class GrpcPipelineMapper {
     };
   }
 
+  /**
+   * Takes the shape rather than one named response: the project- and
+   * organization-scoped listings are the same `{ pipelines, pagination }` pair.
+   */
   static toDomainInfoList(
-    pipelines: ListProjectPipelinesResponse,
+    pipelines: PipelineListResponse,
   ): PaginatedList<PipelineMetadata> {
     return {
       items: pipelines.pipelines.map(GrpcPipelineMapper.toDomainInfo),

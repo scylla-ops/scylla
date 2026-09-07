@@ -30,13 +30,12 @@ msgid "Add a description..."
 msgstr "Add a description..."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:160
-msgid "Add a member"
-msgstr "Add a member"
+#~ msgid "Add a member"
+#~ msgstr "Add a member"
 
-#. placeholder {0}: organization.name
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:196
-msgid "Add a member to “{0}”"
-msgstr "Add a member to “{0}”"
+#~ msgid "Add a member to “{0}”"
+#~ msgstr "Add a member to “{0}”"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:74
 #~ msgid "Add or remove the users that belong to this organization."
@@ -46,10 +45,9 @@ msgstr "Add a member to “{0}”"
 #~ msgid "Anyone holding a role on one of this organization's projects is listed here too."
 #~ msgstr "Anyone holding a role on one of this organization's projects is listed here too."
 
-#. placeholder {0}: organization.name
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:152
-msgid "Belonging to “{0}” means holding a role in it. Granting someone their first role admits them; revoking every role they hold here, and on its projects, removes them."
-msgstr "Belonging to “{0}” means holding a role in it. Granting someone their first role admits them; revoking every role they hold here, and on its projects, removes them."
+#~ msgid "Belonging to “{0}” means holding a role in it. Granting someone their first role admits them; revoking every role they hold here, and on its projects, removes them."
+#~ msgstr "Belonging to “{0}” means holding a role in it. Granting someone their first role admits them; revoking every role they hold here, and on its projects, removes them."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:155
 #~ msgid "Belonging to an organization means holding a role in it. Adding someone grants them the role you pick; removing them revokes every role they hold here, including on its projects."
@@ -67,11 +65,11 @@ msgstr "Belonging to “{0}” means holding a role in it. Granting someone thei
 #~ msgid "Close"
 #~ msgstr "Close"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:49
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:47
 msgid "Create a new organization"
 msgstr "Create a new organization"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:58
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:56
 msgid "Create Organization"
 msgstr "Create Organization"
 
@@ -79,7 +77,7 @@ msgstr "Create Organization"
 #~ msgid "Creating..."
 #~ msgstr "Creating..."
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:140
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:139
 msgid "Delete"
 msgstr "Delete"
 
@@ -87,6 +85,10 @@ msgstr "Delete"
 #: src/modules/features/organization/presentation/utils/create-organization-form-items.ts:14
 msgid "Description"
 msgstr "Description"
+
+#: src/modules/features/organization/organization.module.ts:33
+msgid "Detail"
+msgstr "Detail"
 
 #: src/modules/features/organization/presentation/utils/create-organization-form-items.ts:8
 msgid "e.g., My Organization"
@@ -96,7 +98,7 @@ msgstr "e.g., My Organization"
 msgid "e.g., Our company's main organization"
 msgstr "e.g., Our company's main organization"
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:121
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:120
 msgid "Edit"
 msgstr "Edit"
 
@@ -104,21 +106,21 @@ msgstr "Edit"
 msgid "Edit organization"
 msgstr "Edit organization"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:51
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:49
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Enter a name and description for your new organization. You can change these later in settings."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:224
-msgid "Every role they hold on this organization and on its projects will be revoked. They will lose access immediately."
-msgstr "Every role they hold on this organization and on its projects will be revoked. They will lose access immediately."
+#~ msgid "Every role they hold on this organization and on its projects will be revoked. They will lose access immediately."
+#~ msgstr "Every role they hold on this organization and on its projects will be revoked. They will lose access immediately."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:89
 #~ msgid "Everyone is a member"
 #~ msgstr "Everyone is a member"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:202
-msgid "Everyone is already a member"
-msgstr "Everyone is already a member"
+#~ msgid "Everyone is already a member"
+#~ msgstr "Everyone is already a member"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:125
 #~ msgid "Failed to add the member"
@@ -137,28 +139,26 @@ msgstr "Everyone is already a member"
 #~ msgstr "Loading…"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:183
-msgid "Managed by an organization administrator"
-msgstr "Managed by an organization administrator"
+#~ msgid "Managed by an organization administrator"
+#~ msgstr "Managed by an organization administrator"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:148
-msgid "Member"
-msgstr "Member"
+#~ msgid "Member"
+#~ msgstr "Member"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:123
 #~ msgid "Member added"
 #~ msgstr "Member added"
 
-#. placeholder {0}: roleIds.length
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:124
-msgid "Member added with {0} role(s)"
-msgstr "Member added with {0} role(s)"
+#~ msgid "Member added with {0} role(s)"
+#~ msgstr "Member added with {0} role(s)"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:190
 #~ msgid "Member added with {count} role(s)"
 #~ msgstr "Member added with {count} role(s)"
 
-#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:102
-#: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:149
+#: src/modules/features/organization/presentation/ui/OrganizationList.tsx:101
 msgid "Members"
 msgstr "Members"
 
@@ -183,8 +183,8 @@ msgstr "Members"
 #~ msgstr "No organization role — reached via a project"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:168
-msgid "Nobody belongs to this organization yet."
-msgstr "Nobody belongs to this organization yet."
+#~ msgid "Nobody belongs to this organization yet."
+#~ msgstr "Nobody belongs to this organization yet."
 
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:27
 #: src/modules/features/organization/presentation/utils/create-organization-form-items.ts:7
@@ -192,26 +192,24 @@ msgid "Organization name"
 msgstr "Organization name"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:198
-msgid "Pick someone and the roles they should hold in this organization."
-msgstr "Pick someone and the roles they should hold in this organization."
+#~ msgid "Pick someone and the roles they should hold in this organization."
+#~ msgstr "Pick someone and the roles they should hold in this organization."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:181
-msgid "Reached via a project"
-msgstr "Reached via a project"
+#~ msgid "Reached via a project"
+#~ msgstr "Reached via a project"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:145
 #~ msgid "Remove"
 #~ msgstr "Remove"
 
-#. placeholder {0}: pendingRemoval?.username
-#. placeholder {1}: organization.name
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:219
-msgid "Remove {0} from “{1}”?"
-msgstr "Remove {0} from “{1}”?"
+#~ msgid "Remove {0} from “{1}”?"
+#~ msgstr "Remove {0} from “{1}”?"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:187
-msgid "Remove from the organization"
-msgstr "Remove from the organization"
+#~ msgid "Remove from the organization"
+#~ msgstr "Remove from the organization"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:194
 #~ msgid "Role"
@@ -230,8 +228,8 @@ msgstr "Remove from the organization"
 #~ msgstr "Roles are managed by an organization administrator"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:205
-msgid "Roles to grant"
-msgstr "Roles to grant"
+#~ msgid "Roles to grant"
+#~ msgstr "Roles to grant"
 
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:63
 msgid "Save"
@@ -250,8 +248,8 @@ msgstr "Saving..."
 #~ msgstr "Select a user to add"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:138
-msgid "Select an organization to see its members."
-msgstr "Select an organization to see its members."
+#~ msgid "Select an organization to see its members."
+#~ msgstr "Select an organization to see its members."
 
 #: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:60
 msgid "Update the organization name and description."
@@ -261,21 +259,25 @@ msgstr "Update the organization name and description."
 #~ msgid "Update the organization name."
 #~ msgstr "Update the organization name."
 
+#: src/modules/features/organization/organization.module.ts:31
+msgid "User"
+msgstr "User"
+
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:338
 #~ msgid "You"
 #~ msgstr "You"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:202
-msgid "You can't browse the user directory"
-msgstr "You can't browse the user directory"
+#~ msgid "You can't browse the user directory"
+#~ msgstr "You can't browse the user directory"
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:106
 #~ msgid "You don't have permission to add members."
 #~ msgstr "You don't have permission to add members."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembers.page.tsx:162
-msgid "You don't have permission to admit members here."
-msgstr "You don't have permission to admit members here."
+#~ msgid "You don't have permission to admit members here."
+#~ msgstr "You don't have permission to admit members here."
 
 #: src/modules/features/organization/presentation/ui/OrganizationMembersDialog.tsx:214
 #~ msgid "You don't have permission to admit members."

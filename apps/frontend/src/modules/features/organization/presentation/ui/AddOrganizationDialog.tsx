@@ -3,10 +3,9 @@ import { Trans } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
 import { type FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { createOrganizationItems } from '@/modules/features/organization/presentation/utils/create-organization-form-items.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { useNavigate } from 'react-router-dom';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 
 interface AddOrganizationDialogProps {
   open: boolean;
@@ -32,8 +31,7 @@ export function AddOrganizationDialog({
       { name, description: description?.trim() || undefined },
       {
         onSuccess: data => {
-          const orgId =
-            idValue(data?.organizationId) || idValue(createOrganization.data?.organizationId);
+          const orgId = data.id;
           setOpen(false);
           setOrganization(orgId, name);
           void navigate(`/${slugifyOrgName(name)}/projects`);

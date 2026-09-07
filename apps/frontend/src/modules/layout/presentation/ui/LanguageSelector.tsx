@@ -54,7 +54,7 @@ export function LanguageSelector() {
           >
             <DropdownMenuRadioGroup
               value={currentLocale}
-              onValueChange={value => setAppLocale(value as SupportedLocale)}
+              onValueChange={value => void setAppLocale(value as SupportedLocale)}
             >
               {LOCALE_OPTIONS.map(option => (
                 <DropdownMenuRadioItem key={option.locale} value={option.locale}>

@@ -5,7 +5,7 @@ import {
   getRelativeTime,
 } from '@shared/utils/date-utils.ts';
 import { useNow } from '@shared/presentation/hooks/use-now.ts';
-import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
+import type { JobEntity } from '@/modules/features/jobs';
 import { Trans } from '@lingui/react/macro';
 
 type PipelineMetadataProps = {

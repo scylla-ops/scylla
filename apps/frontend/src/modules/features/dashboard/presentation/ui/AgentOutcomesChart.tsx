@@ -13,9 +13,9 @@ import {
   type ChartConfig,
 } from '@shadcn/chart.tsx';
 import { cn } from '@shared/presentation/utils';
-import { useAgents } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
-import { useAgentStats } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
-import type { DailyOutcome } from '@/modules/features/agents/domain/structs/agent.struct.ts';
+import { useAgents } from '@/modules/features/agents';
+import { useAgentStats } from '@/modules/features/agents';
+import type { DailyOutcome } from '@/modules/features/agents';
 
 type Range = '7d' | '14d' | '30d';
 type StatusFilter = 'all' | 'completed' | 'failed' | 'cancelled';

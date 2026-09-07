@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import type { Permission } from '@/modules/features/permission/domain/structs/permission.struct.ts';
+import type { Permission } from '@platform/authz';
 
 export interface NavItem {
   title: string;

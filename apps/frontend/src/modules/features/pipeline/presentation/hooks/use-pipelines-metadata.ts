@@ -1,21 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { usePipelineDomain } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-domain.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { usePagination } from '@shared/presentation/hooks/use-pagination.ts';
 import { useEffect } from 'react';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
+import { PIPELINES_QUERY_KEY } from '@/modules/features/pipeline/presentation/hooks/pipelines.query-keys.ts';
 
 export const usePipelinesMetadata = (projectId: string) => {
-  const { getPipelinesMetadata } = useDependencies().pipeline;
+  const { pipelineRepository } = usePipelineDomain();
   const { paginationParams, paginationInfo, updatePaginationInfo, setPage } = usePagination();
 
   const { data, isLoading, error, isError } = useQuery<
     PaginatedList<PipelineMetadata>,
     ScyllaError
   >({
-    queryKey: ['pipelines', projectId, paginationParams],
-    queryFn: async () => (await getPipelinesMetadata.execute(projectId, paginationParams)).unwrap(),
+    queryKey: PIPELINES_QUERY_KEY(projectId, paginationParams),
+    queryFn: async () => (await pipelineRepository.getMetadataByProjectId(projectId, paginationParams)).unwrap(),
     staleTime: 5 * 1000, // 5 seconds //todo: more long and refresh button?
   });
 
