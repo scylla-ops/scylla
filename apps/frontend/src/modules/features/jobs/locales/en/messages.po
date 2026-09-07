@@ -13,6 +13,12 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: group.count
+#. placeholder {1}: Math.round(pct)
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:110
+msgid "{0} / {total} nodes ({1}%)"
+msgstr "{0} / {total} nodes ({1}%)"
+
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:77
 msgid "Actions"
 msgstr "Actions"
@@ -21,7 +27,7 @@ msgstr "Actions"
 msgid "agent disconnected mid-run"
 msgstr "agent disconnected mid-run"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:67
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:69
 msgid "Collapse"
 msgstr "Collapse"
 
@@ -54,6 +60,11 @@ msgstr "Duration"
 msgid "Error loading logs..."
 msgstr "Error loading logs..."
 
+#. placeholder {0}: new Date(node.finishedAt).toLocaleTimeString()
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:69
+msgid "Finished: {0}"
+msgstr "Finished: {0}"
+
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:43
 msgid "Job"
 msgstr "Job"
@@ -79,9 +90,14 @@ msgid "No jobs found"
 msgstr "No jobs found"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:48
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:65
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:75
 msgid "No nodes"
 msgstr "No nodes"
+
+#. placeholder {0}: nodeExecutions.length
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:72
+msgid "Node Executions ({0})"
+msgstr "Node Executions ({0})"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
 msgid "Open logs"
@@ -114,6 +130,16 @@ msgstr "Run"
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:53
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
+
+#. placeholder {0}: new Date(node.startedAt).toLocaleTimeString()
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:64
+msgid "Started: {0}"
+msgstr "Started: {0}"
+
+#. placeholder {0}: _(getStatusConfig(node.state).label)
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:60
+msgid "State: {0}"
+msgstr "State: {0}"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:40
 msgid "Status"

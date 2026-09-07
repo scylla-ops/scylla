@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { Card, CardContent } from '@shadcn';
 import { cn } from '@shared/presentation/utils';
 import type { DailyOutcome } from '@/modules/features/agents/domain/structs/agent.struct.ts';
@@ -48,13 +48,15 @@ const fillBuckets = (daily: DailyOutcome[], days: number): Bucket[] => {
   });
 };
 
+// Same semantics as STATUS_CONFIG: completed is the primary hue, not --success.
 const SEGMENTS = [
-  { key: 'completed', color: 'var(--success)' },
+  { key: 'completed', color: 'var(--primary)' },
   { key: 'failed', color: 'var(--destructive)' },
   { key: 'cancelled', color: 'var(--warning)' },
 ] as const;
 
 export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
+  const { i18n, t } = useLingui();
   const [range, setRange] = useState<OutcomeRange>('14d');
   const [hover, setHover] = useState<number | null>(null);
 
@@ -63,7 +65,7 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
   const max = Math.max(1, ...buckets.map(b => b.completed + b.failed + b.cancelled));
 
   const monthLabel = buckets.length
-    ? new Date(buckets[0].day).toLocaleString('en-US', { month: 'short' })
+    ? new Date(buckets[0].day).toLocaleString(i18n.locale, { month: 'short' })
     : '';
 
   return (
@@ -128,7 +130,7 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
                       // resolves against this wrapper — without it every bar
                       // computes to 0 and the chart renders empty.
                       className='group relative flex h-full flex-1 flex-col justify-end'
-                      title={`${b.day}: ${b.completed} completed, ${b.failed} failed, ${b.cancelled} cancelled`}
+                      title={t`${b.day}: ${b.completed} completed, ${b.failed} failed, ${b.cancelled} cancelled`}
                       onMouseEnter={() => setHover(i)}
                       onMouseLeave={() => setHover(h => (h === i ? null : h))}
                     >
@@ -159,20 +161,20 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
                           </p>
                           {b.completed > 0 && (
                             <p>
-                              <span style={{ color: 'var(--success)' }}>●</span> completed{' '}
-                              {b.completed}
+                              <span style={{ color: 'var(--primary)' }}>●</span>{' '}
+                              <Trans>completed {b.completed}</Trans>
                             </p>
                           )}
                           {b.failed > 0 && (
                             <p>
-                              <span style={{ color: 'var(--destructive)' }}>●</span> failed{' '}
-                              {b.failed}
+                              <span style={{ color: 'var(--destructive)' }}>●</span>{' '}
+                              <Trans>failed {b.failed}</Trans>
                             </p>
                           )}
                           {b.cancelled > 0 && (
                             <p>
-                              <span style={{ color: 'var(--warning)' }}>●</span> cancelled{' '}
-                              {b.cancelled}
+                              <span style={{ color: 'var(--warning)' }}>●</span>{' '}
+                              <Trans>cancelled {b.cancelled}</Trans>
                             </p>
                           )}
                         </div>
@@ -208,7 +210,7 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
         {/* Legend */}
         <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs'>
           <span className='flex items-center gap-1.5'>
-            <span className='h-2.5 w-2.5 rounded-sm' style={{ background: 'var(--success)' }} />
+            <span className='h-2.5 w-2.5 rounded-sm' style={{ background: 'var(--primary)' }} />
             <span className='font-semibold'>{aggregate.completed}</span> <Trans>completed</Trans>
           </span>
           <span className='flex items-center gap-1.5'>

@@ -64,8 +64,12 @@ export const JobNodesList = ({
         >
           <div className='mt-4 px-4 pb-4 border-t pt-4'>
             <h4 className='text-sm font-semibold mb-3 flex items-center gap-2'>
-              <IconButton icon={ChevronDown} tooltip={<Trans>Collapse</Trans>} onClick={onCollapse} />
-              Node Executions ({nodeExecutions.length})
+              <IconButton
+                icon={ChevronDown}
+                tooltip={<Trans>Collapse</Trans>}
+                onClick={onCollapse}
+              />
+              <Trans>Node Executions ({nodeExecutions.length})</Trans>
             </h4>
             <div className='space-y-1'>
               {nodeExecutions.map((node, index) => {

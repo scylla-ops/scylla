@@ -56,9 +56,19 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
       tooltip: (
         <div className='text-xs'>
           <p className='font-semibold'>{node.id}</p>
-          <p>State: {node.state}</p>
-          {node.startedAt && <p>Started: {new Date(node.startedAt).toLocaleTimeString()}</p>}
-          {node.finishedAt && <p>Finished: {new Date(node.finishedAt).toLocaleTimeString()}</p>}
+          <p>
+            <Trans>State: {_(getStatusConfig(node.state).label)}</Trans>
+          </p>
+          {node.startedAt && (
+            <p>
+              <Trans>Started: {new Date(node.startedAt).toLocaleTimeString()}</Trans>
+            </p>
+          )}
+          {node.finishedAt && (
+            <p>
+              <Trans>Finished: {new Date(node.finishedAt).toLocaleTimeString()}</Trans>
+            </p>
+          )}
         </div>
       ),
     }));
@@ -87,17 +97,19 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
                   style={{ width: `${pct}%`, minWidth: 18 }}
                 >
                   {pct > 8 && (
-                    <span className='text-[10px] font-semibold text-white drop-shadow-sm select-none'>
+                    <span className='text-[10px] font-semibold text-primary-foreground drop-shadow-sm select-none'>
                       {group.count}
                     </span>
                   )}
                 </div>
               </TooltipTrigger>
-              <TooltipContent side='top' className='text-xs p-3 shadow-lg border-slate-200'>
+              <TooltipContent side='top' className='text-xs p-3 shadow-lg'>
                 <div className='space-y-1'>
                   <p className='font-semibold capitalize'>{_(config.label)}</p>
                   <p>
-                    {group.count} / {total} nodes ({Math.round(pct)}%)
+                    <Trans>
+                      {group.count} / {total} nodes ({Math.round(pct)}%)
+                    </Trans>
                   </p>
                   {group.count <= 8 && (
                     <ul className='mt-1 space-y-0.5 text-muted-foreground'>

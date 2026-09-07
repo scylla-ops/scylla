@@ -122,6 +122,11 @@ msgstr "Brouillon — non créé pour le moment"
 msgid "Duplicate"
 msgstr "Dupliquer"
 
+#. placeholder {0}: formatDuration(duration)
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:89
+msgid "Duration: {0}"
+msgstr "Durée : {0}"
+
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:267
 msgid "e.g., --release"
 msgstr "ex. : --release"
@@ -181,6 +186,11 @@ msgstr "Erreur lors du chargement des jobs"
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:27
 msgid "Failed to load pipeline"
 msgstr "Impossible de charger la pipeline"
+
+#. placeholder {0}: getRelativeTime(job.updatedAt)
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:87
+msgid "Finished {0}"
+msgstr "Terminé {0}"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:38
 msgid "History"
@@ -245,7 +255,7 @@ msgid "New pipeline"
 msgstr "Nouveau pipeline"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:31
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:91
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:97
 msgid "No jobs yet"
 msgstr "Aucun job pour le moment"
 
@@ -299,6 +309,10 @@ msgstr "Référencez un secret"
 msgid "Run"
 msgstr "Exécuter"
 
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:73
+msgid "Run #{runNumber}"
+msgstr "Exécution n°{runNumber}"
+
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:51
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:390
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:33
@@ -349,6 +363,11 @@ msgstr "Donnez un nom au pipeline."
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:230
 msgid "Shell"
 msgstr "Shell"
+
+#. placeholder {0}: getRelativeTime(job.createdAt)
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:85
+msgid "Started {0}"
+msgstr "Démarré {0}"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:29
 msgid "Status"

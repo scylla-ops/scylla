@@ -58,7 +58,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/utils/status-config.ts:112
+#: src/modules/shared/utils/status-config.ts:125
 msgid "Cancelled"
 msgstr "Cancelled"
 
@@ -92,7 +92,7 @@ msgstr "Copy"
 #~ msgid "Copy the secret below — it is shown only once."
 #~ msgstr "Copy the secret below — it is shown only once."
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:111
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:112
 msgid "Copy your secret"
 msgstr "Copy your secret"
 
@@ -112,7 +112,7 @@ msgstr "Creating..."
 msgid "Delete"
 msgstr "Delete"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:172
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:173
 msgid "Done"
 msgstr "Done"
 
@@ -120,7 +120,7 @@ msgstr "Done"
 msgid "Error"
 msgstr "Error"
 
-#: src/modules/shared/utils/status-config.ts:70
+#: src/modules/shared/utils/status-config.ts:83
 msgid "Failed"
 msgstr "Failed"
 
@@ -189,11 +189,11 @@ msgstr "Organization deleted"
 msgid "Organization updated"
 msgstr "Organization updated"
 
-#: src/modules/shared/utils/status-config.ts:90
+#: src/modules/shared/utils/status-config.ts:103
 msgid "Orphaned"
 msgstr "Orphaned"
 
-#: src/modules/shared/utils/status-config.ts:50
+#: src/modules/shared/utils/status-config.ts:63
 msgid "Pending"
 msgstr "Pending"
 
@@ -253,9 +253,13 @@ msgstr "Replace CONTROL_PLANE_URL with the address your agent reaches the contro
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 msgstr "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:132
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:133
 msgid "Reveal"
 msgstr "Reveal"
+
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:169
+msgid "Reveal the secret first"
+msgstr "Reveal the secret first"
 
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:73
 msgid "Run from a repo checkout"
@@ -265,9 +269,13 @@ msgstr "Run from a repo checkout"
 msgid "Run with Docker"
 msgstr "Run with Docker"
 
-#: src/modules/shared/utils/status-config.ts:39
+#: src/modules/shared/utils/status-config.ts:52
 msgid "Running"
 msgstr "Running"
+
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:121
+msgid "Secret copied"
+msgstr "Secret copied"
 
 #: src/modules/shared/utils/toast-messages.ts:53
 msgid "Secret created"
@@ -293,11 +301,11 @@ msgstr "Server unreachable"
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Showing {start}-{end} of {totalCount}"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:113
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:114
 msgid "shown once"
 msgstr "shown once"
 
-#: src/modules/shared/utils/status-config.ts:80
+#: src/modules/shared/utils/status-config.ts:93
 msgid "Skipped"
 msgstr "Skipped"
 
@@ -305,7 +313,7 @@ msgstr "Skipped"
 #~ msgid "Start your agent"
 #~ msgstr "Start your agent"
 
-#: src/modules/shared/utils/status-config.ts:60
+#: src/modules/shared/utils/status-config.ts:73
 msgid "Success"
 msgstr "Success"
 
@@ -351,7 +359,7 @@ msgstr "Trigger updated"
 #~ msgid "Two steps and it picks up jobs."
 #~ msgstr "Two steps and it picks up jobs."
 
-#: src/modules/shared/utils/status-config.ts:102
+#: src/modules/shared/utils/status-config.ts:115
 msgid "Unknown"
 msgstr "Unknown"
 
@@ -388,6 +396,6 @@ msgstr "You don't have permission to do this."
 msgid "You don't have permission to perform this action"
 msgstr "You don't have permission to perform this action"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:163
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:164
 msgid "You won't see this secret again."
 msgstr "You won't see this secret again."

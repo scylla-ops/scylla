@@ -30,7 +30,7 @@ export const StatusBar = ({
   if (items.length === 0) {
     return (
       <div className={cn('w-full flex items-center justify-center py-1', height)}>
-        <span className='text-xs text-slate-400 italic'>
+        <span className='text-xs text-muted-foreground italic'>
           {emptyLabel ?? <Trans>No data</Trans>}
         </span>
       </div>
@@ -66,7 +66,7 @@ export const StatusBar = ({
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>{bar}</TooltipTrigger>
-              <TooltipContent side='top' className='text-xs p-3 shadow-lg border-slate-200'>
+              <TooltipContent side='top' className='text-xs p-3 shadow-lg'>
                 {item.tooltip}
               </TooltipContent>
             </Tooltip>

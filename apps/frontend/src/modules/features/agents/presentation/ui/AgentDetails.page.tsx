@@ -25,7 +25,7 @@ import {
 import { Cpu } from 'lucide-react';
 import { cn } from '@shared/presentation/utils';
 import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 
 const StripLabel = ({ children }: { children: React.ReactNode }) => (
   <span className='font-mono text-[10px] uppercase tracking-wide text-muted-foreground'>
@@ -34,6 +34,7 @@ const StripLabel = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const AgentDetailsPage = () => {
+  const { t } = useLingui();
   const { agentId } = useParams<{ agentId: string }>();
   const navigate = useNavigate();
   const { data: agent, isLoading, isError, error } = useAgent(agentId ?? '');
@@ -45,7 +46,7 @@ export const AgentDetailsPage = () => {
   const { redirecting } = useResourceError({
     error,
     redirectTo: '..',
-    notFoundMessage: 'Agent not found',
+    notFoundMessage: t`Agent not found`,
   });
 
   const online = agent?.connected ?? false;

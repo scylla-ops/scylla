@@ -34,27 +34,40 @@ export interface StatusConfig {
   textClassName: string;
 }
 
+/**
+ * Every colour here is a theme token, never a Tailwind palette shade: the app
+ * ships a light and a dark theme, and a hard-coded `emerald-500` only ever
+ * looks right in one of them. The mapping is semantic —
+ *
+ *   the happy path (running → completed)  → `primary` and its derivatives
+ *   failure                               → `destructive`
+ *   interrupted (cancelled / orphaned)    → `warning`
+ *   inert (pending / skipped / unknown)   → `muted-foreground`
+ *
+ * — and states that share a token are separated by opacity, so a bar of mixed
+ * statuses stays readable without inventing a colour outside the theme.
+ */
 export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   running: {
     label: msg`Running`,
     variant: 'default',
     icon: Loader2,
-    iconClassName: 'text-blue-500 animate-spin',
-    barClassName: 'bg-blue-500 animate-[smooth-pulse_2s_infinite]',
-    barHoverClassName: 'ring-4 ring-blue-400/30 ring-inset hover:scale-y-110',
-    dotClassName: 'bg-blue-500 animate-pulse',
-    textClassName: 'text-blue-600',
+    iconClassName: 'text-primary animate-spin',
+    barClassName: 'bg-primary/50 animate-[smooth-pulse_2s_infinite]',
+    barHoverClassName: 'ring-4 ring-primary/30 ring-inset hover:scale-y-110',
+    dotClassName: 'bg-primary/60 animate-pulse',
+    textClassName: 'text-primary',
   },
 
   pending: {
     label: msg`Pending`,
     variant: 'secondary',
     icon: DiamondMinusIcon,
-    iconClassName: 'text-gray-400',
-    barClassName: 'bg-gray-400/80',
-    barHoverClassName: 'hover:bg-gray-500 hover:scale-y-110',
-    dotClassName: 'bg-gray-500',
-    textClassName: 'text-gray-600',
+    iconClassName: 'text-muted-foreground',
+    barClassName: 'bg-muted-foreground/40',
+    barHoverClassName: 'hover:bg-muted-foreground/70 hover:scale-y-110',
+    dotClassName: 'bg-muted-foreground',
+    textClassName: 'text-muted-foreground',
   },
   completed: {
     label: msg`Success`,
@@ -62,7 +75,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     icon: CheckCircle2,
     iconClassName: 'text-primary',
     barClassName: 'bg-primary',
-    barHoverClassName: 'hover:bg-primary hover:scale-y-110',
+    barHoverClassName: 'hover:bg-primary/80 hover:scale-y-110',
     dotClassName: 'bg-primary',
     textClassName: 'text-primary',
   },
@@ -71,30 +84,30 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     variant: 'destructive',
     icon: XCircle,
     iconClassName: 'text-destructive',
-    barClassName: 'bg-red-400/80',
-    barHoverClassName: 'hover:bg-red-500 hover:scale-y-110',
-    dotClassName: 'bg-red-500',
-    textClassName: 'text-red-600',
+    barClassName: 'bg-destructive/80',
+    barHoverClassName: 'hover:bg-destructive hover:scale-y-110',
+    dotClassName: 'bg-destructive',
+    textClassName: 'text-destructive',
   },
   skipped: {
     label: msg`Skipped`,
     variant: 'outline',
     icon: SkipForward,
-    iconClassName: 'text-zinc-500',
-    barClassName: 'bg-zinc-400/70',
-    barHoverClassName: 'hover:bg-zinc-500 hover:scale-y-110',
-    dotClassName: 'bg-zinc-500',
-    textClassName: 'text-zinc-600',
+    iconClassName: 'text-muted-foreground/70',
+    barClassName: 'bg-muted-foreground/25',
+    barHoverClassName: 'hover:bg-muted-foreground/50 hover:scale-y-110',
+    dotClassName: 'bg-muted-foreground/70',
+    textClassName: 'text-muted-foreground',
   },
   orphaned: {
     label: msg`Orphaned`,
     variant: 'destructive',
     icon: Unplug,
-    iconClassName: 'text-orange-500',
-    barClassName: 'bg-orange-400/80',
-    barHoverClassName: 'hover:bg-orange-500 hover:scale-y-110',
-    dotClassName: 'bg-orange-500',
-    textClassName: 'text-orange-600',
+    iconClassName: 'text-warning',
+    barClassName: 'bg-warning',
+    barHoverClassName: 'hover:bg-warning/80 hover:scale-y-110',
+    dotClassName: 'bg-warning',
+    textClassName: 'text-warning',
   },
   // The server reported a state this build doesn't know about (a newer oneof
   // arm or enum value). Shown as-is rather than guessed at.
@@ -102,21 +115,21 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     label: msg`Unknown`,
     variant: 'outline',
     icon: CircleHelp,
-    iconClassName: 'text-slate-400',
-    barClassName: 'bg-slate-300/80',
-    barHoverClassName: 'hover:bg-slate-400 hover:scale-y-110',
-    dotClassName: 'bg-slate-400',
-    textClassName: 'text-slate-500',
+    iconClassName: 'text-muted-foreground/60',
+    barClassName: 'bg-muted-foreground/15',
+    barHoverClassName: 'hover:bg-muted-foreground/40 hover:scale-y-110',
+    dotClassName: 'bg-muted-foreground/60',
+    textClassName: 'text-muted-foreground',
   },
   cancelled: {
     label: msg`Cancelled`,
     variant: 'outline',
     icon: Ban,
-    iconClassName: 'text-amber-500',
-    barClassName: 'bg-amber-400/80',
-    barHoverClassName: 'hover:bg-amber-500 hover:scale-y-110',
-    dotClassName: 'bg-amber-500',
-    textClassName: 'text-amber-600',
+    iconClassName: 'text-warning/80',
+    barClassName: 'bg-warning/60',
+    barHoverClassName: 'hover:bg-warning/90 hover:scale-y-110',
+    dotClassName: 'bg-warning/80',
+    textClassName: 'text-warning',
   },
 };
 

@@ -122,6 +122,11 @@ msgstr "Draft — not created yet"
 msgid "Duplicate"
 msgstr "Duplicate"
 
+#. placeholder {0}: formatDuration(duration)
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:89
+msgid "Duration: {0}"
+msgstr "Duration: {0}"
+
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:267
 msgid "e.g., --release"
 msgstr "e.g., --release"
@@ -181,6 +186,11 @@ msgstr "Error loading jobs"
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:27
 msgid "Failed to load pipeline"
 msgstr "Failed to load pipeline"
+
+#. placeholder {0}: getRelativeTime(job.updatedAt)
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:87
+msgid "Finished {0}"
+msgstr "Finished {0}"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:38
 msgid "History"
@@ -245,7 +255,7 @@ msgid "New pipeline"
 msgstr "New pipeline"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:31
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:91
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:97
 msgid "No jobs yet"
 msgstr "No jobs yet"
 
@@ -299,6 +309,10 @@ msgstr "Reference a secret"
 msgid "Run"
 msgstr "Run"
 
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:73
+msgid "Run #{runNumber}"
+msgstr "Run #{runNumber}"
+
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:51
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:390
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:33
@@ -349,6 +363,11 @@ msgstr "Set the name of the pipeline."
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:230
 msgid "Shell"
 msgstr "Shell"
+
+#. placeholder {0}: getRelativeTime(job.createdAt)
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:85
+msgid "Started {0}"
+msgstr "Started {0}"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:29
 msgid "Status"

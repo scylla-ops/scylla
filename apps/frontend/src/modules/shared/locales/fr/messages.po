@@ -58,7 +58,7 @@ msgstr "Êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/utils/status-config.ts:112
+#: src/modules/shared/utils/status-config.ts:125
 msgid "Cancelled"
 msgstr "Annulé"
 
@@ -92,7 +92,7 @@ msgstr "Copier"
 #~ msgid "Copy the secret below — it is shown only once."
 #~ msgstr ""
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:111
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:112
 msgid "Copy your secret"
 msgstr "Copiez votre secret"
 
@@ -112,7 +112,7 @@ msgstr "Création..."
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:172
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:173
 msgid "Done"
 msgstr "Terminé"
 
@@ -120,7 +120,7 @@ msgstr "Terminé"
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/shared/utils/status-config.ts:70
+#: src/modules/shared/utils/status-config.ts:83
 msgid "Failed"
 msgstr "Échoué"
 
@@ -189,11 +189,11 @@ msgstr "Organisation supprimée"
 msgid "Organization updated"
 msgstr "Organisation mise à jour"
 
-#: src/modules/shared/utils/status-config.ts:90
+#: src/modules/shared/utils/status-config.ts:103
 msgid "Orphaned"
 msgstr "Orphelin"
 
-#: src/modules/shared/utils/status-config.ts:50
+#: src/modules/shared/utils/status-config.ts:63
 msgid "Pending"
 msgstr "En attente"
 
@@ -253,9 +253,13 @@ msgstr "Remplacez CONTROL_PLANE_URL par l'adresse à laquelle votre agent attein
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 msgstr "Nécessite la chaîne d'outils Rust, à partir d'un clone du <0>référentiel scylla</0> (crate scylla-agent). L'agent s'exécute au premier plan et Ctrl-C l'arrête."
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:132
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:133
 msgid "Reveal"
 msgstr "Révéler"
+
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:169
+msgid "Reveal the secret first"
+msgstr "Révélez d'abord le secret"
 
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:73
 msgid "Run from a repo checkout"
@@ -265,9 +269,13 @@ msgstr "Exécuter depuis un clone du dépôt"
 msgid "Run with Docker"
 msgstr "Exécuter avec Docker"
 
-#: src/modules/shared/utils/status-config.ts:39
+#: src/modules/shared/utils/status-config.ts:52
 msgid "Running"
 msgstr "En cours"
+
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:121
+msgid "Secret copied"
+msgstr "Secret copié"
 
 #: src/modules/shared/utils/toast-messages.ts:53
 msgid "Secret created"
@@ -293,11 +301,11 @@ msgstr "Serveur injoignable"
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Affichage de {start}-{end} sur {totalCount}"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:113
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:114
 msgid "shown once"
 msgstr "montré une seule fois"
 
-#: src/modules/shared/utils/status-config.ts:80
+#: src/modules/shared/utils/status-config.ts:93
 msgid "Skipped"
 msgstr "Ignoré"
 
@@ -305,7 +313,7 @@ msgstr "Ignoré"
 #~ msgid "Start your agent"
 #~ msgstr ""
 
-#: src/modules/shared/utils/status-config.ts:60
+#: src/modules/shared/utils/status-config.ts:73
 msgid "Success"
 msgstr "Réussi"
 
@@ -351,7 +359,7 @@ msgstr "Déclencheur mis à jour"
 #~ msgid "Two steps and it picks up jobs."
 #~ msgstr ""
 
-#: src/modules/shared/utils/status-config.ts:102
+#: src/modules/shared/utils/status-config.ts:115
 msgid "Unknown"
 msgstr "Inconnu"
 
@@ -388,6 +396,6 @@ msgstr "Vous n'avez pas la permission de faire cela."
 msgid "You don't have permission to perform this action"
 msgstr "Vous n'avez pas la permission d'effectuer cette action"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:163
+#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:164
 msgid "You won't see this secret again."
 msgstr "Vous ne verrez plus ce secret."

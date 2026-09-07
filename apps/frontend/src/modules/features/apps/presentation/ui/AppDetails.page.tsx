@@ -41,7 +41,7 @@ export const AppDetailsPage = () => {
   const { redirecting } = useResourceError({
     error,
     redirectTo: '..',
-    notFoundMessage: 'App not found',
+    notFoundMessage: t`App not found`,
   });
 
   if (redirecting) return null;

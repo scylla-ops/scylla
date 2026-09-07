@@ -44,6 +44,10 @@ msgstr "App"
 msgid "App ID"
 msgstr "ID de l'app"
 
+#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:44
+msgid "App not found"
+msgstr "Application introuvable"
+
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:53
 msgid "Apps"
 msgstr "Apps"

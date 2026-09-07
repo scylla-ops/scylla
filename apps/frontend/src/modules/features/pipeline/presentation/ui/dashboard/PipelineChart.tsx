@@ -49,7 +49,7 @@ export const PipelineChart = ({
   if (isError) {
     return (
       <div className='w-full flex items-center justify-center h-10 py-1'>
-        <span className='text-xs text-slate-400 italic'>
+        <span className='text-xs text-muted-foreground italic'>
           <Trans>Error loading jobs</Trans>
         </span>
       </div>
@@ -69,18 +69,24 @@ export const PipelineChart = ({
         tooltip: (
           <div className='flex flex-col gap-1.5'>
             <div className='flex items-center justify-between gap-4'>
-              <span className='font-bold text-slate-400'>Run #{runNumber}</span>
-              <span className='text-[10px] text-slate-400 font-mono'>{job.id.slice(0, 8)}...</span>
+              <span className='font-bold text-muted-foreground'>
+                <Trans>Run #{runNumber}</Trans>
+              </span>
+              <span className='text-[10px] text-muted-foreground font-mono'>
+                {job.id.slice(0, 8)}...
+              </span>
             </div>
             <div className='flex items-center gap-2'>
               <div className={cn('w-2 h-2 rounded-full', config.dotClassName)} />
               <span className={cn('font-semibold', config.textClassName)}>{_(config.label)}</span>
             </div>
-            <span className='text-[10px] text-slate-500 italic border-t border-slate-100 pt-1 mt-1'>
-              {job.status === 'running' || job.status === 'pending'
-                ? `Started ${getRelativeTime(job.createdAt)}`
-                : `Finished ${getRelativeTime(job.updatedAt)}`}{' '}
-              • Duration: {formatDuration(duration)}
+            <span className='text-[10px] text-muted-foreground italic border-t pt-1 mt-1'>
+              {job.status === 'running' || job.status === 'pending' ? (
+                <Trans>Started {getRelativeTime(job.createdAt)}</Trans>
+              ) : (
+                <Trans>Finished {getRelativeTime(job.updatedAt)}</Trans>
+              )}{' '}
+              • <Trans>Duration: {formatDuration(duration)}</Trans>
             </span>
           </div>
         ),
