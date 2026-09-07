@@ -26,7 +26,7 @@ msgstr "{0}"
 #~ msgid "Agents"
 #~ msgstr "Agents"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:108
+#: src/modules/layout/presentation/ui/Layout.tsx:102
 msgid "Create"
 msgstr "Create"
 
@@ -97,7 +97,7 @@ msgstr "System"
 msgid "Take a look at the new trigger feature on the pipeline page!"
 msgstr "Take a look at the new trigger feature on the pipeline page!"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:86
+#: src/modules/layout/presentation/ui/Layout.tsx:80
 msgid "To get started, please create your first organization."
 msgstr "To get started, please create your first organization."
 
@@ -109,6 +109,6 @@ msgstr "Toggle Sidebar"
 #~ msgid "Users"
 #~ msgstr "Users"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:83
+#: src/modules/layout/presentation/ui/Layout.tsx:77
 msgid "Welcome to Scylla!"
 msgstr "Welcome to Scylla!"
