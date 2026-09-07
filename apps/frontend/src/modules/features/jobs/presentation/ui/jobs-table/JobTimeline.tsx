@@ -6,6 +6,7 @@ import { useLingui } from '@lingui/react';
 import { cn } from '@shared/presentation/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
+import { formatTime } from '@shared/utils/date-utils.ts';
 
 type JobTimelineProps = {
   nodeExecutions: JobNodeExecution[];
@@ -61,12 +62,12 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
           </p>
           {node.startedAt && (
             <p>
-              <Trans>Started: {new Date(node.startedAt).toLocaleTimeString()}</Trans>
+              <Trans>Started: {formatTime(node.startedAt)}</Trans>
             </p>
           )}
           {node.finishedAt && (
             <p>
-              <Trans>Finished: {new Date(node.finishedAt).toLocaleTimeString()}</Trans>
+              <Trans>Finished: {formatTime(node.finishedAt)}</Trans>
             </p>
           )}
         </div>

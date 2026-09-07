@@ -39,7 +39,8 @@ export interface StatusConfig {
  * ships a light and a dark theme, and a hard-coded `emerald-500` only ever
  * looks right in one of them. The mapping is semantic —
  *
- *   the happy path (running → completed)  → `primary` and its derivatives
+ *   in progress (running)                 → `info` (the theme's blue)
+ *   success (completed)                   → `primary`
  *   failure                               → `destructive`
  *   interrupted (cancelled / orphaned)    → `warning`
  *   inert (pending / skipped / unknown)   → `muted-foreground`
@@ -52,11 +53,11 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     label: msg`Running`,
     variant: 'default',
     icon: Loader2,
-    iconClassName: 'text-primary animate-spin',
-    barClassName: 'bg-primary/50 animate-[smooth-pulse_2s_infinite]',
-    barHoverClassName: 'ring-4 ring-primary/30 ring-inset hover:scale-y-110',
-    dotClassName: 'bg-primary/60 animate-pulse',
-    textClassName: 'text-primary',
+    iconClassName: 'text-info animate-spin',
+    barClassName: 'bg-info/80 animate-[smooth-pulse_2s_infinite]',
+    barHoverClassName: 'ring-4 ring-info/30 ring-inset hover:scale-y-110',
+    dotClassName: 'bg-info animate-pulse',
+    textClassName: 'text-info',
   },
 
   pending: {

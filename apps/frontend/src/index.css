@@ -35,6 +35,11 @@
   --error-foreground: oklch(0.985 0 0);
   --warning: oklch(0.7 0.199 78.736);
   --warning-foreground: oklch(0.145 0 0);
+  /* In-progress / neutral-informative. The only blue in the theme: statuses
+     that are neither good nor bad (a running job) must not borrow --primary,
+     which means "succeeded" here. */
+  --info: oklch(0.58 0.148 252);
+  --info-foreground: oklch(0.985 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.973 0 89.876);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -80,6 +85,8 @@
   --error-foreground: oklch(0.985 0 0);
   --warning: oklch(76.569% 0.15453 67.242);
   --warning-foreground: oklch(0.145 0 0);
+  --info: oklch(0.7 0.135 252);
+  --info-foreground: oklch(0.145 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.627 0.084 155.4);
@@ -137,6 +144,8 @@
   --color-error-foreground: var(--error-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 }
 
 @layer base {
