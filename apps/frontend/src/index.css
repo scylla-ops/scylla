@@ -284,3 +284,61 @@
 .react-flow__controls-button svg {
   fill: var(--foreground) !important;
 }
+
+
+
+/* SCROLLBAR */
+
+html {
+  scrollbar-gutter: stable;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 140, 140, 0.35) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(140, 140, 140, 0.35);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(140, 140, 140, 0.65);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:root {
+  scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+}
+:root ::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.22);
+}
+:root ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.dark {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.38);
+}

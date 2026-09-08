@@ -83,7 +83,7 @@ export const DashboardPage = () => {
     // `pr-3` keeps right-aligned content ("See all", the table's last column)
     // off the scroll track; it is unconditional so the layout does not shift
     // depending on whether a scrollbar happens to be showing.
-    <div className='flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto pr-3'>
+    <div className='flex h-full min-h-0 w-full flex-col gap-4'>
       <FeatureHeader label={t`Dashboard`} />
 
       <div className='grid shrink-0 grid-cols-2 gap-4 md:grid-cols-4'>
@@ -158,7 +158,9 @@ export const DashboardPage = () => {
                 return (
                   <Card
                     key={project.id}
-                    onClick={openable ? () => navigate.goToProject(project.id, project.name) : undefined}
+                    onClick={
+                      openable ? () => navigate.goToProject(project.id, project.name) : undefined
+                    }
                     title={
                       openable ? undefined : t`You don't have access to this project's pipelines`
                     }

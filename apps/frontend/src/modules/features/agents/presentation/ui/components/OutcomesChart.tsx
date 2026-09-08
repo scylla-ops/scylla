@@ -69,8 +69,8 @@ export const OutcomesChart = ({ daily, aggregate }: OutcomesChartProps) => {
     : '';
 
   return (
-    <Card>
-      <CardContent className='space-y-3 p-4'>
+    <Card className={'w-full'}>
+      <CardContent className='space-y-3 p-4 w-full'>
         <div className='flex items-center justify-between'>
           <span className='font-mono text-xs uppercase tracking-wide text-muted-foreground'>
             <Trans>outcomes · last</Trans> {range}

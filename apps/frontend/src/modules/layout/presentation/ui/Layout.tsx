@@ -112,9 +112,9 @@ export const Layout = ({ navEntries }: LayoutProps) => {
   return (
     <SidebarProvider className='w-screen h-screen'>
       <AppSidebar navEntries={navEntries} />
-      <SidebarInset className='flex flex-col flex-1 min-w-0 border border-sidebar-border bg-background'>
+      <SidebarInset className='p-4 flex flex-col flex-1 min-w-0 border border-sidebar-border bg-background'>
         <TopBar />
-        <div className='p-4 flex-1 min-h-0'>
+        <div className='flex-1 overflow-auto min-h-0'>
           <AnimatedOutlet />
         </div>
       </SidebarInset>

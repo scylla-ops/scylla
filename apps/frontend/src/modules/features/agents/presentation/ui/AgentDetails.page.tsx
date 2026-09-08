@@ -58,55 +58,50 @@ export const AgentDetailsPage = () => {
   const seenLabel = agent.lastSeen ? getRelativeTime(agent.lastSeen) : null;
 
   return (
-    <div className='w-full h-full flex flex-col gap-4'>
-      {/* Header — no ULID here; it lives in the identity strip as a link. */}
-      <div className={'flex flex-row gap-2'}>
-        <div className={'flex flex-row justify-between w-full '}>
-          <div className='flex items-start justify-between gap-3'>
-            <div className='flex items-center gap-3'>
+    <div className='w-full min-h-full flex flex-col gap-6 pb-8'>
+      {/* Header */}
+      <div className='flex items-center justify-between w-full gap-4'>
+        <div className='flex items-center gap-3'>
+          <span
+            className={cn(
+              'relative flex h-14 w-14 items-center justify-center rounded-lg bg-success/10',
+              online ? 'border border-success' : 'border-2 border-destructive',
+            )}
+          >
+            <Cpu className={cn('h-7 w-7', online ? 'text-success' : 'text-destructive')} />
+            <span className='absolute -bottom-1 -right-1 flex h-3.5 w-3.5' aria-hidden>
+              {online && (
+                <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70' />
+              )}
               <span
                 className={cn(
-                  'relative flex h-14 w-14 items-center justify-center rounded-lg bg-success/10',
-                  online ? 'border border-success' : 'border-2 border-destructive',
+                  'relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-card',
+                  online ? 'bg-success' : 'bg-destructive',
                 )}
-              >
-                <Cpu className={cn('h-7 w-7', online ? 'text-success' : 'text-destructive')} />
-                <span className='absolute -bottom-1 -right-1 flex h-3.5 w-3.5' aria-hidden>
-                  {online && (
-                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-success/70' />
-                  )}
-                  <span
-                    className={cn(
-                      'relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-card',
-                      online ? 'bg-success' : 'bg-destructive',
-                    )}
-                  />
-                </span>
-              </span>
-              <div>
-                <h1 className='text-xl font-semibold'>{agent.name}</h1>
-                <p className='font-mono text-xs text-muted-foreground'>
-                  {online ? <Trans>online</Trans> : <Trans>offline</Trans>}
-                  {seenLabel && (
-                    <>
-                      {' · '}
-                      {online ? <Trans>seen</Trans> : <Trans>down</Trans>} {seenLabel}
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
+              />
+            </span>
+          </span>
+          <div>
+            <h1 className='text-xl font-semibold text-foreground'>{agent.name}</h1>
+            <p className='font-mono text-xs text-muted-foreground'>
+              {online ? <Trans>online</Trans> : <Trans>offline</Trans>}
+              {seenLabel && (
+                <>
+                  {' · '}
+                  {online ? <Trans>seen</Trans> : <Trans>down</Trans>} {seenLabel}
+                </>
+              )}
+            </p>
           </div>
         </div>
-        <div className='flex items-center gap-2'>
-          <Button variant='destructive' onClick={() => setConfirmDelete(true)}>
-            <Trans>Delete</Trans>
-          </Button>
-        </div>
+
+        <Button variant='destructive' onClick={() => setConfirmDelete(true)}>
+          <Trans>Delete</Trans>
+        </Button>
       </div>
 
-      {/* Identity strip — the quietest block on the page. */}
-      <div className='flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3.5 py-2'>
+      {/* Identity strip */}
+      <div className='flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-border bg-card px-3.5 py-2 w-full'>
         <span className='flex items-center gap-1.5'>
           <StripLabel>
             <Trans>Agent ID</Trans>
@@ -127,21 +122,21 @@ export const AgentDetailsPage = () => {
           <StripLabel>
             <Trans context='date-prefix'>Created</Trans>
           </StripLabel>
-          <span className='font-mono text-xs'>{formatDate(agent.createdAt)}</span>
+          <span className='font-mono text-xs text-foreground'>{formatDate(agent.createdAt)}</span>
         </span>
         <span className='text-muted-foreground/50'>·</span>
         <span className='flex items-center gap-1.5'>
           <StripLabel>
             <Trans context='date-prefix'>Updated</Trans>
           </StripLabel>
-          <span className='font-mono text-xs'>{formatDate(agent.updatedAt)}</span>
+          <span className='font-mono text-xs text-foreground'>{formatDate(agent.updatedAt)}</span>
         </span>
       </div>
 
       {/* Job stats */}
-      <div>
+      <div className='w-full'>
         <div className='mb-2 flex items-baseline gap-2'>
-          <h2 className='text-lg font-semibold'>
+          <h2 className='text-lg font-semibold text-foreground'>
             <Trans>Job stats</Trans>
           </h2>
           {stats && (
@@ -157,7 +152,7 @@ export const AgentDetailsPage = () => {
           )}
         </div>
 
-        <div className='grid gap-3 lg:grid-cols-[380px_1fr]'>
+        <div className='flex w-full  gap-3'>
           {stats ? (
             <OutcomesChart
               daily={stats.daily}
@@ -174,21 +169,19 @@ export const AgentDetailsPage = () => {
       </div>
 
       {/* How to start a worker for this agent */}
-      <div>
+      <div className='w-full'>
         <div className='mb-2 flex items-baseline gap-2'>
-          <h2 className='text-lg font-semibold'>
+          <h2 className='text-lg font-semibold text-foreground'>
             <Trans>Run this agent</Trans>
           </h2>
           <span className='font-mono text-xs text-muted-foreground'>
             <Trans>connects as this agent's app id</Trans>
           </span>
         </div>
-        <div className='max-w-3xl'>
+        <div className='w-full'>
           <AgentRunInstructions appId={agent.id} />
         </div>
       </div>
-
-      {/* Logs  here (not functionnal yet, need plug to backend */}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
