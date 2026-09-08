@@ -4,31 +4,35 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Surfaces : fond doux & cartes blanc pur pour la hiérarchie Shadcn */
   --background: #F4F7EB;
   --foreground: #272921;
 
-  --card: #EFF2E7;
+  --card: #FFFFFF;
   --card-foreground: #272921;
 
-  --popover: #EFF2E7;
+  --popover: #FFFFFF;
   --popover-foreground: #272921;
 
-  --select: #EFF2E7;
+  --select: #FFFFFF;
 
+  /* Marque & Actions principales */
   --primary: #5D9972;
   --primary-hover: #518C67;
   --primary-foreground: #F4F7EB;
   --primary-subtle: #E8F4EC;
 
-  --secondary: #4097A6;
-  --secondary-foreground: #F4F7EB;
-  --secondary-subtle: #E4F4F7;
+  /* Secondaire : neutre et sobre pour les éléments discrets */
+  --secondary: #E8EAE0;
+  --secondary-foreground: #272921;
+  --secondary-subtle: #F0F2E8;
 
+  /* Muted & Accents : hovers de menus et textes secondaires */
   --muted: #E8EAE0;
   --muted-foreground: #686965;
 
-  --accent: #E4F4F7;
-  --accent-foreground: #287683;
+  --accent: #E8F4EC;
+  --accent-foreground: #272921;
 
   --destructive: #BA4C43;
   --destructive-foreground: #F4F7EB;
@@ -37,12 +41,14 @@
   --input: #AFB0AA;
   --ring: #5D9972;
 
+  /* Graphiques */
   --chart-1: #5D9972;
   --chart-2: #4097A6;
   --chart-3: #287683;
   --chart-4: #ECA851;
   --chart-5: #BA4C43;
 
+  /* États (Info remis en teal / #4097A6) */
   --success: #5D9972;
   --success-foreground: #F4F7EB;
   --error: #BA4C43;
@@ -52,18 +58,27 @@
   --info: #4097A6;
   --info-foreground: #F4F7EB;
 
+  /* Semantic Status Tokens */
+  --status-queued: #94968F;
+  --status-running: #ECA851;
+  --status-passed: #5D9972;
+  --status-failed: #BA4C43;
+  --status-canceled: #AFB0AA;
+  --status-skipped: #8B6EB2;
+
   --radius: 0.625rem;
 
+  /* Navigation latérale */
   --sidebar: #EFF2E7;
   --sidebar-foreground: #272921;
   --sidebar-primary: #5D9972;
   --sidebar-primary-foreground: #F4F7EB;
-  --sidebar-accent: #E4F4F7;
-  --sidebar-accent-foreground: #287683;
+  --sidebar-accent: #E8F4EC;
+  --sidebar-accent-foreground: #272921;
   --sidebar-border: #D1D3CA;
   --sidebar-ring: #5D9972;
 
-  --code-editor-bg: #EFF2E7;
+  --code-editor-bg: #FFFFFF;
   --code-editor-line-bg: #E8F4EC;
   --code-editor-selection-bg: rgba(93, 153, 114, 0.25);
 }
@@ -75,7 +90,7 @@
   --card: #1E1E1C;
   --card-foreground: #F4F7EC;
 
-  --popover: #1E1E1C;
+  --popover: #222220;
   --popover-foreground: #F4F7EC;
 
   --select: #1E1E1C;
@@ -85,20 +100,20 @@
   --primary-foreground: #F4F7EB;
   --primary-subtle: #1B261E;
 
-  --secondary: #4097A6;
-  --secondary-foreground: #F4F7EB;
+  --secondary: #282826;
+  --secondary-foreground: #F4F7EC;
   --secondary-subtle: #162629;
 
   --muted: #282826;
   --muted-foreground: #B4B5B1;
 
-  --accent: #162629;
-  --accent-foreground: #81C2CE;
+  --accent: #222B24;
+  --accent-foreground: #F4F7EC;
 
   --destructive: #BA4C43;
   --destructive-foreground: #F4F7EB;
 
-  --border: #41413F;
+  --border: #333330;
   --input: #676865;
   --ring: #5D9972;
 
@@ -117,13 +132,21 @@
   --info: #4097A6;
   --info-foreground: #F4F7EB;
 
-  --sidebar: #171715;
+  /* Semantic Status Tokens */
+  --status-queued: #8E8F8A;
+  --status-running: #ECA851;
+  --status-passed: #5D9972;
+  --status-failed: #BA4C43;
+  --status-canceled: #676865;
+  --status-skipped: #8B6EB2;
+
+  --sidebar: #141412;
   --sidebar-foreground: #F4F7EC;
   --sidebar-primary: #5D9972;
   --sidebar-primary-foreground: #F4F7EB;
-  --sidebar-accent: #162629;
-  --sidebar-accent-foreground: #81C2CE;
-  --sidebar-border: #41413F;
+  --sidebar-accent: #222B24;
+  --sidebar-accent-foreground: #F4F7EC;
+  --sidebar-border: #333330;
   --sidebar-ring: #5D9972;
 
   --code-editor-bg: #171715;
@@ -187,6 +210,14 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+
+  /* Mapping Tailwind pour les Status (ex: bg-status-running, text-status-passed) */
+  --color-status-queued: var(--status-queued);
+  --color-status-running: var(--status-running);
+  --color-status-passed: var(--status-passed);
+  --color-status-failed: var(--status-failed);
+  --color-status-canceled: var(--status-canceled);
+  --color-status-skipped: var(--status-skipped);
 }
 
 @layer base {

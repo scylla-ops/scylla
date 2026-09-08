@@ -21,56 +21,49 @@ interface StatusIndicatorProps {
 }
 
 /**
- * Theme tokens only — same semantics as `STATUS_CONFIG` in
- * `@shared/utils/status-config.ts`, which this mirrors for the states it names
- * differently (`success` = `completed`, `idle` = `unknown`):
- * success → `primary`, running → `info`, failure → `destructive`,
- * interrupted → `warning`, inert → `muted-foreground`.
- * Keep the two in step; a status must not be green here and grey there.
+ * Uses semantic status tokens from the theme:
+ * success → `status-passed`, running → `status-running`, failure → `status-failed`,
+ * pending → `status-queued`, skipped → `status-skipped`,
+ * cancelled / orphaned → `status-canceled`, idle → `muted-foreground`.
  */
 const getStateColors = (state: StatusIndicatorProps['state']) => {
   switch (state) {
     case 'success':
       return {
-        dot: 'bg-primary',
-        ping: 'bg-primary/60',
-        container: 'border-primary/30 text-primary',
+        dot: 'bg-status-passed',
+        ping: 'bg-status-passed/60',
+        container: 'border-status-passed/30 text-status-passed',
       };
     case 'failed':
       return {
-        dot: 'bg-destructive',
-        ping: 'bg-destructive/60',
-        container: 'border-destructive/30 text-destructive',
+        dot: 'bg-status-failed',
+        ping: 'bg-status-failed/60',
+        container: 'border-status-failed/30 text-status-failed',
       };
     case 'running':
       return {
-        dot: 'bg-info',
-        ping: 'bg-info/60',
-        container: 'border-info/30 text-info',
+        dot: 'bg-status-running',
+        ping: 'bg-status-running/60',
+        container: 'border-status-running/30 text-status-running',
       };
     case 'pending':
       return {
-        dot: 'bg-muted-foreground',
-        ping: 'bg-muted-foreground/50',
-        container: 'border-border text-muted-foreground',
+        dot: 'bg-status-queued',
+        ping: 'bg-status-queued/50',
+        container: 'border-status-queued/30 text-status-queued',
       };
     case 'skipped':
       return {
-        dot: 'bg-muted-foreground/70',
-        ping: 'bg-muted-foreground/40',
-        container: 'border-border text-muted-foreground',
+        dot: 'bg-status-skipped',
+        ping: 'bg-status-skipped/50',
+        container: 'border-status-skipped/30 text-status-skipped',
       };
     case 'cancelled':
-      return {
-        dot: 'bg-warning/80',
-        ping: 'bg-warning/50',
-        container: 'border-warning/30 text-warning',
-      };
     case 'orphaned':
       return {
-        dot: 'bg-warning',
-        ping: 'bg-warning/60',
-        container: 'border-warning/30 text-warning',
+        dot: 'bg-status-canceled',
+        ping: 'bg-status-canceled/50',
+        container: 'border-status-canceled/30 text-status-canceled',
       };
     case 'idle':
     default:
