@@ -51,9 +51,7 @@ export const buildCron = (model: CronModel): string => {
     case 'daily':
       return `${model.minute} ${model.hour} * * *`;
     case 'weekly': {
-      const dow = model.weekdays.length
-        ? [...model.weekdays].sort((a, b) => a - b).join(',')
-        : '*';
+      const dow = model.weekdays.length ? [...model.weekdays].sort((a, b) => a - b).join(',') : '*';
       return `${model.minute} ${model.hour} * * ${dow}`;
     }
     case 'monthly':
@@ -111,7 +109,7 @@ export const parseCron = (expression: string): CronModel => {
  * runs outside the component tree — the caller passes the one from `useLingui`.
  */
 export const describeCron = (model: CronModel, i18n: I18n): string => {
-  const time = `${pad2(model.hour)}:${pad2(model.minute)} UTC`;
+  const time = `${pad2(model.hour)}:${pad2(model.minute)}`;
   switch (model.frequency) {
     case 'hourly':
       return i18n._(msg`Every hour at :${pad2(model.minute)}`);

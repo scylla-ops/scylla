@@ -102,7 +102,9 @@ const TimePicker = ({
         ))}
       </SelectContent>
     </Select>
-    <span className='text-xs text-muted-foreground'>UTC</span>
+    <span className='text-xs text-muted-foreground'>
+      <Trans>local time</Trans>
+    </span>
   </div>
 );
 
