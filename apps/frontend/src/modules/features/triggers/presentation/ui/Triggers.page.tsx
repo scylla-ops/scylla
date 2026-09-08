@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 import { ErrorState } from '@/modules/shared/presentation/ui/feedback/ErrorState.tsx';
 import { SecretRevealDialog } from '@shared/presentation/ui';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 import { usePipelineTriggers } from '@/modules/features/triggers/presentation/hooks/use-pipeline-triggers.ts';
 import {
   TriggersHeader,
@@ -12,7 +12,6 @@ import {
 import { TriggersTable } from '@/modules/features/triggers/presentation/ui/triggers-table/index.ts';
 import { TriggerFormDialog } from '@/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx';
 import type { CreatedTrigger } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
-import { useNewFeature } from '@shared/presentation/hooks/use-new-feature.ts';
 
 interface RevealedSecret {
   id: string;
@@ -25,13 +24,12 @@ export const TriggersPage = () => {
   const pipelineName = useContextStore(state => state.pipeline?.name) ?? '';
 
   const { triggers, isLoading, isError, error } = usePipelineTriggers(pipelineId ?? '');
-  const { isNew } = useNewFeature('triggers');
 
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [revealed, setRevealed] = useState<RevealedSecret | null>(null);
 
   if (!pipelineId || !projectId) {
-    return <ErrorState message='Pipeline ID is missing' />;
+    return <ErrorState message={<Trans>Pipeline ID is missing</Trans>} />;
   }
   if (isLoading) {
     return <></>;
@@ -58,19 +56,13 @@ export const TriggersPage = () => {
         triggerIds={triggers.map(trigger => trigger.id)}
         pipelineId={pipelineId}
         onNew={() => setCreateOpen(true)}
-        isNew={isNew}
       />
 
       {triggers.length > 0 && <TriggersOverview triggers={triggers} />}
 
       <div className='overflow-hidden'>
         {triggers.length > 0 ? (
-          <TriggersTable
-            triggers={triggers}
-            pipelineId={pipelineId}
-            projectId={projectId}
-            pipelineName={pipelineName}
-          />
+          <TriggersTable triggers={triggers} pipelineId={pipelineId} pipelineName={pipelineName} />
         ) : (
           <div className='flex items-center justify-center min-h-[300px]'>
             <div className='text-center space-y-2'>
@@ -95,9 +87,13 @@ export const TriggersPage = () => {
       {revealed && (
         <SecretRevealDialog
           open={true}
-          entityKind='webhook'
-          entity={{ id: revealed.id, name: revealed.name }}
+          title={<Trans>{revealed.name} webhook secret</Trans>}
+          description={<Trans>Copy the secret below — it is shown only once.</Trans>}
           secret={revealed.secret}
+          secretLabel={`Secret`}
+          revealedNote={
+            <Trans>Add this signing secret to your webhook sender's HMAC configuration.</Trans>
+          }
           onClose={() => setRevealed(null)}
         />
       )}

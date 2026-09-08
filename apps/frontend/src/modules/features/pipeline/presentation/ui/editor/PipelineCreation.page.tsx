@@ -25,7 +25,7 @@ export const PipelineCreationPage = () => {
     <div className='flex h-full flex-col gap-4'>
       <PipelineEditor
         mode='create'
-        submitLabel='Create'
+        submitLabel={<Trans>Create</Trans>}
         projectId={projectId}
         initialScript={initialScript}
         onSubmit={({ name, steps }) =>

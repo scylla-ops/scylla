@@ -33,12 +33,12 @@ export const IconButton = ({
           variant='ghost'
           disabled={disabled}
           className={cn(
-            'h-8 w-8 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full',
+            'h-8 w-8 cursor-pointer rounded-full transition-all duration-200 hover:scale-125 hover:bg-primary-subtle hover:text-primary active:scale-95',
             className,
           )}
           onClick={onClick}
         >
-          <Icon className={cn('w-4 h-4', iconClassName)} />
+          <Icon className={cn('h-4 w-4', iconClassName)} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>
@@ -47,4 +47,3 @@ export const IconButton = ({
     </Tooltip>
   );
 };
-

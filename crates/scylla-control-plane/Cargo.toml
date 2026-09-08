@@ -3,29 +3,83 @@ name = "scylla-control-plane"
 version = "0.1.0"
 edition = "2024"
 
+# The shipped binary. Its name is load-bearing: the Dockerfile builds
+# `-p ${PACKAGE}` then copies `target/release/${PACKAGE}`, so the package name
+# and the binary name must stay identical.
 [[bin]]
 name = "scylla-control-plane"
 path = "src/main.rs"
 
+[features]
+# Public self-service signup (the gRPC RegistrationService). Off by default so a
+# deployment stays invite-only / OAuth-only unless it opts in.
+register = []
+
+# Exposes the `test_support` builders and seeders. Only this crate consumes them
+# today; the feature exists so an integration-test crate could without making
+# them part of the normal build.
+test-utils = []
+
 [dependencies]
-# workspace subsystems composed in-process
-scylla-core = { workspace = true, features = ["postgres", "hash", "permission"] }
-scylla-api = { path = "../scylla-api" }
+# the shared kernel: domain model + the agent-facing event vocabulary
+scylla-core = { workspace = true }
+tokio.workspace = true
+async-trait.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+http.workspace = true
+serde.workspace = true
+toml.workspace = true
+chrono.workspace = true
+prost-types.workspace = true
+tracing.workspace = true
+derive_more.workspace = true
+thiserror.workspace = true
 
-# async runtime + cancellation
+tokio-stream = { workspace = true }
+futures-util.workspace = true
+serde_json.workspace = true
+
+# webhook ingress HTTP server (separate listener from the gRPC port)
+axum.workspace = true
+
+# database
+sqlx.workspace = true
+
+# adapters: password hashing, policy engine, secret encryption, webhook HMAC,
+# outbound mail and OAuth. All of these used to sit in scylla-core, where they
+# were linked into the agent for no reason.
+argon2.workspace = true
+cedar-policy.workspace = true
+chacha20poly1305.workspace = true
+hmac.workspace = true
+sha2.workspace = true
+subtle.workspace = true
+hex.workspace = true
+lettre.workspace = true
+oauth2.workspace = true
+reqwest.workspace = true
+croner.workspace = true
+humantime-serde.workspace = true
+uuid.workspace = true
+bon.workspace = true
+futures-core.workspace = true
+
+# grpc
+tonic.workspace = true
+tonic-web.workspace = true
+tonic-reflection.workspace = true
+tonic-async-interceptor.workspace = true
+scylla-protocol.workspace = true
+
+# binary: cli, cancellation, top-level error reporting
+clap.workspace = true
+tokio-util.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+
+[dev-dependencies]
 tokio = { workspace = true }
-tokio-util = { workspace = true }
-
-# config + cli + tracing
-serde = { workspace = true }
-toml = { workspace = true }
-clap = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-
-# error
-anyhow = { workspace = true }
-thiserror = { workspace = true }
 
 [lints]
 workspace = true

@@ -1,14 +1,17 @@
 import { Button } from '@shadcn';
 import { TabsList, TabsTrigger } from '@shadcn/tabs.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@shared/presentation/utils';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
 
 interface PipelineEditorHeaderProps {
   onSubmit: () => void;
-  submitLabel: string;
+  submitLabel: ReactNode;
   /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
   mode: 'create' | 'edit';
   /** Disables the submit button (e.g. when the script JSON is invalid). */
@@ -45,6 +48,11 @@ export const PipelineEditorHeader = ({
         ? 'dirty'
         : 'saved';
 
+  // Creating vs. editing needs a different permission, in the current project context.
+  const canSubmit = useCan(
+    mode === 'create' ? Permission.CREATE_PIPELINE : Permission.UPDATE_PIPELINE,
+  );
+
   return (
     <div className={'flex w-full items-center justify-between gap-3'}>
       <TabsList>
@@ -57,7 +65,7 @@ export const PipelineEditorHeader = ({
       </TabsList>
 
       <div className='flex items-center gap-3'>
-        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+        <div className='flex items-center gap-2 text-sm text-foreground/80'>
           <span className='relative flex size-2'>
             {status === 'dirty' && (
               <span className='absolute inline-flex size-full animate-ping rounded-full bg-amber-500/70' />
@@ -85,10 +93,31 @@ export const PipelineEditorHeader = ({
           </AnimatePresence>
         </div>
 
-        <Button onClick={onSubmit} disabled={submitDisabled || isSaving}>
-          {isSaving && <Loader2 className='mr-2 size-4 animate-spin' />}
-          <Trans>{submitLabel}</Trans>
-        </Button>
+        {canSubmit ? (
+          <Button onClick={onSubmit} disabled={submitDisabled || isSaving}>
+            {isSaving && <Loader2 className='mr-2 size-4 animate-spin' />}
+            {submitLabel}
+          </Button>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className='inline-flex'>
+                <Button disabled className='pointer-events-none'>
+                  {submitLabel}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {mode === 'create' ? (
+                  <Trans>You don't have permission to create pipelines.</Trans>
+                ) : (
+                  <Trans>You don't have permission to edit this pipeline.</Trans>
+                )}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

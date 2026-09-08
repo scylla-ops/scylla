@@ -1,14 +1,16 @@
-import type { ListOrganizationsResponse, OrganizationResponse } from '@/generated/organization.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
+import type { UserEntity } from '@/modules/features/user';
+import type { OrganizationEntity } from '@/modules/features/organization/domain/entities/organization.entity.ts';
 
 export interface OrganizationRepository {
-  getAll(): Promise<ScyllaResult<ListOrganizationsResponse>>;
-  getMine(): Promise<ScyllaResult<ListOrganizationsResponse>>;
-  create: (name: string, description?: string) => Promise<ScyllaResult<OrganizationResponse>>;
+  getAll(): Promise<ScyllaResult<OrganizationEntity[]>>;
+  getMine(): Promise<ScyllaResult<OrganizationEntity[]>>;
+  listMembers(organizationId: string): Promise<ScyllaResult<UserEntity[]>>;
+  create: (name: string, description?: string) => Promise<ScyllaResult<OrganizationEntity>>;
   update: (
     organizationId: string,
     name?: string,
     description?: string,
-  ) => Promise<ScyllaResult<OrganizationResponse>>;
+  ) => Promise<ScyllaResult<OrganizationEntity>>;
   delete: (organizationId: string) => Promise<ScyllaResult<void>>;
 }

@@ -45,10 +45,11 @@ export const CopyableText = ({
   };
 
   const text = display ?? (truncate ? `${value.slice(0, truncate)}...` : value);
-  const label = <span className='font-mono text-sm truncate'>{text}</span>;
+  const label = <span className='font-mono truncate'>{text}</span>;
 
+  // `min-w-0` on the root so the label can actually ellipsize when this sits in a flex row.
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex min-w-0 items-center gap-2', className)}>
       {showFullOnHover ? (
         <Tooltip>
           <TooltipTrigger asChild>{label}</TooltipTrigger>

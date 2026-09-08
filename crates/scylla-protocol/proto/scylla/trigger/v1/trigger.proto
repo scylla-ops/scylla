@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package scylla.trigger.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Triggers — the ways a run starts WITHOUT a human clicking "Run". A trigger is
+// a stored initiator bound to ONE pipeline; when it fires it takes the same path
+// as a manual run (a single runPipeline check, one Job minted, the same agent
+// dispatch). It is a new *source*, never a new execution path. A pipeline may
+// have several triggers.
+//
+// Two sources ship today:
+//   • cron    — fires on a schedule (UTC).
+//   • webhook — fires when an external system POSTs to the hook URL,
+//               authenticated by an HMAC-SHA256 signature of the raw body.
+// (poll — fires on a detected change — arrives later as a new `source` arm.)
+//
+// The run executes as a dedicated machine principal scoped to the org (an App
+// carrying only runPipeline) — never as the human who created it, never as a
+// system service. Creating a trigger therefore also requires that the caller can
+// run the pipeline themselves (no authority laundering).
+//
+// Every RPC is guarded by `manageTriggers` on the target pipeline.
+//
+// FireTriggerNow returns only the id of the job it minted rather than the job
+// itself, so this contract does not depend on `scylla.job.v1`.
+service TriggerService {
+  rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse);
+  rpc GetTrigger(GetTriggerRequest) returns (GetTriggerResponse);
+  rpc UpdateTrigger(UpdateTriggerRequest) returns (UpdateTriggerResponse);
+  rpc DeleteTrigger(DeleteTriggerRequest) returns (DeleteTriggerResponse);
+  rpc ListPipelineTriggers(ListPipelineTriggersRequest) returns (ListPipelineTriggersResponse);
+  // Enable / disable without deleting. A disabled trigger never fires and, for a
+  // webhook, its URL returns an opaque 404.
+  rpc SetTriggerEnabled(SetTriggerEnabledRequest) returns (SetTriggerEnabledResponse);
+  // Fire immediately, short-circuiting schedule and signature — for testing.
+  // Mints and dispatches a Job exactly like a real fire. Requires runPipeline.
+  rpc FireTriggerNow(FireTriggerNowRequest) returns (FireTriggerNowResponse);
+}
+
+// ── Source specs (write side) ──────────────────────────────────────────────
+
+// Cron schedule. `expression` is a 5-field cron expression (min hour day month
+// weekday), evaluated in UTC. Sub-minute schedules are rejected; the minimum
+// interval is enforced server-side.
+message CronSpec {
+  // e.g. "0 9 * * 1-5" — 09:00 UTC on weekdays.
+  string expression = 1;
+}
+
+// Webhook source. Scylla generates the signing secret at creation and returns it
+// exactly once (see CreateTriggerResponse.webhook_secret); it is stored
+// encrypted (never one-way hashed — HMAC verification needs the value) and never
+// returned again. Senders sign the raw body with HMAC-SHA256 and pass the
+// signature in the configured header.
+message WebhookSpec {
+  // Header carrying the HMAC-SHA256 signature (hex) of the raw body. Empty = the
+  // default Scylla header; set "X-Hub-Signature-256" for GitHub.
+  string signature_header = 1;
+}
+
+// Static or payload-derived inputs, injected into the run as literal (unmasked)
+// env, merged after secret resolution. `literal` = a constant; `json_pointer` =
+// extraction of a value from the webhook payload (RFC 6901), allow-listed per
+// trigger — never a body→env splat, and a value can never name a secret.
+message TriggerInput {
+  string key = 1;
+  oneof source {
+    string literal = 2;
+    // Webhook only, e.g. "/after".
+    string json_pointer = 3;
+  }
+}
+
+// ── Read model ─────────────────────────────────────────────────────────────
+
+// A stored trigger as returned by the API.
+//
+// Tags 1-9 carry what is true of every trigger; the source and activation unions
+// start at 10 and 20 so both can grow without colliding.
+message Trigger {
+  scylla.common.v1.TriggerId trigger_id = 1;
+  scylla.common.v1.PipelineId pipeline_id = 2;
+  string name = 3;
+  repeated TriggerInput inputs = 4;
+  // The most recent fire attempt. Absent before the first fire.
+  FireObservation last_observation = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+
+  // What makes it fire. Always set. The source *kind* is immutable — switching
+  // cron↔webhook means delete and recreate. Each arm carries only the fields its
+  // own kind has, so a cron trigger holding a webhook URL is unrepresentable.
+  oneof source {
+    Cron cron = 10;
+    Webhook webhook = 11;
+  }
+
+  // Whether it fires, and — for an enabled cron — when it is next due. A
+  // disabled trigger structurally has no schedule, so `next_fire_at` cannot
+  // outlive being disabled: it lives only inside `Enabled`. Always set.
+  oneof activation {
+    Disabled disabled = 20;
+    Enabled enabled = 21;
+  }
+
+  message Cron {
+    // 5-field cron expression, evaluated in UTC.
+    string expression = 1;
+  }
+  message Webhook {
+    // Header carrying the HMAC-SHA256 signature of the raw body.
+    string signature_header = 1;
+    // Public URL to POST to. Derived from server config.
+    string url = 2;
+  }
+
+  message Disabled {}
+  message Enabled {
+    // Scheduled cron only: the next due occurrence (UTC). Absent for a webhook
+    // or a cron the scheduler has not anchored yet.
+    google.protobuf.Timestamp next_fire_at = 1;
+  }
+}
+
+// The outcome of the most recent fire attempt. The timestamp and its result move
+// together — there is never one without the other.
+message FireObservation {
+  google.protobuf.Timestamp fired_at = 1;
+
+  oneof result {
+    Succeeded succeeded = 2;
+    Failed failed = 3;
+  }
+
+  message Succeeded {}
+  // `error` is a free-form description and may be empty when only the failure
+  // itself was recorded.
+  message Failed { string error = 1; }
+}
+
+// ── CRUD ───────────────────────────────────────────────────────────────────
+
+message CreateTriggerRequest {
+  scylla.common.v1.PipelineId pipeline_id = 1;
+  string name = 2;
+  repeated TriggerInput inputs = 3;
+
+  oneof source {
+    CronSpec cron = 10;
+    WebhookSpec webhook = 11;
+  }
+}
+
+message CreateTriggerResponse {
+  Trigger trigger = 1;
+  // The plaintext HMAC secret, shown exactly once. Set only when the trigger's
+  // source is a webhook — a cron trigger has no secret to hand back. It cannot
+  // live inside `Trigger.source.webhook` because Get/Update return that same
+  // message and must never disclose the secret.
+  optional string webhook_secret = 2;
+}
+
+message GetTriggerRequest { scylla.common.v1.TriggerId trigger_id = 1; }
+
+message GetTriggerResponse { Trigger trigger = 1; }
+
+// Replaces the editable fields (name, source spec, inputs). `enabled` is managed
+// through SetTriggerEnabled. The source KIND is immutable — to move from cron to
+// webhook, delete and recreate. The `source` block is REQUIRED and must keep the
+// existing kind; the handler rejects a request without one.
+message UpdateTriggerRequest {
+  scylla.common.v1.TriggerId trigger_id = 1;
+  optional string name = 2;
+  repeated TriggerInput inputs = 3;
+
+  oneof source {
+    CronSpec cron = 10;
+    WebhookSpec webhook = 11;
+  }
+}
+
+message UpdateTriggerResponse { Trigger trigger = 1; }
+
+message DeleteTriggerRequest { scylla.common.v1.TriggerId trigger_id = 1; }
+
+message DeleteTriggerResponse {}
+
+message ListPipelineTriggersRequest { scylla.common.v1.PipelineId pipeline_id = 1; }
+
+message ListPipelineTriggersResponse { repeated Trigger triggers = 1; }
+
+message SetTriggerEnabledRequest {
+  scylla.common.v1.TriggerId trigger_id = 1;
+  bool enabled = 2;
+}
+
+message SetTriggerEnabledResponse { Trigger trigger = 1; }
+
+message FireTriggerNowRequest { scylla.common.v1.TriggerId trigger_id = 1; }
+
+// The run that was minted. Fetch it with JobService.GetJob.
+message FireTriggerNowResponse { scylla.common.v1.JobId job_id = 1; }

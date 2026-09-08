@@ -24,6 +24,7 @@ bun.lockb
 *.njsproj
 *.sln
 *.sw?
+.zed
 
 src/modules/**/messages.ts
 src/generated/**/messages.ts

@@ -2,6 +2,7 @@ import { cn } from '@shared/presentation/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import type { ReactNode } from 'react';
+import { Trans } from '@lingui/react/macro';
 
 export interface StatusBarItem {
   id: string;
@@ -11,7 +12,7 @@ export interface StatusBarItem {
 
 interface StatusBarProps {
   items: StatusBarItem[];
-  emptyLabel?: string;
+  emptyLabel?: ReactNode;
   className?: string;
   height?: string;
 }
@@ -20,16 +21,13 @@ interface StatusBarProps {
  * Generic bar chart showing colored segments per status.
  * Used for pipeline job history and job node timelines.
  */
-export const StatusBar = ({
-  items,
-  emptyLabel = 'No data',
-  className,
-  height = 'h-6',
-}: StatusBarProps) => {
+export const StatusBar = ({ items, emptyLabel, className, height = 'h-6' }: StatusBarProps) => {
   if (items.length === 0) {
     return (
       <div className={cn('w-full flex items-center justify-center py-1', height)}>
-        <span className='text-xs text-slate-400 italic'>{emptyLabel}</span>
+        <span className='text-xs text-muted-foreground italic'>
+          {emptyLabel ?? <Trans>No data</Trans>}
+        </span>
       </div>
     );
   }
@@ -63,7 +61,10 @@ export const StatusBar = ({
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>{bar}</TooltipTrigger>
-              <TooltipContent side='top' className='text-xs p-3 shadow-lg border-slate-200'>
+              <TooltipContent
+                side='top'
+                className='text-xs text-popover-foreground border-border p-3 shadow-lg bg-popover'
+              >
                 {item.tooltip}
               </TooltipContent>
             </Tooltip>

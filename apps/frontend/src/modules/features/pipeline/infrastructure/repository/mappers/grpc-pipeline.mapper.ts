@@ -6,12 +6,12 @@ import type {
 import type { PipelineEntity } from '@/modules/features/pipeline/domain/entities/pipeline.entity.ts';
 import type {
   EnvVar,
-  ListPipelinesResponse,
+  ListProjectPipelinesResponse,
+  Pipeline,
   PipelineNode,
-  PipelineResponse,
   PipelineSummary,
-} from '@/generated/pipeline.ts';
-import { Shell } from '@/generated/common.ts';
+} from '@/generated/scylla/pipeline/v1/pipeline.ts';
+import { Shell } from '@/generated/scylla/exec/v1/step.ts';
 import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts';
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import { idValue, timestampToIso, wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
@@ -24,16 +24,28 @@ function shellToProto(s: 'sh' | 'bash'): Shell {
   return s === 'bash' ? Shell.BASH : Shell.SH;
 }
 
+/**
+ * Thrown when the server sends a oneof arm this build does not know. Reading the
+ * pipeline as-is would silently drop what the newer arm carried, and saving the
+ * editor back would then overwrite it on the server — so refuse the whole
+ * pipeline instead. `ScyllaResult.map` turns this into an error result.
+ */
+class UnknownArmError extends Error {
+  constructor(what: string) {
+    super(`${what} uses a variant this client doesn't understand — update Scylla`);
+  }
+}
+
 /** proto EnvVar -> domain EnvEntry (a secret ref or an inline literal). */
 function envVarToDomain(e: EnvVar): EnvEntry {
-  if (e.source.oneofKind === 'secretRef') {
-    return { key: e.key, kind: 'secret', secretRef: e.source.secretRef };
+  switch (e.source.oneofKind) {
+    case 'secretRef':
+      return { key: e.key, kind: 'secret', secretRef: e.source.secretRef };
+    case 'value':
+      return { key: e.key, kind: 'literal', value: e.source.value };
+    default:
+      throw new UnknownArmError(`Environment variable "${e.key}"`);
   }
-  return {
-    key: e.key,
-    kind: 'literal',
-    value: e.source.oneofKind === 'value' ? e.source.value : '',
-  };
 }
 
 /** domain EnvEntry -> proto EnvVar. */
@@ -43,6 +55,9 @@ function envVarFromDomain(entry: EnvEntry): EnvVar {
   }
   return { key: entry.key, source: { oneofKind: 'value', value: entry.value } };
 }
+
+/** What every scoped pipeline listing returns, whatever the scope. */
+type PipelineListResponse = Pick<ListProjectPipelinesResponse, 'pipelines' | 'pagination'>;
 
 export class GrpcPipelineMapper {
   private static nodeToDomain(node: PipelineNode): PipelineStep {
@@ -70,7 +85,7 @@ export class GrpcPipelineMapper {
         args: step.exec.args,
       };
     }
-    return { ...base, kind: 'exec', command: '', args: [] };
+    throw new UnknownArmError(`Step "${base.id}"`);
   }
 
   static nodeFromDomain(step: PipelineStep): PipelineNode {
@@ -92,7 +107,7 @@ export class GrpcPipelineMapper {
     };
   }
 
-  static toDomain(pipeline: PipelineResponse): PipelineEntity {
+  static toDomain(pipeline: Pipeline): PipelineEntity {
     return {
       id: idValue(pipeline.pipelineId),
       projectId: idValue(pipeline.projectId),
@@ -112,7 +127,13 @@ export class GrpcPipelineMapper {
     };
   }
 
-  static toDomainInfoList(pipelines: ListPipelinesResponse): PaginatedList<PipelineMetadata> {
+  /**
+   * Takes the shape rather than one named response: the project- and
+   * organization-scoped listings are the same `{ pipelines, pagination }` pair.
+   */
+  static toDomainInfoList(
+    pipelines: PipelineListResponse,
+  ): PaginatedList<PipelineMetadata> {
     return {
       items: pipelines.pipelines.map(GrpcPipelineMapper.toDomainInfo),
       pagination: pipelines.pagination as PaginationInfo,

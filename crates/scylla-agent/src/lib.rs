@@ -2,7 +2,7 @@ pub mod agent;
 pub mod config;
 pub mod error;
 pub mod executor;
-pub mod plan;
+pub mod host;
 pub mod reporter;
 
 pub use agent::Agent;

@@ -3,23 +3,23 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Streaming;
 use tonic::metadata::MetadataValue;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Code, Request};
 use tracing::{error, info, warn};
 
-use scylla_core::domain::entities::PipelineNode;
-use scylla_core::domain::value_objects::pipeline::{EnvKey, EnvVar, NodeId, Shell, Step, WorkingDir};
-use scylla_protocol::services::agent::agent_service_client::AgentServiceClient;
-use scylla_protocol::services::agent::{AgentDown, AgentNode, AgentUp, agent_down, agent_node};
-use scylla_protocol::services::common;
-use scylla_protocol::services::app::IssueTokenRequest;
-use scylla_protocol::services::app::app_auth_service_client::AppAuthServiceClient;
+use scylla_core::domain::pipeline::PipelineNode;
+use scylla_core::domain::pipeline::{EnvKey, EnvVar, NodeId, Step, WorkingDir};
+use scylla_protocol::agent::v1::agent_service_client::AgentServiceClient;
+use scylla_protocol::agent::v1::{AgentDown, AgentNode, AgentUp, agent_down, agent_node, agent_up};
+use scylla_protocol::app::v1::IssueTokenRequest;
+use scylla_protocol::app::v1::app_auth_service_client::AppAuthServiceClient;
+use scylla_protocol::common::v1 as common;
 
 use crate::config::AgentConfig;
 use crate::error::AgentError;
 use crate::executor::Executor;
 use crate::reporter::StatusPublisher;
-use scylla_core::application::JobEvent;
+use scylla_core::JobEvent;
 
 pub struct Agent {
     config: AgentConfig,
@@ -61,6 +61,7 @@ impl Agent {
             match self.connect().await {
                 Ok((inbound, up_tx)) => {
                     info!("agent stream open — waiting for jobs");
+                    send_hello(&up_tx).await;
                     let started = Instant::now();
                     let outcome = self.serve(inbound, up_tx).await;
                     let uptime = started.elapsed();
@@ -107,17 +108,32 @@ impl Agent {
     /// agent stream. Returns the inbound (server→agent) stream and the
     /// up-stream sender (agent→server).
     async fn connect(&self) -> Result<(Streaming<AgentDown>, mpsc::Sender<AgentUp>), AgentError> {
-        let channel = Channel::from_shared(self.config.control_plane_url.clone())
-            .map_err(|e| AgentError::InvalidUrl {
-                url: self.config.control_plane_url.clone(),
+        let url = self.config.control_plane_url.clone();
+        let mut endpoint =
+            Channel::from_shared(url.clone()).map_err(|e| AgentError::InvalidUrl {
+                url: url.clone(),
                 message: e.to_string(),
-            })?
-            .connect()
-            .await?;
+            })?;
+        // Keepalive so a half-open connection (proxy/NAT idle drop, or a control
+        // plane that vanished without a FIN) is detected instead of hanging the
+        // agent forever: pings while idle, and a missed pong tears the stream
+        // down so the outer reconnect loop kicks in.
+        endpoint = endpoint
+            .http2_keep_alive_interval(Duration::from_secs(20))
+            .keep_alive_timeout(Duration::from_secs(10))
+            .keep_alive_while_idle(true)
+            .tcp_keepalive(Some(Duration::from_secs(30)));
+        // An https:// control plane terminates TLS at the proxy (which then
+        // speaks h2c to the backend); load the host's native roots so the
+        // handshake succeeds. Plain http:// (local dev) stays cleartext h2c.
+        if url.starts_with("https://") {
+            endpoint = endpoint.tls_config(ClientTlsConfig::new().with_native_roots())?;
+        }
+        let channel = endpoint.connect().await?;
 
         let token = AppAuthServiceClient::new(channel.clone())
             .issue_token(IssueTokenRequest {
-                app_id: Some(scylla_protocol::services::common::AppId {
+                app_id: Some(common::AppId {
                     value: self.config.app_id.clone(),
                 }),
                 secret: self.config.app_secret.clone(),
@@ -177,8 +193,7 @@ impl Agent {
                                 // `pending` forever (it is already assigned to
                                 // this agent) — fail it upstream instead.
                                 warn!(%job_id, error = %e, "invalid dispatch nodes, failing job");
-                                let publisher =
-                                    StatusPublisher::new(up_tx.clone(), job_id.clone());
+                                let publisher = StatusPublisher::new(up_tx.clone(), job_id.clone());
                                 if let Err(pe) = publisher.emit(JobEvent::JobStarted).await {
                                     warn!(%job_id, error = %pe, "failed to report job start");
                                 } else if let Err(pe) = publisher
@@ -219,6 +234,27 @@ impl Agent {
     }
 }
 
+async fn send_hello(up_tx: &mpsc::Sender<AgentUp>) {
+    let hello = crate::host::hello();
+    info!(
+        version = %hello.version,
+        os = %hello.os,
+        arch = %hello.arch,
+        hostname = %hello.hostname,
+        cpus = hello.cpu_count,
+        memory_mb = hello.total_memory_mb,
+        "reporting agent host to control plane"
+    );
+    if let Err(e) = up_tx
+        .send(AgentUp {
+            payload: Some(agent_up::Payload::Hello(hello)),
+        })
+        .await
+    {
+        warn!(error = %e, "failed to report agent host; continuing without it");
+    }
+}
+
 /// Seconds an agent stream must stay up before we treat the connection as
 /// healthy and reset the reconnect-failure counter.
 const MIN_UPTIME_FOR_RESET_SECS: u64 = 5;
@@ -253,7 +289,8 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
     nodes
         .into_iter()
         .map(|n| {
-            let id = NodeId::new(&n.node_id.unwrap_or_default().value).map_err(|e| e.to_string())?;
+            let id =
+                NodeId::new(&n.node_id.unwrap_or_default().value).map_err(|e| e.to_string())?;
             let deps = n
                 .deps
                 .iter()
@@ -277,19 +314,14 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                 Some(agent_node::Step::Exec(e)) => {
                     Step::exec(e.command, e.args).map_err(|err| err.to_string())?
                 }
-                Some(agent_node::Step::Script(s)) => {
-                    Step::script(s.script, shell_from_proto(s.shell)).map_err(|err| err.to_string())?
-                }
+                Some(agent_node::Step::Script(s)) => Step::script(
+                    s.script,
+                    scylla_protocol::convert::shell_from_proto(s.shell),
+                )
+                .map_err(|err| err.to_string())?,
                 None => return Err("dispatch node is missing its step".to_string()),
             };
             Ok(PipelineNode::new(id, deps, step, working_dir, env))
         })
         .collect()
-}
-
-fn shell_from_proto(raw: i32) -> Shell {
-    match common::Shell::try_from(raw).unwrap_or_default() {
-        common::Shell::Bash => Shell::Bash,
-        common::Shell::Sh | common::Shell::Unspecified => Shell::Sh,
-    }
 }

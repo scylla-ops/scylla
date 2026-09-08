@@ -7,8 +7,6 @@ import type {
 import type { TriggersRepository } from '@/modules/features/triggers/domain/repository/triggers.repository.ts';
 import type { TriggersRemoteDataSource } from '@/modules/features/triggers/infrastructure/repository/data-sources/triggers-remote.data-source.ts';
 import { GrpcTriggerMapper } from '@/modules/features/triggers/infrastructure/repository/mappers/grpc-trigger.mapper.ts';
-import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
-import { GrpcJobMapper } from '@/modules/features/jobs/infrastructure/repository/mappers/grpc-job.mapper.ts';
 
 /** TriggersRepository backed by the remote (gRPC) data source. */
 export class DefaultTriggersRepository implements TriggersRepository {
@@ -40,7 +38,7 @@ export class DefaultTriggersRepository implements TriggersRepository {
     return (await this.remoteDataSource.update(request)).map(GrpcTriggerMapper.toDomain);
   }
 
-  public deleteById(triggerId: string): Promise<ScyllaResult<boolean>> {
+  public deleteById(triggerId: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.deleteById(triggerId);
   }
 
@@ -53,7 +51,7 @@ export class DefaultTriggersRepository implements TriggersRepository {
     );
   }
 
-  public async fireNow(triggerId: string): Promise<ScyllaResult<JobEntity>> {
-    return (await this.remoteDataSource.fireNow(triggerId)).map(GrpcJobMapper.toDomain);
+  public fireNow(triggerId: string): Promise<ScyllaResult<string>> {
+    return this.remoteDataSource.fireNow(triggerId);
   }
 }

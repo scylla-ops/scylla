@@ -5,45 +5,55 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
-import { useRunPipeline } from '@/modules/features/pipeline/presentation/hooks/use-run-pipeline.ts';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
   jobIds: string[];
   pipelineId: string;
   onRefresh: () => void;
+  /**
+   * Runs the pipeline these jobs belong to. Injected by whoever owns the route,
+   * because running is a pipeline operation — jobs would otherwise have to
+   * import the pipeline module that already reads jobs.
+   */
+  onRun?: () => Promise<void>;
 }
 
-export const JobsHeader = ({ numberOfJobs, jobIds, pipelineId, onRefresh }: JobsHeaderProps) => {
+export const JobsHeader = ({
+  numberOfJobs,
+  jobIds,
+  pipelineId,
+  onRefresh,
+  onRun,
+}: JobsHeaderProps) => {
   const deleteJob = useDeleteJobs(pipelineId);
   const { headerProps } = useFeatureSelection('jobs', jobIds, {
     deleteItem: id => deleteJob.mutateAsync(id),
   });
 
-  const runPipeline = useRunPipeline();
-
-  const handleRunPipeline = async () => {
-    try {
-      await runPipeline.mutateAsync(pipelineId);
-    } catch {
-      // Toast shown by the global MutationCache onError handler.
-    }
-  };
+  const canRun = useCan(Permission.RUN_PIPELINE);
+  const canDelete = useCan(Permission.DELETE_JOB);
 
   return (
     <div className={'flex flex-col gap-3'}>
       <FeatureHeader
         count={numberOfJobs}
-        label={'Job'}
-        pluralLabel={'Jobs'}
-        newLabel={'Run'}
-        onNew={handleRunPipeline}
+        label={<Trans>Job</Trans>}
+        pluralLabel={<Trans>Jobs</Trans>}
+        newLabel={<Trans>Run</Trans>}
+        onNew={onRun ? () => void onRun() : undefined}
+        canNew={canRun}
+        newDeniedReason={<Trans>You don't have permission to run this pipeline.</Trans>}
+        canDelete={canDelete}
+        deleteDeniedReason={<Trans>You don't have permission to delete jobs.</Trans>}
         {...headerProps}
         underLabel={
           <div className={'flex items-center justify-between'}>
             <div className='flex items-baseline gap-2'>
               <span className='text-sm text-muted-foreground font-medium'>
-                Pipeline ID: {pipelineId}
+                <Trans>Pipeline ID: {pipelineId}</Trans>
               </span>
             </div>
           </div>

@@ -1,0 +1,214 @@
+use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
+use crate::application::authz::policy::PolicyControl;
+use crate::application::caller::CallerContext;
+use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
+use crate::application::{OrganizationRepository, PermissionService, UserRepository};
+use crate::domain::errors::{DomainError, DomainResult};
+use crate::domain::ids::{OrganizationId, UserId};
+use crate::domain::organization::Organization;
+use crate::domain::organization::{OrganizationDescription, OrganizationName};
+use crate::domain::permission::Permission;
+use crate::domain::role::RoleName;
+use crate::domain::user::User;
+use derive_more::Constructor;
+use std::sync::Arc;
+use tracing::instrument;
+
+#[derive(Constructor)]
+pub struct OrganizationUseCases<
+    O: OrganizationRepository,
+    U: UserRepository,
+    PS: PermissionService,
+    PC: PolicyControl,
+> {
+    org_repo: Arc<O>,
+    user_repo: Arc<U>,
+    permission_service: Arc<PS>,
+    policy_control: Arc<PC>,
+}
+
+impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: PolicyControl>
+    OrganizationUseCases<O, U, PS, PC>
+{
+    #[instrument(skip_all, fields(name = %name))]
+    pub async fn create(
+        &self,
+        caller: &CallerContext,
+        name: OrganizationName,
+        description: Option<OrganizationDescription>,
+    ) -> DomainResult<Organization> {
+        self.permission_service
+            .check(caller, Permission::CreateOrganization)
+            .await?;
+
+        if self.org_repo.name_exists(&name).await? {
+            return Err(DomainError::conflict("Organization name already exists"));
+        }
+
+        let org = Organization::create(name, description)?;
+
+        // The human creator becomes the org's admin. The org row and the owner
+        // grant are written in ONE transaction, so a partial failure can never
+        // leave an org without an owner. Machine/anonymous callers have nobody
+        // to make owner, so they just get the bare org.
+        match caller {
+            CallerContext::User(user_id) => {
+                let role = RoleName::new(ORGANIZATION_ADMIN_ROLE)?;
+                let grant = Grant::new(
+                    Principal::User(user_id.clone()),
+                    role,
+                    Scope::Organization(org.id().clone()),
+                );
+                self.org_repo.provision_with_owner(&org, &grant).await?;
+                // Make the org-admin grant live now so the creator can act on
+                // the org immediately, without a control-plane restart.
+                self.policy_control.reload().await?;
+            }
+            _ => {
+                self.org_repo.create(&org).await?;
+            }
+        }
+
+        Ok(org)
+    }
+
+    #[instrument(skip_all, fields(org_id = %id))]
+    pub async fn get(
+        &self,
+        caller: &CallerContext,
+        id: &OrganizationId,
+    ) -> DomainResult<Organization> {
+        self.permission_service
+            .check(caller, Permission::ReadOrganization(id.clone()))
+            .await?;
+        self.org_repo.find_by_id(id).await
+    }
+
+    #[instrument(skip_all, fields(org_id = %id))]
+    pub async fn update(
+        &self,
+        caller: &CallerContext,
+        id: &OrganizationId,
+        name: Option<OrganizationName>,
+        description: Option<Option<OrganizationDescription>>,
+    ) -> DomainResult<Organization> {
+        self.permission_service
+            .check(caller, Permission::UpdateOrganization(id.clone()))
+            .await?;
+
+        let mut org = self.org_repo.find_by_id(id).await?;
+
+        if let Some(new_name) = name {
+            if self.org_repo.name_exists(&new_name).await? && org.name() != &new_name {
+                return Err(DomainError::conflict("Organization name already exists"));
+            }
+            org.update_name(new_name)?;
+        }
+        if let Some(new_desc) = description {
+            org.update_description(new_desc)?;
+        }
+
+        self.org_repo.update(&org).await
+    }
+
+    /// Set the active flag to an explicit value and return the updated
+    /// organization. Idempotent, so a retried call is safe — see
+    /// [`Organization::set_active`].
+    #[instrument(skip_all, fields(org_id = %id))]
+    pub async fn set_active(
+        &self,
+        caller: &CallerContext,
+        id: &OrganizationId,
+        is_active: bool,
+    ) -> DomainResult<Organization> {
+        self.permission_service
+            .check(caller, Permission::UpdateOrganization(id.clone()))
+            .await?;
+        let mut org = self.org_repo.find_by_id(id).await?;
+        org.set_active(is_active);
+        self.org_repo.update(&org).await?;
+        Ok(org)
+    }
+
+    #[instrument(skip_all, fields(org_id = %id))]
+    pub async fn delete(&self, caller: &CallerContext, id: &OrganizationId) -> DomainResult<()> {
+        self.permission_service
+            .check(caller, Permission::DeleteOrganization(id.clone()))
+            .await?;
+        self.org_repo.find_by_id(id).await?;
+        // The row delete cascades the whole subtree, and DB triggers drop the
+        // grants bound to it (the org's own scope, its projects', and those held
+        // by its apps). Reload so the live policy set stops carrying the dead
+        // links those rows produced.
+        self.org_repo.delete(id).await?;
+        self.policy_control.reload().await
+    }
+
+    #[instrument(skip(self, caller, pagination))]
+    pub async fn list(
+        &self,
+        caller: &CallerContext,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<PaginatedResult<Organization>> {
+        self.permission_service
+            .check(caller, Permission::ListOrganizations)
+            .await?;
+        self.org_repo.list_all(pagination).await
+    }
+
+    /// Everyone with access to the organization: the principals holding a grant
+    /// on it or on one of its projects. There is no membership roster to read
+    /// from, so the grants themselves answer "who is here", which also means the
+    /// answer can never disagree with what those people can actually do.
+    #[instrument(skip_all, fields(org_id = %org_id))]
+    pub async fn list_users(
+        &self,
+        caller: &CallerContext,
+        org_id: &OrganizationId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
+        self.permission_service
+            .check(caller, Permission::ListOrganizationMembers(org_id.clone()))
+            .await?;
+
+        let paginated = self.org_repo.list_principals(org_id, pagination).await?;
+        let (user_ids, metadata) = paginated.into_parts();
+
+        // One batched read instead of N `find_by_id`; re-order to the paginated
+        // order (the batch result order is unspecified).
+        let mut by_id: std::collections::HashMap<String, User> = self
+            .user_repo
+            .find_by_ids(&user_ids)
+            .await?
+            .into_iter()
+            .map(|u| (u.id().as_str().to_owned(), u))
+            .collect();
+        let users = user_ids
+            .iter()
+            .filter_map(|id| by_id.remove(id.as_str()))
+            .collect();
+
+        Ok((users, metadata))
+    }
+
+    /// The organizations a user belongs to, meaning those they hold a grant on
+    /// or that contain a project they hold a grant on. A System-scoped grant is
+    /// deliberately not expanded here: a platform operator reaching every
+    /// organization is not a member of each one, and listing them all under
+    /// "my organizations" would be noise.
+    #[instrument(skip_all, fields(user_id = %user_id))]
+    pub async fn list_user_orgs(
+        &self,
+        caller: &CallerContext,
+        user_id: &UserId,
+        pagination: Option<&PaginationParams>,
+    ) -> DomainResult<(Vec<Organization>, PaginationMetadata)> {
+        self.permission_service
+            .check(caller, Permission::ListUserOrganizations(user_id.clone()))
+            .await?;
+
+        let paginated = self.org_repo.list_for_user(user_id, pagination).await?;
+        let (orgs, metadata) = paginated.into_parts();
+        Ok((orgs, metadata))
+    }
+}

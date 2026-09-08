@@ -1,11 +1,11 @@
 // modules/organisation/presentation/hooks/useOrganizations.ts
 import { useQuery } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useOrganizationDomain } from '@/modules/features/organization/presentation/hooks/use-organization-domain.ts';
 
 export const useOrganizations = () => {
   // Member-scoped: orgs the current user belongs to. Non-admins are denied the
   // global listOrganizations, so the switcher must use listUserOrganizations.
-  const { getUserOrganizations } = useDependencies().organization;
+  const { organizationRepository } = useOrganizationDomain();
 
   const {
     data: organizations,
@@ -13,12 +13,12 @@ export const useOrganizations = () => {
     error,
   } = useQuery({
     queryKey: ['organizations', 'mine'],
-    queryFn: async () => (await getUserOrganizations.execute()).unwrap(),
+    queryFn: async () => (await organizationRepository.getMine()).unwrap(),
     staleTime: 1000 * 60 * 5, // 5 minutes TODO: change
   });
 
   return {
-    organizations: organizations?.organizations,
+    organizations,
     isLoading,
     isError: !!error,
   };

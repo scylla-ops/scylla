@@ -5,7 +5,12 @@ import { createAgentItems } from '@/modules/features/agents/presentation/utils/c
 import { AgentCard } from '@/modules/features/agents/presentation/ui/components/AgentCard.tsx';
 import { mockCardStats } from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
 import type { CreatedAgent } from '@/modules/features/agents/domain/structs/agent.struct.ts';
-import { FeatureHeader, FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
+import {
+  AgentRunInstructions,
+  FeatureHeader,
+  FormDialog,
+  SecretRevealDialog,
+} from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Button, Card } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';
@@ -47,13 +52,14 @@ export const AgentsPage = () => {
   const runningTotal = agents.reduce((n, a) => n + mockCardStats(a.id, a.connected).running, 0);
   const completedTotal = agents.reduce((n, a) => n + mockCardStats(a.id, a.connected).completed, 0);
 
-  if (isError) return <ErrorState message='Error loading agents' />;
+  if (isError) return <ErrorState message={<Trans>Error loading agents</Trans>} />;
 
   return (
     <div className='flex flex-col gap-4 w-full h-full'>
       <FeatureHeader
         count={agents.length}
-        label='Agent'
+        label={<Trans>Agent</Trans>}
+        pluralLabel={<Trans>Agents</Trans>}
         onNew={() => setCreateOpen(true)}
         underLabel={
           <>
@@ -134,9 +140,14 @@ export const AgentsPage = () => {
       {created && (
         <SecretRevealDialog
           open={!!created}
-          entityKind='agent'
-          entity={{ id: created.agent.id, name: created.agent.name }}
+          title={<Trans>{created.agent.name} is ready</Trans>}
+          description={<Trans>Two steps and it picks up jobs.</Trans>}
           secret={created.secret}
+          secretLabel={<Trans>Secret for the agent</Trans>}
+          secondStep={{
+            title: <Trans>Start your agent</Trans>,
+            content: <AgentRunInstructions appId={created.agent.id} secret={created.secret} />,
+          }}
           onClose={() => {
             const id = created.agent.id;
             setCreated(null);

@@ -1,4 +1,4 @@
-import type { ListUsersResponse, UserResponse } from '@/generated/user.ts';
+import type { ListUsersResponse, User } from '@/generated/scylla/user/v1/user.ts';
 
 import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts';
 import type { UserEntity } from '@/modules/features/user/domain/entities/user.entity.ts';
@@ -6,7 +6,7 @@ import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts'
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
 export class GrpcUserMapper {
-  static toDomain(user: UserResponse): UserEntity {
+  static toDomain(user: User): UserEntity {
     return {
       username: user.username,
       userId: idValue(user.userId),

@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package scylla.project.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Projects — a unit of work inside an organization. Membership is listed here;
+// the roles a member holds live in `scylla.authz.v1`.
+service ProjectService {
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse);
+  // Sets the active flag outright rather than toggling it, so a retried or
+  // double-submitted call lands on the state the caller asked for.
+  rpc SetProjectActive(SetProjectActiveRequest) returns (SetProjectActiveResponse);
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc ListOrganizationProjects(ListOrganizationProjectsRequest) returns (ListOrganizationProjectsResponse);
+  rpc ListUserProjects(ListUserProjectsRequest) returns (ListUserProjectsResponse);
+  rpc ListProjectMembers(ListProjectMembersRequest) returns (ListProjectMembersResponse);
+  // Adding and removing people is granting and revoking a role: see
+  // scylla.authz.v1.GrantService (CreateGrant / RevokeGrant / RevokeAllAccess).
+}
+
+message Project {
+  scylla.common.v1.ProjectId project_id = 1;
+  scylla.common.v1.OrganizationId organization_id = 2;
+  string name = 3;
+  string description = 4;
+  bool is_active = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// A user's membership in a project, as shown in member lists.
+message ProjectMember {
+  scylla.common.v1.UserId user_id = 1;
+  string username = 2;
+}
+
+message CreateProjectRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  string name = 2;
+  optional string description = 3;
+}
+
+message CreateProjectResponse { Project project = 1; }
+
+message GetProjectRequest { scylla.common.v1.ProjectId project_id = 1; }
+
+message GetProjectResponse { Project project = 1; }
+
+message UpdateProjectRequest {
+  scylla.common.v1.ProjectId project_id = 1;
+  optional string name = 2;
+  optional string description = 3;
+}
+
+message UpdateProjectResponse { Project project = 1; }
+
+message SetProjectActiveRequest {
+  scylla.common.v1.ProjectId project_id = 1;
+  bool is_active = 2;
+}
+
+message SetProjectActiveResponse { Project project = 1; }
+
+message DeleteProjectRequest { scylla.common.v1.ProjectId project_id = 1; }
+
+message DeleteProjectResponse {}
+
+message ListProjectsRequest { scylla.common.v1.PaginationRequest pagination = 1; }
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListOrganizationProjectsRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListOrganizationProjectsResponse {
+  repeated Project projects = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListUserProjectsRequest {
+  scylla.common.v1.UserId user_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListUserProjectsResponse {
+  repeated Project projects = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListProjectMembersRequest {
+  scylla.common.v1.ProjectId project_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListProjectMembersResponse {
+  repeated ProjectMember members = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+

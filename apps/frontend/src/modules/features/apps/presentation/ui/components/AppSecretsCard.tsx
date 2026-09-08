@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { KeyRound, Plus, Trash } from 'lucide-react';
 import { Badge, Button, Card, CardContent } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';
@@ -27,6 +27,7 @@ interface AppSecretsCardProps {
 }
 
 export const AppSecretsCard = ({ app }: AppSecretsCardProps) => {
+  const { t } = useLingui();
   const { secrets, isLoading, createSecret, revokeSecret, setSecretEnabled } = useAppSecrets(
     app.id,
   );
@@ -110,7 +111,7 @@ export const AppSecretsCard = ({ app }: AppSecretsCardProps) => {
                     onCheckedChange={enabled =>
                       setSecretEnabled.mutate({ secretId: secret.id, enabled })
                     }
-                    aria-label='Toggle secret enabled'
+                    aria-label={t`Toggle secret enabled`}
                   />
                   <Button
                     variant='ghost'
@@ -141,9 +142,20 @@ export const AppSecretsCard = ({ app }: AppSecretsCardProps) => {
       {created && (
         <SecretRevealDialog
           open={!!created}
-          entityKind='app'
-          entity={{ id: app.id, name: `${app.name} · ${created.credential.label}` }}
+          title={
+            <Trans>
+              {app.name} · {created.credential.label} credentials
+            </Trans>
+          }
+          description={<Trans>Copy the secret below — it is shown only once.</Trans>}
           secret={created.secret}
+          secretLabel={<Trans>Secret</Trans>}
+          revealedNote={
+            <Trans>
+              Use these credentials (id + secret) to authenticate an automation against the Scylla
+              API.
+            </Trans>
+          }
           onClose={() => setCreated(null)}
         />
       )}

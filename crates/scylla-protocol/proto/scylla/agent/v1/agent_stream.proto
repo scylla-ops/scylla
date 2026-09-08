@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package scylla.agent.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+import "scylla/exec/v1/step.proto";
+
+// Persistent bidirectional stream between the control plane and a connected
+// agent App. The App authenticates with its bearer token (Authorization
+// metadata) and the interceptor resolves it to an App principal. While
+// connected it receives JobDispatch messages and streams back job status and
+// log events. Presence is the open stream itself — no heartbeats.
+//
+// `Open` (not `Connect`) because tonic's generated client already has a
+// `connect(endpoint)` constructor — a `Connect` RPC would collide with it.
+service AgentService {
+  rpc Open(stream AgentUp) returns (stream AgentDown);
+}
+
+// Server -> agent. An absent payload is a decode error, never a valid message.
+message AgentDown {
+  oneof payload {
+    JobDispatch dispatch = 1;
+  }
+}
+
+// Agent -> server. An absent payload is a decode error, never a valid message.
+message AgentUp {
+  oneof payload {
+    JobStatus status = 1;
+    JobLogLine log = 2;
+    AgentHello hello = 3;
+  }
+}
+
+// Self-description an agent sends once after opening the stream. Informational
+// only; the control plane stores it and never schedules on it. Optional — an
+// older agent that never sends one keeps working, presence is the open stream.
+message AgentHello {
+  string version = 1;
+  string os = 2;
+  string arch = 3;
+  string hostname = 4;
+  // `0` means unknown, not "a machine with no CPU".
+  int32 cpu_count = 5;
+  int64 total_memory_mb = 6;
+}
+
+// A job handed to the agent for execution, with every node fully resolved.
+message JobDispatch {
+  scylla.common.v1.JobId job_id = 1;
+  scylla.common.v1.PipelineId pipeline_id = 2;
+  repeated AgentNode nodes = 3;
+}
+
+// One node of a dispatched job. The same DAG shape as a pipeline node, but with
+// every secret already looked up control-plane-side.
+message AgentNode {
+  scylla.common.v1.NodeId node_id = 1;
+  repeated scylla.common.v1.NodeId deps = 2;
+  // Relative to the job workspace; "" = workspace root.
+  string working_dir = 3;
+  // Env overlay, secrets already resolved.
+  repeated ResolvedEnv env = 4;
+
+  oneof step {
+    scylla.exec.v1.ExecStep exec = 10;
+    scylla.exec.v1.ScriptStep script = 11;
+  }
+}
+
+// A fully-resolved environment variable handed to the agent: any secret
+// reference has already been looked up control-plane-side. `masked` marks a
+// value that originated from a secret so the agent can scrub it from logs.
+message ResolvedEnv {
+  string key = 1;
+  string value = 2;
+  bool masked = 3;
+}
+
+// Exactly one lifecycle event, mirroring the domain `JobEvent`. Each variant
+// carries only the fields meaningful to it: a node event always has its node, a
+// job-level event never carries one. An absent `event` is a decode error.
+message JobStatus {
+  scylla.common.v1.JobId job_id = 1;
+
+  oneof event {
+    JobStarted job_started = 10;
+    JobCompleted job_completed = 11;
+    JobFailed job_failed = 12;
+    NodeStarted node_started = 13;
+    NodeCompleted node_completed = 14;
+    NodeFailed node_failed = 15;
+    NodeSkipped node_skipped = 16;
+  }
+
+  message JobStarted {}
+  message JobCompleted {}
+  message JobFailed { string error = 1; }
+
+  message NodeStarted { scylla.common.v1.NodeId node_id = 1; }
+  message NodeCompleted { scylla.common.v1.NodeId node_id = 1; }
+  message NodeSkipped { scylla.common.v1.NodeId node_id = 1; }
+  message NodeFailed {
+    scylla.common.v1.NodeId node_id = 1;
+    string error = 2;
+  }
+}
+
+// One line of output captured from a running node.
+message JobLogLine {
+  scylla.common.v1.JobId job_id = 1;
+  scylla.common.v1.NodeId node_id = 2;
+  scylla.common.v1.LogStream stream = 3;
+  string line = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}

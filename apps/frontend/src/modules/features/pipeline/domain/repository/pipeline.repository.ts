@@ -12,6 +12,17 @@ export interface PipelineRepository {
     projectId: string,
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<PaginatedList<PipelineMetadata>>>;
+  /**
+   * Pipeline metadata across a whole organization, in one call.
+   *
+   * The organization-wide views used to fan out one `getMetadataByProjectId`
+   * per project — N requests, N cache entries, and one error toast per project
+   * the caller could not read.
+   */
+  getMetadataByOrganizationId(
+    organizationId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<PaginatedList<PipelineMetadata>>>;
   deleteById(id: string): Promise<ScyllaResult<void>>;
   run(id: string): Promise<ScyllaResult<void>>;
   create(pipeline: Omit<PipelineEntity, 'id'>): Promise<ScyllaResult<void>>;

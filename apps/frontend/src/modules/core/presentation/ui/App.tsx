@@ -1,44 +1,21 @@
 import { RouterProvider } from 'react-router-dom';
 import { CoreRouter } from '@core/presentation/ui/router/Core.router.tsx';
-import { StrictMode } from 'react';
 import { I18nProvider } from '@lingui/react';
+import { useLingui } from '@lingui/react/macro';
 import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DependenciesProvider } from '@core/presentation/providers/Dependencies.provider.tsx';
-import { messages as loginMessages } from '@/modules/features/login/locales/en/messages.ts';
-import { messages as projectMessages } from '@/modules/features/project/locales/en/messages.ts';
-import { messages as pipelineMessages } from '@/modules/features/pipeline/locales/en/messages.ts';
-import { messages as marketplaceMessages } from '@/modules/features/marketplace/locales/en/messages.ts';
-import { messages as organizationMessages } from '@/modules/features/organization/locales/en/messages.ts';
-import { messages as userMessages } from '@/modules/features/user/locales/en/messages.ts';
-import { messages as sharedMessages } from '@/modules/shared/locales/en/messages.ts';
-import { messages as layoutMessages } from '@/modules/layout/locales/en/messages.ts';
-import { messages as jobMessages } from '@/modules/features/jobs/locales/en/messages.ts';
-import { messages as appsMessages } from '@/modules/features/apps/locales/en/messages.ts';
-import { messages as agentsMessages } from '@/modules/features/agents/locales/en/messages.ts';
-import { messages as secretMessages } from '@/modules/features/secret/locales/en/messages.ts';
-import { messages as triggersMessages } from '@/modules/features/triggers/locales/en/messages.ts';
+import { DependenciesProvider } from '@platform/di';
+import { dependencies } from '@core/di/registry.ts';
+import { ThemeProvider, useTheme } from 'next-themes';
+import { Moon, Sun } from 'lucide-react';
+import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
 
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { Toaster } from '@shadcn/sonner.tsx';
 
-i18n.load('en', {
-  ...loginMessages,
-  ...userMessages,
-  ...projectMessages,
-  ...pipelineMessages,
-  ...marketplaceMessages,
-  ...organizationMessages,
-  ...sharedMessages,
-  ...jobMessages,
-  ...appsMessages,
-  ...layoutMessages,
-  ...agentsMessages,
-  ...secretMessages,
-  ...triggersMessages,
-});
-i18n.activate('en');
+// Catalogs are loaded and the locale activated in `main.tsx`, before the first
+// render — see `initializeAppLocale`.
 
 //todo: maybe in production, console error only network or non scylla error ?
 //todo: domain errors should be only be toasted by module itself
@@ -92,18 +69,48 @@ const queryClient = new QueryClient({
   }),
 });
 
+function ThemeToggle() {
+  const { t } = useLingui();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  return (
+    <Button
+      type='button'
+      variant='outline'
+      size='icon'
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label={t`Toggle dark mode`}
+      className='fixed right-4 top-4 z-50 h-10 w-10 rounded-full border-border bg-background/90 shadow-sm backdrop-blur'
+    >
+      {isDark ? (
+        <Sun className='size-4 text-amber-500' />
+      ) : (
+        <Moon className='size-4 text-slate-600 dark:text-slate-300' />
+      )}
+    </Button>
+  );
+}
+
 function App() {
   return (
-    <StrictMode>
+    <ThemeProvider
+      attribute='class'
+      defaultTheme='dark'
+      enableSystem={false}
+      storageKey='scylla-theme'
+      disableTransitionOnChange
+    >
       <I18nProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <DependenciesProvider>
+          <DependenciesProvider registry={dependencies}>
+            <ThemeToggle />
             <RouterProvider router={CoreRouter} />
             <Toaster />
           </DependenciesProvider>
         </QueryClientProvider>
       </I18nProvider>
-    </StrictMode>
+    </ThemeProvider>
   );
 }
 

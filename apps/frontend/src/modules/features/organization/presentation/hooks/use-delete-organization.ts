@@ -1,17 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useOrganizationDomain } from '@/modules/features/organization/presentation/hooks/use-organization-domain.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 
 export const useDeleteOrganization = () => {
   const queryClient = useQueryClient();
-  const { deleteOrganization } = useDependencies().organization;
+  const { organizationRepository } = useOrganizationDomain();
   const { i18n } = useLingui();
 
   return useMutation({
     mutationFn: async (organizationId: string) =>
-      (await deleteOrganization.execute(organizationId)).unwrap(),
+      (await organizationRepository.delete(organizationId)).unwrap(),
     onSuccess: () => {
       toast.success(i18n._(ToastMessages.ORGANIZATION_DELETE));
       return queryClient.invalidateQueries({ queryKey: ['organizations'] });

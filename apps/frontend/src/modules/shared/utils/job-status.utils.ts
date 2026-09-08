@@ -8,6 +8,7 @@ const JOB_STATUS_MAP: Record<string, StatusState> = {
   failed: 'failed',
   skipped: 'skipped',
   cancelled: 'cancelled',
+  orphaned: 'orphaned',
 };
 
 /**

@@ -8,7 +8,8 @@ export type StatusState =
   | 'pending'
   | 'idle'
   | 'skipped'
-  | 'cancelled';
+  | 'cancelled'
+  | 'orphaned';
 
 interface StatusIndicatorProps {
   state: StatusState;
@@ -19,50 +20,57 @@ interface StatusIndicatorProps {
   animateAllStates?: boolean;
 }
 
+/**
+ * Uses semantic status tokens from the theme:
+ * success → `status-passed`, running → `status-running`, failure → `status-failed`,
+ * pending → `status-queued`, skipped → `status-skipped`,
+ * cancelled / orphaned → `status-canceled`, idle → `muted-foreground`.
+ */
 const getStateColors = (state: StatusIndicatorProps['state']) => {
   switch (state) {
     case 'success':
       return {
-        dot: 'bg-green-500',
-        ping: 'bg-green-300',
-        container: 'border-green-200 text-green-800 dark:border-green-800 dark:text-green-300',
-        gradient: 'from-green-400 to-green-500',
+        dot: 'bg-status-passed',
+        ping: 'bg-status-passed/60',
+        container: 'border-status-passed/30 text-status-passed',
       };
     case 'failed':
       return {
-        dot: 'bg-red-500',
-        ping: 'bg-red-300',
-        container: 'border-red-200 text-red-800 dark:border-red-800 dark:text-red-300',
-        gradient: 'from-red-400 to-red-500',
+        dot: 'bg-status-failed',
+        ping: 'bg-status-failed/60',
+        container: 'border-status-failed/30 text-status-failed',
       };
     case 'running':
       return {
-        dot: 'bg-blue-500',
-        ping: 'bg-blue-300',
-        container: 'border-blue-200 text-blue-800 dark:border-blue-800 dark:text-blue-300',
-        gradient: 'from-blue-400 to-blue-500',
+        dot: 'bg-status-running',
+        ping: 'bg-status-running/60',
+        container: 'border-status-running/30 text-status-running',
+      };
+    case 'pending':
+      return {
+        dot: 'bg-status-queued',
+        ping: 'bg-status-queued/50',
+        container: 'border-status-queued/30 text-status-queued',
       };
     case 'skipped':
       return {
-        dot: 'bg-zinc-500',
-        ping: 'bg-zinc-300',
-        container: 'border-zinc-200 text-zinc-700 dark:border-zinc-700 dark:text-zinc-300',
-        gradient: 'from-zinc-400 to-zinc-500',
+        dot: 'bg-status-skipped',
+        ping: 'bg-status-skipped/50',
+        container: 'border-status-skipped/30 text-status-skipped',
       };
     case 'cancelled':
+    case 'orphaned':
       return {
-        dot: 'bg-amber-500',
-        ping: 'bg-amber-300',
-        container: 'border-amber-200 text-amber-800 dark:border-amber-800 dark:text-amber-300',
-        gradient: 'from-amber-400 to-amber-500',
+        dot: 'bg-status-canceled',
+        ping: 'bg-status-canceled/50',
+        container: 'border-status-canceled/30 text-status-canceled',
       };
     case 'idle':
     default:
       return {
-        dot: 'bg-slate-700',
-        ping: 'bg-slate-400',
-        container: 'border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-300',
-        gradient: 'from-slate-400 to-slate-500',
+        dot: 'bg-muted-foreground/60',
+        ping: 'bg-muted-foreground/30',
+        container: 'border-border text-muted-foreground',
       };
   }
 };
@@ -104,10 +112,10 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   const sizeClasses = getSizeClasses(size);
 
   return (
-    <div className='relative inline-flex rounded-full overflow-hiddenfrom-transparent via-transparent to-transparent'>
+    <div className='relative inline-flex rounded-full overflow-hidden'>
       <div
         className={cn(
-          'relative inline-flex items-center gap-2 rounded-full bg-white dark:bg-slate-900 transition-all duration-300',
+          'relative inline-flex items-center gap-2 rounded-full bg-card transition-all duration-300',
           sizeClasses.container,
           colors.container,
           className,

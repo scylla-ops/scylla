@@ -21,13 +21,12 @@ export const CurrentContextDisplay = ({
     return (
       <div
         className={`
-          flex items-center justify-center rounded-lg size-9
+          flex items-center justify-center rounded-lg size-8
           cursor-pointer
-          shadow-sm
-          ${variant === 'primary' ? 'bg-primary' : 'bg-gradient-to-br from-slate-500 to-slate-600'}
+          ${variant === 'primary' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-slate-500 to-slate-600 text-white'}
         `}
       >
-        <Icon className='size-4 text-white' strokeWidth={2.5} />
+        <Icon className='size-4' strokeWidth={2.5} />
       </div>
     );
   }
@@ -38,22 +37,18 @@ export const CurrentContextDisplay = ({
         className={`
           flex items-center justify-center rounded-lg size-9 shrink-0
           shadow-sm
-          ${variant === 'primary' ? 'bg-primary' : 'bg-gradient-to-br from-slate-500 to-slate-600'}
+          ${variant === 'primary' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-slate-500 to-slate-600 text-white'}
         `}
       >
-        <Icon className='size-4 text-white' strokeWidth={2.5} />
+        <Icon className='size-4' strokeWidth={2.5} />
       </div>
 
       <div className='flex-1 min-w-0 text-left'>
-        <p className='text-sm font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight'>
-          {name}
-        </p>
-        <p className='text-xs text-slate-500 dark:text-slate-400 truncate leading-tight'>
-          {description}
-        </p>
+        <p className='text-sm font-semibold text-foreground truncate leading-tight'>{name}</p>
+        <p className='text-xs text-muted-foreground truncate leading-tight'>{description}</p>
       </div>
 
-      <ChevronsUpDown className='size-4 text-slate-400 shrink-0 ml-auto' />
+      <ChevronsUpDown className='size-4 text-muted-foreground shrink-0 ml-auto' />
     </>
   );
 };

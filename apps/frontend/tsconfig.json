@@ -6,6 +6,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@core/*": ["src/modules/core/*"],
+      "@platform/*": ["src/modules/platform/*"],
       "@shared/*": ["src/modules/shared/*"],
       "@shadcn/*": ["src/modules/shared/presentation/ui/shadcn/*"],
       "@shadcn": ["src/modules/shared/presentation/ui/shadcn"]

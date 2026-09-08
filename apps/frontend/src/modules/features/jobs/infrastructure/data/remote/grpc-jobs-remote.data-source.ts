@@ -3,30 +3,31 @@ import type {
   JobLogsTailHandleRepo,
 } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
 import type {
-  ListJobsResponse,
-  JobResponse,
+  Job,
+  ListPipelineJobsResponse,
+  ListOrganizationJobsResponse,
   ListJobLogsResponse,
   JobLogEntry,
-} from '@/generated/job.ts';
+} from '@/generated/scylla/job/v1/job.ts';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { ScyllaResult as Result } from '@shared/utils/scylla-result.ts';
-import { JobServiceClient } from '@/generated/job.client.ts';
-import type { CoreGrpcTransport } from '@core/infrastructure/grpc/core-grpc-transport.ts';
+import { JobServiceClient } from '@/generated/scylla/job/v1/job.client.ts';
+import type { ScyllaGrpcTransport } from '@platform/grpc';
 import { wrapId, wrapIdOpt } from '@shared/infrastructure/grpc/wrappers.ts';
 import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 
 export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
   private readonly _jobClient: JobServiceClient;
 
-  constructor(grpcTransport: CoreGrpcTransport) {
+  constructor(grpcTransport: ScyllaGrpcTransport) {
     this._jobClient = new JobServiceClient(grpcTransport.getTransport());
   }
 
   public async getByPipelineId(
     pipelineId: string,
     pagination?: PaginationParams,
-  ): Promise<ScyllaResult<ListJobsResponse>> {
-    return Result.tryAsync<ListJobsResponse>(
+  ): Promise<ScyllaResult<ListPipelineJobsResponse>> {
+    return Result.tryAsync<ListPipelineJobsResponse>(
       async () =>
         (await this._jobClient.listPipelineJobs({ pipelineId: wrapId(pipelineId), pagination }))
           .response,
@@ -34,11 +35,29 @@ export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
     );
   }
 
-  public async getById(jobId: string): Promise<ScyllaResult<JobResponse>> {
-    return Result.tryAsync<JobResponse>(
-      async () => (await this._jobClient.getJob({ jobId: wrapId(jobId) })).response,
-      'Error fetching job',
+  public async getByOrganizationId(
+    organizationId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<ListOrganizationJobsResponse>> {
+    return Result.tryAsync<ListOrganizationJobsResponse>(
+      async () =>
+        (
+          await this._jobClient.listOrganizationJobs({
+            organizationId: wrapId(organizationId),
+            pagination,
+          })
+        ).response,
+      'Error fetching organization jobs',
     );
+  }
+
+  public async getById(jobId: string): Promise<ScyllaResult<Job>> {
+    return Result.tryAsync<Job>(async () => {
+      // `GetJobResponse` wraps the entity; unwrap here so mappers keep seeing a `Job`.
+      const { job } = (await this._jobClient.getJob({ jobId: wrapId(jobId) })).response;
+      if (!job) throw new ScyllaError('Job missing from GetJobResponse');
+      return job;
+    }, 'Error fetching job');
   }
 
   public async deleteById(jobId: string): Promise<ScyllaResult<void>> {

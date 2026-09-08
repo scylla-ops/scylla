@@ -13,5 +13,5 @@ export interface AgentsRepository {
   getAgent(agentId: string): Promise<ScyllaResult<AgentEntity>>;
   getAgentStats(agentId: string): Promise<ScyllaResult<AgentStats>>;
   createAgent(organizationId: string, name: string): Promise<ScyllaResult<CreatedAgent>>;
-  deleteAgent(agentId: string): Promise<ScyllaResult<boolean>>;
+  deleteAgent(agentId: string): Promise<ScyllaResult<void>>;
 }

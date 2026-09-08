@@ -1,8 +1,7 @@
 import ReactCodeMirror from '@uiw/react-codemirror';
-import { StreamLanguage } from '@codemirror/language';
-import { shell } from '@codemirror/legacy-modes/mode/shell';
-import { codeMirrorTheme } from '@/modules/features/pipeline/presentation/utils/code-mirror-theme.ts';
+import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { useTailJobLogs } from '@/modules/features/jobs/presentation/hooks/use-tail-job-logs.ts';
+import { Trans } from '@lingui/react/macro';
 
 interface JobLogDisplayProps {
   jobId: string;
@@ -16,18 +15,28 @@ interface LogViewerProps {
 }
 
 const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error loading logs...</div>;
+  const editorTheme = useCodeMirrorTheme();
+
+  if (isLoading) return (
+      <div>
+        <Trans>Loading...</Trans>
+      </div>
+    );
+  if (isError) return (
+      <div>
+        <Trans>Error loading logs...</Trans>
+      </div>
+    );
 
   return (
-    <div className={'border rounded-md overflow-hidden shadow-sm'}>
+    <div className={'min-w-0 w-full rounded-xl overflow-hidden shadow-sm'}>
       <ReactCodeMirror
         readOnly
         editable={false}
         autoFocus={false}
         value={logs}
-        maxHeight={'15rem'}
-        extensions={[StreamLanguage.define(shell), codeMirrorTheme]}
+        maxHeight={'28rem'}
+        theme={editorTheme}
       />
     </div>
   );

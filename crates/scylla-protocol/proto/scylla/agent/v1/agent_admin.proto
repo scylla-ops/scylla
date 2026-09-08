@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package scylla.agent.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+// Management + introspection of Agents — specialized Apps that run jobs.
+// Creating an agent provisions an App credential under the hood (the secret is
+// returned exactly once) plus its agent grant. Distinct from the streaming
+// `AgentService` in the same package (the agent ↔ control-plane job stream):
+// this service is the unary control surface used by the dashboard.
+// Authorization is org-scoped: the caller must hold the matching agent
+// permission on the org / agent.
+service AgentAdminService {
+  rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse);
+  rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  rpc GetAgentStats(GetAgentStatsRequest) returns (GetAgentStatsResponse);
+  rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
+}
+
+// An agent: its backing app identity plus live presence and durable last-seen.
+// The id is the agent's app id (== jobs.agent_app_id).
+message Agent {
+  scylla.common.v1.AppId agent_id = 1;
+  scylla.common.v1.OrganizationId organization_id = 2;
+  string name = 3;
+  bool is_active = 4;
+  // True while the agent currently holds an open agent stream. Derived live
+  // from the agent registry, not stored.
+  bool connected = 5;
+  // Last activity timestamp; unset if the agent has never connected.
+  google.protobuf.Timestamp last_seen = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  // Current load. Live from the agent registry like `connected`, so a
+  // disconnected agent is 0 rather than a stale count.
+  int32 in_flight = 9;
+  // Last reported machine; unset until an agent has sent an AgentHello. Kept
+  // across disconnects.
+  AgentHost host = 10;
+}
+
+// The machine an agent last reported running on (see AgentHello).
+message AgentHost {
+  string version = 1;
+  string os = 2;
+  string arch = 3;
+  string hostname = 4;
+  int32 cpu_count = 5;
+  int64 total_memory_mb = 6;
+  google.protobuf.Timestamp reported_at = 7;
+}
+
+// Aggregate run stats for an agent, derived from the jobs it executed. Every
+// job status has a bucket, so the counters sum back to `total`.
+message AgentStats {
+  int64 total = 1;
+  int64 pending = 2;
+  int64 running = 3;
+  int64 completed = 4;
+  int64 failed = 5;
+  int64 cancelled = 6;
+  google.protobuf.Timestamp last_run_at = 7;
+  // Finished jobs per day over the last 30 days, oldest first. Days with no
+  // finished job are absent — consumers zero-fill the gaps.
+  repeated DailyOutcome daily = 8;
+  int64 orphaned = 9;
+  // Over jobs that started and finished. Unset means no job has run yet, as
+  // opposed to a 0 ms run.
+  optional int64 median_duration_ms = 10;
+  optional int64 p95_duration_ms = 11;
+}
+
+// One day of finished-job outcomes for an agent.
+message DailyOutcome {
+  google.protobuf.Timestamp day = 1;
+  int64 completed = 2;
+  int64 failed = 3;
+  int64 cancelled = 4;
+  // Unset when no job that day started and finished.
+  optional int64 median_duration_ms = 5;
+  int64 orphaned = 6;
+}
+
+message CreateAgentRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  string name = 2;
+}
+
+// The newly created agent plus its plaintext secret, shown exactly once. It is
+// never stored in recoverable form and cannot be fetched again.
+message CreateAgentResponse {
+  Agent agent = 1;
+  string secret = 2;
+}
+
+message GetAgentRequest { scylla.common.v1.AppId agent_id = 1; }
+
+message GetAgentResponse { Agent agent = 1; }
+
+message ListAgentsRequest { scylla.common.v1.OrganizationId organization_id = 1; }
+
+message ListAgentsResponse { repeated Agent agents = 1; }
+
+message GetAgentStatsRequest { scylla.common.v1.AppId agent_id = 1; }
+
+message GetAgentStatsResponse { AgentStats stats = 1; }
+
+message DeleteAgentRequest { scylla.common.v1.AppId agent_id = 1; }
+
+message DeleteAgentResponse {}

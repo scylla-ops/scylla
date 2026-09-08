@@ -6,9 +6,8 @@
 //! `JobCompleted`/`JobFailed` fires via [`JobReporter::finalize`] at the end of
 //! the run — regardless of which path the executor took.
 
-use scylla_core::application::JobEvent;
-use scylla_protocol::services::agent::{AgentUp, JobEventKind, JobStatus, agent_up};
-use scylla_protocol::services::common;
+use scylla_core::JobEvent;
+use scylla_protocol::agent::v1::{AgentUp, agent_up};
 use tokio::sync::mpsc;
 
 use crate::error::ExecutionError;
@@ -28,7 +27,7 @@ impl StatusPublisher {
     }
 
     pub async fn emit(&self, event: JobEvent) -> Result<(), ExecutionError> {
-        let status = job_event_to_status(&self.job_id, event);
+        let status = scylla_protocol::convert::job_event_to_status(&self.job_id, event);
         self.up_tx
             .send(AgentUp {
                 payload: Some(agent_up::Payload::Status(status)),
@@ -39,29 +38,6 @@ impl StatusPublisher {
 }
 
 /// Map a domain [`JobEvent`] to the proto [`JobStatus`] sent over the stream.
-fn job_event_to_status(job_id: &str, event: JobEvent) -> JobStatus {
-    let (kind, node_id, error) = match event {
-        JobEvent::JobStarted => (JobEventKind::JobStarted, String::new(), String::new()),
-        JobEvent::NodeStarted { node_id } => (JobEventKind::NodeStarted, node_id, String::new()),
-        JobEvent::NodeCompleted { node_id } => {
-            (JobEventKind::NodeCompleted, node_id, String::new())
-        }
-        JobEvent::NodeFailed { node_id, error } => (JobEventKind::NodeFailed, node_id, error),
-        JobEvent::NodeSkipped { node_id } => (JobEventKind::NodeSkipped, node_id, String::new()),
-        JobEvent::JobCompleted => (JobEventKind::JobCompleted, String::new(), String::new()),
-        JobEvent::JobFailed { error } => (JobEventKind::JobFailed, String::new(), error),
-    };
-    JobStatus {
-        job_id: Some(common::JobId {
-            value: job_id.to_string(),
-        }),
-        kind: kind as i32,
-        // Empty node_id means a job-level event (no node) — send it unset.
-        node_id: (!node_id.is_empty()).then_some(common::NodeId { value: node_id }),
-        error,
-    }
-}
-
 enum JobOutcome {
     Pending,
     Success,
@@ -91,11 +67,6 @@ impl JobReporter {
 
     pub fn commit_failure(&mut self, error: String) {
         self.outcome = JobOutcome::Failure(error);
-    }
-
-    #[must_use]
-    pub fn publisher(&self) -> StatusPublisher {
-        self.publisher.clone()
     }
 
     /// Emit the terminal event (`JobCompleted` / `JobFailed`) and consume the guard.

@@ -4,6 +4,8 @@ import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { useDeleteProject } from '@/modules/features/project/presentation/hooks/use-delete-project.ts';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
 
 interface ProjectHeaderProps {
   numberOfProjects: number;
@@ -17,14 +19,24 @@ export const ProjectHeader = ({ numberOfProjects, projectIds }: ProjectHeaderPro
     deleteItem: id => deleteProject.mutateAsync(id),
   });
 
+  // Creating a project is an organization-level capability; deleting one is
+  // checked per project, so this only reflects the current context.
+  const canCreate = useCan(Permission.CREATE_PROJECT);
+  const canDelete = useCan(Permission.DELETE_PROJECT);
+
   return (
     <>
       <FeatureHeader
         count={numberOfProjects}
-        label='Project'
+        label={<Trans>Project</Trans>}
+        pluralLabel={<Trans>Projects</Trans>}
         {...headerProps}
         onNew={() => setOpen(true)}
         newLabel={<Trans>New project</Trans>}
+        canNew={canCreate}
+        newDeniedReason={<Trans>You don't have permission to create projects.</Trans>}
+        canDelete={canDelete}
+        deleteDeniedReason={<Trans>You don't have permission to delete projects.</Trans>}
       />
       <AddProjectDialog open={open} setOpen={setOpen} />
     </>

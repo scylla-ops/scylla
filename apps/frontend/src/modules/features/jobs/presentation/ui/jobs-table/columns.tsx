@@ -39,21 +39,21 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobEntity>[] {
       accessorKey: 'status',
       header: () => <Trans>Status</Trans>,
       cell: ({ row }) => <JobStatus job={row.original} />,
-      size: 160,
-      minSize: 140,
+      size: 200,
+      minSize: 150,
     },
     {
       accessorKey: 'id',
       header: () => <Trans>Job ID</Trans>,
       cell: ({ row }) => <JobIdCell job={row.original} />,
-      size: 180,
-      minSize: 150,
+      size: 200,
+      minSize: 180,
     },
     {
       id: 'timeline',
       header: () => <Trans>Timeline</Trans>,
       cell: ({ row }) => <JobTimeline nodeExecutions={row.original.nodeExecutions} />,
-      size: undefined,
+      // No size: takes every pixel the sized columns leave, down to 100px.
       minSize: 200,
     },
     {
@@ -91,8 +91,8 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobEntity>[] {
           }}
         />
       ),
-      size: 100,
-      minSize: 80,
+      minSize: 100,
+      size: 130,
     },
   ];
 }

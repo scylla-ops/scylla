@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package scylla.user.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+}
+// ChangeUserGlobalRole is gone: its handler only ever returned
+// `unimplemented`, and role assignment is `scylla.authz.v1.GrantService`'s job.
+// A dead RPC in a published contract is a promise you have to keep later.
+
+// A user account.
+message User {
+  scylla.common.v1.UserId user_id = 1;
+  string username = 2;
+  // Unset for accounts created without one (e.g. via invite acceptance).
+  optional scylla.common.v1.Email email = 3;
+  bool is_active = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  // Plaintext; hashed on receipt, never stored or returned as given.
+  string password = 2;
+  optional scylla.common.v1.Email email = 3;
+}
+
+message CreateUserResponse { User user = 1; }
+
+message GetUserRequest { scylla.common.v1.UserId user_id = 1; }
+
+message GetUserResponse { User user = 1; }
+
+message UpdateUserRequest {
+  scylla.common.v1.UserId user_id = 1;
+  optional string username = 2;
+}
+
+message UpdateUserResponse { User user = 1; }
+
+message DeleteUserRequest { scylla.common.v1.UserId user_id = 1; }
+
+message DeleteUserResponse {}
+
+message ListUsersRequest { scylla.common.v1.PaginationRequest pagination = 1; }
+
+message ListUsersResponse {
+  repeated User users = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
