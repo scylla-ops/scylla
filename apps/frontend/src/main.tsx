@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from '@core/presentation/ui/App.tsx';
@@ -14,9 +13,5 @@ if (!rootElement) {
 // the first render has to wait for them — otherwise the app paints a frame of
 // untranslated message ids.
 void initializeAppLocale().then(() => {
-  createRoot(rootElement).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
+  createRoot(rootElement).render(<App />);
 });
