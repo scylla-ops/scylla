@@ -67,7 +67,7 @@ msgstr "Annuler"
 
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:222
 msgid "cancelled"
-msgstr "annulé"
+msgstr "annulés"
 
 #. placeholder {0}: b.cancelled
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:177
@@ -81,7 +81,7 @@ msgstr "Bientôt disponible"
 
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:214
 msgid "completed"
-msgstr "terminé"
+msgstr "terminés"
 
 #. placeholder {0}: b.completed
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:165
@@ -118,6 +118,7 @@ msgid "created"
 msgstr "créé le"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:128
+msgctxt "date-prefix"
 msgid "Created"
 msgstr "Créé le"
 
@@ -148,7 +149,7 @@ msgstr "Erreur lors du chargement des agents"
 
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:218
 msgid "failed"
-msgstr "échoué"
+msgstr "échoués"
 
 #. placeholder {0}: b.failed
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:171
@@ -224,10 +225,6 @@ msgstr "Aucun agent connecté"
 msgid "No finished jobs in this window."
 msgstr "Aucun job terminé sur cette période."
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:151
-#~ msgid "no runs yet · waiting for first job"
-#~ msgstr "aucune exécution · en attente du premier job"
-
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:89
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:74
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:102
@@ -260,10 +257,6 @@ msgstr "aperçu · flux de logs agent pas encore branché"
 msgid "queue empty"
 msgstr "file vide"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:111
-#~ msgid "Rename"
-#~ msgstr "Renommer"
-
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:103
 msgid "Run a pipeline on this agent and the chart fills up."
 msgstr "Lancez une pipeline sur cet agent et le graphe se remplira."
@@ -271,10 +264,6 @@ msgstr "Lancez une pipeline sur cet agent et le graphe se remplira."
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:180
 msgid "Run this agent"
 msgstr "Lancer cet agent"
-
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:180
-#~ msgid "Run this worker"
-#~ msgstr "Lancer ce worker"
 
 #: src/modules/features/agents/presentation/ui/Agents.page.tsx:77
 #: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:91
@@ -284,10 +273,6 @@ msgstr "en cours"
 #: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:160
 msgid "runs"
 msgstr "exécutions"
-
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:138
-#~ msgid "runs · last hour"
-#~ msgstr "exécutions · dernière heure"
 
 #: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:41
 msgid "sample"
@@ -301,10 +286,6 @@ msgstr "Secret pour l'agent"
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:109
 msgid "seen"
 msgstr "vu"
-
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:54
-#~ msgid "Service"
-#~ msgstr "Service"
 
 #: src/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx:59
 msgid "Set up an agent"
@@ -328,6 +309,7 @@ msgid "Two steps and it picks up jobs."
 msgstr "Deux étapes et il récupère les travaux."
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:135
+msgctxt "date-prefix"
 msgid "Updated"
 msgstr "Mis à jour le"
 

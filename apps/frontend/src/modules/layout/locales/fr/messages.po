@@ -18,21 +18,9 @@ msgstr ""
 msgid "{0}"
 msgstr "{0}"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:77
-#~ msgid "Admin"
-#~ msgstr "Admin"
-
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:77
-#~ msgid "Agents"
-#~ msgstr "Agents"
-
 #: src/modules/layout/presentation/ui/Layout.tsx:102
 msgid "Create"
 msgstr "Créer"
-
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:57
-#~ msgid "Dashboard"
-#~ msgstr "Tableau de bord"
 
 #: src/modules/layout/presentation/ui/LanguageSelector.tsx:41
 #: src/modules/layout/presentation/ui/LanguageSelector.tsx:45
@@ -47,18 +35,6 @@ msgstr "Chargement…"
 msgid "Log out"
 msgstr "Se déconnecter"
 
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:54
-#~ msgid "Main"
-#~ msgstr "Principal"
-
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:83
-#~ msgid "Marketplace"
-#~ msgstr "Marketplace"
-
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:71
-#~ msgid "Members"
-#~ msgstr "Membres"
-
 #: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:26
 msgid "New feature: Triggers!"
 msgstr "Nouveauté : les déclencheurs !"
@@ -68,14 +44,6 @@ msgstr "Nouveauté : les déclencheurs !"
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:105
 msgid "Organization"
 msgstr "Organisation"
-
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:63
-#~ msgid "Projects"
-#~ msgstr "Projets"
-
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:100
-#~ msgid "Roles"
-#~ msgstr "Rôles"
 
 #: src/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx:36
 msgid "Seen"
@@ -104,10 +72,6 @@ msgstr "Pour commencer, veuillez créer votre première organisation."
 #: src/modules/layout/presentation/ui/ScyllaSidebarTrigger.tsx:33
 msgid "Toggle Sidebar"
 msgstr "Afficher/masquer la barre latérale"
-
-#: src/modules/layout/presentation/ui/AppSidebar.tsx:94
-#~ msgid "Users"
-#~ msgstr "Utilisateurs"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:77
 msgid "Welcome to Scylla!"

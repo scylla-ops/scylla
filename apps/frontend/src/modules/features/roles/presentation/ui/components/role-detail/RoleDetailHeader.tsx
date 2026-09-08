@@ -18,7 +18,7 @@ const originLabel = (role: RoleEntity) => {
     case 'custom':
       return <Trans>Custom</Trans>;
     default:
-      return <Trans>Unknown</Trans>;
+      return <Trans context='feminine'>Unknown</Trans>;
   }
 };
 

@@ -102,7 +102,7 @@ msgstr "Nœuds"
 
 #: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:98
 msgid "Orphaned"
-msgstr "Orphelins"
+msgstr "Orphelin"
 
 #. placeholder {0}: summary.total
 #: src/modules/features/dashboard/presentation/ui/RunActivityCard.tsx:115

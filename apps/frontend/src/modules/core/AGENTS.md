@@ -95,5 +95,6 @@ toasted by the owning module). Leave them unless you are addressing them.
 
 ## Before done
 
-`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` — all clean.
+`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
+— all clean.
 New strings: `pnpm extract && pnpm compile`.

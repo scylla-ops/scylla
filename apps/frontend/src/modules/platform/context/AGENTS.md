@@ -80,4 +80,5 @@ No layer folders. Correct — this capability is two files, and inventing
 
 ## Before done
 
-`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` — all clean.
+`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
+— all clean.

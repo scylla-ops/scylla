@@ -21,17 +21,13 @@ msgstr "Actions"
 msgid "Active account"
 msgstr "Compte actif"
 
-#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
-#~ msgid "Back"
-#~ msgstr ""
-
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
 msgid "Create a new user"
 msgstr "Créer un nouvel utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:58
 msgid "Create User"
-msgstr "Créer l’utilisateur"
+msgstr "Créer l'utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:31
 msgid "Created at"
@@ -47,7 +43,7 @@ msgstr "Saisissez un mot de passe"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:55
 msgid "Enter a username and password for the new user."
-msgstr "Saisissez un nom d’utilisateur et un mot de passe pour le nouvel utilisateur."
+msgstr "Saisissez un nom d'utilisateur et un mot de passe pour le nouvel utilisateur."
 
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:95
 msgid "Error loading user information"
@@ -107,11 +103,7 @@ msgstr "Paramètres utilisateur"
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:104
 msgid "Username"
-msgstr "Nom d’utilisateur"
-
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
-#~ msgid "Username and password are required."
-#~ msgstr ""
+msgstr "Nom d'utilisateur"
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:53
 #: src/modules/features/user/user.module.ts:22
@@ -122,10 +114,6 @@ msgstr "Utilisateurs"
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "View"
 msgstr "Voir"
-
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
-#~ msgid "You cannot delete your own account."
-#~ msgstr ""
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:59
 msgid "You don't have permission to create users."

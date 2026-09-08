@@ -319,7 +319,7 @@ export const SCOPE_LABELS: Record<PermissionScope, MessageDescriptor> = {
   [PermissionScope.SYSTEM]: msg`System`,
   [PermissionScope.ORGANIZATION]: msg`Organization`,
   [PermissionScope.PROJECT]: msg`Project`,
-  [PermissionScope.UNSPECIFIED]: msg`Unknown`,
+  [PermissionScope.UNSPECIFIED]: msg({ context: 'feminine', message: 'Unknown' }),
 };
 
 /**

@@ -73,5 +73,15 @@ jobs:
       - name: Module cycles
         run: pnpm run depcruise:cycles
 
+      # Catalogs are per-module but merged into one flat map at runtime, so a
+      # msgid shared by two modules resolves to whichever catalog loads last —
+      # app-wide. An untranslated twin silently wins and renders English.
+      #
+      # Extract first (tolerated failure, as in `prebuild`): the check reads the
+      # .po files, so without this a string added to source but never extracted
+      # would be invisible to it and the collision would land on main.
+      - name: Catalog collisions
+        run: (pnpm run extract || true) && pnpm run i18n:collisions
+
       - name: Build
         run: pnpm run build

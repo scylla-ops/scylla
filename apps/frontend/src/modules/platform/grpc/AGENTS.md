@@ -71,5 +71,6 @@ Changing the key or the storage mechanism means changing all three in one commit
 
 ## Before done
 
-`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` — all clean.
+`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
+— all clean.
 After a `.proto` change: `pnpm gen-proto`.

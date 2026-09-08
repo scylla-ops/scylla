@@ -84,5 +84,6 @@ Sidebar: one entry only — section `organization`, order `30`, icon `UsersRound
 
 ## Before done
 
-`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` — all clean.
+`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
+— all clean.
 New strings: `pnpm extract && pnpm compile`.

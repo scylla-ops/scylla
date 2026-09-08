@@ -13,18 +13,10 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/roles/presentation/ui/components/members/MemberCard.tsx:85
-#~ msgid "{0, plural, =0 {No role} one {# role} other {# roles}}"
-#~ msgstr "{0, plural, =0 {No role} one {# role} other {# roles}}"
-
 #. placeholder {0}: scopeIds.length
 #: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:167
 msgid "{0} grants created"
 msgstr "{0} grants created"
-
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:58
-#~ msgid "{0} selected"
-#~ msgstr "{0} selected"
 
 #: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:69
 msgid "{conferredCount} selected"
@@ -34,25 +26,9 @@ msgstr "{conferredCount} selected"
 msgid "{memberCount} members"
 msgstr "{memberCount} members"
 
-#: src/modules/features/roles/presentation/hooks/use-scope-membership.ts:116
-#~ msgid "{username} removed — {revoked} grant(s) revoked"
-#~ msgstr "{username} removed — {revoked} grant(s) revoked"
-
-#: src/modules/features/roles/presentation/ui/components/members/AddRoleSelect.tsx:32
-#~ msgid "+ role"
-#~ msgstr "+ role"
-
 #: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:207
 msgid "Access"
 msgstr "Access"
-
-#: src/modules/features/roles/presentation/ui/components/members/member-columns.tsx:90
-#~ msgid "Actions"
-#~ msgstr "Actions"
-
-#: src/modules/features/roles/presentation/ui/components/members/AddMemberDialog.tsx:157
-#~ msgid "Add"
-#~ msgstr "Add"
 
 #: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:197
 msgid "Add grant"
@@ -62,17 +38,9 @@ msgstr "Add grant"
 msgid "Always"
 msgstr "Always"
 
-#: src/modules/features/roles/presentation/ui/authorization/PermissionDenied.tsx:24
-#~ msgid "Ask an administrator to grant you access if you think you should have it."
-#~ msgstr "Ask an administrator to grant you access if you think you should have it."
-
 #: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:17
 msgid "Built-in"
 msgstr "Built-in"
-
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:113
-#~ msgid "can't see this organization"
-#~ msgstr "can't see this organization"
 
 #: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:109
 msgid "can't see this organization's projects"
@@ -157,10 +125,6 @@ msgstr "Delete users"
 msgid "Description"
 msgstr "Description"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:110
-#~ msgid "don't have the right to see the organization's projects"
-#~ msgstr "don't have the right to see the organization's projects"
-
 #: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:150
 msgid "e.g., project-viewer"
 msgstr "e.g., project-viewer"
@@ -203,10 +167,6 @@ msgstr "Full control"
 msgid "Grant “{0}”"
 msgstr "Grant “{0}”"
 
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:90
-#~ msgid "Grant and revoke roles"
-#~ msgstr "Grant and revoke roles"
-
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:94
 msgid "Grant and revoke roles anywhere"
 msgstr "Grant and revoke roles anywhere"
@@ -231,18 +191,6 @@ msgstr "Grant and revoke roles on the project"
 msgid "Grant created"
 msgstr "Grant created"
 
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:91
-#~ msgid "Grant roles on the organization"
-#~ msgstr "Grant roles on the organization"
-
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:132
-#~ msgid "Grant roles on the project"
-#~ msgstr "Grant roles on the project"
-
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:71
-#~ msgid "Grant roles system-wide"
-#~ msgstr "Grant roles system-wide"
-
 #: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:496
 msgid "Granted"
 msgstr "Granted"
@@ -255,14 +203,6 @@ msgstr "Grants"
 msgid "Grants full control over its scope."
 msgstr "Grants full control over its scope."
 
-#: src/modules/features/roles/presentation/ui/components/members/RoleChecklist.tsx:77
-#~ msgid "Held"
-#~ msgstr "Held"
-
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:86
-#~ msgid "Holding a role in an organization is what belonging to it means, so every organization role carries it."
-#~ msgstr "Holding a role in an organization is what belonging to it means, so every organization role carries it."
-
 #: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:97
 msgid "Holding a role in an organization is what belonging to it means, so every organization role carries it. An organization role applies to every project of the organization."
 msgstr "Holding a role in an organization is what belonging to it means, so every organization role carries it. An organization role applies to every project of the organization."
@@ -271,10 +211,6 @@ msgstr "Holding a role in an organization is what belonging to it means, so ever
 msgid "Loading…"
 msgstr "Loading…"
 
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:83
-#~ msgid "Manage roles"
-#~ msgstr "Manage roles"
-
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:86
 msgid "Manage roles, and grant them anywhere"
 msgstr "Manage roles, and grant them anywhere"
@@ -282,14 +218,6 @@ msgstr "Manage roles, and grant them anywhere"
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:257
 msgid "Manage triggers"
 msgstr "Manage triggers"
-
-#: src/modules/features/roles/presentation/ui/components/members/MemberRoleBadges.tsx:121
-#~ msgid "Managed at the organization level."
-#~ msgstr "Managed at the organization level."
-
-#: src/modules/features/roles/presentation/ui/components/members/AddMemberDialog.tsx:110
-#~ msgid "Member"
-#~ msgstr "Member"
 
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:104
 msgid "Member of the organization"
@@ -324,14 +252,6 @@ msgstr "No permissions."
 msgid "No projects in this organization."
 msgstr "No projects in this organization."
 
-#: src/modules/features/roles/presentation/ui/components/members/MemberRoleBadges.tsx:68
-#~ msgid "No role"
-#~ msgstr "No role"
-
-#: src/modules/features/roles/presentation/ui/components/members/RoleChecklist.tsx:48
-#~ msgid "No role can be granted here."
-#~ msgstr "No role can be granted here."
-
 #: src/modules/features/roles/presentation/ui/Roles.page.tsx:74
 msgid "No roles yet. Create one to get started."
 msgstr "No roles yet. Create one to get started."
@@ -340,18 +260,6 @@ msgstr "No roles yet. Create one to get started."
 msgid "Nobody can receive a project grant here yet. Admit someone to the organization first — from the organization switcher, under “Members” — and they will show up here."
 msgstr "Nobody can receive a project grant here yet. Admit someone to the organization first — from the organization switcher, under “Members” — and they will show up here."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:428
-#~ msgid "Nobody can receive a project grant here yet. Grant an organization-scoped role that confers “View the organization” first — otherwise the project stays out of reach."
-#~ msgstr "Nobody can receive a project grant here yet. Grant an organization-scoped role that confers “View the organization” first — otherwise the project stays out of reach."
-
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:413
-#~ msgid "Nobody has been admitted to this organization yet. Grant an organization-scoped role first — a project grant only goes to someone the organization already accepted."
-#~ msgstr "Nobody has been admitted to this organization yet. Grant an organization-scoped role first — a project grant only goes to someone the organization already accepted."
-
-#: src/modules/features/roles/presentation/ui/components/members/MembersList.tsx:64
-#~ msgid "Nobody is listed here yet."
-#~ msgstr "Nobody is listed here yet."
-
 #: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:105
 msgid "not a member of this organization"
 msgstr "not a member of this organization"
@@ -359,10 +267,6 @@ msgstr "not a member of this organization"
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:226
 msgid "Open a pipeline"
 msgstr "Open a pipeline"
-
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:119
-#~ msgid "Open a project"
-#~ msgstr "Open a project"
 
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:227
 msgid "Open any pipeline"
@@ -414,21 +318,9 @@ msgstr "Remove"
 msgid "Restricted permissions"
 msgstr "Restricted permissions"
 
-#: src/modules/features/roles/presentation/ui/components/members/MemberRoleBadges.tsx:85
-#~ msgid "Revoke {name}"
-#~ msgstr "Revoke {name}"
-
 #: src/modules/features/roles/presentation/ui/RolesHeader.tsx:19
 msgid "Role"
 msgstr "Role"
-
-#: src/modules/features/roles/presentation/hooks/use-scope-membership.ts:87
-#~ msgid "Role granted"
-#~ msgstr "Role granted"
-
-#: src/modules/features/roles/presentation/hooks/use-scope-membership.ts:97
-#~ msgid "Role revoked"
-#~ msgstr "Role revoked"
 
 #: src/modules/features/roles/presentation/ui/RolesHeader.tsx:20
 #: src/modules/features/roles/roles.module.ts:25
@@ -459,10 +351,6 @@ msgstr "See and open every project in the organization"
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:106
 msgid "See every organization on the instance"
 msgstr "See every organization on the instance"
-
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:114
-#~ msgid "See every project in the organization"
-#~ msgstr "See every project in the organization"
 
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:138
 msgid "See every project of every organization"
@@ -511,6 +399,7 @@ msgstr "This role grants access across the whole system."
 
 #: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:21
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:322
+msgctxt "feminine"
 msgid "Unknown"
 msgstr "Unknown"
 
@@ -526,10 +415,6 @@ msgstr "User"
 msgid "View agents"
 msgstr "View agents"
 
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:91
-#~ msgid "View organization members"
-#~ msgstr "View organization members"
-
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:265
 msgid "View pipeline jobs"
 msgstr "View pipeline jobs"
@@ -538,14 +423,6 @@ msgstr "View pipeline jobs"
 msgid "View project secrets"
 msgstr "View project secrets"
 
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:109
-#~ msgid "View the marketplace"
-#~ msgstr "View the marketplace"
-
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:84
-#~ msgid "View the organization"
-#~ msgstr "View the organization"
-
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:219
 msgid "View the pipeline list"
 msgstr "View the pipeline list"
@@ -553,14 +430,6 @@ msgstr "View the pipeline list"
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:220
 msgid "View the pipelines of every project"
 msgstr "View the pipelines of every project"
-
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:178
-#~ msgid "View the project"
-#~ msgstr "View the project"
-
-#: src/modules/features/roles/presentation/utils/permission-mapping.ts:103
-#~ msgid "View the project list"
-#~ msgstr "View the project list"
 
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:286
 msgid "View the secrets of every project"
@@ -574,14 +443,6 @@ msgstr "View users"
 msgid "What is this role for?"
 msgstr "What is this role for?"
 
-#: src/modules/features/roles/presentation/ui/components/members/MemberRowAction.tsx:35
-#~ msgid "You"
-#~ msgstr "You"
-
-#: src/modules/features/roles/presentation/ui/authorization/PermissionButton.tsx:55
-#~ msgid "You don't have permission to do this."
-#~ msgstr "You don't have permission to do this."
-
 #: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:47
 msgid "You don't have permission to edit roles."
 msgstr "You don't have permission to edit roles."
@@ -593,7 +454,3 @@ msgstr "You don't have permission to grant this role."
 #: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:95
 msgid "You don't have permission to revoke grants."
 msgstr "You don't have permission to revoke grants."
-
-#: src/modules/features/roles/presentation/ui/authorization/PermissionDenied.tsx:20
-#~ msgid "You don't have the permission"
-#~ msgstr "You don't have the permission"

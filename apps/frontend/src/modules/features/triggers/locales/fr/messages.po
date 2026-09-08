@@ -22,17 +22,9 @@ msgstr "Secret webhook {0}"
 msgid "{days} at {time}"
 msgstr "{days} à {time}"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
-#~ msgid "5-field cron (min hour day month weekday), evaluated in UTC."
-#~ msgstr ""
-
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:261
 msgid "5-field cron (min hour day month weekday), evaluated in your local time."
 msgstr "Cron en 5 champs (min heure jour mois jour de semaine), évalué selon votre heure locale."
-
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:166
-#~ msgid "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
-#~ msgstr ""
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:114
 msgid "A trigger starts a run of this pipeline automatically."
@@ -66,17 +58,13 @@ msgstr "à la minute"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
-#~ msgid "Copied!"
-#~ msgstr ""
-
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:94
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copiez le secret ci-dessous — il est affiché une seule fois."
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:33
 msgid "Copy url"
-msgstr "Copier l’URL"
+msgstr "Copier l'URL"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:219
 msgid "Create"
@@ -109,7 +97,7 @@ msgstr "désactivé"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:37
 msgid "disabled — URL returns 404"
-msgstr "désactivé — l’URL renvoie 404"
+msgstr "désactivé — l'URL renvoie 404"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:32
 msgid "Edit"
@@ -214,13 +202,9 @@ msgstr "suivant"
 msgid "next scheduled run (Local time)"
 msgstr "prochaine exécution planifiée (heure locale)"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
-#~ msgid "next scheduled run (UTC)"
-#~ msgstr ""
-
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:73
 msgid "No triggers yet"
-msgstr "Aucun déclencheur pour l’instant"
+msgstr "Aucun déclencheur pour l'instant"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:25
 msgid "OK"
@@ -240,7 +224,7 @@ msgstr "le jour"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerInputsEditor.tsx:46
 msgid "Optional values injected into the run as environment variables."
-msgstr "Valeurs facultatives injectées dans l’exécution en tant que variables d’environnement."
+msgstr "Valeurs facultatives injectées dans l'exécution en tant que variables d'environnement."
 
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:121
 msgid "Pick at least one day"

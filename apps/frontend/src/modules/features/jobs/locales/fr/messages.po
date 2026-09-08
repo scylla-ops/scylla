@@ -31,13 +31,9 @@ msgstr "agent déconnecté en cours d'exécution"
 msgid "Collapse"
 msgstr "Réduire"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
-#~ msgid "Copied!"
-#~ msgstr ""
-
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:6
 msgid "Copy ID"
-msgstr "Copier l’ID"
+msgstr "Copier l'ID"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:68
 msgid "Created"
@@ -102,10 +98,6 @@ msgstr "Exécutions de nœuds ({0})"
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
 msgid "Open logs"
 msgstr "Ouvrir les journaux"
-
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:81
-#~ msgid "OpenJobLog"
-#~ msgstr ""
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:21
 msgid "Pipeline ID is missing"

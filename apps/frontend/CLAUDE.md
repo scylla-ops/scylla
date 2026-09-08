@@ -50,9 +50,10 @@ Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/fronten
 | `pnpm lint` | ESLint, `--max-warnings 0` (warnings are errors) |
 | `pnpm lint:fix` | ESLint with `--fix` |
 | `pnpm gen-proto` | Generate gRPC/protobuf-ts clients |
-| `pnpm extract` / `pnpm compile` | Lingui: extract messages / compile catalogs |
+| `pnpm extract` / `pnpm compile` | Lingui: extract messages (`--clean`, drops obsolete entries) / compile catalogs |
 | `pnpm depcruise` | Architecture rules: layer direction **and** public-API surface — **must be clean** |
 | `pnpm depcruise:cycles` | Module dependency cycles — **must be zero** |
+| `pnpm i18n:collisions` | Same msgid translated differently in two catalogs — **must be zero** |
 
 > `depcruise:cycles` is **not** redundant with `depcruise`'s `no-circular`. That rule works on the
 > *file* graph; a cycle can exist between two folders with no file in a loop (`a/x.ts → b/index.ts`,
@@ -62,9 +63,9 @@ Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/fronten
 
 `prebuild` = `gen-proto` + `extract` + `compile`, and runs before `dev` and `build`. **Do not hand-edit generated proto code or compiled locale `messages.ts` files** — regenerate them.
 
-Before considering work done: `pnpm typecheck`, `pnpm lint`, `pnpm depcruise` and
-`pnpm depcruise:cycles` must all pass clean (zero warnings, zero violations, zero cycles).
-CI runs all four.
+Before considering work done: `pnpm typecheck`, `pnpm lint`, `pnpm depcruise`,
+`pnpm depcruise:cycles` and `pnpm i18n:collisions` must all pass clean (zero warnings, zero
+violations, zero cycles, zero collisions). CI runs all five.
 
 **After moving any component between modules**, run `node scripts/restore-translations.mjs` —
 Lingui catalogs are per-module and keyed by source string, so `extract` silently drops the
@@ -335,6 +336,17 @@ Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `
 
 - Use `<Trans>...</Trans>` in JSX and `` t`...` `` for strings. `FormItem` labels accept `ReactNode`.
 - Catalogs live in `locales/{en,fr}/messages.po` per feature (+ global). Run `pnpm extract` after adding strings, `pnpm compile` to build catalogs. Don't edit `messages.ts` by hand.
+- **Catalogs are per-module, but the runtime merges them into one flat map** keyed by a hash of
+  message + context, last one loaded winning. So two modules translating the same source string
+  differently overwrite each other *app-wide* — and an untranslated twin renders as English while
+  every catalog still looks complete. `pnpm i18n:collisions` is the CI gate; keep it at zero.
+- When the same English word needs two French forms, **give one a `context`** rather than living
+  with the collision — it is part of the hash, so it separates them cleanly:
+  `` <Trans context='date-prefix'>Created</Trans> `` → "Créé le" vs. the bare column header "Créé";
+  `msg({ context: 'feminine', message: 'Unknown' })` → "Inconnue" vs. "Inconnu".
+  When the two uses genuinely mean the same thing, unify the wording instead.
+- French copy uses **straight apostrophes** (`'`), never `’` — the two are different characters and
+  produce two different messages for the same string.
 
 ---
 
@@ -374,4 +386,5 @@ React 18 · TypeScript 5.8 · TanStack Query 5 · Zustand 5 · React Router 7 ·
     table. Follow the shape of a neighbouring module's pair: `AGENTS.md` = public API, data
     contract, file map, routes/nav, the rules that bite there; `README.md` = what it is for and
     why it is built that way.
-11. `pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` all clean.
+11. `pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
+    all clean.

@@ -125,14 +125,14 @@ export const AgentDetailsPage = () => {
         <span className='text-muted-foreground/50'>·</span>
         <span className='flex items-center gap-1.5'>
           <StripLabel>
-            <Trans>Created</Trans>
+            <Trans context='date-prefix'>Created</Trans>
           </StripLabel>
           <span className='font-mono text-xs'>{formatDate(agent.createdAt)}</span>
         </span>
         <span className='text-muted-foreground/50'>·</span>
         <span className='flex items-center gap-1.5'>
           <StripLabel>
-            <Trans>Updated</Trans>
+            <Trans context='date-prefix'>Updated</Trans>
           </StripLabel>
           <span className='font-mono text-xs'>{formatDate(agent.updatedAt)}</span>
         </span>

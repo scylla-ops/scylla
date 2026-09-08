@@ -21,10 +21,6 @@ msgstr "Actions"
 msgid "Active account"
 msgstr "Active account"
 
-#: src/modules/features/user/presentation/ui/settings/UserSettings.page.tsx:21
-#~ msgid "Back"
-#~ msgstr "Back"
-
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
 msgid "Create a new user"
 msgstr "Create a new user"
@@ -109,10 +105,6 @@ msgstr "User settings"
 msgid "Username"
 msgstr "Username"
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:42
-#~ msgid "Username and password are required."
-#~ msgstr "Username and password are required."
-
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:53
 #: src/modules/features/user/user.module.ts:22
 #: src/modules/features/user/user.module.ts:38
@@ -122,10 +114,6 @@ msgstr "Users"
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "View"
 msgstr "View"
-
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:25
-#~ msgid "You cannot delete your own account."
-#~ msgstr "You cannot delete your own account."
 
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:59
 msgid "You don't have permission to create users."

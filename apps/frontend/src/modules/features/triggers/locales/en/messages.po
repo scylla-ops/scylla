@@ -22,17 +22,9 @@ msgstr "{0} webhook secret"
 msgid "{days} at {time}"
 msgstr "{days} at {time}"
 
-#: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:259
-#~ msgid "5-field cron (min hour day month weekday), evaluated in UTC."
-#~ msgstr "5-field cron (min hour day month weekday), evaluated in UTC."
-
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:261
 msgid "5-field cron (min hour day month weekday), evaluated in your local time."
 msgstr "5-field cron (min hour day month weekday), evaluated in your local time."
-
-#: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:166
-#~ msgid "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
-#~ msgstr "5-field cron, evaluated in UTC. Example: 0 9 * * 1-5 (weekdays at 09:00)."
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:114
 msgid "A trigger starts a run of this pipeline automatically."
@@ -65,10 +57,6 @@ msgstr "at minute"
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:216
 msgid "Cancel"
 msgstr "Cancel"
-
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:64
-#~ msgid "Copied!"
-#~ msgstr "Copied!"
 
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:94
 msgid "Copy the secret below — it is shown only once."
@@ -213,10 +201,6 @@ msgstr "next"
 #: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
 msgid "next scheduled run (Local time)"
 msgstr "next scheduled run (Local time)"
-
-#: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:46
-#~ msgid "next scheduled run (UTC)"
-#~ msgstr "next scheduled run (UTC)"
 
 #: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:73
 msgid "No triggers yet"

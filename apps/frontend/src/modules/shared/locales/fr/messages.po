@@ -13,25 +13,9 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:88
-#~ msgid "{0} credentials"
-#~ msgstr ""
-
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:84
-#~ msgid "{0} is ready"
-#~ msgstr ""
-
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:86
-#~ msgid "{0} webhook secret"
-#~ msgstr ""
-
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:66
 msgid "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
 msgstr "{selectedCount, plural, one {# élément supprimé} other {# éléments supprimés}}"
-
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:163
-#~ msgid "Add this signing secret to your webhook sender's HMAC configuration."
-#~ msgstr ""
 
 #: src/modules/shared/utils/toast-messages.ts:46
 msgid "Agent id copied"
@@ -88,10 +72,6 @@ msgstr "Copié !"
 msgid "Copy"
 msgstr "Copier"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:95
-#~ msgid "Copy the secret below — it is shown only once."
-#~ msgstr ""
-
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:112
 msgid "Copy your secret"
 msgstr "Copiez votre secret"
@@ -144,18 +124,6 @@ msgstr "au total"
 msgid "Job queued — no agent connected"
 msgstr "Travail mis en file d'attente — aucun agent connecté"
 
-#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:41
-#~ msgid "Jobs are queued — check that your agents are connected."
-#~ msgstr "Des jobs sont en file d'attente — vérifiez que vos agents sont bien connectés."
-
-#: src/modules/shared/utils/toast-messages.ts:29
-#~ msgid "Member added"
-#~ msgstr ""
-
-#: src/modules/shared/utils/toast-messages.ts:30
-#~ msgid "Member removed"
-#~ msgstr ""
-
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:142
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
 msgid "New {label}"
@@ -164,10 +132,6 @@ msgstr "Nouveau {label}"
 #: src/modules/shared/presentation/ui/shadcn/pagination.tsx:102
 msgid "Next"
 msgstr "Suivant"
-
-#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:52
-#~ msgid "No agent connected — queued jobs are waiting for one."
-#~ msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
 
 #: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:34
 msgid "No data"
@@ -293,10 +257,6 @@ msgstr "Tout sélectionner"
 msgid "Server unreachable"
 msgstr "Serveur injoignable"
 
-#: src/modules/shared/presentation/ui/feedback/NoAgentsBanner.tsx:59
-#~ msgid "Set up an agent"
-#~ msgstr "Configurer un agent"
-
 #: src/modules/shared/presentation/ui/data-display/Pagination.tsx:81
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Affichage de {start}-{end} sur {totalCount}"
@@ -308,10 +268,6 @@ msgstr "montré une seule fois"
 #: src/modules/shared/utils/status-config.ts:94
 msgid "Skipped"
 msgstr "Ignoré"
-
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:154
-#~ msgid "Start your agent"
-#~ msgstr ""
 
 #: src/modules/shared/utils/status-config.ts:74
 msgid "Success"
@@ -355,17 +311,9 @@ msgstr "Déclencheur déclenché — exécution démarrée"
 msgid "Trigger updated"
 msgstr "Déclencheur mis à jour"
 
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:93
-#~ msgid "Two steps and it picks up jobs."
-#~ msgstr ""
-
 #: src/modules/shared/utils/status-config.ts:116
 msgid "Unknown"
 msgstr "Inconnu"
-
-#: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:167
-#~ msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
-#~ msgstr ""
 
 #: src/modules/shared/utils/toast-messages.ts:19
 msgid "User created"

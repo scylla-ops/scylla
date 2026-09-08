@@ -93,6 +93,7 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
 
 ## Before done
 
-`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` — all clean.
+`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
+— all clean.
 New strings: `pnpm extract && pnpm compile`. After moving a component between modules:
 `node scripts/restore-translations.mjs`.

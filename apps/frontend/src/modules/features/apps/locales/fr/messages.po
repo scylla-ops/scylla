@@ -98,6 +98,7 @@ msgid "created"
 msgstr "créé le"
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:120
+msgctxt "date-prefix"
 msgid "Created"
 msgstr "Créé le"
 
@@ -222,10 +223,11 @@ msgid "Toggle secret enabled"
 msgstr "Activer/désactiver le secret"
 
 #: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:126
+msgctxt "date-prefix"
 msgid "Updated"
 msgstr "Mis à jour le"
 
 #: src/modules/features/apps/presentation/ui/Apps.page.tsx:123
 #: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:154
 msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
-msgstr "Utilisez ces identifiants (ID + secret) pour authentifier une automatisation auprès de l’API Scylla."
+msgstr "Utilisez ces identifiants (ID + secret) pour authentifier une automatisation auprès de l'API Scylla."

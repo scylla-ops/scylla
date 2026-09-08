@@ -13,33 +13,9 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:368
-#~ msgid "+ role"
-#~ msgstr "+ rôle"
-
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:279
-#~ msgid "Add"
-#~ msgstr "Ajouter"
-
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:33
 msgid "Add a description..."
-msgstr "Ajoutez une description..."
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:197
-#~ msgid "Add a member"
-#~ msgstr "Ajouter un membre"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:247
-#~ msgid "Add a member to this project"
-#~ msgstr "Ajouter un membre à ce projet"
-
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:113
-#~ msgid "Cancel"
-#~ msgstr "Annuler"
-
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:339
-#~ msgid "Close"
-#~ msgstr "Fermer"
+msgstr "Ajouter une description..."
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:66
 msgid "Create a new project"
@@ -48,10 +24,6 @@ msgstr "Créer un nouveau projet"
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:72
 msgid "Create Project"
 msgstr "Créer le projet"
-
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:119
-#~ msgid "Creating..."
-#~ msgstr "Création en cours..."
 
 #: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:35
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:32
@@ -78,50 +50,6 @@ msgstr "Modifier le projet"
 msgid "Enter a name for your new project and select the organization it belongs to."
 msgstr "Entrez un nom pour votre nouveau projet et sélectionnez l'organisation à laquelle il appartient."
 
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:257
-#~ msgid "Every member of the organization is already here"
-#~ msgstr "Tous les membres de l'organisation sont déjà présents"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:275
-#~ msgid "Every role they hold on this project will be revoked. Roles inherited from the organization are untouched — they are managed at the organization level."
-#~ msgstr "Tous les rôles qu'il détient sur ce projet seront révoqués. Les rôles hérités de l'organisation ne sont pas touchés — ils sont gérés au niveau de l'organisation."
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:190
-#~ msgid "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this page."
-#~ msgstr "Toutes les personnes ayant accès à ce projet, qu'il soit accordé ici ou via un rôle sur l'organisation. Seuls les rôles de projet peuvent être modifiés depuis cette page."
-
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:218
-#~ msgid "Everyone with access to this project, whether granted here or through a role on the organization. Only project roles can be changed from this view."
-#~ msgstr "Toutes les personnes ayant accès à ce projet, que ce soit par un rôle attribué ici ou par un rôle sur l'organisation. Seuls les rôles de projet sont modifiables depuis cette vue."
-
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:23
-#~ msgid "in total"
-#~ msgstr "au total"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:221
-#~ msgid "Managed by a project administrator"
-#~ msgstr "Géré par un administrateur du projet"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:186
-#~ msgid "Member"
-#~ msgstr "Membre"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:170
-#~ msgid "Member added with {0} role(s)"
-#~ msgstr "Membre ajouté avec {0} rôle(s)"
-
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:193
-#~ msgid "Member added with {count} role(s)"
-#~ msgstr "Membre ajouté avec {count} rôle(s)"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:187
-#~ msgid "Members"
-#~ msgstr "Membres"
-
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:215
-#~ msgid "Members of “{0}”"
-#~ msgstr "Membres de « {0} »"
-
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:35
 msgid "New project"
 msgstr "Nouveau projet"
@@ -130,29 +58,9 @@ msgstr "Nouveau projet"
 msgid "No description"
 msgstr "Aucune description"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:66
-#~ msgid "No description (coming soon)"
-#~ msgstr ""
-
 #: src/modules/features/project/presentation/ui/ProjectPage.tsx:18
 msgid "No organization selected"
 msgstr "Aucune organisation sélectionnée"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:205
-#~ msgid "Nobody has access to this project yet."
-#~ msgstr "Personne n'a encore accès à ce projet."
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:249
-#~ msgid "Only members of the organization can be added — a project role granted to anyone else is refused."
-#~ msgstr "Seuls les membres de l'organisation peuvent être ajoutés — un rôle de projet accordé à quelqu'un d'autre est refusé."
-
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:31
-#~ msgid "Organization"
-#~ msgstr "Organisation"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:237
-#~ msgid "Organization administrators also reach this project. Their roles are managed at the organization level and are not listed here."
-#~ msgstr "Les administrateurs de l'organisation ont aussi accès à ce projet. Leurs rôles sont gérés au niveau de l'organisation et ne sont pas listés ici."
 
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:31
 msgid "Project"
@@ -163,38 +71,10 @@ msgstr "Projet"
 msgid "Project name"
 msgstr "Nom du projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:60
-#~ msgid "Project name is required and you must select an organization."
-#~ msgstr "Le nom du projet est requis et vous devez sélectionner une organisation."
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:261
-#~ msgid "Project roles to grant"
-#~ msgstr "Rôles de projet à attribuer"
-
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:32
 #: src/modules/features/project/project.module.ts:32
 msgid "Projects"
 msgstr "Projets"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:273
-#~ msgid "Remove {0} from this project?"
-#~ msgstr "Retirer {0} de ce projet ?"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:225
-#~ msgid "Remove from the project"
-#~ msgstr "Retirer du projet"
-
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:197
-#~ msgid "Role granted"
-#~ msgstr "Rôle attribué"
-
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:204
-#~ msgid "Role revoked"
-#~ msgstr "Rôle révoqué"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:233
-#~ msgid "Roles badged “Organization” are inherited from the organization and are managed there."
-#~ msgstr "Les rôles marqués « Organisation » sont hérités de l'organisation et se gèrent là-bas."
 
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:62
 msgid "Save"
@@ -208,14 +88,6 @@ msgstr "Enregistrement..."
 msgid "Select"
 msgstr "Sélectionner"
 
-#: src/modules/features/project/presentation/ui/ProjectMembersDialog.tsx:244
-#~ msgid "Select a member of the organization"
-#~ msgstr "Sélectionner un membre de l'organisation"
-
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:32
-#~ msgid "Select an organization"
-#~ msgstr "Sélectionner une organisation"
-
 #: src/modules/features/project/presentation/ui/ProjectPage.tsx:21
 msgid "Select an organization from the sidebar to view its projects"
 msgstr "Sélectionnez une organisation dans la barre latérale pour voir ses projets"
@@ -227,18 +99,6 @@ msgstr "Impossible de charger les projets"
 #: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:59
 msgid "Update the project name and description."
 msgstr "Mettez à jour le nom du projet et sa description."
-
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:42
-#~ msgid "Update the project name."
-#~ msgstr ""
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:258
-#~ msgid "You can't browse the organization's members"
-#~ msgstr "Vous ne pouvez pas parcourir les membres de l'organisation"
-
-#: src/modules/features/project/presentation/ui/ProjectMembers.page.tsx:199
-#~ msgid "You don't have permission to add members to this project."
-#~ msgstr "Vous n'avez pas la permission d'ajouter des membres à ce projet."
 
 #: src/modules/features/project/presentation/ui/ProjectHeader.tsx:37
 msgid "You don't have permission to create projects."

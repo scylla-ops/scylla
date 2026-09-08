@@ -31,10 +31,6 @@ msgstr "agent disconnected mid-run"
 msgid "Collapse"
 msgstr "Collapse"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:28
-#~ msgid "Copied!"
-#~ msgstr "Copied!"
-
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:6
 msgid "Copy ID"
 msgstr "Copy ID"
@@ -102,10 +98,6 @@ msgstr "Node Executions ({0})"
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
 msgid "Open logs"
 msgstr "Open logs"
-
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:81
-#~ msgid "OpenJobLog"
-#~ msgstr "OpenJobLog"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:21
 msgid "Pipeline ID is missing"

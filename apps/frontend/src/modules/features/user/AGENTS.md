@@ -91,5 +91,6 @@ without conflicting. If you add a route under `users`, check the other module fi
 
 ## Before done
 
-`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles` — all clean.
+`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
+— all clean.
 New strings: `pnpm extract && pnpm compile`.

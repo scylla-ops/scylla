@@ -117,13 +117,13 @@ export const AppDetailsPage = () => {
             </div>
             <div>
               <Label>
-                <Trans>Created</Trans>
+                <Trans context='date-prefix'>Created</Trans>
               </Label>
               <dd className='mt-1'>{formatDate(app.createdAt)}</dd>
             </div>
             <div>
               <Label>
-                <Trans>Updated</Trans>
+                <Trans context='date-prefix'>Updated</Trans>
               </Label>
               <dd className='mt-1'>{formatDate(app.updatedAt)}</dd>
             </div>
