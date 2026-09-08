@@ -41,7 +41,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
 
   if (userId == undefined) {
     return (
-      <Card className='w-full bg-white'>
+      <Card className='w-full bg-card'>
         <CardHeader>
           <CardTitle>
             <Trans>User information</Trans>
@@ -51,7 +51,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className='text-center text-gray-500'>
+          <div className='text-center text-muted-foreground'>
             <Trans>User information not available</Trans>
           </div>
         </CardContent>
@@ -61,7 +61,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
 
   if (isLoading) {
     return (
-      <Card className='w-full bg-white'>
+      <Card className='w-full bg-card'>
         <CardHeader>
           <CardTitle>
             <Trans>User information</Trans>
@@ -71,7 +71,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className='text-center text-gray-500'>
+          <div className='text-center text-muted-foreground'>
             <Trans>Loading user information...</Trans>
           </div>
         </CardContent>
@@ -81,7 +81,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
 
   if (isError || !user) {
     return (
-      <Card className='w-full bg-white'>
+      <Card className='w-full bg-card'>
         <CardHeader>
           <CardTitle>
             <Trans>User information</Trans>
@@ -91,7 +91,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className='text-center text-red-500'>
+          <div className='text-center text-destructive'>
             <Trans>Error loading user information</Trans>
           </div>
         </CardContent>
@@ -101,7 +101,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
 
   const FormItems: FormItem[] = [
     {
-      label: 'Username',
+      label: <Trans>Username</Trans>,
       placeholder: user.username,
       id: 'username',
       type: FormItemType.Input,
@@ -110,7 +110,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
       defaultValue: user.username,
     },
     {
-      label: 'User ID',
+      label: <Trans>User ID</Trans>,
       placeholder: user.userId,
       id: 'user-id',
       type: FormItemType.Input,
@@ -130,7 +130,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
   };
 
   return (
-    <Card className='w-full bg-white'>
+    <Card className='w-full bg-card'>
       <CardHeader>
         <CardTitle>
           <Trans>User information</Trans>
@@ -147,7 +147,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
           </Avatar>
           <div>
             <div className='text-base font-medium'>{user.username}</div>
-            <div className='text-sm text-gray-500'>
+            <div className='text-sm text-muted-foreground'>
               <Trans>Active account</Trans>
             </div>
           </div>
@@ -156,7 +156,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
         <ScyllaForm
           onSubmit={handleSubmit}
           items={FormItems}
-          buttonLabel={'Save'}
+          buttonLabel={<Trans>Save</Trans>}
           className={'gap-2'}
           isPending={updateUserMutation.isPending}
         />

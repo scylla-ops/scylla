@@ -7,10 +7,11 @@ import {
 } from '@shadcn/dropdown-menu.tsx';
 import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2, Copy, Zap } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
-import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
-import { useNewFeature } from '@shared/presentation/hooks/use-new-feature.ts';
+import { useCompactContainer } from '@shared/presentation/hooks/use-compact-container.ts';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
 
 type PipelineActionsProps = {
   onRun: (e: SyntheticEvent) => void;
@@ -37,25 +38,14 @@ export const PipelineActions = ({
   isRunning,
   isDuplicating,
 }: PipelineActionsProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isCompact, setIsCompact] = useState(false);
-  const { isNew: isTriggersNew } = useNewFeature('triggers');
+  const { containerRef, isCompact } = useCompactContainer();
 
-  useEffect(() => {
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        setIsCompact(entry.contentRect.width < 70);
-      }
-    });
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+  // Gate each action by the permission it needs, in the current project context.
+  const canRun = useCan(Permission.RUN_PIPELINE);
+  const canEdit = useCan(Permission.UPDATE_PIPELINE);
+  const canDuplicate = useCan(Permission.CREATE_PIPELINE);
+  const canManageTriggers = useCan(Permission.MANAGE_TRIGGERS);
+  const showTriggers = !!onViewTriggers && canManageTriggers;
 
   return (
     <div ref={containerRef} className='flex w-full items-center justify-center gap-2 shrink-0'>
@@ -72,36 +62,34 @@ export const PipelineActions = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-40'>
-            <DropdownMenuItem onClick={onRun}>
-              <PlayIcon className='w-4 h-4 mr-2' />
-              <Trans>Run</Trans>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onEdit}>
-              <EditIcon className='w-4 h-4 mr-2' />
-              <Trans>Edit</Trans>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className='w-4 h-4 mr-2' />
-              <Trans>Duplicate</Trans>
-            </DropdownMenuItem>
+            {canRun && (
+              <DropdownMenuItem onClick={onRun}>
+                <PlayIcon className='w-4 h-4 mr-2' />
+                <Trans>Run</Trans>
+              </DropdownMenuItem>
+            )}
+            {canEdit && (
+              <DropdownMenuItem onClick={onEdit}>
+                <EditIcon className='w-4 h-4 mr-2' />
+                <Trans>Edit</Trans>
+              </DropdownMenuItem>
+            )}
+            {canDuplicate && (
+              <DropdownMenuItem onClick={onDuplicate}>
+                <Copy className='w-4 h-4 mr-2' />
+                <Trans>Duplicate</Trans>
+              </DropdownMenuItem>
+            )}
             {onViewJobs && (
               <DropdownMenuItem onClick={onViewJobs}>
                 <ListChecks className='w-4 h-4 mr-2' />
-                View Jobs
+                <Trans>View Jobs</Trans>
               </DropdownMenuItem>
             )}
-            {onViewTriggers && (
+            {showTriggers && (
               <DropdownMenuItem onClick={onViewTriggers}>
                 <Zap className='w-4 h-4 mr-2' />
                 <Trans>Triggers</Trans>
-                {isTriggersNew && (
-                  <span className='relative inline-flex ml-2'>
-                    <span className='absolute inset-0 animate-ping rounded-full bg-primary opacity-40' />
-                    <span className='relative bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none'>
-                      New
-                    </span>
-                  </span>
-                )}
               </DropdownMenuItem>
             )}
             {onMore && (
@@ -114,40 +102,36 @@ export const PipelineActions = ({
         </DropdownMenu>
       ) : (
         <>
-          <IconButton
-            icon={isRunning ? Loader2 : PlayIcon}
-            tooltip={<Trans>Run</Trans>}
-            onClick={onRun}
-            disabled={isRunning}
-            iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
-          />
+          {canRun && (
+            <IconButton
+              icon={isRunning ? Loader2 : PlayIcon}
+              tooltip={<Trans>Run</Trans>}
+              onClick={onRun}
+              disabled={isRunning}
+              iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
+            />
+          )}
 
-          <IconButton icon={EditIcon} tooltip={'Edit pipeline'} onClick={onEdit} />
+          {canEdit && (
+            <IconButton icon={EditIcon} tooltip={<Trans>Edit pipeline</Trans>} onClick={onEdit} />
+          )}
 
-          <IconButton
-            icon={isDuplicating ? Loader2 : Copy}
-            tooltip={<Trans>Duplicate</Trans>}
-            onClick={onDuplicate}
-            disabled={isDuplicating}
-            iconClassName={isDuplicating ? 'animate-spin' : undefined}
-          />
+          {canDuplicate && (
+            <IconButton
+              icon={isDuplicating ? Loader2 : Copy}
+              tooltip={<Trans>Duplicate</Trans>}
+              onClick={onDuplicate}
+              disabled={isDuplicating}
+              iconClassName={isDuplicating ? 'animate-spin' : undefined}
+            />
+          )}
 
           {onViewJobs && (
             <IconButton icon={ListChecks} tooltip={<Trans>View Jobs</Trans>} onClick={onViewJobs} />
           )}
 
-          {onViewTriggers && (
-            <div className='relative'>
-              <IconButton icon={Zap} tooltip={<Trans>Triggers</Trans>} onClick={onViewTriggers} />
-              {isTriggersNew && (
-                <span className='absolute -top-1.5 -right-1.5 flex pointer-events-none'>
-                  <span className='absolute inset-0 animate-ping rounded-full bg-primary opacity-40' />
-                  <span className='relative bg-primary text-primary-foreground text-[10px] font-bold px-1 py-0.5 rounded-full leading-none'>
-                    New
-                  </span>
-                </span>
-              )}
-            </div>
+          {showTriggers && (
+            <IconButton icon={Zap} tooltip={<Trans>Triggers</Trans>} onClick={onViewTriggers} />
           )}
 
           {onMore && (

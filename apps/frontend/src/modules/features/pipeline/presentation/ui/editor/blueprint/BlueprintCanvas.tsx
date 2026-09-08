@@ -91,7 +91,7 @@ export const BlueprintCanvas = forwardRef<BlueprintCanvasHandle, BlueprintCanvas
         defaultEdgeOptions={defaultEdgeOptions}
       >
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} className='bg-background!' />
-        <Controls className='bg-card! border-border! shadow-sm!' />
+        <Controls className='bg-background! border-border! shadow-sm!' />
       </ReactFlow>
     );
   },

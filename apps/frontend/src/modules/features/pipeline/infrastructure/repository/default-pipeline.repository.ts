@@ -23,6 +23,15 @@ export class DefaultPipelineRepository implements PipelineRepository {
     );
   }
 
+  public async getMetadataByOrganizationId(
+    organizationId: string,
+    pagination?: PaginationParams,
+  ): Promise<ScyllaResult<PaginatedList<PipelineMetadata>>> {
+    return (await this.remoteDataSource.getByOrganizationId(organizationId, pagination)).map(
+      GrpcPipelineMapper.toDomainInfoList,
+    );
+  }
+
   public async deleteById(id: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.deleteById(id);
   }

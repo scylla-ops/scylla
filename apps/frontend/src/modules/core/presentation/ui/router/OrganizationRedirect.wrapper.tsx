@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { useOrganizations } from '@/modules/features/organization/presentation/hooks/useOrganizations.ts';
+import { useContextStore } from '@platform/context';
+import { useOrganizations } from '@/modules/features/organization';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 /**
@@ -16,7 +16,7 @@ export const OrganizationRedirectWrapper = () => {
   const orgName = storedOrgName ?? organizations?.[0]?.name;
 
   if (orgName) {
-    return <Navigate to={`/${slugifyOrgName(orgName)}/projects`} replace />;
+    return <Navigate to={`/${slugifyOrgName(orgName)}/dashboard`} replace />;
   }
 
   // No orgs at all — Layout will show the onboarding screen

@@ -1,13 +1,20 @@
-import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
-import { div } from 'framer-motion/m';
+import type { ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
 import { UserInformation } from '@/modules/features/user/presentation/ui/settings/UserInformation.tsx';
 import { useParams } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 
+interface UserSettingsPageProps {
+  /**
+   * The user's organizations panel, injected by whoever owns the route. Listing
+   * organizations is the organization module's job, and it already depends on
+   * `user` — so it fills this slot rather than being imported from here.
+   */
+  organizations?: ReactNode;
+}
+
 //TODO: change and list only organization that the user is in
-// (pass it as a props from Organization module)
-export const UserSettingsPage = () => {
+export const UserSettingsPage = ({ organizations }: UserSettingsPageProps) => {
   const { userId } = useParams();
 
   return (
@@ -23,16 +30,16 @@ export const UserSettingsPage = () => {
           <UserInformation userId={userId ?? localStorage.getItem('userId') ?? undefined} />
         </div>
 
-        <div className='w-1/2'>
-          <Card className='w-full'>
-            <CardHeader>
-              <CardTitle>Organizations: </CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <OrganizationList Wrapper={div} />
-            </CardContent>
-          </Card>
-        </div>
+        {organizations && (
+          <div className='w-1/2'>
+            <Card className='w-full'>
+              <CardHeader>
+                <CardTitle>Organizations: </CardTitle>
+              </CardHeader>
+              <CardContent className='space-y-4'>{organizations}</CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

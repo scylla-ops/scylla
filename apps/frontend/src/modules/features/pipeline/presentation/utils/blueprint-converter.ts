@@ -8,7 +8,7 @@ export interface StartNodeData {
 }
 
 export const START_NODE_ID = '__start__';
-export const EDGE_COLOR = 'oklch(65.752% 0.25 180)';
+export const EDGE_COLOR = 'var(--primary)';
 
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 120;

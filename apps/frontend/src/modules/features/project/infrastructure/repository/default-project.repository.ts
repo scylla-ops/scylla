@@ -3,7 +3,9 @@ import type { ProjectRepository } from '@/modules/features/project/domain/reposi
 import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
+import type { ProjectMember } from '@/modules/features/project/domain/structs/project-member.struct.ts';
 import { GrpcProjectMapper } from '@/modules/features/project/infrastructure/repository/mappers/grpc-project.mapper.ts';
+import { GrpcProjectMemberMapper } from '@/modules/features/project/infrastructure/repository/mappers/grpc-project-member.mapper.ts';
 
 export class DefaultProjectRepository implements ProjectRepository {
   constructor(private readonly _remoteDataSource: ProjectRemoteDataSource) {}
@@ -11,6 +13,12 @@ export class DefaultProjectRepository implements ProjectRepository {
   async getByOrganizationId(organizationId: string, pagination?: PaginationParams) {
     return (await this._remoteDataSource.getByOrganizationId(organizationId, pagination)).map(
       GrpcProjectMapper.toDomainList,
+    );
+  }
+
+  async listMembers(projectId: string): Promise<ScyllaResult<ProjectMember[]>> {
+    return (await this._remoteDataSource.listMembers(projectId)).map(members =>
+      members.map(GrpcProjectMemberMapper.toDomain),
     );
   }
 

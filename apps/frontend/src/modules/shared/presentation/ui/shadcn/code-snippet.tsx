@@ -65,7 +65,7 @@ export const CodeSnippet = ({
 }: CodeSnippetProps) => {
   const [copied, setCopied] = React.useState(false);
   const styles = VARIANT[variant];
-  const { i18n } = useLingui();
+  const { i18n, t } = useLingui();
 
   const copy = async () => {
     if (blurred) return;
@@ -86,7 +86,7 @@ export const CodeSnippet = ({
         <span className='font-mono text-[10px] uppercase tracking-wide'>{label}</span>
         <button
           type='button'
-          aria-label='Copy'
+          aria-label={t`Copy`}
           onClick={copy}
           disabled={blurred}
           className={cn(

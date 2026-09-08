@@ -5,6 +5,7 @@ import {
   MoreHorizontalIcon,
 } from "lucide-react"
 
+import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from "@shared/presentation/utils"
 import { buttonVariants, type Button } from "@shared/presentation/ui/shadcn/button"
 
@@ -69,15 +70,18 @@ function PaginationPrevious({
   className,
   ...props
 }: React.ComponentProps<typeof PaginationLink>) {
+  const { t } = useLingui();
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label={t`Go to previous page`}
       size="default"
       className={cn("gap-1 px-2.5 sm:pl-2.5", className)}
       {...props}
     >
       <ChevronLeftIcon />
-      <span className="hidden sm:block">Previous</span>
+      <span className="hidden sm:block">
+        <Trans>Previous</Trans>
+      </span>
     </PaginationLink>
   )
 }
@@ -86,14 +90,17 @@ function PaginationNext({
   className,
   ...props
 }: React.ComponentProps<typeof PaginationLink>) {
+  const { t } = useLingui();
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label={t`Go to next page`}
       size="default"
       className={cn("gap-1 px-2.5 sm:pr-2.5", className)}
       {...props}
     >
-      <span className="hidden sm:block">Next</span>
+      <span className="hidden sm:block">
+        <Trans>Next</Trans>
+      </span>
       <ChevronRightIcon />
     </PaginationLink>
   )

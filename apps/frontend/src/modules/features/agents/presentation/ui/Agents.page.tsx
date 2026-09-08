@@ -52,13 +52,14 @@ export const AgentsPage = () => {
   const runningTotal = agents.reduce((n, a) => n + mockCardStats(a.id, a.connected).running, 0);
   const completedTotal = agents.reduce((n, a) => n + mockCardStats(a.id, a.connected).completed, 0);
 
-  if (isError) return <ErrorState message='Error loading agents' />;
+  if (isError) return <ErrorState message={<Trans>Error loading agents</Trans>} />;
 
   return (
     <div className='flex flex-col gap-4 w-full h-full'>
       <FeatureHeader
         count={agents.length}
-        label='Agent'
+        label={<Trans>Agent</Trans>}
+        pluralLabel={<Trans>Agents</Trans>}
         onNew={() => setCreateOpen(true)}
         underLabel={
           <>
@@ -142,7 +143,7 @@ export const AgentsPage = () => {
           title={<Trans>{created.agent.name} is ready</Trans>}
           description={<Trans>Two steps and it picks up jobs.</Trans>}
           secret={created.secret}
-          secretLabel={'Secret for the agent'}
+          secretLabel={<Trans>Secret for the agent</Trans>}
           secondStep={{
             title: <Trans>Start your agent</Trans>,
             content: <AgentRunInstructions appId={created.agent.id} secret={created.secret} />,

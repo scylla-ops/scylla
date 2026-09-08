@@ -9,6 +9,10 @@ tonic-prost.workspace = true
 prost.workspace = true
 prost-types.workspace = true
 
+# the kernel types these conversions map to and from
+scylla-core.workspace = true
+chrono.workspace = true
+
 [build-dependencies]
 tonic-prost-build.workspace = true
 

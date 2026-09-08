@@ -1,4 +1,4 @@
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useJobsDomain } from '@/modules/features/jobs/presentation/hooks/use-jobs-domain.ts';
 import { useEffect, useState } from 'react';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 
@@ -15,7 +15,7 @@ import type { ScyllaError } from '@shared/utils/scylla-result.ts';
  * reader fast so nothing is dropped.
  */
 export const useTailJobLogs = (jobId: string, nodeId?: string) => {
-  const { tailJobLogs } = useDependencies().jobs;
+  const { jobsRepository } = useJobsDomain();
 
   const [logString, setLogString] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +34,7 @@ export const useTailJobLogs = (jobId: string, nodeId?: string) => {
     setIsError(false);
     setError(null);
 
-    const stream = tailJobLogs.execute(jobId, nodeId).fold({
+    const stream = jobsRepository.tailLogs(jobId, nodeId).fold({
       onSuccess: value => value,
       onError: err => {
         setIsError(true);
@@ -80,7 +80,7 @@ export const useTailJobLogs = (jobId: string, nodeId?: string) => {
       clearInterval(flushTimer);
       stream.cancel();
     };
-  }, [jobId, nodeId, tailJobLogs]);
+  }, [jobId, nodeId, jobsRepository]);
 
   return { logString, isLoading, isError, error };
 };

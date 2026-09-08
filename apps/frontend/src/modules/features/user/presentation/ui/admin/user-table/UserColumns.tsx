@@ -4,7 +4,7 @@ import { Eye } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { formatDate } from '@shared/utils/date-utils.ts';
 import { Avatar, AvatarFallback, AvatarImage } from '@shadcn';
-import { IconButton } from '@shared/presentation/ui';
+import { IconButton, TruncatedText } from '@shared/presentation/ui';
 
 type PipelineColumnMeta = {
   onView: (userId: string) => void;
@@ -15,25 +15,39 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntit
     id: 'username',
     header: () => <Trans>User</Trans>,
     cell: ({ row }) => (
-      <div className='flex flex-row items-center gap-2'>
-        <Avatar className='h-8 w-8 rounded-lg'>
+      <div className='flex w-full min-w-0 flex-row items-center gap-2'>
+        <Avatar className='h-8 w-8 shrink-0 rounded-lg'>
           <AvatarImage />
           <AvatarFallback className='rounded-lg'>
             {row.original.username.at(0)?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <span>{row.original.username}</span>
+        <TruncatedText tooltip={row.original.username} className='text-xs'>
+          {row.original.username}
+        </TruncatedText>
       </div>
     ),
+    size: 200,
+    minSize: 200,
   },
   {
     id: 'creationDate',
-    header: () => <Trans>Created at</Trans>,
-    cell: ({ row }) => <span>{formatDate(row.original.createdAt)}</span>,
+    header: () => (
+      <div className={'flex w-full items-center justify-center'}>
+        <Trans>Created at</Trans>
+      </div>
+    ),
+    cell: ({ row }) => <span className='truncate'>{formatDate(row.original.createdAt)}</span>,
+    size: 250,
+    minSize: 150,
   },
   {
     id: 'actions',
-    header: () => <Trans>Actions</Trans>,
+    header: () => (
+      <div className={'w-full flex items-center justify-center'}>
+        <Trans>Actions</Trans>
+      </div>
+    ),
     cell: ({ row }) => (
       <IconButton
         icon={Eye}
@@ -44,5 +58,7 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntit
         }}
       />
     ),
+    // No minSize: the first column to give its width back on a narrow viewport.
+    size: 100,
   },
 ];

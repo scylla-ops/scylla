@@ -1,4 +1,4 @@
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { Container, Terminal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn/tabs.tsx';
 import { CodeSnippet } from '@shadcn/code-snippet.tsx';
@@ -20,13 +20,9 @@ const DOCKER_IMAGE = 'godlyjaaaaj/scylla-agent:latest';
  * beyond Rust itself), or the published Docker image. Shared by the one-time
  * secret dialog (shown after the reveal) and the agent detail page
  * (placeholder secret).
- *
- * The control-plane URL is deliberately a placeholder, not a guessed value:
- * the UI only knows how the BROWSER reaches the API, which is rarely the
- * address a worker on some other machine (or inside Docker) should dial.
- * Better an explicit "fill this in" than a copied command that half-works.
  */
 export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProps) => {
+  const { t } = useLingui();
   const secretValue = secret ?? SECRET_PLACEHOLDER;
 
   const cargoCommand = [
@@ -51,9 +47,9 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
     'data-[state=active]:bg-transparent data-[state=active]:shadow-none';
 
   return (
-    <div className='space-y-2'>
+    <div className='w-full space-y-3'>
       <Tabs defaultValue='cargo' className='w-full'>
-        <TabsList className='h-auto w-full justify-start gap-4 rounded-none border-b bg-transparent p-0'>
+        <TabsList className='h-auto w-full justify-start gap-4 rounded-none border-b border-border bg-transparent p-0'>
           <TabsTrigger value='cargo' className={triggerClass}>
             <Terminal className='h-3.5 w-3.5' />
             <Trans>From source</Trans>
@@ -64,14 +60,14 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value='cargo' className='space-y-2 pt-2'>
+        <TabsContent value='cargo' className='mt-2.5 space-y-1.5 focus-visible:outline-none'>
           <CodeSnippet
             multiline
             value={cargoCommand}
-            copyToast='Command copied'
+            copyToast={t`Command copied`}
             label={<Trans>Run from a repo checkout</Trans>}
           />
-          <p className='text-xs text-muted-foreground'>
+          <p className='text-xs text-muted-foreground leading-normal'>
             <Trans>
               Requires the Rust toolchain, from a clone of{' '}
               <a
@@ -87,14 +83,14 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
           </p>
         </TabsContent>
 
-        <TabsContent value='docker' className='space-y-2 pt-2'>
+        <TabsContent value='docker' className='mt-2.5 space-y-1.5 focus-visible:outline-none'>
           <CodeSnippet
             multiline
             value={dockerCommand}
-            copyToast='Command copied'
+            copyToast={t`Command copied`}
             label={<Trans>Run with Docker</Trans>}
           />
-          <p className='text-xs text-muted-foreground'>
+          <p className='text-xs text-muted-foreground leading-normal'>
             <Trans>
               The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C
               stops it.
@@ -103,7 +99,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
         </TabsContent>
       </Tabs>
 
-      <p className='text-xs text-muted-foreground'>
+      <p className='text-xs text-muted-foreground leading-normal'>
         <Trans>
           Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for
           example http://localhost:50051 on the same machine, or http://host.docker.internal:50051
@@ -112,7 +108,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
       </p>
 
       {!secret && (
-        <p className='rounded-md border bg-muted/40 p-2.5 text-xs text-muted-foreground'>
+        <p className='rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground leading-normal'>
           <Trans>
             Replace APP_SECRET with the secret revealed when this agent was created — it cannot be
             shown again. Lost it? Delete this agent and create a new one.

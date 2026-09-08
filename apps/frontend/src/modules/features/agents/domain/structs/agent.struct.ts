@@ -10,9 +10,13 @@ export interface AgentStats {
   completed: number;
   failed: number;
   cancelled: number;
+  orphaned: number;
   lastRunAt: string;
   /** Finished jobs per day (last 30 days, oldest first); gap days absent. */
   daily: DailyOutcome[];
+  /** `null` means no job has run yet, as opposed to a 0 ms run. */
+  medianDurationMs: number | null;
+  p95DurationMs: number | null;
 }
 
 /** One day of finished-job outcomes (day is an ISO date-time string). */
@@ -21,6 +25,8 @@ export interface DailyOutcome {
   completed: number;
   failed: number;
   cancelled: number;
+  orphaned: number;
+  medianDurationMs: number | null;
 }
 
 /**

@@ -1,4 +1,7 @@
-import type { App as ProtoApp, AppSecret as ProtoAppSecret } from '@/generated/app.ts';
+import type {
+  App as ProtoApp,
+  AppSecret as ProtoAppSecret,
+} from '@/generated/scylla/app/v1/app.ts';
 import type {
   AppEntity,
   AppSecretEntity,
@@ -9,7 +12,7 @@ import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts
 export class GrpcAppMapper {
   static toDomain(a: ProtoApp): AppEntity {
     return {
-      id: idValue(a.id),
+      id: idValue(a.appId),
       organizationId: idValue(a.organizationId),
       name: a.name,
       isActive: a.isActive,
@@ -20,7 +23,7 @@ export class GrpcAppMapper {
 
   static secretToDomain(s: ProtoAppSecret): AppSecretEntity {
     return {
-      id: idValue(s.id),
+      id: idValue(s.appSecretId),
       appId: idValue(s.appId),
       label: s.label,
       enabled: s.enabled,

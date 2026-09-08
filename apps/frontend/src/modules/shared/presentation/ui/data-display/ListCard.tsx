@@ -25,7 +25,7 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
     <div
       onClick={onClick}
       className={cn(
-        'w-full group flex items-center gap-4 px-4 py-3 mb-2 rounded-xl border transition-all duration-200 overflow-hidden',
+        'w-full group flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 overflow-hidden',
         onClick && 'cursor-pointer',
         !selected &&
           !className?.includes('hover:') && [
@@ -52,7 +52,6 @@ export const ListCard = ({ sections, onClick, selected, className, height }: Lis
             {showSeparator && (
               <SeparatorVertical className='m-3 h-9/12 w-px bg-slate-200 shrink-0' />
             )}
-            {isLast && <div className='ml-3' />}
           </React.Fragment>
         );
       })}

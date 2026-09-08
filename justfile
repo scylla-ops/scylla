@@ -151,3 +151,23 @@ release-frontend: _info
 [no-exit-message]
 _info:
     @echo "══ user={{DOCKER_USER}} version={{VERSION}} platforms={{platforms}} ══"
+
+# -- Protos --
+
+# Lint every .proto against the buf STANDARD rules
+[group('proto')]
+[no-exit-message]
+proto-lint:
+    buf lint
+
+# Rewrite every .proto in canonical buf formatting
+[group('proto')]
+[no-exit-message]
+proto-fmt:
+    buf format -w
+
+# Fail if the schema breaks wire or source compatibility with main
+[group('proto')]
+[no-exit-message]
+proto-breaking:
+    buf breaking --against '.git#branch=main'

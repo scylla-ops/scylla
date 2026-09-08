@@ -18,7 +18,7 @@ export class DefaultSecretRepository implements SecretRepository {
     return this.remoteDataSource.create(input);
   }
 
-  public deleteById(secretId: string): Promise<ScyllaResult<boolean>> {
+  public deleteById(secretId: string): Promise<ScyllaResult<void>> {
     return this.remoteDataSource.deleteById(secretId);
   }
 }

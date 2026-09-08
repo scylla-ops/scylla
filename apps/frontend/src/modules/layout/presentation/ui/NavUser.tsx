@@ -19,9 +19,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
-import { useUser } from '@/modules/features/user/presentation/hooks/use-user.ts';
+import { useScyllaNavigate } from '@platform/context';
+import { useContextStore } from '@platform/context';
+import { useUser } from '@/modules/features/user';
 
 export function NavUser() {
   const { isMobile } = useSidebar();
@@ -36,22 +36,26 @@ export function NavUser() {
 
   //todo: better loading (skeleton if loading too slow ?)
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <Trans>Loading...</Trans>
+      </div>
+    );
   }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem
         className='
-                  bg-white dark:bg-slate-900
-                  border border-slate-200 dark:border-slate-700
+                  bg-background
+                  border border-border
                   rounded-lg
                   hover:scale-105
-                  hover:bg-slate-50 dark:hover:bg-slate-800
-                  hover:border-slate-300 dark:hover:border-slate-600
-                  data-[state=open]:bg-slate-50 dark:data-[state=open]:bg-slate-800
+                  hover:bg-accent
+                  hover:border-primary/40
+                  data-[state=open]:bg-accent
                   data-[state=open]:scale-105
-                  data-[state=open]:border-primary dark:data-[state=open]:border-primary-border
+                  data-[state=open]:border-primary
                   transition-all duration-200
                   shadow-sm hover:shadow-md
                   focus:ring-0 focus:outline-none focus-visible:ring-0
@@ -77,7 +81,7 @@ export function NavUser() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
+            className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg border-border bg-background shadow-lg'
             side={isMobile ? 'bottom' : 'right'}
             align='end'
             sideOffset={4}
@@ -86,15 +90,18 @@ export function NavUser() {
               onSelect={() => {
                 if (user) goToUserSettings(user?.userId);
               }}
-              className='p-0 font-normal'
+              className='p-0 font-normal text-foreground hover:bg-accent'
             >
               <div className='w-full flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                 <SettingsIcon className='size-4' />
-                <span>Settings</span>
+                <span>
+                  <Trans>Settings</Trans>
+                </span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              className='text-foreground hover:bg-accent'
               onSelect={() => {
                 localStorage.removeItem('token');
                 resetContext();

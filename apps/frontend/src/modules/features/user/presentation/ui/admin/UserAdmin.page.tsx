@@ -7,10 +7,12 @@ import { AddUserDialog } from '@/modules/features/user/presentation/ui/admin/Add
 import { useState } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
-import { useScyllaNavigate } from '@shared/presentation/hooks/use-scylla-navigate.ts';
+import { useScyllaNavigate } from '@platform/context';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
+import { Permission } from '@platform/authz';
+import { useCan } from '@platform/authz';
 
 export const UserAdminPage = () => {
   const { users, isLoading, isError } = useUsers();
@@ -21,6 +23,10 @@ export const UserAdminPage = () => {
   const { i18n } = useLingui();
 
   const { goToUserSettings } = useScyllaNavigate();
+
+  // Users are a system-level resource — no org/project target to check against.
+  const canCreate = useCan(Permission.CREATE_USER);
+  const canDelete = useCan(Permission.DELETE_USER);
 
   const handleDelete = async () => {
     const currentUserId = localStorage.getItem('userId');
@@ -37,17 +43,22 @@ export const UserAdminPage = () => {
 
   //todo: handle properly
   if (isLoading) return <></>;
-  if (isError) return <ErrorState message='Error loading users' />;
+  if (isError) return <ErrorState message={<Trans>Error loading users</Trans>} />;
 
   return (
     <div className={'flex flex-col gap-4 w-full'}>
       <FeatureHeader
         count={users?.items?.length ?? 0}
-        label='User'
+        label={<Trans>User</Trans>}
+        pluralLabel={<Trans>Users</Trans>}
         {...headerProps}
         onDeleteSelection={handleDelete}
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}
+        canNew={canCreate}
+        newDeniedReason={<Trans>You don't have permission to create users.</Trans>}
+        canDelete={canDelete}
+        deleteDeniedReason={<Trans>You don't have permission to delete users.</Trans>}
       />
       <UserTable onView={goToUserSettings} data={users?.items} />
       <AddUserDialog open={openDialog} setOpen={setOpenDialog} />

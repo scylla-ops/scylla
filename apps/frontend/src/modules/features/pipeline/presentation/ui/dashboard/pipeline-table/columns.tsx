@@ -6,7 +6,7 @@ import { PipelineChart } from '../PipelineChart.tsx';
 import { Trans } from '@lingui/react/macro';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import { toStatusState } from '@shared/utils/job-status.utils.ts';
-import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
+import type { JobEntity } from '@/modules/features/jobs';
 type PipelineColumnMeta = {
   onRun: (pipelineId: string) => void;
   onEdit: (pipeline: PipelineMetadata) => void;
@@ -20,6 +20,7 @@ type PipelineColumnMeta = {
   jobsByPipelineId: Map<string, JobEntity[]>;
   isJobsLoading?: boolean;
   isJobsError?: boolean;
+  canListJobs?: boolean;
 };
 
 export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<PipelineMetadata>[] => [
@@ -30,7 +31,8 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       const lastJob = meta.jobsByPipelineId.get(row.original.id)?.[0];
       return <PipelineStatus status={toStatusState(lastJob?.status)} pipeline={row.original} />;
     },
-    size: 350,
+    size: 280,
+    minSize: 250,
   },
   {
     id: 'history',
@@ -42,11 +44,12 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
           jobs={jobs}
           isLoading={meta.isJobsLoading}
           isError={meta.isJobsError}
+          isForbidden={meta.canListJobs === false}
           maxJobs={10}
         />
       );
     },
-    size: 400,
+    minSize: 180,
   },
   {
     id: 'metadata',
@@ -56,6 +59,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       return <PipelineLastJob jobs={jobs} />;
     },
     size: 200,
+    minSize: 180,
   },
   {
     id: 'actions',
@@ -87,5 +91,6 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       />
     ),
     size: 200,
+    minSize: 80,
   },
 ];

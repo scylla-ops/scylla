@@ -8,8 +8,7 @@ import {
   type FormItem,
   FormItemType,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
-import { useNavigate } from 'react-router-dom';
-import { useContextStore } from '@shared/presentation/stores/use-context.store.ts';
+import { useContextStore } from '@platform/context';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -18,7 +17,6 @@ interface AddProjectDialogProps {
 
 export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const { t, i18n } = useLingui();
-  const navigate = useNavigate();
   const organizationId = useContextStore(state => state.organization.id);
   const createProject = useCreateProject();
 
@@ -53,7 +51,6 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
       {
         onSuccess: () => {
           setOpen(false);
-          void navigate('/projects');
         },
       },
     );

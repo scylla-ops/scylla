@@ -31,7 +31,7 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
       },
     })),
 
-  clearSelection: (key) =>
+  clearSelection: key =>
     set(state => ({
       selectedIds: {
         ...state.selectedIds,
@@ -39,6 +39,5 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
       },
     })),
 
-  getSelectedIds: (key) => get().selectedIds[key] ?? [],
+  getSelectedIds: key => get().selectedIds[key] ?? [],
 }));
-

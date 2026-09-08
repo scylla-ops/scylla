@@ -1,8 +1,9 @@
 import { Trans } from '@lingui/react/macro';
+import type { ReactNode } from 'react';
 
 type ErrorStateProps = {
-  title?: string;
-  message?: string;
+  title?: ReactNode;
+  message?: ReactNode;
 };
 
 export const ErrorState = ({ title, message }: ErrorStateProps) => (

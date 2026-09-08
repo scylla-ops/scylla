@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { plural } from '@lingui/core/macro';
 import { Button } from '@shadcn';
 import { Trash } from 'lucide-react';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
+import { cn } from '@shared/presentation/utils';
 import { toast } from 'sonner';
 
 interface FeatureHeaderProps {
@@ -20,9 +22,13 @@ interface FeatureHeaderProps {
   onDeleteSelection?: () => Promise<void> | void;
   onNew?: () => void;
   newLabel?: ReactNode;
+  /** When false, the "New" button is shown disabled with {@link newDeniedReason}. */
+  canNew?: boolean;
+  newDeniedReason?: ReactNode;
+  /** When false, the bulk-delete button is shown disabled with {@link deleteDeniedReason}. */
+  canDelete?: boolean;
+  deleteDeniedReason?: ReactNode;
   extraActions?: ReactNode;
-  /** Shows a pulsing "new feature" dot next to the title. */
-  isNew?: boolean;
 }
 
 export const FeatureHeader = ({
@@ -36,19 +42,26 @@ export const FeatureHeader = ({
   onDeleteSelection,
   onNew,
   newLabel,
+  canNew = true,
+  newDeniedReason,
+  canDelete = true,
+  deleteDeniedReason,
   extraActions,
   underLabel,
-  isNew = false,
 }: FeatureHeaderProps) => {
   const displayLabel = count && count > 1 ? (pluralLabel ?? label) : label;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { t } = useLingui();
 
   const handleDelete = async () => {
     try {
       setDeleteDialogOpen(false);
       await onDeleteSelection?.();
-      const itemLabel = typeof label === 'string' ? label : 'item';
-      toast.success(`${selectedCount} ${itemLabel}s deleted`);
+      // Labels are ReactNode, so the entity name can't be spliced into a
+      // translatable sentence — the confirmation stays deliberately generic.
+      toast.success(
+        t`${plural(selectedCount, { one: '# item deleted', other: '# items deleted' })}`,
+      );
     } catch {
       // Toast shown by the global MutationCache onError handler.
       setDeleteDialogOpen(false);
@@ -63,12 +76,6 @@ export const FeatureHeader = ({
             <h1 className='text-3xl font-bold tracking-tight'>
               {count !== undefined && <span className='text-primary mr-2 '>{count}</span>}
               <span className='text-foreground'>{displayLabel}</span>
-              {isNew && (
-                <span className='relative inline-flex ml-2 h-2.5 w-2.5 align-middle'>
-                  <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75' />
-                  <span className='relative inline-flex h-2.5 w-2.5 rounded-full bg-primary' />
-                </span>
-              )}
             </h1>
             {count !== undefined && (
               <span className='text-sm text-muted-foreground font-medium'>
@@ -94,24 +101,50 @@ export const FeatureHeader = ({
         {selectedCount > 0 && onDeleteSelection && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                size='icon'
-                variant='destructive'
-                onClick={() => setDeleteDialogOpen(true)}
-                className='h-9 w-9 cursor-pointer transition-all hover:scale-110'
-              >
-                <Trash className='size-4' />
-              </Button>
+              <span className='inline-flex'>
+                <Button
+                  size='icon'
+                  variant='destructive'
+                  disabled={!canDelete}
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className={cn(
+                    'h-9 w-9 cursor-pointer transition-all hover:scale-110',
+                    !canDelete && 'pointer-events-none',
+                  )}
+                >
+                  <Trash className='size-4' />
+                </Button>
+              </span>
             </TooltipTrigger>
             <TooltipContent>
               <p>
-                <Trans>Delete</Trans>
+                {canDelete ? (
+                  <Trans>Delete</Trans>
+                ) : (
+                  (deleteDeniedReason ?? <Trans>You don't have permission to do this.</Trans>)
+                )}
               </p>
             </TooltipContent>
           </Tooltip>
         )}
         {extraActions}
-        {onNew && <Button onClick={onNew}>{newLabel ?? <Trans>New {label}</Trans>}</Button>}
+        {onNew &&
+          (canNew ? (
+            <Button onClick={onNew}>{newLabel ?? <Trans>New {label}</Trans>}</Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className='inline-flex'>
+                  <Button disabled className='pointer-events-none'>
+                    {newLabel ?? <Trans>New {label}</Trans>}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{newDeniedReason ?? <Trans>You don't have permission to do this.</Trans>}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
       </div>
       {onDeleteSelection && (
         <ConfirmOperationAlertDialog

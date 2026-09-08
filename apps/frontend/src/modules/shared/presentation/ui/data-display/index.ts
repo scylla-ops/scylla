@@ -6,3 +6,4 @@ export * from './StatusBar.tsx';
 export * from './status-indicator.tsx';
 export * from './AgentRunInstructions.tsx';
 export * from './CopyableText.tsx';
+export * from './TruncatedText.tsx';

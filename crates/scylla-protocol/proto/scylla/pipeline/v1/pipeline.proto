@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package scylla.pipeline.v1;
+
+import "google/protobuf/timestamp.proto";
+import "scylla/common/v1/common.proto";
+import "scylla/exec/v1/step.proto";
+
+// Pipelines — the DAG blueprints a project runs.
+//
+// RunPipeline returns only the id of the job it minted rather than the job
+// itself: embedding `scylla.job.v1.Job` here would weld this contract to the job
+// contract, so every breaking change over there would become a breaking change
+// here. Callers fetch the run with JobService.GetJob.
+service PipelineService {
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse);
+  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse);
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse);
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
+  rpc ListProjectPipelines(ListProjectPipelinesRequest) returns (ListProjectPipelinesResponse);
+  rpc ListOrganizationPipelines(ListOrganizationPipelinesRequest) returns (ListOrganizationPipelinesResponse);
+  rpc RunPipeline(RunPipelineRequest) returns (RunPipelineResponse);
+}
+
+// One node of the DAG: a unit of work plus what it depends on.
+message PipelineNode {
+  scylla.common.v1.NodeId node_id = 1;
+  repeated scylla.common.v1.NodeId deps = 2;
+  // Relative to the job workspace; "" = workspace root.
+  string working_dir = 3;
+  // Node-scoped environment overlay.
+  repeated EnvVar env = 4;
+
+  oneof step {
+    // argv, no shell — deterministic, injection-proof.
+    scylla.exec.v1.ExecStep exec = 10;
+    // Multi-line shell script — the ergonomic default.
+    scylla.exec.v1.ScriptStep script = 11;
+  }
+}
+
+// One environment variable for a node. The value is either an inline literal
+// or a reference to a stored secret, resolved control-plane-side at dispatch
+// time (the agent never sees the secret store).
+message EnvVar {
+  string key = 1;
+  oneof source {
+    // Inline literal.
+    string value = 2;
+    // Name of a project secret to resolve at dispatch. This is the secret's
+    // name, not its id — pipelines are written by hand.
+    string secret_ref = 3;
+  }
+}
+
+// A pipeline with its full node list.
+message Pipeline {
+  scylla.common.v1.PipelineId pipeline_id = 1;
+  scylla.common.v1.ProjectId project_id = 2;
+  string name = 3;
+  repeated PipelineNode nodes = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// A pipeline without its nodes, for list views.
+message PipelineSummary {
+  scylla.common.v1.PipelineId pipeline_id = 1;
+  scylla.common.v1.ProjectId project_id = 2;
+  string name = 3;
+  uint32 node_count = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreatePipelineRequest {
+  scylla.common.v1.ProjectId project_id = 1;
+  string name = 2;
+  repeated PipelineNode nodes = 3;
+}
+
+message CreatePipelineResponse { Pipeline pipeline = 1; }
+
+message GetPipelineRequest { scylla.common.v1.PipelineId pipeline_id = 1; }
+
+message GetPipelineResponse { Pipeline pipeline = 1; }
+
+message UpdatePipelineRequest {
+  scylla.common.v1.PipelineId pipeline_id = 1;
+  optional string name = 2;
+  repeated PipelineNode nodes = 3;
+}
+
+message UpdatePipelineResponse { Pipeline pipeline = 1; }
+
+message DeletePipelineRequest { scylla.common.v1.PipelineId pipeline_id = 1; }
+
+message DeletePipelineResponse {}
+
+message ListPipelinesRequest { scylla.common.v1.PaginationRequest pagination = 1; }
+
+message ListPipelinesResponse {
+  repeated PipelineSummary pipelines = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListProjectPipelinesRequest {
+  scylla.common.v1.ProjectId project_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListProjectPipelinesResponse {
+  repeated PipelineSummary pipelines = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message ListOrganizationPipelinesRequest {
+  scylla.common.v1.OrganizationId organization_id = 1;
+  scylla.common.v1.PaginationRequest pagination = 2;
+}
+
+message ListOrganizationPipelinesResponse {
+  repeated PipelineSummary pipelines = 1;
+  scylla.common.v1.PaginationMetadata pagination = 2;
+}
+
+message RunPipelineRequest { scylla.common.v1.PipelineId pipeline_id = 1; }
+
+// The run that was minted. Fetch it with JobService.GetJob.
+message RunPipelineResponse { scylla.common.v1.JobId job_id = 1; }

@@ -20,6 +20,7 @@ import {
 } from '@shadcn/dialog.tsx';
 import { Trans } from '@lingui/react/macro';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
+import type { TriggerDraftKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type {
   CreatedTrigger,
   TriggerEntity,
@@ -60,7 +61,9 @@ export const TriggerFormDialog = ({
   const isPending = createTrigger.isPending || updateTrigger.isPending;
 
   const [name, setName] = useState('');
-  const [kind, setKind] = useState<TriggerKind>(TriggerKind.Cron);
+  const [kind, setKind] = useState<TriggerDraftKind>(TriggerKind.Cron);
+  // A source arm newer than this build can't be rendered, so it can't be re-sent either.
+  const isUnknownSource = trigger?.source.kind === TriggerKind.Unknown;
   const [cronExpression, setCronExpression] = useState('');
   const [signatureHeader, setSignatureHeader] = useState('');
   const [inputs, setInputs] = useState<DraftInput[]>([]);
@@ -69,7 +72,7 @@ export const TriggerFormDialog = ({
   useEffect(() => {
     if (!open) return;
     setName(trigger?.name ?? '');
-    setKind(trigger?.source.kind ?? TriggerKind.Cron);
+    setKind(trigger?.source.kind === TriggerKind.Webhook ? TriggerKind.Webhook : TriggerKind.Cron);
 
     setCronExpression(
       trigger?.source.kind === TriggerKind.Cron ? trigger.source.expression : '0 9 * * *',
@@ -81,6 +84,7 @@ export const TriggerFormDialog = ({
   }, [open, trigger]);
 
   const isValid =
+    !isUnknownSource &&
     name.trim().length > 0 &&
     (kind === TriggerKind.Cron ? isCronExpressionValid(cronExpression) : true);
 
@@ -130,7 +134,15 @@ export const TriggerFormDialog = ({
                 <Trans>Type</Trans>
               </Label>
               <div className='flex items-center gap-2'>
-                <Badge variant='secondary'>{kind === TriggerKind.Cron ? 'Cron' : 'Webhook'}</Badge>
+                <Badge variant='secondary'>
+                  {isUnknownSource ? (
+                    <Trans>Unknown</Trans>
+                  ) : kind === TriggerKind.Cron ? (
+                    'Cron'
+                  ) : (
+                    'Webhook'
+                  )}
+                </Badge>
                 <span className='text-xs text-muted-foreground'>
                   <Trans>Type can't be changed — delete and recreate to switch.</Trans>
                 </span>
@@ -141,7 +153,7 @@ export const TriggerFormDialog = ({
               <Label htmlFor='trigger-kind'>
                 <Trans>Type</Trans>
               </Label>
-              <Select value={kind} onValueChange={value => setKind(value as TriggerKind)}>
+              <Select value={kind} onValueChange={value => setKind(value as TriggerDraftKind)}>
                 <SelectTrigger id='trigger-kind' className='w-full'>
                   <SelectValue />
                 </SelectTrigger>

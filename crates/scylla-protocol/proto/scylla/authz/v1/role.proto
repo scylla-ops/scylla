@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package scylla.authz.v1;
+
+import "scylla/authz/v1/permission.proto";
+import "scylla/common/v1/common.proto";
+
+// CRUD for the dynamic role catalog — a role is a named, editable bundle of
+// permissions bound to a scope kind. All RPCs require `manageRoles` (system).
+// A change is applied live (hot-reload), so editing a role's permissions
+// re-authorizes everyone who holds it on the next request.
+service RoleService {
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+  // "What can this principal do" — the principal's resolved permissions grouped
+  // by the scope each grant binds to. Backs an admin permission matrix over
+  // *other* principals, so it requires `manageSystemGrants`. To read your own,
+  // call GetMyPermissions.
+  rpc GetEffectivePermissions(GetEffectivePermissionsRequest) returns (GetEffectivePermissionsResponse);
+  // The caller's own resolved permissions, same shape as above. Takes no
+  // principal on purpose: reading your own access needs no permission, and
+  // asking for someone else's is unrepresentable rather than rejected at
+  // runtime. Backs the "my access" view and client-side affordances.
+  rpc GetMyPermissions(GetMyPermissionsRequest) returns (GetMyPermissionsResponse);
+  // The authorization vocabulary a role may reference: every permission, with
+  // the narrowest scope kind it is coherent at. Read-only — lets a role editor
+  // enumerate real permissions instead of guessing names.
+  rpc ListAuthzVocabulary(ListAuthzVocabularyRequest) returns (ListAuthzVocabularyResponse);
+}
+
+message Role {
+  // Opaque role id — the value a grant references. For builtins, equals the key.
+  scylla.common.v1.RoleId role_id = 1;
+  string name = 2;
+  string description = 3;
+  // The scope kind a grant of this role must bind to.
+  ScopeKind scope_kind = 4;
+  // What the role confers within its scope.
+  Access access = 5;
+  // Where the role comes from. Mirrors the domain: a builtin has a stable key
+  // and no owning organization; a tenant custom role has an owner and no key.
+  // Splitting them makes "builtin owned by an org" unrepresentable.
+  oneof origin {
+    Builtin builtin = 6;
+    Custom custom = 7;
+  }
+
+  // Compiled-in role. Its `key` is stable across installations, e.g.
+  // "organization-admin".
+  message Builtin { string key = 1; }
+  // Tenant-defined role, owned by the organization that created it.
+  message Custom { scylla.common.v1.OrganizationId owner_organization_id = 1; }
+}
+
+message CreateRoleRequest {
+  string name = 1;
+  string description = 2;
+  ScopeKind scope_kind = 3;
+  Access access = 4;
+}
+
+message CreateRoleResponse { Role role = 1; }
+
+message GetRoleRequest { scylla.common.v1.RoleId role_id = 1; }
+
+message GetRoleResponse { Role role = 1; }
+
+// Replaces the role's name, description and permission set wholesale (PUT-style).
+// A role's scope kind and origin are immutable.
+message UpdateRoleRequest {
+  scylla.common.v1.RoleId role_id = 1;
+  string name = 2;
+  string description = 3;
+  Access access = 4;
+}
+
+message UpdateRoleResponse { Role role = 1; }
+
+message DeleteRoleRequest { scylla.common.v1.RoleId role_id = 1; }
+
+message DeleteRoleResponse {}
+
+message ListRolesRequest {}
+
+message ListRolesResponse { repeated Role roles = 1; }
+
+message GetEffectivePermissionsRequest { PrincipalRef principal = 1; }
+
+// The permissions a principal holds at one scope (roles expanded + direct
+// permission grants), as resolved for the matrix.
+message EffectiveScope {
+  ScopeRef scope = 1;
+  Access access = 2;
+}
+
+message GetEffectivePermissionsResponse { repeated EffectiveScope scopes = 1; }
+
+message GetMyPermissionsRequest {}
+
+message GetMyPermissionsResponse { repeated EffectiveScope scopes = 1; }
+
+message ListAuthzVocabularyRequest {}
+
+message ListAuthzVocabularyResponse { repeated AuthzAction actions = 1; }

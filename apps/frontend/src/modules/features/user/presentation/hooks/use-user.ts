@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useUserDomain } from '@/modules/features/user/presentation/hooks/use-user-domain.ts';
 
 export const useUser = (userId?: string) => {
-  const { getUser } = useDependencies().user;
+  const { userRepository } = useUserDomain();
 
   const {
     data: user,
@@ -14,7 +14,7 @@ export const useUser = (userId?: string) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return (await getUser.execute(userId)).unwrap();
+      return (await userRepository.getById(userId)).unwrap();
     },
     enabled: !!userId,
   });

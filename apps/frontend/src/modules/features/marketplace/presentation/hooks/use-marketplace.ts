@@ -1,13 +1,13 @@
-import { useDependencies } from '@core/presentation/hooks/use-dependencies.ts';
+import { useMarketplaceDomain } from '@/modules/features/marketplace/presentation/hooks/use-marketplace-domain.ts';
 import { useQuery } from '@tanstack/react-query';
 
 export const useMarketplace = () => {
-  const deps = useDependencies();
+  const { marketplaceRepository } = useMarketplaceDomain();
 
   return useQuery({
     queryKey: ['marketplace'],
     queryFn: async () => {
-      const result = await deps.marketplace.getMarketplaceUseCase.execute();
+      const result = await marketplaceRepository.getMarketplace();
       return result.unwrap();
     },
     staleTime: 1000 * 60,

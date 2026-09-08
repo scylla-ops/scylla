@@ -15,11 +15,11 @@ export interface AppsRepository {
   listApps(organizationId: string): Promise<ScyllaResult<AppEntity[]>>;
   getApp(appId: string): Promise<ScyllaResult<AppEntity>>;
   createApp(organizationId: string, name: string): Promise<ScyllaResult<CreatedApp>>;
-  deleteApp(appId: string): Promise<ScyllaResult<boolean>>;
+  deleteApp(appId: string): Promise<ScyllaResult<void>>;
   setAppActive(appId: string, active: boolean): Promise<ScyllaResult<AppEntity>>;
 
   listAppSecrets(appId: string): Promise<ScyllaResult<AppSecretEntity[]>>;
   createAppSecret(appId: string, label: string): Promise<ScyllaResult<CreatedAppSecret>>;
-  revokeAppSecret(secretId: string): Promise<ScyllaResult<boolean>>;
+  revokeAppSecret(secretId: string): Promise<ScyllaResult<void>>;
   setAppSecretEnabled(secretId: string, enabled: boolean): Promise<ScyllaResult<AppSecretEntity>>;
 }

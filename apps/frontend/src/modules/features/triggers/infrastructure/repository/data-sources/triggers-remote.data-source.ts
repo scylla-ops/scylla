@@ -1,23 +1,23 @@
 import type { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type {
-  CreatedTrigger,
   CreateTriggerRequest,
-  ListTriggersResponse,
-  TriggerView,
+  CreateTriggerResponse,
+  Trigger,
   UpdateTriggerRequest,
-} from '@/generated/trigger.ts';
-import type { JobResponse } from '@/generated/job.ts';
+} from '@/generated/scylla/trigger/v1/trigger.ts';
 
 /**
- * Transport contract for the trigger service. Returns proto types — the
- * repository maps them to domain via {@link GrpcTriggerMapper}.
+ * Transport contract for the trigger service. Unwraps the `XxxResponse`
+ * envelopes and returns proto entities — the repository maps them to domain
+ * via {@link GrpcTriggerMapper}.
  */
 export interface TriggersRemoteDataSource {
-  listByPipelineId(pipelineId: string): Promise<ScyllaResult<ListTriggersResponse>>;
-  getById(triggerId: string): Promise<ScyllaResult<TriggerView>>;
-  create(request: CreateTriggerRequest): Promise<ScyllaResult<CreatedTrigger>>;
-  update(request: UpdateTriggerRequest): Promise<ScyllaResult<TriggerView>>;
-  deleteById(triggerId: string): Promise<ScyllaResult<boolean>>;
-  setEnabled(triggerId: string, enabled: boolean): Promise<ScyllaResult<TriggerView>>;
-  fireNow(triggerId: string): Promise<ScyllaResult<JobResponse>>;
+  listByPipelineId(pipelineId: string): Promise<ScyllaResult<Trigger[]>>;
+  getById(triggerId: string): Promise<ScyllaResult<Trigger>>;
+  create(request: CreateTriggerRequest): Promise<ScyllaResult<CreateTriggerResponse>>;
+  update(request: UpdateTriggerRequest): Promise<ScyllaResult<Trigger>>;
+  deleteById(triggerId: string): Promise<ScyllaResult<void>>;
+  setEnabled(triggerId: string, enabled: boolean): Promise<ScyllaResult<Trigger>>;
+  /** Fires the trigger and returns the id of the job it minted. */
+  fireNow(triggerId: string): Promise<ScyllaResult<string>>;
 }

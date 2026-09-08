@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package scylla.registration.v1;
+
+import "scylla/common/v1/common.proto";
+
+// Self-service signup. A whole service (not just an RPC on AuthService) because
+// it is public — it must sit outside the auth interceptor.
+service RegistrationService {
+  rpc Signup(SignupRequest) returns (SignupResponse);
+}
+
+message SignupRequest {
+  string username = 1;
+  // Plaintext; hashed on receipt.
+  string password = 2;
+  scylla.common.v1.Email email = 3;
+  // Name of the organization provisioned alongside the account.
+  string organization_name = 4;
+}
+
+message SignupResponse {
+  // Opaque bearer token for the new session.
+  string token = 1;
+  scylla.common.v1.UserId user_id = 2;
+  // The organization provisioned with the account.
+  scylla.common.v1.OrganizationId organization_id = 3;
+}

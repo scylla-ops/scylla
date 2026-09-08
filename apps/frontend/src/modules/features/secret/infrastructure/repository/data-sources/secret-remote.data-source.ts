@@ -7,5 +7,5 @@ import type {
 export interface SecretRemoteDataSource {
   listByProjectId(projectId: string): Promise<ScyllaResult<SecretEntity[]>>;
   create(input: CreateSecretInput): Promise<ScyllaResult<SecretEntity>>;
-  deleteById(secretId: string): Promise<ScyllaResult<boolean>>;
+  deleteById(secretId: string): Promise<ScyllaResult<void>>;
 }

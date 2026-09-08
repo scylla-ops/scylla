@@ -20,7 +20,7 @@ interface AgentIdLinkProps {
  */
 export const AgentIdLink = ({ id, truncate, chip = false, className }: AgentIdLinkProps) => {
   const label = truncate && id.length > truncate ? `${id.slice(0, truncate)}…` : id;
-  const { i18n } = useLingui();
+  const { i18n, t } = useLingui();
 
   const copyId = async (e: React.MouseEvent) => {
     // Cards navigate on click — copying must not also open the agent.
@@ -39,8 +39,8 @@ export const AgentIdLink = ({ id, truncate, chip = false, className }: AgentIdLi
     <button
       type='button'
       onClick={e => void copyId(e)}
-      title='Copy agent id'
-      aria-label='Copy agent id'
+      title={t`Copy agent id`}
+      aria-label={t`Copy agent id`}
       className={cn(
         'group inline-flex cursor-pointer items-center gap-1 font-mono text-xs text-foreground transition-colors duration-100',
         'hover:text-success hover:underline hover:decoration-success hover:underline-offset-[3px]',

@@ -49,6 +49,18 @@ export default defineConfig({
       include: ['src/modules/features/triggers/'],
     },
     {
+      path: '<rootDir>/src/modules/features/roles/locales/{locale}/messages',
+      include: ['src/modules/features/roles/'],
+    },
+    {
+      path: '<rootDir>/src/modules/features/dashboard/locales/{locale}/messages',
+      include: ['src/modules/features/dashboard/'],
+    },
+    {
+      path: '<rootDir>/src/modules/features/membership/locales/{locale}/messages',
+      include: ['src/modules/features/membership/'],
+    },
+    {
       path: '<rootDir>/src/modules/core/locales/{locale}/messages',
       include: ['src/modules/core/'],
     },
@@ -59,6 +71,10 @@ export default defineConfig({
     {
       path: '<rootDir>/src/modules/layout/locales/{locale}/messages',
       include: ['src/modules/layout/'],
+    },
+    {
+      path: '<rootDir>/src/modules/platform/authz/locales/{locale}/messages',
+      include: ['src/modules/platform/authz/'],
     },
   ],
   compileNamespace: 'default',

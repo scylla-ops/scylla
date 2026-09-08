@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { usePipelinesMetadata } from '../../hooks/use-pipelines-metadata.ts';
-import { usePipelineJobs } from '../../hooks/use-pipeline-jobs.ts';
+import { useJobsByPipelines } from '@/modules/features/jobs';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Pagination } from '@shared/presentation/ui/data-display/Pagination.tsx';
@@ -13,7 +13,8 @@ export const DashboardPipelinePage = () => {
     usePipelinesMetadata(projectId!);
 
   const pipelineIds = (pipelines?.items ?? []).map(p => p.id);
-  const { jobsByPipelineId, isJobsError, isJobsLoading } = usePipelineJobs(pipelineIds);
+  const { jobsByPipelineId, isJobsError, isJobsLoading, canListJobs } =
+    useJobsByPipelines(pipelineIds);
 
   if (isLoading || !pipelines) {
     return <></>;
@@ -37,6 +38,7 @@ export const DashboardPipelinePage = () => {
               jobsByPipelineId={jobsByPipelineId}
               isJobsError={isJobsError}
               isJobsLoading={isJobsLoading}
+              canListJobs={canListJobs}
             />
           ) : (
             <div className='flex items-center justify-center h-full min-h-100'>

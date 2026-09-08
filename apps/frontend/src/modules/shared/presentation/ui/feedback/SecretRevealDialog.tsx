@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { Check, Eye } from 'lucide-react';
 import { Button } from '@shadcn';
 import {
@@ -64,13 +64,14 @@ export const SecretRevealDialog = ({
   description,
   secret,
   secretLabel,
-  copyToast = 'Secret copied',
+  copyToast,
   secretStepTitle,
   secondStep,
   revealedNote,
   footerNote,
   onClose,
 }: SecretRevealDialogProps) => {
+  const { t } = useLingui();
   const [revealed, setRevealed] = useState(false);
   const revealBtnRef = useRef<HTMLButtonElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
@@ -117,7 +118,7 @@ export const SecretRevealDialog = ({
                 multiline
                 value={secret}
                 blurred={!revealed}
-                copyToast={copyToast}
+                copyToast={copyToast ?? t`Secret copied`}
                 label={<span className='truncate font-mono'>{secretLabel}</span>}
                 overlay={
                   <Button
@@ -165,7 +166,7 @@ export const SecretRevealDialog = ({
           <Button
             ref={confirmBtnRef}
             disabled={!revealed}
-            title={revealed ? undefined : 'Reveal the secret first'}
+            title={revealed ? undefined : t`Reveal the secret first`}
             onClick={onClose}
           >
             <Check className='mr-1.5 h-4 w-4' />
