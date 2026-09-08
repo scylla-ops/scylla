@@ -59,7 +59,7 @@
   --status-passed: #5D9972;
   --status-failed: #BA4C43;
   --status-canceled: #AFB0AA;
-  --status-skipped: #8B6EB2;
+  --status-skipped: #9b86c1;
 
   --radius: 0.625rem;
 
@@ -130,7 +130,7 @@
   --status-passed: #5D9972;
   --status-failed: #BA4C43;
   --status-canceled: #676865;
-  --status-skipped: #8B6EB2;
+  --status-skipped: #8e7ab5;
 
   --sidebar: #141412;
   --sidebar-foreground: #F4F7EC;
