@@ -44,7 +44,7 @@ msgstr "Créé"
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:81
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:103
 msgid "Delete Job"
 msgstr "Supprimer le job"
 
@@ -61,7 +61,7 @@ msgstr "Erreur lors du chargement des journaux…"
 msgid "Finished: {0}"
 msgstr "Terminé : {0}"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:43
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:28
 msgid "Job"
 msgstr "Job"
 
@@ -73,7 +73,7 @@ msgstr "ID du job"
 msgid "Job Logs"
 msgstr "Journaux de job"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:29
 msgid "Jobs"
 msgstr "Jobs"
 
@@ -81,7 +81,7 @@ msgstr "Jobs"
 msgid "Loading..."
 msgstr "Chargement…"
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:50
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:49
 msgid "No jobs found"
 msgstr "Aucun job trouvé"
 
@@ -103,7 +103,7 @@ msgstr "Ouvrir les journaux"
 msgid "Pipeline ID is missing"
 msgstr "L'identifiant de pipeline est manquant"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:56
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:38
 msgid "Pipeline ID: {pipelineId}"
 msgstr "ID de pipeline : {pipelineId}"
 
@@ -111,17 +111,21 @@ msgstr "ID de pipeline : {pipelineId}"
 msgid "queued — waiting for an agent"
 msgstr "en file — en attente d'un agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:75
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:57
 msgid "Refresh"
 msgstr "Actualiser"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:45
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:30
 msgid "Run"
 msgstr "Exécuter"
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:53
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:52
 msgid "Run your pipeline to create the first job"
 msgstr "Exécutez votre pipeline pour créer le premier job"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:76
+msgid "Search a job…"
+msgstr "Rechercher un job…"
 
 #. placeholder {0}: formatTime(node.startedAt)
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:65
@@ -134,6 +138,7 @@ msgid "State: {0}"
 msgstr "État : {0}"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:40
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:79
 msgid "Status"
 msgstr "Statut"
 
@@ -150,10 +155,10 @@ msgstr "Chronologie"
 msgid "View"
 msgstr "Voir"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:50
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:84
 msgid "You don't have permission to delete jobs."
 msgstr "Vous n'avez pas la permission de supprimer des jobs."
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:48
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:33
 msgid "You don't have permission to run this pipeline."
 msgstr "Vous n'avez pas la permission d'exécuter cette pipeline."

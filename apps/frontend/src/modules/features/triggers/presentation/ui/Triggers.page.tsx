@@ -53,7 +53,6 @@ export const TriggersPage = () => {
     <div className='flex flex-col gap-4 w-full min-h-full'>
       <TriggersHeader
         count={triggers.length}
-        triggerIds={triggers.map(trigger => trigger.id)}
         pipelineId={pipelineId}
         onNew={() => setCreateOpen(true)}
       />

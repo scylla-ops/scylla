@@ -51,16 +51,21 @@ export const UserAdminPage = () => {
         count={users?.items?.length ?? 0}
         label={<Trans>User</Trans>}
         pluralLabel={<Trans>Users</Trans>}
-        {...headerProps}
-        onDeleteSelection={handleDelete}
         onNew={() => setOpenDialog(true)}
         newLabel={<Trans>New user</Trans>}
         canNew={canCreate}
         newDeniedReason={<Trans>You don't have permission to create users.</Trans>}
-        canDelete={canDelete}
-        deleteDeniedReason={<Trans>You don't have permission to delete users.</Trans>}
       />
-      <UserTable onView={goToUserSettings} data={users?.items} />
+      <UserTable
+        onView={goToUserSettings}
+        data={users?.items}
+        selection={{
+          ...headerProps,
+          onDeleteSelection: handleDelete,
+          canDelete,
+          deleteDeniedReason: <Trans>You don't have permission to delete users.</Trans>,
+        }}
+      />
       <AddUserDialog open={openDialog} setOpen={setOpenDialog} />
     </div>
   );

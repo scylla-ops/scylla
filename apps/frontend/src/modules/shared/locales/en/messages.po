@@ -13,9 +13,22 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:63
+#. placeholder {0}: selected.size
+#: src/modules/shared/presentation/ui/data-display/DataTableFacetFilter.tsx:75
+msgid "{0} selected"
+msgstr "{0} selected"
+
+#: src/modules/shared/presentation/ui/data-display/DataTableToolbar.tsx:113
+msgid "{filteredCount} of {totalCount}"
+msgstr "{filteredCount} of {totalCount}"
+
+#: src/modules/shared/presentation/ui/controls/SelectionActions.tsx:54
 msgid "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
 msgstr "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
+
+#: src/modules/shared/presentation/ui/data-display/DataTableToolbar.tsx:58
+msgid "{selectedCount, plural, one {# selected} other {# selected}}"
+msgstr "{selectedCount, plural, one {# selected} other {# selected}}"
 
 #: src/modules/shared/utils/toast-messages.ts:46
 msgid "Agent id copied"
@@ -46,9 +59,17 @@ msgstr "Cancel"
 msgid "Cancelled"
 msgstr "Cancelled"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:98
+#: src/modules/shared/presentation/ui/controls/SelectionActions.tsx:68
 msgid "Clear"
 msgstr "Clear"
+
+#: src/modules/shared/presentation/ui/data-display/DataTableFacetFilter.tsx:124
+msgid "Clear filter"
+msgstr "Clear filter"
+
+#: src/modules/shared/presentation/ui/data-display/DataTableToolbar.tsx:91
+msgid "Clear search"
+msgstr "Clear search"
 
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:72
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:95
@@ -88,7 +109,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:122
+#: src/modules/shared/presentation/ui/controls/SelectionActions.tsx:93
 msgid "Delete"
 msgstr "Delete"
 
@@ -116,7 +137,7 @@ msgstr "Go to next page"
 msgid "Go to previous page"
 msgstr "Go to previous page"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:82
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:54
 msgid "in total"
 msgstr "in total"
 
@@ -124,8 +145,8 @@ msgstr "in total"
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:133
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:139
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:68
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:74
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -137,7 +158,15 @@ msgstr "Next"
 msgid "No data"
 msgstr "No data"
 
-#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:174
+#: src/modules/shared/presentation/ui/data-display/DataTableFacetFilter.tsx:85
+msgid "No option"
+msgstr "No option"
+
+#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:330
+msgid "No result matches your filters."
+msgstr "No result matches your filters."
+
+#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:332
 msgid "No results."
 msgstr "No results."
 
@@ -217,6 +246,10 @@ msgstr "Replace CONTROL_PLANE_URL with the address your agent reaches the contro
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 msgstr "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 
+#: src/modules/shared/presentation/ui/data-display/DataTableToolbar.tsx:123
+msgid "Reset"
+msgstr "Reset"
+
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:133
 msgid "Reveal"
 msgstr "Reveal"
@@ -237,6 +270,10 @@ msgstr "Run with Docker"
 msgid "Running"
 msgstr "Running"
 
+#: src/modules/shared/presentation/ui/data-display/DataTableToolbar.tsx:82
+msgid "Search…"
+msgstr "Search…"
+
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:121
 msgid "Secret copied"
 msgstr "Secret copied"
@@ -249,7 +286,7 @@ msgstr "Secret created"
 msgid "Secret deleted"
 msgstr "Secret deleted"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:93
+#: src/modules/shared/presentation/ui/controls/SelectionActions.tsx:104
 msgid "Select all"
 msgstr "Select all"
 
@@ -335,8 +372,8 @@ msgstr "Username and password are required."
 msgid "You cannot delete your own account."
 msgstr "You cannot delete your own account."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:124
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:144
+#: src/modules/shared/presentation/ui/controls/SelectionActions.tsx:95
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:79
 msgid "You don't have permission to do this."
 msgstr "You don't have permission to do this."
 

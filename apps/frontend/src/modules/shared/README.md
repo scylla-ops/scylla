@@ -57,10 +57,19 @@ and behave alike:
 
 - **`DataTable`** with **`usePagination()`** — local page state merged with the server's
   `totalCount` and `totalPages`. Row keys are business ids, never array indices.
+  It also owns its search-and-filter toolbar (`searchable`, `facets`), so every feature gets the
+  same one without wiring state into its page. The filter state lives *inside* the table because
+  it is view state, not something a page should have to hold; and a facet extracts its value from
+  the row rather than from a column, since most of our columns are display-only and carry no
+  accessor to filter on.
 - **`useSelection(key)`** over a single `useSelectionStore`. Selection is keyed by feature, so
   `useSelection('jobs')` and `useSelection('users')` are independent — which is why there is no
   per-feature selection store anywhere in the codebase.
-- **`FeatureHeader`** — the list header: item count, clear/delete selection, new-item button.
+- **`FeatureHeader`** — the list header: item count and the button that creates one.
+- **`SelectionActions`** — select all / clear / delete over the current selection. A `DataTable`
+  renders it in its own toolbar, where the actions sit next to the rows they act on and take the
+  bar over while a selection is pending; `FeatureHeader` renders it for the screens that list
+  with cards instead of a table. One component, so the two never drift apart.
 - **`ScyllaForm`** — forms are declared as `FormItem[]` rather than assembled by hand.
   `FormDialog` wraps one in a dialog, `useFormState` owns values, dirty-checking and validation.
 - **`ConfirmOperationAlertDialog`** for destructive actions, **`SecretRevealDialog`** for values

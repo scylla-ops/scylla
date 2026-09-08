@@ -21,7 +21,6 @@ export const SecretPage = () => {
       <SecretHeader
         projectId={projectId}
         activeCount={secrets.length}
-        secretIds={secrets.map(secret => secret.id)}
         onAddSecret={() => {
           setCreateIsDialogOpen(true);
         }}

@@ -1,72 +1,44 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { Trans, useLingui } from '@lingui/react/macro';
-import { plural } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
 import { Button } from '@shadcn';
-import { Trash } from 'lucide-react';
-import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
+import {
+  SelectionActions,
+  type SelectionActionsProps,
+} from '@shared/presentation/ui/controls/SelectionActions.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
-import { cn } from '@shared/presentation/utils';
-import { toast } from 'sonner';
 
-interface FeatureHeaderProps {
+interface FeatureHeaderProps extends SelectionActionsProps {
   count?: number;
   label: ReactNode;
   underLabel?: ReactNode;
   pluralLabel?: ReactNode;
-  selectedCount?: number;
-  /** True when every selectable row is already selected — hides the "Select all" button. */
-  allSelected?: boolean;
-  onSelectAll?: () => void;
-  onClearSelection?: () => void;
-  onDeleteSelection?: () => Promise<void> | void;
   onNew?: () => void;
   newLabel?: ReactNode;
   /** When false, the "New" button is shown disabled with {@link newDeniedReason}. */
   canNew?: boolean;
   newDeniedReason?: ReactNode;
-  /** When false, the bulk-delete button is shown disabled with {@link deleteDeniedReason}. */
-  canDelete?: boolean;
-  deleteDeniedReason?: ReactNode;
   extraActions?: ReactNode;
 }
 
+/**
+ * A list screen's title bar: what the list is, how many there are, and the actions
+ * that create one. Bulk actions over the selection are accepted here too — but a
+ * list rendered with `DataTable` should pass them to its toolbar instead, where they
+ * sit next to the rows they act on.
+ */
 export const FeatureHeader = ({
   count,
   label,
   pluralLabel,
-  selectedCount = 0,
-  allSelected = false,
-  onSelectAll,
-  onClearSelection,
-  onDeleteSelection,
   onNew,
   newLabel,
   canNew = true,
   newDeniedReason,
-  canDelete = true,
-  deleteDeniedReason,
   extraActions,
   underLabel,
+  ...selection
 }: FeatureHeaderProps) => {
   const displayLabel = count && count > 1 ? (pluralLabel ?? label) : label;
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const { t } = useLingui();
-
-  const handleDelete = async () => {
-    try {
-      setDeleteDialogOpen(false);
-      await onDeleteSelection?.();
-      // Labels are ReactNode, so the entity name can't be spliced into a
-      // translatable sentence — the confirmation stays deliberately generic.
-      toast.success(
-        t`${plural(selectedCount, { one: '# item deleted', other: '# items deleted' })}`,
-      );
-    } catch {
-      // Toast shown by the global MutationCache onError handler.
-      setDeleteDialogOpen(false);
-    }
-  };
 
   return (
     <div className={'flex flex-row items-end justify-between w-full'}>
@@ -88,45 +60,8 @@ export const FeatureHeader = ({
       </div>
 
       <div className={'flex items-center justify-end gap-2'}>
-        {onSelectAll && !allSelected && !!count && (
-          <Button variant={'outline'} onClick={onSelectAll}>
-            <Trans>Select all</Trans>
-          </Button>
-        )}
-        {selectedCount > 0 && onClearSelection && (
-          <Button variant={'outline'} onClick={onClearSelection}>
-            <Trans>Clear</Trans>
-          </Button>
-        )}
-        {selectedCount > 0 && onDeleteSelection && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className='inline-flex'>
-                <Button
-                  size='icon'
-                  variant='destructive'
-                  disabled={!canDelete}
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className={cn(
-                    'h-9 w-9 cursor-pointer transition-all hover:scale-110',
-                    !canDelete && 'pointer-events-none',
-                  )}
-                >
-                  <Trash className='size-4' />
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {canDelete ? (
-                  <Trans>Delete</Trans>
-                ) : (
-                  (deleteDeniedReason ?? <Trans>You don't have permission to do this.</Trans>)
-                )}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {/* "Select all" is pointless with nothing to select — `count` is that number here. */}
+        <SelectionActions selectableCount={count} {...selection} />
         {extraActions}
         {onNew &&
           (canNew ? (
@@ -146,13 +81,6 @@ export const FeatureHeader = ({
             </Tooltip>
           ))}
       </div>
-      {onDeleteSelection && (
-        <ConfirmOperationAlertDialog
-          onContinue={handleDelete}
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-        />
-      )}
     </div>
   );
 };

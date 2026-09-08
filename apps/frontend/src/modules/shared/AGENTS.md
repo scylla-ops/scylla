@@ -30,11 +30,12 @@ presentation/
   stores/use-selection.store.ts      one of the app's two global stores
   structs/scylla-form.struct.ts      FormItem, FormItemType, FormChange, SelectOption
   ui/index.ts                        re-exports the five groups below
-  ui/data-display/                   DataTable, Pagination, ListCard, StatusBar,
+  ui/data-display/                   DataTable (+ DataTableToolbar, DataTableFacetFilter),
+                                     Pagination, ListCard, StatusBar,
                                      CopyableText, status-indicator, AgentRunInstructions
   ui/feedback/                       ErrorState, ConfirmOperationAlertDialog, SecretRevealDialog
   ui/forms/                          ScyllaForm, FormDialog, CheckboxTree
-  ui/controls/                       IconButton, BackButton
+  ui/controls/                       IconButton, BackButton, SelectionActions
   ui/layout/                         FeatureHeader, ContextItem, AnimatedOutlet
   ui/shadcn/                         shadcn/ui primitives — @shadcn/*
   utils/                             cn, toast, i18n, code-mirror-theme
@@ -65,10 +66,12 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
 | Need | Use |
 |---|---|
 | Row selection | `useSelection(key)` over the single `useSelectionStore` — **no per-feature selection store** |
-| List header (count, clear, delete, new) | `FeatureHeader` |
+| List header (count, new button) | `FeatureHeader` |
+| Bulk actions on a selection | `SelectionActions` — pass it to `DataTable`'s `selection` prop when the list is a table, to `FeatureHeader` otherwise |
 | A form | `FormItem[]` → `ScyllaForm`; `FormDialog` wraps it; `useFormState(items)` owns values/validation — it is exported from `ui/forms/ScyllaForm.tsx`, not from `hooks/` |
 | Pagination | `usePagination()` — local page merged with server `totalCount`/`totalPages` |
 | A table | `DataTable` (+ `usePagination`) — row keys are business ids, never indices |
+| Search / filter a table | `DataTable`'s own toolbar: `searchable`, `searchValues`, `facets` — **do not** filter the array before passing it in |
 | Confirm a destructive action | `ConfirmOperationAlertDialog` |
 | Show a one-time secret | `SecretRevealDialog` |
 | Error state | `ErrorState` / `useResourceError` |
@@ -90,6 +93,20 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
   (colour, icon, label), not business rules. Keep it that way; job semantics belong in
   `features/jobs`.
 - Adding to `shared/` needs a second real usage. One usage stays inline.
+- **`DataTable` filtering is client-side, over the rows it is handed.** On a server-paginated
+  list it narrows the current page, not the whole collection. Filtering the array *before*
+  `data` instead would break the toolbar's counts and its facet options — pass the full page
+  and declare `facets`.
+- **Selection actions belong to the table, not the header,** whenever there is a `DataTable`:
+  pass `useFeatureSelection(...).headerProps` to its `selection` prop. The toolbar then takes
+  over the bar while rows are selected. `FeatureHeader` still accepts them for the lists that
+  are not tables (`ListCard` screens) — both routes render the same `SelectionActions`.
+- **No `backdrop-blur` on the table header.** It is one backdrop-filter layer per sticky cell,
+  re-rasterised whenever the rows under it change — i.e. on every keystroke in the search box.
+  The header is opaque `bg-card` for that reason; keep it that way.
+- A `DataTableFacet` reads its value from the row (`value: row => …`), not from a column, so it
+  works on the display-only columns most feature tables use. `options` are optional: omit them
+  to derive raw values from the data, declare them to control labels, order and icons.
 
 ## Before done
 

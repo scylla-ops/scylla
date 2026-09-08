@@ -63,7 +63,7 @@ msgstr "Command"
 msgid "Create"
 msgstr "Create"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:50
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:49
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
@@ -171,7 +171,7 @@ msgstr "Last Run"
 msgid "Literal"
 msgstr "Literal"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:51
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:39
 msgid "Members"
 msgstr "Members"
 
@@ -184,7 +184,11 @@ msgstr "More options"
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:38
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineTable.tsx:54
+msgid "Never run"
+msgstr "Never run"
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:28
 msgid "New pipeline"
 msgstr "New pipeline"
 
@@ -193,7 +197,7 @@ msgstr "New pipeline"
 msgid "No jobs yet"
 msgstr "No jobs yet"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:47
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:46
 msgid "No pipeline found"
 msgstr "No pipeline found"
 
@@ -203,7 +207,7 @@ msgstr "Node ID"
 
 #: src/modules/features/pipeline/pipeline.module.ts:45
 #: src/modules/features/pipeline/pipeline.module.ts:61
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:34
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:25
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNode.tsx:14
 msgid "Pipeline"
 msgstr "Pipeline"
@@ -212,7 +216,7 @@ msgstr "Pipeline"
 msgid "Pipeline name"
 msgstr "Pipeline name"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:35
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:26
 msgid "Pipelines"
 msgstr "Pipelines"
 
@@ -248,6 +252,10 @@ msgstr "Script"
 msgid "Scripting"
 msgstr "Scripting"
 
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineTable.tsx:100
+msgid "Search a pipeline…"
+msgstr "Search a pipeline…"
+
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:327
 msgid "Secret"
 msgstr "Secret"
@@ -256,7 +264,7 @@ msgstr "Secret"
 msgid "secret name"
 msgstr "secret name"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:57
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:45
 msgid "Secrets"
 msgstr "Secrets"
 
@@ -278,6 +286,7 @@ msgid "Started {0}"
 msgstr "Started {0}"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:29
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineTable.tsx:105
 msgid "Status"
 msgstr "Status"
 
@@ -307,12 +316,12 @@ msgstr "View Jobs"
 msgid "Working directory"
 msgstr "Working directory"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:40
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:30
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:113
 msgid "You don't have permission to create pipelines."
 msgstr "You don't have permission to create pipelines."
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:42
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineTable.tsx:113
 msgid "You don't have permission to delete pipelines."
 msgstr "You don't have permission to delete pipelines."
 

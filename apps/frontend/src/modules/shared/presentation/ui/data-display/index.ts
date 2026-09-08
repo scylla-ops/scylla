@@ -1,5 +1,7 @@
 // Components that render data: tables, lists, status, pagination, copyable values.
 export * from './DataTable.tsx';
+export * from './DataTableToolbar.tsx';
+export * from './DataTableFacetFilter.tsx';
 export * from './Pagination.tsx';
 export * from './ListCard.tsx';
 export * from './StatusBar.tsx';

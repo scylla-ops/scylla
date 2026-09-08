@@ -64,7 +64,7 @@ msgstr "Chargement des informations utilisateur..."
 msgid "Manage your account details."
 msgstr "Gérez les détails de votre compte."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:57
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:55
 msgid "New user"
 msgstr "Nouvel utilisateur"
 
@@ -75,6 +75,10 @@ msgstr "Mot de passe"
 #: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:159
 msgid "Save"
 msgstr "Enregistrer"
+
+#: src/modules/features/user/presentation/ui/admin/user-table/UserTable.tsx:27
+msgid "Search a user…"
+msgstr "Rechercher un utilisateur…"
 
 #: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:16
 #: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:52
@@ -115,10 +119,10 @@ msgstr "Utilisateurs"
 msgid "View"
 msgstr "Voir"
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:59
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:57
 msgid "You don't have permission to create users."
 msgstr "Vous n'avez pas la permission de créer des utilisateurs."
 
-#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:61
+#: src/modules/features/user/presentation/ui/admin/UserAdmin.page.tsx:66
 msgid "You don't have permission to delete users."
 msgstr "Vous n'avez pas la permission de supprimer des utilisateurs."

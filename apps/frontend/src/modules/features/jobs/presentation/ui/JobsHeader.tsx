@@ -1,16 +1,13 @@
 import { Button } from '@shadcn';
 import { RefreshCw } from 'lucide-react';
-import { useDeleteJobs } from '@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
 import { FeatureHeader } from '@shared/presentation/ui';
-import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { Permission } from '@platform/authz';
 import { useCan } from '@platform/authz';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
-  jobIds: string[];
   pipelineId: string;
   onRefresh: () => void;
   /**
@@ -21,20 +18,8 @@ interface JobsHeaderProps {
   onRun?: () => Promise<void>;
 }
 
-export const JobsHeader = ({
-  numberOfJobs,
-  jobIds,
-  pipelineId,
-  onRefresh,
-  onRun,
-}: JobsHeaderProps) => {
-  const deleteJob = useDeleteJobs(pipelineId);
-  const { headerProps } = useFeatureSelection('jobs', jobIds, {
-    deleteItem: id => deleteJob.mutateAsync(id),
-  });
-
+export const JobsHeader = ({ numberOfJobs, pipelineId, onRefresh, onRun }: JobsHeaderProps) => {
   const canRun = useCan(Permission.RUN_PIPELINE);
-  const canDelete = useCan(Permission.DELETE_JOB);
 
   return (
     <div className={'flex flex-col gap-3'}>
@@ -46,9 +31,6 @@ export const JobsHeader = ({
         onNew={onRun ? () => void onRun() : undefined}
         canNew={canRun}
         newDeniedReason={<Trans>You don't have permission to run this pipeline.</Trans>}
-        canDelete={canDelete}
-        deleteDeniedReason={<Trans>You don't have permission to delete jobs.</Trans>}
-        {...headerProps}
         underLabel={
           <div className={'flex items-center justify-between'}>
             <div className='flex items-baseline gap-2'>

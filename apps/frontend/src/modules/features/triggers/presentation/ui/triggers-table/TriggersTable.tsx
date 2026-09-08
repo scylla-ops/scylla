@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { DataTable } from '@shared/presentation/ui/data-display/DataTable.tsx';
 import { ConfirmOperationAlertDialog } from '@shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx';
-import { useSelection } from '@shared/presentation/hooks/use-selection.ts';
+import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
+import { Permission, useCan } from '@platform/authz';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import { useScyllaNavigate } from '@platform/context';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 import { useDeleteTrigger } from '@/modules/features/triggers/presentation/hooks/use-delete-trigger.ts';
@@ -17,9 +20,16 @@ interface TriggersTableProps {
 }
 
 export const TriggersTable = ({ triggers, pipelineId, pipelineName }: TriggersTableProps) => {
-  const { selectedIds, select } = useSelection('triggers');
-  const { goToJobs } = useScyllaNavigate();
   const deleteTrigger = useDeleteTrigger(pipelineId);
+  const { selectedIds, select, headerProps } = useFeatureSelection(
+    'triggers',
+    triggers.map(trigger => trigger.id),
+    { deleteItem: id => deleteTrigger.mutateAsync(id) },
+  );
+  // Triggers are all-or-nothing in V1: one permission covers create and delete.
+  const canManage = useCan(Permission.MANAGE_TRIGGERS);
+  const { t } = useLingui();
+  const { goToJobs } = useScyllaNavigate();
   const setEnabled = useSetTriggerEnabled(pipelineId);
   const fireNow = useFireTriggerNow(pipelineId);
 
@@ -61,6 +71,34 @@ export const TriggersTable = ({ triggers, pipelineId, pipelineName }: TriggersTa
         onRowClick={row => select(row.original.id)}
         getRowId={row => row.id}
         isRowSelected={row => selectedIds.includes(row.id)}
+        searchable
+        searchPlaceholder={t`Search a trigger…`}
+        searchValues={trigger => [trigger.name, trigger.id]}
+        facets={[
+          {
+            id: 'source',
+            label: t`Source`,
+            value: trigger => trigger.source.kind,
+            options: [
+              { value: TriggerKind.Cron, label: t`Cron` },
+              { value: TriggerKind.Webhook, label: t`Webhook` },
+            ],
+          },
+          {
+            id: 'enabled',
+            label: t`State`,
+            value: trigger => (trigger.enabled ? 'enabled' : 'disabled'),
+            options: [
+              { value: 'enabled', label: t`Enabled` },
+              { value: 'disabled', label: t`Disabled` },
+            ],
+          },
+        ]}
+        selection={{
+          ...headerProps,
+          canDelete: canManage,
+          deleteDeniedReason: <Trans>You don't have permission to manage triggers.</Trans>,
+        }}
         alignColumnsCenter
       />
 

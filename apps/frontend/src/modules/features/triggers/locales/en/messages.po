@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: revealed.name
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:90
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:89
 msgid "{0} webhook secret"
 msgstr "{0} webhook secret"
 
@@ -34,7 +34,7 @@ msgstr "A trigger starts a run of this pipeline automatically."
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:73
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:72
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr "Add a cron schedule or webhook to start runs automatically."
 
@@ -42,7 +42,7 @@ msgstr "Add a cron schedule or webhook to start runs automatically."
 msgid "Add input"
 msgstr "Add input"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:95
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:94
 msgid "Add this signing secret to your webhook sender's HMAC configuration."
 msgstr "Add this signing secret to your webhook sender's HMAC configuration."
 
@@ -58,7 +58,7 @@ msgstr "at minute"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:91
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:90
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copy the secret below — it is shown only once."
 
@@ -69,6 +69,10 @@ msgstr "Copy url"
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:219
 msgid "Create"
 msgstr "Create"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:83
+msgid "Cron"
+msgstr "Cron"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/CronScheduleBuilder.tsx:164
 msgid "Custom"
@@ -95,6 +99,10 @@ msgstr "Delete"
 msgid "disabled"
 msgstr "disabled"
 
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:93
+msgid "Disabled"
+msgstr "Disabled"
+
 #: src/modules/features/triggers/presentation/ui/triggers-table/TriggerStatusCell.tsx:37
 msgid "disabled — URL returns 404"
 msgstr "disabled — URL returns 404"
@@ -112,6 +120,7 @@ msgid "enabled"
 msgstr "enabled"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:60
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:92
 msgid "Enabled"
 msgstr "Enabled"
 
@@ -189,7 +198,7 @@ msgstr "Name"
 msgid "Never fired"
 msgstr "Never fired"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:21
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:111
 msgid "New trigger"
 msgstr "New trigger"
@@ -202,7 +211,7 @@ msgstr "next"
 msgid "next scheduled run (Local time)"
 msgstr "next scheduled run (Local time)"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:70
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:69
 msgid "No triggers yet"
 msgstr "No triggers yet"
 
@@ -238,7 +247,7 @@ msgstr "Pipeline"
 msgid "Pipeline ID is missing"
 msgstr "Pipeline ID is missing"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:43
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:27
 msgid "Pipeline ID: {pipelineId}"
 msgstr "Pipeline ID: {pipelineId}"
 
@@ -254,13 +263,22 @@ msgstr "Save"
 msgid "Schedule"
 msgstr "Schedule"
 
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:75
+msgid "Search a trigger…"
+msgstr "Search a trigger…"
+
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:186
 msgid "Signature header"
 msgstr "Signature header"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:48
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:80
 msgid "Source"
 msgstr "Source"
+
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:89
+msgid "State"
+msgstr "State"
 
 #: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
 msgid "Status"
@@ -274,11 +292,11 @@ msgstr "Sun"
 msgid "Thu"
 msgstr "Thu"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:32
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:19
 msgid "Trigger"
 msgstr "Trigger"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:33
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:20
 #: src/modules/features/triggers/triggers.module.ts:28
 msgid "Triggers"
 msgstr "Triggers"
@@ -301,6 +319,10 @@ msgstr "Type can't be changed — delete and recreate to switch."
 msgid "Unknown"
 msgstr "Unknown"
 
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:84
+msgid "Webhook"
+msgstr "Webhook"
+
 #: src/modules/features/triggers/presentation/ui/components/TriggersOverview.tsx:58
 msgid "webhook endpoints"
 msgstr "webhook endpoints"
@@ -317,7 +339,7 @@ msgstr "Weekly"
 msgid "Write a cron expression"
 msgstr "Write a cron expression"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:37
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:39
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:24
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggersTable.tsx:100
 msgid "You don't have permission to manage triggers."
 msgstr "You don't have permission to manage triggers."

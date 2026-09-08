@@ -28,7 +28,6 @@ export const DashboardPipelinePage = () => {
     <div className='flex flex-col gap-4 w-full h-full'>
       <PipelineDashboardHeader
         numberOfPipelines={paginationInfo?.totalCount ?? pipelines.items.length}
-        pipelineIds={pipelineIds}
       />
       <div className='flex-1 min-h-0 overflow-auto'>
         <div className='relative'>

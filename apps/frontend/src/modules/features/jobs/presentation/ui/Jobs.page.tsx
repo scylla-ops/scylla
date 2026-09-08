@@ -33,7 +33,6 @@ export const JobsPage = ({ onRun }: JobsPageProps) => {
     <div className='flex flex-col gap-4 w-full h-full'>
       <JobsHeader
         numberOfJobs={paginationInfo?.totalCount ?? jobs.length}
-        jobIds={jobs.map(job => job.id)}
         pipelineId={pipelineId}
         onRefresh={() => refetch()}
         onRun={onRun}
