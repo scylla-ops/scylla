@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from '@core/presentation/ui/App.tsx';
 import { initializeAppLocale } from '@shared/presentation/utils/i18n.ts';
+import { StrictMode } from 'react';
 
 const rootElement = document.getElementById('root');
 
@@ -13,5 +14,9 @@ if (!rootElement) {
 // the first render has to wait for them — otherwise the app paints a frame of
 // untranslated message ids.
 void initializeAppLocale().then(() => {
-  createRoot(rootElement).render(<App />);
+  createRoot(rootElement).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
 });

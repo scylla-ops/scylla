@@ -13,14 +13,14 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/core/presentation/ui/router/Core.router.tsx:59
+#: src/modules/core/presentation/ui/router/Core.router.tsx:60
 msgid "Project"
 msgstr "Project"
 
-#: src/modules/core/presentation/ui/router/Core.router.tsx:49
+#: src/modules/core/presentation/ui/router/Core.router.tsx:50
 msgid "Projects"
 msgstr "Projects"
 
-#: src/modules/core/presentation/ui/App.tsx:84
+#: src/modules/core/presentation/ui/App.tsx:83
 msgid "Toggle dark mode"
 msgstr "Toggle dark mode"

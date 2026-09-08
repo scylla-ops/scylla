@@ -1,6 +1,5 @@
 import { RouterProvider } from 'react-router-dom';
 import { CoreRouter } from '@core/presentation/ui/router/Core.router.tsx';
-import { StrictMode } from 'react';
 import { I18nProvider } from '@lingui/react';
 import { useLingui } from '@lingui/react/macro';
 import { i18n } from '@lingui/core';
@@ -95,25 +94,23 @@ function ThemeToggle() {
 
 function App() {
   return (
-    <StrictMode>
-      <ThemeProvider
-        attribute='class'
-        defaultTheme='dark'
-        enableSystem={false}
-        storageKey='scylla-theme'
-        disableTransitionOnChange
-      >
-        <I18nProvider i18n={i18n}>
-          <QueryClientProvider client={queryClient}>
-            <DependenciesProvider registry={dependencies}>
-              <ThemeToggle />
-              <RouterProvider router={CoreRouter} />
-              <Toaster />
-            </DependenciesProvider>
-          </QueryClientProvider>
-        </I18nProvider>
-      </ThemeProvider>
-    </StrictMode>
+    <ThemeProvider
+      attribute='class'
+      defaultTheme='dark'
+      enableSystem={false}
+      storageKey='scylla-theme'
+      disableTransitionOnChange
+    >
+      <I18nProvider i18n={i18n}>
+        <QueryClientProvider client={queryClient}>
+          <DependenciesProvider registry={dependencies}>
+            <ThemeToggle />
+            <RouterProvider router={CoreRouter} />
+            <Toaster />
+          </DependenciesProvider>
+        </QueryClientProvider>
+      </I18nProvider>
+    </ThemeProvider>
   );
 }
 

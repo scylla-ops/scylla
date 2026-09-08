@@ -27,8 +27,6 @@ export const CoreRouter = createBrowserRouter([
     HydrateFallback: ScyllaLoadingScreen,
     children: [
       ...routesFor(modules, 'public'),
-      ...routesFor(modules, 'public'),
-
       {
         element: <AuthGuard />,
         children: [
