@@ -62,8 +62,8 @@ export const JobNodesList = ({
           transition={{ duration: 0.2 }}
           className='overflow-hidden'
         >
-          <div className='mt-4 px-4 pb-4 border-t pt-4'>
-            <h4 className='text-sm font-semibold mb-3 flex items-center gap-2'>
+          <div className='mt-4 px-4 pb-4 border-t border-border pt-4'>
+            <h4 className='text-sm font-semibold mb-3 flex items-center gap-2 text-foreground'>
               <IconButton
                 icon={ChevronDown}
                 tooltip={<Trans>Collapse</Trans>}
@@ -71,7 +71,7 @@ export const JobNodesList = ({
               />
               <Trans>Node Executions ({nodeExecutions.length})</Trans>
             </h4>
-            <div className='space-y-1'>
+            <div className='space-y-1.5'>
               {nodeExecutions.map((node, index) => {
                 const config = getStatusConfig(node.state);
                 const Icon = config.icon;
@@ -79,38 +79,38 @@ export const JobNodesList = ({
                 const isNodeExpanded = expandedNodes.has(nodeId);
 
                 return (
-                  <div key={index} className='rounded-lg overflow-hidden border'>
+                  <div
+                    key={nodeId}
+                    className='rounded-lg overflow-hidden border border-border bg-card text-card-foreground'
+                  >
                     <Button
-                      variant='outline'
+                      variant='ghost'
                       type='button'
                       onClick={e => {
                         e.stopPropagation();
                         toggleNode(nodeId);
                       }}
-                      // hover:scale-100 neutralizes the Button base's
-                      // hover:scale-108 — a zoom reads fine on small buttons
-                      // but is jarring on a full-width row.
-                      className='w-full flex items-center justify-between p-3 h-auto hover:bg-secondary hover:scale-100 transition-colors cursor-pointer rounded-none'
+                      className='w-full flex items-center justify-between p-3 h-auto hover:bg-accent hover:text-accent-foreground hover:scale-100 transition-colors cursor-pointer rounded-none'
                     >
                       <div className='flex items-center gap-3'>
                         {isNodeExpanded ? (
-                          <ChevronDown className='w-4 h-4 text-slate-500' />
+                          <ChevronDown className='w-4 h-4 text-muted-foreground' />
                         ) : (
-                          <ChevronRight className='w-4 h-4 text-slate-500' />
+                          <ChevronRight className='w-4 h-4 text-muted-foreground' />
                         )}
                         <Icon className={`w-5 h-5 ${config.iconClassName}`} />
                         <div className='text-left'>
-                          <p className='font-medium text-sm'>{node.id}</p>
+                          <p className='font-medium text-sm text-foreground'>{node.id}</p>
                         </div>
                         <Badge variant={config.variant} className='text-xs'>
                           {_(config.label)}
                         </Badge>
                       </div>
-                      <div className='flex items-center gap-3 text-right text-sm text-slate-600'>
+                      <div className='flex items-center gap-3 text-right text-sm text-muted-foreground'>
                         <p className='font-medium'>
                           {calculateDuration(node.startedAt, node.finishedAt)}
                         </p>
-                        <TerminalSquare className='w-4 h-4 text-slate-400' />
+                        <TerminalSquare className='w-4 h-4 text-muted-foreground' />
                       </div>
                     </Button>
 
@@ -119,9 +119,9 @@ export const JobNodesList = ({
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         transition={{ duration: 0.15 }}
-                        className='overflow-hidden'
+                        className='overflow-hidden border-t border-border bg-background/50'
                       >
-                        <div className='p-2'>
+                        <div className='p-3'>
                           <JobLogDisplay jobId={jobId} nodeId={nodeId} />
                         </div>
                       </motion.div>

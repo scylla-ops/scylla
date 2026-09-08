@@ -7,18 +7,18 @@
   --background: #F4F7EB;
   --foreground: #272921;
 
-  --card: #FFFFFF;
+  --card: #F7F9EE;
   --card-foreground: #272921;
 
-  --popover: #FFFFFF;
+  --popover: #F7F9EE;
   --popover-foreground: #272921;
 
-  --select: #FFFFFF;
+  --select: #F7F9EE;
 
   --primary: #5D9972;
-  --primary-hover: #518C67;
+  --primary-hover: #67A37C;
   --primary-foreground: #F4F7EB;
-  --primary-subtle: #E8F4EC;
+  --primary-subtle: #d4e5ce;
 
   --secondary: #E8EAE0;
   --secondary-foreground: #272921;
@@ -27,7 +27,7 @@
   --muted: #E8EAE0;
   --muted-foreground: #686965;
 
-  --accent: #E8F4EC;
+  --accent: #EFF2E7;
   --accent-foreground: #272921;
 
   --destructive: #BA4C43;
@@ -37,12 +37,14 @@
   --input: #AFB0AA;
   --ring: #5D9972;
 
+  /* Graphiques */
   --chart-1: #5D9972;
   --chart-2: #4097A6;
   --chart-3: #287683;
   --chart-4: #ECA851;
   --chart-5: #BA4C43;
 
+  /* États */
   --success: #5D9972;
   --success-foreground: #F4F7EB;
   --error: #BA4C43;
@@ -65,13 +67,12 @@
   --sidebar-foreground: #272921;
   --sidebar-primary: #5D9972;
   --sidebar-primary-foreground: #F4F7EB;
-  --sidebar-accent: #E8F4EC;
+  --sidebar-accent: #E2E5DA;
   --sidebar-accent-foreground: #272921;
   --sidebar-border: #D1D3CA;
   --sidebar-ring: #5D9972;
-
-  --code-editor-bg: #FFFFFF;
-  --code-editor-line-bg: #E8F4EC;
+  --code-editor-bg: #F7F9EE;
+  --code-editor-line-bg: #d4e5ce;
   --code-editor-selection-bg: rgba(93, 153, 114, 0.25);
 }
 
@@ -90,7 +91,7 @@
   --primary: #5D9972;
   --primary-hover: #69A57E;
   --primary-foreground: #F4F7EB;
-  --primary-subtle: #1B261E;
+  --primary-subtle: #1C2A20;
 
   --secondary: #282826;
   --secondary-foreground: #F4F7EC;
@@ -124,7 +125,6 @@
   --info: #4097A6;
   --info-foreground: #F4F7EB;
 
-  /* Semantic Status Tokens */
   --status-queued: #8E8F8A;
   --status-running: #ECA851;
   --status-passed: #5D9972;
@@ -141,9 +141,9 @@
   --sidebar-border: #333330;
   --sidebar-ring: #5D9972;
 
-  --code-editor-bg: #171715;
-  --code-editor-line-bg: #1B261E;
-  --code-editor-selection-bg: rgba(93, 153, 114, 0.25);
+  --code-editor-bg: #1D1E1C;
+  --code-editor-line-bg: #253128;
+  --code-editor-selection-bg: rgba(93, 153, 114, 0.35);
 }
 
 @theme inline {

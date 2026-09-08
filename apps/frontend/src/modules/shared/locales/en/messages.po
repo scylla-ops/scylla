@@ -42,7 +42,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/utils/status-config.ts:126
+#: src/modules/shared/utils/status-config.ts:111
 msgid "Cancelled"
 msgstr "Cancelled"
 
@@ -100,7 +100,7 @@ msgstr "Done"
 msgid "Error"
 msgstr "Error"
 
-#: src/modules/shared/utils/status-config.ts:84
+#: src/modules/shared/utils/status-config.ts:81
 msgid "Failed"
 msgstr "Failed"
 
@@ -137,7 +137,7 @@ msgstr "Next"
 msgid "No data"
 msgstr "No data"
 
-#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:174
+#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:179
 msgid "No results."
 msgstr "No results."
 
@@ -153,11 +153,11 @@ msgstr "Organization deleted"
 msgid "Organization updated"
 msgstr "Organization updated"
 
-#: src/modules/shared/utils/status-config.ts:104
+#: src/modules/shared/utils/status-config.ts:101
 msgid "Orphaned"
 msgstr "Orphaned"
 
-#: src/modules/shared/utils/status-config.ts:64
+#: src/modules/shared/utils/status-config.ts:61
 msgid "Pending"
 msgstr "Pending"
 
@@ -233,7 +233,7 @@ msgstr "Run from a repo checkout"
 msgid "Run with Docker"
 msgstr "Run with Docker"
 
-#: src/modules/shared/utils/status-config.ts:53
+#: src/modules/shared/utils/status-config.ts:50
 msgid "Running"
 msgstr "Running"
 
@@ -265,11 +265,11 @@ msgstr "Showing {start}-{end} of {totalCount}"
 msgid "shown once"
 msgstr "shown once"
 
-#: src/modules/shared/utils/status-config.ts:94
+#: src/modules/shared/utils/status-config.ts:91
 msgid "Skipped"
 msgstr "Skipped"
 
-#: src/modules/shared/utils/status-config.ts:74
+#: src/modules/shared/utils/status-config.ts:71
 msgid "Success"
 msgstr "Success"
 
@@ -311,7 +311,7 @@ msgstr "Trigger fired — run started"
 msgid "Trigger updated"
 msgstr "Trigger updated"
 
-#: src/modules/shared/utils/status-config.ts:116
+#: src/modules/shared/utils/status-config.ts:123
 msgid "Unknown"
 msgstr "Unknown"
 
