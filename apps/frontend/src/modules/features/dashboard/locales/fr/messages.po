@@ -18,7 +18,7 @@ msgid "{inFlight} in progress"
 msgstr "{inFlight} en cours"
 
 #: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:246
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:278
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:280
 msgid "Agent Outcomes"
 msgstr "Résultats des agents"
 
@@ -26,7 +26,7 @@ msgstr "Résultats des agents"
 msgid "all"
 msgstr "tous"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:203
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:205
 msgid "All Pipelines"
 msgstr "Tous les pipelines"
 
@@ -68,7 +68,7 @@ msgstr "Échoué"
 msgid "Last run {0}"
 msgstr "Dernière exécution {0}"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:225
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:227
 msgid "Name"
 msgstr "Nom"
 
@@ -76,7 +76,7 @@ msgstr "Nom"
 msgid "No agents found. Connect an agent to see execution history."
 msgstr "Aucun agent trouvé. Connectez un agent pour voir l'historique des exécutions."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:186
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:188
 msgid "No description"
 msgstr "Aucune description"
 
@@ -88,7 +88,7 @@ msgstr "Aucun job terminé sur cette période."
 msgid "No pipeline has run yet."
 msgstr "Aucun pipeline n'a encore été exécuté."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:215
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:217
 msgid "No pipelines yet."
 msgstr "Aucun pipeline pour le moment."
 
@@ -96,7 +96,7 @@ msgstr "Aucun pipeline pour le moment."
 msgid "No projects yet."
 msgstr "Aucun projet pour le moment."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:231
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:233
 msgid "Nodes"
 msgstr "Nœuds"
 
@@ -118,7 +118,7 @@ msgstr "sur les {0} dernières exécutions parmi {totalRuns}"
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:228
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:230
 msgid "Project"
 msgstr "Projet"
 
@@ -151,10 +151,10 @@ msgstr "Taux de réussite (récent)"
 msgid "Unable to load dashboard"
 msgstr "Impossible de charger le tableau de bord"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:234
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:236
 msgid "Updated"
 msgstr "Mis à jour"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:163
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:165
 msgid "You don't have access to this project's pipelines"
 msgstr "Vous n'avez pas accès aux pipelines de ce projet"

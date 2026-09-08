@@ -50,8 +50,8 @@ msgstr "Cancelled"
 msgid "Clear"
 msgstr "Clear"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:72
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:95
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:67
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:90
 msgid "Command copied"
 msgstr "Command copied"
 
@@ -104,7 +104,7 @@ msgstr "Error"
 msgid "Failed"
 msgstr "Failed"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:60
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:55
 msgid "From source"
 msgstr "From source"
 
@@ -205,15 +205,15 @@ msgstr "Project name is required and you must select an organization."
 msgid "Project updated"
 msgstr "Project updated"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:117
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:112
 msgid "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
 msgstr "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:108
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:103
 msgid "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
 msgstr "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:76
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:71
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 msgstr "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 
@@ -225,11 +225,11 @@ msgstr "Reveal"
 msgid "Reveal the secret first"
 msgstr "Reveal the secret first"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:73
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:68
 msgid "Run from a repo checkout"
 msgstr "Run from a repo checkout"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:96
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:91
 msgid "Run with Docker"
 msgstr "Run with Docker"
 
@@ -273,7 +273,7 @@ msgstr "Skipped"
 msgid "Success"
 msgstr "Success"
 
-#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:99
+#: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:94
 msgid "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
 msgstr "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
 

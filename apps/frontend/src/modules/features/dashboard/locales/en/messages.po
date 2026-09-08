@@ -18,7 +18,7 @@ msgid "{inFlight} in progress"
 msgstr "{inFlight} in progress"
 
 #: src/modules/features/dashboard/presentation/ui/AgentOutcomesChart.tsx:246
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:278
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:280
 msgid "Agent Outcomes"
 msgstr "Agent Outcomes"
 
@@ -26,7 +26,7 @@ msgstr "Agent Outcomes"
 msgid "all"
 msgstr "all"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:203
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:205
 msgid "All Pipelines"
 msgstr "All Pipelines"
 
@@ -68,7 +68,7 @@ msgstr "Failed"
 msgid "Last run {0}"
 msgstr "Last run {0}"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:225
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:227
 msgid "Name"
 msgstr "Name"
 
@@ -76,7 +76,7 @@ msgstr "Name"
 msgid "No agents found. Connect an agent to see execution history."
 msgstr "No agents found. Connect an agent to see execution history."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:186
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:188
 msgid "No description"
 msgstr "No description"
 
@@ -88,7 +88,7 @@ msgstr "No finished jobs in this window."
 msgid "No pipeline has run yet."
 msgstr "No pipeline has run yet."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:215
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:217
 msgid "No pipelines yet."
 msgstr "No pipelines yet."
 
@@ -96,7 +96,7 @@ msgstr "No pipelines yet."
 msgid "No projects yet."
 msgstr "No projects yet."
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:231
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:233
 msgid "Nodes"
 msgstr "Nodes"
 
@@ -118,7 +118,7 @@ msgstr "over the last {0} of {totalRuns} runs"
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:228
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:230
 msgid "Project"
 msgstr "Project"
 
@@ -151,10 +151,10 @@ msgstr "Success rate (recent)"
 msgid "Unable to load dashboard"
 msgstr "Unable to load dashboard"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:234
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:236
 msgid "Updated"
 msgstr "Updated"
 
-#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:163
+#: src/modules/features/dashboard/presentation/ui/Dashboard.page.tsx:165
 msgid "You don't have access to this project's pipelines"
 msgstr "You don't have access to this project's pipelines"

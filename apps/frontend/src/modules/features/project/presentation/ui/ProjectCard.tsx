@@ -32,9 +32,9 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
           isSelected && 'ring-2 ring-primary border-primary',
         )}
       >
-        <CardHeader className='pb-2 overflow-hidden'>
-          <div className='flex items-start justify-between gap-2 overflow-hidden'>
-            <div className='flex items-center gap-3 min-w-0 flex-1 overflow-hidden'>
+        <CardHeader className='pb-2'>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='flex items-center gap-3 min-w-0 flex-1 '>
               <div className='rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors shrink-0'>
                 <Folder className='h-5 w-5 text-primary' />
               </div>
