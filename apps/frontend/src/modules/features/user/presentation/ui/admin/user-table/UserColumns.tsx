@@ -4,7 +4,7 @@ import { Eye } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { formatDate } from '@shared/utils/date-utils.ts';
 import { Avatar, AvatarFallback, AvatarImage } from '@shadcn';
-import { IconButton } from '@shared/presentation/ui';
+import { IconButton, TruncatedText } from '@shared/presentation/ui';
 
 type PipelineColumnMeta = {
   onView: (userId: string) => void;
@@ -19,20 +19,21 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntit
         <Avatar className='h-8 w-8 shrink-0 rounded-lg'>
           <AvatarImage />
           <AvatarFallback className='rounded-lg'>
-            {row.original.username.at(0)?.toUpperCase()}
+            <TruncatedText className='text-xs'>
+              {row.original.username.at(0)?.toUpperCase()}
+            </TruncatedText>
           </AvatarFallback>
         </Avatar>
         <span className='truncate'>{row.original.username}</span>
       </div>
     ),
-    // No size: the username takes whatever the sized columns leave.
+    size: 200,
     minSize: 200,
   },
   {
     id: 'creationDate',
     header: () => <Trans>Created at</Trans>,
     cell: ({ row }) => <span className='truncate'>{formatDate(row.original.createdAt)}</span>,
-    size: 200,
     minSize: 150,
   },
   {
