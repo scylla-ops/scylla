@@ -19,12 +19,12 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntit
         <Avatar className='h-8 w-8 shrink-0 rounded-lg'>
           <AvatarImage />
           <AvatarFallback className='rounded-lg'>
-            <TruncatedText className='text-xs'>
-              {row.original.username.at(0)?.toUpperCase()}
-            </TruncatedText>
+            {row.original.username.at(0)?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <span className='truncate'>{row.original.username}</span>
+        <TruncatedText tooltip={row.original.username} className='text-xs'>
+          {row.original.username}
+        </TruncatedText>
       </div>
     ),
     size: 200,
@@ -32,13 +32,22 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntit
   },
   {
     id: 'creationDate',
-    header: () => <Trans>Created at</Trans>,
+    header: () => (
+      <div className={'flex w-full items-center justify-center'}>
+        <Trans>Created at</Trans>
+      </div>
+    ),
     cell: ({ row }) => <span className='truncate'>{formatDate(row.original.createdAt)}</span>,
+    size: 250,
     minSize: 150,
   },
   {
     id: 'actions',
-    header: () => <Trans>Actions</Trans>,
+    header: () => (
+      <div className={'w-full flex items-center justify-center'}>
+        <Trans>Actions</Trans>
+      </div>
+    ),
     cell: ({ row }) => (
       <IconButton
         icon={Eye}
