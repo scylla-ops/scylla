@@ -10,7 +10,6 @@ interface TriggersHeaderProps {
   triggerIds: string[];
   pipelineId: string;
   onNew: () => void;
-  isNew?: boolean;
 }
 
 export const TriggersHeader = ({
@@ -18,7 +17,6 @@ export const TriggersHeader = ({
   triggerIds,
   pipelineId,
   onNew,
-  isNew,
 }: TriggersHeaderProps) => {
   const deleteTrigger = useDeleteTrigger(pipelineId);
   const { headerProps } = useFeatureSelection('triggers', triggerIds, {
@@ -35,7 +33,6 @@ export const TriggersHeader = ({
       pluralLabel={<Trans>Triggers</Trans>}
       newLabel={<Trans>New trigger</Trans>}
       onNew={onNew}
-      isNew={isNew}
       canNew={canManage}
       newDeniedReason={<Trans>You don't have permission to manage triggers.</Trans>}
       canDelete={canManage}

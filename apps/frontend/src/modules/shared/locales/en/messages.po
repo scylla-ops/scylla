@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:66
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:63
 msgid "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
 msgstr "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
 
@@ -46,7 +46,7 @@ msgstr "Cancel"
 msgid "Cancelled"
 msgstr "Cancelled"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:107
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:98
 msgid "Clear"
 msgstr "Clear"
 
@@ -88,7 +88,7 @@ msgstr "Create"
 msgid "Creating..."
 msgstr "Creating..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:131
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:122
 msgid "Delete"
 msgstr "Delete"
 
@@ -116,7 +116,7 @@ msgstr "Go to next page"
 msgid "Go to previous page"
 msgstr "Go to previous page"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:91
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:82
 msgid "in total"
 msgstr "in total"
 
@@ -124,8 +124,8 @@ msgstr "in total"
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:142
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:148
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:133
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:139
 msgid "New {label}"
 msgstr "New {label}"
 
@@ -133,7 +133,7 @@ msgstr "New {label}"
 msgid "Next"
 msgstr "Next"
 
-#: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:34
+#: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:29
 msgid "No data"
 msgstr "No data"
 
@@ -249,7 +249,7 @@ msgstr "Secret created"
 msgid "Secret deleted"
 msgstr "Secret deleted"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:102
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:93
 msgid "Select all"
 msgstr "Select all"
 
@@ -335,8 +335,8 @@ msgstr "Username and password are required."
 msgid "You cannot delete your own account."
 msgstr "You cannot delete your own account."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:133
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:153
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:124
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:144
 msgid "You don't have permission to do this."
 msgstr "You don't have permission to do this."
 

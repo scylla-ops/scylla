@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: revealed.name
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:93
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:90
 msgid "{0} webhook secret"
 msgstr "Secret webhook {0}"
 
@@ -34,7 +34,7 @@ msgstr "Un déclencheur lance automatiquement une exécution de ce pipeline."
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:76
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:73
 msgid "Add a cron schedule or webhook to start runs automatically."
 msgstr "Ajoutez une planification cron ou un webhook pour démarrer des exécutions automatiquement."
 
@@ -42,7 +42,7 @@ msgstr "Ajoutez une planification cron ou un webhook pour démarrer des exécuti
 msgid "Add input"
 msgstr "Ajouter une entrée"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:98
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:95
 msgid "Add this signing secret to your webhook sender's HMAC configuration."
 msgstr "Ajoutez ce secret de signature à la configuration HMAC de votre émetteur de webhook."
 
@@ -58,7 +58,7 @@ msgstr "à la minute"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:94
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:91
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copiez le secret ci-dessous — il est affiché une seule fois."
 
@@ -189,7 +189,7 @@ msgstr "Nom"
 msgid "Never fired"
 msgstr "Jamais déclenché"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:36
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:111
 msgid "New trigger"
 msgstr "Nouveau déclencheur"
@@ -202,7 +202,7 @@ msgstr "suivant"
 msgid "next scheduled run (Local time)"
 msgstr "prochaine exécution planifiée (heure locale)"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:73
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:70
 msgid "No triggers yet"
 msgstr "Aucun déclencheur pour l'instant"
 
@@ -234,11 +234,11 @@ msgstr "Choisissez au moins un jour"
 msgid "Pipeline"
 msgstr "Pipeline"
 
-#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:34
+#: src/modules/features/triggers/presentation/ui/Triggers.page.tsx:32
 msgid "Pipeline ID is missing"
 msgstr "L'identifiant de pipeline est manquant"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:46
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:43
 msgid "Pipeline ID: {pipelineId}"
 msgstr "ID de pipeline : {pipelineId}"
 
@@ -274,11 +274,11 @@ msgstr "Dim"
 msgid "Thu"
 msgstr "Jeu"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:32
 msgid "Trigger"
 msgstr "Déclencheur"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:35
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:33
 #: src/modules/features/triggers/triggers.module.ts:28
 msgid "Triggers"
 msgstr "Déclencheurs"
@@ -317,7 +317,7 @@ msgstr "Hebdomadaire"
 msgid "Write a cron expression"
 msgstr "Rédigez une expression cron"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:40
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:42
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:37
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:39
 msgid "You don't have permission to manage triggers."
 msgstr "Vous n'avez pas la permission de gérer les déclencheurs."

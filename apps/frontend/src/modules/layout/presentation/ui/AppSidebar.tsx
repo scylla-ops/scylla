@@ -27,6 +27,7 @@ import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { Permission } from '@platform/authz';
 import { useAuthorization, useCan, } from '@platform/authz';
 import { LanguageSelector } from '@/modules/layout/presentation/ui/LanguageSelector.tsx';
+import { highlightIdForNav } from '@/modules/layout/presentation/hooks/use-whats-new.ts';
 
 /**
  * Turns the entries the modules declared into rendered sidebar sections.
@@ -54,6 +55,7 @@ const useNavSections = (
         url: `${prefix}/${entry.url}`,
         icon: entry.icon,
         permission: entry.permission,
+        highlightId: highlightIdForNav(entry.url),
       }));
 
   const sections: NavSection[] = [

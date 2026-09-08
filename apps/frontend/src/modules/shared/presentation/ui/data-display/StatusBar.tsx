@@ -21,12 +21,7 @@ interface StatusBarProps {
  * Generic bar chart showing colored segments per status.
  * Used for pipeline job history and job node timelines.
  */
-export const StatusBar = ({
-  items,
-  emptyLabel,
-  className,
-  height = 'h-6',
-}: StatusBarProps) => {
+export const StatusBar = ({ items, emptyLabel, className, height = 'h-6' }: StatusBarProps) => {
   if (items.length === 0) {
     return (
       <div className={cn('w-full flex items-center justify-center py-1', height)}>
@@ -66,7 +61,10 @@ export const StatusBar = ({
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>{bar}</TooltipTrigger>
-              <TooltipContent side='top' className='text-xs p-3 shadow-lg'>
+              <TooltipContent
+                side='top'
+                className='text-xs text-popover-foreground border-border p-3 shadow-lg bg-popover'
+              >
                 {item.tooltip}
               </TooltipContent>
             </Tooltip>

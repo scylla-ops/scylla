@@ -87,8 +87,8 @@ msgstr "Delete node"
 msgid "Draft — not created yet"
 msgstr "Draft — not created yet"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:99
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:147
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:97
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:137
 msgid "Duplicate"
 msgstr "Duplicate"
 
@@ -118,7 +118,7 @@ msgid "e.g., my-pipeline"
 msgstr "e.g., my-pipeline"
 
 #: src/modules/features/pipeline/pipeline.module.ts:47
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:93
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:91
 msgid "Edit"
 msgstr "Edit"
 
@@ -126,7 +126,7 @@ msgstr "Edit"
 msgid "Edit node"
 msgstr "Edit node"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:142
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:132
 msgid "Edit pipeline"
 msgstr "Edit pipeline"
 
@@ -175,19 +175,14 @@ msgstr "Literal"
 msgid "Members"
 msgstr "Members"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:125
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:175
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:115
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:155
 msgid "More options"
 msgstr "More options"
 
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:27
 msgid "Name"
 msgstr "Name"
-
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:116
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:165
-msgid "New"
-msgstr "New"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:38
 msgid "New pipeline"
@@ -225,8 +220,8 @@ msgstr "Pipelines"
 msgid "Reference a secret"
 msgstr "Reference a secret"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:87
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:135
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:85
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:125
 msgid "Run"
 msgstr "Run"
 
@@ -286,8 +281,8 @@ msgstr "Started {0}"
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:111
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:160
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:109
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:149
 msgid "Triggers"
 msgstr "Triggers"
 
@@ -303,8 +298,8 @@ msgstr "Update the step details and dependencies."
 msgid "value"
 msgstr "value"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:105
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:155
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:103
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:145
 msgid "View Jobs"
 msgstr "View Jobs"
 

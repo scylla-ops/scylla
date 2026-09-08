@@ -18,6 +18,8 @@ import { ChevronRight } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@shared/presentation/utils/cn.ts';
+import { NewBadge } from '@/modules/layout/presentation/ui/NewBadge.tsx';
+import { markSeen } from '@/modules/layout/presentation/hooks/use-whats-new.ts';
 
 /**
  * Each nav section reads as a self-contained card floating on the sidebar
@@ -54,10 +56,17 @@ export function NavMain({ sections }: NavMainProps) {
       <SidebarMenuButton
         tooltip={item.title}
         isActive={isActive(item.url)}
-        onClick={() => item.url && navigate(item.url)}
+        onClick={() => {
+          if (!item.url) return;
+          // Opening the page is the acknowledgement — the badge invites the
+          // click, it has nothing left to say once it happened.
+          if (item.highlightId) markSeen(item.highlightId);
+          void navigate(item.url);
+        }}
       >
         {item.icon && <item.icon />}
         <span>{item.title}</span>
+        {item.highlightId && <NewBadge highlightId={item.highlightId} />}
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

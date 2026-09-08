@@ -13,6 +13,12 @@ export interface NavItem {
    * Omit for entries everyone may see.
    */
   permission?: Permission;
+  /**
+   * Release highlight this entry announces, when the current release has one
+   * for its url — see `layout/whats-new.ts`. Resolved by the shell, where the
+   * unprefixed url is still known; the badge itself lives in `NavMain`.
+   */
+  highlightId?: string;
   /** Sub-scope entries rendered as a collapsible Pangolin-style sub-menu. */
   items?: NavItem[];
 }

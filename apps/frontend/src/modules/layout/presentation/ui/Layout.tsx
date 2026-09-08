@@ -3,7 +3,7 @@ import { AppSidebar } from '@/modules/layout/presentation/ui/AppSidebar.tsx';
 import { SidebarInset, SidebarProvider } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { TopBar } from '@/modules/layout/presentation/ui/TopBar.tsx';
 import { AnimatedOutlet } from '@/modules/shared/presentation/ui/layout/AnimatedOutlet.tsx';
-import { NewTriggerFeaturePopup } from '@/modules/layout/presentation/ui/NewTriggerFeaturePopup.tsx';
+import { WhatsNewDialog } from '@/modules/layout/presentation/ui/WhatsNewDialog.tsx';
 import { useOrganizations } from '@/modules/features/organization';
 import { Trans } from '@lingui/react/macro';
 import { useCreateOrganization } from '@/modules/features/organization';
@@ -118,7 +118,7 @@ export const Layout = ({ navEntries }: LayoutProps) => {
           <AnimatedOutlet />
         </div>
       </SidebarInset>
-      <NewTriggerFeaturePopup />
+      <WhatsNewDialog />
     </SidebarProvider>
   );
 };

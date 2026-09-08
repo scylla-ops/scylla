@@ -20,7 +20,9 @@ add one.
 ## Layout
 
 ```
+whats-new.ts                  THE release announcement (see below)
 presentation/structs/nav-section.struct.ts   NavItem, NavSection
+presentation/hooks/use-whats-new.ts          seen flags, `highlightIdForNav`
 presentation/ui/
   Layout.tsx                  the shell — takes `navEntries` from core
   AppSidebar.tsx              sidebar shell
@@ -30,7 +32,8 @@ presentation/ui/
   ScyllaBreadcrumbs.tsx       reads route handles
   ScyllaSidebarTrigger.tsx    collapse toggle
   LanguageSelector.tsx        locale switch
-  NewTriggerFeaturePopup.tsx  one-off announcement (see below)
+  WhatsNewDialog.tsx          first-launch release announcement
+  NewBadge.tsx                "New" pill on a sidebar entry
   context-selector/           ContextSelector, CurrentContextDisplay
 locales/                      the shell's own catalog
 ```
@@ -59,10 +62,12 @@ Direction matters: `layout` → `organization`, never the reverse.
 
 ## Rules that bite here
 
-- **`NewTriggerFeaturePopup` is a one-off announcement**, backed by `useNewFeature(key)` from
-  `@shared` (a `localStorage` flag + a window event, so every badge for the same key clears
-  together). It is not a notification system. Do not grow one here — and delete the popup once
-  the announcement has run its course.
+- **Announcing a new feature is editing `whats-new.ts`, nothing else.** Add a highlight
+  (`id`, `title`, `description`, `icon`, and `navUrl` when it is a page) and the first-launch
+  dialog and the sidebar badge follow. Never hand-roll a popup or a badge in a feature again —
+  that is what this replaced. Bump `WHATS_NEW.version` and replace the highlights at each
+  release: the `localStorage` seen flags are keyed by the version, so the announcement re-arms
+  by itself. It is not a notification system; do not grow one here.
 - The shell may read a feature's hook, but must not own business logic. If you are writing
   domain rules in `layout/`, they belong in a feature.
 - A component here used by a feature must move to `shared/presentation/ui/` — a feature may not

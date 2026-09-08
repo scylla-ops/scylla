@@ -53,16 +53,31 @@ The dependency runs one way only: the shell may import a feature, a feature may 
 shell. Dependency-cruiser enforces both halves. If a feature ever appears to need something from
 `layout/`, the thing it needs is generic and belongs in [shared](../shared/README.md).
 
-## A note on `NewTriggerFeaturePopup`
+## Announcing a release: `whats-new.ts`
 
-There is a small "new feature" announcement pointing at
-[triggers](../features/triggers/README.md), backed by `useNewFeature` from `shared` — a
-`localStorage` flag plus a window event, so the badge and the popup for the same key clear
-together the moment either is dismissed.
+Announcements used to be hand-written components — one popup for triggers, one badge glued onto
+`PipelineActions`, another flag threaded through `FeatureHeader`. Every announcement cost code in
+three modules, and retiring it cost the same again, so the code outlived the news.
 
-It is worth being explicit about what it is not: a notification system, an onboarding framework,
-or a place to add the next announcement. It is a one-off, and the right end state is deleting it
-once the feature is no longer new.
+Now there is one declaration, [`whats-new.ts`](whats-new.ts), and everything else is derived from
+it: the dialog on first launch lists its highlights, and a highlight that names a `navUrl` puts a
+"New" pill on that sidebar entry. Announcing a feature is adding an entry; retiring the whole
+announcement is emptying the list. Nothing else in the app knows an announcement exists.
+
+Two deliberate choices:
+
+- **TypeScript, not JSON.** The copy has to go through Lingui like every other string, and an
+  icon is a component. A JSON file would need a translation table and a name→icon map beside it
+  to carry the same information, and neither would be type-checked.
+- **The seen flags are keyed by `version`.** One `localStorage` key per announcement, prefixed
+  with the release it belongs to, so bumping `version` re-arms every announcement at once and no
+  one has to invent fresh ids to make the dialog show again.
+
+The dialog is dismissed as a whole; a nav badge clears on its own when the user opens the page it
+points at — it has said what it had to say by then.
+
+It is still not a notification system. It announces what shipped in *this* version, to a user who
+was here for the last one.
 
 ## Related modules
 

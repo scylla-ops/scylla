@@ -26,7 +26,7 @@ utils/                               ← no barrel, import by path
 presentation/
   hooks/                             use-pagination, use-selection, use-dialog,
                                      use-feature-selection, use-resource-error, use-now,
-                                     use-new-feature, use-code-mirror-theme
+                                     use-code-mirror-theme
   stores/use-selection.store.ts      one of the app's two global stores
   structs/scylla-form.struct.ts      FormItem, FormItemType, FormChange, SelectOption
   ui/index.ts                        re-exports the five groups below

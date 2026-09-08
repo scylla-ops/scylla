@@ -63,5 +63,4 @@ card summarising what is scheduled.
 
 - [pipeline](../pipeline/README.md) — what a trigger starts.
 - [jobs](../jobs/README.md) — the runs it produces.
-- [layout](../../layout/README.md) — `NewTriggerFeaturePopup`, the shell's announcement of this
-  feature.
+- [layout](../../layout/README.md) — the shell, and `whats-new.ts` where a release is announced.
