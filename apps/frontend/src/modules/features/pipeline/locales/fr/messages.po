@@ -16,7 +16,7 @@ msgstr ""
 msgid "{0} (copy)"
 msgstr "{0} (copie)"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:64
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:66
 msgid "Actions"
 msgstr "Actions"
 
@@ -67,7 +67,7 @@ msgstr "Créer"
 msgid "Create your first pipeline to get started"
 msgstr "Créez votre premier pipeline pour commencer"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineStatus.tsx:24
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineStatus.tsx:31
 msgid "Creation:"
 msgstr "Création :"
 
@@ -87,8 +87,8 @@ msgstr "Supprimer le nœud"
 msgid "Draft — not created yet"
 msgstr "Brouillon — non créé pour le moment"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:97
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:137
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:80
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:122
 msgid "Duplicate"
 msgstr "Dupliquer"
 
@@ -118,7 +118,7 @@ msgid "e.g., my-pipeline"
 msgstr "ex. : my-pipeline"
 
 #: src/modules/features/pipeline/pipeline.module.ts:47
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:91
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:74
 msgid "Edit"
 msgstr "Modifier"
 
@@ -126,7 +126,7 @@ msgstr "Modifier"
 msgid "Edit node"
 msgstr "Modifier le nœud"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:132
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:116
 msgid "Edit pipeline"
 msgstr "Modifier la pipeline"
 
@@ -147,7 +147,7 @@ msgstr "Impossible de charger la pipeline"
 msgid "Finished {0}"
 msgstr "Terminé {0}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:38
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:39
 msgid "History"
 msgstr "Historique"
 
@@ -163,7 +163,7 @@ msgstr "Jobs"
 msgid "KEY"
 msgstr "CLÉ"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:55
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:56
 msgid "Last Run"
 msgstr "Dernière exécution"
 
@@ -175,8 +175,8 @@ msgstr "Littéral"
 msgid "Members"
 msgstr "Membres"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:115
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:155
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:98
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:140
 msgid "More options"
 msgstr "Plus d'options"
 
@@ -220,8 +220,8 @@ msgstr "Pipelines"
 msgid "Reference a secret"
 msgstr "Référencez un secret"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:85
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:125
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:68
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:108
 msgid "Run"
 msgstr "Exécuter"
 
@@ -281,8 +281,8 @@ msgstr "Démarré {0}"
 msgid "Status"
 msgstr "Statut"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:109
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:149
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:92
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:134
 msgid "Triggers"
 msgstr "Déclencheurs"
 
@@ -298,8 +298,8 @@ msgstr "Mettez à jour les détails de l'étape et les dépendances."
 msgid "value"
 msgstr "valeur"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:103
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:145
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:86
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineActions.tsx:130
 msgid "View Jobs"
 msgstr "Voir les travaux"
 

@@ -1,64 +1,69 @@
-import { createColumnHelper } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@shadcn';
 import { KeyRound, Trash2 } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { CopyableText } from '@shared/presentation/ui';
+import { formatDay } from '@shared/utils/date-utils.ts';
 import type { SecretEntity } from '@/modules/features/secret/domain/entities/secret.entity.ts';
-
-const columnHelper = createColumnHelper<SecretEntity>();
 
 interface SecretColumnsMetadata {
   onDelete: (id: string) => void;
 }
 
-export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) => [
-  columnHelper.accessor('name', {
+export const createCredentialsColumns = ({
+  onDelete,
+}: SecretColumnsMetadata): ColumnDef<SecretEntity>[] => [
+  {
+    accessorKey: 'name',
     header: () => <Trans>Name</Trans>,
-    cell: info => (
-      <div className={'w-fit flex flex-row '}>
-        <div className={'flex flex-row gap-4 w-5/8'}>
-          <div className='flex size-10 items-center justify-center rounded-lg bg-primary/10 shrink-0'>
-            <KeyRound className='size-4 text-primary' />
-          </div>
-          <div className='flex flex-col items-start w-3/5'>
-            <p className='font-semibold text-foreground truncate'>{info.row.original.name}</p>
-            <p className='font-mono text-xs text-muted-foreground truncate'>
-              ID: {info.row.original.id}
-            </p>
-          </div>
+    cell: ({ row }) => (
+      <div className='flex w-full min-w-0 flex-row items-center gap-4'>
+        <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10'>
+          <KeyRound className='size-4 text-primary' />
+        </div>
+        <div className='flex min-w-0 flex-col text-start'>
+          <p className='truncate font-semibold text-foreground'>{row.original.name}</p>
+          <CopyableText className='text-xs text-muted-foreground/80' value={row.original.id} />
         </div>
       </div>
     ),
-    size: 20,
-  }),
-  columnHelper.accessor('description', {
+    size: 240,
+    minSize: 240,
+  },
+  {
+    accessorKey: 'description',
     header: () => <Trans>Description</Trans>,
-    cell: info => (
-      <div className={'w-full flex justify-center'}>
-        <p className='text-xs text-muted-foreground'>{info.row.original.description}</p>
+    cell: ({ row }) => (
+      <div className='flex w-full min-w-0 justify-center'>
+        <p className='truncate text-xs text-muted-foreground'>{row.original.description}</p>
       </div>
     ),
     size: 300,
-  }),
-  columnHelper.accessor('createdAt', {
+    minSize: 180,
+  },
+  {
+    accessorKey: 'createdAt',
     header: () => <Trans>Created</Trans>,
-    cell: info => (
-      <div className={'flex justify-center'}>
-        <span className='text-sm text-muted-foreground whitespace-nowrap'>
-          {info.row.original.createdAt}
+    cell: ({ row }) => (
+      <div className='flex justify-center'>
+        <span className='text-sm whitespace-nowrap text-muted-foreground'>
+          {formatDay(row.original.createdAt)}
         </span>
       </div>
     ),
-    size: 100,
-  }),
-  columnHelper.accessor('id', {
+    size: 180,
+    minSize: 160,
+  },
+  {
+    id: 'actions',
     header: () => <Trans>Actions</Trans>,
-    cell: info => (
-      <div className='flex items-center justify-center gap-1 shrink-0'>
+    cell: ({ row }) => (
+      <div className='flex shrink-0 items-center justify-center gap-1'>
         <Button
           onClick={e => {
             e.stopPropagation();
             e.preventDefault();
-            onDelete(info.row.original.id);
+            onDelete(row.original.id);
           }}
           type='button'
           variant='ghost'
@@ -70,5 +75,6 @@ export const createCredentialsColumns = ({ onDelete }: SecretColumnsMetadata) =>
       </div>
     ),
     size: 100,
-  }),
+    minSize: 100,
+  },
 ];

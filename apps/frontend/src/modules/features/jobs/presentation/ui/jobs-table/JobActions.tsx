@@ -7,9 +7,9 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/dropdown-menu';
 import { Eye, Trash, MoreHorizontal, TerminalSquare } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
-import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
+import { useCompactContainer } from '@shared/presentation/hooks/use-compact-container.ts';
 import { Permission } from '@platform/authz';
 import { useCan } from '@platform/authz';
 
@@ -24,27 +24,9 @@ type JobActionsProps = {
  * Automatically switches to dropdown mode when space is limited
  */
 export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isCompact, setIsCompact] = useState(false);
-
   const canViewLogs = useCan(Permission.READ_JOB_LOGS);
   const canDelete = useCan(Permission.DELETE_JOB);
-
-  useEffect(() => {
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        setIsCompact(entry.contentRect.width < 70);
-      }
-    });
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+  const { containerRef, isCompact } = useCompactContainer();
 
   return (
     <div ref={containerRef} className='flex w-full items-center justify-center gap-2 shrink-0'>
@@ -61,10 +43,14 @@ export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-40'>
-            {onView && (
-              <DropdownMenuItem onClick={onView}>
-                <Eye className='w-4 h-4 mr-2' />
-                <Trans>View</Trans>
+            <DropdownMenuItem onClick={onView}>
+              <Eye className='w-4 h-4 mr-2' />
+              <Trans>View</Trans>
+            </DropdownMenuItem>
+            {canViewLogs && (
+              <DropdownMenuItem onClick={onOpenJobLog}>
+                <TerminalSquare className='w-4 h-4 mr-2' />
+                <Trans>Open logs</Trans>
               </DropdownMenuItem>
             )}
             {canDelete && (

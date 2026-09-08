@@ -63,11 +63,11 @@ msgstr "Continuer"
 msgid "Copied"
 msgstr "Copié"
 
-#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:74
+#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:75
 msgid "Copied!"
 msgstr "Copié !"
 
-#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:74
+#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:75
 #: src/modules/shared/presentation/ui/shadcn/code-snippet.tsx:89
 msgid "Copy"
 msgstr "Copier"
@@ -137,7 +137,7 @@ msgstr "Suivant"
 msgid "No data"
 msgstr "Aucune donnée"
 
-#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:179
+#: src/modules/shared/presentation/ui/data-display/DataTable.tsx:218
 msgid "No results."
 msgstr "Aucun résultat."
 

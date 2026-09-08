@@ -23,7 +23,7 @@ msgstr "{0} / {total} nœuds ({1} %)"
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:32
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:34
 msgid "agent disconnected mid-run"
 msgstr "agent déconnecté en cours d'exécution"
 
@@ -39,12 +39,12 @@ msgstr "Copier l'ID"
 msgid "Created"
 msgstr "Créé"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:73
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:93
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:59
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:79
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:81
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:80
 msgid "Delete Job"
 msgstr "Supprimer le job"
 
@@ -95,7 +95,8 @@ msgstr "Aucun nœud"
 msgid "Node Executions ({0})"
 msgstr "Exécutions de nœuds ({0})"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:85
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:53
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:71
 msgid "Open logs"
 msgstr "Ouvrir les journaux"
 
@@ -107,7 +108,7 @@ msgstr "L'identifiant de pipeline est manquant"
 msgid "Pipeline ID: {pipelineId}"
 msgstr "ID de pipeline : {pipelineId}"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:28
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:29
 msgid "queued — waiting for an agent"
 msgstr "en file — en attente d'un agent"
 
@@ -145,8 +146,8 @@ msgstr "Flux de sortie en direct"
 msgid "Timeline"
 msgstr "Chronologie"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:67
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:80
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:48
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:66
 msgid "View"
 msgstr "Voir"
 

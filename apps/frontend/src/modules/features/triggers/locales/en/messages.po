@@ -30,7 +30,7 @@ msgstr "5-field cron (min hour day month weekday), evaluated in your local time.
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "A trigger starts a run of this pipeline automatically."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:77
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:81
 msgid "Actions"
 msgstr "Actions"
 
@@ -87,7 +87,8 @@ msgstr "Daily"
 msgid "Day {0} of each month at {time}"
 msgstr "Day {0} of each month at {time}"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:35
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:60
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:76
 msgid "Delete"
 msgstr "Delete"
 
@@ -99,7 +100,8 @@ msgstr "disabled"
 msgid "disabled — URL returns 404"
 msgstr "disabled — URL returns 404"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:32
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:56
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:73
 msgid "Edit"
 msgstr "Edit"
 
@@ -111,7 +113,7 @@ msgstr "Edit trigger"
 msgid "enabled"
 msgstr "enabled"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:60
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:63
 msgid "Enabled"
 msgstr "Enabled"
 
@@ -136,7 +138,8 @@ msgstr "Every hour"
 msgid "Every hour at :{0}"
 msgstr "Every hour at :{0}"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:28
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:52
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:68
 msgid "Fire now"
 msgstr "Fire now"
 
@@ -258,11 +261,11 @@ msgstr "Schedule"
 msgid "Signature header"
 msgstr "Signature header"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:48
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:49
 msgid "Source"
 msgstr "Source"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:56
 msgid "Status"
 msgstr "Status"
 

@@ -7,9 +7,9 @@ import {
 } from '@shadcn/dropdown-menu.tsx';
 import { EditIcon, PlayIcon, MoreHorizontal, ListChecks, Loader2, Copy, Zap } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
-import { useRef, useState, useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
+import { useCompactContainer } from '@shared/presentation/hooks/use-compact-container.ts';
 import { Permission } from '@platform/authz';
 import { useCan } from '@platform/authz';
 
@@ -38,8 +38,7 @@ export const PipelineActions = ({
   isRunning,
   isDuplicating,
 }: PipelineActionsProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isCompact, setIsCompact] = useState(false);
+  const { containerRef, isCompact } = useCompactContainer();
 
   // Gate each action by the permission it needs, in the current project context.
   const canRun = useCan(Permission.RUN_PIPELINE);
@@ -47,22 +46,6 @@ export const PipelineActions = ({
   const canDuplicate = useCan(Permission.CREATE_PIPELINE);
   const canManageTriggers = useCan(Permission.MANAGE_TRIGGERS);
   const showTriggers = !!onViewTriggers && canManageTriggers;
-
-  useEffect(() => {
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        setIsCompact(entry.contentRect.width < 70);
-      }
-    });
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
 
   return (
     <div ref={containerRef} className='flex w-full items-center justify-center gap-2 shrink-0'>
@@ -129,7 +112,9 @@ export const PipelineActions = ({
             />
           )}
 
-          {canEdit && <IconButton icon={EditIcon} tooltip={<Trans>Edit pipeline</Trans>} onClick={onEdit} />}
+          {canEdit && (
+            <IconButton icon={EditIcon} tooltip={<Trans>Edit pipeline</Trans>} onClick={onEdit} />
+          )}
 
           {canDuplicate && (
             <IconButton

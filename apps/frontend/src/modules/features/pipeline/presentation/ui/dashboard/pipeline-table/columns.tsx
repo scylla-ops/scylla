@@ -31,7 +31,8 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       const lastJob = meta.jobsByPipelineId.get(row.original.id)?.[0];
       return <PipelineStatus status={toStatusState(lastJob?.status)} pipeline={row.original} />;
     },
-    size: 350,
+    size: 280,
+    minSize: 250,
   },
   {
     id: 'history',
@@ -48,7 +49,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
         />
       );
     },
-    size: 400,
+    minSize: 180,
   },
   {
     id: 'metadata',
@@ -58,6 +59,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       return <PipelineLastJob jobs={jobs} />;
     },
     size: 200,
+    minSize: 180,
   },
   {
     id: 'actions',
@@ -89,5 +91,6 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
       />
     ),
     size: 200,
+    minSize: 80,
   },
 ];

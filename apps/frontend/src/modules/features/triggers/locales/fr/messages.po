@@ -30,7 +30,7 @@ msgstr "Cron en 5 champs (min heure jour mois jour de semaine), évalué selon v
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "Un déclencheur lance automatiquement une exécution de ce pipeline."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:77
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:81
 msgid "Actions"
 msgstr "Actions"
 
@@ -87,7 +87,8 @@ msgstr "Tous les jours"
 msgid "Day {0} of each month at {time}"
 msgstr "Le {0} de chaque mois à {time}"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:35
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:60
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:76
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -99,7 +100,8 @@ msgstr "désactivé"
 msgid "disabled — URL returns 404"
 msgstr "désactivé — l'URL renvoie 404"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:32
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:56
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:73
 msgid "Edit"
 msgstr "Modifier"
 
@@ -111,7 +113,7 @@ msgstr "Modifier le déclencheur"
 msgid "enabled"
 msgstr "activé"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:60
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:63
 msgid "Enabled"
 msgstr "Activé"
 
@@ -136,7 +138,8 @@ msgstr "Toutes les heures"
 msgid "Every hour at :{0}"
 msgstr "Toutes les heures à :{0}"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:28
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:52
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerActions.tsx:68
 msgid "Fire now"
 msgstr "Déclencher maintenant"
 
@@ -258,11 +261,11 @@ msgstr "Planification"
 msgid "Signature header"
 msgstr "En-tête de signature"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:48
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:49
 msgid "Source"
 msgstr "Source"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:56
 msgid "Status"
 msgstr "Statut"
 

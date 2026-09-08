@@ -15,21 +15,25 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntit
     id: 'username',
     header: () => <Trans>User</Trans>,
     cell: ({ row }) => (
-      <div className='flex flex-row items-center gap-2'>
-        <Avatar className='h-8 w-8 rounded-lg'>
+      <div className='flex w-full min-w-0 flex-row items-center gap-2'>
+        <Avatar className='h-8 w-8 shrink-0 rounded-lg'>
           <AvatarImage />
           <AvatarFallback className='rounded-lg'>
             {row.original.username.at(0)?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <span>{row.original.username}</span>
+        <span className='truncate'>{row.original.username}</span>
       </div>
     ),
+    // No size: the username takes whatever the sized columns leave.
+    minSize: 200,
   },
   {
     id: 'creationDate',
     header: () => <Trans>Created at</Trans>,
-    cell: ({ row }) => <span>{formatDate(row.original.createdAt)}</span>,
+    cell: ({ row }) => <span className='truncate'>{formatDate(row.original.createdAt)}</span>,
+    size: 200,
+    minSize: 150,
   },
   {
     id: 'actions',
@@ -44,5 +48,7 @@ export const createUserColumns = (meta: PipelineColumnMeta): ColumnDef<UserEntit
         }}
       />
     ),
+    // No minSize: the first column to give its width back on a narrow viewport.
+    size: 100,
   },
 ];

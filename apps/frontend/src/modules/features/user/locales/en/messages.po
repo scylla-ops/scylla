@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:36
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
 msgid "Actions"
 msgstr "Actions"
 
@@ -29,7 +29,7 @@ msgstr "Create a new user"
 msgid "Create User"
 msgstr "Create User"
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:31
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:33
 msgid "Created at"
 msgstr "Created at"
 
@@ -111,7 +111,7 @@ msgstr "Username"
 msgid "Users"
 msgstr "Users"
 
-#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:40
+#: src/modules/features/user/presentation/ui/admin/user-table/UserColumns.tsx:44
 msgid "View"
 msgstr "View"
 

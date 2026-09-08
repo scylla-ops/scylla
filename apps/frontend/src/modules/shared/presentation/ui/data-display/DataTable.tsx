@@ -31,11 +31,47 @@ const alignClass: Record<ColumnAlign, string> = {
   right: 'text-right',
 };
 
+const headAlignClass: Record<ColumnAlign, string> = {
+  left: 'justify-start',
+  center: 'justify-center',
+  right: 'justify-end',
+};
+
 const cellAlignClass: Record<ColumnAlign, string> = {
   left: '',
   center: 'flex items-center justify-center',
   right: 'flex items-center justify-end',
 };
+
+/**
+ * One grid track per column.
+ *
+ * A CSS table cannot express this: `table-layout: fixed` ignores `min-width` on
+ * cells entirely, and `auto` never shrinks a column below its content. `minmax()`
+ * gives every column a real floor:
+ *
+ * - `size` set       → `minmax(minSize, size)` — grows up to `size`, shrinks back to
+ *   `minSize`, i.e. down to nothing when no `minSize` is declared.
+ * - `size` undefined → `minmax(minSize, 1fr)` — absorbs all the leftover space.
+ *
+ * When no column is flexible, each track becomes `${size}fr` instead so the table
+ * still fills its container, sharing the width proportionally as a fixed table
+ * layout would — otherwise the columns would leave a gap on the right.
+ *
+ * Read from the `columns` prop, never from `column.columnDef`: TanStack defaults
+ * the latter to `size: 150, minSize: 20`, which makes "unspecified" unreadable.
+ */
+function buildGridTemplate(columns: { size?: number; minSize?: number }[]): string {
+  const hasFlexibleColumn = columns.some(column => column.size === undefined);
+
+  return columns
+    .map(({ size, minSize }) => {
+      const min = `${minSize ?? 0}px`;
+      if (size === undefined) return `minmax(${min}, 1fr)`;
+      return `minmax(${min}, ${hasFlexibleColumn ? `${size}px` : `${size}fr`})`;
+    })
+    .join(' ');
+}
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -47,13 +83,6 @@ interface DataTableProps<TData, TValue> {
   isRowExpanded?: (row: TData) => boolean;
   alignColumnsCenter?: boolean;
   alignRowsCenter?: boolean;
-  /**
-   * Use a fixed table layout so the table honours its `w-full` width instead of
-   * growing to fit cell content. Needed when a cell (e.g. expanded row content)
-   * can be wider than the viewport and should scroll internally rather than
-   * widening the whole table.
-   */
-  tableLayoutFixed?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -66,7 +95,6 @@ export function DataTable<TData, TValue>({
   isRowExpanded,
   alignRowsCenter = false,
   alignColumnsCenter = false,
-  tableLayoutFixed = false,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -75,35 +103,44 @@ export function DataTable<TData, TValue>({
     getRowId,
   });
 
+  const gridTemplateColumns = buildGridTemplate(columns);
+  // Below the summed minimums the tracks overflow the container; pinning the table
+  // to that width keeps the header and row backgrounds under them while scrolling.
+  const minTableWidth = columns.reduce((total, column) => total + (column.minSize ?? 0), 0);
+
   return (
     <div className='h-full w-full overflow-auto rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-16px_oklch(0_0_0/0.18)]'>
-      {/* border-separate keeps the sticky header's hairline attached while scrolling —
-          with border-collapse the browser drops cell borders on a sticky thead. */}
+      {/* Rows are CSS grids, not table rows — see buildGridTemplate. The table,
+          thead and tbody stay plain blocks so the sticky header keeps the whole
+          table as its containing block (a grid item is trapped in its own area).
+          `display` other than `table-*` drops the implicit ARIA roles: restate them. */}
       <table
-        className={cn(
-          'w-full caption-bottom border-separate border-spacing-0 text-sm',
-          tableLayoutFixed && 'table-fixed',
-        )}
+        role='table'
+        className='block w-full text-sm'
+        style={{ minWidth: minTableWidth > 0 ? `${minTableWidth}px` : undefined }}
       >
-        <TableHeader>
+        <TableHeader
+          role='rowgroup'
+          className='sticky top-0 z-10 block bg-card/80 shadow-[inset_0_-1px_0_0_var(--border)] backdrop-blur-xl'
+        >
           {table.getHeaderGroups().map(headerGroup => (
-            <TableRow key={headerGroup.id} className='hover:bg-transparent'>
+            <TableRow
+              key={headerGroup.id}
+              role='row'
+              className='grid hover:bg-transparent'
+              style={{ gridTemplateColumns }}
+            >
               {headerGroup.headers.map(header => {
                 const align =
                   header.column.columnDef.meta?.align ?? (alignColumnsCenter ? 'center' : 'left');
                 return (
                   <TableHead
                     key={header.id}
-                    style={{
-                      width: header.getSize() !== 150 ? `${header.getSize()}px` : 'auto',
-                      minWidth: header.column.columnDef.minSize
-                        ? `${header.column.columnDef.minSize}px`
-                        : undefined,
-                    }}
+                    role='columnheader'
                     className={cn(
-                      'sticky top-0 z-10 h-11 bg-card/80 px-5 text-[0.6875rem] font-semibold tracking-[0.08em] text-muted-foreground/90 uppercase backdrop-blur-xl',
-                      'shadow-[inset_0_-1px_0_0_var(--border)]',
+                      'flex h-11 min-w-0 items-center overflow-hidden px-5 text-[0.6875rem] font-semibold tracking-[0.08em] text-muted-foreground/90 uppercase',
                       alignClass[align],
+                      headAlignClass[align],
                     )}
                   >
                     {header.isPlaceholder
@@ -116,7 +153,7 @@ export function DataTable<TData, TValue>({
           ))}
         </TableHeader>
 
-        <TableBody>
+        <TableBody role='rowgroup' className='block'>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map(row => {
               const isSelected = isRowSelected?.(row.original) ?? false;
@@ -125,10 +162,12 @@ export function DataTable<TData, TValue>({
               return (
                 <React.Fragment key={row.id}>
                   <TableRow
+                    role='row'
                     data-state={isSelected ? 'selected' : undefined}
                     onClick={() => onRowClick?.(row)}
+                    style={{ gridTemplateColumns }}
                     className={cn(
-                      'transition-colors duration-150',
+                      'grid transition-colors duration-150',
                       onRowClick && 'cursor-pointer',
                       onRowClick && !isSelected && 'hover:bg-muted/40',
                       // Inset shadow rather than a left border: the accent bar appears
@@ -137,22 +176,19 @@ export function DataTable<TData, TValue>({
                         '[&>td]:bg-primary/[0.07] [&>td:first-child]:shadow-[inset_3px_0_0_0_var(--primary)] hover:[&>td]:bg-primary/[0.1]',
                     )}
                   >
-                    {row.getVisibleCells().map((cell, index) => {
-                      const header = table.getHeaderGroups()[0].headers[index];
+                    {row.getVisibleCells().map(cell => {
                       const align =
                         cell.column.columnDef.meta?.align ?? (alignRowsCenter ? 'center' : 'left');
                       return (
                         <TableCell
                           key={cell.id}
-                          style={{
-                            width: header.getSize() !== 150 ? `${header.getSize()}px` : 'auto',
-                            minWidth: header.column.columnDef.minSize
-                              ? `${header.column.columnDef.minSize}px`
-                              : undefined,
-                          }}
-                          className={cn('px-5 py-3.5', alignClass[align])}
+                          role='cell'
+                          className={cn(
+                            'flex min-w-0 items-center overflow-hidden px-5 py-3.5',
+                            alignClass[align],
+                          )}
                         >
-                          <div className={cn(cellAlignClass[align])}>
+                          <div className={cn('w-full min-w-0', cellAlignClass[align])}>
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </div>
                         </TableCell>
@@ -161,8 +197,11 @@ export function DataTable<TData, TValue>({
                   </TableRow>
 
                   {isExpanded && expandedContent && (
-                    <TableRow key={`${row.id}-expanded`} className='hover:bg-transparent'>
-                      <TableCell colSpan={columns.length} className='bg-muted/30 p-0'>
+                    <TableRow
+                      role='row'
+                      className='grid grid-cols-[minmax(0,1fr)] hover:bg-transparent'
+                    >
+                      <TableCell role='cell' className='min-w-0 overflow-hidden bg-muted/30 p-0'>
                         {expandedContent(row)}
                       </TableCell>
                     </TableRow>
@@ -171,10 +210,10 @@ export function DataTable<TData, TValue>({
               );
             })
           ) : (
-            <TableRow className='hover:bg-transparent'>
+            <TableRow role='row' className='grid grid-cols-[minmax(0,1fr)] hover:bg-transparent'>
               <TableCell
-                colSpan={columns.length}
-                className='h-28 text-center text-sm text-muted-foreground'
+                role='cell'
+                className='flex h-28 items-center justify-center text-sm text-muted-foreground'
               >
                 <Trans>No results.</Trans>
               </TableCell>
