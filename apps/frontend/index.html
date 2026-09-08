@@ -1,6 +1,29 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (() => {
+        const theme = localStorage.getItem('scylla-theme');
+        document.documentElement.classList.toggle(
+                'dark',
+                theme !== 'light'
+        );
+      })();
+    </script>
+    <style>
+      html {
+        background: #1C1C1A;
+      }
+
+      html:not(.dark) {
+        background: #F4F7EB;
+      }
+
+      body {
+        margin: 0;
+        background: inherit;
+      }
+    </style>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/Scylla_Beta_Log.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

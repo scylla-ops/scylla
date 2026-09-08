@@ -8,6 +8,7 @@ import { modules } from '@core/di/registry.ts';
 import { ContextCleanerWrapper } from './ContextCleaner.wrapper.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx';
+import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 
 /**
  * The application shell.
@@ -22,46 +23,52 @@ import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper.tsx'
  * wrapping its own element.
  */
 export const CoreRouter = createBrowserRouter([
-  ...routesFor(modules, 'public'),
-
   {
-    element: <AuthGuard />,
+    HydrateFallback: ScyllaLoadingScreen,
     children: [
+      ...routesFor(modules, 'public'),
+      ...routesFor(modules, 'public'),
+
       {
-        element: <Layout navEntries={navEntriesFor(modules)} />,
+        element: <AuthGuard />,
         children: [
           {
-            index: true,
-            element: <OrganizationRedirectWrapper />,
-          },
-          {
-            path: '/:organizationSlug',
-            element: <OrganizationSyncWrapper />,
+            element: <Layout navEntries={navEntriesFor(modules)} />,
             children: [
               {
-                element: <RouteGuard />,
+                index: true,
+                element: <OrganizationRedirectWrapper />,
+              },
+              {
+                path: '/:organizationSlug',
+                element: <OrganizationSyncWrapper />,
                 children: [
-                  ...routesFor(modules, 'organization'),
                   {
-                    path: 'projects',
-                    handle: { breadcrumb: () => ({ label: msg`Projects` }) },
+                    element: <RouteGuard />,
                     children: [
-                      ...routesFor(modules, 'projects'),
+                      ...routesFor(modules, 'organization'),
                       {
-                        //TODO: add a loader here to resolve project and pipeline
-                        // names from ids for the breadcrumbs
-                        path: ':projectId',
-                        element: <ContextCleanerWrapper />,
-                        handle: {
-                          breadcrumb: ({ projectName }: { projectName?: string }) => ({
-                            label: msg`Project`,
-                            highlight: projectName,
-                          }),
-                        },
+                        path: 'projects',
+                        handle: { breadcrumb: () => ({ label: msg`Projects` }) },
                         children: [
+                          ...routesFor(modules, 'projects'),
                           {
-                            element: <RouteGuard />,
-                            children: routesFor(modules, 'project'),
+                            //TODO: add a loader here to resolve project and pipeline
+                            // names from ids for the breadcrumbs
+                            path: ':projectId',
+                            element: <ContextCleanerWrapper />,
+                            handle: {
+                              breadcrumb: ({ projectName }: { projectName?: string }) => ({
+                                label: msg`Project`,
+                                highlight: projectName,
+                              }),
+                            },
+                            children: [
+                              {
+                                element: <RouteGuard />,
+                                children: routesFor(modules, 'project'),
+                              },
+                            ],
                           },
                         ],
                       },
@@ -73,11 +80,11 @@ export const CoreRouter = createBrowserRouter([
           },
         ],
       },
-    ],
-  },
 
-  {
-    path: '*',
-    element: <Navigate to='/login' replace />,
+      {
+        path: '*',
+        element: <Navigate to='/login' replace />,
+      },
+    ],
   },
 ]);
