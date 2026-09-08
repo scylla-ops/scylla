@@ -12,7 +12,7 @@ export const RoleDetailPermissions = ({ role }: RoleDetailPermissionsProps) => {
 
   return (
     <section className='flex flex-col gap-2'>
-      <h3 className='text-xs font-semibold uppercase tracking-wider text-slate-500'>
+      <h3 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
         <Trans>Permissions</Trans>
       </h3>
       {role.access.kind === 'fullControl' ? (
