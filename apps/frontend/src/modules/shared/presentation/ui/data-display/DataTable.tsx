@@ -76,13 +76,18 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className='w-full h-full border border-border bg-card shadow-sm rounded-xl overflow-auto'>
+    <div className='h-full w-full overflow-auto rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-16px_oklch(0_0_0/0.18)]'>
+      {/* border-separate keeps the sticky header's hairline attached while scrolling —
+          with border-collapse the browser drops cell borders on a sticky thead. */}
       <table
-        className={cn('w-full caption-bottom text-sm relative', tableLayoutFixed && 'table-fixed')}
+        className={cn(
+          'w-full caption-bottom border-separate border-spacing-0 text-sm',
+          tableLayoutFixed && 'table-fixed',
+        )}
       >
-        <TableHeader className='bg-muted/70 sticky top-0 z-10'>
+        <TableHeader>
           {table.getHeaderGroups().map(headerGroup => (
-            <TableRow key={headerGroup.id} className='hover:bg-transparent border-b border-border'>
+            <TableRow key={headerGroup.id} className='hover:bg-transparent'>
               {headerGroup.headers.map(header => {
                 const align =
                   header.column.columnDef.meta?.align ?? (alignColumnsCenter ? 'center' : 'left');
@@ -96,7 +101,8 @@ export function DataTable<TData, TValue>({
                         : undefined,
                     }}
                     className={cn(
-                      'h-12 px-4 text-muted-foreground font-semibold bg-muted/70 text-xs uppercase tracking-wider',
+                      'sticky top-0 z-10 h-11 bg-card/80 px-5 text-[0.6875rem] font-semibold tracking-[0.08em] text-muted-foreground/90 uppercase backdrop-blur-xl',
+                      'shadow-[inset_0_-1px_0_0_var(--border)]',
                       alignClass[align],
                     )}
                   >
@@ -122,11 +128,13 @@ export function DataTable<TData, TValue>({
                     data-state={isSelected ? 'selected' : undefined}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      'border-b [&>td:first-child]:border-l-[3px] border-border/70 [&>td:first-child]:border-l-transparent transition-colors duration-150',
+                      'transition-colors duration-150',
                       onRowClick && 'cursor-pointer',
-                      onRowClick && !isSelected && 'hover:bg-muted/50',
+                      onRowClick && !isSelected && 'hover:bg-muted/40',
+                      // Inset shadow rather than a left border: the accent bar appears
+                      // without shifting the first column by its width.
                       isSelected &&
-                        '[&>td]:bg-primary/6 [&>td:first-child]:border-l-[3px] [&>td:first-child]:border-l-primary hover:bg-primary/9',
+                        '[&>td]:bg-primary/[0.07] [&>td:first-child]:shadow-[inset_3px_0_0_0_var(--primary)] hover:[&>td]:bg-primary/[0.1]',
                     )}
                   >
                     {row.getVisibleCells().map((cell, index) => {
@@ -142,7 +150,7 @@ export function DataTable<TData, TValue>({
                               ? `${header.column.columnDef.minSize}px`
                               : undefined,
                           }}
-                          className={cn('px-4 py-4', alignClass[align])}
+                          className={cn('px-5 py-3.5', alignClass[align])}
                         >
                           <div className={cn(cellAlignClass[align])}>
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -153,11 +161,8 @@ export function DataTable<TData, TValue>({
                   </TableRow>
 
                   {isExpanded && expandedContent && (
-                    <TableRow
-                      key={`${row.id}-expanded`}
-                      className='border-b border-border bg-muted/50'
-                    >
-                      <TableCell colSpan={columns.length} className='p-0'>
+                    <TableRow key={`${row.id}-expanded`} className='hover:bg-transparent'>
+                      <TableCell colSpan={columns.length} className='bg-muted/30 p-0'>
                         {expandedContent(row)}
                       </TableCell>
                     </TableRow>
@@ -166,10 +171,10 @@ export function DataTable<TData, TValue>({
               );
             })
           ) : (
-            <TableRow>
+            <TableRow className='hover:bg-transparent'>
               <TableCell
                 colSpan={columns.length}
-                className='h-24 text-center text-muted-foreground'
+                className='h-28 text-center text-sm text-muted-foreground'
               >
                 <Trans>No results.</Trans>
               </TableCell>
