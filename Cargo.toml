@@ -18,6 +18,15 @@ futures-util = "0.3"
 
 # grpc / proto
 tonic = { version = "0.14", features = ["server"] }
+# `default-features = false` matters: tokio-rustls defaults to the aws-lc-rs
+# provider, which is not in Cargo.lock and needs a C/NASM toolchain — it would
+# break the linux/arm64 leg of a buildx release. `ring` is what the rest of the
+# graph already resolves to.
+tokio-rustls = { version = "0.26", default-features = false, features = [
+    "ring",
+    "logging",
+    "tls12",
+] }
 tonic-web = "0.14"
 tonic-prost = "0.14"
 tonic-reflection = "0.14"

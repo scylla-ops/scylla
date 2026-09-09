@@ -81,6 +81,24 @@ just ui-build
 cargo build --release -p scylla-control-plane
 ```
 
+## TLS
+
+The control plane speaks plain HTTP by default, on the assumption that a reverse
+proxy or ingress terminates TLS in front of it. To terminate it in the binary
+instead, point `[server.tls]` at a PEM chain and key:
+
+```toml
+[server]
+address = "0.0.0.0:8443"
+
+[server.tls]
+cert = "/etc/scylla/tls/fullchain.pem"
+key  = "/etc/scylla/tls/privkey.pem"
+```
+
+Both HTTP/2 and HTTP/1.1 are advertised over ALPN, so browsers, gRPC clients and
+plain HTTP/1.1 webhook senders all connect to the same socket.
+
 ## Common commands
 
 | `just`        | `docker compose`                  | What it does                                  |

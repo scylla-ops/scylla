@@ -73,7 +73,13 @@ bon.workspace = true
 futures-core.workspace = true
 
 # grpc
-tonic.workspace = true
+# `tls-connect-info` is what gives us `impl Connected for TlsStream<TcpStream>`,
+# the bound `serve_with_incoming_shutdown` needs to accept our own rustls
+# acceptor. Declared here rather than left to feature unification with
+# scylla-agent: the Dockerfile builds `-p scylla-control-plane`, which does not
+# unify with a sibling package.
+tonic = { workspace = true, features = ["tls-connect-info"] }
+tokio-rustls.workspace = true
 tonic-web.workspace = true
 tonic-reflection.workspace = true
 tonic-async-interceptor.workspace = true

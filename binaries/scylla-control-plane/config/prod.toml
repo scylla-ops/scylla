@@ -3,6 +3,12 @@
 # inbound webhook ingress. Terminate TLS in front, or set [server.tls].
 address = "0.0.0.0:8080"
 
+# Terminate TLS here instead of upstream. Both HTTP/2 and HTTP/1.1 are offered
+# over ALPN, so browsers, gRPC clients and plain webhook senders all connect.
+# [server.tls]
+# cert = "/etc/scylla/tls/fullchain.pem"
+# key  = "/etc/scylla/tls/privkey.pem"
+
 [webhook]
 # Base URL advertised in TriggerView.webhook_url. Set it to the public origin of
 # this instance, or webhook triggers show an empty URL in the UI.

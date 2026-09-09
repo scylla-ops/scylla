@@ -28,6 +28,7 @@ pub mod error;
 pub mod rest;
 pub mod runtime;
 pub mod startup;
+pub mod tls;
 
 pub mod grpc;
 

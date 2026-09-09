@@ -830,19 +830,32 @@ where
     // catch-all that came with tonic's `Routes`. It must stay last.
     let app = crate::rest::ui::attach(grpc.merge(http), &config.ui);
 
-    tracing::info!("server listening on {}", config.server.address);
-
     // CORS stays outermost, as it was. It is no longer load-bearing for the UI —
     // same origin now — but third-party API clients and the Vite dev server on
     // :5173 still rely on it.
     let mut server = Server::builder()
         .accept_http1(true)
         .layer(build_cors_layer(&config.cors));
+    let router = server.add_routes(Routes::from(app));
 
-    server
-        .add_routes(Routes::from(app))
-        .serve_with_shutdown(config.server.address, shutdown)
-        .await?;
+    match config.server.tls.as_ref() {
+        None => {
+            tracing::info!("server listening on http://{}", config.server.address);
+            router
+                .serve_with_shutdown(config.server.address, shutdown)
+                .await?;
+        }
+        // Our own acceptor rather than `Server::tls_config`, so the ALPN list can
+        // include http/1.1 — see the module docs on `crate::tls`.
+        Some(tls) => {
+            let incoming =
+                crate::tls::incoming(config.server.address, crate::tls::acceptor(tls)?).await?;
+            tracing::info!("server listening on https://{}", config.server.address);
+            router
+                .serve_with_incoming_shutdown(incoming, shutdown)
+                .await?;
+        }
+    }
 
     Ok(())
 }

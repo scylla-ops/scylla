@@ -111,6 +111,18 @@ fn default_smtp_port() -> u16 {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServerConfig {
     pub address: SocketAddr,
+
+    /// Terminate TLS here. Absent means plain HTTP, which is the right answer
+    /// whenever a reverse proxy or an ingress already terminates it upstream.
+    #[serde(default)]
+    pub tls: Option<TlsConfig>,
+}
+
+/// PEM certificate chain and private key for [`ServerConfig::tls`].
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TlsConfig {
+    pub cert: PathBuf,
+    pub key: PathBuf,
 }
 
 /// Web UI serving. The SPA is compiled into the binary, so the common case is
@@ -239,6 +251,7 @@ impl Default for ServerConfig {
     fn default() -> Self {
         Self {
             address: SocketAddr::from(([127, 0, 0, 1], 8080)),
+            tls: None,
         }
     }
 }

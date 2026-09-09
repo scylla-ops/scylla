@@ -44,8 +44,8 @@ pub enum StartupError {
     Bootstrap(#[from] BootstrapError),
     #[error("gRPC reflection: {0}")]
     Reflection(String),
-    #[error("gRPC serve: {0}")]
+    #[error("serve: {0}")]
     Serve(#[from] tonic::transport::Error),
-    #[error("webhook server: {0}")]
-    Webhook(String),
+    #[error("tls: {0}")]
+    Tls(String),
 }
