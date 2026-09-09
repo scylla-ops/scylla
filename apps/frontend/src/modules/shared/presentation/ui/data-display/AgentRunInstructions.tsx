@@ -102,7 +102,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
       <p className='text-xs text-muted-foreground leading-normal'>
         <Trans>
           Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for
-          example http://localhost:50051 on the same machine, or http://host.docker.internal:50051
+          example http://localhost:8080 on the same machine, or http://host.docker.internal:8080
           from inside Docker.
         </Trans>
       </p>

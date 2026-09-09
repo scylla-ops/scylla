@@ -3,12 +3,18 @@ use crate::infrastructure::DatabaseConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::net::SocketAddr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ControlPlaneConfig {
+    /// The one listener. `alias = "grpc"` so a config file written for the
+    /// pre-merge layout (when this was the gRPC-only port) still loads.
+    #[serde(default, alias = "grpc")]
+    pub server: ServerConfig,
+
+    /// Web UI. Absent means "serve the copy embedded in this binary".
     #[serde(default)]
-    pub grpc: GrpcConfig,
+    pub ui: UiConfig,
 
     #[serde(default)]
     pub database: DatabaseConfig,
@@ -35,19 +41,16 @@ pub struct ControlPlaneConfig {
     #[serde(default)]
     pub secrets: Option<SecretsConfig>,
 
-    /// Inbound webhook ingress (a separate HTTP listener). When absent, no
-    /// webhook server is started and webhook triggers can only be fired manually.
+    /// Inbound webhook ingress. The route itself is always mounted on the main
+    /// listener; this section only carries the URL advertised to users.
     #[serde(default)]
     pub webhook: Option<WebhookConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WebhookConfig {
-    /// Address the webhook HTTP server binds to, e.g. `0.0.0.0:8088`.
-    pub address: SocketAddr,
-
     /// Public base URL advertised in `TriggerView.webhook_url`, e.g.
-    /// `https://hooks.example.com`. When absent, `webhook_url` is left empty.
+    /// `https://scylla.example.com`. When absent, `webhook_url` is left empty.
     #[serde(default)]
     pub public_base_url: Option<String>,
 }
@@ -102,9 +105,41 @@ fn default_smtp_port() -> u16 {
     465
 }
 
+/// The single listener: web UI, gRPC, gRPC-Web, reflection and webhook ingress
+/// all share it. Splitting them across ports is what forced CORS on the browser
+/// and froze the API URL into the frontend bundle.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GrpcConfig {
+pub struct ServerConfig {
     pub address: SocketAddr,
+}
+
+/// Web UI serving. The SPA is compiled into the binary, so the common case is
+/// an empty section.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UiConfig {
+    /// Serve the web UI at all. Turn it off to run the API alone — the case that
+    /// matters is `pnpm dev`, where Vite owns the UI on :5173 and the binary has
+    /// no `dist/` to serve. `--no-ui` on the command line forces this to false.
+    #[serde(default = "enabled_by_default")]
+    pub enabled: bool,
+
+    /// Serve this directory instead of the embedded assets. An escape hatch for
+    /// swapping the UI without a rebuild; absent is the normal case.
+    #[serde(default)]
+    pub dir: Option<PathBuf>,
+}
+
+fn enabled_by_default() -> bool {
+    true
+}
+
+impl Default for UiConfig {
+    fn default() -> Self {
+        Self {
+            enabled: enabled_by_default(),
+            dir: None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -200,10 +235,10 @@ fn default_max_age() -> u64 {
     600
 }
 
-impl Default for GrpcConfig {
+impl Default for ServerConfig {
     fn default() -> Self {
         Self {
-            address: SocketAddr::from(([127, 0, 0, 1], 50051)),
+            address: SocketAddr::from(([127, 0, 0, 1], 8080)),
         }
     }
 }

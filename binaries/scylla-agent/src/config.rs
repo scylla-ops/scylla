@@ -8,7 +8,7 @@ pub struct AgentConfig {
     #[arg(
         long,
         env = "SCYLLA_CONTROL_PLANE_URL",
-        default_value = "http://127.0.0.1:50051"
+        default_value = "http://127.0.0.1:8080"
     )]
     pub control_plane_url: String,
 

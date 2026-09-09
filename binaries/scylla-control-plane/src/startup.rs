@@ -24,7 +24,6 @@ use crate::infrastructure::{
 use http::{HeaderName, HeaderValue, Method};
 use sqlx::PgPool;
 use std::future::Future;
-use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Notify;
 use tower_http::cors::CorsLayer;
@@ -595,9 +594,18 @@ pub async fn shutdown_signal() {
     }
 }
 
-// ── gRPC server ────────────────────────────────────────────────────────
+// ── The server ─────────────────────────────────────────────────────────
 
-pub async fn run_grpc<F>(
+/// Build every surface onto one axum router and serve it on one socket: the web
+/// UI, the gRPC API, its gRPC-Web translation, reflection, and the inbound
+/// webhook ingress.
+///
+/// The layering is the load-bearing part. `tonic_web::GrpcWebLayer` answers HTTP
+/// 400 to any HTTP/1.1 request that is not gRPC-Web, so it is scoped to the gRPC
+/// routes and never applied to the router as a whole — and because
+/// `Router::layer` wraps the fallback too, the UI fallback must be installed
+/// *after* that layer, which is what `rest::ui::attach` does last.
+pub async fn run_server<F>(
     config: &ControlPlaneConfig,
     services: &Services,
     shutdown: F,
@@ -638,6 +646,7 @@ where
         trigger::v1::trigger_service_server::TriggerServiceServer,
         user::v1::user_service_server::UserServiceServer,
     };
+    use tonic::service::Routes;
     use tonic::transport::Server;
     use tonic_async_interceptor::async_interceptor;
     use tonic_web::GrpcWebLayer;
@@ -683,10 +692,6 @@ where
         services.session_repo.clone(),
         services.app_token_repo.clone(),
     ));
-    let cors_layer = build_cors_layer(&config.cors);
-
-    tracing::info!("gRPC server listening on {}", config.grpc.address);
-
     // Expose BOTH reflection variants so any client works: v1 (current spec) and
     // v1alpha (older clients — grpcurl defaults, some MCP/reflection bridges).
     // They are distinct gRPC services (grpc.reflection.v1[alpha].ServerReflection),
@@ -775,12 +780,10 @@ where
         .layer(auth_interceptor.clone())
         .service(InvitationServiceServer::new(invitation_handler));
 
-    let router = Server::builder()
-        .accept_http1(true)
-        .layer(TraceLayer::new_for_grpc())
-        .layer(cors_layer)
-        .layer(GrpcWebLayer::new())
-        .add_service(reflection_v1)
+    // Collect the gRPC services into `Routes` rather than straight onto a tonic
+    // `Server`, so they can be merged with the HTTP surfaces into one router.
+    let mut grpc = Routes::builder();
+    grpc.add_service(reflection_v1)
         .add_service(reflection_v1alpha)
         .add_service(auth_service)
         .add_service(app_auth_service)
@@ -801,42 +804,45 @@ where
 
     // Public self-service signup — only registered when built with `register`.
     #[cfg(feature = "register")]
-    let router = router.add_service(registration_service);
+    grpc.add_service(registration_service);
 
     // GitHub OAuth is only registered when configured with credentials.
-    let router = match oauth_service {
-        Some(svc) => router.add_service(svc),
-        None => router,
-    };
+    if let Some(svc) = oauth_service {
+        grpc.add_service(svc);
+    }
 
-    router
-        .serve_with_shutdown(config.grpc.address, shutdown)
+    // Both layers are scoped to the gRPC routes: `GrpcWebLayer` because it 400s
+    // everything else, and the gRPC trace classifier because it reads
+    // `grpc-status` — on a static asset it would call every response a success.
+    let grpc = grpc
+        .routes()
+        .into_axum_router()
+        .layer(GrpcWebLayer::new())
+        .layer(TraceLayer::new_for_grpc());
+
+    // The plain-HTTP surfaces get the status-based classifier instead. The
+    // webhook router sets no fallback, so merging it into the tonic-derived
+    // router (which has one) is safe — axum only panics when both do.
+    let http = crate::rest::webhook::router(services.webhook_ingress_uc.clone())
+        .layer(TraceLayer::new_for_http());
+
+    // `attach` installs the UI as the fallback, replacing the `UNIMPLEMENTED`
+    // catch-all that came with tonic's `Routes`. It must stay last.
+    let app = crate::rest::ui::attach(grpc.merge(http), &config.ui);
+
+    tracing::info!("server listening on {}", config.server.address);
+
+    // CORS stays outermost, as it was. It is no longer load-bearing for the UI —
+    // same origin now — but third-party API clients and the Vite dev server on
+    // :5173 still rely on it.
+    let mut server = Server::builder()
+        .accept_http1(true)
+        .layer(build_cors_layer(&config.cors));
+
+    server
+        .add_routes(Routes::from(app))
+        .serve_with_shutdown(config.server.address, shutdown)
         .await?;
 
-    Ok(())
-}
-
-// ── Webhook ingress HTTP server ────────────────────────────────────────────
-
-/// Serve the inbound-webhook HTTP API on its own port until `shutdown` resolves.
-/// Separate from the gRPC server: a public, unauthenticated-at-the-edge surface
-/// (requests are authenticated per-trigger by HMAC inside the handler).
-pub async fn run_webhook<F>(
-    address: SocketAddr,
-    ingress: SharedWebhookIngressUc,
-    shutdown: F,
-) -> Result<(), StartupError>
-where
-    F: Future<Output = ()> + Send + 'static,
-{
-    let app = crate::rest::webhook::router(ingress);
-    let listener = tokio::net::TcpListener::bind(address)
-        .await
-        .map_err(|e| StartupError::Webhook(format!("bind {address}: {e}")))?;
-    tracing::info!("webhook ingress listening on {address}");
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown)
-        .await
-        .map_err(|e| StartupError::Webhook(e.to_string()))?;
     Ok(())
 }

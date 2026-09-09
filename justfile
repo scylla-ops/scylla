@@ -4,7 +4,6 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 DOCKER_USER  := env("DOCKER_USER", "godlyjaaaaj")
 VERSION      := env("VERSION", "latest")
-VITE_API_URL := env("VITE_API_URL", "http://localhost:50051")
 DATABASE_URL := env("DATABASE_URL", "postgres://scylla:scylla@localhost:5432/scylla")
 BUILDER      := env("BUILDER", "scylla-builder")
 
@@ -21,6 +20,15 @@ default:
     @just --list
 
 # -- Dev (local stack) --
+
+# A release `cargo build` compiles apps/frontend/dist into the control-plane
+# binary, so this has to run first when building outside Docker. The image does
+# it on its own, in the Dockerfile's `ui` stage.
+# Build the web UI into apps/frontend/dist (prerequisite of a native release build)
+[group('dev')]
+[no-exit-message]
+ui-build:
+    cd apps/frontend && pnpm install --frozen-lockfile && pnpm run build
 
 # Build all services for local dev (native arch)
 [group('dev')]
@@ -116,10 +124,10 @@ release-setup:
     docker buildx inspect {{BUILDER}} >/dev/null 2>&1 || docker buildx create --name {{BUILDER}} --driver docker-container --bootstrap
     @echo "✓ buildx builder '{{BUILDER}}' ready (remember: docker login)"
 
-# Build & push the full stack: control-plane + agent + frontend
+# Build & push everything. The web UI ships inside the control-plane image.
 [group('release')]
 [no-exit-message]
-release: (release-svc "scylla-control-plane") (release-svc "scylla-agent") release-frontend
+release: (release-svc "scylla-control-plane") (release-svc "scylla-agent")
 
 # Build & push the backend services (control-plane + agent)
 [group('release')]
@@ -131,20 +139,9 @@ release-backend: (release-svc "scylla-control-plane") (release-svc "scylla-agent
 [no-exit-message]
 release-svc pkg: _info
     docker buildx build --builder {{BUILDER}} --platform {{platforms}} \
-        --build-arg PACKAGE={{pkg}} \
+        --target {{pkg}} \
         -t {{DOCKER_USER}}/{{pkg}}:{{VERSION}} \
         -t {{DOCKER_USER}}/{{pkg}}:latest \
-        --push .
-
-# Build & push the frontend (VITE_API_URL is baked into the assets)
-[group('release')]
-[no-exit-message]
-release-frontend: _info
-    docker buildx build --builder {{BUILDER}} --platform {{platforms}} \
-        -f apps/frontend/Dockerfile \
-        --build-arg VITE_API_URL={{VITE_API_URL}} \
-        -t {{DOCKER_USER}}/scylla-frontend:{{VERSION}} \
-        -t {{DOCKER_USER}}/scylla-frontend:latest \
         --push .
 
 [private]

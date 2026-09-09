@@ -7,3 +7,6 @@ tests
 **/node_modules
 *.yaml
 .claude
+
+# The UI reaches the build through the `ui` stage, never the build context.
+apps/frontend/dist

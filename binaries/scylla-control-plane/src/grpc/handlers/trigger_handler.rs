@@ -47,8 +47,10 @@ where
 {
     use_cases: Arc<TriggerUseCases<T, P, PR, A, H, PC, PS>>,
     fire_uc: Arc<TriggerFireUseCases<T, P, PR, A, J, PS, W>>,
-    /// Public base URL of the webhook ingress (e.g. `https://host:8088`), used to
-    /// build `Trigger.webhook.url`. `None` when ingress isn't configured.
+    /// Public origin this instance is reachable at (e.g. `https://scylla.example.com`),
+    /// used to build `Trigger.webhook.url`. The ingress itself is always mounted;
+    /// this is `None` when `[webhook].public_base_url` is unset, and the URL is
+    /// then left empty rather than advertising an address we cannot know.
     webhook_base_url: Option<String>,
 }
 

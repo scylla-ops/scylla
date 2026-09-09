@@ -45,8 +45,10 @@ tokio-stream = { workspace = true }
 futures-util.workspace = true
 serde_json.workspace = true
 
-# webhook ingress HTTP server (separate listener from the gRPC port)
+# the single HTTP surface: web UI, webhook ingress, healthz
 axum.workspace = true
+# the Vite build, compiled in. See build.rs and src/rest/ui.rs.
+rust-embed.workspace = true
 
 # database
 sqlx.workspace = true

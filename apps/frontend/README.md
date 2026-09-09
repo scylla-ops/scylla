@@ -8,7 +8,7 @@ Welcome to the Scylla frontend repository.
 
 - [Node.js](https://nodejs.org/) (v18+)
 - [pnpm](https://pnpm.io/) (v9+)
-- The Scylla backend running (gRPC server on port `50051` by default)
+- The Scylla backend running (`cargo run -p scylla-control-plane -- --config ../../binaries/scylla-control-plane/config/local.toml --no-ui`, port `8080` by default)
 
 ### Environment Variables
 
@@ -20,7 +20,7 @@ cp .env.example .env
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_API_URL` | URL of the Scylla gRPC-Web backend | `http://localhost:50051` |
+| `VITE_API_URL` | URL of the Scylla gRPC-Web backend. Only needed here: a deployed instance serves this bundle from the control plane itself, leaves the variable unset, and the client uses relative URLs. | `http://localhost:8080` |
 
 ### Install & Run
 

@@ -88,14 +88,30 @@ oauth2 = { version = "5", default-features = false, features = [
 ] }
 
 # web / tracing
-axum = "0.8"
-tower = { version = "0.5" }
-tower-http = { version = "0.7", features = ["cors", "trace"] }
+# `http2` is NOT an axum default feature. We serve through tonic's transport, so
+# axum's own h2 support is not load-bearing today — but leaving it implicit made
+# HTTP/2 an emergent property of tonic's feature set, which is not something to
+# rely on for the agents' native gRPC.
+axum = { version = "0.8", features = ["http2"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.7", features = [
+    "cors",
+    "trace",
+    # UI serving: `fs` for the [ui].dir override, the rest to replace what Caddy
+    # used to do (`encode zstd gzip`, the immutable Cache-Control on /assets/*).
+    "fs",
+    "set-header",
+    "compression-gzip",
+    "compression-br",
+] }
 http = "1.4"
 serde_json = "1"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+
+# web UI: the Vite build is compiled into the control-plane binary
+rust-embed = { version = "8", features = ["mime-guess"] }
 
 # cli
 clap = { version = "4", features = ["derive", "env"] }

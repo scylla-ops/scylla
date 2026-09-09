@@ -1,5 +1,11 @@
-[grpc]
-address = "127.0.0.1:50051"
+[server]
+# One listener for everything: web UI, gRPC, gRPC-Web, reflection, webhooks.
+address = "127.0.0.1:8080"
+
+[ui]
+# Host-native dev runs the UI on Vite (:5173), so there is no dist/ to serve.
+# `--no-ui` on the command line does the same thing without editing this file.
+enabled = false
 
 [database]
 url = "postgres://scylla:scylla@127.0.0.1:5432/scylla"
@@ -8,6 +14,8 @@ min_connections = 1
 acquire_timeout = "30s"
 run_migrations = true
 
+# Only needed because `pnpm dev` serves the UI from :5173, a different origin.
+# A deployed instance serves both from one origin and needs none of this.
 [cors]
 allow_origins = ["*"]
 allow_headers = [

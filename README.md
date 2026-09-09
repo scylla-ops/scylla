@@ -6,12 +6,13 @@ Distributed CI/CD platform.
 
 | Service                | Ports          | Description                                                       |
 |------------------------|----------------|-------------------------------------------------------------------|
-| `scylla-frontend`      | `8080`         | Web UI (Caddy-served static build)                                |
-| `scylla-control-plane` | `50051`        | Single binary: gRPC API + in-process job dispatch (the agent worker stream) |
+| `scylla-control-plane` | `8080`         | One binary: web UI, gRPC API, gRPC-Web, webhook ingress, and in-process job dispatch |
 | `scylla-agent`         | —              | Worker installed per machine; registered as an "App" in the UI, run out-of-band |
 | `postgres`             | `5432`         | Primary datastore (PostgreSQL 18)                                 |
 
-Two binaries ship: `scylla-control-plane` (central brain) and `scylla-agent` (remote workers). Agents connect to the control plane's gRPC API (`50051`) over a persistent worker stream, there is no message broker.
+Two binaries ship: `scylla-control-plane` (central brain) and `scylla-agent` (remote workers). Agents connect to the control plane over a persistent worker stream, there is no message broker.
+
+Everything the browser and the agents talk to lives on **one port**. The control plane serves the compiled-in web UI, terminates gRPC-Web for the browser, speaks native gRPC to the agents, and accepts inbound webhooks at `/webhooks/{trigger_id}` — all on `8080`. Because the UI is served from the same origin as the API, the bundle uses relative URLs: the published image carries no baked-in hostname and works unchanged in any deployment.
 
 The workspace separates what ships from what is shared. `binaries/` holds the two packages that produce an executable — `scylla-control-plane` (use cases, adapters, the HTTP/gRPC surface, and the binary) and `scylla-agent` (the worker binary). `crates/` holds the two libraries both of them link: `scylla-domain` (the shared kernel — the domain model plus the types the two binaries exchange) and `scylla-proto` (the `.proto` files and their generated bindings, which the frontend also consumes). `scylla-domain` deliberately links no database, no gRPC stack and no crypto, so an agent can depend on it cheaply.
 
@@ -33,7 +34,7 @@ docker compose version
 
 Prebuilt images are published for both `linux/amd64` and `linux/arm64` — Docker pulls the right one for your host automatically.
 
-One command pulls the prebuilt images and starts the stack (control plane, PostgreSQL, frontend). Agents are added afterward from the UI — see below:
+One command pulls the prebuilt images and starts the stack (control plane, PostgreSQL). Agents are added afterward from the UI — see below:
 
 > [!WARNING]
 > Coming from an earlier beta? Wipe the previous stack first with `just clean` — it removes the old containers, volumes, and locally-built images, which are not compatible across betas.
@@ -54,6 +55,32 @@ Open **http://localhost:8080/** and sign in:
 - username: `admin`
 - password: `admin123`
 
+## Developing
+
+The stack above is enough to run Scylla. To work on it:
+
+```sh
+just db-up                                        # Postgres alone
+cargo run -p scylla-control-plane -- \
+    --config binaries/scylla-control-plane/config/local.toml --no-ui
+cd apps/frontend && pnpm install && pnpm dev       # http://localhost:5173
+```
+
+`--no-ui` is what makes this work: the web UI is compiled into the release
+binary, and in dev there is nothing to compile in — Vite owns it on `:5173`.
+The flag drops the UI routes entirely so the binary serves only the API.
+(`config/local.toml` already sets `[ui].enabled = false`, so the flag is
+belt-and-braces.) `apps/frontend/.env` points the dev bundle at `:8080`;
+`local.toml` allows that origin through CORS.
+
+To run the real thing natively, build the UI first — a release `cargo build`
+embeds whatever is in `apps/frontend/dist`:
+
+```sh
+just ui-build
+cargo build --release -p scylla-control-plane
+```
+
 ## Common commands
 
 | `just`        | `docker compose`                  | What it does                                  |
@@ -68,11 +95,11 @@ Run `just --list` to see every recipe.
 
 ## Troubleshooting
 
-**Port already in use.** Another process holds `8080`, `5432`, or `50051`. Stop it or change the host port in `docker-compose.yaml`.
+**Port already in use.** Another process holds `8080` or `5432`. Stop it or change the host port in `docker-compose.yaml`.
 
 **`scylla-control-plane` fails to connect to PostgreSQL.** Ensure `postgres` is `healthy` via `just status` (or `docker compose ps`). If it's stuck, run `just clean` to reset the volume and try again.
 
-**Frontend shows gRPC errors.** Verify the UI on `http://localhost:8080` can reach the control plane on `http://localhost:50051`. The browser must accept CORS — the default config already allows `http://localhost:8080`.
+**Frontend shows gRPC errors.** The UI and the API share an origin, so there is no CORS step to get wrong — check that `scylla-control-plane` is `healthy` (`just status`) and read its logs. `curl http://localhost:8080/healthz` should answer `ok`.
 
 **Agent not picking up jobs.** Agents run out-of-band (not in this compose stack). Check the agent's own logs and confirm it can reach the control plane at its `--control-plane-url` with a valid `--app-id` / `--app-secret`. In the UI the app shows as connected once its worker stream is open.
 

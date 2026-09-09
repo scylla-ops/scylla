@@ -3,7 +3,7 @@ use clap::Parser;
 use scylla_control_plane::config::{ControlPlaneConfig, MASTER_KEY_ENV};
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Scylla control-plane (gRPC API)")]
+#[command(author, version, about = "Scylla control-plane (API + web UI)")]
 struct Args {
     /// Print an example configuration file and exit
     #[arg(short = 'e', long = "print-example-config")]
@@ -12,6 +12,13 @@ struct Args {
     /// Path to the configuration file
     #[arg(short, long)]
     config: Option<String>,
+
+    /// Serve the API only, without the web UI. The dev loop this exists for is
+    /// `pnpm dev`: Vite owns the UI on :5173 and this binary has no `dist/` to
+    /// serve, so the SPA fallback would answer every unmatched path with a
+    /// "no UI bundled" page. Overrides `[ui].enabled`.
+    #[arg(long = "no-ui")]
+    no_ui: bool,
 }
 
 #[tokio::main]
@@ -51,6 +58,7 @@ async fn run(args: Args) -> Result<()> {
     // password, SMTP and OAuth secrets. Log only which optional subsystems are
     // configured.
     tracing::info!(
+        ui = config.ui.enabled,
         secrets = config.secrets.is_some(),
         mail = config.mail.is_some(),
         github_oauth = config.oauth.github.is_some(),
@@ -72,6 +80,12 @@ fn load_config(args: &Args) -> Result<ControlPlaneConfig> {
     // Let a deployment inject the project-secret master key at deploy time
     // instead of committing it to a config file.
     config.apply_env_overrides();
+
+    // The flag only ever turns the UI off, never on: `--no-ui` is a dev
+    // convenience, not a way to resurrect assets that were never built in.
+    if args.no_ui {
+        config.ui.enabled = false;
+    }
 
     // The shipped dev/demo config carries a PUBLIC master key. Using it in a real
     // deployment leaves every project secret and webhook secret decryptable by

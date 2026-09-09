@@ -41,11 +41,10 @@ pub use grpc::{
     proto_to_domain_pagination, user_to_proto,
 };
 
-pub use config::GrpcConfig;
-pub use config::{BootstrapConfig, ControlPlaneConfig, CorsConfig};
+pub use config::{BootstrapConfig, ControlPlaneConfig, CorsConfig, ServerConfig, UiConfig};
 pub use error::{BootstrapError, ConfigError, StartupError};
 pub use startup::{
     Services, SharedAuthUc, SharedGrantUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc,
     SharedOrgUc, SharedPipelineUc, SharedProjectUc, SharedUserUc, SharedWebhookIngressUc,
-    build_cors_layer, init_services, run_grpc, run_webhook, shutdown_signal,
+    build_cors_layer, init_services, run_server, shutdown_signal,
 };

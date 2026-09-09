@@ -5,4 +5,5 @@
 //! (Named `rest` rather than `http` on purpose: a crate-root `mod http` would
 //! shadow the external `http` crate that the rest of the API imports.)
 
+pub mod ui;
 pub mod webhook;

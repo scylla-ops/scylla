@@ -299,11 +299,10 @@ fn proto_node_to_domain(n: ProtoPipelineNode) -> Result<PipelineNode, Status> {
         Some(pipeline_node::Step::Exec(e)) => {
             Step::exec(e.command, e.args).map_err(domain_error_to_status)?
         }
-        Some(pipeline_node::Step::Script(s)) => Step::script(
-            s.script,
-            scylla_proto::convert::shell_from_proto(s.shell),
-        )
-        .map_err(domain_error_to_status)?,
+        Some(pipeline_node::Step::Script(s)) => {
+            Step::script(s.script, scylla_proto::convert::shell_from_proto(s.shell))
+                .map_err(domain_error_to_status)?
+        }
         None => {
             return Err(Status::invalid_argument(
                 "pipeline node is missing its step (exec or script)",

@@ -314,11 +314,10 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                 Some(agent_node::Step::Exec(e)) => {
                     Step::exec(e.command, e.args).map_err(|err| err.to_string())?
                 }
-                Some(agent_node::Step::Script(s)) => Step::script(
-                    s.script,
-                    scylla_proto::convert::shell_from_proto(s.shell),
-                )
-                .map_err(|err| err.to_string())?,
+                Some(agent_node::Step::Script(s)) => {
+                    Step::script(s.script, scylla_proto::convert::shell_from_proto(s.shell))
+                        .map_err(|err| err.to_string())?
+                }
                 None => return Err("dispatch node is missing its step".to_string()),
             };
             Ok(PipelineNode::new(id, deps, step, working_dir, env))

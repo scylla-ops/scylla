@@ -24,15 +24,16 @@ services:
     image: ${DOCKER_USER:-godlyjaaaaj}/scylla-control-plane:${VERSION:-latest}
     build:
       context: .
-      args:
-        PACKAGE: scylla-control-plane
+      # Final stages are named after the package; this one adds the web UI on
+      # top of the shared runtime.
+      target: scylla-control-plane
     container_name: scylla-control-plane
-    # 50051 = gRPC API (user APIs, app token exchange, and the agent worker
-    # stream). Agents connect here — there is no separate broker port.
-    # 8088 = inbound webhook ingress (POST /webhooks/{trigger_id}).
+    # One port for everything: the web UI, the gRPC API (user APIs, app token
+    # exchange, and the agent worker stream — agents connect here, there is no
+    # separate broker port), its gRPC-Web translation for the browser, and the
+    # inbound webhook ingress (POST /webhooks/{trigger_id}).
     ports:
-      - "50051:50051"
-      - "8088:8088"
+      - "8080:8080"
     environment:
       # RUST_LOG is deliberately NOT set here, so the binary's own default filter
       # applies (see main.rs): app logs at info, authorization grants silenced,
@@ -51,25 +52,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
-  scylla-frontend:
-    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-frontend:${VERSION:-latest}
-    build:
-      context: .
-      dockerfile: apps/frontend/Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:50051}
-    container_name: scylla-frontend
-    ports:
-      - "8080:80"
-    depends_on:
-      scylla-control-plane:
-        condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/healthz"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/healthz"]
       interval: 10s
       timeout: 3s
       retries: 3
+      start_period: 10s
 
   # Agents are NOT part of this stack. An agent is an "App" created in the UI;
   # the UI then shows ready-to-paste run commands (docker run with a workspace

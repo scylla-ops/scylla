@@ -5,12 +5,12 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 ## Platform services
 
 ### `scylla-control-plane`
-The central brain, as one crate and one binary: use cases (`application/`), adapters (`infrastructure/`, including Postgres, Cedar, Argon2, SMTP and OAuth), the gRPC surface (`grpc/`), the webhook HTTP ingress (`rest/`), the `Services` composition struct, and the `main.rs` that boots them. Serves the gRPC API on `50051` (user APIs, app token exchange, and the agent worker stream). Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `binaries/scylla-control-plane/config/*.toml`.
+The central brain, as one crate and one binary: use cases (`application/`), adapters (`infrastructure/`, including Postgres, Cedar, Argon2, SMTP and OAuth), the gRPC surface (`grpc/`), the webhook HTTP ingress (`rest/`), the `Services` composition struct, and the `main.rs` that boots them. Serves everything on one port (`8080`): the compiled-in web UI, the gRPC API (user APIs, app token exchange, and the agent worker stream), its gRPC-Web translation for the browser, and the inbound webhook ingress. Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `binaries/scylla-control-plane/config/*.toml`.
 
-The package name, the binary name and the config directory path are load-bearing: the Dockerfile builds `-p ${PACKAGE}` then copies `target/release/${PACKAGE}`, and `docker-compose.yaml` bind-mounts `binaries/scylla-control-plane/config`. Renaming any of the three breaks the image build or the container at runtime, not the `cargo` build.
+The package name, the binary name, the Dockerfile stage name and the config directory path are load-bearing: the image is built with `--target <package>` and `docker-compose.yaml` bind-mounts `binaries/scylla-control-plane/config`. So is the package's depth — `sqlx::migrate!("../../migrations")` resolves against `CARGO_MANIFEST_DIR`. Changing any of them breaks the image build or the container at runtime, not the `cargo` build.
 
 ### `scylla-agent`
-Worker binary installed on each pipeline-executing machine. Authenticates as its [App](#app) (`--app-id` / `--app-secret` exchanged for a bearer token), opens the control plane's `WorkerService` stream over `50051`, receives `JobDispatch` messages, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status + log events back on the same stream. Presence is simply the open stream — no heartbeats.
+Worker binary installed on each pipeline-executing machine. Authenticates as its [App](#app) (`--app-id` / `--app-secret` exchanged for a bearer token), opens the control plane's `WorkerService` stream over `8080`, receives `JobDispatch` messages, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status + log events back on the same stream. Presence is simply the open stream — no heartbeats.
 
 ### `scylla-domain`
 The shared kernel, and the only Rust code both binaries run. Holds the domain model (entities, value objects, `DomainError`, the DAG planner) plus [`JobEvent`](#jobevent), the command vocabulary the agent reports and the control plane applies.
@@ -242,7 +242,7 @@ Caller-supplied ID for each pipeline node. Must be unique within its pipeline. V
 ## Infra & dev
 
 ### `docker-compose.yaml`
-Defines the backend stack (`postgres`, `scylla-control-plane`, `scylla-frontend`). Agents are installed out-of-band (see [`scylla-agent`](#scylla-agent)), not in this stack.
+Defines the stack (`postgres`, `scylla-control-plane`). The web UI ships inside the control-plane image, so there is no separate frontend service. Agents are installed out-of-band (see [`scylla-agent`](#scylla-agent)), not in this stack.
 
 ### `justfile`
 Task runner recipes: `just up`, `just down`, `just logs`, `just push-all`, etc.
