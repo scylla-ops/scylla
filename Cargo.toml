@@ -1,10 +1,10 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/scylla-core",
-    "crates/scylla-protocol",
-    "crates/scylla-agent",
-    "crates/scylla-control-plane",
+    "crates/scylla-domain",
+    "crates/scylla-proto",
+    "binaries/scylla-agent",
+    "binaries/scylla-control-plane",
 ]
 
 [workspace.dependencies]
@@ -24,7 +24,7 @@ tonic-reflection = "0.14"
 prost = "0.14"
 prost-types = "0.14"
 tonic-prost-build = "0.14"
-scylla-protocol = { path = "crates/scylla-protocol" }
+scylla-proto = { path = "crates/scylla-proto" }
 tonic-async-interceptor = "0.14"
 
 # serialization
@@ -44,7 +44,7 @@ sqlx = { version = "0.9", default-features = false, features = [
 ] }
 
 # workspace crates
-scylla-core = { path = "crates/scylla-core" }
+scylla-domain = { path = "crates/scylla-domain" }
 
 # domain / utilities
 thiserror = "2.0.18"

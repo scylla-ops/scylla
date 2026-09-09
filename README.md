@@ -13,7 +13,7 @@ Distributed CI/CD platform.
 
 Two binaries ship: `scylla-control-plane` (central brain) and `scylla-agent` (remote workers). Agents connect to the control plane's gRPC API (`50051`) over a persistent worker stream, there is no message broker.
 
-The workspace is four crates: `scylla-control-plane` (use cases, adapters, gRPC and HTTP surfaces, and the binary), `scylla-agent` (the worker binary), `scylla-core` (the shared kernel: the domain model plus the types the two binaries exchange) and `scylla-protocol` (the `.proto` files and their generated bindings, which the frontend also consumes). Only the last two are shared, and `scylla-core` deliberately links no database, no gRPC stack and no crypto so an agent can depend on it cheaply.
+The workspace separates what ships from what is shared. `binaries/` holds the two packages that produce an executable — `scylla-control-plane` (use cases, adapters, the HTTP/gRPC surface, and the binary) and `scylla-agent` (the worker binary). `crates/` holds the two libraries both of them link: `scylla-domain` (the shared kernel — the domain model plus the types the two binaries exchange) and `scylla-proto` (the `.proto` files and their generated bindings, which the frontend also consumes). `scylla-domain` deliberately links no database, no gRPC stack and no crypto, so an agent can depend on it cheaply.
 
 ## Prerequisites
 

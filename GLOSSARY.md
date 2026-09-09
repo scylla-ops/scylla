@@ -5,19 +5,19 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 ## Platform services
 
 ### `scylla-control-plane`
-The central brain, as one crate and one binary: use cases (`application/`), adapters (`infrastructure/`, including Postgres, Cedar, Argon2, SMTP and OAuth), the gRPC surface (`grpc/`), the webhook HTTP ingress (`rest/`), the `Services` composition struct, and the `main.rs` that boots them. Serves the gRPC API on `50051` (user APIs, app token exchange, and the agent worker stream). Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `crates/scylla-control-plane/config/*.toml`.
+The central brain, as one crate and one binary: use cases (`application/`), adapters (`infrastructure/`, including Postgres, Cedar, Argon2, SMTP and OAuth), the gRPC surface (`grpc/`), the webhook HTTP ingress (`rest/`), the `Services` composition struct, and the `main.rs` that boots them. Serves the gRPC API on `50051` (user APIs, app token exchange, and the agent worker stream). Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `binaries/scylla-control-plane/config/*.toml`.
 
-The package name, the binary name and the config directory path are load-bearing: the Dockerfile builds `-p ${PACKAGE}` then copies `target/release/${PACKAGE}`, and `docker-compose.yaml` bind-mounts `crates/scylla-control-plane/config`. Renaming any of the three breaks the image build or the container at runtime, not the `cargo` build.
+The package name, the binary name and the config directory path are load-bearing: the Dockerfile builds `-p ${PACKAGE}` then copies `target/release/${PACKAGE}`, and `docker-compose.yaml` bind-mounts `binaries/scylla-control-plane/config`. Renaming any of the three breaks the image build or the container at runtime, not the `cargo` build.
 
 ### `scylla-agent`
 Worker binary installed on each pipeline-executing machine. Authenticates as its [App](#app) (`--app-id` / `--app-secret` exchanged for a bearer token), opens the control plane's `WorkerService` stream over `50051`, receives `JobDispatch` messages, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status + log events back on the same stream. Presence is simply the open stream — no heartbeats.
 
-### `scylla-core`
+### `scylla-domain`
 The shared kernel, and the only Rust code both binaries run. Holds the domain model (entities, value objects, `DomainError`, the DAG planner) plus [`JobEvent`](#jobevent), the command vocabulary the agent reports and the control plane applies.
 
 Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `uuid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-control-plane`. The crate has no Cargo features at all.
 
-### `scylla-protocol`
+### `scylla-proto`
 Library crate holding shared `.proto` definitions and their generated Rust + TypeScript bindings. Both the backend and the frontend import these.
 
 ### `postgres`
@@ -212,7 +212,7 @@ An agent is connected when its [App](#app) holds an open `WorkerService` stream 
 ## Networking & protocol
 
 ### gRPC
-Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-protocol/proto/`, which is the single include root. Each file's path below that root **is** its package: `scylla/job/v1/job.proto` declares `package scylla.job.v1`. Packages carry a version suffix from day one, so a breaking change means a new `v2` directory beside `v1`, never an edit in place. `buf lint` and `buf breaking` enforce both (`just proto-lint`, `just proto-breaking`).
+Primary transport between API and internal services. Defined in `.proto` files in `crates/scylla-proto/proto/`, which is the single include root. Each file's path below that root **is** its package: `scylla/job/v1/job.proto` declares `package scylla.job.v1`. Packages carry a version suffix from day one, so a breaking change means a new `v2` directory beside `v1`, never an edit in place. `buf lint` and `buf breaking` enforce both (`just proto-lint`, `just proto-breaking`).
 
 Two packages are deliberate leaves that others may import: `scylla.common.v1` (id wrappers, `Email`, pagination) and `scylla.exec.v1` (the step contract shared by pipelines and agents). Feature packages never import each other — they reference across contexts by id.
 
@@ -229,7 +229,7 @@ Protobuf code generator used by Tonic. Converts `.proto` → Rust structs.
 TypeScript protobuf toolchain used by the frontend to generate clients from `.proto`.
 
 ### Auth interceptor
-Async Tonic interceptor (`crates/scylla-control-plane/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal — a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
+Async Tonic interceptor (`binaries/scylla-control-plane/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal — a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
 
 ## Identifiers
 
@@ -248,7 +248,7 @@ Defines the backend stack (`postgres`, `scylla-control-plane`, `scylla-frontend`
 Task runner recipes: `just up`, `just down`, `just logs`, `just push-all`, etc.
 
 ### `config/*.toml`
-Per-environment config for `scylla-control-plane` (under `crates/scylla-control-plane/config/`): `local.toml` (host-native dev), `docker.toml` (compose), `prod.toml` (production).
+Per-environment config for `scylla-control-plane` (under `binaries/scylla-control-plane/config/`): `local.toml` (host-native dev), `docker.toml` (compose), `prod.toml` (production).
 
 ### `VITE_API_URL`
 Frontend env var pointing the gRPC-Web client at the API (default: same origin). Set in `apps/frontend/.env.local` to override.
@@ -260,7 +260,7 @@ i18n framework used by the frontend. `pnpm extract` / `pnpm compile` manage mess
 
 The hexagon is split across two crates. The model sits in the kernel; every layer that orchestrates or talks to the outside world sits in the control plane.
 
-`crates/scylla-core/src/` (the kernel, shared with the agent):
+`crates/scylla-domain/src/` (the kernel, shared with the agent):
 
 - `domain/entities/` — objects with identity and mutable state.
 - `domain/value_objects/` — immutable validated wrappers.
@@ -268,7 +268,7 @@ The hexagon is split across two crates. The model sits in the kernel; every laye
 - `domain/errors.rs` — `DomainError` / `DomainResult`.
 - `job_event.rs` — [`JobEvent`](#jobevent).
 
-`crates/scylla-control-plane/src/`:
+`binaries/scylla-control-plane/src/`:
 
 - `application/<feature>/repository.rs` and `service.rs` — the ports.
 - `application/<feature>/use_case.rs` — the orchestrators that consume them.
@@ -281,7 +281,7 @@ The hexagon is split across two crates. The model sits in the kernel; every laye
 A trait describing something the use cases need from the outside world (persistence, hashing, permission checks), declared next to its use case in `application/<feature>/`. Examples: `PipelineRepository`, `HashService`, `PermissionService`.
 
 ### Adapter
-A concrete implementation of a port. **Driven** adapters, the ones the use cases call out to, live under `crates/scylla-control-plane/src/infrastructure/`: `persistence/postgres/*` for repositories, `services/cedar_permission_service.rs`, `services/argon2_hash_service.rs`. **Driving** adapters, the ones that call into the use cases, sit at the crate root next to the composition root: `grpc/` and `rest/`.
+A concrete implementation of a port. **Driven** adapters, the ones the use cases call out to, live under `binaries/scylla-control-plane/src/infrastructure/`: `persistence/postgres/*` for repositories, `services/cedar_permission_service.rs`, `services/argon2_hash_service.rs`. **Driving** adapters, the ones that call into the use cases, sit at the crate root next to the composition root: `grpc/` and `rest/`.
 
 ### Use case
 A struct in `application/<feature>/use_case.rs` grouping operations on one aggregate (e.g. `PipelineUseCases`, `JobUseCases`). Holds `Arc<dyn Port>` fields and exposes async methods. The gRPC handlers call these.
@@ -305,4 +305,4 @@ The lifecycle vocabulary a running agent reports: `JobStarted`, `NodeStarted`, `
 The topological-sort routine behind `DagPlan` (`domain/dag.rs`). One implementation serves both sides: the control plane calls `drains_completely()` once to reject a pipeline containing a cycle, and an agent drives the same structure incrementally (`drain_ready` / `mark_completed` / `mark_terminal`) to decide what to launch next. Keeping it single is what stops the two from disagreeing about which nodes are runnable.
 
 ### Cargo features
-There are two in the whole workspace, both on `scylla-control-plane`: `register` (exposes the public self-service signup RPC, off by default so a deployment stays invite-only) and `test-utils` (exposes the `test_support` builders). `scylla-core`, `scylla-agent` and `scylla-protocol` have none.
+There are two in the whole workspace, both on `scylla-control-plane`: `register` (exposes the public self-service signup RPC, off by default so a deployment stays invite-only) and `test-utils` (exposes the `test_support` builders). `scylla-domain`, `scylla-agent` and `scylla-proto` have none.

@@ -2687,8 +2687,8 @@ dependencies = [
  "clap",
  "libc",
  "prost-types",
- "scylla-core",
- "scylla-protocol",
+ "scylla-domain",
+ "scylla-proto",
  "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
@@ -2723,8 +2723,8 @@ dependencies = [
  "oauth2",
  "prost-types",
  "reqwest",
- "scylla-core",
- "scylla-protocol",
+ "scylla-domain",
+ "scylla-proto",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -2747,7 +2747,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "scylla-core"
+name = "scylla-domain"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -2759,13 +2759,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "scylla-protocol"
+name = "scylla-proto"
 version = "0.1.0"
 dependencies = [
  "chrono",
  "prost",
  "prost-types",
- "scylla-core",
+ "scylla-domain",
  "tonic",
  "tonic-prost",
  "tonic-prost-build",

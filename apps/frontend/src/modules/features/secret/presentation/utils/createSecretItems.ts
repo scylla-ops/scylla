@@ -9,7 +9,7 @@ export const createSecretsItems: () => FormItem[] = () => {
       placeholder: t`e.g., DATABASE_URL`,
       type: FormItemType.Input,
       inputType: 'text',
-      // Mirrors the backend rule (scylla-core secret/name.rs): alphanumeric, '-', '_', '.'
+      // Mirrors the backend rule (scylla-domain secret/name.rs): alphanumeric, '-', '_', '.'
       pattern: '^[A-Za-z0-9._-]+$',
     },
     {

@@ -22,7 +22,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm config set store-dir /pnpm/store && \
     pnpm install --frozen-lockfile
 
-COPY crates/scylla-protocol/proto/ ../../crates/scylla-protocol/proto/
+COPY crates/scylla-proto/proto/ ../../crates/scylla-proto/proto/
 COPY apps/frontend/ .
 
 ARG VITE_API_URL=""
