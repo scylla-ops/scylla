@@ -83,12 +83,10 @@ export const Layout = ({ navEntries }: LayoutProps) => {
               <CardContent>
                 <ScyllaForm
                   items={createOrganizationItems()}
-                  onSubmit={values => {
-                    const name = values.find(v => v.id === 'name')?.value;
-                    const description = values.find(v => v.id === 'description')?.value;
+                  onSubmit={({ name, description }) => {
                     if (name) {
                       createOrganization.mutate(
-                        { name, description: description || '' },
+                        { name, description },
                         {
                           onSuccess: data => {
                             const orgId = data?.id;

@@ -28,7 +28,7 @@ presentation/
                                      use-feature-selection, use-resource-error, use-now,
                                      use-code-mirror-theme
   stores/use-selection.store.ts      one of the app's two global stores
-  structs/scylla-form.struct.ts      FormItem, FormItemType, FormChange, SelectOption
+  structs/scylla-form.struct.ts      FormItem, FormItemType, FormValues, SelectOption
   ui/index.ts                        re-exports the five groups below
   ui/data-display/                   DataTable, Pagination, ListCard, StatusBar,
                                      CopyableText, status-indicator, AgentRunInstructions
@@ -55,8 +55,14 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
 ```
 
 - Data sources wrap with `tryAsync`; `ScyllaError` extracts the gRPC code.
+- `getCode()` returns `ScyllaErrorCode`, not `string`: the gRPC-Web status names (derived from
+  `GrpcStatusCode`, imported as a type only — nothing lands in the bundle) plus the codes we
+  mint. A code compared anywhere must exist in that union, so add yours there first.
 - Hooks call `.unwrap()` **inside** `queryFn` / `mutationFn` so TanStack Query owns the error.
 - `map` / `flatMapAsync` chain without unwrapping (see `UpdateRoleUseCase`).
+- `mapError` rewrites the failure of a result and leaves a success untouched — use it in a data
+  source when a generic gRPC code means something more precise for that one call (see
+  [`login`](../features/login/AGENTS.md)), rather than special-casing it in every consumer.
 - **Do not add an `onError` toast in a hook** — `core`'s `QueryCache`/`MutationCache` already
   toasts globally, and you would double it.
 
@@ -66,7 +72,7 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
 |---|---|
 | Row selection | `useSelection(key)` over the single `useSelectionStore` — **no per-feature selection store** |
 | List header (count, clear, delete, new) | `FeatureHeader` |
-| A form | `FormItem[]` → `ScyllaForm`; `FormDialog` wraps it; `useFormState(items)` owns values/validation — it is exported from `ui/forms/ScyllaForm.tsx`, not from `hooks/` |
+| A form | `FormItem[]` → `ScyllaForm`; `FormDialog` wraps it; `useFormState(items)` owns values/validation — it is exported from `ui/forms/ScyllaForm.tsx`, not from `hooks/`. Declare the ids in the item type (`readonly FormItem<'name' \| 'description'>[]`) and `onSubmit` receives a typed `FormValues` record — never re-index the values by hand |
 | Pagination | `usePagination()` — local page merged with server `totalCount`/`totalPages` |
 | A table | `DataTable` (+ `usePagination`) — row keys are business ids, never indices |
 | Confirm a destructive action | `ConfirmOperationAlertDialog` |

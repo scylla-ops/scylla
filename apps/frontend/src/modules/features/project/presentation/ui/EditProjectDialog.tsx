@@ -1,9 +1,9 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
 import {
-  type FormChange,
   type FormItem,
   FormItemType,
+  type FormValues,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { useUpdateProject } from '@/modules/features/project/presentation/hooks/use-update-project.ts';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
@@ -18,7 +18,7 @@ export function EditProjectDialog({ open, setOpen, project }: EditProjectDialogP
   const { t } = useLingui();
   const updateProject = useUpdateProject();
 
-  const items: FormItem[] = [
+  const items: readonly FormItem<'name' | 'description'>[] = [
     {
       id: 'name',
       label: t`Project name`,
@@ -37,15 +37,12 @@ export function EditProjectDialog({ open, setOpen, project }: EditProjectDialogP
     },
   ];
 
-  const handleSubmit = (values: FormChange[]) => {
-    const name = values.find(v => v.id === 'name')?.value;
-    const description = values.find(v => v.id === 'description')?.value;
-
+  const handleSubmit = ({ name, description }: FormValues<'name' | 'description'>) => {
     updateProject.mutate(
       {
         projectId: project.id,
-        name: name?.trim() || undefined,
-        description: description?.trim() || undefined,
+        name: name.trim() || undefined,
+        description: description.trim() || undefined,
       },
       { onSuccess: () => setOpen(false) },
     );

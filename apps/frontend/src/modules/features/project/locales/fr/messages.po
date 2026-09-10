@@ -17,11 +17,11 @@ msgstr ""
 msgid "Add a description..."
 msgstr "Ajouter une description..."
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:63
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:60
 msgid "Create a new project"
 msgstr "Créer un nouveau projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:69
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:66
 msgid "Create Project"
 msgstr "Créer le projet"
 
@@ -42,11 +42,11 @@ msgstr "ex. Mon projet"
 msgid "Edit"
 msgstr "Modifier"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:58
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:55
 msgid "Edit project"
 msgstr "Modifier le projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:65
+#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:62
 msgid "Enter a name for your new project and select the organization it belongs to."
 msgstr "Entrez un nom pour votre nouveau projet et sélectionnez l'organisation à laquelle il appartient."
 
@@ -76,11 +76,11 @@ msgstr "Nom du projet"
 msgid "Projects"
 msgstr "Projets"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:62
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:59
 msgid "Save"
 msgstr "Enregistrer"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:63
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:60
 msgid "Saving..."
 msgstr "Enregistrement..."
 
@@ -96,7 +96,7 @@ msgstr "Sélectionnez une organisation dans la barre latérale pour voir ses pro
 msgid "Unable to load projects"
 msgstr "Impossible de charger les projets"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:59
+#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:56
 msgid "Update the project name and description."
 msgstr "Mettez à jour le nom du projet et sa description."
 

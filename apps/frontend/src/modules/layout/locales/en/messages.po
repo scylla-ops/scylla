@@ -22,7 +22,7 @@ msgstr "{0}"
 msgid "Build your own roles and grant them fine-grained permissions on an organization or a project."
 msgstr "Build your own roles and grant them fine-grained permissions on an organization or a project."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:102
+#: src/modules/layout/presentation/ui/Layout.tsx:100
 msgid "Create"
 msgstr "Create"
 

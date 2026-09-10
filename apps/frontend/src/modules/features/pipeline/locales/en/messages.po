@@ -208,7 +208,7 @@ msgstr "Node ID"
 msgid "Pipeline"
 msgstr "Pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:47
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:46
 msgid "Pipeline name"
 msgstr "Pipeline name"
 
@@ -229,7 +229,7 @@ msgstr "Run"
 msgid "Run #{runNumber}"
 msgstr "Run #{runNumber}"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:51
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:50
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:390
 #: src/modules/features/pipeline/presentation/ui/editor/PipelineUpdate.page.tsx:33
 msgid "Save"
@@ -264,7 +264,7 @@ msgstr "Secrets"
 msgid "Select a project first"
 msgstr "Select a project first"
 
-#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:48
+#: src/modules/features/pipeline/presentation/ui/editor/blueprint/StartNodeFormDialog.tsx:47
 msgid "Set the name of the pipeline."
 msgstr "Set the name of the pipeline."
 

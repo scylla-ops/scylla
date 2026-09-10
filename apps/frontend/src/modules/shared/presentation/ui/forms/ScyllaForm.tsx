@@ -9,40 +9,35 @@ import {
   SelectValue,
 } from '@/modules/shared/presentation/ui/shadcn';
 import {
-  type FormChange,
   type FormItem,
   FormItemType,
+  type FormValues,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { Field, FieldGroup, FieldLabel } from '@/modules/shared/presentation/ui/shadcn/field.tsx';
 import { useState } from 'react';
 
 // --- Form state hook ---
 
+const initialValues = <TId extends string>(items: readonly FormItem<TId>[]): FormValues<TId> =>
+  Object.fromEntries(items.map(item => [item.id, item.defaultValue ?? ''])) as FormValues<TId>;
+
 //todo: move this into a separate file?
 // eslint-disable-next-line react-refresh/only-export-components
-export const useFormState = (items: FormItem[]) => {
-  const [values, setValues] = useState<FormChange[]>(
-    items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })),
-  );
+export const useFormState = <TId extends string>(items: readonly FormItem<TId>[]) => {
+  const [values, setValues] = useState<FormValues<TId>>(() => initialValues(items));
 
-  const handleChange = (id: string, value: string) => {
-    setValues(prev => prev.map(field => (field.id === id ? { ...field, value } : field)));
+  const handleChange = (id: TId, value: string) => {
+    setValues(prev => ({ ...prev, [id]: value }));
   };
 
-  const reset = () =>
-    setValues(items.map(item => ({ id: item.id, value: item.defaultValue ?? '' })));
+  const reset = () => setValues(initialValues(items));
 
-  const optionalIds = new Set(items.filter(item => item.optional).map(item => item.id));
-  const patternMap = new Map(
-    items
-      .filter(item => item.type === FormItemType.Input && item.pattern)
-      .map(item => [item.id, new RegExp((item as { pattern: string }).pattern)]),
-  );
-  const isValid = values.every(v => {
-    if (optionalIds.has(v.id)) return true;
-    if (v.value.trim().length === 0) return false;
-    const pattern = patternMap.get(v.id);
-    return !pattern || pattern.test(v.value);
+  const isValid = items.every(item => {
+    if (item.optional) return true;
+    const value = values[item.id] ?? '';
+    if (value.trim().length === 0) return false;
+    if (item.type !== FormItemType.Input || !item.pattern) return true;
+    return new RegExp(item.pattern).test(value);
   });
 
   return { values, handleChange, reset, isValid };
@@ -50,23 +45,23 @@ export const useFormState = (items: FormItem[]) => {
 
 // --- ScyllaForm ---
 
-export type ScyllaFormProps = {
-  items: FormItem[];
+export type ScyllaFormProps<TId extends string> = {
+  items: readonly FormItem<TId>[];
   className?: string;
-  onSubmit: (values: FormChange[]) => void;
+  onSubmit: (values: FormValues<TId>) => void;
   isPending?: boolean;
   footer?: (props: { isValid: boolean; isPending: boolean }) => ReactNode;
   buttonLabel?: ReactNode;
 };
 
-export const ScyllaForm = ({
+export const ScyllaForm = <TId extends string>({
   items,
   className,
   buttonLabel,
   onSubmit,
   isPending = false,
   footer,
-}: ScyllaFormProps) => {
+}: ScyllaFormProps<TId>) => {
   const { values, handleChange, isValid } = useFormState(items);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -89,14 +84,14 @@ export const ScyllaForm = ({
                 id={item.id}
                 type={item.inputType}
                 autoFocus={index === 0}
-                value={values.find(v => v.id === item.id)?.value}
+                value={values[item.id]}
                 onChange={e => handleChange(item.id, e.target.value)}
               />
             )}
 
             {item.type === FormItemType.Select && (
               <Select
-                value={values.find(v => v.id === item.id)?.value}
+                value={values[item.id]}
                 onValueChange={val => handleChange(item.id, val)}
                 disabled={isPending || item.disabled}
               >

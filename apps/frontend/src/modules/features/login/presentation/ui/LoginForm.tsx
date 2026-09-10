@@ -1,54 +1,50 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Button, Input, Label } from '@/modules/shared/presentation/ui/shadcn';
-import { useState } from 'react';
-import * as React from 'react';
+import { Button } from '@/modules/shared/presentation/ui/shadcn';
+import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
+import { FormItemType } from '@shared/presentation/structs/scylla-form.struct.ts';
+import { useMemo } from 'react';
 
 type LoginFormProps = {
-  handleSubmit: (e: React.FormEvent, login: string, password: string) => void;
+  handleSubmit: (login: string, password: string) => void;
+  isPending?: boolean;
 };
 
-//TODO: use ScyllaForm instead of this
-export const LoginForm = ({ handleSubmit }: LoginFormProps) => {
+export const LoginForm = ({ handleSubmit, isPending = false }: LoginFormProps) => {
   const { t } = useLingui();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+
+  // `as const` keeps the ids literal, which is what types the submitted values.
+  const formItems = useMemo(
+    () =>
+      [
+        {
+          id: 'username',
+          label: <Trans>Username</Trans>,
+          placeholder: t`username`,
+          type: FormItemType.Input,
+          inputType: 'text',
+        },
+        {
+          id: 'password',
+          label: <Trans>Password</Trans>,
+          placeholder: t`••••••••`,
+          type: FormItemType.Input,
+          inputType: 'password',
+        },
+      ] as const,
+    [t],
+  );
 
   return (
-    <form
-      onSubmit={e => handleSubmit(e, username, password)}
-      className='flex flex-col gap-4 w-auto mx-auto'
-    >
-      <div>
-        <Label htmlFor='username'>
-          <Trans>Username</Trans>
-        </Label>
-        <Input
-          id='username'
-          type='text'
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          placeholder={t`username`}
-          required
-        />
-      </div>
-
-      <div>
-        <Label htmlFor='password'>
-          <Trans>Password</Trans>
-        </Label>
-        <Input
-          id='password'
-          type='password'
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder={t`••••••••`}
-          required
-        />
-      </div>
-
-      <Button type='submit' className='mt-2'>
-        <Trans>Login</Trans>
-      </Button>
-    </form>
+    <ScyllaForm
+      items={formItems}
+      className='gap-4'
+      onSubmit={values => handleSubmit(values.username, values.password)}
+      isPending={isPending}
+      footer={({ isValid, isPending }) => (
+        <Button type='submit' className='mt-2 w-full' disabled={!isValid || isPending}>
+          <Trans>Login</Trans>
+        </Button>
+      )}
+    />
   );
 };

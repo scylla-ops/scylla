@@ -231,7 +231,7 @@ In mutation/query hooks, call `.unwrap()` inside `mutationFn`/`queryFn` so TanSt
 
 - **Selection**: `useSelection(key)` over a single `useSelectionStore`, keyed by feature. Used by `DataTable` + `FeatureHeader`. No per-feature selection store.
 - **List headers**: `FeatureHeader` (count, clear/delete selection, new button).
-- **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog; `useFormState(items)` manages values/changes/reset/validation.
+- **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog; `useFormState(items)` manages values/changes/reset/validation. Both are generic over the item ids — type the items `readonly FormItem<'a' | 'b'>[]` and `onSubmit` hands back a typed `FormValues` record, so never search the values by id.
 - **Pagination**: `usePagination()` (local page state merged with server `totalCount`/`totalPages`).
 - **Navigation**: `useScyllaNavigate()`.
 - **Global state**: only `useContextStore` (current org/project) and `useSelectionStore` are app-wide. Everything else = TanStack Query (server) or local `useState`.

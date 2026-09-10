@@ -9,23 +9,23 @@ import {
   DialogTitle,
 } from '@shadcn/dialog.tsx';
 import { Trans } from '@lingui/react/macro';
-import type { FormChange, FormItem } from '@shared/presentation/structs/scylla-form.struct.ts';
+import type { FormItem, FormValues } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 
-interface FormDialogProps {
+interface FormDialogProps<TId extends string> {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
   description?: ReactNode;
-  items: FormItem[];
+  items: readonly FormItem<TId>[];
   isPending?: boolean;
   submitLabel?: ReactNode;
   pendingLabel?: ReactNode;
-  onSubmit: (values: FormChange[]) => void;
+  onSubmit: (values: FormValues<TId>) => void;
   hideCancel?: boolean;
 }
 
-export function FormDialog({
+export function FormDialog<TId extends string>({
   open,
   onOpenChange,
   title,
@@ -36,7 +36,7 @@ export function FormDialog({
   pendingLabel,
   onSubmit,
   hideCancel = false,
-}: FormDialogProps) {
+}: FormDialogProps<TId>) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={hideCancel ? '[&>button]:hidden' : ''}>

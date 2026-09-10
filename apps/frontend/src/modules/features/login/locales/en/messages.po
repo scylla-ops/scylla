@@ -13,30 +13,34 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:44
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:29
 msgid "••••••••"
 msgstr "••••••••"
 
-#: src/modules/features/login/presentation/ui/Login.page.tsx:51
+#: src/modules/features/login/presentation/ui/Login.page.tsx:49
 msgid "Enter your username below to login to your account"
 msgstr "Enter your username below to login to your account"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:50
+#: src/modules/features/login/infrastructure/data/remote/grpc-login-remote.data-source.ts:18
+msgid "Incorrect username or password"
+msgstr "Incorrect username or password"
+
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:45
 msgid "Login"
 msgstr "Login"
 
-#: src/modules/features/login/presentation/ui/Login.page.tsx:48
+#: src/modules/features/login/presentation/ui/Login.page.tsx:46
 msgid "Login to your account"
 msgstr "Login to your account"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:37
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:28
 msgid "Password"
 msgstr "Password"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:30
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:22
 msgid "username"
 msgstr "username"
 
-#: src/modules/features/login/presentation/ui/LoginForm.tsx:23
+#: src/modules/features/login/presentation/ui/LoginForm.tsx:21
 msgid "Username"
 msgstr "Username"

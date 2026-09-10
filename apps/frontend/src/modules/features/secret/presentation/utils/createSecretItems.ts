@@ -1,7 +1,7 @@
 import { type FormItem, FormItemType } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { t } from '@lingui/core/macro';
 
-export const createSecretsItems: () => FormItem[] = () => {
+export const createSecretsItems: () => readonly FormItem<'name' | 'description' | 'value'>[] = () => {
   return [
     {
       id: 'name',

@@ -25,7 +25,7 @@ msgstr "ID d'agent copié"
 msgid "An error occurred"
 msgstr "Une erreur s'est produite"
 
-#: src/modules/shared/utils/scylla-result.ts:68
+#: src/modules/shared/utils/scylla-result.ts:90
 msgid "An unexpected error occurred"
 msgstr "Une erreur inattendue s'est produite"
 
@@ -253,7 +253,7 @@ msgstr "Secret supprimé"
 msgid "Select all"
 msgstr "Tout sélectionner"
 
-#: src/modules/shared/utils/scylla-result.ts:56
+#: src/modules/shared/utils/scylla-result.ts:78
 msgid "Server unreachable"
 msgstr "Serveur injoignable"
 
@@ -340,7 +340,7 @@ msgstr "Vous ne pouvez pas supprimer votre propre compte."
 msgid "You don't have permission to do this."
 msgstr "Vous n'avez pas la permission de faire cela."
 
-#: src/modules/shared/utils/scylla-result.ts:66
+#: src/modules/shared/utils/scylla-result.ts:88
 msgid "You don't have permission to perform this action"
 msgstr "Vous n'avez pas la permission d'effectuer cette action"
 
