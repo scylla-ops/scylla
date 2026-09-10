@@ -1,7 +1,8 @@
-import ReactCodeMirror from '@uiw/react-codemirror';
+import ReactCodeMirror, { EditorView, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { useTailJobLogs } from '@/modules/features/jobs/presentation/hooks/use-tail-job-logs.ts';
 import { Trans } from '@lingui/react/macro';
+import { useEffect, useRef } from 'react';
 
 interface JobLogDisplayProps {
   jobId: string;
@@ -17,12 +18,26 @@ interface LogViewerProps {
 const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
   const editorTheme = useCodeMirrorTheme();
 
-  if (isLoading) return (
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+
+  useEffect(() => {
+    const view = editorRef.current?.view;
+
+    if (view) {
+      view.dispatch({
+        effects: EditorView.scrollIntoView(view.state.doc.length),
+      });
+    }
+  }, [logs]);
+
+  if (isLoading)
+    return (
       <div>
         <Trans>Loading...</Trans>
       </div>
     );
-  if (isError) return (
+  if (isError)
+    return (
       <div>
         <Trans>Error loading logs...</Trans>
       </div>
@@ -37,6 +52,7 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
         value={logs}
         maxHeight={'28rem'}
         theme={editorTheme}
+        ref={editorRef}
       />
     </div>
   );
