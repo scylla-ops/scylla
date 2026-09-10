@@ -69,16 +69,16 @@ export const FeatureHeader = ({
   };
 
   return (
-    <div className={'flex flex-row items-end justify-between w-full'}>
-      <div className={'flex flex-col gap-2'}>
-        <div className={'flex flex-row gap-4'}>
-          <div className='flex items-baseline gap-2'>
-            <h1 className='text-3xl font-bold tracking-tight'>
+    <div className={'flex flex-row flex-wrap items-end justify-between gap-x-4 gap-y-3 w-full'}>
+      <div className={'flex flex-col gap-2 min-w-0'}>
+        <div className={'flex flex-row flex-wrap gap-4'}>
+          <div className='flex items-baseline gap-2 min-w-0'>
+            <h1 className='text-2xl sm:text-3xl font-bold tracking-tight min-w-0 break-words'>
               {count !== undefined && <span className='text-primary mr-2 '>{count}</span>}
               <span className='text-foreground'>{displayLabel}</span>
             </h1>
             {count !== undefined && (
-              <span className='text-sm text-muted-foreground font-medium'>
+              <span className='text-sm text-muted-foreground font-medium whitespace-nowrap'>
                 <Trans>in total</Trans>
               </span>
             )}
@@ -87,7 +87,8 @@ export const FeatureHeader = ({
         {underLabel && <>{underLabel}</>}
       </div>
 
-      <div className={'flex items-center justify-end gap-2'}>
+      {/* Wraps under the title rather than pushing the actions out of the page. */}
+      <div className={'flex flex-wrap items-center justify-end gap-2 ml-auto'}>
         {onSelectAll && !allSelected && !!count && (
           <Button variant={'outline'} onClick={onSelectAll}>
             <Trans>Select all</Trans>

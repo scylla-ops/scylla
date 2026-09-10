@@ -39,7 +39,8 @@ export const ProjectPage = () => {
         numberOfProjects={paginationInfo?.totalCount ?? projects.length}
         projectIds={projects.map(project => project.id)}
       />
-      <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
+      {/* Breakpoints are viewport-wide; the sidebar eats ~16rem, hence the late 3rd/4th column. */}
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4'>
         {projects.map(project => (
           <ProjectCard key={project.id} project={project} />
         ))}

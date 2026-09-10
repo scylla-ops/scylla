@@ -52,7 +52,8 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
                     e.stopPropagation();
                     setEditOpen(true);
                   }}
-                  className='h-7 w-7 opacity-0 group-hover:opacity-100'
+                  // Always visible on small screens: there is no hover on touch.
+                  className='h-7 w-7 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'
                   iconClassName='h-3.5 w-3.5'
                 />
               </Can>
