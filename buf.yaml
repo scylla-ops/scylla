@@ -1,6 +1,6 @@
 version: v2
 modules:
-  - path: crates/scylla-protocol/proto
+  - path: crates/scylla-proto/proto
 lint:
   use:
     - STANDARD

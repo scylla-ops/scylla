@@ -10,7 +10,7 @@ on:
   pull_request:
     paths:
       - "apps/frontend/**"
-      - "crates/scylla-protocol/proto/**"
+      - "crates/scylla-proto/proto/**"
       - ".github/workflows/frontend.yml"
   workflow_dispatch:
 

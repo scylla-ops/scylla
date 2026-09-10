@@ -210,8 +210,8 @@ msgid "Replace APP_SECRET with the secret revealed when this agent was created �
 msgstr "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
 
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:103
-msgid "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
-msgstr "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:50051 on the same machine, or http://host.docker.internal:50051 from inside Docker."
+msgid "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:8080 on the same machine, or http://host.docker.internal:8080 from inside Docker."
+msgstr "Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for example http://localhost:8080 on the same machine, or http://host.docker.internal:8080 from inside Docker."
 
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:71
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."

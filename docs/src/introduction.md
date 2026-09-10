@@ -11,13 +11,14 @@
 Scylla runs your pipelines across a fleet of machines from a single control
 plane. Two binaries ship:
 
-- **`scylla-control-plane`** — the central brain: a gRPC API plus in-process job
-  dispatch.
+- **`scylla-control-plane`** — the central brain: the web UI, a gRPC API and its
+  gRPC-Web translation, the inbound webhook ingress, and in-process job
+  dispatch, all on one port.
 - **`scylla-agent`** — a worker installed per machine, registered as an *App* and
   connected to the control plane over a persistent worker stream (there is no
   message broker).
 
-A PostgreSQL database backs the control plane, and a web UI drives everything.
+A PostgreSQL database backs the control plane. The web UI is compiled into the control-plane binary and served from the same origin as the API, so there is nothing to deploy alongside it.
 
 ## What's coming
 
@@ -25,7 +26,7 @@ The chapters in the sidebar are placeholders for now. Planned sections include:
 
 - **Getting started** — run the full stack with Docker in one command.
 - **Architecture** — control plane, agents/Apps, and the worker stream.
-- **Configuration** — environment, ports, and database.
+- **Configuration** — environment, the listener (and TLS), and the database.
 - **Operations** — running agents and wiring up triggers (cron & webhooks).
 - **Reference** — the full glossary of Scylla terms.
 
