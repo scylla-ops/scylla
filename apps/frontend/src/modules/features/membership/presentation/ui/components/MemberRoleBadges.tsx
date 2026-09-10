@@ -83,7 +83,7 @@ export const MemberRoleBadges = ({
             type='button'
             disabled={disabled}
             aria-label={t`Revoke ${name}`}
-            className='inline-flex size-4 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50'
+            className='inline-flex size-4 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-destructive-subtle hover:text-destructive disabled:pointer-events-none disabled:opacity-50'
             onClick={() => onRevoke?.(role)}
           >
             <X className='size-3' />

@@ -141,7 +141,7 @@ export const OrganizationList = ({ Wrapper }: OrganizationListProps) => {
                     e.stopPropagation();
                     setDeleteOrgId(organisation.id);
                   }}
-                  className='h-7 w-7 hover:text-destructive hover:bg-destructive/10'
+                  className='h-7 w-7 hover:text-destructive hover:bg-destructive-subtle'
                   iconClassName='h-3.5 w-3.5'
                 />
               </Can>

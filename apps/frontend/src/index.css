@@ -32,6 +32,7 @@
 
   --destructive: #BA4C43;
   --destructive-foreground: #F4F7EB;
+  --destructive-subtle: #F3D8D5;
 
   --border: #D1D3CA;
   --input: #AFB0AA;
@@ -91,7 +92,9 @@
   --primary: #5D9972;
   --primary-hover: #69A57E;
   --primary-foreground: #F4F7EB;
-  --primary-subtle: #1C2A20;
+  /* Hover surface for icon buttons: must lift clearly off --card (#21211E), which
+     the previous #1C2A20 did not — it sat within 1.1:1 of the surface behind it. */
+  --primary-subtle: #2F4838;
 
   --secondary: #282826;
   --secondary-foreground: #F4F7EC;
@@ -105,6 +108,7 @@
 
   --destructive: #BA4C43;
   --destructive-foreground: #F4F7EB;
+  --destructive-subtle: #4E2E28;
 
   --border: #333330;
   --input: #676865;
@@ -170,6 +174,7 @@
 
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
