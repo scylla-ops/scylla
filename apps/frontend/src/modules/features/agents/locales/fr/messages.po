@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: created.agent.name
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:142
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:135
 msgid "{0} is ready"
 msgstr "{0} est prêt"
 
@@ -34,7 +34,7 @@ msgstr "actif"
 msgid "Active"
 msgstr "Actif"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:60
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:57
 msgid "Agent"
 msgstr "Agent"
 
@@ -52,16 +52,16 @@ msgstr "Agent introuvable"
 
 #: src/modules/features/agents/agents.module.ts:22
 #: src/modules/features/agents/agents.module.ts:47
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:61
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:58
 msgid "Agents"
 msgstr "Agents"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:102
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:95
 msgid "An agent runs jobs. Create one to get credentials, then start the agent — it'll pull jobs and report back."
 msgstr "Un agent exécute des jobs. Créez-en un pour obtenir des identifiants, puis démarrez l'agent — il récupérera les jobs et fera ses retours."
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:198
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:170
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:163
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -88,10 +88,6 @@ msgstr "terminés"
 msgid "completed {0}"
 msgstr "terminés {0}"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:77
-msgid "completed total"
-msgstr "terminés au total"
-
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:178
 msgid "connects as this agent's app id"
 msgstr "se connecte avec l'app id de cet agent"
@@ -105,11 +101,11 @@ msgstr "Copier l'identifiant de l'agent"
 msgid "Copy id"
 msgstr "Copier l'id"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:135
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:128
 msgid "Create & reveal secret →"
 msgstr "Créer & révéler le secret →"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:108
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:101
 msgid "Create your first agent"
 msgstr "Créez votre premier agent"
 
@@ -124,13 +120,13 @@ msgstr "Créé le"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:99
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:210
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:178
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:171
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:86
 msgid "Delete"
 msgstr "Supprimer"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:190
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:162
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:155
 msgid "Delete agent?"
 msgstr "Supprimer l'agent ?"
 
@@ -143,7 +139,7 @@ msgstr "hors ligne"
 msgid "Error loading agent"
 msgstr "Erreur lors du chargement de l'agent"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:54
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:51
 msgid "Error loading agents"
 msgstr "Erreur lors du chargement des agents"
 
@@ -164,7 +160,7 @@ msgstr "filtre"
 msgid "finished"
 msgstr "terminés"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:132
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:125
 msgid "Get credentials to connect an agent."
 msgstr "Obtenez des identifiants pour connecter un agent."
 
@@ -208,8 +204,8 @@ msgstr "Nom"
 msgid "never connected"
 msgstr "jamais connecté"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:123
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:131
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:116
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:124
 msgid "New Agent"
 msgstr "Nouvel agent"
 
@@ -217,7 +213,7 @@ msgstr "Nouvel agent"
 msgid "No agent connected — queued jobs are waiting for one."
 msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:99
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:92
 msgid "No agents connected"
 msgstr "Aucun agent connecté"
 
@@ -226,13 +222,13 @@ msgid "No finished jobs in this window."
 msgstr "Aucun job terminé sur cette période."
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:87
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:73
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:70
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:102
 msgid "offline"
 msgstr "hors ligne"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:87
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:69
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:66
 #: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:97
 msgid "online"
 msgstr "en ligne"
@@ -265,7 +261,6 @@ msgstr "Lancez une pipeline sur cet agent et le graphe se remplira."
 msgid "Run this agent"
 msgstr "Lancer cet agent"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:76
 #: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:91
 msgid "running"
 msgstr "en cours"
@@ -278,7 +273,7 @@ msgstr "exécutions"
 msgid "sample"
 msgstr "exemple"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:145
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:138
 msgid "Secret for the agent"
 msgstr "Secret pour l'agent"
 
@@ -295,16 +290,16 @@ msgstr "Configurer un agent"
 msgid "since"
 msgstr "depuis"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:147
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:140
 msgid "Start your agent"
 msgstr "Démarrez votre agent"
 
 #: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:193
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:165
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:158
 msgid "This revokes the agent's grants and disconnects it. Cannot be undone."
 msgstr "Cela révoque les autorisations de l'agent et le déconnecte. Irréversible."
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:143
+#: src/modules/features/agents/presentation/ui/Agents.page.tsx:136
 msgid "Two steps and it picks up jobs."
 msgstr "Deux étapes et il récupère les travaux."
 

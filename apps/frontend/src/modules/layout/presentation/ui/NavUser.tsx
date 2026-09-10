@@ -105,7 +105,7 @@ export function NavUser() {
               onSelect={() => {
                 localStorage.removeItem('token');
                 resetContext();
-                window.location.href = '/';
+                window.location.href = '/login';
               }}
             >
               <LogOut />
