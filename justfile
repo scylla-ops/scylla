@@ -7,8 +7,6 @@ VERSION      := env("VERSION", "latest")
 DATABASE_URL := env("DATABASE_URL", "postgres://scylla:scylla@localhost:5432/scylla")
 BUILDER      := env("BUILDER", "scylla-builder")
 
-platforms := "linux/amd64,linux/arm64"
-
 # -- Aliases --
 alias u := up
 alias s := start
@@ -108,46 +106,39 @@ db-reset:
     docker volume rm scylla_postgres_data || true
     docker compose up -d postgres
 
-# -- Release (manual multi-arch build & push to Docker Hub) --
+# -- Release (multi-arch build & push to Docker Hub) --
 #
-# Plain buildx: the same Dockerfiles as local dev, built for amd64 + arm64 and
-# pushed with their multi-arch manifest. The non-native platform builds under
-# emulation, so a full release is slow — but it is one command, reproducible
-# anywhere Docker runs, and needs no host toolchain.
-#
-#   just release-setup            # once per machine (+ docker login)
-#   VERSION=0.3.0 just release    # full stack: control-plane + agent + frontend
+# The build is declared in docker-bake.hcl; `latest` follows stable versions
+# automatically. Full process, checklist and rollback: RELEASING.md
 
 # One-time: create the multi-arch buildx builder
 [group('release')]
 release-setup:
     docker buildx inspect {{BUILDER}} >/dev/null 2>&1 || docker buildx create --name {{BUILDER}} --driver docker-container --bootstrap
-    @echo "✓ buildx builder '{{BUILDER}}' ready (remember: docker login)"
 
-# Build & push everything. The web UI ships inside the control-plane image.
+# Print the resolved release plan without building anything
 [group('release')]
 [no-exit-message]
-release: (release-svc "scylla-control-plane") (release-svc "scylla-agent")
+release-plan version:
+    VERSION={{version}} docker buildx bake -f docker-bake.hcl --print release
 
-# Build & push the backend services (control-plane + agent)
+# Build & push every release image (e.g. just release 0.4.0-beta)
 [group('release')]
 [no-exit-message]
-release-backend: (release-svc "scylla-control-plane") (release-svc "scylla-agent")
+release version: release-setup
+    VERSION={{version}} GIT_SHA=`git rev-parse HEAD` docker buildx bake -f docker-bake.hcl --builder {{BUILDER}} --push release
 
-# Build & push one backend service (e.g. just release-svc scylla-agent)
+# Show the published manifests, to confirm every platform is there
 [group('release')]
 [no-exit-message]
-release-svc pkg: _info
-    docker buildx build --builder {{BUILDER}} --platform {{platforms}} \
-        --target {{pkg}} \
-        -t {{DOCKER_USER}}/{{pkg}}:{{VERSION}} \
-        -t {{DOCKER_USER}}/{{pkg}}:latest \
-        --push .
+release-verify version:
+    for image in scylla-control-plane scylla-agent; do docker buildx imagetools inspect {{DOCKER_USER}}/$image:{{version}}; done
 
-[private]
+# Point a channel tag at a published version, without rebuilding
+[group('release')]
 [no-exit-message]
-_info:
-    @echo "══ user={{DOCKER_USER}} version={{VERSION}} platforms={{platforms}} ══"
+release-promote version tag:
+    for image in scylla-control-plane scylla-agent; do docker buildx imagetools create --tag {{DOCKER_USER}}/$image:{{tag}} {{DOCKER_USER}}/$image:{{version}}; done
 
 # -- Protos --
 

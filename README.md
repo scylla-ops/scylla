@@ -152,4 +152,4 @@ just local
 ## Further reading
 
 - [Glossary](GLOSSARY.md), every Scylla-specific term, grouped by topic.
-- Releasing images: `just release` builds and pushes the multi-arch Docker images to Docker Hub. Run `just --list` for the individual recipes.
+- Releasing images: see [RELEASING.md](RELEASING.md). `just release <version>` builds and pushes the multi-arch images; `just --list` shows the individual recipes.
