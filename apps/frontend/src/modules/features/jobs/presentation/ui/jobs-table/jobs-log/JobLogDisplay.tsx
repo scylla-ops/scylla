@@ -1,4 +1,4 @@
-import ReactCodeMirror, { EditorView, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import ReactCodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { useTailJobLogs } from '@/modules/features/jobs/presentation/hooks/use-tail-job-logs.ts';
 import { Trans } from '@lingui/react/macro';
@@ -24,8 +24,13 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
     const view = editorRef.current?.view;
 
     if (view) {
-      view.dispatch({
-        effects: EditorView.scrollIntoView(view.state.doc.length),
+      requestAnimationFrame(() => {
+        const scrollEl = view.scrollDOM;
+
+        scrollEl.scrollTo({
+          top: scrollEl.scrollHeight,
+          behavior: 'smooth',
+        });
       });
     }
   }, [logs]);
