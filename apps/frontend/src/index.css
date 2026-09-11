@@ -76,7 +76,13 @@
   /* Translucent: CodeMirror paints the selection *under* the lines, so an opaque
      active-line background would hide the selection on the caret's own line. */
   --code-editor-line-bg: rgba(93, 153, 114, 0.22);
-  --code-editor-selection-bg: rgba(93, 153, 114, 0.25);
+  /* Blue, not the accent green: the selection is composited *under* the green
+     active-line tint, so a green-on-green selection reads as "slightly darker
+     line" instead of a distinct band. A different hue survives that overlay. */
+  --code-editor-selection-bg: rgba(37, 78, 168, 0.42);
+  /* Occurrence + bracket matches: a passive hint, deliberately weaker than the
+     selection the user is actively dragging. */
+  --code-editor-match-bg: rgba(93, 153, 114, 0.25);
 }
 
 .dark {
@@ -150,7 +156,11 @@
   --code-editor-bg: #1D1E1C;
   /* Translucent — see the light-theme note above. */
   --code-editor-line-bg: rgba(93, 153, 114, 0.14);
-  --code-editor-selection-bg: rgba(93, 153, 114, 0.35);
+  /* Much lighter green than the light theme's: on a dark surface an overlay can
+     only add light, so the accent green barely lifts the active line it sits on. */
+  --code-editor-selection-bg: rgba(122, 192, 145, 0.45);
+  /* Matches keep the restrained accent — see the light-theme note above. */
+  --code-editor-match-bg: rgba(93, 153, 114, 0.35);
 }
 
 @theme inline {
