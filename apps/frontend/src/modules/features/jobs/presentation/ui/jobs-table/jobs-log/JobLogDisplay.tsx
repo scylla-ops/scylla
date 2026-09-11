@@ -1,8 +1,8 @@
-import ReactCodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import ReactCodeMirror from '@uiw/react-codemirror';
 import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { useTailJobLogs } from '@/modules/features/jobs/presentation/hooks/use-tail-job-logs.ts';
+import { useStreamedLogView } from '@/modules/features/jobs/presentation/hooks/use-streamed-log-view.ts';
 import { Trans } from '@lingui/react/macro';
-import { useEffect, useRef } from 'react';
 
 interface JobLogDisplayProps {
   jobId: string;
@@ -17,23 +17,7 @@ interface LogViewerProps {
 
 const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
   const editorTheme = useCodeMirrorTheme();
-
-  const editorRef = useRef<ReactCodeMirrorRef>(null);
-
-  useEffect(() => {
-    const view = editorRef.current?.view;
-
-    if (view) {
-      requestAnimationFrame(() => {
-        const scrollEl = view.scrollDOM;
-
-        scrollEl.scrollTo({
-          top: scrollEl.scrollHeight,
-          behavior: 'smooth',
-        });
-      });
-    }
-  }, [logs]);
+  const { initialValue, onCreateEditor } = useStreamedLogView(logs);
 
   if (isLoading)
     return (
@@ -54,10 +38,10 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
         readOnly
         editable={false}
         autoFocus={false}
-        value={logs}
+        value={initialValue}
         maxHeight={'28rem'}
         theme={editorTheme}
-        ref={editorRef}
+        onCreateEditor={onCreateEditor}
       />
     </div>
   );
