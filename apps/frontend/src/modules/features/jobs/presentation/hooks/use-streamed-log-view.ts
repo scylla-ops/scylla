@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { EditorView } from '@uiw/react-codemirror';
+import { EditorView } from '@uiw/react-codemirror';
 
 /** Distance from the end that still counts as "parked at the tail", in px. */
 const TAIL_THRESHOLD_PX = 24;
 
 /**
  * Feeds a growing log stream into a CodeMirror viewer, and keeps the viewport on
- * the tail the way an IDE console does: it sticks to the end while lines arrive,
- * and hands control back the moment the user takes over — scrolling up, or
- * pressing on a line to select it. Following resumes by itself once the user is
- * back at the end with nothing selected.
+ * the tail the way an IDE console does: it opens on the end of the log, sticks to
+ * it while lines arrive, and hands control back the moment the user takes over —
+ * scrolling up, or pressing on a line to select it. Following resumes by itself
+ * once the user is back at the end with nothing selected.
  *
  * The document is written **only here**, by appending the delta. `<ReactCodeMirror
  * value={...}>` re-syncs a changed `value` with `changes: { from: 0, to: length }`
@@ -29,6 +29,7 @@ export const useStreamedLogView = (logs: string) => {
   const [view, setView] = useState<EditorView | null>(null);
   const [initialValue] = useState(() => logs);
   const isFollowingRef = useRef(true);
+  const hasAnchoredRef = useRef(false);
 
   useEffect(() => {
     if (!view) return;
@@ -49,7 +50,23 @@ export const useStreamedLogView = (logs: string) => {
   useEffect(() => {
     if (!view || !isFollowingRef.current) return;
 
-    // One frame late, so the new lines are laid out and `scrollHeight` is final.
+    const end = view.state.doc.length;
+    if (end === 0) return;
+
+    // Opening an already-finished job hands over the whole log at once. Animating
+    // across it would scroll through lines CodeMirror has not rendered yet (it only
+    // renders the viewport) and stop short of the end, since the heights it scrolls
+    // against are estimates until measured. Land on the end instead, and let
+    // `scrollIntoView` re-apply itself across the measure passes.
+    if (!hasAnchoredRef.current) {
+      hasAnchoredRef.current = true;
+      view.dispatch({ effects: EditorView.scrollIntoView(end, { y: 'end' }) });
+      return;
+    }
+
+    // Afterwards the document only grows a few lines at a time: a frame late, so
+    // they are laid out and `scrollHeight` is final, and smooth because the jump
+    // is small enough to follow with the eye.
     const frame = requestAnimationFrame(() => {
       view.scrollDOM.scrollTo({ top: view.scrollDOM.scrollHeight, behavior: 'smooth' });
     });
