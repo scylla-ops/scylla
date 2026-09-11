@@ -73,7 +73,9 @@
   --sidebar-border: #D1D3CA;
   --sidebar-ring: #5D9972;
   --code-editor-bg: #F7F9EE;
-  --code-editor-line-bg: #d4e5ce;
+  /* Translucent: CodeMirror paints the selection *under* the lines, so an opaque
+     active-line background would hide the selection on the caret's own line. */
+  --code-editor-line-bg: rgba(93, 153, 114, 0.22);
   --code-editor-selection-bg: rgba(93, 153, 114, 0.25);
 }
 
@@ -146,7 +148,8 @@
   --sidebar-ring: #5D9972;
 
   --code-editor-bg: #1D1E1C;
-  --code-editor-line-bg: #253128;
+  /* Translucent — see the light-theme note above. */
+  --code-editor-line-bg: rgba(93, 153, 114, 0.14);
   --code-editor-selection-bg: rgba(93, 153, 114, 0.35);
 }
 

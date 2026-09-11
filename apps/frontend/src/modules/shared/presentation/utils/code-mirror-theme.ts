@@ -38,6 +38,10 @@ export const buildCodeMirrorTheme = ({
       '.cm-scroller': { overflow: 'auto', backgroundColor: 'var(--code-editor-bg)' },
       '.cm-content': { padding: '0.5rem', caretColor: 'var(--foreground)' },
       '.cm-placeholder': { color: 'var(--muted-foreground)' },
+      // `--code-editor-line-bg` must stay translucent: CodeMirror draws the
+      // selection in a layer pinned under `.cm-content` (inline `z-index: -1`,
+      // so a theme rule cannot lift it), and an opaque line background would
+      // swallow the selection on the line holding the caret.
       '.cm-activeLine': { backgroundColor: 'var(--code-editor-line-bg)' },
       '.cm-activeLineGutter': {
         backgroundColor: 'var(--code-editor-line-bg)',
