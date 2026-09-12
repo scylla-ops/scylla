@@ -52,14 +52,18 @@ pub enum QuotaDecision {
     },
 }
 
-/// Usage of one resource kind inside a scope.
+/// Usage of one resource kind inside a metered scope.
+///
+/// A policy that does not meter `resource` for a scope answers `None` from
+/// [`QuotaPolicy::usage`] rather than filling this in: there is one way to say
+/// "unmetered", and a usage always comes with the limit it is measured against.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuotaUsage {
     pub resource: Resource,
     /// How many the scope currently has.
     pub current: u64,
-    /// The scope's limit; `None` when the policy imposes none.
-    pub limit: Option<u64>,
+    /// The limit the scope is held to.
+    pub limit: u64,
 }
 
 /// The policy could not answer (a metering backend was unreachable, ...).

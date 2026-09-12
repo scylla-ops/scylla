@@ -51,7 +51,7 @@ impl QuotaPolicy for DenyAfter {
         Ok(Some(QuotaUsage {
             resource,
             current,
-            limit: Some(self.limit),
+            limit: self.limit,
         }))
     }
 }
