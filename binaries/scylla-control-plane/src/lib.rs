@@ -1,5 +1,5 @@
-//! The Scylla control plane binary: the Postgres adapters, the composition
-//! root that wires them to the `scylla-core` use cases, and the runtime.
+//! The Scylla control plane binary: the composition root that wires the
+//! `scylla-db` adapters to the `scylla-core` use cases, and the runtime.
 //!
 //! The use cases, surfaces and configuration live in `scylla-core`; they are
 //! re-exported below under their former paths so the composition root keeps
@@ -16,9 +16,6 @@ pub mod infrastructure;
 
 pub mod runtime;
 pub mod startup;
-
-#[cfg(any(test, feature = "test-utils"))]
-pub mod test_support;
 
 pub use config::{BootstrapConfig, ControlPlaneConfig, CorsConfig, ServerConfig, UiConfig};
 pub use error::{BootstrapError, ConfigError, StartupError};

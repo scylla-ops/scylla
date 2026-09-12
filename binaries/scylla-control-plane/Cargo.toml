@@ -5,11 +5,6 @@ edition = "2024"
 license.workspace = true
 repository.workspace = true
 
-# This package lives exactly two directories below the workspace root, and that
-# depth is load-bearing: `sqlx::migrate!("../../migrations")` and every
-# `#[sqlx::test(migrations = "../../migrations")]` resolve against
-# CARGO_MANIFEST_DIR. Moving it one level deeper silently breaks all of them.
-
 # The shipped binary. Its name is load-bearing: the Dockerfile builds
 # `-p ${PACKAGE}` then copies `target/release/${PACKAGE}`, so the package name
 # and the binary name must stay identical.
@@ -22,26 +17,20 @@ path = "src/main.rs"
 # deployment stays invite-only / OAuth-only unless it opts in.
 register = ["scylla-core/register"]
 
-# Exposes the `test_support` seeders (and, through scylla-core, the builders).
-# Only this crate consumes them today; the feature exists so an integration-test
-# crate could without making them part of the normal build.
-test-utils = ["scylla-core/test-utils"]
-
 [dependencies]
 # the shared kernel: domain model + the agent-facing event vocabulary
 scylla-domain = { workspace = true }
 # use cases, surfaces, configuration
 scylla-core = { workspace = true }
+# the Postgres adapters and pool
+scylla-db = { workspace = true }
 tokio.workspace = true
-async-trait.workspace = true
 tower.workspace = true
 tower-http.workspace = true
 http.workspace = true
-serde.workspace = true
-chrono.workspace = true
 tracing.workspace = true
 
-# database
+# database: only for the `PgPool` handle the runtime closes at shutdown
 sqlx.workspace = true
 
 # grpc
@@ -64,9 +53,6 @@ anyhow.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true }
-# the in-memory builders and PermissionService doubles the seeders and the
-# persistence tests build on
-scylla-core = { workspace = true, features = ["test-utils"] }
 
 [lints]
 workspace = true

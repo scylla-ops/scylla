@@ -2870,14 +2870,12 @@ name = "scylla-control-plane"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
- "chrono",
  "clap",
  "http",
  "scylla-core",
+ "scylla-db",
  "scylla-domain",
  "scylla-proto",
- "serde",
  "sqlx",
  "tokio",
  "tokio-util",
@@ -2932,6 +2930,20 @@ dependencies = [
  "tower-http 0.7.0",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "scylla-db"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "scylla-auth",
+ "scylla-core",
+ "scylla-domain",
+ "sqlx",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -6,6 +6,7 @@ members = [
     "crates/scylla-proto",
     "crates/scylla-auth",
     "crates/scylla-core",
+    "crates/scylla-db",
     "binaries/scylla-agent",
     "binaries/scylla-control-plane",
 ]
@@ -65,6 +66,7 @@ scylla-extension = { path = "crates/scylla-extension" }
 scylla-domain = { path = "crates/scylla-domain" }
 scylla-auth = { path = "crates/scylla-auth" }
 scylla-core = { path = "crates/scylla-core" }
+scylla-db = { path = "crates/scylla-db" }
 
 # domain / utilities
 thiserror = "2.0.18"
