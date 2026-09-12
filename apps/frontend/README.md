@@ -8,7 +8,7 @@ Welcome to the Scylla frontend repository.
 
 - [Node.js](https://nodejs.org/) (v18+)
 - [pnpm](https://pnpm.io/) (v9+)
-- The Scylla backend running (`cargo run -p scylla-ce -- --config ../../crates/scylla-ce/config/local.toml --no-ui`, port `8080` by default)
+- The Scylla backend running (`cargo run -p scylla-ce -- --config ../../binaries/scylla-ce/config/local.toml --no-ui`, port `8080` by default)
 
 ### Environment Variables
 

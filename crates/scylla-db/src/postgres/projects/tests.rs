@@ -175,9 +175,9 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
 /// there is no second row to write.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
-    use scylla_auth::authz::{Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope};
     use crate::domain::role::RoleName;
     use crate::postgres::PgGrantRepository;
+    use scylla_auth::authz::{Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope};
 
     let org = seed_org(&pool, "acme").await;
     let owner = seed_user(&pool, "alice").await;
@@ -212,9 +212,9 @@ async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
 /// dangling owner id → FK violation) rolls back the project too.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
-    use scylla_auth::authz::{Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope};
     use crate::domain::role::RoleName;
     use crate::postgres::PgGrantRepository;
+    use scylla_auth::authz::{Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope};
 
     // Note what this no longer proves: it used to fail on a dangling owner,
     // because the membership row had a foreign key to `users`. `grants` has

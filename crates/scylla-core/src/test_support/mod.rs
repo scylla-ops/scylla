@@ -6,9 +6,9 @@
 //! - a short `*(...)` free function for the zero-customisation case.
 //!
 //! [`authz`] holds the `PermissionService` doubles and [`quota`] a `QuotaPolicy`
-//! double. Nothing here touches a
-//! database: the `seed_*` helpers that persist these fixtures live next to the
-//! Postgres adapters, in the crate that owns them.
+//! double. Nothing here touches a database: the `seed_*` helpers that persist
+//! these fixtures live next to the Postgres adapters, in the crate that owns
+//! them.
 //!
 //! Pull everything in at once via [`prelude`]:
 //! ```ignore

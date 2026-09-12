@@ -14,7 +14,7 @@ Two binaries ship: `scylla-ce` (the control plane, Community Edition) and `scyll
 
 Everything the browser and the agents talk to lives on **one port**. The control plane serves the compiled-in web UI, terminates gRPC-Web for the browser, speaks native gRPC to the agents, and accepts inbound webhooks at `/webhooks/{trigger_id}` — all on `8080`. Because the UI is served from the same origin as the API, the bundle uses relative URLs: the published image carries no baked-in hostname and works unchanged in any deployment.
 
-The workspace is a stack of library crates under `crates/` with the two binaries on top: `scylla-ce` (the control plane, under `crates/` next to the libraries it assembles) and `scylla-agent` (under `binaries/`). See [Workspace layout](#workspace-layout) below.
+The workspace is a stack of library crates under `crates/` with the two binaries under `binaries/`: `scylla-ce` (the control plane) and `scylla-agent` (the worker). See [Workspace layout](#workspace-layout) below.
 
 ## Workspace layout
 
@@ -26,9 +26,9 @@ crates/
   scylla-auth/        the access model: RBAC ports and types, the Cedar adapter
   scylla-core/        use cases and their ports, gRPC + HTTP surfaces, server config, in-memory adapters
   scylla-db/          the Postgres adapters, the pool, the embedded migrations
-  scylla-server/      the composition root: Services, init_services, run_server, runtime::run
-  scylla-ce/          the Community Edition binary: main.rs, config/*.toml, the default extensions
+  scylla-server/      the composition root: serve(config, db, extensions) and the shared cli
 binaries/
+  scylla-ce/          the Community Edition binary: a main.rs and config/*.toml
   scylla-agent/       the worker binary (depends on scylla-domain + scylla-proto only)
 apps/frontend/        the web UI, compiled into scylla-ce through scylla-core
 migrations/           the SQL schema, embedded by scylla-db
@@ -42,7 +42,7 @@ scylla-domain <- scylla-proto <- scylla-core <- scylla-db <- scylla-server <- sc
 scylla-domain <- scylla-auth  <- scylla-core
 ```
 
-`scylla-core` is generic over the ports declared in `scylla-core` and `scylla-auth`; `scylla-db` implements them; `scylla-server` is the only crate that names the concrete implementations side by side. The binaries are a `main.rs` each: load a configuration, build the edition's extensions, call `scylla_server::runtime::run`.
+`scylla-core` is generic over the ports declared in `scylla-core` and `scylla-auth`; `scylla-db` implements them; `scylla-server` is the only crate that names the concrete implementations side by side. The binaries are a `main.rs` each: parse the command line, load the configuration, open the pool with `scylla_db::init_db`, build the edition's `Extensions`, call `scylla_server::serve`.
 
 A WebAssembly plugin runtime is planned as `crates/scylla-wasm/`; it does not exist yet.
 
@@ -50,7 +50,7 @@ A WebAssembly plugin runtime is planned as `crates/scylla-wasm/`; it does not ex
 
 This repository is the open source core and ships the Community Edition binary, `scylla-ce`. A separate, private repository builds an Enterprise binary on top of it. The dependency is strictly one way: the private repository depends on this one by a pinned git tag, and nothing here knows it exists.
 
-The seam between the two is `crates/scylla-extension`: a small crate holding only traits and the types that appear in their signatures, with no dependency on any other workspace crate. An edition implements the traits, bundles the implementations in an `Extensions` value, and hands it to `scylla_server::runtime::run`. The core calls through the traits and never knows which edition built it.
+The seam between the two is `crates/scylla-extension`: a small crate holding only traits and the types that appear in their signatures, with no dependency on any other workspace crate. An edition implements the traits, bundles the implementations in an `Extensions` value, and hands it to `scylla_server::serve` along with the pool it opened, so an implementation can share the database. The core calls through the traits and never knows which edition built it.
 
 One extension point exists today, the quota:
 
@@ -72,9 +72,9 @@ pub struct Extensions {
 }
 ```
 
-`ProjectUseCases::create` asks the policy before creating a project and turns a `Deny` into `DomainError::QuotaExceeded` (gRPC `RESOURCE_EXHAUSTED`). The Community Edition wires `UnlimitedQuota` (`crates/scylla-ce/src/extensions.rs`), which always allows and consults nothing. `scope` is the organization id as a plain string so the contract stays free of the domain model.
+`ProjectUseCases::create` asks the policy before creating a project and turns a `Deny` into `DomainError::QuotaExceeded` (gRPC `RESOURCE_EXHAUSTED`). The Community Edition wires `UnlimitedQuota` (`binaries/scylla-ce/src/main.rs`), which always allows and consults nothing. `scope` is the organization id as a plain string so the contract stays free of the domain model.
 
-Adding an extension point is: a trait and its boundary types in `scylla-extension`, a field on `Extensions`, a default implementation in `scylla-core`, and a line in each edition's `build_extensions()`.
+Adding an extension point is: a trait and its boundary types in `scylla-extension`, a field on `Extensions`, a default implementation in `scylla-core`, and a line in each edition's `Extensions` literal.
 
 ## Prerequisites
 
@@ -122,7 +122,7 @@ The stack above is enough to run Scylla. To work on it:
 ```sh
 just db-up                                        # Postgres alone
 cargo run -p scylla-ce -- \
-    --config crates/scylla-ce/config/local.toml --no-ui
+    --config binaries/scylla-ce/config/local.toml --no-ui
 cd apps/frontend && pnpm install && pnpm dev       # http://localhost:5173
 ```
 
@@ -177,7 +177,7 @@ Run `just --list` to see every recipe.
 
 **`scylla-ce` fails to connect to PostgreSQL.** Ensure `postgres` is `healthy` via `just status` (or `docker compose ps`). If it's stuck, run `just clean` to reset the volume and try again.
 
-**Frontend shows gRPC errors.** The UI and the API share an origin, so there is no CORS step to get wrong — check that `scylla-ce` is `healthy` (`just status`) and read its logs. `curl http://localhost:8080/healthz` should answer `ok`.
+**Frontend shows gRPC errors.** The UI and the API share an origin, so there is no CORS step to get wrong; check that `scylla-ce` is `healthy` (`just status`) and read its logs. `curl http://localhost:8080/healthz` should answer `ok`.
 
 **Agent not picking up jobs.** Agents run out-of-band (not in this compose stack). Check the agent's own logs and confirm it can reach the control plane at its `--control-plane-url` with a valid `--app-id` / `--app-secret`. In the UI the app shows as connected once its worker stream is open.
 
@@ -213,3 +213,7 @@ just local
 
 - [Glossary](GLOSSARY.md), every Scylla-specific term, grouped by topic.
 - Releasing images: see [RELEASING.md](RELEASING.md). `just release <version>` builds and pushes the multi-arch images; `just --list` shows the individual recipes.
+
+## License
+
+Apache License 2.0, see [LICENSE](./LICENSE).

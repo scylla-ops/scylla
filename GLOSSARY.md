@@ -5,11 +5,11 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 ## Platform services
 
 ### `scylla-ce`
-The Community Edition binary, and the process people call "the control plane". Serves everything on one port (`8080`): the compiled-in web UI, the gRPC API (user APIs, app token exchange, and the agent worker stream), its gRPC-Web translation for the browser, and the inbound webhook ingress. Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `crates/scylla-ce/config/*.toml`.
+The Community Edition binary, and the process people call "the control plane". Serves everything on one port (`8080`): the compiled-in web UI, the gRPC API (user APIs, app token exchange, and the agent worker stream), its gRPC-Web translation for the browser, and the inbound webhook ingress. Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `binaries/scylla-ce/config/*.toml`.
 
-The package is a `main.rs` and nothing else: it loads a configuration, builds the Community `Extensions` (see [Extension point](#extension-point)) and hands both to `scylla-server`, which owns the composition root (the `Services` struct, `init_services`, `run_server`). The use cases live in `scylla-core`, the access model in `scylla-auth`, the Postgres adapters in `scylla-db`.
+The package is a `main.rs` and nothing else: it loads a configuration, opens the pool, builds the Community `Extensions` (see [Extension point](#extension-point)) and hands all three to `scylla_server::serve`, which owns the composition root. The use cases live in `scylla-core`, the access model in `scylla-auth`, the Postgres adapters in `scylla-db`.
 
-The package name, the binary name, the Dockerfile stage name and the config directory path are load-bearing: the image is built with `--target scylla-ce` and `docker-compose.yaml` bind-mounts `crates/scylla-ce/config`. So is the depth of `scylla-db` and `scylla-core` under `crates/`: `sqlx::migrate!("../../migrations")` and the rust-embed `#[folder = "../../apps/frontend/dist/"]` resolve against `CARGO_MANIFEST_DIR`. Changing any of them breaks the image build or the container at runtime, not the `cargo` build.
+The package name, the binary name, the Dockerfile stage name and the config directory path are load-bearing: the image is built with `--target scylla-ce` and `docker-compose.yaml` bind-mounts `binaries/scylla-ce/config`. So is the depth of `scylla-db` and `scylla-core` under `crates/`: `sqlx::migrate!("../../migrations")` and the rust-embed `#[folder = "../../apps/frontend/dist/"]` resolve against `CARGO_MANIFEST_DIR`. Changing any of them breaks the image build or the container at runtime, not the `cargo` build.
 
 ### `scylla-agent`
 Worker binary installed on each pipeline-executing machine. Authenticates as its [App](#app) (`--app-id` / `--app-secret` exchanged for a bearer token), opens the control plane's `WorkerService` stream over `8080`, receives `JobDispatch` messages, walks the pipeline DAG in topological order (parallel within a level), spawns each node as a child process, and streams status + log events back on the same stream. Presence is simply the open stream — no heartbeats.
@@ -17,7 +17,7 @@ Worker binary installed on each pipeline-executing machine. Authenticates as its
 ### `scylla-domain`
 The shared kernel, and the only Rust code both binaries run. Holds the domain model (entities, value objects, `DomainError`, the DAG planner) plus [`JobEvent`](#jobevent), the command vocabulary the agent reports and the control plane applies.
 
-Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `uuid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
+Not a service, and deliberately dependency-light: `serde`, `chrono`, `nutype`, `ulid`, `thiserror` and nothing else. It links no database driver, no gRPC stack, no crypto and no mail client, so an agent can depend on it without pulling in the server's world. Anything that talks to an external system is an adapter and belongs in `scylla-core` or `scylla-db`. The crate has no Cargo features at all.
 
 ### `scylla-proto`
 Library crate holding shared `.proto` definitions and their generated Rust + TypeScript bindings. Both the backend and the frontend import these.
@@ -231,12 +231,12 @@ Protobuf code generator used by Tonic. Converts `.proto` → Rust structs.
 TypeScript protobuf toolchain used by the frontend to generate clients from `.proto`.
 
 ### Auth interceptor
-Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal — a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
+Async Tonic interceptor (`crates/scylla-core/src/grpc/middleware/auth_interceptor.rs`). Reads the `authorization: Bearer <token>` metadata and resolves it to a principal: a user session (`SessionRepository`) or, failing that, an app token (`AppTokenRepository`). Rejects expired or unknown tokens with `Unauthenticated` and attaches an `AuthContext { caller }` (`CallerContext::User` or `CallerContext::App`) to the request extensions.
 
 ## Identifiers
 
 ### Entity IDs
-All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AppId`, `AppTokenId`, `AppCredentialId`, `InvitationId`, `SecretId`, `TriggerId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`. Generated by the `define_id!` macro in `domain/entities/ids.rs`; they carry no `sqlx` integration because every query binds them as `&str` through `as_str()`.
+All domain IDs (`UserId`, `OrganizationId`, `ProjectId`, `PipelineId`, `JobId`, `JobLogId`, `SessionId`, `AppId`, `AppTokenId`, `AppCredentialId`, `InvitationId`, `SecretId`, `TriggerId`) are opaque string newtypes generated as lowercased ULIDs via `::generate()`. They also accept external strings via `::new(...)`. Generated by the `define_id!` macro in `domain/ids.rs`; they carry no `sqlx` integration because every query binds them as `&str` through `as_str()`.
 
 ### `NodeId`
 Caller-supplied ID for each pipeline node. Must be unique within its pipeline. Validated as a lowercase ASCII alphanumeric string plus `-` / `_`, max 128 chars.
@@ -247,10 +247,10 @@ Caller-supplied ID for each pipeline node. Must be unique within its pipeline. V
 Defines the stack (`postgres`, `scylla-ce`). The web UI ships inside the `scylla-ce` image, so there is no separate frontend service. Agents are installed out-of-band (see [`scylla-agent`](#scylla-agent)), not in this stack.
 
 ### `justfile`
-Task runner recipes: `just up`, `just down`, `just logs`, `just push-all`, etc.
+Task runner recipes: `just up`, `just down`, `just logs`, `just release <version>`, etc.
 
 ### `config/*.toml`
-Per-environment config for `scylla-ce` (under `crates/scylla-ce/config/`): `local.toml` (host-native dev), `docker.toml` (compose), `prod.toml` (production).
+Per-environment config for `scylla-ce` (under `binaries/scylla-ce/config/`): `local.toml` (host-native dev), `docker.toml` (compose), `prod.toml` (production).
 
 ### `VITE_API_URL`
 Frontend env var pointing the gRPC-Web client at the API (default: same origin). Set in `apps/frontend/.env.local` to override.
@@ -268,7 +268,7 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 - `domain/value_objects/` — immutable validated wrappers.
 - `domain/dag.rs` — the DAG planner, see [Kahn's algorithm](#kahns-algorithm).
 - `domain/errors.rs` — `DomainError` / `DomainResult`.
-- `job_event.rs` — [`JobEvent`](#jobevent).
+- `domain/job/event.rs`: [`JobEvent`](#jobevent).
 
 `crates/scylla-core/src/`:
 
@@ -282,11 +282,11 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 
 `crates/scylla-db/src/`: `postgres/<aggregate>/` (one `Pg…Repository` per aggregate) and `pool.rs` (the pool and the embedded migrations).
 
-`crates/scylla-server/src/`: `startup.rs` (the `Services` struct and `init_services`, the one place that names every concrete adapter, plus `run_server`) and `runtime.rs`.
+`crates/scylla-server/src/`: `serve.rs` (the public entry point), `startup.rs` (the `Services` struct and `init_services`, the one place that names every concrete adapter, plus `run_server`; all crate-private) and `cli.rs` (the command line, config loading and tracing setup shared by the edition binaries).
 
 `crates/scylla-extension/src/`: the traits an edition implements, see [Extension point](#extension-point).
 
-Every crate re-exports the kernel's `domain` module, so `crate::domain::...` names the model from anywhere even though it lives in another crate; `scylla-core` likewise re-exports the access model under `application::authz`, and `scylla-db` re-exports `scylla_core::application`, so the adapters keep naming the ports they implement as `crate::application::...`.
+Every crate re-exports the kernel's `domain` module, so `crate::domain::...` names the model from anywhere even though it lives in another crate. That is the only re-export of its kind: the access model is reached as `scylla_auth::authz`, and the Postgres adapters import the ports they implement from `scylla_core::application`.
 
 ### Port
 A trait describing something the use cases need from the outside world (persistence, hashing, permission checks), declared next to its use case in `application/<feature>/`. Examples: `PipelineRepository`, `HashService`, `PermissionService`.
