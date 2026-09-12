@@ -50,7 +50,7 @@ pub fn is_owner_role(role: &RoleName) -> bool {
 
 /// Whether removing every grant `victim` holds at `scope` would leave the scope
 /// with no human owner. This is the membership-removal counterpart of the
-/// per-grant last-owner guard inline in [`GrantUseCases::revoke`]: a scope must
+/// per-grant last-owner guard inline in `GrantUseCases::revoke` (in scylla-core): a scope must
 /// always retain at least one *human* owner, so removing its sole owner-holding
 /// member is blocked rather than orphaning the org/project. Returns false when
 /// `victim` holds no owner role at `scope` (removing a non-owner never orphans
