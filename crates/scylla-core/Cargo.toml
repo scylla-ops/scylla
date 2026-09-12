@@ -25,6 +25,8 @@ test-utils = []
 scylla-domain = { workspace = true }
 # the access model (RBAC ports, scoped grants, the Cedar adapter)
 scylla-auth = { workspace = true }
+# the edition boundary: the extension traits the use cases call through
+scylla-extension = { workspace = true }
 tokio.workspace = true
 async-trait.workspace = true
 tower.workspace = true

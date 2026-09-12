@@ -25,6 +25,7 @@ use scylla_db::{
     PgSessionRepository, PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
     PgUserRepository,
 };
+use scylla_extension::Extensions;
 use sqlx::PgPool;
 use std::future::Future;
 use std::sync::Arc;
@@ -177,7 +178,13 @@ pub struct Services {
     pub mailer: Arc<dyn Mailer>,
 }
 
-pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, StartupError> {
+/// Build every use case over the Postgres adapters, the Cedar engine and the
+/// edition's `extensions`, run the bootstrap, and start the background
+/// schedulers.
+pub async fn init_services(
+    config: &ControlPlaneConfig,
+    extensions: Extensions,
+) -> Result<Services, StartupError> {
     let db = scylla_db::init_db(&config.database).await?;
 
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
@@ -253,9 +260,7 @@ pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, Star
         permission_checker.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        scylla_core::application::Quotas {
-            max_projects_per_org: config.metering.max_projects_per_org,
-        },
+        extensions.quota.clone(),
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),

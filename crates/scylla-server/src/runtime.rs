@@ -1,6 +1,7 @@
 use crate::startup::{init_services, run_server, shutdown_signal};
 use anyhow::{Context, Result};
 use scylla_core::config::ControlPlaneConfig;
+use scylla_extension::Extensions;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
@@ -9,10 +10,10 @@ use tracing::info;
 /// log fan-out are in-process (the agent stream), so there is no broker or
 /// recorder to boot — and since the web UI, the gRPC API and the webhook
 /// ingress now share one listener, there is a single server to wait on.
-pub async fn run(config: ControlPlaneConfig) -> Result<()> {
+pub async fn run(config: ControlPlaneConfig, extensions: Extensions) -> Result<()> {
     let token = CancellationToken::new();
 
-    let services = init_services(&config)
+    let services = init_services(&config, extensions)
         .await
         .context("init_services failed")?;
     let db_pool = services.db.clone();

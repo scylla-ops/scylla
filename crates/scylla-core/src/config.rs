@@ -25,9 +25,6 @@ pub struct ControlPlaneConfig {
     #[serde(default)]
     pub bootstrap: Option<BootstrapConfig>,
 
-    #[serde(default)]
-    pub metering: MeteringConfig,
-
     /// SMTP settings. When absent, a no-op mailer is used.
     #[serde(default)]
     pub mail: Option<MailConfig>,
@@ -260,25 +257,6 @@ impl Default for BootstrapConfig {
             username: "admin".to_string(),
             password: "admin123".to_string(),
             email: None,
-        }
-    }
-}
-
-/// Per-organization quotas, enforced on resource creation.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MeteringConfig {
-    #[serde(default = "default_max_projects_per_org")]
-    pub max_projects_per_org: u64,
-}
-
-fn default_max_projects_per_org() -> u64 {
-    100
-}
-
-impl Default for MeteringConfig {
-    fn default() -> Self {
-        Self {
-            max_projects_per_org: default_max_projects_per_org(),
         }
     }
 }

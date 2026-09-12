@@ -5,7 +5,8 @@
 //! - a `*Builder` for chainable, in-memory construction with sensible defaults,
 //! - a short `*(...)` free function for the zero-customisation case.
 //!
-//! [`authz`] holds the `PermissionService` doubles. Nothing here touches a
+//! [`authz`] holds the `PermissionService` doubles and [`quota`] a `QuotaPolicy`
+//! double. Nothing here touches a
 //! database: the `seed_*` helpers that persist these fixtures live next to the
 //! Postgres adapters, in the crate that owns them.
 //!
@@ -21,6 +22,7 @@ pub mod jobs;
 pub mod organizations;
 pub mod pipelines;
 pub mod projects;
+pub mod quota;
 pub mod sessions;
 pub mod users;
 

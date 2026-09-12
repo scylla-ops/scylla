@@ -31,13 +31,14 @@ async fn count_by_organization_reflects_inserts(pool: PgPool) {
     assert_eq!(repo.count_by_organization(org.id()).await.unwrap(), 2);
 }
 
-/// Project creation must cap projects per org. Uses a Service caller to
-/// bypass Cedar and isolate the quota check.
+/// Project creation must honour the quota policy's refusal. Uses a Service
+/// caller to bypass Cedar and isolate the quota check; the policy is a double
+/// that allows two creations per scope and denies the third.
 #[sqlx::test(migrations = "../../migrations")]
 async fn project_quota_enforced(pool: PgPool) {
     use crate::application::audit::NoopAuditLog;
     use crate::application::caller::CallerContext;
-    use crate::application::{ProjectUseCases, Quotas, ServiceIdentity};
+    use crate::application::{ProjectUseCases, ServiceIdentity};
     use crate::domain::project::ProjectName;
     use crate::postgres::{
         PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
@@ -62,9 +63,7 @@ async fn project_quota_enforced(pool: PgPool) {
         permission.clone(),
         permission.clone(),
         permission,
-        Quotas {
-            max_projects_per_org: 2,
-        },
+        Arc::new(DenyAfter::new(2)),
     );
     let caller = CallerContext::Service(ServiceIdentity::recorder());
 

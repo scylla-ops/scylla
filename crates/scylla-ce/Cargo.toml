@@ -26,6 +26,8 @@ register = ["scylla-server/register"]
 scylla-core = { workspace = true }
 # the composition root and the server
 scylla-server = { workspace = true }
+# the extension traits this edition provides implementations for
+scylla-extension = { workspace = true }
 
 # binary: cli, logging, top-level error reporting
 clap.workspace = true

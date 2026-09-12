@@ -1,3 +1,5 @@
+mod extensions;
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use scylla_core::config::{ControlPlaneConfig, MASTER_KEY_ENV};
@@ -67,7 +69,7 @@ async fn run(args: Args) -> Result<()> {
         webhook = config.webhook.is_some(),
         "configuration loaded",
     );
-    scylla_server::runtime::run(config).await
+    scylla_server::runtime::run(config, extensions::build_extensions()).await
 }
 
 fn load_config(args: &Args) -> Result<ControlPlaneConfig> {

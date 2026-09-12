@@ -3,8 +3,8 @@ use crate::application::authz::policy::PolicyControl;
 use crate::application::authz::{Visibility, VisibilityResolver};
 use crate::application::caller::CallerContext;
 use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
-use crate::application::{PermissionService, ProjectRepository, UserRepository};
-use crate::domain::errors::{DomainError, DomainResult};
+use crate::application::{PermissionService, ProjectRepository, UserRepository, quota};
+use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::project::Project;
@@ -12,6 +12,7 @@ use crate::domain::project::{ProjectDescription, ProjectName};
 use crate::domain::role::RoleName;
 use crate::domain::user::User;
 use derive_more::Constructor;
+use scylla_extension::{QuotaPolicy, Resource};
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -29,8 +30,8 @@ pub struct ProjectUseCases<
     /// yes/no check cannot answer.
     visibility: Arc<dyn VisibilityResolver>,
     policy_control: Arc<PC>,
-    /// Per-org limits enforced on project creation.
-    quotas: crate::application::quota::Quotas,
+    /// The edition's quota policy, asked before a project is created.
+    quota: Arc<dyn QuotaPolicy>,
 }
 
 impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyControl>
@@ -48,17 +49,12 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
             .check(caller, Permission::CreateProject(organization_id.clone()))
             .await?;
 
-        // Cap projects per organization.
-        let used = self
-            .project_repo
-            .count_by_organization(&organization_id)
-            .await?;
-        if used >= self.quotas.max_projects_per_org {
-            return Err(DomainError::quota_exceeded(format!(
-                "project quota reached for this organization ({used}/{})",
-                self.quotas.max_projects_per_org
-            )));
-        }
+        // Cap projects per organization: the edition's policy decides.
+        quota::enforce(
+            self.quota
+                .check(Resource::Project, organization_id.as_str())
+                .await,
+        )?;
 
         let project = Project::create(name, description, organization_id)?;
 
