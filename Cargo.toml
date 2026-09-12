@@ -7,8 +7,9 @@ members = [
     "crates/scylla-auth",
     "crates/scylla-core",
     "crates/scylla-db",
+    "crates/scylla-server",
+    "crates/scylla-ce",
     "binaries/scylla-agent",
-    "binaries/scylla-control-plane",
 ]
 
 # Shared package metadata: every member inherits it with `field.workspace = true`.
@@ -67,6 +68,7 @@ scylla-domain = { path = "crates/scylla-domain" }
 scylla-auth = { path = "crates/scylla-auth" }
 scylla-core = { path = "crates/scylla-core" }
 scylla-db = { path = "crates/scylla-db" }
+scylla-server = { path = "crates/scylla-server" }
 
 # domain / utilities
 thiserror = "2.0.18"

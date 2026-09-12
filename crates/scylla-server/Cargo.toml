@@ -1,0 +1,44 @@
+[package]
+name = "scylla-server"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+repository.workspace = true
+
+# The composition root, as a library so that every edition binary (Community
+# here, Enterprise out of tree) starts the same server with its own extensions.
+[features]
+# Public self-service signup (the gRPC RegistrationService). Off by default so a
+# deployment stays invite-only / OAuth-only unless it opts in. Forwarded by the
+# edition binaries.
+register = ["scylla-core/register"]
+
+[dependencies]
+scylla-auth = { workspace = true }
+scylla-core = { workspace = true }
+scylla-db = { workspace = true }
+scylla-proto = { workspace = true }
+
+tokio.workspace = true
+tokio-util.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+http.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+
+# only for the `PgPool` handle the runtime closes at shutdown
+sqlx.workspace = true
+
+# grpc
+# `tls-connect-info` is what gives us `impl Connected for TlsStream<TcpStream>`,
+# the bound `serve_with_incoming_shutdown` needs to accept our own rustls
+# acceptor. Declared here rather than left to feature unification: a release
+# builds one edition package at a time, which does not unify with a sibling.
+tonic = { workspace = true, features = ["tls-connect-info"] }
+tonic-web.workspace = true
+tonic-reflection.workspace = true
+tonic-async-interceptor.workspace = true
+
+[lints]
+workspace = true

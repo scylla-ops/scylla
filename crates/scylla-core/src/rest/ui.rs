@@ -208,7 +208,7 @@ fn set_cache_control(response: &mut Response, immutable: bool) {
 fn no_ui() -> Response {
     (
         StatusCode::SERVICE_UNAVAILABLE,
-        "No web UI is bundled in this build of scylla-control-plane.\n\
+        "No web UI is bundled in this build of Scylla.\n\
          Build the frontend (`just ui-build`) and rebuild, or set [ui].dir.\n",
     )
         .into_response()

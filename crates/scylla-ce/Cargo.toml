@@ -1,0 +1,38 @@
+[package]
+name = "scylla-ce"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+repository.workspace = true
+
+# The Community Edition binary: a main.rs, the shipped configuration files and
+# the wiring of the default extension implementations. No business logic lives
+# here; the server itself is `scylla-server`.
+#
+# The package name, the binary name, the Dockerfile stage name and the config
+# directory path are load-bearing: the image is built with `--target scylla-ce`
+# and docker-compose.yaml bind-mounts `crates/scylla-ce/config`.
+[[bin]]
+name = "scylla-ce"
+path = "src/main.rs"
+
+[features]
+# Public self-service signup (the gRPC RegistrationService). Off by default so a
+# deployment stays invite-only / OAuth-only unless it opts in.
+register = ["scylla-server/register"]
+
+[dependencies]
+# configuration types and their TOML loader
+scylla-core = { workspace = true }
+# the composition root and the server
+scylla-server = { workspace = true }
+
+# binary: cli, logging, top-level error reporting
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+
+[lints]
+workspace = true

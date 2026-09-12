@@ -20,14 +20,14 @@ services:
       timeout: 3s
       retries: 10
 
-  scylla-control-plane:
-    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-control-plane:${VERSION:-latest}
+  scylla-ce:
+    image: ${DOCKER_USER:-godlyjaaaaj}/scylla-ce:${VERSION:-latest}
     build:
       context: .
       # Final stages are named after the package; this one adds the web UI on
       # top of the shared runtime.
-      target: scylla-control-plane
-    container_name: scylla-control-plane
+      target: scylla-ce
+    container_name: scylla-ce
     # One port for everything: the web UI, the gRPC API (user APIs, app token
     # exchange, and the agent worker stream — agents connect here, there is no
     # separate broker port), its gRPC-Web translation for the browser, and the
@@ -39,7 +39,7 @@ services:
       # applies (see main.rs): app logs at info, authorization grants silenced,
       # denials kept. A bare `RUST_LOG: info` overrode all of that and turned the
       # audit trail back into one line per authorized call.
-      # To investigate: `RUST_LOG=audit=info docker compose up scylla-control-plane`.
+      # To investigate: `RUST_LOG=audit=info docker compose up scylla-ce`.
       # Override DatabaseConfig.url via env so secrets stay out of the image.
       DATABASE_URL: postgres://${POSTGRES_USER:-scylla}:${POSTGRES_PASSWORD:-scylla}@postgres:5432/${POSTGRES_DB:-scylla}
       # Project-secret master key. Inject a unique 64-hex-char value here (or in a
@@ -48,7 +48,7 @@ services:
       SCYLLA_MASTER_KEY: ${SCYLLA_MASTER_KEY:-}
     command: ["--config", "/app/config/docker.toml"]
     volumes:
-      - ./binaries/scylla-control-plane/config:/app/config:ro
+      - ./crates/scylla-ce/config:/app/config:ro
     depends_on:
       postgres:
         condition: service_healthy

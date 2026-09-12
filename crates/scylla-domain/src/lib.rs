@@ -4,7 +4,7 @@
 //! This crate is deliberately dependency-light. It links no database driver, no
 //! HTTP or gRPC stack, no crypto and no mail client, so an agent can depend on
 //! it without dragging in the server's world. Anything that talks to an external
-//! system is an adapter and belongs in `scylla-control-plane` instead.
+//! system is an adapter and belongs in `scylla-core` or `scylla-db` instead.
 //!
 //! Concretely: nothing here may depend on `sqlx`, `tonic`, `cedar-policy`,
 //! `reqwest`, `lettre`, `oauth2` or `argon2`. Reaching for one of those is the

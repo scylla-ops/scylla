@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use scylla_control_plane::config::{ControlPlaneConfig, MASTER_KEY_ENV};
+use scylla_core::config::{ControlPlaneConfig, MASTER_KEY_ENV};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Scylla control-plane (API + web UI)")]
@@ -34,7 +34,9 @@ async fn main() {
                 // Denials stay visible because they are what someone reads logs for.
                 //
                 // `RUST_LOG=audit=info` brings the full trail back with no rebuild.
-                "audit=warn,scylla_control_plane=info,scylla_domain=info,warn".into()
+                "audit=warn,scylla_ce=info,scylla_server=info,scylla_core=info,scylla_auth=info,\
+                 scylla_db=info,scylla_domain=info,warn"
+                    .into()
             }),
         )
         .init();
@@ -65,7 +67,7 @@ async fn run(args: Args) -> Result<()> {
         webhook = config.webhook.is_some(),
         "configuration loaded",
     );
-    scylla_control_plane::runtime::run(config).await
+    scylla_server::runtime::run(config).await
 }
 
 fn load_config(args: &Args) -> Result<ControlPlaneConfig> {

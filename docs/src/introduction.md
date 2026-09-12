@@ -11,7 +11,7 @@
 Scylla runs your pipelines across a fleet of machines from a single control
 plane. Two binaries ship:
 
-- **`scylla-control-plane`** — the central brain: the web UI, a gRPC API and its
+- **`scylla-ce`** — the central brain: the web UI, a gRPC API and its
   gRPC-Web translation, the inbound webhook ingress, and in-process job
   dispatch, all on one port.
 - **`scylla-agent`** — a worker installed per machine, registered as an *App* and

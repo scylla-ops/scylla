@@ -54,7 +54,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 # RUN's cache key (BuildKit treats it as an implicit env prefix), which would
 # give every service a distinct deps layer and silently un-share the cook.
 # Cook the ENTIRE workspace once — service-independent, so the layer is SHARED
-# across all service builds (control-plane, agent…).
+# across all service builds (ce, agent…).
 FROM chef AS deps
 COPY --from=planner /app/recipe.json recipe.json
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
@@ -72,23 +72,24 @@ ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
 ENV SQLX_OFFLINE=true
 
 # One build stage per binary instead of a shared `ARG PACKAGE`: only the control
-# plane needs the web UI, and giving it its own branch is what keeps the agent
-# image from paying for the node stage. BuildKit only builds the stages its
-# target actually reaches, so `--target scylla-agent` never runs `ui`.
+# plane (the `scylla-ce` package) needs the web UI, and giving it its own branch
+# is what keeps the agent image from paying for the node stage. BuildKit only
+# builds the stages its target actually reaches, so `--target scylla-agent`
+# never runs `ui`.
 FROM src AS build-agent
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     cargo build --release -p scylla-agent && \
     cp target/release/scylla-agent /app/service
 
-FROM src AS build-control-plane
+FROM src AS build-ce
 # The SPA is compiled into the binary (rust-embed), so it has to land before
 # cargo runs, at the path build.rs and the #[folder] attribute both expect.
 COPY --from=ui /app/dist ./apps/frontend/dist
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
-    cargo build --release -p scylla-control-plane && \
-    cp target/release/scylla-control-plane /app/service
+    cargo build --release -p scylla-ce && \
+    cp target/release/scylla-ce /app/service
 
 # === Runtime ===
 FROM debian:bookworm-slim AS runtime-base
@@ -120,8 +121,8 @@ ENTRYPOINT ["./service"]
 FROM runtime-base AS scylla-agent
 COPY --from=build-agent --chown=appuser:appuser /app/service ./service
 
-FROM runtime-base AS scylla-control-plane
-COPY --from=build-control-plane --chown=appuser:appuser /app/service ./service
+FROM runtime-base AS scylla-ce
+COPY --from=build-ce --chown=appuser:appuser /app/service ./service
 # One port now: web UI, gRPC, gRPC-Web, reflection and webhook ingress.
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \

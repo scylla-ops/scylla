@@ -5,20 +5,30 @@ this file only says where to look.
 
 ## Repository shape
 
-`binaries/` holds the packages that produce an executable, `crates/` the
-libraries both of them link.
+`crates/` holds the library crates and the Community Edition binary,
+`binaries/` the agent.
 
 | Path | What it is |
 |---|---|
+| `crates/scylla-extension` | the edition boundary: extension traits (`QuotaPolicy`) + `Extensions`; no workspace dependency |
 | `crates/scylla-domain` | dependency-light shared kernel (domain model, `JobEvent`) |
 | `crates/scylla-proto` | the wire contract — protos under `proto/scylla/<domain>/v1/` |
-| `binaries/scylla-control-plane` | server binary: web UI, gRPC API, job dispatch, cron, webhooks |
+| `crates/scylla-auth` | the access model: RBAC ports and types, the Cedar adapter |
+| `crates/scylla-core` | use cases and ports, gRPC + HTTP surfaces, config, in-memory adapters |
+| `crates/scylla-db` | the Postgres adapters, the pool, the embedded migrations |
+| `crates/scylla-server` | the composition root: `Services`, `init_services`, `run_server` |
+| `crates/scylla-ce` | the Community Edition binary: `main.rs`, config files, the wiring of the default extensions |
 | `binaries/scylla-agent` | the worker installed per machine |
-| `apps/frontend` | the web UI's source; compiled into the control-plane binary |
+| `apps/frontend` | the web UI's source; compiled into the `scylla-ce` binary through `scylla-core` |
 
-Both binary packages sit exactly two directories below the root, and that depth
-is load-bearing: `sqlx::migrate!("../../migrations")` resolves against
-`CARGO_MANIFEST_DIR`.
+Dependencies point one way: `domain <- auth <- core <- db <- server <- ce`, with
+`extension` below everything. A private Enterprise repo depends on this one by
+git tag and provides its own `Extensions`; nothing here depends on it.
+
+Every crate under `crates/` sits exactly two directories below the root, and
+that depth is load-bearing: `sqlx::migrate!("../../migrations")` (scylla-db)
+and the rust-embed `#[folder = "../../apps/frontend/dist/"]` (scylla-core)
+resolve against `CARGO_MANIFEST_DIR`.
 
 ## Guides
 

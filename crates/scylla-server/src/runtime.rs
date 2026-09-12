@@ -1,5 +1,6 @@
-use crate::config::ControlPlaneConfig;
+use crate::startup::{init_services, run_server, shutdown_signal};
 use anyhow::{Context, Result};
+use scylla_core::config::ControlPlaneConfig;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
@@ -11,7 +12,7 @@ use tracing::info;
 pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     let token = CancellationToken::new();
 
-    let services = crate::init_services(&config)
+    let services = init_services(&config)
         .await
         .context("init_services failed")?;
     let db_pool = services.db.clone();
@@ -19,13 +20,13 @@ pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     // ── Ctrl+C / SIGTERM → cancel root token ───────────────────────────
     let signal_token = token.clone();
     tokio::spawn(async move {
-        crate::shutdown_signal().await;
+        shutdown_signal().await;
         signal_token.cancel();
     });
 
     // ── The server (blocks until the token is cancelled) ───────────────
     let server_token = token.clone();
-    let result = crate::run_server(&config, &services, async move {
+    let result = run_server(&config, &services, async move {
         server_token.cancelled().await;
     })
     .await;
@@ -33,7 +34,7 @@ pub async fn run(config: ControlPlaneConfig) -> Result<()> {
     token.cancel();
 
     info!("closing database pool");
-    crate::infrastructure::close_db(&db_pool).await;
+    scylla_db::close_db(&db_pool).await;
 
     result.context("run_server failed")?;
     Ok(())

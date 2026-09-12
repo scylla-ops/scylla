@@ -2866,25 +2866,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "scylla-control-plane"
+name = "scylla-ce"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "http",
  "scylla-core",
- "scylla-db",
- "scylla-domain",
- "scylla-proto",
- "sqlx",
+ "scylla-server",
  "tokio",
- "tokio-util",
- "tonic",
- "tonic-async-interceptor",
- "tonic-reflection",
- "tonic-web",
- "tower",
- "tower-http 0.7.0",
  "tracing",
  "tracing-subscriber",
 ]
@@ -2977,6 +2966,28 @@ dependencies = [
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
+]
+
+[[package]]
+name = "scylla-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "http",
+ "scylla-auth",
+ "scylla-core",
+ "scylla-db",
+ "scylla-proto",
+ "sqlx",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tonic-async-interceptor",
+ "tonic-reflection",
+ "tonic-web",
+ "tower",
+ "tower-http 0.7.0",
+ "tracing",
 ]
 
 [[package]]

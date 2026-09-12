@@ -1,6 +1,8 @@
+use http::{HeaderName, HeaderValue, Method};
+use scylla_auth::CedarPermissionService;
 #[cfg(feature = "register")]
-use crate::application::SignupUseCases;
-use crate::application::{
+use scylla_core::application::SignupUseCases;
+use scylla_core::application::{
     AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases,
     BootstrapUseCases, CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
     InvitationUseCases, JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer,
@@ -9,19 +11,20 @@ use crate::application::{
     TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
     WebhookIngressUseCases,
 };
-use crate::config::ControlPlaneConfig;
-use crate::error::StartupError;
-use crate::infrastructure::LettreMailer;
-use crate::infrastructure::{
-    Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
-    GitHubOAuthProvider, InMemoryAgentRegistry, InMemoryJobLogStream, PgAgentRepository,
-    PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository, PgAuditLog,
-    PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository, PgJobLogRepository,
-    PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository, PgPipelineRepository,
-    PgProjectRepository, PgRoleRepository, PgSecretRepository, PgSessionRepository,
-    PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository, PgUserRepository,
+use scylla_core::config::ControlPlaneConfig;
+use scylla_core::error::StartupError;
+use scylla_core::infrastructure::{
+    Argon2HashService, ChaChaSecretCipher, CronScheduleService, GitHubOAuthProvider,
+    InMemoryAgentRegistry, InMemoryJobLogStream, LettreMailer,
 };
-use http::{HeaderName, HeaderValue, Method};
+use scylla_db::{
+    PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,
+    PgAuditLog, PgAuthzEntityProvider, PgGrantRepository, PgInvitationRepository,
+    PgJobLogRepository, PgJobRepository, PgOAuthIdentityRepository, PgOrganizationRepository,
+    PgPipelineRepository, PgProjectRepository, PgRoleRepository, PgSecretRepository,
+    PgSessionRepository, PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
+    PgUserRepository,
+};
 use sqlx::PgPool;
 use std::future::Future;
 use std::sync::Arc;
@@ -175,7 +178,7 @@ pub struct Services {
 }
 
 pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, StartupError> {
-    let db = crate::infrastructure::init_db(&config.database).await?;
+    let db = scylla_db::init_db(&config.database).await?;
 
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
     let session_repo = Arc::new(PgSessionRepository::new(db.clone()));
@@ -250,7 +253,7 @@ pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, Star
         permission_checker.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        crate::application::Quotas {
+        scylla_core::application::Quotas {
             max_projects_per_org: config.metering.max_projects_per_org,
         },
     ));
@@ -317,7 +320,7 @@ pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, Star
         // Bootstrap mints a System-scoped `system-admin` grant via the grant use
         // case (replaces the former global-role assignment).
         let bootstrap_uc = BootstrapUseCases::new(user_uc.clone(), grant_uc.clone());
-        crate::bootstrap::bootstrap_admin(&bootstrap_uc, cfg).await?;
+        scylla_core::bootstrap::bootstrap_admin(&bootstrap_uc, cfg).await?;
     }
 
     // Mailer: real SMTP when configured, else a no-op (logs only).
@@ -522,7 +525,7 @@ pub async fn init_services(config: &ControlPlaneConfig) -> Result<Services, Star
 
 // ── CORS builder ───────────────────────────────────────────────────────
 
-pub fn build_cors_layer(cors: &crate::config::CorsConfig) -> CorsLayer {
+pub fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLayer {
     let mut layer = CorsLayer::new();
 
     if cors.allow_origins.iter().any(|o| o == "*") {
@@ -614,8 +617,8 @@ where
     F: Future<Output = ()> + Send + 'static,
 {
     #[cfg(feature = "register")]
-    use crate::grpc::RegistrationHandler;
-    use crate::grpc::{
+    use scylla_core::grpc::RegistrationHandler;
+    use scylla_core::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
         InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
         ProjectHandler, RoleHandler, SecretHandler, TriggerHandler, UserHandler,
@@ -823,12 +826,12 @@ where
     // The plain-HTTP surfaces get the status-based classifier instead. The
     // webhook router sets no fallback, so merging it into the tonic-derived
     // router (which has one) is safe — axum only panics when both do.
-    let http = crate::rest::webhook::router(services.webhook_ingress_uc.clone())
+    let http = scylla_core::rest::webhook::router(services.webhook_ingress_uc.clone())
         .layer(TraceLayer::new_for_http());
 
     // `attach` installs the UI as the fallback, replacing the `UNIMPLEMENTED`
     // catch-all that came with tonic's `Routes`. It must stay last.
-    let app = crate::rest::ui::attach(grpc.merge(http), &config.ui);
+    let app = scylla_core::rest::ui::attach(grpc.merge(http), &config.ui);
 
     // CORS stays outermost, as it was. It is no longer load-bearing for the UI —
     // same origin now — but third-party API clients and the Vite dev server on
@@ -846,10 +849,11 @@ where
                 .await?;
         }
         // Our own acceptor rather than `Server::tls_config`, so the ALPN list can
-        // include http/1.1 — see the module docs on `crate::tls`.
+        // include http/1.1; see the module docs on `scylla_core::tls`.
         Some(tls) => {
             let incoming =
-                crate::tls::incoming(config.server.address, crate::tls::acceptor(tls)?).await?;
+                scylla_core::tls::incoming(config.server.address, scylla_core::tls::acceptor(tls)?)
+                    .await?;
             tracing::info!("server listening on https://{}", config.server.address);
             router
                 .serve_with_incoming_shutdown(incoming, shutdown)

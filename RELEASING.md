@@ -13,7 +13,7 @@ just release 0.4.0-beta     # build and push everything
 
 | Image | Built from | Contents |
 |---|---|---|
-| `scylla-control-plane` | `Dockerfile`, stage `scylla-control-plane` | the web UI, gRPC API and gRPC-Web, job dispatch, cron scheduler, webhook ingress |
+| `scylla-ce` | `Dockerfile`, stage `scylla-ce` | the web UI, gRPC API and gRPC-Web, job dispatch, cron scheduler, webhook ingress |
 | `scylla-agent` | `Dockerfile`, stage `scylla-agent` | the worker installed per machine |
 
 Both come out of the same workspace `Dockerfile`; the bake target picks the
@@ -126,7 +126,7 @@ so baking them together cooks it once instead of twice.
 To build a single image without paying for the others, call bake directly:
 
 ```sh
-VERSION=0.4.0-beta docker buildx bake -f docker-bake.hcl --push control-plane
+VERSION=0.4.0-beta docker buildx bake -f docker-bake.hcl --push ce
 VERSION=0.4.0-beta docker buildx bake -f docker-bake.hcl --push agent
 ```
 
@@ -180,7 +180,7 @@ Anything about *how* an image is built belongs in the bake file, not the
 justfile.
 
 Its variables: `VERSION`, `LATEST`, `DOCKER_USER`, `PLATFORMS`, `GIT_SHA`,
-`CACHE`. Targets: `control-plane`, `agent`. One group, `release`, holding both.
+`CACHE`. Targets: `ce`, `agent`. One group, `release`, holding both.
 
 Driving bake directly is fine, but **always pass `-f docker-bake.hcl`**:
 
