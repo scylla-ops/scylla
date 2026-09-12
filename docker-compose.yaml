@@ -48,7 +48,7 @@ services:
       SCYLLA_MASTER_KEY: ${SCYLLA_MASTER_KEY:-}
     command: ["--config", "/app/config/docker.toml"]
     volumes:
-      - ./crates/scylla-ce/config:/app/config:ro
+      - ./binaries/scylla-ce/config:/app/config:ro
     depends_on:
       postgres:
         condition: service_healthy

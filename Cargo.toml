@@ -8,7 +8,7 @@ members = [
     "crates/scylla-core",
     "crates/scylla-db",
     "crates/scylla-server",
-    "crates/scylla-ce",
+    "binaries/scylla-ce",
     "binaries/scylla-agent",
 ]
 
