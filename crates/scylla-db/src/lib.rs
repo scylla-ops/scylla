@@ -4,17 +4,13 @@
 //!
 //! This crate sits above `scylla-core` (it implements core's traits) and below
 //! the composition root that hands the repositories to the use cases. It is
-//! the only crate that links `sqlx`.
+//! the only crate that runs queries; everything above it only passes the pool
+//! around.
 
 /// The domain model, re-exported from the [`scylla_domain`] kernel so that
 /// `crate::domain::...` paths keep naming it from anywhere in this crate.
 #[doc(no_inline)]
 pub use scylla_domain::domain;
-
-/// The use cases and ports, re-exported from [`scylla_core`] so that the
-/// adapters keep naming the traits they implement as `crate::application::...`.
-#[doc(no_inline)]
-pub use scylla_core::application;
 
 pub mod pool;
 pub mod postgres;

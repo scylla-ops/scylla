@@ -3,10 +3,6 @@ use crate::application::agent::dispatch::JobDispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::agent::repository::{AgentRepository, AgentStats};
 use crate::application::app::repository::AppRepository;
-use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
-use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::service::PermissionService;
-use crate::application::caller::CallerContext;
 use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
@@ -16,6 +12,10 @@ use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use chrono::{DateTime, Utc};
 use derive_more::Constructor;
+use scylla_auth::authz::{
+    Grant, ORGANIZATION_AGENT_ROLE, PermissionService, PolicyControl, Principal, Scope,
+};
+use scylla_auth::caller::CallerContext;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};

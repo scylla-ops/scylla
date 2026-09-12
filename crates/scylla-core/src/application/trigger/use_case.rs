@@ -1,8 +1,6 @@
-use crate::application::caller::CallerContext;
 use crate::application::{
-    AppRepository, CronSchedule, Grant, HashService, ORGANIZATION_TRIGGER_RUNNER_ROLE,
-    PermissionService, PipelineRepository, PolicyControl, Principal, ProjectRepository, Scope,
-    SecretCipher, TriggerRepository, next_fire_time,
+    AppRepository, CronSchedule, HashService, PipelineRepository, ProjectRepository, SecretCipher,
+    TriggerRepository, next_fire_time,
 };
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretLabel};
@@ -14,6 +12,10 @@ use crate::domain::role::RoleName;
 use crate::domain::trigger::Trigger;
 use crate::domain::trigger::{TriggerInput, TriggerName, TriggerSource};
 use derive_more::Constructor;
+use scylla_auth::authz::{
+    Grant, ORGANIZATION_TRIGGER_RUNNER_ROLE, PermissionService, PolicyControl, Principal, Scope,
+};
+use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;

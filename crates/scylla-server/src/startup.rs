@@ -1,15 +1,16 @@
 use http::{HeaderName, HeaderValue, Method};
-use scylla_auth::CedarPermissionService;
+use scylla_auth::audit::AuditLog;
+use scylla_auth::authz::RoleUseCases;
+use scylla_auth::cedar::CedarPermissionService;
 #[cfg(feature = "register")]
 use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
-    AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuditLog, AuthUseCases,
-    BootstrapUseCases, CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
-    InvitationUseCases, JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer,
-    NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PipelineUseCases,
-    ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
-    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
-    WebhookIngressUseCases,
+    AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases,
+    CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
+    JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
+    OrganizationUseCases, PendingJobScheduler, PipelineUseCases, ProjectUseCases, SecretCipher,
+    SecretResolver, SecretUseCases, TriggerCronScheduler, TriggerFireUseCases, TriggerFiring,
+    TriggerUseCases, UserUseCases, WebhookIngressUseCases,
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;

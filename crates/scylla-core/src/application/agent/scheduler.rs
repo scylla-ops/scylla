@@ -1,10 +1,10 @@
 use crate::application::agent::dispatch::assemble_dispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::agent::use_case::{DispatchOutcome, DispatchUseCases};
-use crate::application::authz::service::PermissionService;
 use crate::application::job::repository::JobRepository;
 use crate::application::pipeline::repository::PipelineRepository;
 use crate::application::secret::SecretResolver;
+use scylla_auth::authz::PermissionService;
 use std::sync::Arc;
 use tracing::{info, instrument, warn};
 
@@ -116,7 +116,6 @@ where
 mod tests {
     use super::*;
     use crate::application::agent::dispatch::{DispatchNode, JobDispatch};
-    use crate::application::caller::CallerContext;
     use crate::application::pagination::{PaginatedResult, PaginationParams};
     use crate::domain::errors::DomainResult;
     use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
@@ -127,6 +126,7 @@ mod tests {
     use crate::test_support::pipelines::pipeline;
     use crate::test_support::projects::project;
     use async_trait::async_trait;
+    use scylla_auth::caller::CallerContext;
     use std::sync::Mutex;
 
     /// Job repo holding a fixed pending set; records `set_agent` attributions.

@@ -16,8 +16,8 @@ use crate::domain::user::User;
 use scylla_core::test_support::prelude::*;
 
 pub async fn seed_org(pool: &sqlx::PgPool, name: &str) -> Organization {
-    use crate::application::OrganizationRepository;
     use crate::postgres::PgOrganizationRepository;
+    use scylla_core::application::OrganizationRepository;
     let org = org(name);
     PgOrganizationRepository::new(pool.clone())
         .create(&org)
@@ -27,8 +27,8 @@ pub async fn seed_org(pool: &sqlx::PgPool, name: &str) -> Organization {
 }
 
 pub async fn seed_project(pool: &sqlx::PgPool, org: &Organization, name: &str) -> Project {
-    use crate::application::ProjectRepository;
     use crate::postgres::PgProjectRepository;
+    use scylla_core::application::ProjectRepository;
     let project = project(org, name);
     PgProjectRepository::new(pool.clone())
         .create(&project)
@@ -38,8 +38,8 @@ pub async fn seed_project(pool: &sqlx::PgPool, org: &Organization, name: &str) -
 }
 
 pub async fn seed_pipeline(pool: &sqlx::PgPool, project: &Project) -> Pipeline {
-    use crate::application::PipelineRepository;
     use crate::postgres::PgPipelineRepository;
+    use scylla_core::application::PipelineRepository;
     let pipeline = pipeline(project);
     PgPipelineRepository::new(pool.clone())
         .create(&pipeline)
@@ -49,8 +49,8 @@ pub async fn seed_pipeline(pool: &sqlx::PgPool, project: &Project) -> Pipeline {
 }
 
 pub async fn seed_job(pool: &sqlx::PgPool, pipeline: &Pipeline) -> Job {
-    use crate::application::JobRepository;
     use crate::postgres::PgJobRepository;
+    use scylla_core::application::JobRepository;
     let job = job(pipeline);
     PgJobRepository::new(pool.clone())
         .create(&job)
@@ -65,8 +65,8 @@ pub async fn seed_job_log(
     node_id: &str,
     line: &str,
 ) -> JobLog {
-    use crate::application::JobLogRepository;
     use crate::postgres::PgJobLogRepository;
+    use scylla_core::application::JobLogRepository;
     let log = job_log(job_id, node_id, line);
     PgJobLogRepository::new(pool.clone())
         .create(&log)
@@ -76,8 +76,8 @@ pub async fn seed_job_log(
 }
 
 pub async fn seed_session(pool: &sqlx::PgPool, user_id: &UserId) -> Session {
-    use crate::application::SessionRepository;
     use crate::postgres::PgSessionRepository;
+    use scylla_core::application::SessionRepository;
     let session = session(user_id);
     PgSessionRepository::new(pool.clone())
         .create(&session)
@@ -87,8 +87,8 @@ pub async fn seed_session(pool: &sqlx::PgPool, user_id: &UserId) -> Session {
 }
 
 pub async fn seed_user(pool: &sqlx::PgPool, name: &str) -> User {
-    use crate::application::UserRepository;
     use crate::postgres::PgUserRepository;
+    use scylla_core::application::UserRepository;
     let user = user(name);
     PgUserRepository::new(pool.clone())
         .create(&user)

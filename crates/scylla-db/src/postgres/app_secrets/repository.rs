@@ -1,10 +1,10 @@
-use crate::application::app::AppCredentialRepository;
 use crate::domain::app::AppCredential;
 use crate::domain::app::{AppSecretHash, AppSecretLabel};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppCredentialId, AppId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::app::AppCredentialRepository;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

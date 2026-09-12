@@ -3,9 +3,9 @@
 //! `String` ids / `chrono` timestamps / sum types the domain uses. Centralised
 //! here so each mapper and handler site stays a one-liner.
 
-use crate::application::{Principal, Scope, ScopeKind};
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
+use scylla_auth::authz::{Principal, Scope, ScopeKind};
 use scylla_domain::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
 use scylla_proto::authz::v1::{
     Permission, PrincipalRef, ScopeKind as ProtoScopeKind, ScopeRef, principal_ref, scope_ref,

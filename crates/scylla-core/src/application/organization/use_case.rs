@@ -1,8 +1,5 @@
-use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
-use crate::application::authz::policy::PolicyControl;
-use crate::application::caller::CallerContext;
 use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
-use crate::application::{OrganizationRepository, PermissionService, UserRepository};
+use crate::application::{OrganizationRepository, UserRepository};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::Organization;
@@ -11,6 +8,10 @@ use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use crate::domain::user::User;
 use derive_more::Constructor;
+use scylla_auth::authz::{
+    Grant, ORGANIZATION_ADMIN_ROLE, PermissionService, PolicyControl, Principal, Scope,
+};
+use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 

@@ -1,5 +1,4 @@
 use super::PgTriggerRepository;
-use crate::application::{PipelineRepository, TriggerRepository};
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::pipeline::EnvKey;
@@ -9,6 +8,7 @@ use crate::domain::trigger::{CronSpec, TriggerInput, TriggerName, TriggerSource,
 use crate::postgres::PgPipelineRepository;
 use crate::test_support::prelude::*;
 use chrono::{DateTime, Duration, Utc};
+use scylla_core::application::{PipelineRepository, TriggerRepository};
 use sqlx::PgPool;
 
 fn cron_trigger(pipeline: &Pipeline, name: &str) -> Trigger {

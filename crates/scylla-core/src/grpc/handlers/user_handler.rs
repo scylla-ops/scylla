@@ -1,11 +1,12 @@
 use crate::application::UserUseCases;
-use crate::application::{HashService, PermissionService, PolicyControl, UserRepository};
+use crate::application::{HashService, UserRepository};
 use crate::extract_auth_context;
 use crate::grpc::convert::{optional, required};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination, user_to_proto,
 };
 use derive_more::Constructor;
+use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::UserId;
 use scylla_domain::domain::user::{Email, Password, Username};
 use scylla_proto::user::v1::{

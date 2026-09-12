@@ -1,10 +1,9 @@
-use crate::application::authz::Visibility;
-use crate::application::authz::grant::Grant;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::project::Project;
 use async_trait::async_trait;
+use scylla_auth::authz::{Grant, Visibility};
 
 #[async_trait]
 pub trait ProjectRepository {

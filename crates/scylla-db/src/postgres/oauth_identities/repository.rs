@@ -1,7 +1,7 @@
-use crate::application::oauth::OAuthIdentityRepository;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::UserId;
 use async_trait::async_trait;
+use scylla_core::application::oauth::OAuthIdentityRepository;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

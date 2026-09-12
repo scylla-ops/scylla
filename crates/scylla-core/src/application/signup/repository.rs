@@ -1,8 +1,8 @@
-use crate::application::authz::grant::Grant;
 use crate::domain::errors::DomainResult;
 use crate::domain::organization::Organization;
 use crate::domain::user::User;
 use async_trait::async_trait;
+use scylla_auth::authz::Grant;
 
 /// Atomic provisioning of a brand-new account. The four inserts (user,
 /// organization, membership, organization-admin grant) must succeed or fail as a

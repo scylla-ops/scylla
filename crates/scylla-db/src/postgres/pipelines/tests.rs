@@ -1,9 +1,9 @@
 use super::PgPipelineRepository;
-use crate::application::{PipelineRepository, ProjectRepository};
 use crate::domain::errors::DomainError;
 use crate::domain::pipeline::NodeId;
 use crate::postgres::PgProjectRepository;
 use crate::test_support::prelude::*;
+use scylla_core::application::{PipelineRepository, ProjectRepository};
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]

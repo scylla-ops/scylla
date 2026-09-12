@@ -1,11 +1,9 @@
-use crate::application::{
-    AppCredentialRepository, AppRepository, AppUseCases, HashService, PermissionService,
-    PolicyControl,
-};
+use crate::application::{AppCredentialRepository, AppRepository, AppUseCases, HashService};
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
+use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::app::{App, AppCredential};
 use scylla_domain::domain::app::{AppName, AppSecretLabel};
 use scylla_domain::domain::ids::{AppCredentialId, AppId, OrganizationId};

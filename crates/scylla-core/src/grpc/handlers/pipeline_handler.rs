@@ -1,6 +1,6 @@
 use crate::application::{
-    AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PermissionService,
-    PipelineRepository, PipelineUseCases, ProjectRepository,
+    AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PipelineRepository,
+    PipelineUseCases, ProjectRepository,
 };
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, wrap};
@@ -8,6 +8,7 @@ use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, pipeline_to_proto, pipeline_to_proto_summary,
     proto_to_domain_pagination,
 };
+use scylla_auth::authz::PermissionService;
 use scylla_domain::domain::ids::{OrganizationId, PipelineId, ProjectId};
 use scylla_domain::domain::pipeline::PipelineNode;
 use scylla_domain::domain::pipeline::{EnvKey, EnvVar, NodeId, PipelineName, Step, WorkingDir};

@@ -1,10 +1,8 @@
 pub mod agent;
 pub mod app;
-pub mod audit;
 pub mod auth;
-pub mod authz;
 pub mod bootstrap;
-pub mod caller;
+pub mod grant;
 pub mod invitation;
 pub mod job;
 pub mod mail;
@@ -27,16 +25,9 @@ pub use app::{
     AppCredentialRepository, AppRepository, AppTokenOutcome, AppTokenRepository, AppTokenUseCases,
     AppUseCases, CreatedApp, CreatedAppSecret,
 };
-pub use audit::{AuditDecision, AuditEntry, AuditLog, NoopAuditLog};
 pub use auth::{AuthUseCases, HashService, SessionRepository};
-pub use authz::{
-    AuthzEntityProvider, EffectiveScope, FULL_CONTROL, Grant, GrantRepository, GrantUseCases,
-    GrantableRole, ORGANIZATION_TRIGGER_RUNNER_ROLE, PermissionService, PolicyControl, Principal,
-    ResourceAncestors, Role, RoleKind, RoleRepository, RoleUseCases, Scope, ScopeKind, Visibility,
-    VisibilityResolver, grantable_roles, resource_home_scope, validate_role_in_db,
-};
 pub use bootstrap::BootstrapUseCases;
-pub use caller::{CallerContext, ServiceIdentity};
+pub use grant::GrantUseCases;
 pub use invitation::{AcceptOutcome, InvitationRepository, InvitationUseCases};
 pub use job::{
     JobEvent, JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase,

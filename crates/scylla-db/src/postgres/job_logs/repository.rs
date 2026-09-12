@@ -1,5 +1,3 @@
-use crate::application::JobLogRepository;
-use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{JobId, JobLogId};
 use crate::domain::job::JobLog;
@@ -7,6 +5,8 @@ use crate::domain::job::LogStream;
 use crate::domain::pipeline::NodeId;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::JobLogRepository;
+use scylla_core::application::pagination::{PaginatedResult, PaginationParams};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

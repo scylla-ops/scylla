@@ -1,10 +1,10 @@
-use crate::application::secret::SecretRepository;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{ProjectId, SecretId};
 use crate::domain::secret::Secret;
 use crate::domain::secret::SecretName;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::secret::SecretRepository;
 use sqlx::PgPool;
 use tracing::instrument;
 

@@ -1,10 +1,10 @@
-use crate::application::authz::grant::Grant;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::Organization;
 use crate::domain::organization::OrganizationName;
 use async_trait::async_trait;
+use scylla_auth::authz::Grant;
 
 #[async_trait]
 pub trait OrganizationRepository {

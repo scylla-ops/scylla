@@ -1,10 +1,3 @@
-use crate::application::authz::grant::{
-    Grant, ORGANIZATION_MEMBER_ROLE, Principal, Scope, validate_role_in_db,
-};
-use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::role::RoleRepository;
-use crate::application::authz::service::PermissionService;
-use crate::application::caller::CallerContext;
 use crate::application::invitation::repository::InvitationRepository;
 use crate::application::invitation::token::mint_invitation_token;
 use crate::application::mail::Mailer;
@@ -19,6 +12,11 @@ use crate::domain::user::User;
 use crate::domain::user::{Email, Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;
+use scylla_auth::authz::{
+    Grant, ORGANIZATION_MEMBER_ROLE, PermissionService, PolicyControl, Principal, RoleRepository,
+    Scope, validate_role_in_db,
+};
+use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;

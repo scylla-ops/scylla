@@ -1,8 +1,8 @@
-use crate::application::TriggerDeliveryRepository;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::TriggerId;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::TriggerDeliveryRepository;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

@@ -1,8 +1,4 @@
 use super::PgAgentRepository;
-use crate::application::authz::grant::{
-    Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
-};
-use crate::application::{AgentRepository, AppRepository, JobRepository};
 use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
@@ -13,6 +9,8 @@ use crate::domain::job::JobStatus;
 use crate::domain::role::RoleName;
 use crate::postgres::{PgAppRepository, PgGrantRepository, PgJobRepository};
 use crate::test_support::prelude::*;
+use scylla_auth::authz::{Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope};
+use scylla_core::application::{AgentRepository, AppRepository, JobRepository};
 use sqlx::PgPool;
 
 const TEST_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$aGFzaGhhc2g";

@@ -1,9 +1,7 @@
 use crate::application::agent::dispatch::assemble_dispatch;
-use crate::application::caller::CallerContext;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
-    JobDispatch, JobRepository, PermissionService, PipelineRepository, ProjectRepository,
-    SecretResolver,
+    JobDispatch, JobRepository, PipelineRepository, ProjectRepository, SecretResolver,
 };
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
@@ -13,6 +11,8 @@ use crate::domain::permission::Permission;
 use crate::domain::pipeline::PipelineName;
 use crate::domain::pipeline::{Pipeline, PipelineNode};
 use derive_more::Constructor;
+use scylla_auth::authz::PermissionService;
+use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 

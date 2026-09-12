@@ -1,8 +1,8 @@
-use crate::application::authz::policy::PolicyControl;
 use crate::application::{HashService, SessionRepository, SignupRepository, SignupUseCases};
 use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
+use scylla_auth::authz::PolicyControl;
 use scylla_domain::domain::organization::OrganizationName;
 use scylla_domain::domain::user::{Email, Password, Username};
 use scylla_proto::registration::v1::{

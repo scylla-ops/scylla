@@ -1,9 +1,9 @@
 use super::PgJobLogRepository;
-use crate::application::{JobLogRepository, JobRepository};
 use crate::domain::job::JobLog;
 use crate::postgres::PgJobRepository;
 use crate::test_support::prelude::*;
 use chrono::{Duration, Utc};
+use scylla_core::application::{JobLogRepository, JobRepository};
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]

@@ -1,9 +1,9 @@
-use crate::application::authz::grant::Grant;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{InvitationId, OrganizationId, UserId};
 use crate::domain::invitation::Invitation;
 use crate::domain::user::User;
 use async_trait::async_trait;
+use scylla_auth::authz::Grant;
 
 /// Persistence for invitations. `accept_atomic` performs the join (optionally
 /// creating the user, always writing the grant that joins them) in a single

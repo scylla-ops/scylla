@@ -1,12 +1,12 @@
 use crate::application::ProjectUseCases;
-use crate::application::authz::policy::PolicyControl;
-use crate::application::{PermissionService, ProjectRepository, UserRepository};
+use crate::application::{ProjectRepository, UserRepository};
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, project_to_proto, proto_to_domain_pagination,
 };
 use derive_more::Constructor;
+use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::{OrganizationId, ProjectId, UserId};
 use scylla_domain::domain::project::{ProjectDescription, ProjectName};
 use scylla_proto::project::v1::{

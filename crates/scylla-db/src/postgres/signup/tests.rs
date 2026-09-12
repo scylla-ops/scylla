@@ -1,14 +1,12 @@
 use super::PgSignupRepository;
-use crate::application::authz::grant::{
-    Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope,
-};
-use crate::application::signup::repository::SignupRepository;
-use crate::application::{OrganizationRepository, UserRepository};
 use crate::domain::role::RoleName;
 use crate::postgres::{
     PgGrantRepository, PgOrganizationRepository, PgRoleRepository, PgUserRepository,
 };
 use crate::test_support::prelude::*;
+use scylla_auth::authz::{Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
+use scylla_core::application::signup::repository::SignupRepository;
+use scylla_core::application::{OrganizationRepository, UserRepository};
 use sqlx::PgPool;
 
 fn org_admin_grant(
@@ -90,11 +88,11 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
 /// wrong password with the same opaque error.
 #[sqlx::test(migrations = "../../migrations")]
 async fn login_by_email_or_username(pool: PgPool) {
-    use crate::application::auth::use_case::AuthUseCases;
-    use crate::application::{HashService, UserRepository};
     use crate::domain::user::User;
     use crate::domain::user::{Email, Password, Username};
     use crate::postgres::PgSessionRepository;
+    use scylla_core::application::auth::use_case::AuthUseCases;
+    use scylla_core::application::{HashService, UserRepository};
     use scylla_core::infrastructure::Argon2HashService;
     use std::sync::Arc;
 
@@ -145,15 +143,16 @@ async fn login_by_email_or_username(pool: PgPool) {
 /// reload makes it live, and a real `check` honours it.
 #[sqlx::test(migrations = "../../migrations")]
 async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
-    use crate::application::audit::NoopAuditLog;
-    use crate::application::caller::CallerContext;
-    use crate::application::{PermissionService, SignupUseCases};
     use crate::domain::organization::OrganizationName;
     use crate::domain::permission::Permission;
     use crate::domain::user::{Email, Password, Username};
     use crate::postgres::PgAuthzEntityProvider;
     use crate::postgres::PgSessionRepository;
-    use scylla_auth::CedarPermissionService;
+    use scylla_auth::audit::NoopAuditLog;
+    use scylla_auth::authz::PermissionService;
+    use scylla_auth::caller::CallerContext;
+    use scylla_auth::cedar::CedarPermissionService;
+    use scylla_core::application::SignupUseCases;
     use scylla_core::infrastructure::Argon2HashService;
     use std::sync::Arc;
 

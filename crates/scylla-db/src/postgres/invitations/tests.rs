@@ -1,8 +1,3 @@
-use crate::application::audit::NoopAuditLog;
-use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
-use crate::application::caller::CallerContext;
-use crate::application::invitation::InvitationUseCases;
-use crate::application::{Mailer, NoopMailer};
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, Username};
 use crate::postgres::{
@@ -10,7 +5,12 @@ use crate::postgres::{
     PgRoleRepository, PgSessionRepository, PgUserRepository,
 };
 use crate::test_support::prelude::*;
-use scylla_auth::CedarPermissionService;
+use scylla_auth::audit::NoopAuditLog;
+use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
+use scylla_auth::caller::CallerContext;
+use scylla_auth::cedar::CedarPermissionService;
+use scylla_core::application::invitation::InvitationUseCases;
+use scylla_core::application::{Mailer, NoopMailer};
 use scylla_core::infrastructure::Argon2HashService;
 use std::sync::Arc;
 

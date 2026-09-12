@@ -1,5 +1,3 @@
-use crate::application::authz::grant::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
-use crate::application::authz::policy::PolicyControl;
 use crate::application::signup::repository::SignupRepository;
 use crate::application::{HashService, SessionRepository};
 use crate::domain::errors::DomainResult;
@@ -12,6 +10,7 @@ use crate::domain::user::User;
 use crate::domain::user::{Email, Password, Username};
 use chrono::Duration;
 use derive_more::Constructor;
+use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, PolicyControl, Principal, Scope};
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;

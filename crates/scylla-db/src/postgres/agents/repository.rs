@@ -1,9 +1,9 @@
-use crate::application::agent::repository::{AgentRepository, AgentStats};
 use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::agent::repository::{AgentRepository, AgentStats};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
@@ -241,7 +241,7 @@ impl AgentRepository for PgAgentRepository {
         .await
         .to_domain()?
         .into_iter()
-        .map(|r| crate::application::agent::repository::DailyOutcome {
+        .map(|r| scylla_core::application::agent::repository::DailyOutcome {
             day: r.day,
             completed: r.completed,
             failed: r.failed,

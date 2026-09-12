@@ -1,10 +1,10 @@
 use super::PgUserRepository;
-use crate::application::UserRepository;
-use crate::application::pagination::PaginationParams;
 use crate::domain::errors::DomainError;
 use crate::domain::ids::UserId;
 use crate::domain::user::{Email, Username};
 use crate::test_support::prelude::*;
+use scylla_core::application::UserRepository;
+use scylla_core::application::pagination::PaginationParams;
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]

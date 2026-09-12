@@ -1,9 +1,9 @@
 use super::PgProjectRepository;
-use crate::application::authz::Visibility;
-use crate::application::{OrganizationRepository, ProjectRepository};
 use crate::domain::errors::DomainError;
 use crate::postgres::PgOrganizationRepository;
 use crate::test_support::prelude::*;
+use scylla_auth::authz::Visibility;
+use scylla_core::application::{OrganizationRepository, ProjectRepository};
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -36,14 +36,15 @@ async fn count_by_organization_reflects_inserts(pool: PgPool) {
 /// that allows two creations per scope and denies the third.
 #[sqlx::test(migrations = "../../migrations")]
 async fn project_quota_enforced(pool: PgPool) {
-    use crate::application::audit::NoopAuditLog;
-    use crate::application::caller::CallerContext;
-    use crate::application::{ProjectUseCases, ServiceIdentity};
     use crate::domain::project::ProjectName;
     use crate::postgres::{
         PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
     };
-    use scylla_auth::CedarPermissionService;
+    use scylla_auth::audit::NoopAuditLog;
+    use scylla_auth::caller::CallerContext;
+    use scylla_auth::caller::ServiceIdentity;
+    use scylla_auth::cedar::CedarPermissionService;
+    use scylla_core::application::ProjectUseCases;
     use std::sync::Arc;
 
     let org = seed_org(&pool, "limited").await;
@@ -176,9 +177,7 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
 /// there is no second row to write.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
-    use crate::application::authz::grant::{
-        Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
-    };
+    use scylla_auth::authz::{Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope};
     use crate::domain::role::RoleName;
     use crate::postgres::PgGrantRepository;
 
@@ -215,9 +214,7 @@ async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
 /// dangling owner id → FK violation) rolls back the project too.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
-    use crate::application::authz::grant::{
-        Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope,
-    };
+    use scylla_auth::authz::{Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope};
     use crate::domain::role::RoleName;
     use crate::postgres::PgGrantRepository;
 
@@ -259,15 +256,15 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
 /// stub.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
-    use crate::application::audit::NoopAuditLog;
-    use crate::application::authz::grant::{
-        Grant, GrantRepository, PROJECT_VIEWER_ROLE, Principal, Scope,
-    };
-    use crate::application::authz::{Visibility, VisibilityResolver};
-    use crate::application::caller::CallerContext;
     use crate::domain::role::RoleName;
     use crate::postgres::{PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository};
-    use scylla_auth::CedarPermissionService;
+    use scylla_auth::audit::NoopAuditLog;
+    use scylla_auth::authz::{
+        Grant, GrantRepository, PROJECT_VIEWER_ROLE, Principal, Scope, Visibility,
+        VisibilityResolver,
+    };
+    use scylla_auth::caller::CallerContext;
+    use scylla_auth::cedar::CedarPermissionService;
     use std::sync::Arc;
 
     let org = seed_org(&pool, "acme").await;

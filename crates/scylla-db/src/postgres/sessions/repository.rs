@@ -1,8 +1,8 @@
-use crate::application::SessionRepository;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{SessionId, UserId};
 use crate::domain::session::Session;
 use async_trait::async_trait;
+use scylla_core::application::SessionRepository;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

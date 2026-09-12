@@ -1,11 +1,11 @@
 use crate::application::{
     AgentRepository, AgentStats, AgentUseCases, AgentView, AppRepository, HashService,
-    PermissionService, PolicyControl,
 };
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
+use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::agent::AgentHost;
 use scylla_domain::domain::app::AppName;
 use scylla_domain::domain::ids::{AppId, OrganizationId};

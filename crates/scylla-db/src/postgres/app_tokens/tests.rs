@@ -1,12 +1,12 @@
 use super::PgAppTokenRepository;
-use crate::application::HashService;
-use crate::application::app::{AppRepository, AppTokenRepository, AppTokenUseCases};
-use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::role::RoleName;
 use crate::postgres::{PgAppCredentialRepository, PgAppRepository};
 use crate::test_support::prelude::*;
+use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
+use scylla_core::application::HashService;
+use scylla_core::application::app::{AppRepository, AppTokenRepository, AppTokenUseCases};
 use scylla_core::infrastructure::Argon2HashService;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -50,7 +50,7 @@ fn use_cases(
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn issue_with_correct_secret_then_token_resolves(pool: PgPool) {
-    let secret = crate::application::app::mint_app_secret();
+    let secret = scylla_core::application::app::mint_app_secret();
     let app = seed_app(&pool, &secret).await;
 
     let outcome = use_cases(&pool)
@@ -68,11 +68,14 @@ async fn issue_with_correct_secret_then_token_resolves(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn issue_with_wrong_secret_is_unauthorized(pool: PgPool) {
-    let secret = crate::application::app::mint_app_secret();
+    let secret = scylla_core::application::app::mint_app_secret();
     let app = seed_app(&pool, &secret).await;
 
     let result = use_cases(&pool)
-        .issue(app.id().clone(), crate::application::app::mint_app_secret())
+        .issue(
+            app.id().clone(),
+            scylla_core::application::app::mint_app_secret(),
+        )
         .await;
     assert!(matches!(
         result,

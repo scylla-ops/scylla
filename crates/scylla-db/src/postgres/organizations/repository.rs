@@ -1,12 +1,12 @@
-use crate::application::OrganizationRepository;
-use crate::application::authz::grant::Grant;
-use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::Organization;
 use crate::domain::organization::{OrganizationDescription, OrganizationName};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_auth::authz::Grant;
+use scylla_core::application::OrganizationRepository;
+use scylla_core::application::pagination::{PaginatedResult, PaginationParams};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

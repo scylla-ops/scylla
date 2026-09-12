@@ -1,12 +1,12 @@
-use crate::application::authz::policy::PolicyControl;
 use crate::application::{
     HashService, InvitationRepository, InvitationUseCases, OrganizationRepository,
-    PermissionService, SessionRepository, UserRepository,
+    SessionRepository, UserRepository,
 };
 use crate::extract_auth_context;
 use crate::grpc::convert::{optional, required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
+use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::{InvitationId, OrganizationId};
 use scylla_domain::domain::invitation::Invitation;
 use scylla_domain::domain::invitation::InvitationStatus as DomainInvitationStatus;

@@ -1,5 +1,3 @@
-use crate::application::authz::service::PermissionService;
-use crate::application::caller::CallerContext;
 use crate::application::secret::SecretCipher;
 use crate::application::secret::repository::SecretRepository;
 use crate::domain::errors::DomainResult;
@@ -7,6 +5,8 @@ use crate::domain::ids::{ProjectId, SecretId};
 use crate::domain::permission::Permission;
 use crate::domain::secret::Secret;
 use crate::domain::secret::SecretName;
+use scylla_auth::authz::PermissionService;
+use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 

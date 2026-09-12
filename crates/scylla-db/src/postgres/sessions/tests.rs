@@ -1,9 +1,9 @@
 use super::PgSessionRepository;
-use crate::application::{SessionRepository, UserRepository};
 use crate::domain::errors::DomainError;
 use crate::postgres::PgUserRepository;
 use crate::test_support::prelude::*;
 use chrono::Duration;
+use scylla_core::application::{SessionRepository, UserRepository};
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]

@@ -1,8 +1,7 @@
-use crate::application::authz::grant::ScopeKind;
-use crate::application::authz::role::{Role, RoleRepository};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::OrganizationId;
 use async_trait::async_trait;
+use scylla_auth::authz::{Role, RoleRepository, ScopeKind};
 use sqlx::PgPool;
 use tracing::instrument;
 
@@ -186,8 +185,7 @@ impl RoleRepository for PgRoleRepository {
 #[cfg(test)]
 mod tests {
     use super::PgRoleRepository;
-    use crate::application::authz::grant::ScopeKind;
-    use crate::application::authz::role::{Role, RoleRepository};
+    use scylla_auth::authz::{Role, RoleRepository, ScopeKind};
     use sqlx::PgPool;
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -226,14 +224,14 @@ mod tests {
 
     #[sqlx::test(migrations = "../../migrations")]
     async fn effective_permissions_resolves_roles_and_direct_grants(pool: PgPool) {
-        use crate::application::PermissionService;
-        use crate::application::authz::policy::PolicyControl;
-        use crate::application::authz::{Principal, RoleUseCases, Scope};
-        use crate::application::caller::{CallerContext, ServiceIdentity};
         use crate::domain::errors::DomainResult;
         use crate::domain::ids::UserId;
         use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
+        use scylla_auth::authz::{
+            PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
+        };
+        use scylla_auth::caller::{CallerContext, ServiceIdentity};
         use std::sync::Arc;
 
         struct AllowAll;
@@ -323,14 +321,14 @@ mod tests {
     /// that denies everything, so the split is what is under test, not the stub.
     #[sqlx::test(migrations = "../../migrations")]
     async fn my_permissions_needs_no_permission_unlike_the_admin_view(pool: PgPool) {
-        use crate::application::PermissionService;
-        use crate::application::authz::policy::PolicyControl;
-        use crate::application::authz::{Principal, RoleUseCases, Scope};
-        use crate::application::caller::{CallerContext, ServiceIdentity};
         use crate::domain::errors::{DomainError, DomainResult};
         use crate::domain::ids::UserId;
         use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
+        use scylla_auth::authz::{
+            PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
+        };
+        use scylla_auth::caller::{CallerContext, ServiceIdentity};
         use std::sync::Arc;
 
         struct DenyAll;

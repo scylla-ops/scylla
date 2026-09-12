@@ -1,17 +1,13 @@
-use super::{
-    Grant, GrantRepository, Principal, Scope, is_owner_role, removal_orphans_scope,
-    validate_role_in_db,
-};
 use crate::application::agent::dispatch_port::AgentDispatch;
-use crate::application::authz::entity_provider::AuthzEntityProvider;
-use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::role::{FULL_CONTROL, RoleRepository};
-use crate::application::authz::service::PermissionService;
-use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::{Permission, ResourceRef};
 use crate::domain::role::RoleName;
 use derive_more::Constructor;
+use scylla_auth::authz::{
+    AuthzEntityProvider, FULL_CONTROL, Grant, GrantRepository, PermissionService, PolicyControl,
+    Principal, RoleRepository, Scope, is_owner_role, removal_orphans_scope, validate_role_in_db,
+};
+use scylla_auth::caller::CallerContext;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 use tracing::instrument;
@@ -307,14 +303,13 @@ impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases
 
 #[cfg(test)]
 mod tests {
-    use super::super::*;
     use super::*;
     use crate::application::agent::dispatch::JobDispatch;
-    use crate::application::authz::entity_provider::ResourceAncestors;
-    use crate::application::authz::role::Role;
-    use crate::application::caller::ServiceIdentity;
     use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
     use async_trait::async_trait;
+    use scylla_auth::authz::*;
+    use scylla_auth::authz::{ResourceAncestors, Role};
+    use scylla_auth::caller::ServiceIdentity;
     use std::sync::Mutex;
 
     struct StubGrants(Vec<Grant>);

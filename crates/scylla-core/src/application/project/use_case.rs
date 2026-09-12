@@ -1,9 +1,5 @@
-use crate::application::authz::grant::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
-use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::{Visibility, VisibilityResolver};
-use crate::application::caller::CallerContext;
 use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
-use crate::application::{PermissionService, ProjectRepository, UserRepository, quota};
+use crate::application::{ProjectRepository, UserRepository, quota};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
@@ -12,6 +8,11 @@ use crate::domain::project::{ProjectDescription, ProjectName};
 use crate::domain::role::RoleName;
 use crate::domain::user::User;
 use derive_more::Constructor;
+use scylla_auth::authz::{
+    Grant, PROJECT_ADMIN_ROLE, PermissionService, PolicyControl, Principal, Scope, Visibility,
+    VisibilityResolver,
+};
+use scylla_auth::caller::CallerContext;
 use scylla_extension::{QuotaPolicy, Resource};
 use std::sync::Arc;
 use tracing::instrument;

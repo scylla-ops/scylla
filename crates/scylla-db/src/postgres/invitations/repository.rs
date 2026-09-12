@@ -1,10 +1,10 @@
-use crate::application::authz::grant::Grant;
-use crate::application::invitation::InvitationRepository;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{InvitationId, OrganizationId, UserId};
 use crate::domain::invitation::Invitation;
 use crate::domain::user::User;
 use async_trait::async_trait;
+use scylla_auth::authz::Grant;
+use scylla_core::application::invitation::InvitationRepository;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

@@ -1,9 +1,8 @@
 use super::use_case::TRIGGER_RUNNER_APP_NAME;
 use crate::application::agent::dispatch_port::AgentDispatch;
-use crate::application::caller::CallerContext;
 use crate::application::{
-    AppRepository, DispatchOutcome, DispatchUseCases, JobRepository, PermissionService,
-    PipelineRepository, PipelineUseCases, ProjectRepository, TriggerRepository,
+    AppRepository, DispatchOutcome, DispatchUseCases, JobRepository, PipelineRepository,
+    PipelineUseCases, ProjectRepository, TriggerRepository,
 };
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -14,6 +13,8 @@ use crate::domain::permission::Permission;
 use crate::domain::trigger::Trigger;
 use crate::domain::trigger::{TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
+use scylla_auth::authz::PermissionService;
+use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::{instrument, warn};
 

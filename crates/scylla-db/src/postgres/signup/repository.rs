@@ -1,9 +1,9 @@
-use crate::application::authz::grant::Grant;
-use crate::application::signup::repository::SignupRepository;
 use crate::domain::errors::DomainResult;
 use crate::domain::organization::Organization;
 use crate::domain::user::User;
 use async_trait::async_trait;
+use scylla_auth::authz::Grant;
+use scylla_core::application::signup::repository::SignupRepository;
 use sqlx::PgPool;
 use tracing::instrument;
 

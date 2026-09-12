@@ -1,10 +1,10 @@
-use crate::application::TriggerRepository;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{PipelineId, TriggerId};
 use crate::domain::trigger::Trigger;
 use crate::domain::trigger::{TriggerInput, TriggerName, TriggerSource};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::TriggerRepository;
 use sqlx::{PgExecutor, PgPool, types::Json};
 use tracing::instrument;
 

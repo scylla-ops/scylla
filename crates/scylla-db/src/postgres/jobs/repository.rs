@@ -1,5 +1,3 @@
-use crate::application::JobRepository;
-use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::job::JobState;
@@ -7,6 +5,8 @@ use crate::domain::job::{Job, JobNode};
 use crate::domain::job::{JobOrigin, JobStatus};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::JobRepository;
+use scylla_core::application::pagination::{PaginatedResult, PaginationParams};
 use sqlx::{PgExecutor, PgPool, types::Json};
 use tracing::instrument;
 

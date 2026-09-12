@@ -1,8 +1,8 @@
-use crate::application::app::token_repository::AppTokenRepository;
 use crate::domain::app::AppToken;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppCredentialId, AppId, AppTokenId};
 use async_trait::async_trait;
+use scylla_core::application::app::token_repository::AppTokenRepository;
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

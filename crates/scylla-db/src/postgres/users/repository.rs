@@ -1,11 +1,11 @@
-use crate::application::UserRepository;
-use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::UserId;
 use crate::domain::user::User;
 use crate::domain::user::{Email, PasswordHash, Username};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_core::application::UserRepository;
+use scylla_core::application::pagination::{PaginatedResult, PaginationParams};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

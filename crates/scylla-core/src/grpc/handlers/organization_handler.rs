@@ -1,6 +1,5 @@
 use crate::application::OrganizationUseCases;
-use crate::application::authz::policy::PolicyControl;
-use crate::application::{OrganizationRepository, PermissionService, UserRepository};
+use crate::application::{OrganizationRepository, UserRepository};
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::{
@@ -8,6 +7,7 @@ use crate::grpc::mappers::{
     proto_to_domain_pagination,
 };
 use derive_more::Constructor;
+use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::{OrganizationId, UserId};
 use scylla_domain::domain::organization::{OrganizationDescription, OrganizationName};
 use scylla_proto::organization::v1::{

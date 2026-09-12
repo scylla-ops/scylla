@@ -1,8 +1,8 @@
-use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
+use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 
@@ -248,13 +248,13 @@ impl GrantRepository for PgGrantRepository {
 #[cfg(test)]
 mod tests {
     use super::PgGrantRepository;
-    use crate::application::authz::grant::{
-        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE,
-        PROJECT_ADMIN_ROLE, Principal, SYSTEM_ADMIN_ROLE, Scope,
-    };
     use crate::domain::ids::AppId;
     use crate::domain::role::RoleName;
     use crate::test_support::prelude::*;
+    use scylla_auth::authz::{
+        Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE,
+        PROJECT_ADMIN_ROLE, Principal, SYSTEM_ADMIN_ROLE, Scope,
+    };
     use sqlx::PgPool;
 
     fn role(name: &str) -> RoleName {

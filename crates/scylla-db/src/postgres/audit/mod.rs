@@ -1,4 +1,4 @@
-use crate::application::audit::{AuditEntry, AuditLog};
+use scylla_auth::audit::{AuditEntry, AuditLog};
 use sqlx::PgPool;
 use tokio::sync::mpsc;
 use tracing::warn;

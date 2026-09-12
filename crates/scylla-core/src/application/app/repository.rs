@@ -1,9 +1,9 @@
-use crate::application::authz::grant::Grant;
 use crate::domain::agent::Agent;
 use crate::domain::app::{App, AppCredential};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use async_trait::async_trait;
+use scylla_auth::authz::Grant;
 
 /// Persistence for machine Apps (`apps` table).
 ///

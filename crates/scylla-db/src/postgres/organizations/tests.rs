@@ -1,7 +1,7 @@
 use super::PgOrganizationRepository;
-use crate::application::OrganizationRepository;
 use crate::domain::organization::OrganizationDescription;
 use crate::test_support::prelude::*;
+use scylla_core::application::OrganizationRepository;
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -76,12 +76,12 @@ async fn list_active_filters_inactive(pool: PgPool) {
 /// so it has to be complete.
 #[sqlx::test(migrations = "../../migrations")]
 async fn revoke_all_access_strips_the_whole_org_subtree(pool: PgPool) {
-    use crate::application::authz::grant::{
+    use crate::domain::role::RoleName;
+    use crate::postgres::PgGrantRepository;
+    use scylla_auth::authz::{
         Grant, GrantRepository, ORGANIZATION_ADMIN_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE,
         Principal, SYSTEM_ADMIN_ROLE, Scope,
     };
-    use crate::domain::role::RoleName;
-    use crate::postgres::PgGrantRepository;
 
     let org = seed_org(&pool, "acme").await;
     let other_org = seed_org(&pool, "globex").await;

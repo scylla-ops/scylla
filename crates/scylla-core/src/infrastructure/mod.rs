@@ -11,5 +11,3 @@ pub use messaging::{InMemoryAgentRegistry, InMemoryJobLogStream};
 pub use services::{ChaChaSecretCipher, CronScheduleService, GitHubOAuthProvider, LettreMailer};
 
 pub use services::Argon2HashService;
-
-pub use services::CedarPermissionService;

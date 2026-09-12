@@ -1,11 +1,11 @@
 use super::PgJobRepository;
-use crate::application::{JobRepository, PipelineRepository};
 use crate::domain::errors::DomainError;
 use crate::domain::ids::TriggerId;
 use crate::domain::job::{JobOrigin, JobStatus};
 use crate::postgres::PgPipelineRepository;
 use crate::test_support::prelude::*;
 use chrono::Utc;
+use scylla_core::application::{JobRepository, PipelineRepository};
 use sqlx::PgPool;
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -62,13 +62,13 @@ async fn update_persists_started_finished_timestamps(pool: PgPool) {
 /// reconciliation) then orphans every remaining running job.
 #[sqlx::test(migrations = "../../migrations")]
 async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: PgPool) {
-    use crate::application::AppRepository;
-    use crate::application::authz::grant::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
     use crate::domain::agent::Agent;
     use crate::domain::app::{App, AppCredential};
     use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
     use crate::domain::role::RoleName;
     use crate::postgres::PgAppRepository;
+    use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
+    use scylla_core::application::AppRepository;
 
     let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "reap").await;
     let repo = PgJobRepository::new(pool.clone());

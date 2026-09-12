@@ -9,6 +9,3 @@ pub use chacha_secret_cipher::ChaChaSecretCipher;
 pub use cron_schedule::CronScheduleService;
 pub use github_oauth_provider::GitHubOAuthProvider;
 pub use lettre_mailer::LettreMailer;
-/// The Cedar adapter lives with the access model in `scylla-auth`; re-exported
-/// so the composition root and the persistence tests keep naming it here.
-pub use scylla_auth::cedar::CedarPermissionService;

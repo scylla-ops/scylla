@@ -1,6 +1,3 @@
-use crate::application::audit::NoopAuditLog;
-use crate::application::authz::grant::{GrantRepository, Principal, Scope};
-use crate::application::oauth::{AccountOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo};
 use crate::domain::errors::DomainResult;
 use crate::domain::user::Email;
 use crate::postgres::{
@@ -9,7 +6,12 @@ use crate::postgres::{
 };
 use crate::test_support::prelude::*;
 use async_trait::async_trait;
-use scylla_auth::CedarPermissionService;
+use scylla_auth::audit::NoopAuditLog;
+use scylla_auth::authz::{GrantRepository, Principal, Scope};
+use scylla_auth::cedar::CedarPermissionService;
+use scylla_core::application::oauth::{
+    AccountOutcome, OAuthProvider, OAuthUseCases, OAuthUserInfo,
+};
 use scylla_core::infrastructure::Argon2HashService;
 use std::sync::Arc;
 
@@ -106,9 +108,12 @@ async fn login_links_to_existing_user_by_email(pool: sqlx::PgPool) {
     let existing = UserBuilder::new("legacy")
         .email("match@example.com")
         .build();
-    crate::application::UserRepository::create(&PgUserRepository::new(pool.clone()), &existing)
-        .await
-        .expect("seed existing user");
+    scylla_core::application::UserRepository::create(
+        &PgUserRepository::new(pool.clone()),
+        &existing,
+    )
+    .await
+    .expect("seed existing user");
 
     let info = OAuthUserInfo {
         provider_user_id: "gh-999".to_string(),

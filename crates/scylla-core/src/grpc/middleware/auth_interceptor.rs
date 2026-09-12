@@ -1,6 +1,7 @@
-use crate::application::{AppTokenRepository, CallerContext, SessionRepository};
+use crate::application::{AppTokenRepository, SessionRepository};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
+use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tonic::{Request, Status};
 use tonic_async_interceptor::AsyncInterceptor;

@@ -1,10 +1,10 @@
 use super::PgTriggerDeliveryRepository;
-use crate::application::{TriggerDeliveryRepository, TriggerRepository};
 use crate::domain::clock;
 use crate::domain::trigger::Trigger;
 use crate::domain::trigger::{TriggerName, TriggerSource, WebhookSpec};
 use crate::postgres::PgTriggerRepository;
 use crate::test_support::prelude::*;
+use scylla_core::application::{TriggerDeliveryRepository, TriggerRepository};
 use sqlx::PgPool;
 
 async fn webhook_trigger(pool: &PgPool) -> Trigger {

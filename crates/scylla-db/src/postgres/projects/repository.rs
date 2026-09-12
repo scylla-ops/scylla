@@ -1,13 +1,12 @@
-use crate::application::ProjectRepository;
-use crate::application::authz::Visibility;
-use crate::application::authz::grant::Grant;
-use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::project::Project;
 use crate::domain::project::{ProjectDescription, ProjectName};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use scylla_auth::authz::{Grant, Visibility};
+use scylla_core::application::ProjectRepository;
+use scylla_core::application::pagination::{PaginatedResult, PaginationParams};
 use sqlx::{PgExecutor, PgPool};
 use tracing::instrument;
 

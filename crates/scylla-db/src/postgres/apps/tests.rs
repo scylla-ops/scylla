@@ -1,13 +1,11 @@
 use super::PgAppRepository;
-use crate::application::app::AppRepository;
-use crate::application::authz::grant::{
-    Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope,
-};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
 use crate::domain::role::RoleName;
 use crate::postgres::{PgGrantRepository, PgOrganizationRepository};
 use crate::test_support::prelude::*;
+use scylla_auth::authz::{Grant, GrantRepository, ORGANIZATION_AGENT_ROLE, Principal, Scope};
+use scylla_core::application::app::AppRepository;
 use sqlx::PgPool;
 
 const TEST_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$aGFzaGhhc2g";
@@ -85,7 +83,7 @@ async fn duplicate_name_in_same_org_conflicts(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn cascade_org_delete_removes_apps(pool: PgPool) {
-    use crate::application::OrganizationRepository;
+    use scylla_core::application::OrganizationRepository;
 
     let org = seed_org(&pool, "Acme").await;
     let repo = PgAppRepository::new(pool.clone());

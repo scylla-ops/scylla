@@ -7,8 +7,11 @@ pub mod visibility;
 
 pub use entity_provider::{AuthzEntityProvider, ResourceAncestors};
 pub use grant::{
-    Grant, GrantRepository, GrantableRole, ORGANIZATION_TRIGGER_RUNNER_ROLE, Principal, RoleKind,
-    Scope, ScopeKind, grantable_roles, validate_role_in_db,
+    GRANTABLE_ROLES, Grant, GrantRepository, GrantableRole, ORGANIZATION_ADMIN_ROLE,
+    ORGANIZATION_AGENT_ROLE, ORGANIZATION_MEMBER_ROLE, ORGANIZATION_TRIGGER_RUNNER_ROLE,
+    ORGANIZATION_VIEWER_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, PROJECT_DEVELOPER_ROLE,
+    PROJECT_VIEWER_ROLE, Principal, RoleKind, SYSTEM_ADMIN_ROLE, Scope, ScopeKind, grantable_roles,
+    is_owner_role, removal_orphans_scope, validate_role_in_db,
 };
 pub use policy::PolicyControl;
 pub use role::{

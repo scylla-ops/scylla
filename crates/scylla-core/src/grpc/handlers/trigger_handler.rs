@@ -1,11 +1,11 @@
 use crate::application::{
-    AgentDispatch, AppRepository, HashService, JobRepository, PermissionService,
-    PipelineRepository, PolicyControl, ProjectRepository, TriggerFireUseCases, TriggerRepository,
-    TriggerUseCases,
+    AgentDispatch, AppRepository, HashService, JobRepository, PipelineRepository,
+    ProjectRepository, TriggerFireUseCases, TriggerRepository, TriggerUseCases,
 };
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, ts, wrap};
 use crate::grpc::mappers::domain_error_to_status;
+use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::{PipelineId, TriggerId};
 use scylla_domain::domain::pipeline::EnvKey;
 use scylla_domain::domain::trigger::{

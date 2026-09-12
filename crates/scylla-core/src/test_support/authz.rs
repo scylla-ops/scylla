@@ -7,11 +7,11 @@
 //! a use case checks authorization BEFORE touching repositories, ciphers, or
 //! any other collaborator (pair it with panicking stubs).
 
-use crate::application::authz::service::PermissionService;
-use crate::application::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
+use scylla_auth::authz::PermissionService;
+use scylla_auth::caller::CallerContext;
 use std::sync::Mutex;
 
 /// Allow-all `PermissionService` that records every check, in call order.
