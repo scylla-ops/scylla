@@ -5,13 +5,12 @@ edition = "2024"
 license.workspace = true
 repository.workspace = true
 
-# The Community Edition binary: a main.rs, the shipped configuration files and
-# the wiring of the default extension implementations. No business logic lives
-# here; the server itself is `scylla-server`.
+# The Community Edition binary: a main.rs and the shipped configuration files.
+# No business logic lives here; the server itself is `scylla-server`.
 #
 # The package name, the binary name, the Dockerfile stage name and the config
 # directory path are load-bearing: the image is built with `--target scylla-ce`
-# and docker-compose.yaml bind-mounts `crates/scylla-ce/config`.
+# and docker-compose.yaml bind-mounts `binaries/scylla-ce/config`.
 [[bin]]
 name = "scylla-ce"
 path = "src/main.rs"
@@ -22,18 +21,16 @@ path = "src/main.rs"
 register = ["scylla-server/register"]
 
 [dependencies]
-# configuration types and their TOML loader
+# the configuration types and the default extension implementations
 scylla-core = { workspace = true }
-# the composition root and the server
+# the pool this binary opens and hands to the server
+scylla-db = { workspace = true }
+# the composition root, the server and the shared command line
 scylla-server = { workspace = true }
-# the extension traits this edition provides implementations for
+# the Extensions bundle this edition fills in
 scylla-extension = { workspace = true }
 
-# binary: cli, logging, top-level error reporting
-clap.workspace = true
 tokio.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
 anyhow.workspace = true
 
 [lints]

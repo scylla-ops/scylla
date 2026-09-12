@@ -36,7 +36,7 @@ services:
       - "8080:8080"
     environment:
       # RUST_LOG is deliberately NOT set here, so the binary's own default filter
-      # applies (see main.rs): app logs at info, authorization grants silenced,
+      # applies (see scylla_server::cli::init_tracing): app logs at info, authorization grants silenced,
       # denials kept. A bare `RUST_LOG: info` overrode all of that and turned the
       # audit trail back into one line per authorized call.
       # To investigate: `RUST_LOG=audit=info docker compose up scylla-ce`.

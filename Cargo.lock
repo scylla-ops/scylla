@@ -2870,13 +2870,11 @@ name = "scylla-ce"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clap",
  "scylla-core",
+ "scylla-db",
  "scylla-extension",
  "scylla-server",
  "tokio",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -2975,6 +2973,7 @@ name = "scylla-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "http",
  "scylla-auth",
  "scylla-core",
@@ -2991,6 +2990,7 @@ dependencies = [
  "tower",
  "tower-http 0.7.0",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

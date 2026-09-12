@@ -35,19 +35,19 @@ use tower_http::cors::CorsLayer;
 
 // ── Concrete type aliases ──────────────────────────────────────────────
 
-pub type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
-pub type SharedPermissionChecker = Arc<PermissionChecker>;
-pub type SharedGrantUc =
+pub(crate) type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
+pub(crate) type SharedGrantUc =
     Arc<GrantUseCases<PgGrantRepository, PermissionChecker, PermissionChecker>>;
-pub type SharedRoleUc =
+pub(crate) type SharedRoleUc =
     Arc<RoleUseCases<PgRoleRepository, PgGrantRepository, PermissionChecker, PermissionChecker>>;
 
-pub type SharedAuthUc = Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
+pub(crate) type SharedAuthUc =
+    Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
 #[cfg(feature = "register")]
-pub type SharedSignupUc = Arc<
+pub(crate) type SharedSignupUc = Arc<
     SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
 >;
-pub type SharedInvitationUc = Arc<
+pub(crate) type SharedInvitationUc = Arc<
     InvitationUseCases<
         PgInvitationRepository,
         PermissionChecker,
@@ -58,7 +58,7 @@ pub type SharedInvitationUc = Arc<
         PermissionChecker,
     >,
 >;
-pub type SharedOAuthUc = Arc<
+pub(crate) type SharedOAuthUc = Arc<
     OAuthUseCases<
         GitHubOAuthProvider,
         PgOAuthIdentityRepository,
@@ -69,9 +69,9 @@ pub type SharedOAuthUc = Arc<
         PermissionChecker,
     >,
 >;
-pub type SharedUserUc =
+pub(crate) type SharedUserUc =
     Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker, PermissionChecker>>;
-pub type SharedOrgUc = Arc<
+pub(crate) type SharedOrgUc = Arc<
     OrganizationUseCases<
         PgOrganizationRepository,
         PgUserRepository,
@@ -79,18 +79,18 @@ pub type SharedOrgUc = Arc<
         PermissionChecker,
     >,
 >;
-pub type SharedProjectUc = Arc<
+pub(crate) type SharedProjectUc = Arc<
     ProjectUseCases<PgProjectRepository, PgUserRepository, PermissionChecker, PermissionChecker>,
 >;
-pub type SharedPipelineUc = Arc<
+pub(crate) type SharedPipelineUc = Arc<
     PipelineUseCases<PgPipelineRepository, PgProjectRepository, PgJobRepository, PermissionChecker>,
 >;
-pub type SharedJobUc = Arc<JobUseCases<PgJobRepository, PermissionChecker>>;
-pub type SharedSecretUc = Arc<SecretUseCases<PgSecretRepository, PermissionChecker>>;
-pub type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
-pub type SharedJobLogStreamUc =
+pub(crate) type SharedJobUc = Arc<JobUseCases<PgJobRepository, PermissionChecker>>;
+pub(crate) type SharedSecretUc = Arc<SecretUseCases<PgSecretRepository, PermissionChecker>>;
+pub(crate) type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
+pub(crate) type SharedJobLogStreamUc =
     Arc<JobLogStreamUseCase<PgJobLogRepository, InMemoryJobLogStream, PermissionChecker>>;
-pub type SharedAppUc = Arc<
+pub(crate) type SharedAppUc = Arc<
     AppUseCases<
         PgAppRepository,
         PgAppCredentialRepository,
@@ -99,7 +99,7 @@ pub type SharedAppUc = Arc<
         PermissionChecker,
     >,
 >;
-pub type SharedAppTokenUc = Arc<
+pub(crate) type SharedAppTokenUc = Arc<
     AppTokenUseCases<
         PgAppRepository,
         PgAppTokenRepository,
@@ -107,8 +107,8 @@ pub type SharedAppTokenUc = Arc<
         Argon2HashService,
     >,
 >;
-pub type SharedDispatchUc = Arc<DispatchUseCases<InMemoryAgentRegistry, PermissionChecker>>;
-pub type SharedAgentUc = Arc<
+pub(crate) type SharedDispatchUc = Arc<DispatchUseCases<InMemoryAgentRegistry, PermissionChecker>>;
+pub(crate) type SharedAgentUc = Arc<
     AgentUseCases<
         PgAppRepository,
         PgAgentRepository,
@@ -117,7 +117,7 @@ pub type SharedAgentUc = Arc<
         PermissionChecker,
     >,
 >;
-pub type SharedTriggerUc = Arc<
+pub(crate) type SharedTriggerUc = Arc<
     TriggerUseCases<
         PgTriggerRepository,
         PgPipelineRepository,
@@ -128,7 +128,7 @@ pub type SharedTriggerUc = Arc<
         PermissionChecker,
     >,
 >;
-pub type SharedTriggerFireUc = Arc<
+pub(crate) type SharedTriggerFireUc = Arc<
     TriggerFireUseCases<
         PgTriggerRepository,
         PgPipelineRepository,
@@ -139,13 +139,12 @@ pub type SharedTriggerFireUc = Arc<
         InMemoryAgentRegistry,
     >,
 >;
-pub type SharedWebhookIngressUc =
+pub(crate) type SharedWebhookIngressUc =
     Arc<WebhookIngressUseCases<PgTriggerRepository, PgTriggerDeliveryRepository>>;
 
 // ── Services container ─────────────────────────────────────────────────
 
-pub struct Services {
-    pub db: PgPool,
+pub(crate) struct Services {
     pub auth_uc: SharedAuthUc,
     #[cfg(feature = "register")]
     pub signup_uc: SharedSignupUc,
@@ -173,21 +172,18 @@ pub struct Services {
     pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
     pub role_uc: SharedRoleUc,
-    pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
-    pub mailer: Arc<dyn Mailer>,
 }
 
-/// Build every use case over the Postgres adapters, the Cedar engine and the
-/// edition's `extensions`, run the bootstrap, and start the background
-/// schedulers.
-pub async fn init_services(
+/// Build every use case over the Postgres adapters (on the pool the binary
+/// opened), the Cedar engine and the edition's `extensions`, run the bootstrap,
+/// and start the background schedulers.
+pub(crate) async fn init_services(
     config: &ControlPlaneConfig,
+    db: PgPool,
     extensions: Extensions,
 ) -> Result<Services, StartupError> {
-    let db = scylla_db::init_db(&config.database).await?;
-
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
     let session_repo = Arc::new(PgSessionRepository::new(db.clone()));
     let org_repo = Arc::new(PgOrganizationRepository::new(db.clone()));
@@ -495,7 +491,6 @@ pub async fn init_services(
     }
 
     Ok(Services {
-        db,
         auth_uc,
         #[cfg(feature = "register")]
         signup_uc,
@@ -522,16 +517,14 @@ pub async fn init_services(
         job_log_stream,
         grant_uc,
         role_uc,
-        permission_checker,
         session_repo,
         app_token_repo,
-        mailer,
     })
 }
 
 // ── CORS builder ───────────────────────────────────────────────────────
 
-pub fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLayer {
+pub(crate) fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLayer {
     let mut layer = CorsLayer::new();
 
     if cors.allow_origins.iter().any(|o| o == "*") {
@@ -579,7 +572,7 @@ pub fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLayer {
 
 // ── Graceful shutdown signal helper ────────────────────────────────────
 
-pub async fn shutdown_signal() {
+pub(crate) async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
             .await
@@ -614,7 +607,7 @@ pub async fn shutdown_signal() {
 /// routes and never applied to the router as a whole — and because
 /// `Router::layer` wraps the fallback too, the UI fallback must be installed
 /// *after* that layer, which is what `rest::ui::attach` does last.
-pub async fn run_server<F>(
+pub(crate) async fn run_server<F>(
     config: &ControlPlaneConfig,
     services: &Services,
     shutdown: F,

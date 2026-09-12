@@ -28,15 +28,15 @@ http.workspace = true
 tracing.workspace = true
 anyhow.workspace = true
 
-# only for the `PgPool` handle the runtime closes at shutdown
+# cli: the command line and the tracing setup shared by the edition binaries
+clap.workspace = true
+tracing-subscriber.workspace = true
+
+# the `PgPool` the binary opens and hands to `serve`
 sqlx.workspace = true
 
 # grpc
-# `tls-connect-info` is what gives us `impl Connected for TlsStream<TcpStream>`,
-# the bound `serve_with_incoming_shutdown` needs to accept our own rustls
-# acceptor. Declared here rather than left to feature unification: a release
-# builds one edition package at a time, which does not unify with a sibling.
-tonic = { workspace = true, features = ["tls-connect-info"] }
+tonic.workspace = true
 tonic-web.workspace = true
 tonic-reflection.workspace = true
 tonic-async-interceptor.workspace = true

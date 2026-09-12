@@ -6,15 +6,15 @@
 //! library crate because it is the only place allowed to name concrete
 //! implementations side by side: `scylla-core` is generic over its ports,
 //! `scylla-db` implements them, and neither may know about the other's
-//! concrete types. The Community and Enterprise binaries are each a `main.rs`
-//! that loads a configuration, builds an [`scylla_extension::Extensions`] and
-//! calls [`runtime::run`].
+//! concrete types.
+//!
+//! An edition binary is a `main.rs` of a few lines: [`cli::Cli::parse_as`],
+//! [`cli::init_tracing`], [`cli::Cli::load_config`], `scylla_db::init_db`,
+//! build an [`scylla_extension::Extensions`], [`serve`]. The Community one is
+//! `binaries/scylla-ce/src/main.rs`.
 
-pub mod runtime;
-pub mod startup;
+pub mod cli;
+mod serve;
+mod startup;
 
-pub use startup::{
-    Services, SharedAuthUc, SharedGrantUc, SharedJobLogStreamUc, SharedJobLogUc, SharedJobUc,
-    SharedOrgUc, SharedPipelineUc, SharedProjectUc, SharedUserUc, SharedWebhookIngressUc,
-    build_cors_layer, init_services, run_server, shutdown_signal,
-};
+pub use serve::serve;
