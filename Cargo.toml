@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/scylla-extension",
     "crates/scylla-domain",
     "crates/scylla-proto",
     "binaries/scylla-agent",
@@ -58,6 +59,7 @@ sqlx = { version = "0.9", default-features = false, features = [
 ] }
 
 # workspace crates
+scylla-extension = { path = "crates/scylla-extension" }
 scylla-domain = { path = "crates/scylla-domain" }
 
 # domain / utilities

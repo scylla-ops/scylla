@@ -1,0 +1,17 @@
+[package]
+name = "scylla-extension"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+repository.workspace = true
+
+# The edition boundary. No workspace crate may appear here: an Enterprise build
+# compiles this crate from a pinned git tag and must not drag the domain model,
+# the database or the gRPC stack along with it. Keep it to traits and the
+# minimal types their signatures need.
+[dependencies]
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

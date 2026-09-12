@@ -2915,6 +2915,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "scylla-extension"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "scylla-proto"
 version = "0.1.0"
 dependencies = [
