@@ -4,6 +4,7 @@ members = [
     "crates/scylla-extension",
     "crates/scylla-domain",
     "crates/scylla-proto",
+    "crates/scylla-auth",
     "binaries/scylla-agent",
     "binaries/scylla-control-plane",
 ]
@@ -61,6 +62,7 @@ sqlx = { version = "0.9", default-features = false, features = [
 # workspace crates
 scylla-extension = { path = "crates/scylla-extension" }
 scylla-domain = { path = "crates/scylla-domain" }
+scylla-auth = { path = "crates/scylla-auth" }
 
 # domain / utilities
 thiserror = "2.0.18"

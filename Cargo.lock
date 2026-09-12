@@ -2853,6 +2853,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "scylla-auth"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cedar-policy",
+ "chrono",
+ "derive_more",
+ "scylla-domain",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "scylla-control-plane"
 version = "0.1.0"
 dependencies = [
@@ -2861,7 +2874,6 @@ dependencies = [
  "async-trait",
  "axum",
  "bon",
- "cedar-policy",
  "chacha20poly1305",
  "chrono",
  "clap",
@@ -2878,6 +2890,7 @@ dependencies = [
  "prost-types",
  "reqwest",
  "rust-embed",
+ "scylla-auth",
  "scylla-domain",
  "scylla-proto",
  "serde",

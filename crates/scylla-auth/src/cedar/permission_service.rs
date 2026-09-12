@@ -1,14 +1,12 @@
-use super::cedar_authz::{euid, parent_set, principal_parts, resource_parts, resource_uid};
-use crate::application::PermissionService;
-use crate::application::audit::{AuditDecision, AuditEntry, AuditLog};
-use crate::application::authz::entity_provider::AuthzEntityProvider;
-use crate::application::authz::grant::{Grant, GrantRepository, Principal, Scope};
-use crate::application::authz::policy::PolicyControl;
-use crate::application::authz::role::{Role, RoleRepository};
-use crate::application::authz::visibility::{
-    Visibility, VisibilityResolver, visibility_from_grants,
-};
-use crate::application::caller::CallerContext;
+use super::authz::{euid, parent_set, principal_parts, resource_parts, resource_uid};
+use crate::audit::{AuditDecision, AuditEntry, AuditLog};
+use crate::authz::PermissionService;
+use crate::authz::entity_provider::AuthzEntityProvider;
+use crate::authz::grant::{Grant, GrantRepository, Principal, Scope};
+use crate::authz::policy::PolicyControl;
+use crate::authz::role::{Role, RoleRepository};
+use crate::authz::visibility::{Visibility, VisibilityResolver, visibility_from_grants};
+use crate::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::{Permission, ResourceRef};
 use async_trait::async_trait;
@@ -22,8 +20,8 @@ use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use tracing::{info, instrument, warn};
 
-const SCHEMA_SRC: &str = include_str!("cedar/schema.cedarschema");
-const POLICIES_SRC: &str = include_str!("cedar/policies.cedar");
+const SCHEMA_SRC: &str = include_str!("schema.cedarschema");
+const POLICIES_SRC: &str = include_str!("policies.cedar");
 
 /// The Cedar permit body for a role, instantiated per grant via the `?principal`
 /// / `?resource` slots. A full-control role (`*` permission set) gets an
@@ -473,14 +471,14 @@ impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::authz::entity_provider::ResourceAncestors;
-    use crate::application::authz::grant::{
+    use crate::authz::entity_provider::ResourceAncestors;
+    use crate::authz::grant::{
         ORGANIZATION_ADMIN_ROLE, ORGANIZATION_AGENT_ROLE, ORGANIZATION_TRIGGER_RUNNER_ROLE,
         ORGANIZATION_VIEWER_ROLE, PROJECT_ADMIN_ROLE, PROJECT_AGENT_ROLE, PROJECT_DEVELOPER_ROLE,
         SYSTEM_ADMIN_ROLE, ScopeKind,
     };
-    use crate::application::authz::role::FULL_CONTROL;
-    use crate::application::caller::ServiceIdentity;
+    use crate::authz::role::FULL_CONTROL;
+    use crate::caller::ServiceIdentity;
     use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
     use crate::domain::role::RoleName;
 
@@ -633,7 +631,7 @@ mod tests {
             }),
             Arc::new(StubRoles(builtin_roles())),
             Arc::new(StubGrants(grants)),
-            Arc::new(crate::application::audit::NoopAuditLog),
+            Arc::new(crate::audit::NoopAuditLog),
         )
         .await
         .expect("schema + policies must parse, validate, and link")
@@ -652,7 +650,7 @@ mod tests {
             }),
             Arc::new(StubRoles(builtin_roles())),
             Arc::new(StubGrants(grants)),
-            Arc::new(crate::application::audit::NoopAuditLog),
+            Arc::new(crate::audit::NoopAuditLog),
         )
         .await
         .expect("schema + policies must parse, validate, and link")

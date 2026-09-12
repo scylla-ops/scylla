@@ -313,7 +313,7 @@ mod tests {
     use crate::application::authz::entity_provider::ResourceAncestors;
     use crate::application::authz::role::Role;
     use crate::application::caller::ServiceIdentity;
-    use crate::domain::ids::{AppId, OrganizationId, UserId};
+    use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
     use async_trait::async_trait;
     use std::sync::Mutex;
 

@@ -30,6 +30,8 @@ test-utils = []
 [dependencies]
 # the shared kernel: domain model + the agent-facing event vocabulary
 scylla-domain = { workspace = true }
+# the access model (RBAC ports, scoped grants, the Cedar adapter)
+scylla-auth = { workspace = true }
 tokio.workspace = true
 async-trait.workspace = true
 tower.workspace = true
@@ -59,7 +61,6 @@ sqlx.workspace = true
 # outbound mail and OAuth. All of these used to sit in scylla-domain, where they
 # were linked into the agent for no reason.
 argon2.workspace = true
-cedar-policy.workspace = true
 chacha20poly1305.workspace = true
 hmac.workspace = true
 sha2.workspace = true

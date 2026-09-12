@@ -1,10 +1,10 @@
 //! Pure, `self`-free helpers for the Cedar adapter: entity-UID construction,
 //! request-entity building, and audit-mapping.
-//! Extracted from `cedar_permission_service.rs` so each concern is isolated and
+//! Extracted from `permission_service.rs` so each concern is isolated and
 //! independently readable; the service module keeps only the orchestration
 //! (`check`, policy-set build/reload, the trait impls).
 
-use crate::application::caller::CallerContext;
+use crate::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::ResourceRef;
 use cedar_policy::EntityUid;

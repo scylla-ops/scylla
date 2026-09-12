@@ -1,6 +1,6 @@
-use crate::application::authz::grant::{Grant, Scope};
-use crate::application::authz::role::FULL_CONTROL;
-use crate::application::caller::CallerContext;
+use crate::authz::grant::{Grant, Scope};
+use crate::authz::role::FULL_CONTROL;
+use crate::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId};
 use async_trait::async_trait;
@@ -44,7 +44,7 @@ impl Visibility {
 }
 
 /// Resolves what a caller may see, for filtering listings. Kept separate from
-/// [`crate::application::authz::service::PermissionService`] because the two
+/// [`crate::authz::service::PermissionService`] because the two
 /// answer different shapes of question: one decides a single access, this one
 /// describes a set.
 #[async_trait]
@@ -67,7 +67,7 @@ pub trait VisibilityResolver: Send + Sync {
 pub fn visibility_from_grants<S: std::hash::BuildHasher>(
     role_permissions: &HashMap<String, Vec<String>, S>,
     grants: &[Grant],
-    principal: &crate::application::authz::grant::Principal,
+    principal: &crate::authz::grant::Principal,
     permission_key: &str,
 ) -> Visibility {
     let mut orgs = Vec::new();
@@ -98,7 +98,7 @@ pub fn visibility_from_grants<S: std::hash::BuildHasher>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::authz::grant::Principal;
+    use crate::authz::grant::Principal;
     use crate::domain::ids::UserId;
     use crate::domain::role::RoleName;
 
