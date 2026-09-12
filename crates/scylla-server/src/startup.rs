@@ -828,9 +828,13 @@ where
     let http = scylla_core::rest::webhook::router(services.webhook_ingress_uc.clone())
         .layer(TraceLayer::new_for_http());
 
+    // The liveness probe is a plain route with no layer of its own, so it goes
+    // in before the fallback and outside the traced surfaces.
+    let app = grpc.merge(http).merge(scylla_core::rest::health::router());
+
     // `attach` installs the UI as the fallback, replacing the `UNIMPLEMENTED`
     // catch-all that came with tonic's `Routes`. It must stay last.
-    let app = scylla_core::rest::ui::attach(grpc.merge(http), &config.ui);
+    let app = scylla_core::rest::ui::attach(app, &config.ui);
 
     // CORS stays outermost, as it was. It is no longer load-bearing for the UI —
     // same origin now — but third-party API clients and the Vite dev server on
