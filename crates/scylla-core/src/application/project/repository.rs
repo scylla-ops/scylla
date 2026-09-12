@@ -61,6 +61,4 @@ pub trait ProjectRepository {
         pagination: Option<&PaginationParams>,
         visible: &Visibility,
     ) -> DomainResult<PaginatedResult<Project>>;
-
-    async fn count_by_organization(&self, organization_id: &OrganizationId) -> DomainResult<u64>;
 }

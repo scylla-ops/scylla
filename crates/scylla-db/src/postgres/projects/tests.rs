@@ -20,20 +20,10 @@ async fn create_then_find_round_trip(pool: PgPool) {
     assert_eq!(found.created_at(), project.created_at());
 }
 
-#[sqlx::test(migrations = "../../migrations")]
-async fn count_by_organization_reflects_inserts(pool: PgPool) {
-    let org = seed_org(&pool, "counted").await;
-    let repo = PgProjectRepository::new(pool);
-
-    assert_eq!(repo.count_by_organization(org.id()).await.unwrap(), 0);
-    repo.create(&project(&org, "p1")).await.expect("p1");
-    repo.create(&project(&org, "p2")).await.expect("p2");
-    assert_eq!(repo.count_by_organization(org.id()).await.unwrap(), 2);
-}
-
-/// Project creation must honour the quota policy's refusal. Uses a Service
-/// caller to bypass Cedar and isolate the quota check; the policy is a double
-/// that allows two creations per scope and denies the third.
+/// Project creation must honour the quota policy's refusal, and refuse before
+/// writing. Uses a Service caller to bypass Cedar and isolate the quota check;
+/// the policy is a double that allows two creations per scope and denies the
+/// third.
 #[sqlx::test(migrations = "../../migrations")]
 async fn project_quota_enforced(pool: PgPool) {
     use crate::domain::project::ProjectName;
@@ -88,6 +78,14 @@ async fn project_quota_enforced(pool: PgPool) {
         .await
         .expect_err("over quota");
     assert!(matches!(err, DomainError::QuotaExceeded(_)));
+
+    // The refusal came before any write: the organization still holds exactly
+    // the two projects the policy let through.
+    let listed = PgProjectRepository::new(pool.clone())
+        .list_by_organization(org.id(), None, &Visibility::All)
+        .await
+        .expect("list projects");
+    assert_eq!(listed.items().len(), 2);
 }
 
 #[sqlx::test(migrations = "../../migrations")]

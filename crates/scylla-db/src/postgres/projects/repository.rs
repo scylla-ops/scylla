@@ -127,17 +127,6 @@ impl ProjectRepository for PgProjectRepository {
             queries::list_page(&self.pool, &params, false, Some(organization_id), &filter).await?;
         Ok(PaginatedResult::new(items, &params, total))
     }
-
-    #[instrument(skip_all, fields(org_id = %organization_id))]
-    async fn count_by_organization(&self, organization_id: &OrganizationId) -> DomainResult<u64> {
-        queries::count(
-            &self.pool,
-            false,
-            Some(organization_id),
-            &queries::VisibilityFilter::unrestricted(),
-        )
-        .await
-    }
 }
 
 #[allow(clippy::wildcard_imports)]
@@ -446,7 +435,7 @@ pub mod queries {
         }
 
         /// Everything is visible — used by the internal callers that legitimately
-        /// bypass filtering (quota counts, cascade bookkeeping).
+        /// bypass filtering (cascade bookkeeping).
         #[must_use]
         pub fn unrestricted() -> Self {
             Self {
