@@ -13,9 +13,7 @@ pub async fn seed_org_project_pipeline(
     pool: &PgPool,
     suffix: &str,
 ) -> (Organization, Project, Pipeline) {
-    use super::organizations::seed_org;
-    use super::pipelines::seed_pipeline;
-    use super::projects::seed_project;
+    use super::seed::{seed_org, seed_pipeline, seed_project};
 
     let org = seed_org(pool, &format!("org-{suffix}")).await;
     let project = seed_project(pool, &org, &format!("project-{suffix}")).await;

@@ -82,14 +82,3 @@ impl JobBuilder {
 pub fn job(pipeline: &Pipeline) -> Job {
     JobBuilder::new(pipeline).build()
 }
-
-pub async fn seed_job(pool: &sqlx::PgPool, pipeline: &Pipeline) -> Job {
-    use crate::application::JobRepository;
-    use crate::infrastructure::persistence::postgres::PgJobRepository;
-    let job = job(pipeline);
-    PgJobRepository::new(pool.clone())
-        .create(&job)
-        .await
-        .expect("seed job failed");
-    job
-}

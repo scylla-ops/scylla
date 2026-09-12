@@ -1,28 +1,16 @@
-//! Test scaffolding for `scylla-control-plane`, exposed to downstream test
-//! crates via the `test-utils` feature.
+//! Postgres-backed test scaffolding: the `seed_*` helpers that persist a
+//! fixture through the real repository, and the composite scenarios built on
+//! them.
 //!
-//! Each sub-module owns one aggregate:
-//! - a `*Builder` for chainable, in-memory construction with sensible defaults,
-//! - a short `*(...)` free function for the zero-customisation case,
-//! - a `seed_*` async helper that persists through the real repository.
-//!
-//! Composite scenarios (`org -> project -> pipeline -> job`) live in [`scenarios`].
-//!
-//! Pull everything in at once via [`prelude`]:
+//! The in-memory builders (`*Builder`, the `org(..)`/`project(..)` shortcuts)
+//! and the `PermissionService` doubles live in `scylla_core::test_support`;
+//! [`prelude`] re-exports both sides so a test needs one glob import:
 //! ```ignore
 //! use scylla_control_plane::test_support::prelude::*;
-//! let user = UserBuilder::new("alice").is_active(false).build();
+//! let org = seed_org(&pool, "acme").await;
 //! ```
 
-pub mod authz;
-pub mod job_logs;
-pub mod jobs;
-pub mod organizations;
-pub mod pipelines;
-pub mod projects;
-pub mod sessions;
-pub mod users;
-
 pub mod scenarios;
+pub mod seed;
 
 pub mod prelude;

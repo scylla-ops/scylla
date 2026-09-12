@@ -40,14 +40,3 @@ impl OrgBuilder {
 pub fn org(name: &str) -> Organization {
     OrgBuilder::new(name).build()
 }
-
-pub async fn seed_org(pool: &sqlx::PgPool, name: &str) -> Organization {
-    use crate::application::OrganizationRepository;
-    use crate::infrastructure::persistence::postgres::PgOrganizationRepository;
-    let org = org(name);
-    PgOrganizationRepository::new(pool.clone())
-        .create(&org)
-        .await
-        .expect("seed org failed");
-    org
-}

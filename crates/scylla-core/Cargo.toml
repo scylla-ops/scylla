@@ -1,0 +1,80 @@
+[package]
+name = "scylla-core"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+repository.workspace = true
+
+# This package lives exactly two directories below the workspace root, and that
+# depth is load-bearing: `src/rest/ui.rs` embeds `../../apps/frontend/dist` with
+# rust-embed and build.rs watches the same path, both resolved against
+# CARGO_MANIFEST_DIR. Moving it one level deeper silently ships no web UI.
+
+[features]
+# Public self-service signup (the gRPC RegistrationService). Off by default so a
+# deployment stays invite-only / OAuth-only unless it opts in. Forwarded by the
+# edition binaries.
+register = []
+
+# Exposes the `test_support` builders and PermissionService doubles to
+# downstream test code (the persistence crate's tests seed through them).
+test-utils = []
+
+[dependencies]
+# the shared kernel: domain model + the agent-facing event vocabulary
+scylla-domain = { workspace = true }
+# the access model (RBAC ports, scoped grants, the Cedar adapter)
+scylla-auth = { workspace = true }
+tokio.workspace = true
+async-trait.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+http.workspace = true
+serde.workspace = true
+toml.workspace = true
+chrono.workspace = true
+prost-types.workspace = true
+tracing.workspace = true
+derive_more.workspace = true
+thiserror.workspace = true
+
+tokio-stream = { workspace = true }
+futures-util.workspace = true
+serde_json.workspace = true
+
+# the single HTTP surface: web UI, webhook ingress, healthz
+axum.workspace = true
+# the Vite build, compiled in. See build.rs and src/rest/ui.rs.
+rust-embed.workspace = true
+
+# adapters: password hashing, secret encryption, webhook HMAC, outbound mail
+# and OAuth.
+argon2.workspace = true
+chacha20poly1305.workspace = true
+hmac.workspace = true
+sha2.workspace = true
+subtle.workspace = true
+hex.workspace = true
+lettre.workspace = true
+oauth2.workspace = true
+reqwest.workspace = true
+croner.workspace = true
+humantime-serde.workspace = true
+uuid.workspace = true
+bon.workspace = true
+futures-core.workspace = true
+
+# grpc
+# `tls-connect-info` is what gives us `impl Connected for TlsStream<TcpStream>`,
+# the bound `serve_with_incoming_shutdown` needs to accept our own rustls
+# acceptor (src/tls.rs).
+tonic = { workspace = true, features = ["tls-connect-info"] }
+tokio-rustls.workspace = true
+tonic-async-interceptor.workspace = true
+scylla-proto.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }
+
+[lints]
+workspace = true

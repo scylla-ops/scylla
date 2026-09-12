@@ -53,14 +53,3 @@ impl SessionBuilder {
 pub fn session(user_id: &UserId) -> Session {
     SessionBuilder::new(user_id).build()
 }
-
-pub async fn seed_session(pool: &sqlx::PgPool, user_id: &UserId) -> Session {
-    use crate::application::SessionRepository;
-    use crate::infrastructure::persistence::postgres::PgSessionRepository;
-    let session = session(user_id);
-    PgSessionRepository::new(pool.clone())
-        .create(&session)
-        .await
-        .expect("seed session failed");
-    session
-}

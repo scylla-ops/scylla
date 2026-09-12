@@ -2870,13 +2870,37 @@ name = "scylla-control-plane"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "chrono",
+ "clap",
+ "http",
+ "scylla-core",
+ "scylla-domain",
+ "scylla-proto",
+ "serde",
+ "sqlx",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tonic-async-interceptor",
+ "tonic-reflection",
+ "tonic-web",
+ "tower",
+ "tower-http 0.7.0",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "scylla-core"
+version = "0.1.0"
+dependencies = [
  "argon2",
  "async-trait",
  "axum",
  "bon",
  "chacha20poly1305",
  "chrono",
- "clap",
  "croner",
  "derive_more",
  "futures-core",
@@ -2896,22 +2920,17 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.0",
- "sqlx",
  "subtle",
  "thiserror 2.0.18",
  "tokio",
  "tokio-rustls",
  "tokio-stream",
- "tokio-util",
  "toml",
  "tonic",
  "tonic-async-interceptor",
- "tonic-reflection",
- "tonic-web",
  "tower",
  "tower-http 0.7.0",
  "tracing",
- "tracing-subscriber",
  "uuid",
 ]
 

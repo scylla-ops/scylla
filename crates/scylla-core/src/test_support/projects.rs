@@ -66,14 +66,3 @@ impl ProjectBuilder {
 pub fn project(org: &Organization, name: &str) -> Project {
     ProjectBuilder::new(org, name).build()
 }
-
-pub async fn seed_project(pool: &sqlx::PgPool, org: &Organization, name: &str) -> Project {
-    use crate::application::ProjectRepository;
-    use crate::infrastructure::persistence::postgres::PgProjectRepository;
-    let project = project(org, name);
-    PgProjectRepository::new(pool.clone())
-        .create(&project)
-        .await
-        .expect("seed project failed");
-    project
-}

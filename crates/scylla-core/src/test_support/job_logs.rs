@@ -41,19 +41,3 @@ impl JobLogBuilder {
 pub fn job_log(job_id: &JobId, node_id: &str, line: &str) -> JobLog {
     JobLogBuilder::new(job_id, node_id, line).build()
 }
-
-pub async fn seed_job_log(
-    pool: &sqlx::PgPool,
-    job_id: &JobId,
-    node_id: &str,
-    line: &str,
-) -> JobLog {
-    use crate::application::JobLogRepository;
-    use crate::infrastructure::persistence::postgres::PgJobLogRepository;
-    let log = job_log(job_id, node_id, line);
-    PgJobLogRepository::new(pool.clone())
-        .create(&log)
-        .await
-        .expect("seed job log failed");
-    log
-}

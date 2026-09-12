@@ -1,17 +1,16 @@
 pub mod db;
-pub mod messaging;
 pub mod persistence;
-pub mod services;
 
-pub use db::{DatabaseConfig, close_db, init_db};
+pub use db::{close_db, init_db};
 
-pub use messaging::{InMemoryAgentRegistry, InMemoryJobLogStream};
-
-pub use services::{ChaChaSecretCipher, CronScheduleService, GitHubOAuthProvider, LettreMailer};
-
-pub use services::Argon2HashService;
-
-pub use services::CedarPermissionService;
+/// The in-memory and service adapters live in `scylla-core`, the Cedar adapter
+/// in `scylla-auth`; re-exported so the composition root and the persistence
+/// tests keep naming every adapter here.
+pub use scylla_core::infrastructure::{
+    Argon2HashService, CedarPermissionService, ChaChaSecretCipher, CronScheduleService,
+    GitHubOAuthProvider, InMemoryAgentRegistry, InMemoryJobLogStream, LettreMailer, messaging,
+    services,
+};
 
 pub use persistence::postgres::{
     PgAgentRepository, PgAppCredentialRepository, PgAppRepository, PgAppTokenRepository,

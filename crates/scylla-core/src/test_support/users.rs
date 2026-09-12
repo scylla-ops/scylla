@@ -46,14 +46,3 @@ impl UserBuilder {
 pub fn user(name: &str) -> User {
     UserBuilder::new(name).build()
 }
-
-pub async fn seed_user(pool: &sqlx::PgPool, name: &str) -> User {
-    use crate::application::UserRepository;
-    use crate::infrastructure::persistence::postgres::PgUserRepository;
-    let user = user(name);
-    PgUserRepository::new(pool.clone())
-        .create(&user)
-        .await
-        .expect("seed user failed");
-    user
-}
