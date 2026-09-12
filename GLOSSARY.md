@@ -7,7 +7,7 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 ### `scylla-ce`
 The Community Edition binary, and the process people call "the control plane". Serves everything on one port (`8080`): the compiled-in web UI, the gRPC API (user APIs, app token exchange, and the agent worker stream), its gRPC-Web translation for the browser, and the inbound webhook ingress. Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `binaries/scylla-ce/config/*.toml`.
 
-The package is a `main.rs` and nothing else: it loads a configuration, opens the pool, builds the Community `Extensions` (see [Extension point](#extension-point)) and hands all three to `scylla_server::serve`, which owns the composition root. The use cases live in `scylla-core`, the access model in `scylla-auth`, the Postgres adapters in `scylla-db`.
+The package is a `main.rs` and nothing else: it loads a configuration, opens the pool and hands both to the `scylla_server::Server` builder, which owns the composition root; it registers no extension (see [Extension point](#extension-point)), so every point runs on the core's default. The use cases live in `scylla-core`, the access model in `scylla-auth`, the Postgres adapters in `scylla-db`.
 
 The package name, the binary name, the Dockerfile stage name and the config directory path are load-bearing: the image is built with `--target scylla-ce` and `docker-compose.yaml` bind-mounts `binaries/scylla-ce/config`. So is the depth of `scylla-db` and `scylla-core` under `crates/`: `sqlx::migrate!("../../migrations")` and the rust-embed `#[folder = "../../apps/frontend/dist/"]` resolve against `CARGO_MANIFEST_DIR`. Changing any of them breaks the image build or the container at runtime, not the `cargo` build.
 
@@ -282,7 +282,7 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 
 `crates/scylla-db/src/`: `postgres/<aggregate>/` (one `Pg…Repository` per aggregate) and `pool.rs` (the pool and the embedded migrations).
 
-`crates/scylla-server/src/`: `serve.rs` (the public entry point), `startup.rs` (the `Services` struct and `init_services`, the one place that names every concrete adapter, plus `run_server`; all crate-private) and `cli.rs` (the command line, config loading and tracing setup shared by the edition binaries).
+`crates/scylla-server/src/`: `server.rs` (the `Server` builder, the public entry point), `startup.rs` (the `Services` struct and `init_services`, the one place that names every concrete adapter, plus `run_server`; all crate-private) and `cli.rs` (the command line, config loading and tracing setup shared by the edition binaries).
 
 `crates/scylla-extension/src/`: the traits an edition implements, see [Extension point](#extension-point).
 
@@ -319,4 +319,4 @@ The topological-sort routine behind `DagPlan` (`domain/dag.rs`). One implementat
 Two in the whole workspace. `register` exposes the public self-service signup RPC, off by default so a deployment stays invite-only; it is declared on `scylla-core` and forwarded by `scylla-server` and `scylla-ce`. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth` and `scylla-extension` have none.
 
 ### Extension point
-A trait in `scylla-extension` that an edition binary implements and hands to the core through the `Extensions` struct. The core calls the trait and never knows which edition built it. One exists today: `QuotaPolicy`, asked by `ProjectUseCases::create` before a project is created. The Community Edition wires `UnlimitedQuota`, which always allows. `scylla-extension` depends on no other workspace crate, so a private Enterprise build can implement the traits against a pinned git tag.
+A trait in `scylla-extension` that an edition binary implements and registers on the `Server` builder under that trait (`.extension::<dyn QuotaPolicy>(...)`); the implementations land in the `Extensions` registry, keyed by trait, which the core looks up, falling back to its own default. The core calls the trait and never knows which edition built it. One exists today: `QuotaPolicy`, asked by `ProjectUseCases::create` before a project is created. The Community Edition wires `UnlimitedQuota`, which always allows. `scylla-extension` depends on no other workspace crate, so a private Enterprise build can implement the traits against a pinned git tag.

@@ -16,7 +16,7 @@ libraries they link.
 | `crates/scylla-auth` | the access model: RBAC ports and types, the Cedar adapter |
 | `crates/scylla-core` | use cases and ports, gRPC + HTTP surfaces, config, in-memory adapters |
 | `crates/scylla-db` | the Postgres adapters, the pool, the embedded migrations |
-| `crates/scylla-server` | the composition root: `serve(config, db, extensions)` and the `cli` every edition binary shares |
+| `crates/scylla-server` | the composition root: the `Server` builder (extensions by trait, extra gRPC/HTTP services) and the `cli` every edition binary shares |
 | `binaries/scylla-ce` | the Community Edition binary: a `main.rs` and the config files |
 | `binaries/scylla-agent` | the worker installed per machine |
 | `apps/frontend` | the web UI's source; compiled into the `scylla-ce` binary through `scylla-core` |
