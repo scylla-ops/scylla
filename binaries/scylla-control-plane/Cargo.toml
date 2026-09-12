@@ -2,6 +2,8 @@
 name = "scylla-control-plane"
 version = "0.1.0"
 edition = "2024"
+license.workspace = true
+repository.workspace = true
 
 # This package lives exactly two directories below the workspace root, and that
 # depth is load-bearing: `sqlx::migrate!("../../migrations")` and every

@@ -2,6 +2,8 @@
 name = "scylla-agent"
 version = "0.1.0"
 edition = "2024"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 # the shared kernel (domain model + JobEvent) and the wire contract. These are

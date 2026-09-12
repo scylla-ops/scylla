@@ -2,6 +2,8 @@
 name = "scylla-domain"
 version = "0.1.0"
 edition = "2024"
+license.workspace = true
+repository.workspace = true
 
 # No features, and no heavy dependencies. This crate is shared by the control
 # plane and by every agent, so anything that opens a socket, talks to a database

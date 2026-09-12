@@ -7,6 +7,11 @@ members = [
     "binaries/scylla-control-plane",
 ]
 
+# Shared package metadata: every member inherits it with `field.workspace = true`.
+[workspace.package]
+license = "Apache-2.0"
+repository = "https://github.com/scylla-ops/scylla"
+
 [workspace.dependencies]
 # async
 tokio = { version = "1.5", features = ["full"] }
