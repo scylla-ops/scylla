@@ -1,7 +1,7 @@
 //! The command line and process setup every edition binary shares.
 //!
 //! An edition's `main.rs` is the sequence: parse, initialise tracing, load the
-//! configuration, open the pool, build its `Extensions`, [`crate::serve`].
+//! configuration, open the pool, build a [`crate::Server`] and serve it.
 //! Everything on that path that does not depend on the edition lives here.
 
 use anyhow::{Context, Result};

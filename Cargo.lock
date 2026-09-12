@@ -2872,7 +2872,6 @@ dependencies = [
  "anyhow",
  "scylla-core",
  "scylla-db",
- "scylla-extension",
  "scylla-server",
  "tokio",
 ]
@@ -2973,6 +2972,7 @@ name = "scylla-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "clap",
  "http",
  "scylla-auth",

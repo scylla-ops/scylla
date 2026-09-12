@@ -1,12 +1,10 @@
-//! The Community Edition binary: the public server with the default
-//! extensions. Every step below is edition-independent except the
-//! `Extensions` literal, which is the whole difference between editions.
+//! The Community Edition binary: the public server with its defaults. Every
+//! step below is edition-independent; an edition differs by what it adds to
+//! the [`Server`] between `new` and `serve`, and this one adds nothing.
 
-use scylla_core::application::UnlimitedQuota;
 use scylla_core::config::ControlPlaneConfig;
-use scylla_extension::Extensions;
+use scylla_server::Server;
 use scylla_server::cli::{self, Cli};
-use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -22,8 +20,5 @@ async fn main() -> anyhow::Result<()> {
     cli::init_tracing(&["scylla_ce"]);
     let config = cli.load_config()?;
     let db = scylla_db::init_db(&config.database).await?;
-    let extensions = Extensions {
-        quota: Arc::new(UnlimitedQuota),
-    };
-    scylla_server::serve(config, db, extensions).await
+    Server::new(config, db).serve().await
 }

@@ -24,6 +24,8 @@ tokio.workspace = true
 tokio-util.workspace = true
 tower.workspace = true
 tower-http.workspace = true
+# the listener is one axum router: the edition's extra HTTP routes merge into it
+axum.workspace = true
 http.workspace = true
 tracing.workspace = true
 anyhow.workspace = true

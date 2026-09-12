@@ -1,3 +1,4 @@
+use crate::surface::Surface;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_auth::audit::AuditLog;
 use scylla_auth::authz::RoleUseCases;
@@ -14,6 +15,7 @@ use scylla_core::application::{
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;
+use scylla_core::grpc::auth_interceptor::AuthInterceptor;
 use scylla_core::infrastructure::{
     Argon2HashService, ChaChaSecretCipher, CronScheduleService, GitHubOAuthProvider,
     InMemoryAgentRegistry, InMemoryJobLogStream, LettreMailer,
@@ -31,11 +33,13 @@ use sqlx::PgPool;
 use std::future::Future;
 use std::sync::Arc;
 use tokio::sync::Notify;
+use tonic_async_interceptor::async_interceptor;
 use tower_http::cors::CorsLayer;
 
 // ── Concrete type aliases ──────────────────────────────────────────────
 
 pub(crate) type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
+pub(crate) type SharedPermissionChecker = Arc<PermissionChecker>;
 pub(crate) type SharedGrantUc =
     Arc<GrantUseCases<PgGrantRepository, PermissionChecker, PermissionChecker>>;
 pub(crate) type SharedRoleUc =
@@ -172,6 +176,8 @@ pub(crate) struct Services {
     pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
     pub role_uc: SharedRoleUc,
+    /// The Cedar engine, also handed to features as their authorization ports.
+    pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
 }
@@ -257,7 +263,7 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        extensions.quota.clone(),
+        scylla_core::application::quota_policy(&extensions),
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),
@@ -517,6 +523,7 @@ pub(crate) async fn init_services(
         job_log_stream,
         grant_uc,
         role_uc,
+        permission_checker,
         session_repo,
         app_token_repo,
     })
@@ -610,6 +617,7 @@ pub(crate) async fn shutdown_signal() {
 pub(crate) async fn run_server<F>(
     config: &ControlPlaneConfig,
     services: &Services,
+    surface: Surface,
     shutdown: F,
 ) -> Result<(), StartupError>
 where
@@ -621,7 +629,6 @@ where
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
         InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
         ProjectHandler, RoleHandler, SecretHandler, TriggerHandler, UserHandler,
-        auth_interceptor::AuthInterceptor,
     };
     use scylla_proto::invitation::v1::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
@@ -650,7 +657,6 @@ where
     };
     use tonic::service::Routes;
     use tonic::transport::Server;
-    use tonic_async_interceptor::async_interceptor;
     use tonic_web::GrpcWebLayer;
     use tower::ServiceBuilder;
     use tower_http::trace::TraceLayer;
@@ -698,12 +704,18 @@ where
     // v1alpha (older clients — grpcurl defaults, some MCP/reflection bridges).
     // They are distinct gRPC services (grpc.reflection.v1[alpha].ServerReflection),
     // so they coexist on the same server without a route clash.
-    let reflection_v1 = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(scylla_proto::FILE_DESCRIPTOR_SET)
+    let reflection = || {
+        let mut builder = tonic_reflection::server::Builder::configure()
+            .register_encoded_file_descriptor_set(scylla_proto::FILE_DESCRIPTOR_SET);
+        for set in &surface.descriptors {
+            builder = builder.register_encoded_file_descriptor_set(set);
+        }
+        builder
+    };
+    let reflection_v1 = reflection()
         .build_v1()
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
-    let reflection_v1alpha = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(scylla_proto::FILE_DESCRIPTOR_SET)
+    let reflection_v1alpha = reflection()
         .build_v1alpha()
         .map_err(|e| StartupError::Reflection(e.to_string()))?;
 
@@ -813,6 +825,11 @@ where
         grpc.add_service(svc);
     }
 
+    // The edition's own services, on the same routes and the same layers.
+    for add in surface.grpc {
+        add(&mut grpc, &auth_interceptor);
+    }
+
     // Both layers are scoped to the gRPC routes: `GrpcWebLayer` because it 400s
     // everything else, and the gRPC trace classifier because it reads
     // `grpc-status` — on a static asset it would call every response a success.
@@ -825,7 +842,13 @@ where
     // The plain-HTTP surfaces get the status-based classifier instead. The
     // webhook router sets no fallback, so merging it into the tonic-derived
     // router (which has one) is safe — axum only panics when both do.
-    let http = scylla_core::rest::webhook::router(services.webhook_ingress_uc.clone())
+    let http = surface
+        .http
+        .into_iter()
+        .fold(
+            scylla_core::rest::webhook::router(services.webhook_ingress_uc.clone()),
+            axum::Router::merge,
+        )
         .layer(TraceLayer::new_for_http());
 
     // The liveness probe is a plain route with no layer of its own, so it goes

@@ -41,7 +41,7 @@ pub use oauth::{
 pub use organization::{OrganizationRepository, OrganizationUseCases};
 pub use pipeline::{PipelineRepository, PipelineUseCases};
 pub use project::{ProjectRepository, ProjectUseCases};
-pub use quota::UnlimitedQuota;
+pub use quota::{UnlimitedQuota, quota_policy};
 pub use secret::{
     DispatchSecretResolver, SecretCipher, SecretRepository, SecretResolver, SecretUseCases,
 };

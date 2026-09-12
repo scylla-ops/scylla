@@ -10,11 +10,16 @@
 //!
 //! An edition binary is a `main.rs` of a few lines: [`cli::Cli::parse_as`],
 //! [`cli::init_tracing`], [`cli::Cli::load_config`], `scylla_db::init_db`,
-//! build an [`scylla_extension::Extensions`], [`serve`]. The Community one is
+//! then [`Server::new`] refined with what the edition contributes (usually as
+//! [`Feature`]s) and [`Server::serve`]. The Community one is
 //! `binaries/scylla-ce/src/main.rs`.
 
 pub mod cli;
-mod serve;
+mod feature;
+mod server;
 mod startup;
+mod surface;
 
-pub use serve::serve;
+pub use feature::{Context, Feature, PrepareFuture};
+pub use server::Server;
+pub use surface::Surface;

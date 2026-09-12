@@ -21,14 +21,12 @@ path = "src/main.rs"
 register = ["scylla-server/register"]
 
 [dependencies]
-# the configuration types and the default extension implementations
+# the configuration types
 scylla-core = { workspace = true }
 # the pool this binary opens and hands to the server
 scylla-db = { workspace = true }
-# the composition root, the server and the shared command line
+# the server builder and the shared command line
 scylla-server = { workspace = true }
-# the Extensions bundle this edition fills in
-scylla-extension = { workspace = true }
 
 tokio.workspace = true
 anyhow.workspace = true

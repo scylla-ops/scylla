@@ -8,7 +8,17 @@
 
 use crate::domain::errors::{DomainError, DomainResult};
 use async_trait::async_trait;
-use scylla_extension::{QuotaDecision, QuotaError, QuotaPolicy, QuotaUsage, Resource};
+use scylla_extension::{Extensions, QuotaDecision, QuotaError, QuotaPolicy, QuotaUsage, Resource};
+use std::sync::Arc;
+
+/// The edition's quota policy, or the Community default when it registered
+/// none. The one place that knows the default; the composition root asks here.
+#[must_use]
+pub fn quota_policy(extensions: &Extensions) -> Arc<dyn QuotaPolicy> {
+    extensions
+        .get::<dyn QuotaPolicy>()
+        .unwrap_or_else(|| Arc::new(UnlimitedQuota))
+}
 
 /// The Community Edition policy: nothing is metered, nothing is consulted.
 #[derive(Debug, Default, Clone, Copy)]
@@ -62,6 +72,23 @@ pub fn enforce(decision: Result<QuotaDecision, QuotaError>) -> DomainResult<()> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn the_community_default_is_unlimited() {
+        let policy = quota_policy(&Extensions::new());
+        assert_eq!(
+            policy.check(Resource::Project, "org").await,
+            Ok(QuotaDecision::Allow)
+        );
+        assert_eq!(policy.usage(Resource::Project, "org").await, Ok(None));
+    }
+
+    #[test]
+    fn a_registered_policy_wins_over_the_default() {
+        let extensions = Extensions::new().with::<dyn QuotaPolicy>(Arc::new(UnlimitedQuota));
+        let registered = extensions.get::<dyn QuotaPolicy>().unwrap();
+        assert!(Arc::ptr_eq(&quota_policy(&extensions), &registered));
+    }
 
     #[tokio::test]
     async fn unlimited_allows_and_reports_nothing_metered() {
