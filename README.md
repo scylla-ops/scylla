@@ -44,6 +44,38 @@ scylla-domain <- scylla-auth  <- scylla-core
 
 `scylla-core` is generic over the ports declared in `scylla-core` and `scylla-auth`; `scylla-db` implements them; `scylla-server` is the only crate that names the concrete implementations side by side. The binaries are a `main.rs` each: load a configuration, build the edition's extensions, call `scylla_server::runtime::run`.
 
+A WebAssembly plugin runtime is planned as `crates/scylla-wasm/`; it does not exist yet.
+
+## Editions and the extension mechanism
+
+This repository is the open source core and ships the Community Edition binary, `scylla-ce`. A separate, private repository builds an Enterprise binary on top of it. The dependency is strictly one way: the private repository depends on this one by a pinned git tag, and nothing here knows it exists.
+
+The seam between the two is `crates/scylla-extension`: a small crate holding only traits and the types that appear in their signatures, with no dependency on any other workspace crate. An edition implements the traits, bundles the implementations in an `Extensions` value, and hands it to `scylla_server::runtime::run`. The core calls through the traits and never knows which edition built it.
+
+One extension point exists today, the quota:
+
+```rust
+#[async_trait]
+pub trait QuotaPolicy: Send + Sync {
+    async fn check(&self, resource: Resource, scope: &str) -> Result<QuotaDecision, QuotaError>;
+    async fn usage(&self, resource: Resource, scope: &str) -> Result<Option<QuotaUsage>, QuotaError>;
+}
+
+pub enum QuotaDecision {
+    Allow,
+    Deny { resource: Resource, limit: u64, current: u64, upgrade_hint: Option<String> },
+}
+
+#[derive(Clone)]
+pub struct Extensions {
+    pub quota: Arc<dyn QuotaPolicy>,
+}
+```
+
+`ProjectUseCases::create` asks the policy before creating a project and turns a `Deny` into `DomainError::QuotaExceeded` (gRPC `RESOURCE_EXHAUSTED`). The Community Edition wires `UnlimitedQuota` (`crates/scylla-ce/src/extensions.rs`), which always allows and consults nothing. `scope` is the organization id as a plain string so the contract stays free of the domain model.
+
+Adding an extension point is: a trait and its boundary types in `scylla-extension`, a field on `Extensions`, a default implementation in `scylla-core`, and a line in each edition's `build_extensions()`.
+
 ## Prerequisites
 
 You only need Docker. Everything else (Rust, Node.js, pnpm) runs inside containers.

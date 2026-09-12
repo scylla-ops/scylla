@@ -7,7 +7,7 @@ Reference for every domain-specific word used across Scylla's code, docs, and UI
 ### `scylla-ce`
 The Community Edition binary, and the process people call "the control plane". Serves everything on one port (`8080`): the compiled-in web UI, the gRPC API (user APIs, app token exchange, and the agent worker stream), its gRPC-Web translation for the browser, and the inbound webhook ingress. Job dispatch and log fan-out are in-process, there is no message broker and no recorder. Config lives in `crates/scylla-ce/config/*.toml`.
 
-The package is a `main.rs` and nothing else: it loads a configuration and hands it to `scylla-server`, which owns the composition root (the `Services` struct, `init_services`, `run_server`). The use cases live in `scylla-core`, the access model in `scylla-auth`, the Postgres adapters in `scylla-db`.
+The package is a `main.rs` and nothing else: it loads a configuration, builds the Community `Extensions` (see [Extension point](#extension-point)) and hands both to `scylla-server`, which owns the composition root (the `Services` struct, `init_services`, `run_server`). The use cases live in `scylla-core`, the access model in `scylla-auth`, the Postgres adapters in `scylla-db`.
 
 The package name, the binary name, the Dockerfile stage name and the config directory path are load-bearing: the image is built with `--target scylla-ce` and `docker-compose.yaml` bind-mounts `crates/scylla-ce/config`. So is the depth of `scylla-db` and `scylla-core` under `crates/`: `sqlx::migrate!("../../migrations")` and the rust-embed `#[folder = "../../apps/frontend/dist/"]` resolve against `CARGO_MANIFEST_DIR`. Changing any of them breaks the image build or the container at runtime, not the `cargo` build.
 
@@ -284,6 +284,8 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 
 `crates/scylla-server/src/`: `startup.rs` (the `Services` struct and `init_services`, the one place that names every concrete adapter, plus `run_server`) and `runtime.rs`.
 
+`crates/scylla-extension/src/`: the traits an edition implements, see [Extension point](#extension-point).
+
 Every crate re-exports the kernel's `domain` module, so `crate::domain::...` names the model from anywhere even though it lives in another crate; `scylla-core` likewise re-exports the access model under `application::authz`, and `scylla-db` re-exports `scylla_core::application`, so the adapters keep naming the ports they implement as `crate::application::...`.
 
 ### Port
@@ -315,3 +317,6 @@ The topological-sort routine behind `DagPlan` (`domain/dag.rs`). One implementat
 
 ### Cargo features
 Two in the whole workspace. `register` exposes the public self-service signup RPC, off by default so a deployment stays invite-only; it is declared on `scylla-core` and forwarded by `scylla-server` and `scylla-ce`. `test-utils` exposes the `test_support` builders (`scylla-core`) and seeders (`scylla-db`) to downstream test code. `scylla-domain`, `scylla-agent`, `scylla-proto`, `scylla-auth` and `scylla-extension` have none.
+
+### Extension point
+A trait in `scylla-extension` that an edition binary implements and hands to the core through the `Extensions` struct. The core calls the trait and never knows which edition built it. One exists today: `QuotaPolicy`, asked by `ProjectUseCases::create` before a project is created. The Community Edition wires `UnlimitedQuota`, which always allows. `scylla-extension` depends on no other workspace crate, so a private Enterprise build can implement the traits against a pinned git tag.

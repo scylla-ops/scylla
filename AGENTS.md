@@ -17,7 +17,7 @@ this file only says where to look.
 | `crates/scylla-core` | use cases and ports, gRPC + HTTP surfaces, config, in-memory adapters |
 | `crates/scylla-db` | the Postgres adapters, the pool, the embedded migrations |
 | `crates/scylla-server` | the composition root: `Services`, `init_services`, `run_server` |
-| `crates/scylla-ce` | the Community Edition binary: `main.rs`, config files, the wiring of the default extensions |
+| `crates/scylla-ce` | the Community Edition binary: `main.rs`, config files, `build_extensions()` |
 | `binaries/scylla-agent` | the worker installed per machine |
 | `apps/frontend` | the web UI's source; compiled into the `scylla-ce` binary through `scylla-core` |
 
