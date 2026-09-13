@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcUserMapper } from './grpc-user.mapper';
 import type { User } from '@/generated/scylla/user/v1/user.ts';

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcRoleMapper } from './grpc-role.mapper';
 import { ScopeKind } from '@/generated/scylla/authz/v1/permission.ts';

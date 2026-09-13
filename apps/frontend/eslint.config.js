@@ -13,6 +13,8 @@ export default tseslint.config([
     'src/generated/**',
     // Lingui compiled message catalogs
     'src/**/locales/**',
+    // v8 coverage output — the HTML reporter ships its own vendored scripts
+    'coverage/**',
   ]),
 
   {

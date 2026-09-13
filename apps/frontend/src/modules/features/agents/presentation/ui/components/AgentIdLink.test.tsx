@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { fireEvent } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { AgentIdLink } from './AgentIdLink';
 
 const toastSuccess = vi.fn();
@@ -13,9 +12,6 @@ vi.mock('sonner', () => ({
     error: (...args: unknown[]) => toastError(...args),
   },
 }));
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 let writeText: ReturnType<typeof vi.fn>;
 

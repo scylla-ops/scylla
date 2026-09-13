@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { EditProjectDialog } from './EditProjectDialog';
 import type { ProjectEntity } from '@/modules/features/project/domain/entities/project.entity.ts';
 
@@ -10,9 +9,6 @@ const mutateMock = vi.fn();
 vi.mock('@/modules/features/project/presentation/hooks/use-update-project.ts', () => ({
   useUpdateProject: () => ({ mutate: mutateMock, isPending: false }),
 }));
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const project = (overrides: Partial<ProjectEntity> = {}): ProjectEntity => ({
   id: 'project-1',

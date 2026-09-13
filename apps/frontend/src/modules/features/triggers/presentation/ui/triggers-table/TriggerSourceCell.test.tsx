@@ -1,20 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
+import { describe, it, expect } from 'vitest';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { TriggerSourceCell } from './TriggerSourceCell';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-});
 
 const trigger = (overrides: Partial<TriggerEntity> = {}): TriggerEntity => ({
   id: 'trigger-1',
@@ -27,9 +16,6 @@ const trigger = (overrides: Partial<TriggerEntity> = {}): TriggerEntity => ({
   updatedAt: '2026-01-01T00:00:00.000Z',
   ...overrides,
 });
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 describe('TriggerSourceCell', () => {
   it('shows a cron trigger\'s expression, converted to local time', () => {

@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { useContextStore } from '@platform/context';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useApps, useApp, useAppSecrets } from './use-apps';
@@ -79,17 +77,7 @@ const makeFakeRepository = (overrides: Partial<AppsRepository> = {}) => {
   };
 };
 
-const wrapperFor = (repository: AppsRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider registry={{ apps: { appsRepository: repository } }}>
-        {children}
-      </DependenciesProvider>
-    </QueryClientProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: AppsRepository) => createProvidersWrapper({ apps: { appsRepository: repository } });
 
 beforeEach(() => {
   useContextStore.setState({ organization: { id: ORG_ID, name: 'Org' } });

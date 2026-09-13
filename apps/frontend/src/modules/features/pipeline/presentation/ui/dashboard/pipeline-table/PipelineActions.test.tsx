@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { screen, act } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { PipelineActions } from './PipelineActions';
 
@@ -22,9 +21,6 @@ class ResizeObserverMock {
     this.callback([{ contentRect: { width } } as unknown as ResizeObserverEntry], this);
   }
 }
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 beforeEach(() => {
   ResizeObserverMock.instances = [];
@@ -65,12 +61,12 @@ describe('PipelineActions', () => {
   });
 
   it('Run is disabled (and spinning) while isRunning', () => {
-    const { container } = renderWithI18n(
+    renderWithI18n(
       <PipelineActions onRun={vi.fn()} onEdit={vi.fn()} onDuplicate={vi.fn()} isRunning />,
     );
     const [runButton] = screen.getAllByRole('button');
     expect(runButton).toBeDisabled();
-    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(runButton).toHaveAttribute('aria-busy', 'true');
   });
 
   it('collapses into a dropdown once the container narrows, and forwards each action', async () => {

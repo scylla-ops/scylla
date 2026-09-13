@@ -84,9 +84,42 @@ export default defineConfig({
     },
   },
   test: {
+    // Default for the UI tests. Mappers, utils and domain tests opt out with a
+    // `// @vitest-environment node` docblock — building a jsdom for a pure
+    // function was ~40% of the suite's wall time.
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: ['./src/test/setup.ts'],
     css: false,
+    coverage: {
+      provider: 'v8',
+      // `include` is what makes untested files count: everything matching is
+      // reported at 0% rather than being absent, which is the difference
+      // between a real number and one that flatters itself.
+      include: ['src/modules/**/*.{ts,tsx}'],
+      exclude: [
+        // Machine output: generated proto clients and compiled Lingui catalogs.
+        'src/generated/**',
+        '**/locales/**',
+        '**/*.test.{ts,tsx}',
+        // Vendored shadcn primitives — upstream code we don't own.
+        '**/shadcn/**',
+        // Barrels and module declarations are re-exports and wiring: covering
+        // them measures nothing, and `*.module.ts` pulls a feature's gRPC
+        // client in just by being imported.
+        '**/index.ts',
+        '**/*.module.ts',
+      ],
+      reporter: ['text-summary', 'html'],
+      // A ratchet, not a target: these are the levels reached today, so the
+      // number can only go up. Raise them when a batch of tests lands; never
+      // lower them to make a red run green.
+      thresholds: {
+        statements: 64,
+        branches: 64,
+        functions: 58,
+        lines: 64,
+      },
+    },
   },
 });

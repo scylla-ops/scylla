@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcPermissionMapper } from './grpc-permission.mapper';
 import { Permission as ProtoPermission } from '@/generated/scylla/authz/v1/permission.ts';

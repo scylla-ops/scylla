@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { screen, act } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { TriggerActions } from './TriggerActions';
 
@@ -22,9 +21,6 @@ class ResizeObserverMock {
     this.callback([{ contentRect: { width } } as unknown as ResizeObserverEntry], this);
   }
 }
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 beforeEach(() => {
   ResizeObserverMock.instances = [];
@@ -48,13 +44,13 @@ describe('TriggerActions', () => {
     expect(screen.getAllByRole('button')).toHaveLength(3);
   });
 
-  it('fire now is disabled (and spinning) while isFiring is set', () => {
-    const { container } = renderWithI18n(
+  it('fire now is disabled and marked busy while isFiring is set', () => {
+    renderWithI18n(
       <TriggerActions onFire={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} isFiring />,
     );
     const [fireButton] = screen.getAllByRole('button');
     expect(fireButton).toBeDisabled();
-    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(fireButton).toHaveAttribute('aria-busy', 'true');
   });
 
   it('collapses into a dropdown once the container narrows, and forwards each action', async () => {

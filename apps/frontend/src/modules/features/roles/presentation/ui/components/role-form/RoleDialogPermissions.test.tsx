@@ -1,23 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { RoleDialogPermissions } from './RoleDialogPermissions';
 import { PermissionScope } from '@platform/authz';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-});
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 describe('RoleDialogPermissions', () => {
   it('counts the implicit "member of" permission for an ORGANIZATION role with nothing ticked', () => {
@@ -65,15 +51,14 @@ describe('RoleDialogPermissions', () => {
     expect(screen.queryByText(/not managed here/)).not.toBeInTheDocument();
 
     rerender(
-      <I18nProvider i18n={i18n}>
-        <RoleDialogPermissions
-          scope={PermissionScope.PROJECT}
-          permissions={[]}
-          preservedCount={2}
-          isPending={false}
-          onPermissionsChange={vi.fn()}
-        />
-      </I18nProvider>,
+      <RoleDialogPermissions
+        scope={PermissionScope.PROJECT}
+        permissions={[]}
+        preservedCount={2}
+        isPending={false}
+        onPermissionsChange={vi.fn()}
+      />,
+
     );
     expect(screen.getByText(/not managed here/)).toBeInTheDocument();
   });

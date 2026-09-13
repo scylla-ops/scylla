@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { TriggerFormDialog } from './TriggerFormDialog';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
@@ -15,15 +14,6 @@ vi.mock('@/modules/features/triggers/presentation/hooks/use-create-trigger.ts', 
 vi.mock('@/modules/features/triggers/presentation/hooks/use-update-trigger.ts', () => ({
   useUpdateTrigger: () => ({ mutateAsync: updateMutateAsync, isPending: false }),
 }));
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const trigger = (overrides: Partial<TriggerEntity> = {}): TriggerEntity => ({
   id: 't1',
@@ -40,10 +30,6 @@ const trigger = (overrides: Partial<TriggerEntity> = {}): TriggerEntity => ({
 beforeEach(() => {
   createMutateAsync.mockReset();
   updateMutateAsync.mockReset();
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
-  Element.prototype.releasePointerCapture = vi.fn();
-  Element.prototype.scrollIntoView = vi.fn();
 });
 
 describe('TriggerFormDialog', () => {

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { JobStatus } from './JobStatus';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
@@ -14,9 +13,6 @@ const job = (overrides: Partial<JobEntity> = {}): JobEntity => ({
   updatedAt: '2026-01-01T00:00:00.000Z',
   ...overrides,
 });
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 describe('JobStatus', () => {
   it('shows the status label', () => {

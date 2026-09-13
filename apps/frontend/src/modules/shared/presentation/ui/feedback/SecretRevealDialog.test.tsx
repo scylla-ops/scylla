@@ -1,22 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { SecretRevealDialog } from './SecretRevealDialog';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-});
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 describe('SecretRevealDialog', () => {
   it('starts with the secret blurred and Done disabled', () => {
@@ -88,16 +74,8 @@ describe('SecretRevealDialog', () => {
     await user.click(screen.getByRole('button', { name: /reveal/i }));
     expect(screen.getByRole('button', { name: /done/i })).toBeEnabled();
 
-    rerender(
-      <I18nProvider i18n={i18n}>
-        <SecretRevealDialog open={false} {...props} />
-      </I18nProvider>,
-    );
-    rerender(
-      <I18nProvider i18n={i18n}>
-        <SecretRevealDialog open {...props} />
-      </I18nProvider>,
-    );
+    rerender(<SecretRevealDialog open={false} {...props} />);
+    rerender(<SecretRevealDialog open {...props} />);
 
     expect(screen.getByRole('button', { name: /done/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /reveal/i })).toBeInTheDocument();

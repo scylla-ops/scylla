@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { canAccess } from './effective-permissions.entity';
 import type { EffectivePermissionsEntity } from './effective-permissions.entity';

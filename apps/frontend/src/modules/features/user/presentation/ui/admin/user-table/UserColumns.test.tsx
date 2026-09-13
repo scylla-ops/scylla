@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '@lingui/react';
@@ -6,16 +6,6 @@ import { i18n } from '@lingui/core';
 import type { CellContext, ColumnDef } from '@tanstack/react-table';
 import { createUserColumns } from './UserColumns';
 import type { UserEntity } from '@/modules/features/user/domain/entities/user.entity.ts';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-});
 
 const user = (overrides: Partial<UserEntity> = {}): UserEntity => ({
   userId: 'user-1',

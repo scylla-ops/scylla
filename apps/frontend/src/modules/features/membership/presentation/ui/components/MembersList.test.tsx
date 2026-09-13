@@ -1,19 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { MembersList } from './MembersList';
 import type { ScopeMember } from '@/modules/features/membership/domain/structs/scope-member.struct.ts';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const member = (overrides: Partial<ScopeMember> = {}): ScopeMember => ({
   userId: 'user-1',
@@ -39,16 +29,9 @@ const baseMetadata = {
   onRemove: vi.fn(),
 };
 
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
-  Element.prototype.releasePointerCapture = vi.fn();
-  Element.prototype.scrollIntoView = vi.fn();
-});
-
 describe('MembersList', () => {
   it('shows a loading spinner and nothing else while loading', () => {
-    const { container } = renderWithI18n(
+    renderWithI18n(
       <MembersList
         {...baseMetadata}
         members={[]}
@@ -57,7 +40,7 @@ describe('MembersList', () => {
         isLoading
       />,
     );
-    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.queryByText('Nobody is listed here yet.')).not.toBeInTheDocument();
   });
 

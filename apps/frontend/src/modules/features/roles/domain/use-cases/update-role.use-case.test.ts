@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 import { PermissionScope } from '@platform/authz';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';

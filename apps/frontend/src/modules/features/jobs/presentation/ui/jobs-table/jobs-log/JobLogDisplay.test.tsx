@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { JobLogDisplay } from './JobLogDisplay';
 import type * as ReactCodeMirrorModule from '@uiw/react-codemirror';
 
@@ -28,9 +27,6 @@ vi.mock('@uiw/react-codemirror', async importOriginal => {
     default: ({ value }: { value: string }) => <div data-testid='log-editor'>{value}</div>,
   };
 });
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 beforeEach(() => {
   tailState.logString = '';

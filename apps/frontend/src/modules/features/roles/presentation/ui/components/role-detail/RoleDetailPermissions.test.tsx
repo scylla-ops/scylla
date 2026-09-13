@@ -1,13 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { RoleDetailPermissions } from './RoleDetailPermissions';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
 import { Permission, PermissionScope } from '@platform/authz';
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const role = (overrides: Partial<RoleEntity> = {}): RoleEntity => ({
   id: 'role-1',

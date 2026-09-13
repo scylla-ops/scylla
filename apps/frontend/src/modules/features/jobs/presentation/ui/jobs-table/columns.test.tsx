@@ -8,12 +8,6 @@ import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { createJobColumns } from './columns';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
 const job = (overrides: Partial<JobEntity> = {}): JobEntity => ({
   id: 'job-1',
   pipelineId: 'pipeline-1',
@@ -36,7 +30,6 @@ const findColumn = (columns: ColumnDef<JobEntity>[], key: string) =>
   columns.find(c => (c as { accessorKey?: string }).accessorKey === key || c.id === key)!;
 
 beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   usePermissionsStore.setState({
     permissions: { scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }] },
   });

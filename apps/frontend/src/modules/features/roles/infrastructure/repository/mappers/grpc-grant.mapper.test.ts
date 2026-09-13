@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcGrantMapper } from './grpc-grant.mapper';
 import type { Grant } from '@/generated/scylla/authz/v1/grant.ts';

@@ -1,23 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { TriggerInputsEditor } from './TriggerInputsEditor';
 import type { DraftInput } from '@/modules/features/triggers/presentation/utils/trigger-form.utils.ts';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-});
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 describe('TriggerInputsEditor', () => {
   it('shows a hint instead of any row when there are no inputs', () => {
@@ -78,9 +64,8 @@ describe('TriggerInputsEditor', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
 
     rerender(
-      <I18nProvider i18n={i18n}>
-        <TriggerInputsEditor inputs={inputs} onChange={vi.fn()} allowJsonPointer />
-      </I18nProvider>,
+      <TriggerInputsEditor inputs={inputs} onChange={vi.fn()} allowJsonPointer />,
+
     );
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });

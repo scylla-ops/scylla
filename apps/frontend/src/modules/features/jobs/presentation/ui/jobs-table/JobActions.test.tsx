@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
 import { act } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { JobActions } from './JobActions';
 
@@ -28,9 +27,6 @@ class ResizeObserverMock {
     this.callback([{ contentRect: { width } } as unknown as ResizeObserverEntry], this);
   }
 }
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 beforeEach(() => {
   ResizeObserverMock.instances = [];

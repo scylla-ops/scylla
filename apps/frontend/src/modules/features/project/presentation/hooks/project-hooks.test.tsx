@@ -1,10 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { useCreateProject } from './useCreateProject';
 import { useDeleteProject } from './use-delete-project';
@@ -69,19 +65,7 @@ const makeFakeRepository = (overrides: Partial<ProjectRepository> = {}) => {
   return { repository, getByOrganizationId, listMembers, create, update, delete: del };
 };
 
-const wrapperFor = (repository: ProjectRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <I18nProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DependenciesProvider registry={{ project: { projectRepository: repository } }}>
-          {children}
-        </DependenciesProvider>
-      </QueryClientProvider>
-    </I18nProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: ProjectRepository) => createProvidersWrapper({ project: { projectRepository: repository } });
 
 describe('useCreateProject', () => {
   it('creates, scoped to the organization, toasts, and invalidates the projects root', async () => {

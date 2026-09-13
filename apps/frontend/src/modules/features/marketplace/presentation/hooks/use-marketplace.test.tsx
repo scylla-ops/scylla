@@ -1,8 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useMarketplace } from './use-marketplace';
 import type MarketplaceRepository from '@/modules/features/marketplace/domain/repository/marketplace.repository.ts';
@@ -22,17 +20,7 @@ const makeFakeRepository = (overrides: Partial<MarketplaceRepository> = {}) => {
   return { repository, getMarketplace };
 };
 
-const wrapperFor = (repository: MarketplaceRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider registry={{ marketplace: { marketplaceRepository: repository } }}>
-        {children}
-      </DependenciesProvider>
-    </QueryClientProvider>
-  );
-  return Wrapper;
-};
+const wrapperFor = (repository: MarketplaceRepository) => createProvidersWrapper({ marketplace: { marketplaceRepository: repository } }).Wrapper;
 
 describe('useMarketplace', () => {
   it('fetches the marketplace item list', async () => {

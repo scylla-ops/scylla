@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { useContextStore } from '@platform/context';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useCreatePipeline } from './use-create-pipeline';
@@ -118,19 +114,7 @@ const makeFakeRepository = (overrides: Partial<PipelineRepository> = {}) => {
   };
 };
 
-const wrapperFor = (repository: PipelineRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <I18nProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DependenciesProvider registry={{ pipeline: { pipelineRepository: repository } }}>
-          {children}
-        </DependenciesProvider>
-      </QueryClientProvider>
-    </I18nProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: PipelineRepository) => createProvidersWrapper({ pipeline: { pipelineRepository: repository } });
 
 beforeEach(() => {
   navigateMock.mockClear();

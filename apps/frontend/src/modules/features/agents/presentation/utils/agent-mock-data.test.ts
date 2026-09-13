@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { mockLiveJobs, mockOutcomes, mockCardStats, mockInitialLogs, OUTCOME_RANGES } from './agent-mock-data';
 

@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DependenciesProvider } from '@platform/di';
 import { useContextStore } from '@platform/context';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
@@ -18,12 +15,6 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => navigateMock,
   useLocation: () => ({ pathname: '/acme/projects' }),
 }));
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
 
 const project = (overrides: Partial<ProjectEntity> = {}): ProjectEntity => ({
   id: 'project-1',
@@ -40,19 +31,7 @@ const fakeProjectRepository = (): ProjectRepository => ({
   delete: vi.fn(),
 });
 
-const wrapperFor = (repository: ProjectRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <I18nProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DependenciesProvider registry={{ project: { projectRepository: repository } }}>
-          {children}
-        </DependenciesProvider>
-      </QueryClientProvider>
-    </I18nProvider>
-  );
-  return Wrapper;
-};
+const wrapperFor = (repository: ProjectRepository) => createProvidersWrapper({ project: { projectRepository: repository } }).Wrapper;
 
 const renderCard = (ui: React.ReactElement) => {
   const Wrapper = wrapperFor(fakeProjectRepository());
@@ -61,7 +40,6 @@ const renderCard = (ui: React.ReactElement) => {
 
 beforeEach(() => {
   navigateMock.mockClear();
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   useSelectionStore.setState({ selectedIds: {} });
   useContextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
@@ -90,23 +68,21 @@ describe('ProjectCard', () => {
     expect(screen.getByText('No description')).toBeInTheDocument();
   });
 
-  // The Edit affordance is IconButton: a bare pencil icon with no aria-label
-  // of its own (its tooltip text doesn't become the button's accessible
-  // name), so it can't be found by role+name like a labeled button.
-  const findEditButton = (container: HTMLElement) =>
-    Array.from(container.querySelectorAll('button')).find(b => b.querySelector('.lucide-pencil')) ?? null;
+  // IconButton renders its tooltip text visually-hidden inside the button, so
+  // the Edit affordance carries a real accessible name.
+  const findEditButton = () => screen.queryByRole('button', { name: 'Edit' });
 
   it('the Edit button is hidden without UPDATE_PROJECT on this project', () => {
     usePermissionsStore.setState({ permissions: { scopes: [] } });
-    const { container } = renderCard(<ProjectCard project={project()} />);
-    expect(findEditButton(container)).toBeNull();
+    renderCard(<ProjectCard project={project()} />);
+    expect(findEditButton()).toBeNull();
   });
 
   it('the Edit button opens the edit dialog without navigating', async () => {
     const user = userEvent.setup();
-    const { container } = renderCard(<ProjectCard project={project()} />);
+    renderCard(<ProjectCard project={project()} />);
 
-    await user.click(findEditButton(container)!);
+    await user.click(findEditButton()!);
 
     expect(navigateMock).not.toHaveBeenCalled();
     expect(screen.getByText('Edit project')).toBeInTheDocument();

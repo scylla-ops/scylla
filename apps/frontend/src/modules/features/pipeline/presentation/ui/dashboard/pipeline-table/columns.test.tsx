@@ -9,12 +9,6 @@ import { createPipelineColumns } from './columns';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import type { JobEntity } from '@/modules/features/jobs';
 
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
 const pipeline = (overrides: Partial<PipelineMetadata> = {}): PipelineMetadata => ({
   id: 'pipeline-1',
   projectId: 'project-1',
@@ -46,7 +40,6 @@ const renderCell = (column: ColumnDef<PipelineMetadata>, row: PipelineMetadata) 
 const findColumn = (columns: ColumnDef<PipelineMetadata>[], id: string) => columns.find(c => c.id === id)!;
 
 beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   usePermissionsStore.setState({
     permissions: { scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }] },
   });
@@ -98,18 +91,13 @@ describe('createPipelineColumns', () => {
     const cell = findColumn(columns, 'actions').cell;
     if (typeof cell !== 'function') throw new Error('no cell renderer');
 
-    const { container } = render(
+    render(
       <I18nProvider i18n={i18n}>
         <div onClick={rowClick}>{cell(ctxFor(pipeline({ id: 'pipeline-42' })))}</div>
       </I18nProvider>,
     );
 
-    // Icon-only IconButtons - no accessible name, found by their Lucide icon class.
-    const editButton = Array.from(container.querySelectorAll('button')).find(b =>
-      b.querySelector('.lucide-square-pen'),
-    );
-    if (!editButton) throw new Error('edit button not found');
-    await user.click(editButton);
+    await user.click(screen.getByRole('button', { name: 'Edit pipeline' }));
     expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 'pipeline-42' }));
     expect(rowClick).not.toHaveBeenCalled();
   });

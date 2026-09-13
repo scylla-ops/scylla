@@ -1,12 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { RequirePermission } from './RequirePermission';
 import { usePermissionsStore, PermissionScope, Permission } from '@platform/authz';
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 beforeEach(() => {
   usePermissionsStore.setState({ permissions: null });
@@ -14,7 +10,7 @@ beforeEach(() => {
 
 describe('RequirePermission', () => {
   it('shows a quiet spinner while permissions are still unknown - never the gated content, never a denial', () => {
-    const { container } = renderWithI18n(
+    renderWithI18n(
       <RequirePermission permission={Permission.READ_PROJECT}>
         <span>gated content</span>
       </RequirePermission>,
@@ -22,7 +18,7 @@ describe('RequirePermission', () => {
 
     expect(screen.queryByText('gated content')).not.toBeInTheDocument();
     expect(screen.queryByText(/don't have the permission/i)).not.toBeInTheDocument();
-    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('renders children once the user is confirmed to hold the permission', () => {

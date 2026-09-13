@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcTriggerMapper } from './grpc-trigger.mapper';
 import type { Trigger } from '@/generated/scylla/trigger/v1/trigger.ts';

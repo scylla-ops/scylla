@@ -68,6 +68,11 @@ export const JobsHeader = ({
                 className='h-9 w-9 cursor-pointer transition-all hover:scale-110'
               >
                 <RefreshCw className='size-4' />
+                {/* The tooltip is only `aria-describedby`: without this the
+                    button has no accessible name while it is closed. */}
+                <span className='sr-only'>
+                  <Trans>Refresh</Trans>
+                </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>

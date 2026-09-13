@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { createSecretsItems } from './createSecretItems';
 import { FormItemType } from '@shared/presentation/structs/scylla-form.struct.ts';

@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { RoleFormDialog } from './RoleFormDialog';
 import { Permission, PermissionScope } from '@platform/authz';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
@@ -12,15 +11,6 @@ const updateRoleState = { mutate: vi.fn(), isPending: false, isSuccess: false, r
 vi.mock('@/modules/features/roles/presentation/hooks/use-roles.ts', () => ({
   useRoles: () => ({ createRole: createRoleState, updateRole: updateRoleState }),
 }));
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const role = (overrides: Partial<RoleEntity> = {}): RoleEntity => ({
   id: 'role-1',
@@ -39,10 +29,6 @@ beforeEach(() => {
   updateRoleState.mutate.mockReset();
   updateRoleState.isPending = false;
   updateRoleState.isSuccess = false;
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
-  Element.prototype.releasePointerCapture = vi.fn();
-  Element.prototype.scrollIntoView = vi.fn();
 });
 
 const selectAccessKind = async (user: ReturnType<typeof userEvent.setup>, label: string) => {

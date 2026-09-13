@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcOrganizationMemberMapper } from './grpc-organization-member.mapper';
 import type { OrganizationMember } from '@/generated/scylla/organization/v1/organization.ts';

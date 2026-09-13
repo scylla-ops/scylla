@@ -8,6 +8,8 @@ describe('MembersHint', () => {
     expect(
       screen.getByText("Users seen through a project grant aren't shown here."),
     ).toBeInTheDocument();
-    expect(container.querySelector('.lucide-info')).toBeInTheDocument();
+    // The icon is decorative: assert one is rendered, not which one — the class
+    // lucide gives it is its own business and has been renamed before.
+    expect(container.querySelector('svg')).toBeInTheDocument();
   });
 });

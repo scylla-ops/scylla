@@ -1,12 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { PipelineLastJob } from './PipelineLastJob';
 import type { JobEntity } from '@/modules/features/jobs';
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const job = (overrides: Partial<JobEntity> = {}): JobEntity => ({
   id: 'job-1',

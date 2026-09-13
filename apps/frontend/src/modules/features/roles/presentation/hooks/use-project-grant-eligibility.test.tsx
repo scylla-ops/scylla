@@ -1,8 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { PermissionScope, PrincipalKind, Permission } from '@platform/authz';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { useProjectGrantEligibility } from './use-project-grant-eligibility';
@@ -51,19 +49,10 @@ const makeFakeRepository = (grants: GrantEntity[], roles: RoleEntity[]): Permiss
   };
 };
 
-const wrapperFor = (repository: PermissionRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider
-        registry={{ roles: { permissionRepository: repository, updateRole: new UpdateRoleUseCase(repository) } }}
-      >
-        {children}
-      </DependenciesProvider>
-    </QueryClientProvider>
-  );
-  return Wrapper;
-};
+const wrapperFor = (repository: PermissionRepository) =>
+  createProvidersWrapper({
+    roles: { permissionRepository: repository, updateRole: new UpdateRoleUseCase(repository) },
+  }).Wrapper;
 
 describe('useProjectGrantEligibility', () => {
   it('a user with no grant at all in the organization is "not-admitted"', async () => {

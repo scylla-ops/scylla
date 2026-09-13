@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { navEntriesFor, routesFor } from './compose-module-routes';
 import type { ScyllaModule, ModuleRoute, NavEntry } from './scylla-module.struct.ts';

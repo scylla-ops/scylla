@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcAppMapper } from './grpc-app.mapper';
 import type { App, AppSecret } from '@/generated/scylla/app/v1/app.ts';

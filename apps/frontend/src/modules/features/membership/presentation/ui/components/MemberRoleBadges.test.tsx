@@ -1,22 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { MemberRoleBadges } from './MemberRoleBadges';
 import { MemberRoleOrigin } from '@/modules/features/membership/domain/structs/scope-member.struct.ts';
 import type { MemberRole } from '@/modules/features/membership/domain/structs/scope-member.struct.ts';
 import { PermissionScope } from '@platform/authz';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-});
 
 const role = (overrides: Partial<MemberRole> = {}): MemberRole => ({
   grantId: 'grant-1',
@@ -27,9 +16,6 @@ const role = (overrides: Partial<MemberRole> = {}): MemberRole => ({
 });
 
 const labelFor = (roleId: string) => `Label for ${roleId}`;
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 describe('MemberRoleBadges', () => {
   it('shows "No role" (default) when the member holds none', () => {
@@ -50,11 +36,10 @@ describe('MemberRoleBadges', () => {
     expect(screen.getByText('Label for b')).toBeInTheDocument();
   });
 
-  it('a direct role has no lock icon and, with canManage, a revoke control', () => {
-    const { container } = renderWithI18n(
+  it('a direct role gets a revoke control with canManage, in place of the inherited lock', () => {
+    renderWithI18n(
       <MemberRoleBadges roles={[role({ origin: MemberRoleOrigin.DIRECT })]} labelFor={labelFor} canManage />,
     );
-    expect(container.querySelector('.lucide-lock')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /revoke/i })).toBeInTheDocument();
   });
 

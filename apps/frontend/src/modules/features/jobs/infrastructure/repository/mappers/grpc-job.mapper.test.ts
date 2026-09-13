@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 import { GrpcJobMapper } from './grpc-job.mapper';
 import { JobOutcome, NodeOutcome } from '@/generated/scylla/job/v1/job.ts';

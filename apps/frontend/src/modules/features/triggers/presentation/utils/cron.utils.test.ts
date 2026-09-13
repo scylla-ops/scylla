@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { i18n } from '@lingui/core';
 import { buildCron, parseCron, describeCron, pad2, type CronModel } from './cron.utils';

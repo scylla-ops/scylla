@@ -1,19 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { AddMemberDialog, type MemberCandidate } from './AddMemberDialog';
 import type { AssignableRole } from '@/modules/features/membership/presentation/hooks/use-assignable-roles.ts';
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const candidate = (overrides: Partial<MemberCandidate> = {}): MemberCandidate => ({
   userId: 'user-1',
@@ -29,13 +19,6 @@ const role = (overrides: Partial<AssignableRole> = {}): AssignableRole => ({
 });
 
 // Radix's Select needs these to open at all under jsdom.
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
-  Element.prototype.releasePointerCapture = vi.fn();
-  Element.prototype.scrollIntoView = vi.fn();
-});
-
 const openUserPicker = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByRole('combobox', { name: /member/i }));
 };
@@ -59,21 +42,20 @@ describe('AddMemberDialog', () => {
     );
 
     rerender(
-      <I18nProvider i18n={i18n}>
-        <AddMemberDialog
-          open
-          onOpenChange={vi.fn()}
-          title='Add a member'
-          description='...'
-          candidates={[candidate()]}
-          emptyCandidatesLabel='Nobody left to add'
-          roles={[role({ roleId: 'default-role' })]}
-          rolesLabel='Roles'
-          isPending={false}
-          defaultRoleId='default-role'
-          onSubmit={vi.fn()}
-        />
-      </I18nProvider>,
+      <AddMemberDialog
+        open
+        onOpenChange={vi.fn()}
+        title='Add a member'
+        description='...'
+        candidates={[candidate()]}
+        emptyCandidatesLabel='Nobody left to add'
+        roles={[role({ roleId: 'default-role' })]}
+        rolesLabel='Roles'
+        isPending={false}
+        defaultRoleId='default-role'
+        onSubmit={vi.fn()}
+      />,
+
     );
 
     expect(screen.getByRole('checkbox')).toBeChecked();

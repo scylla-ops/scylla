@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcProjectMapper } from './grpc-project.mapper';
 import type { Project } from '@/generated/scylla/project/v1/project.ts';

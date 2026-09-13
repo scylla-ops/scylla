@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
 import { TriggersHeader } from './TriggersHeader';
@@ -12,18 +11,8 @@ vi.mock('@/modules/features/triggers/presentation/hooks/use-delete-trigger.ts', 
   useDeleteTrigger: () => ({ mutateAsync: mutateAsyncMock }),
 }));
 
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
-
 beforeEach(() => {
   mutateAsyncMock.mockClear();
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   useSelectionStore.setState({ selectedIds: {} });
   usePermissionsStore.setState({
     permissions: { scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }] },

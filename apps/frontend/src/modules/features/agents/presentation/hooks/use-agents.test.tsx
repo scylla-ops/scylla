@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { useContextStore } from '@platform/context';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
@@ -77,17 +75,7 @@ const setPermissions = (canDoAnything: boolean) => {
   });
 };
 
-const wrapperFor = (repository: AgentsRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider registry={{ agents: { agentsRepository: repository } }}>
-        {children}
-      </DependenciesProvider>
-    </QueryClientProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: AgentsRepository) => createProvidersWrapper({ agents: { agentsRepository: repository } });
 
 beforeEach(() => {
   useContextStore.setState({ organization: { id: ORG_ID, name: 'Org' } });

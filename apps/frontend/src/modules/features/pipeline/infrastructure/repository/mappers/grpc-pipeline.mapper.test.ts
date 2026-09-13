@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcPipelineMapper } from './grpc-pipeline.mapper';
 import { Shell } from '@/generated/scylla/exec/v1/step.ts';

@@ -9,12 +9,6 @@ import { createTriggerColumns } from './columns';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
 
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
 const trigger = (overrides: Partial<TriggerEntity> = {}): TriggerEntity => ({
   id: 't1',
   pipelineId: 'p1',
@@ -38,7 +32,6 @@ const renderCell = (column: ColumnDef<TriggerEntity>, row: TriggerEntity) => {
 const findColumn = (columns: ColumnDef<TriggerEntity>[], id: string) => columns.find(c => c.id === id)!;
 
 beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   usePermissionsStore.setState({
     permissions: { scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }] },
   });
@@ -108,9 +101,9 @@ describe('createTriggerColumns', () => {
 
   it('marks a firing trigger\'s row as pending in the actions cell', () => {
     const firingColumns = createTriggerColumns({ ...meta, firingIds: new Set(['t-firing']) });
-    const { container } = renderCell(findColumn(firingColumns, 'actions'), trigger({ id: 't-firing' }));
+    renderCell(findColumn(firingColumns, 'actions'), trigger({ id: 't-firing' }));
     const [fireButton] = screen.getAllByRole('button');
     expect(fireButton).toBeDisabled();
-    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(fireButton).toHaveAttribute('aria-busy', 'true');
   });
 });

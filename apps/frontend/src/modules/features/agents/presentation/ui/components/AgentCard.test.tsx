@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { AgentCard } from './AgentCard';
 import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 
@@ -13,12 +12,6 @@ vi.mock('react-router-dom', () => ({
 
 const toastSuccess = vi.fn();
 vi.mock('sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
-
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
 
 const agent = (overrides: Partial<AgentEntity> = {}): AgentEntity => ({
   id: 'agent-1',
@@ -34,13 +27,9 @@ const agent = (overrides: Partial<AgentEntity> = {}): AgentEntity => ({
   ...overrides,
 });
 
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
-
 beforeEach(() => {
   navigateMock.mockClear();
   toastSuccess.mockClear();
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 });
 
 describe('AgentCard', () => {
@@ -56,9 +45,8 @@ describe('AgentCard', () => {
     expect(screen.getByText('online')).toBeInTheDocument();
 
     rerender(
-      <I18nProvider i18n={i18n}>
-        <AgentCard agent={agent({ connected: false })} onRequestDelete={vi.fn()} />
-      </I18nProvider>,
+      <AgentCard agent={agent({ connected: false })} onRequestDelete={vi.fn()} />,
+
     );
     expect(screen.getByText('offline')).toBeInTheDocument();
   });
@@ -70,9 +58,8 @@ describe('AgentCard', () => {
     expect(screen.getByText(/seen/)).toBeInTheDocument();
 
     rerender(
-      <I18nProvider i18n={i18n}>
-        <AgentCard agent={agent({ connected: false, lastSeen: '2026-01-01T00:00:00.000Z' })} onRequestDelete={vi.fn()} />
-      </I18nProvider>,
+      <AgentCard agent={agent({ connected: false, lastSeen: '2026-01-01T00:00:00.000Z' })} onRequestDelete={vi.fn()} />,
+
     );
     expect(screen.getByText(/down/)).toBeInTheDocument();
   });

@@ -1,10 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useSecrets, useCreateSecret, useDeleteSecret } from './use-secrets';
 import type { SecretRepository } from '@/modules/features/secret/domain/repository/secret.repository.ts';
@@ -36,19 +32,7 @@ const makeFakeRepository = (overrides: Partial<SecretRepository> = {}) => {
   return { repository, listByProjectId, create, deleteById };
 };
 
-const wrapperFor = (repository: SecretRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <I18nProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DependenciesProvider registry={{ secret: { secretRepository: repository } }}>
-          {children}
-        </DependenciesProvider>
-      </QueryClientProvider>
-    </I18nProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: SecretRepository) => createProvidersWrapper({ secret: { secretRepository: repository } });
 
 describe('useSecrets', () => {
   it('lists a project\'s secrets', async () => {

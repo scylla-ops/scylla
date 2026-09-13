@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcAgentMapper } from './grpc-agent.mapper';
 import type { Agent, AgentHost, AgentStats } from '@/generated/scylla/agent/v1/agent_admin.ts';

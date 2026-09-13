@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { StepNodeFormDialog } from './StepNodeFormDialog';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
 import type * as ReactCodeMirrorModule from '@uiw/react-codemirror';
@@ -45,15 +44,9 @@ vi.mock('@uiw/react-codemirror', async importOriginal => {
   };
 });
 
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
-
 beforeEach(() => {
   paramsMock.mockReturnValue({ projectId: 'project-1' });
   secretsMock.mockReturnValue({ secrets: [] });
-  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
-  Element.prototype.releasePointerCapture = vi.fn();
-  Element.prototype.scrollIntoView = vi.fn();
 });
 
 describe('StepNodeFormDialog', () => {

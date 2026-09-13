@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen, fireEvent } from '@testing-library/react';
+import { act, screen, fireEvent } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { CopyableText } from './CopyableText';
 
 let writeText: ReturnType<typeof vi.fn>;
@@ -18,30 +19,30 @@ afterEach(() => {
 
 describe('CopyableText', () => {
   it('renders the full value by default', () => {
-    render(<CopyableText value='job-01m27ybd6ym31g3h883mk86bse' />);
+    renderWithI18n(<CopyableText value='job-01m27ybd6ym31g3h883mk86bse' />);
     expect(screen.getByText('job-01m27ybd6ym31g3h883mk86bse')).toBeInTheDocument();
   });
 
   it('truncates the displayed text and adds an ellipsis, without truncating the copied value', () => {
-    render(<CopyableText value='job-01m27ybd6ym31g3h883mk86bse' truncate={8} />);
+    renderWithI18n(<CopyableText value='job-01m27ybd6ym31g3h883mk86bse' truncate={8} />);
     expect(screen.getByText('job-01m2...')).toBeInTheDocument();
   });
 
   it('renders a custom display node instead of the value when given one', () => {
-    render(<CopyableText value='secret-value' display='••••••••' />);
+    renderWithI18n(<CopyableText value='secret-value' display='••••••••' />);
     expect(screen.getByText('••••••••')).toBeInTheDocument();
     expect(screen.queryByText('secret-value')).not.toBeInTheDocument();
   });
 
   it('copies the full (untruncated) value to the clipboard on click', () => {
-    render(<CopyableText value='the-full-value-1234567890' truncate={4} />);
+    renderWithI18n(<CopyableText value='the-full-value-1234567890' truncate={4} />);
     fireEvent.click(screen.getByRole('button'));
     expect(writeText).toHaveBeenCalledWith('the-full-value-1234567890');
   });
 
   it('does not let the click bubble up to a parent (e.g. a clickable table row)', () => {
     const onRowClick = vi.fn();
-    render(
+    renderWithI18n(
       <div onClick={onRowClick}>
         <CopyableText value='row-id' />
       </div>,
@@ -52,7 +53,7 @@ describe('CopyableText', () => {
 
   it('shows a checkmark state after copying, then reverts after 2s', () => {
     vi.useFakeTimers();
-    const { container } = render(<CopyableText value='x' />);
+    const { container } = renderWithI18n(<CopyableText value='x' />);
 
     fireEvent.click(screen.getByRole('button'));
     expect(container.querySelector('.text-status-passed')).not.toBeNull();

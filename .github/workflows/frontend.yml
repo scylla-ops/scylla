@@ -1,6 +1,6 @@
 name: Frontend
 
-# Typecheck, lint, architecture boundaries and build for apps/frontend.
+# Typecheck, tests, lint, architecture boundaries and build for apps/frontend.
 # Also triggers on the proto crate: the TS gRPC clients are generated from it at
 # build time and are not committed, so a proto change can break the frontend
 # without touching a single file under apps/frontend/.
@@ -61,6 +61,15 @@ jobs:
 
       - name: Typecheck
         run: pnpm run typecheck
+
+      # The Vitest suite imports the generated gRPC clients through the mappers,
+      # so it has to run after `gen-proto` like everything else below.
+      #
+      # `coverage` rather than `test`: same suite, plus the thresholds in
+      # vite.config.ts, which are a ratchet against silent erosion. Running both
+      # would just execute everything twice.
+      - name: Tests
+        run: pnpm run coverage
 
       - name: Lint
         run: pnpm run lint

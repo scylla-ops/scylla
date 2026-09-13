@@ -1,20 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CheckboxTree } from './CheckboxTree';
 import type { CheckboxNode } from './CheckboxTree';
-
-// Radix Collapsible measures its content's height for the open/close
-// animation, which needs ResizeObserver - absent in jsdom.
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-});
 
 const tree: CheckboxNode[] = [
   {

@@ -187,8 +187,12 @@ module.exports = {
       comment: 'Shipped code must not import a devDependency.',
       severity: 'error',
       // `.d.ts` files are excluded: src/vite-env.d.ts legitimately references
-      // vite/client, which is types-only and never reaches the bundle.
-      from: { path: '^src/', pathNot: ['[.](spec|test)[.](ts|tsx)$', '[.]d[.]ts$'] },
+      // vite/client, which is types-only and never reaches the bundle. So is
+      // `src/test/`, which is the suite's own harness and never ships.
+      from: {
+        path: '^src/',
+        pathNot: ['[.](spec|test)[.](ts|tsx)$', '[.]d[.]ts$', '^src/test/'],
+      },
       to: { dependencyTypes: ['npm-dev'], dependencyTypesNot: ['type-only'] },
     },
 
@@ -207,6 +211,10 @@ module.exports = {
           '(^|/)(vite|eslint|lingui|postcss)[.]config[.][^/]+$',
           '^src/main[.]tsx$',
           '^src/generated/',
+          // Vitest loads setup.ts by path from the config, and the render
+          // helpers are only imported by `.test.tsx` files, which are
+          // themselves orphans — neither is reachable from the module graph.
+          '^src/test/',
         ],
       },
       to: {},

@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { usePermissionsStore, PermissionScope, PrincipalKind } from '@platform/authz';
 import { GrantCreator } from './GrantCreator';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
@@ -55,15 +54,6 @@ vi.mock('@shared/presentation/utils/toast.ts', () => ({
   toast: { success: (...args: unknown[]) => toastSuccess(...args), error: (...args: unknown[]) => toastError(...args) },
 }));
 
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
-
 const role = (overrides: Partial<RoleEntity> = {}): RoleEntity => ({
   id: 'role-1',
   name: 'Developer',
@@ -89,10 +79,6 @@ beforeEach(() => {
   eligibilityForMock.mockReset().mockReturnValue('eligible');
   toastSuccess.mockClear();
   toastError.mockClear();
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-  Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
-  Element.prototype.releasePointerCapture = vi.fn();
-  Element.prototype.scrollIntoView = vi.fn();
   usePermissionsStore.setState({
     permissions: { scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }] },
   });

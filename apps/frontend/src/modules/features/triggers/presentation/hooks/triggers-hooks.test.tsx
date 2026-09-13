@@ -1,10 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { usePipelineTriggers, TRIGGERS_QUERY_KEY } from './use-pipeline-triggers';
 import { useCreateTrigger } from './use-create-trigger';
@@ -67,19 +63,7 @@ const makeFakeRepository = (overrides: Partial<TriggersRepository> = {}) => {
   return { repository, listByPipelineId, getById, create, update, deleteById, setEnabled, fireNow };
 };
 
-const wrapperFor = (repository: TriggersRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <I18nProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DependenciesProvider registry={{ triggers: { triggersRepository: repository } }}>
-          {children}
-        </DependenciesProvider>
-      </QueryClientProvider>
-    </I18nProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: TriggersRepository) => createProvidersWrapper({ triggers: { triggersRepository: repository } });
 
 describe('usePipelineTriggers', () => {
   it('lists a pipeline\'s triggers', async () => {

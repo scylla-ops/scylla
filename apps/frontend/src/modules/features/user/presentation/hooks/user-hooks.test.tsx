@@ -1,10 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useCreateUser } from './use-create-user';
 import { useDeleteUser } from './use-delete-user';
@@ -43,19 +39,7 @@ const makeFakeRepository = (overrides: Partial<UserRepository> = {}) => {
   return { repository, getAll, getById, create, update, delete: del };
 };
 
-const wrapperFor = (repository: UserRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <I18nProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DependenciesProvider registry={{ user: { userRepository: repository } }}>
-          {children}
-        </DependenciesProvider>
-      </QueryClientProvider>
-    </I18nProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: UserRepository) => createProvidersWrapper({ user: { userRepository: repository } });
 
 describe('useUsers', () => {
   it('lists the user directory', async () => {

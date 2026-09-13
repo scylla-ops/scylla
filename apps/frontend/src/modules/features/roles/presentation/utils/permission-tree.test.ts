@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { Permission, PermissionScope } from '@platform/authz';
 import { buildPermissionTree } from './permission-tree';

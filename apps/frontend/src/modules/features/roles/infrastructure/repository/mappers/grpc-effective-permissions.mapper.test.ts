@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { GrpcEffectivePermissionsMapper } from './grpc-effective-permissions.mapper';
 import type { EffectiveScope } from '@/generated/scylla/authz/v1/role.ts';

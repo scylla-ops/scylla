@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { screen, act } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
 import { JobsHeader } from './JobsHeader';
@@ -12,18 +11,8 @@ vi.mock('@/modules/features/jobs/presentation/hooks/use-delete-jobs.ts', () => (
   useDeleteJobs: () => ({ mutateAsync: mutateAsyncMock }),
 }));
 
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
-
 beforeEach(() => {
   mutateAsyncMock.mockClear();
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
   useSelectionStore.setState({ selectedIds: {} });
   usePermissionsStore.setState({
     permissions: { scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }] },
@@ -62,16 +51,11 @@ describe('JobsHeader', () => {
   it('the refresh button calls onRefresh', async () => {
     const onRefresh = vi.fn();
     const user = userEvent.setup();
-    const { container } = renderWithI18n(
+    renderWithI18n(
       <JobsHeader numberOfJobs={2} jobIds={['j1', 'j2']} pipelineId='pipeline-9' onRefresh={onRefresh} />,
     );
 
-    // Icon-only tooltip trigger - no accessible name to query by role.
-    const refreshButton = Array.from(container.querySelectorAll('button')).find(b =>
-      b.querySelector('.lucide-refresh-cw'),
-    );
-    if (!refreshButton) throw new Error('refresh button not found');
-    await user.click(refreshButton);
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(onRefresh).toHaveBeenCalled();
   });
 

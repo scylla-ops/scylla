@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import { RoleDetailPanel } from './RoleDetailPanel';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
 import { PermissionScope } from '@platform/authz';
@@ -24,9 +23,6 @@ vi.mock(
     default: ({ role }: { role: RoleEntity }) => <div data-testid='grants'>{role.id}</div>,
   }),
 );
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const role: RoleEntity = {
   id: 'role-1',

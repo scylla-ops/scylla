@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { FeatureHeader } from './FeatureHeader';
 
 const toastSuccess = vi.fn();
@@ -10,19 +9,9 @@ vi.mock('sonner', () => ({
   toast: { success: (...args: unknown[]) => toastSuccess(...args) },
 }));
 
-class ResizeObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
 beforeEach(() => {
   toastSuccess.mockClear();
-  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 });
-
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 // The delete button is icon-only (a bare Trash icon, aria-hidden) - it carries
 // no accessible name, so it can't be found by role+name like the others.
@@ -63,11 +52,7 @@ describe('FeatureHeader', () => {
     );
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
 
-    rerender(
-      <I18nProvider i18n={i18n}>
-        <FeatureHeader count={3} label='item' selectedCount={2} onClearSelection={vi.fn()} />
-      </I18nProvider>,
-    );
+    rerender(<FeatureHeader count={3} label='item' selectedCount={2} onClearSelection={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
   });
 

@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useJob } from './use-job';
@@ -50,17 +48,7 @@ const makeFakeRepository = (overrides: Partial<JobsRepository> = {}) => {
   return { repository, getByPipelineId, getByOrganizationId, getById, deleteById, getLogs, tailLogs };
 };
 
-const wrapperFor = (repository: JobsRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider registry={{ jobs: { jobsRepository: repository } }}>
-        {children}
-      </DependenciesProvider>
-    </QueryClientProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: JobsRepository) => createProvidersWrapper({ jobs: { jobsRepository: repository } });
 
 beforeEach(() => {
   usePermissionsStore.setState({ permissions: null });

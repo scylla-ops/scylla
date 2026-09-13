@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '@lingui/react';
-import { i18n } from '@lingui/core';
 import { AppCard } from './AppCard';
 import type { AppEntity } from '@/modules/features/apps/domain/entities/app.entity.ts';
 
@@ -24,9 +23,6 @@ const app = (overrides: Partial<AppEntity> = {}): AppEntity => ({
   ...overrides,
 });
 
-const renderWithI18n = (ui: React.ReactElement) =>
-  render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
-
 beforeEach(() => {
   navigateMock.mockClear();
   toastSuccess.mockClear();
@@ -45,9 +41,8 @@ describe('AppCard', () => {
     expect(screen.queryByText('inactive')).not.toBeInTheDocument();
 
     rerender(
-      <I18nProvider i18n={i18n}>
-        <AppCard app={app({ isActive: false })} onRequestDelete={vi.fn()} />
-      </I18nProvider>,
+      <AppCard app={app({ isActive: false })} onRequestDelete={vi.fn()} />,
+
     );
     expect(screen.getByText('inactive')).toBeInTheDocument();
   });

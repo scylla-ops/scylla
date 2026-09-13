@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useLogin } from './use-login';
 import type { LoginRepository } from '@/modules/features/login/domain/repository/login.repository.ts';
@@ -22,17 +20,7 @@ const makeFakeRepository = (overrides: Partial<LoginRepository> = {}) => {
   return { repository, login };
 };
 
-const wrapperFor = (repository: LoginRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider registry={{ login: { loginRepository: repository } }}>
-        {children}
-      </DependenciesProvider>
-    </QueryClientProvider>
-  );
-  return Wrapper;
-};
+const wrapperFor = (repository: LoginRepository) => createProvidersWrapper({ login: { loginRepository: repository } }).Wrapper;
 
 describe('useLogin', () => {
   it('logs in with the given credentials and redirects to the root, replacing history', async () => {

@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { DependenciesProvider } from '@platform/di';
+import { createProvidersWrapper } from '@/test/render.tsx';
 import { usePermissionsStore, PermissionScope, PrincipalKind } from '@platform/authz';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useGrantableRoles, GRANTABLE_ROLES_QUERY_KEY } from './use-grantable-roles';
@@ -98,19 +96,10 @@ const makeFakeRepository = (overrides: Partial<PermissionRepository> = {}) => {
   };
 };
 
-const wrapperFor = (repository: PermissionRepository) => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider
-        registry={{ roles: { permissionRepository: repository, updateRole: new UpdateRoleUseCase(repository) } }}
-      >
-        {children}
-      </DependenciesProvider>
-    </QueryClientProvider>
-  );
-  return { Wrapper, queryClient };
-};
+const wrapperFor = (repository: PermissionRepository) =>
+  createProvidersWrapper({
+    roles: { permissionRepository: repository, updateRole: new UpdateRoleUseCase(repository) },
+  });
 
 beforeEach(() => {
   usePermissionsStore.setState({ permissions: null });
