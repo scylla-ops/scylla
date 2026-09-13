@@ -242,6 +242,12 @@
     cursor: not-allowed;
   }
 
+  /* The canvas is `--sidebar` — the shell's base surface, which the panels sit on
+     top of. `index.html` hardcodes the same two hexes on `html` so the first paint
+     is not white. Since `html` carries a background of its own, the body's no
+     longer propagates to the canvas: it only paints the body box, and anything
+     outside it (the stable scrollbar gutter, overscroll) falls back to `html`.
+     The two must therefore agree. */
   body {
     @apply bg-sidebar text-foreground;
   }

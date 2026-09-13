@@ -11,12 +11,17 @@
       })();
     </script>
     <style>
+      /* Both hexes are `--sidebar` from src/index.css — the app's base surface —
+         inlined so the first paint is not white: the stylesheet has not loaded
+         yet at this point. Keep them in sync with it. `html` is what shows
+         through wherever no element reaches (the stable scrollbar gutter,
+         overscroll), so a mismatch shows up as a band along the edge. */
       html {
-        background: #1C1C1A;
+        background: #141412;
       }
 
       html:not(.dark) {
-        background: #F4F7EB;
+        background: #EFF2E7;
       }
 
       body {
