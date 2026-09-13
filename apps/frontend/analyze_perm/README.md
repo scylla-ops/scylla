@@ -7,7 +7,7 @@ Aucun code n'a été modifié. Les références sont au format `chemin:ligne`.
 
 Les contrats backend ont été vérifiés directement dans le monorepo
 (`crates/scylla-proto/proto/scylla/authz/v1/*.proto` et
-`binaries/scylla-control-plane/src/application/authz/`), donc les écarts
+`crates/scylla-auth/src/authz/`), donc les écarts
 front/back signalés ici sont factuels, pas supposés.
 
 ---

@@ -2853,18 +2853,39 @@ dependencies = [
 ]
 
 [[package]]
-name = "scylla-control-plane"
+name = "scylla-auth"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cedar-policy",
+ "chrono",
+ "derive_more",
+ "scylla-domain",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "scylla-ce"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "scylla-core",
+ "scylla-db",
+ "scylla-server",
+ "tokio",
+]
+
+[[package]]
+name = "scylla-core"
+version = "0.1.0"
+dependencies = [
  "argon2",
  "async-trait",
  "axum",
  "bon",
- "cedar-policy",
  "chacha20poly1305",
  "chrono",
- "clap",
  "croner",
  "derive_more",
  "futures-core",
@@ -2878,28 +2899,39 @@ dependencies = [
  "prost-types",
  "reqwest",
  "rust-embed",
+ "scylla-auth",
  "scylla-domain",
+ "scylla-extension",
  "scylla-proto",
  "serde",
  "serde_json",
  "sha2 0.11.0",
- "sqlx",
  "subtle",
  "thiserror 2.0.18",
  "tokio",
  "tokio-rustls",
  "tokio-stream",
- "tokio-util",
  "toml",
  "tonic",
  "tonic-async-interceptor",
- "tonic-reflection",
- "tonic-web",
  "tower",
  "tower-http 0.7.0",
  "tracing",
- "tracing-subscriber",
  "uuid",
+]
+
+[[package]]
+name = "scylla-db"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "scylla-auth",
+ "scylla-core",
+ "scylla-domain",
+ "sqlx",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2915,6 +2947,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "scylla-extension"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "scylla-proto"
 version = "0.1.0"
 dependencies = [
@@ -2925,6 +2965,32 @@ dependencies = [
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
+]
+
+[[package]]
+name = "scylla-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "clap",
+ "http",
+ "scylla-auth",
+ "scylla-core",
+ "scylla-db",
+ "scylla-extension",
+ "scylla-proto",
+ "sqlx",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tonic-async-interceptor",
+ "tonic-reflection",
+ "tonic-web",
+ "tower",
+ "tower-http 0.7.0",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

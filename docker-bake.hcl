@@ -2,7 +2,7 @@
 #
 # Both published images in one declarative file. Bake builds every target of a
 # group concurrently against a single BuildKit session, which is why this
-# replaced a loop of `docker buildx build` calls: `control-plane` and `agent`
+# replaced a loop of `docker buildx build` calls: `ce` and `agent`
 # share the whole cargo-chef dependency layer, and building them in one bake
 # cooks it once instead of twice.
 #
@@ -93,10 +93,10 @@ target "_backend" {
   dockerfile = "Dockerfile"
 }
 
-target "control-plane" {
+target "ce" {
   inherits   = ["_backend"]
-  target     = "scylla-control-plane"
-  tags       = tags("scylla-control-plane")
+  target     = "scylla-ce"
+  tags       = tags("scylla-ce")
   cache-from = cache_from("scylla-backend")
   cache-to   = cache_to("scylla-backend")
 }
@@ -114,7 +114,7 @@ target "agent" {
 }
 
 group "release" {
-  targets = ["control-plane", "agent"]
+  targets = ["ce", "agent"]
 }
 
 group "default" {

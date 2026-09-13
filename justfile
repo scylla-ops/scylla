@@ -52,7 +52,7 @@ up:
 down:
     docker compose down
 
-# Show service logs (all or specific: just logs scylla-control-plane)
+# Show service logs (all or specific: just logs scylla-ce)
 [group('dev')]
 [no-exit-message]
 logs *svc:
@@ -132,13 +132,13 @@ release version: release-setup
 [group('release')]
 [no-exit-message]
 release-verify version:
-    for image in scylla-control-plane scylla-agent; do docker buildx imagetools inspect {{DOCKER_USER}}/$image:{{version}}; done
+    for image in scylla-ce scylla-agent; do docker buildx imagetools inspect {{DOCKER_USER}}/$image:{{version}}; done
 
 # Point a channel tag at a published version, without rebuilding
 [group('release')]
 [no-exit-message]
 release-promote version tag:
-    for image in scylla-control-plane scylla-agent; do docker buildx imagetools create --tag {{DOCKER_USER}}/$image:{{tag}} {{DOCKER_USER}}/$image:{{version}}; done
+    for image in scylla-ce scylla-agent; do docker buildx imagetools create --tag {{DOCKER_USER}}/$image:{{tag}} {{DOCKER_USER}}/$image:{{version}}; done
 
 # -- Protos --
 
