@@ -54,7 +54,7 @@ msgstr "Entrez un nom pour votre nouveau projet et sélectionnez l'organisation 
 msgid "New project"
 msgstr "Nouveau projet"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:84
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:85
 msgid "No description"
 msgstr "Aucune description"
 
@@ -84,7 +84,7 @@ msgstr "Enregistrer"
 msgid "Saving..."
 msgstr "Enregistrement..."
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:72
+#: src/modules/features/project/presentation/ui/ProjectCard.tsx:73
 msgid "Select"
 msgstr "Sélectionner"
 

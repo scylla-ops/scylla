@@ -30,6 +30,7 @@ msgstr "Créer"
 msgid "Dark mode"
 msgstr "Mode sombre"
 
+#: src/modules/layout/presentation/ui/AppSidebar.test.tsx:80
 #: src/modules/layout/whats-new.ts:44
 msgid "Dashboard"
 msgstr "Tableau de bord"
@@ -77,6 +78,10 @@ msgstr "Nouveau"
 msgid "Organization"
 msgstr "Organisation"
 
+#: src/modules/layout/presentation/ui/AppSidebar.test.tsx:89
+msgid "Pipelines"
+msgstr "Pipelines"
+
 #: src/modules/layout/whats-new.ts:51
 msgid "Roles"
 msgstr "Rôles"
@@ -84,6 +89,10 @@ msgstr "Rôles"
 #: src/modules/layout/whats-new.ts:66
 msgid "Scylla now comes in light and dark — switch with the button in the top-right corner."
 msgstr "Scylla existe désormais en clair et en sombre — basculez avec le bouton en haut à droite."
+
+#: src/modules/layout/presentation/ui/AppSidebar.test.tsx:31
+msgid "Secrets"
+msgstr "Secrets"
 
 #: src/modules/layout/presentation/ui/AppSidebar.tsx:106
 msgid "Select Organization"
@@ -104,6 +113,11 @@ msgstr "Pour commencer, veuillez créer votre première organisation."
 #: src/modules/layout/presentation/ui/ScyllaSidebarTrigger.tsx:33
 msgid "Toggle Sidebar"
 msgstr "Afficher/masquer la barre latérale"
+
+#: src/modules/layout/presentation/ui/AppSidebar.test.tsx:106
+#: src/modules/layout/presentation/ui/AppSidebar.test.tsx:119
+msgid "Users"
+msgstr "Utilisateurs"
 
 #: src/modules/layout/presentation/ui/Layout.tsx:77
 msgid "Welcome to Scylla!"
