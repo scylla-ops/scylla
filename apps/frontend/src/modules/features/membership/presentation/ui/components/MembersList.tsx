@@ -52,7 +52,7 @@ export const MembersList = ({
   if (isLoading) {
     return (
       <div className={`${PANEL} border-border`}>
-        <Loader2 className='size-5 animate-spin text-muted-foreground' />
+        <Loader2 role='status' className='size-5 animate-spin text-muted-foreground' />
       </div>
     );
   }

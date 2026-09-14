@@ -23,11 +23,11 @@ msgstr "{0} / {total} nodes ({1}%)"
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:34
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:35
 msgid "agent disconnected mid-run"
 msgstr "agent disconnected mid-run"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:69
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:70
 msgid "Collapse"
 msgstr "Collapse"
 
@@ -52,7 +52,7 @@ msgstr "Delete Job"
 msgid "Duration"
 msgstr "Duration"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:27
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:31
 msgid "Error loading logs..."
 msgstr "Error loading logs..."
 
@@ -77,7 +77,7 @@ msgstr "Job Logs"
 msgid "Jobs"
 msgstr "Jobs"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:22
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:25
 msgid "Loading..."
 msgstr "Loading..."
 
@@ -91,7 +91,7 @@ msgid "No nodes"
 msgstr "No nodes"
 
 #. placeholder {0}: nodeExecutions.length
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:72
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:73
 msgid "Node Executions ({0})"
 msgstr "Node Executions ({0})"
 
@@ -108,11 +108,12 @@ msgstr "Pipeline ID is missing"
 msgid "Pipeline ID: {pipelineId}"
 msgstr "Pipeline ID: {pipelineId}"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:29
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:30
 msgid "queued — waiting for an agent"
 msgstr "queued — waiting for an agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:75
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:74
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:80
 msgid "Refresh"
 msgstr "Refresh"
 

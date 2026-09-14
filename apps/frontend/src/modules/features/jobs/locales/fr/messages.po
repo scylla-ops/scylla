@@ -23,11 +23,11 @@ msgstr "{0} / {total} nœuds ({1} %)"
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:34
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:35
 msgid "agent disconnected mid-run"
 msgstr "agent déconnecté en cours d'exécution"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:69
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:70
 msgid "Collapse"
 msgstr "Réduire"
 
@@ -52,7 +52,7 @@ msgstr "Supprimer le job"
 msgid "Duration"
 msgstr "Durée"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:27
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:31
 msgid "Error loading logs..."
 msgstr "Erreur lors du chargement des journaux…"
 
@@ -77,7 +77,7 @@ msgstr "Journaux de job"
 msgid "Jobs"
 msgstr "Jobs"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:22
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:25
 msgid "Loading..."
 msgstr "Chargement…"
 
@@ -91,7 +91,7 @@ msgid "No nodes"
 msgstr "Aucun nœud"
 
 #. placeholder {0}: nodeExecutions.length
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:72
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:73
 msgid "Node Executions ({0})"
 msgstr "Exécutions de nœuds ({0})"
 
@@ -108,11 +108,12 @@ msgstr "L'identifiant de pipeline est manquant"
 msgid "Pipeline ID: {pipelineId}"
 msgstr "ID de pipeline : {pipelineId}"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:29
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:30
 msgid "queued — waiting for an agent"
 msgstr "en file — en attente d'un agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:75
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:74
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:80
 msgid "Refresh"
 msgstr "Actualiser"
 

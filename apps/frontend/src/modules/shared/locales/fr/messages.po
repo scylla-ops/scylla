@@ -42,11 +42,11 @@ msgstr "Êtes-vous absolument sûr ?"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/shared/utils/status-config.ts:111
+#: src/modules/shared/utils/status-config.ts:116
 msgid "Cancelled"
 msgstr "Annulé"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:98
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:99
 msgid "Clear"
 msgstr "Effacer"
 
@@ -63,11 +63,11 @@ msgstr "Continuer"
 msgid "Copied"
 msgstr "Copié"
 
-#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:75
+#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:66
 msgid "Copied!"
 msgstr "Copié !"
 
-#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:75
+#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:66
 #: src/modules/shared/presentation/ui/shadcn/code-snippet.tsx:89
 msgid "Copy"
 msgstr "Copier"
@@ -88,7 +88,7 @@ msgstr "Créer"
 msgid "Creating..."
 msgstr "Création..."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:122
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:123
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -100,7 +100,7 @@ msgstr "Terminé"
 msgid "Error"
 msgstr "Erreur"
 
-#: src/modules/shared/utils/status-config.ts:81
+#: src/modules/shared/utils/status-config.ts:86
 msgid "Failed"
 msgstr "Échoué"
 
@@ -124,8 +124,8 @@ msgstr "au total"
 msgid "Job queued — no agent connected"
 msgstr "Travail mis en file d'attente — aucun agent connecté"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:133
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:139
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:134
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:140
 msgid "New {label}"
 msgstr "Nouveau {label}"
 
@@ -153,11 +153,11 @@ msgstr "Organisation supprimée"
 msgid "Organization updated"
 msgstr "Organisation mise à jour"
 
-#: src/modules/shared/utils/status-config.ts:101
+#: src/modules/shared/utils/status-config.ts:106
 msgid "Orphaned"
 msgstr "Orphelin"
 
-#: src/modules/shared/utils/status-config.ts:61
+#: src/modules/shared/utils/status-config.ts:66
 msgid "Pending"
 msgstr "En attente"
 
@@ -233,7 +233,7 @@ msgstr "Exécuter depuis un clone du dépôt"
 msgid "Run with Docker"
 msgstr "Exécuter avec Docker"
 
-#: src/modules/shared/utils/status-config.ts:50
+#: src/modules/shared/utils/status-config.ts:55
 msgid "Running"
 msgstr "En cours"
 
@@ -249,7 +249,7 @@ msgstr "Secret créé"
 msgid "Secret deleted"
 msgstr "Secret supprimé"
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:93
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:94
 msgid "Select all"
 msgstr "Tout sélectionner"
 
@@ -265,11 +265,11 @@ msgstr "Affichage de {start}-{end} sur {totalCount}"
 msgid "shown once"
 msgstr "montré une seule fois"
 
-#: src/modules/shared/utils/status-config.ts:91
+#: src/modules/shared/utils/status-config.ts:96
 msgid "Skipped"
 msgstr "Ignoré"
 
-#: src/modules/shared/utils/status-config.ts:71
+#: src/modules/shared/utils/status-config.ts:76
 msgid "Success"
 msgstr "Réussi"
 
@@ -311,7 +311,7 @@ msgstr "Déclencheur déclenché — exécution démarrée"
 msgid "Trigger updated"
 msgstr "Déclencheur mis à jour"
 
-#: src/modules/shared/utils/status-config.ts:123
+#: src/modules/shared/utils/status-config.ts:128
 msgid "Unknown"
 msgstr "Inconnu"
 
@@ -335,8 +335,8 @@ msgstr "Le nom d'utilisateur et le mot de passe sont requis."
 msgid "You cannot delete your own account."
 msgstr "Vous ne pouvez pas supprimer votre propre compte."
 
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:124
-#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:144
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:125
+#: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:145
 msgid "You don't have permission to do this."
 msgstr "Vous n'avez pas la permission de faire cela."
 
