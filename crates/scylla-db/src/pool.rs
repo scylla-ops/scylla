@@ -3,9 +3,6 @@ use scylla_core::config::DatabaseConfig;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
-/// Connect to `PostgreSQL` using a connection pool and, if `run_migrations` is
-/// true, apply pending migrations from the bundled `migrations/` directory at
-/// the workspace root.
 pub async fn init_db(config: &DatabaseConfig) -> DomainResult<PgPool> {
     let pool = PgPoolOptions::new()
         .max_connections(config.max_connections)
@@ -33,7 +30,6 @@ pub async fn init_db(config: &DatabaseConfig) -> DomainResult<PgPool> {
     Ok(pool)
 }
 
-/// Gracefully close the pool. Waits for in-flight queries to complete.
 pub async fn close_db(pool: &PgPool) {
     pool.close().await;
     tracing::debug!("PostgreSQL pool closed");

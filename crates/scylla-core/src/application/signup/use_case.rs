@@ -17,19 +17,13 @@ use uuid::Uuid;
 
 const DEFAULT_SESSION_DURATION_HOURS: i64 = 24;
 
-/// What a successful signup returns to the transport layer.
 pub struct SignupOutcome {
     pub token: String,
     pub user_id: UserId,
     pub organization_id: OrganizationId,
 }
 
-/// Self-service tenant onboarding. Unlike every other mutating use case this one
-/// takes **no `CallerContext`**: signup is the single public, unauthenticated
-/// entry point, so there is no principal to authorize. It deliberately bypasses
-/// the Cedar-gated `UserUseCases`/`OrganizationUseCases` and writes the whole
-/// account atomically through [`SignupRepository`], then makes the new
-/// org-admin grant live via [`PolicyControl::reload`].
+/// No `CallerContext`: the one public entry point, so the Cedar-gated use cases are bypassed on purpose.
 #[derive(Constructor)]
 pub struct SignupUseCases<SR, S, H, PC>
 where
@@ -63,7 +57,6 @@ where
         let user = User::create(username, Some(email), password_hash);
         let organization = Organization::create(organization_name, None)?;
 
-        // The org creator becomes its admin via a scoped grant on their own org.
         let role = RoleName::new(ORGANIZATION_ADMIN_ROLE)?;
         let grant = Grant::new(
             Principal::User(user.id().clone()),
@@ -75,7 +68,6 @@ where
             .provision_account(&user, &organization, &grant)
             .await?;
 
-        // Rebuild the live policy set so the org-admin grant takes effect now.
         self.policy_control.reload().await?;
 
         let token = Uuid::new_v4().to_string();

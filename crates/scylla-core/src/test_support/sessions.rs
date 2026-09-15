@@ -1,5 +1,3 @@
-//! `Session` test fixtures.
-
 use bon::bon;
 use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
@@ -22,10 +20,7 @@ impl SessionBuilder {
         created_at: Option<DateTime<Utc>>,
         expires_at: Option<DateTime<Utc>>,
         last_active_at: Option<DateTime<Utc>>,
-        /// Convenience: when `true`, force `created_at`, `expires_at` and
-        /// `last_active_at` to be in the past (overrides explicit values).
-        #[builder(default = false)]
-        expired: bool,
+        #[builder(default = false)] expired: bool,
     ) -> Session {
         let (created_at, expires_at, last_active_at) = if expired {
             let now = clock::now();

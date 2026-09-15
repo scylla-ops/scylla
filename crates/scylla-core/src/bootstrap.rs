@@ -6,10 +6,6 @@ use scylla_domain::domain::errors::DomainError;
 use scylla_domain::domain::role::RoleName;
 use scylla_domain::domain::user::{Email, Password, Username};
 
-/// Validate the on-disk bootstrap config into domain value objects and run the
-/// [`BootstrapUseCases`]. Orchestration (create-or-fetch user, assign role)
-/// lives in the use case; this shim is only the config → VO adapter at the API
-/// boundary.
 pub async fn bootstrap_admin<U, H, PS, G, PC>(
     bootstrap_uc: &BootstrapUseCases<U, H, PS, G, PC>,
     cfg: &BootstrapConfig,
@@ -21,8 +17,6 @@ where
     G: GrantRepository,
     PC: PolicyControl,
 {
-    // Loudly flag the well-known dev default so it can't silently ship to a real
-    // deployment. The credential is `BootstrapConfig::default()` (admin/admin123).
     if cfg.username == "admin" && cfg.password == "admin123" {
         tracing::warn!(
             "Bootstrapping the admin account with the DEFAULT credentials (admin/admin123). \
@@ -44,10 +38,7 @@ where
         .bootstrap_admin(username, email, password, role)
         .await
         .map_err(|e| match e {
-            // Permission service refused — service policy or role-step denial.
             DomainError::Forbidden(_) => BootstrapError::GrantPermission(e),
-            // Everything else (validation, conflict resolution, infrastructure)
-            // happened around the user-creation / fetch flow.
             _ => BootstrapError::CreateUser(e),
         })
 }

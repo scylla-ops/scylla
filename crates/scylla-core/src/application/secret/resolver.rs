@@ -9,9 +9,6 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// Turns a pipeline's definition nodes into resolved [`DispatchNode`]s: literal
-/// env vars pass through; secret references are looked up in the pipeline's
-/// project and decrypted, marked `masked` so the agent scrubs them from logs.
 #[async_trait]
 pub trait SecretResolver: Send + Sync {
     async fn resolve(
@@ -21,7 +18,6 @@ pub trait SecretResolver: Send + Sync {
     ) -> DomainResult<Vec<DispatchNode>>;
 }
 
-/// Default resolver backed by the secret repository + cipher.
 pub struct DispatchSecretResolver<R>
 where
     R: SecretRepository,
@@ -53,7 +49,6 @@ where
         project_id: &ProjectId,
         nodes: &[PipelineNode],
     ) -> DomainResult<Vec<DispatchNode>> {
-        // Only hit the secret store if at least one node references a secret.
         let needs_secrets = nodes
             .iter()
             .flat_map(PipelineNode::env)

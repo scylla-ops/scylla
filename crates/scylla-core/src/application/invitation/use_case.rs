@@ -23,21 +23,12 @@ use uuid::Uuid;
 
 const SESSION_TTL_HOURS: i64 = 24;
 
-/// What accepting an invitation returns.
 pub struct AcceptOutcome {
     pub token: String,
     pub user_id: UserId,
     pub organization_id: OrganizationId,
 }
 
-/// Member invitations. Creating an invite is gated by the same permission
-/// as adding a member (`AddOrganizationMember`), so an org-admin can invite.
-/// Accepting is public (the token is the credential).
-///
-/// The mailer is held as `Arc<dyn Mailer>` rather than a generic parameter
-/// (unlike the other collaborators): the concrete transport — real SMTP via
-/// `LettreMailer` or the `NoopMailer` fallback — is selected at runtime from
-/// configuration, which requires dynamic dispatch.
 #[derive(Constructor)]
 #[allow(clippy::too_many_arguments)]
 pub struct InvitationUseCases<I, PS, O, U, H, S, PC>
@@ -58,8 +49,6 @@ where
     hash_service: Arc<H>,
     session_repo: Arc<S>,
     policy_control: Arc<PC>,
-    /// Role catalog, for validating an invite's role against the DB — the same
-    /// check `CreateGrant` uses, so an invite can only carry a grantable role.
     role_repo: Arc<dyn RoleRepository>,
 }
 
@@ -88,8 +77,6 @@ where
             )
             .await?;
 
-        // An invite mints an Organization-scoped grant on accept; reject a role
-        // that isn't assignable on an org now, before persisting/emailing it.
         if let Some(role) = &role {
             validate_role_in_db(
                 &*self.role_repo,
@@ -119,8 +106,7 @@ where
             org.name().as_str(),
             invite.token()
         );
-        // Email delivery is best-effort: a transient SMTP failure must not lose
-        // the persisted invitation (it can be re-sent).
+        // Best-effort: a transient SMTP failure must not lose the persisted invitation.
         if let Err(e) = self
             .mailer
             .send(invite.email(), "You've been invited to Scylla", &body)
@@ -153,7 +139,6 @@ where
         caller: &CallerContext,
         invite_id: &InvitationId,
     ) -> DomainResult<()> {
-        // Resolve the invite's org to scope the permission check to it.
         let invite = self.invite_repo.find_by_id(invite_id).await?;
         self.permission_service
             .check(
@@ -164,9 +149,6 @@ where
         self.invite_repo.revoke(invite_id).await
     }
 
-    /// Public accept: the token is the credential. Creates the user if their
-    /// email is new, adds them to the org, mints the optional role grant, and
-    /// issues a session — atomically.
     #[instrument(skip_all, fields(username = %username))]
     pub async fn accept(
         &self,
@@ -179,7 +161,6 @@ where
             return Err(DomainError::business_rule("Invitation is no longer valid"));
         }
 
-        // Existing account with this email joins directly; otherwise create one.
         let (new_user, user_id) =
             if let Ok(existing) = self.user_repo.find_by_email(invite.email()).await {
                 (None, existing.id().clone())
@@ -190,10 +171,7 @@ where
                 (Some(user), id)
             };
 
-        // The grant is what joins them to the organization, so an invitation
-        // without a named role still mints one: `organization-member`, which
-        // confers only the ability to see that the organization exists. Without
-        // it the invitee would accept and land on an empty account.
+        // The grant is the join: a roleless invite still mints `organization-member`.
         let role = match invite.role() {
             Some(role) => role.clone(),
             None => RoleName::new(ORGANIZATION_MEMBER_ROLE)?,

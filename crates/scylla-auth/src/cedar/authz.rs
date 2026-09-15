@@ -1,9 +1,3 @@
-//! Pure, `self`-free helpers for the Cedar adapter: entity-UID construction,
-//! request-entity building, and audit-mapping.
-//! Extracted from `permission_service.rs` so each concern is isolated and
-//! independently readable; the service module keeps only the orchestration
-//! (`check`, policy-set build/reload, the trait impls).
-
 use crate::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::ResourceRef;
@@ -32,7 +26,6 @@ pub(crate) fn resource_uid(resource: &ResourceRef) -> DomainResult<EntityUid> {
     }
 }
 
-/// `(kind, id)` decomposition of a caller for the audit trail.
 pub(crate) fn principal_parts(caller: &CallerContext) -> (&'static str, Option<String>) {
     match caller {
         CallerContext::User(id) => ("user", Some(id.as_str().to_string())),
@@ -42,7 +35,6 @@ pub(crate) fn principal_parts(caller: &CallerContext) -> (&'static str, Option<S
     }
 }
 
-/// `(kind, id)` decomposition of a resource for the audit trail.
 pub(crate) fn resource_parts(resource: &ResourceRef) -> (&'static str, Option<String>) {
     match resource {
         ResourceRef::System => ("system", None),

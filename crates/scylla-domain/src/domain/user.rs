@@ -13,13 +13,11 @@ use crate::domain::errors::DomainResult;
 use crate::domain::ids::UserId;
 use chrono::{DateTime, Utc};
 
-/// User domain entity
 #[derive(Debug, Clone)]
 pub struct User {
     id: UserId,
     username: Username,
-    /// Optional so legacy/username-only accounts remain valid; required at
-    /// signup and used for email login, mail and OAuth linking.
+    /// `None` for legacy username-only accounts.
     email: Option<Email>,
     password_hash: PasswordHash,
     is_active: bool,
@@ -28,8 +26,6 @@ pub struct User {
 }
 
 impl User {
-    /// Reconstitute a `User` from persistent storage. Skips creation-time
-    /// invariants — the caller is the trusted repository layer.
     #[must_use]
     pub fn from_persistence(
         id: UserId,

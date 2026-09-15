@@ -1,5 +1,3 @@
-//! `Job` test fixtures.
-
 use bon::bon;
 use chrono::{DateTime, Utc};
 
@@ -11,7 +9,6 @@ use crate::domain::pipeline::Pipeline;
 
 pub struct JobBuilder;
 
-/// Default provenance for fixtures that don't care about origin.
 fn default_origin() -> JobOrigin {
     JobOrigin::Human {
         user_id: UserId::generate(),
@@ -21,7 +18,6 @@ fn default_origin() -> JobOrigin {
 #[bon]
 #[allow(clippy::new_ret_no_self, clippy::must_use_candidate)]
 impl JobBuilder {
-    /// Build a fresh `Pending` job mirroring `pipeline.nodes()`.
     #[builder(start_fn = new, finish_fn = build)]
     pub fn assemble(
         #[builder(start_fn)] pipeline: &Pipeline,
@@ -31,15 +27,9 @@ impl JobBuilder {
         updated_at: Option<DateTime<Utc>>,
         started_at: Option<DateTime<Utc>>,
         finished_at: Option<DateTime<Utc>>,
-        /// Convenience: marks the job as `Running` with `started_at = now`
-        /// (only applied if `status` is left at its default).
-        #[builder(default = false)]
-        running: bool,
-        /// Convenience: terminal status with synthesized started/finished timestamps.
+        #[builder(default = false)] running: bool,
         terminated: Option<JobStatus>,
-        /// Provenance; defaults to a throwaway human origin.
-        #[builder(default = default_origin())]
-        origin: JobOrigin,
+        #[builder(default = default_origin())] origin: JobOrigin,
     ) -> Job {
         let pipeline_id = pipeline.id().clone();
         let node_executions: Vec<JobNode> = pipeline

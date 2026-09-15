@@ -37,8 +37,6 @@ impl TriggerDeliveryRepository for PgTriggerDeliveryRepository {
 pub mod queries {
     use super::*;
 
-    /// Insert the delivery; `ON CONFLICT DO NOTHING` makes a replay a no-op.
-    /// `rows_affected() == 1` means new (process it), `0` means already seen.
     pub async fn record_or_detect<'e, E>(
         executor: E,
         trigger_id: &TriggerId,

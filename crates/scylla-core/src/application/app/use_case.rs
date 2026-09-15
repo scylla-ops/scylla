@@ -13,32 +13,18 @@ use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 
-/// Label given to an App's first secret, created alongside the App itself.
 const DEFAULT_SECRET_LABEL: &str = "default";
 
-/// What a successful `create` returns: the persisted app plus its plaintext
-/// secret, which is presented exactly once and never stored or retrievable.
 pub struct CreatedApp {
     pub app: App,
     pub secret: AppSecret,
 }
 
-/// What a successful secret creation/regeneration returns: the persisted secret
-/// record plus its plaintext, shown exactly once.
 pub struct CreatedAppSecret {
     pub credential: AppCredential,
     pub secret: AppSecret,
 }
 
-/// Org-scoped management of machine Apps — generic credentials. Every method is
-/// Cedar-gated, so an org-admin can manage the apps of orgs they control (admins
-/// can manage any). An app is just an identity: it carries no authorization until
-/// grants are assigned to it. A *agent* (an app that runs jobs) is provisioned
-/// separately via `AgentUseCases`, which also grants it the agent role.
-///
-/// An App can hold several secrets; secret management (create/list/revoke/
-/// enable) is gated on the app permissions: reading uses `ReadApp`, mutating
-/// uses `DeleteApp` (the manage-level app permission).
 #[derive(Constructor)]
 pub struct AppUseCases<A, C, H, PS, PC>
 where
@@ -52,9 +38,6 @@ where
     credential_repo: Arc<C>,
     hash_service: Arc<H>,
     permission_service: Arc<PS>,
-    /// Live agent-stream registry. Disabling/deleting an app drops its stream
-    /// here so a connected agent stops at once. No-op for apps that aren't
-    /// connected agents.
     registry: Arc<dyn AgentDispatch>,
     policy_control: Arc<PC>,
 }
@@ -87,9 +70,6 @@ where
             secret_hash,
         );
 
-        // A plain app is an identity only — no grant, no policy reload. It gains
-        // capabilities later through explicit grants (or becomes an agent). The
-        // initial secret is written in the same tx so it can authenticate.
         self.app_repo.create_app(&app, &credential).await?;
 
         Ok(CreatedApp { app, secret })
@@ -123,17 +103,11 @@ where
         self.permission_service
             .check(caller, Permission::DeleteApp(id.clone()))
             .await?;
-        // A DB trigger drops every grant this app held with the row; reload so
-        // the live policy set stops carrying their dead links.
+        // A DB trigger drops the app's grants with the row; reload so the live set stops carrying them.
         self.app_repo.delete(&id).await?;
         self.policy_control.reload().await
     }
 
-    /// Enable or disable the whole app. Disabling has three effects: new token
-    /// issuance is blocked and existing token lookups fail (the auth join filters
-    /// on `is_active`); every privileged action is denied at the permission
-    /// chokepoint, which re-checks `is_active` per request (so a live stream
-    /// can't keep acting); and any open agent stream is dropped immediately.
     #[instrument(skip_all, fields(app_id = %id, active))]
     pub async fn set_active(
         &self,
@@ -145,19 +119,13 @@ where
             .check(caller, Permission::DeleteApp(id.clone()))
             .await?;
         self.app_repo.set_active(&id, active).await?;
-        // Cut the live stream on disable so a connected agent stops at once
-        // rather than running on its already-open connection. The per-action
-        // liveness re-check in the permission service is the durable guarantee;
-        // this just makes the effect instant and frees the registry slot.
+        // The per-action liveness check is the durable guarantee; this makes the effect instant.
         if !active {
             self.registry.disconnect(&id);
         }
         self.app_repo.find_by_id(&id).await
     }
 
-    // --- Secret management -------------------------------------------------
-
-    /// Create (regenerate) a new secret for an app. Returns the plaintext once.
     #[instrument(skip_all, fields(app_id = %app_id, label = %label))]
     pub async fn create_secret(
         &self,
@@ -168,7 +136,6 @@ where
         self.permission_service
             .check(caller, Permission::DeleteApp(app_id.clone()))
             .await?;
-        // Ensure the app exists (surfaces NOT_FOUND rather than a dangling secret).
         self.app_repo.find_by_id(&app_id).await?;
 
         let secret = crate::application::app::mint_app_secret();
@@ -179,7 +146,6 @@ where
         Ok(CreatedAppSecret { credential, secret })
     }
 
-    /// List an app's secrets (metadata only — never the plaintext).
     #[instrument(skip_all, fields(app_id = %app_id))]
     pub async fn list_secrets(
         &self,
@@ -192,10 +158,6 @@ where
         self.credential_repo.list_by_app(&app_id).await
     }
 
-    /// Permanently remove a secret. Calls made with it stop authenticating, and
-    /// any agent currently streaming under this app is dropped at once so it
-    /// can't keep running on its already-open (token-authed) stream — it will
-    /// fail to re-auth on reconnect.
     #[instrument(skip_all, fields(secret_id = %secret_id))]
     pub async fn revoke_secret(
         &self,
@@ -207,17 +169,11 @@ where
             .check(caller, Permission::DeleteApp(credential.app_id().clone()))
             .await?;
         self.credential_repo.delete(&secret_id).await?;
-        // Cut the live agent stream: it was authed once at open and isn't
-        // re-checked per message, so without this it keeps running. The registry
-        // is keyed by app id; a reconnect with a still-valid *other* secret
-        // re-registers, so this is safe for multi-secret apps.
+        // The stream was authenticated once at open; a reconnect with another enabled secret re-registers.
         self.registry.disconnect(credential.app_id());
         Ok(())
     }
 
-    /// Enable or disable a secret. A disabled secret is kept but rejected at
-    /// auth. Returns the updated record. Disabling also drops any live agent
-    /// stream of this app (see `revoke_secret`).
     #[instrument(skip_all, fields(secret_id = %secret_id, enabled))]
     pub async fn set_secret_enabled(
         &self,

@@ -28,8 +28,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// Plaintext password held only during creation/validation.
-/// `Debug` and `Display` are masked so the value never leaks into logs.
 #[nutype(
     validate(with = validate, error = DomainError),
     derive(Clone, PartialEq, Eq, AsRef, Borrow, Into),

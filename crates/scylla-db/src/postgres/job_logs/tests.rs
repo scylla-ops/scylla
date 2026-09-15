@@ -26,7 +26,6 @@ async fn list_by_job_orders_by_timestamp_ascending(pool: PgPool) {
     let job = seed_job(&pool, &pipeline).await;
     let repo = PgJobLogRepository::new(pool);
 
-    // Insert in reverse temporal order to prove the query sorts, not the insert order.
     let base = Utc::now();
     for (line, offset_secs) in [("third", 0_i64), ("second", -1), ("first", -2)] {
         let log = JobLogBuilder::new(job.id(), "a", line)

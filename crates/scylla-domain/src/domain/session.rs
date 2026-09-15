@@ -2,7 +2,6 @@ use crate::domain::clock;
 use crate::domain::ids::{SessionId, UserId};
 use chrono::{DateTime, Duration, Utc};
 
-/// Session domain entity for authentication
 #[derive(Debug, Clone)]
 pub struct Session {
     id: SessionId,

@@ -20,10 +20,6 @@ async fn create_then_find_round_trip(pool: PgPool) {
     assert_eq!(found.created_at(), project.created_at());
 }
 
-/// Project creation must honour the quota policy's refusal, and refuse before
-/// writing. Uses a Service caller to bypass Cedar and isolate the quota check;
-/// the policy is a double that allows two creations per scope and denies the
-/// third.
 #[sqlx::test(migrations = "../../migrations")]
 async fn project_quota_enforced(pool: PgPool) {
     use crate::domain::project::ProjectName;
@@ -79,8 +75,6 @@ async fn project_quota_enforced(pool: PgPool) {
         .expect_err("over quota");
     assert!(matches!(err, DomainError::QuotaExceeded(_)));
 
-    // The refusal came before any write: the organization still holds exactly
-    // the two projects the policy let through.
     let listed = PgProjectRepository::new(pool.clone())
         .list_by_organization(org.id(), None, &Visibility::All)
         .await
@@ -169,10 +163,6 @@ async fn cascade_organization_delete_removes_projects(pool: PgPool) {
     ));
 }
 
-/// H1: creating a project for a human owner must atomically write the project,
-/// a `project-admin` owner grant — so a project is never left without an
-/// administrator. That grant is also what puts the creator on the project:
-/// there is no second row to write.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
     use crate::domain::role::RoleName;
@@ -208,26 +198,17 @@ async fn provision_with_owner_writes_the_owner_grant(pool: PgPool) {
     );
 }
 
-/// The provisioning transaction is atomic: a failure on any insert (here a
-/// dangling owner id → FK violation) rolls back the project too.
 #[sqlx::test(migrations = "../../migrations")]
 async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
     use crate::domain::role::RoleName;
     use crate::postgres::PgGrantRepository;
     use scylla_auth::authz::{Grant, GrantRepository, PROJECT_ADMIN_ROLE, Principal, Scope};
 
-    // Note what this no longer proves: it used to fail on a dangling owner,
-    // because the membership row had a foreign key to `users`. `grants` has
-    // none — `principal_id` is polymorphic — so a fabricated owner id now
-    // inserts cleanly. Nothing in the API can produce one (the owner is the
-    // authenticated caller), and the delete triggers clear grants when a user
-    // goes, but the database no longer refuses it on its own.
     let org = seed_org(&pool, "acme").await;
     let owner = seed_user(&pool, "alice").await;
     let project = project(&org, "rocket");
     let repo = PgProjectRepository::new(pool.clone());
 
-    // The project already exists, so the insert inside the transaction fails.
     repo.create(&project).await.expect("seed the clash");
 
     let grant = Grant::new(
@@ -240,7 +221,6 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
         "a duplicate project id must fail the transaction"
     );
 
-    // And the grant must not have survived the rollback.
     let grants = PgGrantRepository::new(pool).list_all().await.unwrap();
     assert!(
         grants.is_empty(),
@@ -248,10 +228,6 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
     );
 }
 
-/// The visibility rule, end to end: in an organization you see the projects you
-/// hold a role on, and nothing else. This is the whole point of removing the
-/// membership floor, so it is asserted against a real database rather than a
-/// stub.
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
     use crate::domain::role::RoleName;

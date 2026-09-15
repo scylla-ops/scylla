@@ -56,10 +56,6 @@ async fn update_persists_started_finished_timestamps(pool: PgPool) {
     assert!(found.updated_at() <= Utc::now());
 }
 
-/// The reaper orphans running jobs whose agent is no longer connected, and only
-/// those: a running job owned by a connected agent, a pending job, and a
-/// terminal job are all left untouched. An empty connected set (boot
-/// reconciliation) then orphans every remaining running job.
 #[sqlx::test(migrations = "../../migrations")]
 async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: PgPool) {
     use crate::domain::agent::Agent;
@@ -73,7 +69,6 @@ async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: Pg
     let (org, _project, pipeline) = seed_org_project_pipeline(&pool, "reap").await;
     let repo = PgJobRepository::new(pool.clone());
 
-    // A live agent to own one of the running jobs.
     let app = App::create(org.id().clone(), AppName::new("live-runner").unwrap());
     let credential = AppCredential::create(
         app.id().clone(),
@@ -91,14 +86,11 @@ async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: Pg
         .await
         .expect("provision agent");
 
-    // owned: running, assigned to the live (connected) agent.
     let owned = job(&pipeline).start().unwrap();
     repo.create(&owned).await.unwrap();
     repo.set_agent(owned.id(), app.id()).await.unwrap();
-    // stranded: running, no agent.
     let stranded = job(&pipeline).start().unwrap();
     repo.create(&stranded).await.unwrap();
-    // pending + terminal: never reaped.
     let pending = job(&pipeline);
     repo.create(&pending).await.unwrap();
     let done = JobBuilder::new(&pipeline)
@@ -106,7 +98,6 @@ async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: Pg
         .build();
     repo.create(&done).await.unwrap();
 
-    // With the live agent connected, only the stranded running job is reaped.
     let reaped = repo
         .orphan_running_without_agents(std::slice::from_ref(app.id()))
         .await
@@ -125,7 +116,6 @@ async fn orphan_running_without_agents_reaps_only_stranded_running_jobs(pool: Pg
         "an orphaned job is stamped finished",
     );
 
-    // Boot reconciliation: an empty connected set reaps the still-running owned job.
     let reaped_at_boot = repo.orphan_running_without_agents(&[]).await.unwrap();
     assert_eq!(reaped_at_boot, 1, "the last running job is reaped at boot");
     assert_eq!(status(&repo, owned.id()).await, JobStatus::Orphaned);
@@ -185,8 +175,6 @@ async fn origin_round_trips_through_jsonb(pool: PgPool) {
     let (_, _, pipeline) = seed_org_project_pipeline(&pool, "or").await;
     let repo = PgJobRepository::new(pool);
 
-    // Webhook is the richest variant: a typed trigger id plus an optional delivery
-    // id — exercises the full JSONB serde round-trip of the tagged union.
     let origin = JobOrigin::Webhook {
         trigger_id: TriggerId::new("trg-1"),
         delivery_id: Some("gh-42".to_string()),

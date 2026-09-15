@@ -34,7 +34,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
 pub struct NodeId(String);
 
 impl NodeId {
-    /// Backwards-compatible constructor that accepts anything convertible to `String`.
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
         Self::try_new(value.into())
     }

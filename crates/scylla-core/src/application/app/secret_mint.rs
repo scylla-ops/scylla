@@ -1,16 +1,7 @@
 use scylla_domain::domain::app::AppSecret;
 use uuid::Uuid;
 
-/// Mint a fresh app secret: 256 bits of randomness, hex-encoded.
-///
-/// Lives here rather than on `AppSecret` in the kernel because choosing a random
-/// source is a security decision, not a rule about what an app secret is. The
-/// kernel owns the shape (length bounds, redacted `Debug`); the control plane
-/// owns where the bytes come from. It also keeps `uuid`, and its RNG, out of a
-/// crate every agent links.
-///
-/// Two v4 UUIDs concatenated give 256 bits from the OS RNG, and 64 hex chars
-/// always satisfy the length bounds `AppSecret` enforces.
+/// Here and not in the kernel: the random source is a security decision, and `uuid` stays out of the agent.
 #[must_use]
 pub fn mint_app_secret() -> AppSecret {
     let raw = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());

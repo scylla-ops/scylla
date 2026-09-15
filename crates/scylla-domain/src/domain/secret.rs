@@ -6,23 +6,18 @@ use crate::domain::clock;
 use crate::domain::ids::{ProjectId, SecretId};
 use chrono::{DateTime, Utc};
 
-/// A project-scoped secret: a named, encrypted value referenced from pipeline
-/// node env vars and decrypted only at dispatch. The entity carries the
-/// **ciphertext**, never the plaintext; the API never returns either.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Secret {
     id: SecretId,
     project_id: ProjectId,
     name: SecretName,
     description: String,
-    /// AEAD ciphertext blob (nonce embedded). Storage-only.
     encrypted_value: Vec<u8>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
 
 impl Secret {
-    /// Create a new secret from an already-encrypted value.
     #[must_use]
     pub fn create(
         project_id: ProjectId,
@@ -42,7 +37,6 @@ impl Secret {
         }
     }
 
-    /// Reconstitute from persistence.
     #[must_use]
     pub fn from_persistence(
         id: SecretId,

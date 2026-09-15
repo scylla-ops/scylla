@@ -22,26 +22,14 @@ const SESSION_TTL_HOURS: i64 = 24;
 pub struct OAuthOutcome {
     pub token: String,
     pub user_id: UserId,
-    /// Whether this login provisioned a new account or reused an existing one.
     pub account: AccountOutcome,
 }
 
-/// Which onboarding path the callback took. Mirrors the
-/// `OauthCallbackResponse.outcome` oneof: a brand-new account carries the id of
-/// the organization created alongside it; an existing account carries nothing.
 pub enum AccountOutcome {
-    /// A brand-new account and its organization were provisioned on first login.
     New { organization_id: OrganizationId },
-    /// The login resolved to an already-existing account.
     Existing,
 }
 
-/// GitHub OAuth login. Public flow: the frontend redirects to `authorize_url`,
-/// GitHub calls back with a code, and `callback` resolves it to a session —
-/// linking to an existing account (by identity, then email) or provisioning a
-/// new account + organization on first login.
-// The derived `new` wires eight collaborators (the public onboarding flow needs
-// them all); that's intrinsic, not a smell worth a parameter object here.
 #[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct OAuthUseCases<P, IR, SR, U, S, H, PC>
@@ -81,14 +69,12 @@ where
     pub async fn callback(&self, code: &str) -> DomainResult<OAuthOutcome> {
         let info = self.provider.exchange_code(code).await?;
 
-        // 1. Known identity → straight to a session.
         if let Some(user_id) = self
             .identity_repo
             .find_user_id(PROVIDER_GITHUB, &info.provider_user_id)
             .await?
         {
-            // Same liveness gate as password login: a deactivated account must
-            // not be able to log back in through OAuth.
+            // A deactivated account must not log back in through OAuth.
             let user = self.user_repo.find_by_id(&user_id).await?;
             if !user.is_active() {
                 return Err(DomainError::unauthorized("User account is inactive"));
@@ -101,7 +87,6 @@ where
             });
         }
 
-        // 2. Same email as an existing account → link the identity.
         if let Some(email) = &info.email {
             if let Ok(user) = self.user_repo.find_by_email(email).await {
                 if !user.is_active() {
@@ -119,12 +104,10 @@ where
             }
         }
 
-        // 3. Brand new → provision account + organization (like signup).
         let email = info.email.clone().ok_or_else(|| {
             DomainError::validation("GitHub account has no usable email for signup")
         })?;
         let username = Username::new(&info.login)?;
-        // OAuth accounts have no password; store a random one (login is via OAuth).
         let random = Password::new(Uuid::new_v4().to_string())?;
         let password_hash = self.hash_service.hash(&random).await?;
         let user = User::create(username, Some(email), password_hash);
@@ -138,9 +121,7 @@ where
             Scope::Organization(organization.id().clone()),
         );
 
-        // Account, org, owner grant AND the GitHub identity link commit in ONE
-        // transaction — a failure can't leave an account with no linked identity
-        // (which, for an emailless GitHub account, would be unrecoverable).
+        // One transaction: an account with no linked identity and no email would be unrecoverable.
         self.signup_repo
             .provision_account_with_identity(
                 &user,
@@ -150,7 +131,6 @@ where
                 &info.provider_user_id,
             )
             .await?;
-        // Make the owner grant live now (after the account is durably committed).
         self.policy_control.reload().await?;
 
         let token = self.issue_session(user.id()).await?;

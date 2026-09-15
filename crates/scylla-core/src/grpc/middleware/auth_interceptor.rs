@@ -6,14 +6,11 @@ use std::sync::Arc;
 use tonic::{Request, Status};
 use tonic_async_interceptor::AsyncInterceptor;
 
-/// Authenticated principal attached to each request by the auth interceptor.
-/// Either a user (resolved from a session) or a machine App (from an app token).
 #[derive(Debug, Clone, Constructor)]
 pub struct AuthContext {
     pub caller: CallerContext,
 }
 
-/// Extracts the [`AuthContext`] previously attached by the auth interceptor.
 pub fn extract_auth_context<T>(request: &Request<T>) -> Result<AuthContext, Status> {
     request
         .extensions()
@@ -70,10 +67,7 @@ where
         Box::pin(async move {
             let token = extract_bearer_token(&request)?;
 
-            // A user session takes precedence; an expired one is swept. Only a
-            // genuine "not found" falls through to the App-token path — any other
-            // error (DB down, pool exhausted) is a real failure and must surface
-            // as INTERNAL, not be masked as an authentication failure.
+            // Only a genuine not-found falls through to the App token; a DB failure must surface as INTERNAL.
             match session_repo.find_by_token(&token).await {
                 Ok(session) => {
                     if session.is_expired() {
@@ -91,7 +85,6 @@ where
                 Err(e) => return Err(domain_error_to_status(e)),
             }
 
-            // Otherwise the token may belong to a machine App.
             match app_token_repo.find_by_token(&token).await {
                 Ok(app_token) => {
                     if app_token.is_expired() {
@@ -167,7 +160,6 @@ mod tests {
         }
     }
 
-    /// An app-token repo that never matches — for the user-only test paths.
     fn no_app_tokens() -> Arc<StubAppTokenRepo> {
         Arc::new(StubAppTokenRepo {
             find_by_token_fn: Box::new(|t| Err(DomainError::not_found("AppToken", t))),
@@ -232,7 +224,6 @@ mod tests {
 
     #[tokio::test]
     async fn interceptor_app_token_resolves_to_app() {
-        // Session lookup misses; the same token resolves to an App principal.
         let app_id = AppId::new("agent-1");
         let token = AppToken::create(
             app_id.clone(),

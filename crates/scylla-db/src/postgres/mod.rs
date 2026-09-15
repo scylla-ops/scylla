@@ -1,13 +1,3 @@
-//! `PostgreSQL` persistence adapters, grouped by aggregate.
-//!
-//! Each sub-module owns one aggregate and contains:
-//! - `repository.rs`: the trait impl + the SQL via `pub mod queries`.
-//! - `tests.rs`: integration tests via `#[sqlx::test]` against a real Postgres.
-//!
-//! The query helpers take any `sqlx::PgExecutor`, so the same SQL is reused
-//! both from pool-backed repos and from ad-hoc transactions
-//! (`pool.begin().await`).
-
 mod error;
 
 pub mod agents;
@@ -32,8 +22,6 @@ pub mod trigger_deliveries;
 pub mod triggers;
 pub mod users;
 
-// Flat re-exports so call sites can keep `scylla_db::PgUserRepository`
-// without leaking the internal sub-module layout.
 pub use agents::PgAgentRepository;
 pub use app_secrets::PgAppCredentialRepository;
 pub use app_tokens::PgAppTokenRepository;

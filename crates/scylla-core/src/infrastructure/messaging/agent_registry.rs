@@ -11,23 +11,8 @@ use tracing::warn;
 
 const DISPATCH_QUEUE: usize = 64;
 
-/// In-memory registry of connected agent streams (mono-instance). Maps an App
-/// to the sender side of its agent stream; the gRPC handler owns the receiver
-/// and forwards dispatches to the wire. Replaces the message broker for job
-/// dispatch — presence is simply having an entry here.
-///
-/// Each registration carries a monotonic **connection id**. Per-connection
-/// cleanup ([`unregister_if_current`](Self::unregister_if_current)) only removes
-/// the entry when its id still matches — so a slow cleanup of an old, dropped
-/// stream can never evict the entry of a *newer* reconnect of the same App
-/// (a check-then-act race that an unconditional `remove(app_id)` would hit).
-///
-/// Lock access recovers from poisoning (`unwrap_or_else(into_inner)`) instead of
-/// panicking: the map is plain data with no invariant a panicking thread could
-/// corrupt, and a poisoned panic would otherwise take down agent dispatch for
-/// the whole instance in a cascade.
-/// One live agent connection: its monotonic id, the dispatch channel sender, and
-/// the count of jobs dispatched to it but not yet reported terminal (its load).
+/// Cleanup is generation-checked: a slow teardown of an old stream must never evict a newer reconnect.
+/// Lock poisoning is recovered: the map is plain data, and a panic here would take down dispatch for the instance.
 struct Conn {
     conn_id: u64,
     tx: mpsc::Sender<JobDispatch>,
@@ -46,9 +31,6 @@ impl InMemoryAgentRegistry {
         Self::default()
     }
 
-    /// Register a newly-connected agent. Returns the connection id (for
-    /// per-connection cleanup) and the receiver the handler forwards to the
-    /// client stream. A reconnect replaces the prior sender.
     pub fn register(&self, app_id: &AppId) -> (u64, mpsc::Receiver<JobDispatch>) {
         let (tx, rx) = mpsc::channel(DISPATCH_QUEUE);
         let conn_id = self.next_conn.fetch_add(1, Ordering::Relaxed);
@@ -72,9 +54,6 @@ impl InMemoryAgentRegistry {
         (conn_id, rx)
     }
 
-    /// Force-remove an App's current stream regardless of connection id. Used by
-    /// admin actions (secret revoke / app disable) that must drop whatever stream
-    /// is connected right now.
     pub fn unregister(&self, app_id: &AppId) {
         self.agents
             .lock()
@@ -82,9 +61,6 @@ impl InMemoryAgentRegistry {
             .remove(app_id.as_str());
     }
 
-    /// Remove an App's stream only if `conn_id` is still the live registration.
-    /// Used by per-connection cleanup so tearing down a stale connection doesn't
-    /// evict a newer reconnect.
     pub fn unregister_if_current(&self, app_id: &AppId, conn_id: u64) {
         let mut map = self
             .agents
@@ -111,9 +87,7 @@ impl AgentDispatch for InMemoryAgentRegistry {
     }
 
     async fn dispatch(&self, app_id: &AppId, dispatch: &JobDispatch) -> DomainResult<()> {
-        // Clone the sender out of the lock (so the await never holds it) and
-        // optimistically count the job as in-flight in the same critical section.
-        // A failed send rolls the count back via `release`.
+        // Clone the sender out of the lock so the await never holds it; a failed send rolls the count back.
         let sender = {
             let mut map = self
                 .agents
@@ -136,9 +110,6 @@ impl AgentDispatch for InMemoryAgentRegistry {
     }
 
     fn disconnect(&self, app_id: &AppId) {
-        // Dropping the stored sender ends the agent's down-stream, which closes
-        // the RPC and stops the agent. Removing the entry also clears its
-        // in-flight count, so a reconnect starts fresh.
         self.unregister(app_id);
     }
 

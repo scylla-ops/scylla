@@ -15,8 +15,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// Human-readable label for a machine App (agent / automation), unique within
-/// its owning organization.
 #[nutype(
     sanitize(trim),
     validate(with = validate, error = DomainError),

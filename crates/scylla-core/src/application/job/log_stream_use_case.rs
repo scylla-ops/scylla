@@ -14,8 +14,6 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tracing::instrument;
 
-/// Use case that combines a persisted snapshot of job logs with a live broker
-/// subscription, exposing them as a single ordered stream.
 #[derive(Constructor)]
 pub struct JobLogStreamUseCase<R: JobLogRepository, S: JobLogStreamPort, PS: PermissionService> {
     repo: Arc<R>,

@@ -24,10 +24,7 @@ impl Argon2HashService {
 
 #[async_trait]
 impl HashService for Argon2HashService {
-    // Argon2 is deliberately CPU-heavy (tens of ms). Running it inline would
-    // block an async worker thread for that whole time, so each hash/verify is
-    // moved onto Tokio's blocking pool — which is exactly what the per-call
-    // `clone()`s (of the hasher and the input) are for.
+    // Argon2 takes tens of ms: run on the blocking pool, hence the per-call clones.
     #[instrument(skip(self, password))]
     async fn hash(&self, password: &Password) -> DomainResult<PasswordHash> {
         let argon2 = self.argon2.clone();

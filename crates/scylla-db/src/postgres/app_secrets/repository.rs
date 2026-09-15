@@ -10,9 +10,6 @@ use tracing::instrument;
 
 use super::super::error::{DbFieldExt, SqlxResultExt};
 
-/// Insert an app secret on any executor (pool or transaction). Shared by the
-/// pool-backed repo and the atomic app/agent provisioning transactions, so an
-/// App is never persisted without its initial secret.
 pub async fn insert<'e, E>(executor: E, credential: &AppCredential) -> DomainResult<()>
 where
     E: PgExecutor<'e>,

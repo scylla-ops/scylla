@@ -67,13 +67,6 @@ async fn list_active_filters_inactive(pool: PgPool) {
     assert_eq!(all.metadata().total_count(), 3);
 }
 
-/// The kill switch. Stripping someone's access to an organization has to reach
-/// every project underneath it in one statement, and must leave both the other
-/// people and the same person's holdings in other organizations untouched.
-///
-/// This is the anti-regression for the leak that used to be covered by the Cedar
-/// membership guard: with membership gone, deleting the rows *is* the boundary,
-/// so it has to be complete.
 #[sqlx::test(migrations = "../../migrations")]
 async fn revoke_all_access_strips_the_whole_org_subtree(pool: PgPool) {
     use crate::domain::role::RoleName;
@@ -112,20 +105,16 @@ async fn revoke_all_access_strips_the_whole_org_subtree(pool: PgPool) {
         ),
     ];
     let survivors = [
-        // Same person, another organization.
         Grant::new(
             victim_principal.clone(),
             role(PROJECT_ADMIN_ROLE),
             Scope::Project(other_project.id().clone()),
         ),
-        // A platform operator's global access, which an org-level revoke must
-        // never be able to strip.
         Grant::new(
             victim_principal.clone(),
             role(SYSTEM_ADMIN_ROLE),
             Scope::System,
         ),
-        // Someone else, so the org keeps an owner and the revoke is allowed.
         Grant::new(
             Principal::User(colleague.id().clone()),
             role(ORGANIZATION_ADMIN_ROLE),

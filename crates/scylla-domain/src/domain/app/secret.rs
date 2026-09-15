@@ -20,10 +20,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// Plaintext App credential, presented once at creation and again by the App
-/// when it exchanges credentials for a token. Held only transiently; the stored
-/// form is an [`AppSecretHash`](crate::domain::app::AppSecretHash). `Debug` / `Display` are
-/// masked so it never leaks into logs.
 #[nutype(
     validate(with = validate, error = DomainError),
     derive(Clone, PartialEq, Eq, AsRef, Borrow, Into),

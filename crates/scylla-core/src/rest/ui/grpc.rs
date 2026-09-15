@@ -1,6 +1,4 @@
-//! The gRPC guard every UI mode runs first: a gRPC request that reached the
-//! fallback names a service nobody registered, and must be told so in gRPC,
-//! not with a page.
+//! A gRPC call to an unregistered service reaches the fallback and must be answered in gRPC, not with a page.
 
 use axum::body::Body;
 use axum::extract::Request;
@@ -8,7 +6,6 @@ use axum::http::{HeaderMap, HeaderValue, header};
 use axum::middleware::Next;
 use axum::response::Response;
 
-/// Middleware: answer gRPC requests with `UNIMPLEMENTED`, pass everything else on.
 pub(super) async fn guard(request: Request, next: Next) -> Response {
     if is_grpc(request.headers()) {
         return unimplemented(request.headers());
@@ -16,18 +13,11 @@ pub(super) async fn guard(request: Request, next: Next) -> Response {
     next.run(request).await
 }
 
-/// `true` for both native gRPC and gRPC-Web: every content-type in play
-/// (`application/grpc`, `+proto`, `-web`, `-web+proto`, `-web-text`,
-/// `-web-text+proto`) starts with the same prefix.
 fn is_grpc(headers: &HeaderMap) -> bool {
     content_type(headers).is_some_and(|content_type| content_type.starts_with("application/grpc"))
 }
 
-/// Reproduce what tonic's catch-all returned before the SPA replaced it: a
-/// trailers-only `12 UNIMPLEMENTED`. `Status::into_http` puts `grpc-status` in
-/// the *headers*, which is what a client expects for a call that never started.
-/// The request's own content-type is echoed back so a gRPC-Web client's framer
-/// agrees with what it is reading.
+/// Trailers-only `12 UNIMPLEMENTED`, as tonic's catch-all answered before the SPA took the fallback.
 fn unimplemented(headers: &HeaderMap) -> Response {
     let mut response: http::Response<Body> = tonic::Status::unimplemented("").into_http();
     if let Some(content_type) = content_type(headers)

@@ -202,8 +202,7 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        // Don't echo the looked-up username (PII / account-existence oracle on
-        // login paths) into the error id.
+        // Never echo the username into the error id (account-existence oracle).
         .not_found_as("User", "<username>")?;
         row_into_user(
             rec.id,
@@ -230,8 +229,7 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        // Don't echo the looked-up email (PII / account-existence oracle) into
-        // the error id.
+        // Never echo the email into the error id (account-existence oracle).
         .not_found_as("User", "<email>")?;
         row_into_user(
             rec.id,

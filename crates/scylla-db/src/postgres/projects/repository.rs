@@ -117,7 +117,6 @@ impl ProjectRepository for PgProjectRepository {
         visible: &Visibility,
     ) -> DomainResult<PaginatedResult<Project>> {
         let params = pagination.copied().unwrap_or_default();
-        // Nothing visible: answer an empty page without touching the database.
         if visible.is_empty() {
             return Ok(PaginatedResult::new(Vec::new(), &params, 0));
         }
@@ -181,11 +180,7 @@ pub mod queries {
             .collect())
     }
 
-    /// Projects reachable by a user: granted directly, or through a grant on the
-    /// owning organization.
-    ///
-    /// ponytail: the org arm re-reads `grants` per call; fold it into the
-    /// `Visibility` resolver if project listings ever get hot.
+    // ponytail: the org arm re-reads `grants` per call; fold into `Visibility` if listings get hot.
     pub async fn count_for_user<'e, E>(executor: E, user_id: &UserId) -> DomainResult<u64>
     where
         E: PgExecutor<'e>,
@@ -407,10 +402,6 @@ pub mod queries {
         Ok(())
     }
 
-    /// A [`Visibility`] flattened into the three bind parameters the queries
-    /// below take: see-everything, plus the organizations and projects the
-    /// caller holds. Built once per call so the count and the page share exactly
-    /// the same filter.
     pub struct VisibilityFilter {
         all: bool,
         orgs: Vec<String>,
@@ -434,8 +425,6 @@ pub mod queries {
             }
         }
 
-        /// Everything is visible — used by the internal callers that legitimately
-        /// bypass filtering (cascade bookkeeping).
         #[must_use]
         pub fn unrestricted() -> Self {
             Self {

@@ -39,8 +39,6 @@ impl<
     ) -> Result<Response<CreateGrantResponse>, Status> {
         let caller = caller!(request);
         let req = request.into_inner();
-        // A grant is about a user *or* a machine app — the `PrincipalRef` union
-        // carries the kind with its id, so neither is inferred here.
         let principal = principal_ref_from_proto(req.principal)?;
         let scope = scope_ref_from_proto(req.scope)?;
 
@@ -97,9 +95,6 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
 
-        // Scope filter present → scoped listing (org/project/system admins of it).
-        // Absent → list every grant (system admins only). The bound entity travels
-        // inside the `ScopeRef` arm, so SYSTEM carries no id at all.
         let grants = match req.scope {
             Some(scope) => {
                 let scope = scope_ref_from_proto(Some(scope))?;
@@ -118,8 +113,7 @@ impl<
         &self,
         request: Request<ListGrantableRolesRequest>,
     ) -> Result<Response<ListGrantableRolesResponse>, Status> {
-        // Authenticated callers only (interceptor); the catalog itself is static,
-        // non-sensitive compile-time data, so no Cedar check is applied.
+        // No Cedar check: the catalog is static compile-time data.
         let _caller = caller!(request);
         let req = request.into_inner();
         let filter = req.scope_kind.map(scope_kind_from_proto).transpose()?;
@@ -135,7 +129,6 @@ impl<
 
 fn grantable_role_to_proto(r: &GrantableRole) -> ProtoGrantableRole {
     ProtoGrantableRole {
-        // Builtin role ids are their stable keys, so the catalog name is the id.
         role_id: wrap(r.name),
         scope_kind: scope_kind_to_proto(r.scope) as i32,
         kind: role_kind_to_proto(r.kind) as i32,
@@ -143,8 +136,6 @@ fn grantable_role_to_proto(r: &GrantableRole) -> ProtoGrantableRole {
     }
 }
 
-/// Domain `RoleKind` → the proto enum. Both arms are real kinds, so
-/// `UNSPECIFIED` is never produced.
 fn role_kind_to_proto(kind: RoleKind) -> ProtoRoleKind {
     match kind {
         RoleKind::Admin => ProtoRoleKind::Admin,

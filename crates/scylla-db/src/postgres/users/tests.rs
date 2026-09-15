@@ -22,7 +22,6 @@ async fn create_then_find_round_trips(pool: PgPool) {
         user.password_hash().as_str()
     );
     assert_eq!(found.is_active(), user.is_active());
-    // chrono normalizes through TIMESTAMPTZ; equality proves UTC preservation.
     assert_eq!(found.created_at(), user.created_at());
     assert_eq!(found.updated_at(), user.updated_at());
 }
@@ -72,7 +71,6 @@ async fn duplicate_email_maps_to_conflict(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn null_emails_do_not_collide(pool: PgPool) {
-    // Partial unique index must allow many username-only (NULL email) accounts.
     let repo = PgUserRepository::new(pool);
     repo.create(&user("judy")).await.expect("first null email");
     repo.create(&user("mallory"))
@@ -123,7 +121,7 @@ async fn unique_username_violation_maps_to_conflict(pool: PgPool) {
     let repo = PgUserRepository::new(pool);
     repo.create(&user("frank")).await.expect("first");
 
-    let dup = user("frank"); // same username, different generated ULID
+    let dup = user("frank");
     assert!(matches!(
         repo.create(&dup).await,
         Err(DomainError::Conflict(_))

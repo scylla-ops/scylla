@@ -1,18 +1,8 @@
-//! The quota extension point, as seen from the use cases.
-//!
-//! [`QuotaPolicy`] is declared in `scylla-extension` and implemented by the
-//! edition binary; a use case that creates a metered resource holds it as a
-//! trait object and asks before creating. This module holds the two things the
-//! core adds around the trait: the Community default, and the translation of a
-//! refusal into the domain error the surfaces already map.
-
 use crate::domain::errors::{DomainError, DomainResult};
 use async_trait::async_trait;
 use scylla_extension::{Extensions, QuotaDecision, QuotaError, QuotaPolicy, QuotaUsage, Resource};
 use std::sync::Arc;
 
-/// The edition's quota policy, or the Community default when it registered
-/// none. The one place that knows the default; the composition root asks here.
 #[must_use]
 pub fn quota_policy(extensions: &Extensions) -> Arc<dyn QuotaPolicy> {
     extensions
@@ -20,7 +10,6 @@ pub fn quota_policy(extensions: &Extensions) -> Arc<dyn QuotaPolicy> {
         .unwrap_or_else(|| Arc::new(UnlimitedQuota))
 }
 
-/// The Community Edition policy: nothing is metered, nothing is consulted.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct UnlimitedQuota;
 
@@ -39,13 +28,6 @@ impl QuotaPolicy for UnlimitedQuota {
     }
 }
 
-/// Turn a policy's answer into the use case's `Result`.
-///
-/// `Allow` passes. `Deny` becomes [`DomainError::QuotaExceeded`] (mapped to gRPC
-/// `RESOURCE_EXHAUSTED` by the handlers), carrying the message the frontend
-/// shows verbatim, with the policy's upgrade hint appended when it gives one. A
-/// policy that could not answer is an infrastructure failure of the operation,
-/// not a decision.
 pub fn enforce(decision: Result<QuotaDecision, QuotaError>) -> DomainResult<()> {
     match decision {
         Ok(QuotaDecision::Allow) => Ok(()),

@@ -23,8 +23,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// A project-unique secret name (the handle an env var references). Stable,
-/// human-chosen identifier — not the secret value.
 #[nutype(
     sanitize(trim),
     validate(with = validate, error = DomainError),
@@ -35,7 +33,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
 pub struct SecretName(String);
 
 impl SecretName {
-    /// Construct from anything string-like.
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
         Self::try_new(value.into())
     }

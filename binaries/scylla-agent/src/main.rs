@@ -31,10 +31,6 @@ async fn main() -> anyhow::Result<()> {
     }
 }
 
-/// Fail fast on an unusable workspace root: create it if missing and probe it
-/// with a real write. Without this, a bad `--workspace-root` (e.g. the default
-/// `/var/lib/scylla/workspaces` absent on a dev machine) is only discovered
-/// when the first job fails.
 fn ensure_workspace_root(root: &std::path::Path) -> anyhow::Result<()> {
     std::fs::create_dir_all(root).with_context(|| {
         format!(

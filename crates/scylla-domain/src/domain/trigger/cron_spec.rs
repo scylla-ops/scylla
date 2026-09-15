@@ -1,22 +1,13 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use serde::{Deserialize, Serialize};
 
-/// A cron schedule, evaluated in UTC.
-///
-/// Holds the raw 5-field expression (`min hour dom mon dow`). Only structural
-/// validation lives here (non-empty, exactly five whitespace-separated fields) so
-/// the domain stays free of a cron library; semantic parsing and next-occurrence
-/// computation live behind the `CronSchedule` application port (and enforce the
-/// minimum cadence there). Serialized as part of the tagged [`super::TriggerSource`]
-/// JSONB blob.
+/// Shape only (five fields): parsing lives behind the `CronSchedule` port, keeping cron out of the kernel.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CronSpec {
     expression: String,
 }
 
 impl CronSpec {
-    /// Build a cron spec, validating only its shape (5 fields). Returns the
-    /// trimmed, normalized expression.
     pub fn new(expression: impl Into<String>) -> DomainResult<Self> {
         let raw = expression.into();
         let trimmed = raw.trim();

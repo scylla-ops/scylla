@@ -9,8 +9,6 @@ pub trait HashService {
 
     async fn verify(&self, password: &Password, hash: &PasswordHash) -> DomainResult<bool>;
 
-    /// Hash a machine App's secret for storage. Separate from [`hash`] so the
-    /// type system keeps app credentials and user passwords from being mixed up.
     async fn hash_secret(&self, secret: &AppSecret) -> DomainResult<AppSecretHash>;
 
     async fn verify_secret(&self, secret: &AppSecret, hash: &AppSecretHash) -> DomainResult<bool>;

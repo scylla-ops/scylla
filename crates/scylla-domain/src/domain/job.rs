@@ -20,9 +20,6 @@ use crate::domain::pipeline::Pipeline;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-/// How a single pipeline node's execution has progressed. Each variant carries
-/// exactly the timestamps that exist in that state — a pending node has none, a
-/// running one has only its start, a finished one always has an end.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "state", rename_all = "snake_case")]
 pub enum NodeExecution {
@@ -30,8 +27,6 @@ pub enum NodeExecution {
     Running {
         started_at: DateTime<Utc>,
     },
-    /// Reached a terminal outcome. `started_at` is `None` only when the node was
-    /// skipped or cancelled before it ever ran.
     Finished {
         started_at: Option<DateTime<Utc>>,
         finished_at: DateTime<Utc>,
@@ -39,7 +34,6 @@ pub enum NodeExecution {
     },
 }
 
-/// The terminal outcome of a node execution.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NodeOutcome {
@@ -81,7 +75,6 @@ impl JobNode {
         }
     }
 
-    /// `Pending → Running`. Errs if the node has already started.
     fn start(self, started_at: DateTime<Utc>) -> DomainResult<Self> {
         match self.execution {
             NodeExecution::Pending => Ok(Self {
@@ -94,8 +87,6 @@ impl JobNode {
         }
     }
 
-    /// `Running → Finished` with a run outcome (completed / failed). Only a running
-    /// node can finish.
     fn finish(self, outcome: NodeOutcome, finished_at: DateTime<Utc>) -> DomainResult<Self> {
         match self.execution {
             NodeExecution::Running { started_at } => Ok(Self {
@@ -115,8 +106,6 @@ impl JobNode {
         }
     }
 
-    /// `Pending | Running → Finished(Skipped)`. Accepts a node that never started
-    /// (an upstream failure invalidated it) as well as a running one.
     fn skip(self, finished_at: DateTime<Utc>) -> DomainResult<Self> {
         let started_at = match self.execution {
             NodeExecution::Pending => None,
@@ -137,8 +126,6 @@ impl JobNode {
         })
     }
 
-    /// Cancel a still-active node (called when the whole job is cancelled). A node
-    /// already in a terminal state keeps its outcome.
     fn cancel_if_active(self, finished_at: DateTime<Utc>) -> Self {
         let started_at = match self.execution {
             NodeExecution::Pending => None,
@@ -165,7 +152,6 @@ impl JobNode {
         &self.execution
     }
 
-    /// Flat projection of the execution state, for the DB/display boundary.
     #[must_use]
     pub fn state(&self) -> NodeState {
         match &self.execution {
@@ -193,7 +179,6 @@ impl JobNode {
     }
 }
 
-/// The terminal outcome of a job.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TerminalOutcome {
     Completed,
@@ -216,22 +201,12 @@ impl TerminalOutcome {
     }
 }
 
-/// The job lifecycle as a sum type: each state carries exactly the timestamps
-/// that exist in it, so "running without a start time" or "completed without a
-/// finish time" are unrepresentable.
-///
-/// Agent attribution is *not* part of the state — the `agent_app_id` column is a
-/// nullable FK (`ON DELETE SET NULL`), so any job can lose its agent at any time
-/// when the app is deleted. It is therefore an orthogonal field on [`Job`], not a
-/// per-variant one.
 #[derive(Debug, Clone)]
 pub enum JobState {
-    /// Minted, not yet started by an agent.
     Pending,
-    /// The agent reported it started.
-    Running { started_at: DateTime<Utc> },
-    /// Ended. `finished_at` always exists; `started_at` is `None` only when the
-    /// job was cancelled before it ever started running.
+    Running {
+        started_at: DateTime<Utc>,
+    },
     Terminal {
         outcome: TerminalOutcome,
         started_at: Option<DateTime<Utc>>,
@@ -240,9 +215,6 @@ pub enum JobState {
 }
 
 impl JobState {
-    /// Reconstruct the state from the flat persistence columns. An inconsistent
-    /// combination (a running job with no start time, a terminal one with no
-    /// finish time) is a decode error, not a silently-accepted state.
     pub fn from_columns(
         status: JobStatus,
         started_at: Option<DateTime<Utc>>,
@@ -274,17 +246,11 @@ pub struct Job {
     id: JobId,
     pipeline_id: PipelineId,
     state: JobState,
-    /// The agent (app) this job was dispatched to / ran on. `None` while pending
-    /// and unassigned, or once the app has been deleted (nullable FK). Orthogonal
-    /// to [`JobState`]; see its docs.
+    /// Nullable FK (`ON DELETE SET NULL`): can become `None` at any time, so not part of `JobState`.
     agent_app_id: Option<AppId>,
     node_executions: Vec<JobNode>,
-    /// Trigger-supplied literal env (`(key, value)`) overlaid on every node at
-    /// dispatch. Empty for a plain run. Persisted with the job so the dispatch is
-    /// identical whether placed immediately or retried by the pending scheduler.
+    /// Persisted so a retried dispatch is identical to the first.
     inputs: Vec<(String, String)>,
-    /// Provenance: how this run was initiated (human / app / cron / webhook).
-    /// Set at creation, immutable thereafter — a job is never unattributable.
     origin: JobOrigin,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -317,8 +283,6 @@ impl Job {
         }
     }
 
-    /// Mint a fresh `Pending` job for `pipeline`. `origin` is mandatory — every
-    /// run records who/what initiated it (see [`JobOrigin`]).
     #[must_use]
     pub fn create_from_pipeline(pipeline: &Pipeline, origin: JobOrigin) -> Self {
         let now = clock::now();
@@ -342,22 +306,17 @@ impl Job {
         }
     }
 
-    /// Attach trigger-supplied literal inputs (builder style). These are overlaid
-    /// on every node at dispatch and persisted with the job.
     #[must_use]
     pub fn with_inputs(mut self, inputs: Vec<(String, String)>) -> Self {
         self.inputs = inputs;
         self
     }
 
-    /// Record which agent (app) was handed this job at dispatch. Orthogonal to the
-    /// lifecycle state, so it takes `&mut self` rather than transitioning it.
     pub fn assign_agent(&mut self, app_id: AppId) {
         self.agent_app_id = Some(app_id);
         self.updated_at = clock::now();
     }
 
-    /// `Pending → Running`: the agent reported it started.
     pub fn start(mut self) -> DomainResult<Self> {
         match self.state {
             JobState::Pending => {
@@ -372,12 +331,10 @@ impl Job {
         }
     }
 
-    /// `Running → Terminal(Completed)`.
     pub fn complete(self) -> DomainResult<Self> {
         self.finish(TerminalOutcome::Completed)
     }
 
-    /// `Running → Terminal(Failed)`.
     pub fn fail(self) -> DomainResult<Self> {
         self.finish(TerminalOutcome::Failed)
     }
@@ -400,9 +357,6 @@ impl Job {
         }
     }
 
-    /// Cancel a non-terminal job, stamping `finished_at`. A pending job that never
-    /// ran carries no `started_at`; a running one keeps its start. All still-active
-    /// nodes are cancelled too.
     pub fn cancel(mut self) -> DomainResult<Self> {
         let now = clock::now();
         let started_at = match self.state {
@@ -426,7 +380,6 @@ impl Job {
         Ok(self)
     }
 
-    /// `Pending → Running` for a single node: the agent reported the node started.
     pub fn apply_node_started(
         mut self,
         node_id: &NodeId,
@@ -437,7 +390,6 @@ impl Job {
         Ok(self)
     }
 
-    /// `Running → Finished` for a single node with a run outcome.
     pub fn apply_node_finished(
         mut self,
         node_id: &NodeId,
@@ -449,8 +401,6 @@ impl Job {
         Ok(self)
     }
 
-    /// Mark a node skipped from either Pending or Running (an upstream failure
-    /// invalidated it).
     pub fn apply_node_skipped(
         mut self,
         node_id: &NodeId,
@@ -461,8 +411,6 @@ impl Job {
         Ok(self)
     }
 
-    /// Find a node by id and replace it with the result of `transition`. The node
-    /// is left untouched if the transition fails.
     fn transition_node(
         &mut self,
         node_id: &NodeId,
@@ -482,12 +430,7 @@ impl Job {
         matches!(self.state, JobState::Pending | JobState::Running { .. })
     }
 
-    /// Whether logs for `node_id` should be surfaced to readers.
-    ///
-    /// A node still in `Pending` has no execution behind it, so any rows in
-    /// the log store that happen to be keyed to it are either stale (re-run)
-    /// or arrived ahead of the matching status update — neither case should
-    /// leak to the client.
+    /// A pending node has no execution behind it: log rows keyed to it are stale or early.
     #[must_use]
     pub fn logs_readable_for(&self, node_id: &NodeId) -> bool {
         self.find_execution(node_id)
@@ -504,8 +447,6 @@ impl Job {
         self.node_executions.iter().find(|e| e.node_id() == node_id)
     }
 
-    // Getters
-
     #[must_use]
     pub fn id(&self) -> &JobId {
         &self.id
@@ -521,7 +462,6 @@ impl Job {
         &self.state
     }
 
-    /// Flat status projection, for the DB column and legacy read paths.
     #[must_use]
     pub fn status(&self) -> JobStatus {
         match &self.state {
@@ -541,19 +481,16 @@ impl Job {
         &self.node_executions
     }
 
-    /// Trigger-supplied literal env overlaid on every node at dispatch.
     #[must_use]
     pub fn inputs(&self) -> &[(String, String)] {
         &self.inputs
     }
 
-    /// The agent (app) that this job was handed to / ran on, if any.
     #[must_use]
     pub fn agent_app_id(&self) -> Option<&AppId> {
         self.agent_app_id.as_ref()
     }
 
-    /// How this run was initiated (human / app / cron / webhook).
     #[must_use]
     pub fn origin(&self) -> &JobOrigin {
         &self.origin
@@ -597,8 +534,6 @@ mod tests {
         NodeId::new(s).unwrap()
     }
 
-    /// Mint a job from a pipeline with a throwaway human origin (these tests
-    /// exercise status/node behaviour, not provenance).
     fn make_job(pipeline: &Pipeline) -> Job {
         Job::create_from_pipeline(
             pipeline,
@@ -608,8 +543,6 @@ mod tests {
         )
     }
 
-    /// A started (running) job — the common precondition for node-event and
-    /// completion tests.
     fn running_job(pipeline: &Pipeline) -> Job {
         make_job(pipeline).start().unwrap()
     }
@@ -634,8 +567,6 @@ mod tests {
         )
     }
 
-    // --- Creation ---
-
     #[test]
     fn creates_job_from_pipeline() {
         let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
@@ -647,8 +578,6 @@ mod tests {
         assert!(job.started_at().is_none());
     }
 
-    // --- Status transitions ---
-
     #[test]
     fn start_transitions_to_running() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
@@ -659,7 +588,6 @@ mod tests {
         assert_eq!(job.status(), JobStatus::Running);
         assert!(job.started_at().is_some());
 
-        // A running job cannot start again.
         assert!(job.start().is_err());
     }
 
@@ -724,8 +652,6 @@ mod tests {
         assert!(job.finished_at().is_some());
     }
 
-    // --- Node events ---
-
     #[test]
     fn apply_node_started_sets_running() {
         let pipeline = make_pipeline(vec![action("a", &[])]);
@@ -759,24 +685,19 @@ mod tests {
         let pipeline = make_pipeline(vec![action("a", &[]), action("b", &["a"])]);
         let mut job = running_job(&pipeline);
 
-        // Both nodes start Pending → no logs leak.
         assert!(!job.logs_readable_for(&node_id("a")));
         assert!(!job.logs_readable_for(&node_id("b")));
 
-        // Unknown node never readable.
         assert!(!job.logs_readable_for(&node_id("ghost")));
 
-        // Running node → logs visible.
         job = job.apply_node_started(&node_id("a"), clock::now()).unwrap();
         assert!(job.logs_readable_for(&node_id("a")));
 
-        // Completed node → still visible.
         job = job
             .apply_node_finished(&node_id("a"), NodeOutcome::Completed, clock::now())
             .unwrap();
         assert!(job.logs_readable_for(&node_id("a")));
 
-        // Sibling still Pending → still gated.
         assert!(!job.logs_readable_for(&node_id("b")));
     }
 
@@ -860,13 +781,7 @@ mod tests {
         assert!(job.cancel().is_err());
     }
 
-    /// Golden test for the `jobs.node_executions` JSONB column.
-    ///
-    /// `NodeExecution` is an internally tagged enum, so its variant names are
-    /// part of the on-disk format, not just an implementation detail. Renaming
-    /// a variant or a field would silently orphan the execution history of every
-    /// job already recorded in a deployed database. See the equivalent test on
-    /// `PipelineNode` for the same guarantee on `pipelines.nodes`.
+    /// Golden: the variant and field names are the on-disk format of `jobs.node_executions`.
     #[test]
     fn job_nodes_jsonb_shape_is_stable() {
         const STORED: &str = r#"[
@@ -893,7 +808,6 @@ mod tests {
                 ..
             }
         ));
-        // A node skipped before it ever ran has no start timestamp.
         assert!(matches!(
             nodes[3].execution(),
             NodeExecution::Finished {

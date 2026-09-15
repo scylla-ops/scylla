@@ -176,8 +176,6 @@ async fn delete_then_find_returns_not_found(pool: PgPool) {
     ));
 }
 
-/// Persist a cron trigger with a pre-set `next_fire_at` (the scheduler normally
-/// owns this; tests set it directly to drive the claim path).
 async fn cron_trigger_at(
     repo: &PgTriggerRepository,
     pipeline: &Pipeline,
@@ -198,15 +196,11 @@ async fn list_unscheduled_cron_selects_only_enabled_cron_without_next_fire(pool:
     let repo = PgTriggerRepository::new(pool);
     let now = clock::now();
 
-    // Eligible: enabled cron, no next_fire_at.
     let fresh = cron_trigger_at(&repo, &pipeline, "fresh", None).await;
-    // Ineligible: already scheduled.
     cron_trigger_at(&repo, &pipeline, "scheduled", Some(now)).await;
-    // Ineligible: disabled.
     let mut disabled = cron_trigger(&pipeline, "disabled");
     disabled.disable();
     repo.create(&disabled, None).await.unwrap();
-    // Ineligible: webhook kind.
     let webhook = Trigger::create(
         pipeline.id().clone(),
         TriggerName::new("hook").unwrap(),
@@ -231,9 +225,7 @@ async fn claim_due_cron_claims_due_advances_and_excludes_others(pool: PgPool) {
     let advanced = now + Duration::hours(1);
 
     let due = cron_trigger_at(&repo, &pipeline, "due", Some(past)).await;
-    // Not due yet.
     cron_trigger_at(&repo, &pipeline, "later", Some(future)).await;
-    // Ineligible: disabled (structurally has no due time).
     let mut disabled = cron_trigger(&pipeline, "off");
     disabled.disable();
     repo.create(&disabled, None).await.unwrap();
@@ -243,14 +235,11 @@ async fn claim_due_cron_claims_due_advances_and_excludes_others(pool: PgPool) {
     let claimed = repo.claim_due_cron(now, 10, &compute).await.unwrap();
     assert_eq!(claimed.len(), 1, "only the enabled, due trigger is claimed");
     assert_eq!(claimed[0].id(), due.id());
-    // Returned pre-advance (its due time), so the caller can fire for that slot.
     assert_eq!(claimed[0].next_fire_at(), Some(past));
 
-    // Its next_fire_at was advanced in-tx, so it is no longer due.
     let reloaded = repo.find_by_id(due.id()).await.unwrap();
     assert_eq!(reloaded.next_fire_at(), Some(advanced));
 
-    // A second pass claims nothing — the occurrence was consumed exactly once.
     assert!(
         repo.claim_due_cron(now, 10, &compute)
             .await

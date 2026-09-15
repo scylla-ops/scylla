@@ -1,18 +1,4 @@
-//! The extension contract between the Scylla core and an edition binary.
-//!
-//! An edition (the Community binary in this repository, or a private
-//! Enterprise build) implements these traits and registers the implementations
-//! in an [`Extensions`] registry at startup. The core looks its extension
-//! points up by trait and never knows which edition it is running in.
-//!
-//! This crate deliberately depends on no other workspace crate: only the traits
-//! and the minimal types that appear in their signatures live here, so an
-//! implementation compiles outside this repository against a pinned tag
-//! without pulling the domain model, the database or the gRPC stack.
-//!
-//! Adding an extension point is adding a trait here. Nothing else in this crate
-//! changes: the registry is keyed by trait, so no field, method or parameter
-//! has to be added anywhere for a new point to be registered or looked up.
+//! Depends on no workspace crate so an out-of-tree edition builds against a pinned tag.
 
 pub mod quota;
 
@@ -22,12 +8,6 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// The implementations an edition provides, keyed by extension trait.
-///
-/// One entry per extension point: registering a second implementation of the
-/// same trait replaces the first. Cheap to clone (every entry is an `Arc`),
-/// so it can be handed to every service that needs it. A point that was not
-/// registered is simply absent; the core supplies its default.
 #[derive(Clone, Default)]
 pub struct Extensions {
     entries: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
@@ -39,24 +19,17 @@ impl Extensions {
         Self::default()
     }
 
-    /// Register `implementation` as the edition's implementation of `T`,
-    /// replacing any previous one.
-    ///
-    /// `T` is the extension trait, so the call names it:
-    /// `extensions.insert::<dyn QuotaPolicy>(Arc::new(MyQuota))`.
     pub fn insert<T: ?Sized + Send + Sync + 'static>(&mut self, implementation: Arc<T>) {
         self.entries
             .insert(TypeId::of::<Arc<T>>(), Arc::new(implementation));
     }
 
-    /// Builder-style [`Extensions::insert`].
     #[must_use]
     pub fn with<T: ?Sized + Send + Sync + 'static>(mut self, implementation: Arc<T>) -> Self {
         self.insert(implementation);
         self
     }
 
-    /// The registered implementation of `T`, if the edition provided one.
     #[must_use]
     pub fn get<T: ?Sized + Send + Sync + 'static>(&self) -> Option<Arc<T>> {
         self.entries

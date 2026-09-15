@@ -1,34 +1,22 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use serde::{Deserialize, Serialize};
 
-/// Which shell interprets a [`Step::Script`]. Runs with fail-fast semantics so a
-/// failing line aborts the script with a non-zero exit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Shell {
-    /// POSIX `/bin/sh` — always present in the agent image.
     #[default]
     Sh,
-    /// `/bin/bash` — requires bash in the agent base image.
     Bash,
 }
 
-/// What a pipeline node actually runs. Either a direct process exec (no shell,
-/// deterministic, injection-proof) or a shell script (the ergonomic default).
-///
-/// Serialized with an internal `kind` tag so the persisted JSONB blob is
-/// self-describing: `{"kind":"exec",...}` / `{"kind":"script",...}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Step {
-    /// `command` resolved via PATH, `args` a literal argv vector.
     Exec { command: String, args: Vec<String> },
-    /// A (possibly multi-line) shell script run via `shell`.
     Script { script: String, shell: Shell },
 }
 
 impl Step {
-    /// Build a direct-exec step. The command must be non-empty.
     pub fn exec(command: String, args: Vec<String>) -> DomainResult<Self> {
         if command.trim().is_empty() {
             return Err(DomainError::validation("Exec command cannot be empty"));
@@ -36,7 +24,6 @@ impl Step {
         Ok(Self::Exec { command, args })
     }
 
-    /// Build a shell-script step. The script must be non-empty.
     pub fn script(script: String, shell: Shell) -> DomainResult<Self> {
         if script.trim().is_empty() {
             return Err(DomainError::validation("Script cannot be empty"));

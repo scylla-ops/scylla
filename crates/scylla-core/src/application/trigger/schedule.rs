@@ -3,24 +3,11 @@ use crate::domain::trigger::Trigger;
 use crate::domain::trigger::TriggerSource;
 use chrono::{DateTime, Utc};
 
-/// Computes cron occurrences. Kept as an application port so the domain stays
-/// free of a cron library: `CronSpec` validates only the 5-field *shape*, while
-/// semantic parsing and next-occurrence math live in the infrastructure
-/// implementation. All times are UTC (v0.3 has no per-tenant timezone).
 pub trait CronSchedule: Send + Sync {
-    /// The next occurrence strictly after `after`. Errors when the expression is
-    /// syntactically 5-field-shaped but semantically invalid (e.g. `"99 * * * *"`),
-    /// which the shape check at create time cannot catch.
     fn next_after(&self, expression: &str, after: DateTime<Utc>) -> DomainResult<DateTime<Utc>>;
 }
 
-/// THE single source of a trigger's schedule timing: the cron's next occurrence
-/// strictly after `now`, or `None` for a webhook (push-driven, never scheduled).
-/// Every path that (re)anchors `next_fire_at` — create, update, re-enable, the
-/// scheduler's seed, and the scheduler's claim/advance — routes through here, so
-/// there is exactly one rescheduling rule. Errors propagate a semantically
-/// invalid cron expression (e.g. `"99 * * * *"`) to the caller, giving create /
-/// update validation for free.
+/// The single rescheduling rule: create, update, re-enable, seed and claim all route here.
 pub fn next_fire_time(
     trigger: &Trigger,
     schedule: &dyn CronSchedule,
@@ -39,8 +26,6 @@ mod tests {
     use crate::domain::ids::PipelineId;
     use crate::domain::trigger::{CronSpec, TriggerName, WebhookSpec};
 
-    /// Fixed +1h for any expression, except one starting with `99` (semantically
-    /// invalid but 5-field-shaped) which it rejects like the real service would.
     struct StubSchedule;
     impl CronSchedule for StubSchedule {
         fn next_after(&self, expr: &str, after: DateTime<Utc>) -> DomainResult<DateTime<Utc>> {
@@ -88,8 +73,6 @@ mod tests {
 
     #[test]
     fn invalid_expression_propagates_error() {
-        // 5-field shape passes CronSpec, but the schedule rejects it → caller sees
-        // the error (this is what gives create/update validation).
         assert!(next_fire_time(&cron("99 * * * *"), &StubSchedule, now()).is_err());
     }
 }

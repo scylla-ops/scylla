@@ -101,7 +101,6 @@ async fn touch_last_seen_upserts_and_self_heals(pool: PgPool) {
     let app_repo = PgAppRepository::new(pool.clone());
     let agent_repo = PgAgentRepository::new(pool.clone());
 
-    // App exists but has no agents row yet (e.g. legacy / pre-migration agent).
     let app = App::create(org.id().clone(), AppName::new("legacy").unwrap());
     let credential = default_credential(&app);
     app_repo.create_app(&app, &credential).await.unwrap();
@@ -205,8 +204,6 @@ async fn agent_stats_aggregate_jobs_by_status(pool: PgPool) {
 
     let mk = |status: JobStatus| {
         let now = clock::now();
-        // Synthesize timestamps consistent with the status so the reconstructed
-        // state is valid (a terminal job always has a finish time, etc.).
         let (started_at, finished_at) = match status {
             JobStatus::Pending => (None, None),
             JobStatus::Running => (Some(now), None),
@@ -312,8 +309,6 @@ async fn agent_stats_partition_total_and_summarize_durations(pool: PgPool) {
     assert_eq!(stats.orphaned, 1);
     assert_eq!(stats.cancelled, 1);
 
-    // percentile_cont interpolates over [1000, 2000, 3000, 4000]; the
-    // never-started cancelled job is excluded.
     assert_eq!(stats.median_duration_ms, Some(2500));
     assert_eq!(stats.p95_duration_ms, Some(3850));
 
@@ -371,7 +366,6 @@ async fn deleting_agent_keeps_jobs_and_nulls_attribution(pool: PgPool) {
     job.assign_agent(app.id().clone());
     let job = job_repo.create(&job).await.unwrap();
 
-    // Deleting the app cascades the agents row; the job survives with NULL.
     app_repo.delete(app.id()).await.unwrap();
 
     assert!(agent_repo.find_by_app_id(app.id()).await.is_err());

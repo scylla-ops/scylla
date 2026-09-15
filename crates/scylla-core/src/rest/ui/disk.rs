@@ -1,6 +1,3 @@
-//! `[ui].dir`: serve a `dist/` from disk through `ServeDir`, with the same cache
-//! headers as the embedded mode.
-
 use super::cache;
 use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
@@ -16,8 +13,6 @@ pub(super) fn service(
 + Send
 + Sync
 + 'static {
-    // Unknown paths fall back to `index.html`: a deep link into the SPA, which
-    // React Router owns.
     let files = ServeDir::new(dir).fallback(ServeFile::new(dir.join("index.html")));
     tower::service_fn(move |request: Request| {
         let files = files.clone();

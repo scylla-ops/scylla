@@ -45,7 +45,6 @@ async fn provision_then_find_list_and_delete(pool: PgPool) {
     let list = repo.list_by_organization(org.id()).await.unwrap();
     assert_eq!(list.len(), 1);
 
-    // The initial agent grant is persisted in the same transaction.
     let grants = PgGrantRepository::new(pool.clone())
         .list_all()
         .await

@@ -89,8 +89,6 @@ pub enum Scope<'a> {
     Organization(&'a OrganizationId),
 }
 
-/// Row shape for `SELECT ... FROM pipelines`. `query_as!` macro expects fields
-/// matching column names in order and types.
 #[derive(sqlx::FromRow)]
 struct PipelineRow {
     id: String,

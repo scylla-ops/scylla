@@ -31,27 +31,13 @@ impl Agent {
         Self { config }
     }
 
-    /// Borrow the underlying agent configuration.
     #[must_use]
     pub fn config(&self) -> &AgentConfig {
         &self.config
     }
 
-    /// Connect to the control plane and serve dispatched jobs, reconnecting with
-    /// exponential backoff when the stream drops (e.g. the control plane
-    /// restarts). Gives up after `max_reconnect_attempts` consecutive failures
-    /// (`0` = forever).
-    ///
-    /// Two refinements over a naive retry loop:
-    /// - A **terminal** rejection (`Unauthenticated` / `PermissionDenied` /
-    ///   `NotFound` — a revoked secret, disabled app, or deleted agent) stops the
-    ///   agent immediately. Retrying can't fix bad credentials; doing so would
-    ///   hammer the control plane forever.
-    /// - The failure counter only resets after a connection that *stayed up*
-    ///   (≥ [`MIN_UPTIME_FOR_RESET_SECS`]). A connect-then-instant-close loop
-    ///   (server drops us right after open) is counted as a failure so the
-    ///   exponential backoff and `max` cap actually engage, instead of a tight
-    ///   ~1/s reconnect spin with the counter perpetually reset to zero.
+    /// A terminal rejection (revoked secret, disabled app, deleted agent) stops the agent: retrying cannot fix credentials.
+    /// The failure counter resets only after a connection that stayed up, so a connect-then-close loop still backs off.
     pub async fn run(&self) -> Result<(), AgentError> {
         let base = self.config.reconnect_backoff_secs;
         let max = self.config.max_reconnect_attempts;
@@ -104,9 +90,6 @@ impl Agent {
         }
     }
 
-    /// Build a channel, exchange credentials for a bearer token, and open the
-    /// agent stream. Returns the inbound (server→agent) stream and the
-    /// up-stream sender (agent→server).
     async fn connect(&self) -> Result<(Streaming<AgentDown>, mpsc::Sender<AgentUp>), AgentError> {
         let url = self.config.control_plane_url.clone();
         let mut endpoint =
@@ -114,18 +97,13 @@ impl Agent {
                 url: url.clone(),
                 message: e.to_string(),
             })?;
-        // Keepalive so a half-open connection (proxy/NAT idle drop, or a control
-        // plane that vanished without a FIN) is detected instead of hanging the
-        // agent forever: pings while idle, and a missed pong tears the stream
-        // down so the outer reconnect loop kicks in.
+        // Keepalive: a half-open connection (NAT drop, control plane gone without FIN) must not hang the agent.
         endpoint = endpoint
             .http2_keep_alive_interval(Duration::from_secs(20))
             .keep_alive_timeout(Duration::from_secs(10))
             .keep_alive_while_idle(true)
             .tcp_keepalive(Some(Duration::from_secs(30)));
-        // An https:// control plane terminates TLS at the proxy (which then
-        // speaks h2c to the backend); load the host's native roots so the
-        // handshake succeeds. Plain http:// (local dev) stays cleartext h2c.
+        // https:// terminates at the proxy; load native roots. http:// stays h2c.
         if url.starts_with("https://") {
             endpoint = endpoint.tls_config(ClientTlsConfig::new().with_native_roots())?;
         }
@@ -157,9 +135,6 @@ impl Agent {
         Ok((inbound, up_tx))
     }
 
-    /// Run dispatched jobs until the stream ends. Returns `Some(status)` when the
-    /// stream ended with a **terminal** gRPC code (the caller must stop, not
-    /// retry); `None` on a clean close or a transient error (caller reconnects).
     async fn serve(
         &self,
         mut inbound: Streaming<AgentDown>,
@@ -177,8 +152,6 @@ impl Agent {
                             nodes = dispatch.nodes.len(),
                             "received job"
                         );
-                        // Collect secret-sourced values to scrub from logs before
-                        // the nodes are consumed by `to_domain_nodes`.
                         let masked_values: Vec<String> = dispatch
                             .nodes
                             .iter()
@@ -189,9 +162,7 @@ impl Agent {
                         let nodes = match to_domain_nodes(dispatch.nodes) {
                             Ok(nodes) => nodes,
                             Err(e) => {
-                                // Silently skipping would strand the job in
-                                // `pending` forever (it is already assigned to
-                                // this agent) — fail it upstream instead.
+                                // Skipping would strand the job in `pending`: it is already assigned to this agent.
                                 warn!(%job_id, error = %e, "invalid dispatch nodes, failing job");
                                 let publisher = StatusPublisher::new(up_tx.clone(), job_id.clone());
                                 if let Err(pe) = publisher.emit(JobEvent::JobStarted).await {
@@ -214,11 +185,7 @@ impl Agent {
                             self.config.keep_workspace,
                             masked_values,
                         );
-                        // V1: sequential — finish the job before accepting the next.
                         if let Err(e) = executor.run(nodes).await {
-                            // The JobReporter inside run() already pushed the
-                            // terminal JobFailed upstream — this log is local
-                            // operator context only.
                             error!(%job_id, error = %e, "job execution failed");
                         }
                     }
@@ -255,15 +222,9 @@ async fn send_hello(up_tx: &mpsc::Sender<AgentUp>) {
     }
 }
 
-/// Seconds an agent stream must stay up before we treat the connection as
-/// healthy and reset the reconnect-failure counter.
 const MIN_UPTIME_FOR_RESET_SECS: u64 = 5;
-/// Upper bound on the exponential reconnect backoff.
 const MAX_BACKOFF_SECS: u64 = 60;
 
-/// Exponential backoff capped at [`MAX_BACKOFF_SECS`]. `failures == 0` (a healthy
-/// reconnect) waits the base interval; each further consecutive failure doubles
-/// it, up to 64× the base or the cap, whichever is smaller.
 fn backoff_delay(base_secs: u64, failures: u32) -> Duration {
     let shift = failures.saturating_sub(1).min(6);
     let secs = base_secs
@@ -272,8 +233,6 @@ fn backoff_delay(base_secs: u64, failures: u32) -> Duration {
     Duration::from_secs(secs)
 }
 
-/// gRPC codes that mean "this will never succeed as-is" — a revoked/disabled
-/// secret, an inactive app, or a deleted agent. Retrying only adds load.
 fn is_terminal_code(code: Code) -> bool {
     matches!(
         code,
@@ -304,8 +263,6 @@ fn to_domain_nodes(nodes: Vec<AgentNode>) -> Result<Vec<PipelineNode>, String> {
                 .env
                 .into_iter()
                 .map(|e| {
-                    // The agent only ever receives already-resolved literals
-                    // (secret refs are resolved control-plane-side at dispatch).
                     let key = EnvKey::new(&e.key).map_err(|err| err.to_string())?;
                     Ok::<_, String>(EnvVar::literal(key, e.value))
                 })

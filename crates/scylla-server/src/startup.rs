@@ -36,8 +36,6 @@ use tokio::sync::Notify;
 use tonic_async_interceptor::async_interceptor;
 use tower_http::cors::CorsLayer;
 
-// ── Concrete type aliases ──────────────────────────────────────────────
-
 pub(crate) type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
 pub(crate) type SharedPermissionChecker = Arc<PermissionChecker>;
 pub(crate) type SharedGrantUc =
@@ -146,8 +144,6 @@ pub(crate) type SharedTriggerFireUc = Arc<
 pub(crate) type SharedWebhookIngressUc =
     Arc<WebhookIngressUseCases<PgTriggerRepository, PgTriggerDeliveryRepository>>;
 
-// ── Services container ─────────────────────────────────────────────────
-
 pub(crate) struct Services {
     pub auth_uc: SharedAuthUc,
     #[cfg(feature = "register")]
@@ -171,20 +167,15 @@ pub(crate) struct Services {
     pub agent_repo: Arc<PgAgentRepository>,
     pub dispatch_uc: SharedDispatchUc,
     pub agent_registry: Arc<InMemoryAgentRegistry>,
-    /// Poked by the agent handler on connect to wake the pending-job scheduler.
     pub pending_signal: Arc<Notify>,
     pub job_log_stream: Arc<InMemoryJobLogStream>,
     pub grant_uc: SharedGrantUc,
     pub role_uc: SharedRoleUc,
-    /// The Cedar engine, also handed to features as their authorization ports.
     pub permission_checker: SharedPermissionChecker,
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
 }
 
-/// Build every use case over the Postgres adapters (on the pool the binary
-/// opened), the Cedar engine and the edition's `extensions`, run the bootstrap,
-/// and start the background schedulers.
 pub(crate) async fn init_services(
     config: &ControlPlaneConfig,
     db: PgPool,
@@ -209,8 +200,6 @@ pub(crate) async fn init_services(
     let grant_repo = Arc::new(PgGrantRepository::new(db.clone()));
     let hash_service = Arc::new(Argon2HashService::new());
 
-    // Project-secret encryption. Disabled (errors on use) when no master key is
-    // configured; the rest of the server still boots.
     let secret_cipher: Arc<dyn SecretCipher> = Arc::new(ChaChaSecretCipher::from_hex_key(
         config.secrets.as_ref().map(|s| s.master_key.as_str()),
     )?);
@@ -219,7 +208,6 @@ pub(crate) async fn init_services(
         secret_cipher.clone(),
     ));
 
-    // Persistent audit trail; writes happen out-of-band on a background task.
     let audit_log: Arc<dyn AuditLog> = Arc::new(PgAuditLog::new(db.clone()));
 
     let permission_checker = Arc::new(
@@ -285,8 +273,7 @@ pub(crate) async fn init_services(
         job_log_repo.clone(),
         permission_checker.clone(),
     ));
-    // Built before app_uc/grant_uc so disabling, deleting, or revoking an app's
-    // grant can drop its live agent stream immediately.
+    // Built before app_uc and grant_uc: they drop an app's live stream on disable, delete or revoke.
     let agent_registry = Arc::new(InMemoryAgentRegistry::new());
     let app_uc = Arc::new(AppUseCases::new(
         app_repo.clone(),
@@ -325,13 +312,10 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
     ));
     if let Some(cfg) = &config.bootstrap {
-        // Bootstrap mints a System-scoped `system-admin` grant via the grant use
-        // case (replaces the former global-role assignment).
         let bootstrap_uc = BootstrapUseCases::new(user_uc.clone(), grant_uc.clone());
         scylla_core::bootstrap::bootstrap_admin(&bootstrap_uc, cfg).await?;
     }
 
-    // Mailer: real SMTP when configured, else a no-op (logs only).
     let mailer: Arc<dyn Mailer> = match &config.mail {
         Some(m) => Arc::new(
             LettreMailer::new(
@@ -358,7 +342,6 @@ pub(crate) async fn init_services(
         role_repo.clone(),
     ));
 
-    // GitHub OAuth: only wired when the app is configured with credentials.
     let oauth_uc = match &config.oauth.github {
         Some(gh) => {
             let provider = GitHubOAuthProvider::new(
@@ -380,9 +363,6 @@ pub(crate) async fn init_services(
         None => None,
     };
 
-    // In-process agent dispatch + job-log live-tail (mono-instance): jobs are
-    // pushed to a connected agent's stream and log lines fan out through a
-    // per-job broadcast. No message broker. (agent_registry is built above.)
     let job_log_stream = Arc::new(InMemoryJobLogStream::new());
     let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
         job_log_repo.clone(),
@@ -396,8 +376,6 @@ pub(crate) async fn init_services(
 
     let trigger_repo = Arc::new(PgTriggerRepository::new(db.clone()));
     let trigger_delivery_repo = Arc::new(PgTriggerDeliveryRepository::new(db.clone()));
-    // One cron-schedule service, shared by the trigger CRUD (anchors next_fire_at
-    // on create/update/re-enable) and the firing scheduler (seed + claim).
     let cron_schedule: Arc<dyn CronSchedule> = Arc::new(CronScheduleService::new());
     let trigger_uc = Arc::new(TriggerUseCases::new(
         trigger_repo.clone(),
@@ -419,8 +397,6 @@ pub(crate) async fn init_services(
         dispatch_uc.clone(),
         permission_checker.clone(),
     ));
-    // Webhook ingress: shares the trigger-runner fire path; firing is the
-    // TriggerFiring trait object the cron scheduler also uses.
     let webhook_ingress_uc = Arc::new(WebhookIngressUseCases::new(
         trigger_repo.clone(),
         trigger_delivery_repo.clone(),
@@ -428,12 +404,7 @@ pub(crate) async fn init_services(
         trigger_fire_uc.clone() as Arc<dyn TriggerFiring>,
     ));
 
-    // Cron firing engine: each tick seeds first-occurrences for new cron triggers
-    // and fires the due ones (each as the org's trigger-runner App, through the
-    // one RunPipeline check). Like the pending-job scheduler it is detached for
-    // the process lifetime; the first interval tick fires immediately, so a
-    // pre-restart backlog is picked up at boot. A 15s tick bounds firing latency
-    // to well under cron's one-minute granularity without busy-polling.
+    // The first tick fires immediately so a pre-restart backlog is picked up; 15s keeps latency under cron's minute.
     {
         let firing: Arc<dyn TriggerFiring> = trigger_fire_uc.clone();
         let scheduler =
@@ -448,10 +419,6 @@ pub(crate) async fn init_services(
         });
     }
 
-    // Pending-job scheduler: places jobs that were minted while no worker was
-    // connected. Woken by the agent handler on connect (`pending_signal`), on a
-    // periodic tick as a safety net, and once at boot to pick up a pre-restart
-    // backlog. Runs for the process lifetime.
     let pending_signal = Arc::new(Notify::new());
     {
         let scheduler = PendingJobScheduler::new(
@@ -475,13 +442,6 @@ pub(crate) async fn init_services(
         });
     }
 
-    // Orphaned-job reaper: a job is `running` only while its agent owns it. If
-    // that agent's stream drops without a terminal report (crash, network, or a
-    // control plane restart that forgets every live stream), the job would sit
-    // `running` forever. Level-triggered reconciliation orphans every running
-    // job whose agent is not currently connected: once at boot (nothing is
-    // connected yet, so every pre-restart running job is cleared) and on a
-    // periodic tick.
     {
         let reaper = JobReaper::new(job_repo.clone());
         let registry = agent_registry.clone();
@@ -529,15 +489,10 @@ pub(crate) async fn init_services(
     })
 }
 
-// ── CORS builder ───────────────────────────────────────────────────────
-
 pub(crate) fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLayer {
     let mut layer = CorsLayer::new();
 
     if cors.allow_origins.iter().any(|o| o == "*") {
-        // Wildcard origin reflected alongside the `authorization` header is a
-        // permissive posture for a token-authenticated API. Fine for local dev,
-        // dangerous in production — make the choice loud rather than silent.
         tracing::warn!(
             "CORS allow_origins contains '*': any origin is accepted. Do NOT use this in production — set explicit origins in config."
         );
@@ -577,8 +532,6 @@ pub(crate) fn build_cors_layer(cors: &scylla_core::config::CorsConfig) -> CorsLa
     layer
 }
 
-// ── Graceful shutdown signal helper ────────────────────────────────────
-
 pub(crate) async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
@@ -603,17 +556,8 @@ pub(crate) async fn shutdown_signal() {
     }
 }
 
-// ── The server ─────────────────────────────────────────────────────────
-
-/// Build every surface onto one axum router and serve it on one socket: the web
-/// UI, the gRPC API, its gRPC-Web translation, reflection, and the inbound
-/// webhook ingress.
-///
-/// The layering is the load-bearing part. `tonic_web::GrpcWebLayer` answers HTTP
-/// 400 to any HTTP/1.1 request that is not gRPC-Web, so it is scoped to the gRPC
-/// routes and never applied to the router as a whole — and because
-/// `Router::layer` wraps the fallback too, the UI fallback must be installed
-/// *after* that layer, which is what `rest::ui::attach` does last.
+/// `GrpcWebLayer` answers 400 to any non-gRPC-Web HTTP/1.1 request, so it is scoped to the gRPC routes;
+/// `Router::layer` wraps the fallback too, so the UI fallback is attached last.
 pub(crate) async fn run_server<F>(
     config: &ControlPlaneConfig,
     services: &Services,
@@ -637,8 +581,6 @@ where
     use scylla_proto::oauth::v1::oauth_service_server::OauthServiceServer;
     #[cfg(feature = "register")]
     use scylla_proto::registration::v1::registration_service_server::RegistrationServiceServer;
-    // `agent` and `agent_admin` are one package now (`scylla.agent.v1`), so both
-    // stubs come from the same module.
     use scylla_proto::{
         agent::v1::agent_admin_service_server::AgentAdminServiceServer,
         agent::v1::agent_service_server::AgentServiceServer,
@@ -700,10 +642,7 @@ where
         services.session_repo.clone(),
         services.app_token_repo.clone(),
     ));
-    // Expose BOTH reflection variants so any client works: v1 (current spec) and
-    // v1alpha (older clients — grpcurl defaults, some MCP/reflection bridges).
-    // They are distinct gRPC services (grpc.reflection.v1[alpha].ServerReflection),
-    // so they coexist on the same server without a route clash.
+    // v1 and v1alpha reflection both: grpcurl and some bridges default to v1alpha.
     let reflection = || {
         let mut builder = tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(scylla_proto::FILE_DESCRIPTOR_SET);
@@ -721,19 +660,14 @@ where
 
     let auth_service = AuthServiceServer::new(auth_handler);
 
-    // Public app credential exchange — the secret is the credential, so no
-    // interceptor; it mints the bearer token apps use on every other call.
     let app_auth_service = AppAuthServiceServer::new(app_auth_handler);
 
-    // Public self-service signup — compiled in only with the `register` feature.
     #[cfg(feature = "register")]
     let registration_service =
         RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
 
-    // Public invitation acceptance — the token is the credential, so no interceptor.
     let invitation_accept_service = InvitationAcceptServiceServer::new(invitation_handler.clone());
 
-    // Public GitHub OAuth — present only when configured with credentials.
     let oauth_service = services
         .oauth_uc
         .as_ref()
@@ -771,12 +705,10 @@ where
         .layer(auth_interceptor.clone())
         .service(SecretServiceServer::new(secret_handler));
 
-    // Authenticated agent stream (app token). Presence = the open stream.
     let agent_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(AgentServiceServer::new(agent_handler));
 
-    // Authenticated agent management + introspection (dashboard).
     let agent_admin_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(AgentAdminServiceServer::new(agent_admin_handler));
@@ -789,13 +721,10 @@ where
         .layer(auth_interceptor.clone())
         .service(RoleServiceServer::new(role_handler));
 
-    // Authenticated invitation management (org-admins).
     let invitation_service = ServiceBuilder::new()
         .layer(auth_interceptor.clone())
         .service(InvitationServiceServer::new(invitation_handler));
 
-    // Collect the gRPC services into `Routes` rather than straight onto a tonic
-    // `Server`, so they can be merged with the HTTP surfaces into one router.
     let mut grpc = Routes::builder();
     grpc.add_service(reflection_v1)
         .add_service(reflection_v1alpha)
@@ -816,32 +745,25 @@ where
         .add_service(invitation_service)
         .add_service(invitation_accept_service);
 
-    // Public self-service signup — only registered when built with `register`.
     #[cfg(feature = "register")]
     grpc.add_service(registration_service);
 
-    // GitHub OAuth is only registered when configured with credentials.
     if let Some(svc) = oauth_service {
         grpc.add_service(svc);
     }
 
-    // The edition's own services, on the same routes and the same layers.
     for add in surface.grpc {
         add(&mut grpc, &auth_interceptor);
     }
 
-    // Both layers are scoped to the gRPC routes: `GrpcWebLayer` because it 400s
-    // everything else, and the gRPC trace classifier because it reads
-    // `grpc-status` — on a static asset it would call every response a success.
+    // Scoped to the gRPC routes: `GrpcWebLayer` 400s everything else, and the gRPC classifier reads `grpc-status`.
     let grpc = grpc
         .routes()
         .into_axum_router()
         .layer(GrpcWebLayer::new())
         .layer(TraceLayer::new_for_grpc());
 
-    // The plain-HTTP surfaces get the status-based classifier instead. The
-    // webhook router sets no fallback, so merging it into the tonic-derived
-    // router (which has one) is safe — axum only panics when both do.
+    // The webhook router sets no fallback, so merging into the tonic router (which has one) is safe.
     let http = surface
         .http
         .into_iter()
@@ -851,17 +773,12 @@ where
         )
         .layer(TraceLayer::new_for_http());
 
-    // The liveness probe is a plain route with no layer of its own, so it goes
-    // in before the fallback and outside the traced surfaces.
     let app = grpc.merge(http).merge(scylla_core::rest::health::router());
 
-    // `attach` installs the UI as the fallback, replacing the `UNIMPLEMENTED`
-    // catch-all that came with tonic's `Routes`. It must stay last.
+    // Must stay last.
     let app = scylla_core::rest::ui::attach(app, &config.ui);
 
-    // CORS stays outermost, as it was. It is no longer load-bearing for the UI —
-    // same origin now — but third-party API clients and the Vite dev server on
-    // :5173 still rely on it.
+    // CORS is no longer needed by the UI (same origin) but third-party clients and Vite on :5173 rely on it.
     let mut server = Server::builder()
         .accept_http1(true)
         .layer(build_cors_layer(&config.cors));
@@ -874,8 +791,6 @@ where
                 .serve_with_shutdown(config.server.address, shutdown)
                 .await?;
         }
-        // Our own acceptor rather than `Server::tls_config`, so the ALPN list can
-        // include http/1.1; see the module docs on `scylla_core::tls`.
         Some(tls) => {
             let incoming =
                 scylla_core::tls::incoming(config.server.address, scylla_core::tls::acceptor(tls)?)

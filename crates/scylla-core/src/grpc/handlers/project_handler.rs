@@ -113,8 +113,6 @@ impl<
         }))
     }
 
-    /// Sets the active flag to the requested value instead of flipping it, so a
-    /// retried call lands on the state the caller asked for.
     async fn set_project_active(
         &self,
         request: Request<SetProjectActiveRequest>,

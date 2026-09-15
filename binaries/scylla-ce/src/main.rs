@@ -1,7 +1,3 @@
-//! The Community Edition binary: the public server with its defaults. Every
-//! step below is edition-independent; an edition differs by what it adds to
-//! the [`Server`] between `new` and `serve`, and this one adds nothing.
-
 use scylla_core::config::ControlPlaneConfig;
 use scylla_server::Server;
 use scylla_server::cli::{self, Cli};

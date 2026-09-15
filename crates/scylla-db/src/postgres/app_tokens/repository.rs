@@ -59,10 +59,7 @@ pub mod queries {
         Ok(())
     }
 
-    /// Resolve a token to its `App`, but only while its minting secret is still
-    /// enabled and its app is still active. A disabled/revoked secret or an
-    /// inactive app makes the join return nothing → the token reads as not found,
-    /// so credential changes take effect on the very next request.
+    /// The join filters on the secret being enabled and the app active, so a change applies on the next request.
     pub async fn find_by_token<'e, E>(executor: E, token: &str) -> DomainResult<AppToken>
     where
         E: PgExecutor<'e>,
@@ -79,8 +76,7 @@ pub mod queries {
         )
         .fetch_one(executor)
         .await
-        // Never echo the raw bearer token into the error id — it can flow into
-        // logs / tracing fields / gRPC status. Use a non-secret placeholder.
+        // Never echo the bearer token into the error id.
         .not_found_as("AppToken", "<token>")?;
         Ok(AppToken::from_persistence(
             AppTokenId::new(rec.id),

@@ -5,9 +5,6 @@ use crate::domain::user::User;
 use async_trait::async_trait;
 use scylla_auth::authz::Grant;
 
-/// Persistence for invitations. `accept_atomic` performs the join (optionally
-/// creating the user, always writing the grant that joins them) in a single
-/// transaction.
 #[async_trait]
 pub trait InvitationRepository: Send + Sync {
     async fn create(&self, invite: &Invitation) -> DomainResult<()>;
@@ -15,10 +12,7 @@ pub trait InvitationRepository: Send + Sync {
     async fn find_by_token(&self, token: &str) -> DomainResult<Invitation>;
     async fn list_pending(&self, org_id: &OrganizationId) -> DomainResult<Vec<Invitation>>;
     async fn revoke(&self, id: &InvitationId) -> DomainResult<()>;
-    /// Atomic accept: insert `new_user` if Some, write the grant that puts them
-    /// in the organization, and mark the invitation accepted — all or nothing.
-    /// The grant is not optional: it *is* the join, so an accept that wrote no
-    /// grant would leave the invitee unable to see the organization at all.
+    /// The grant is the join: an accept that wrote none would leave the invitee unable to see the org.
     async fn accept_atomic(
         &self,
         invite_id: &InvitationId,

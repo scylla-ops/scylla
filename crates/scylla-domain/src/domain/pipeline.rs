@@ -23,21 +23,14 @@ use std::collections::HashSet;
 pub struct PipelineNode {
     id: NodeId,
     deps: Vec<NodeId>,
-    /// Working directory for the step, relative to the per-job workspace root.
-    /// `None` runs in the workspace root.
     #[serde(default)]
     working_dir: Option<WorkingDir>,
-    /// Node-scoped environment overlay (literal values).
     #[serde(default)]
     env: Vec<EnvVar>,
-    /// What the node runs: a direct exec or a shell script.
     step: Step,
 }
 
 impl PipelineNode {
-    /// Assemble a node. The `step`, `working_dir`, and `env` are already
-    /// validated by their own constructors/types, so this only wires them
-    /// together; DAG-level checks live in [`Pipeline::create`].
     #[must_use]
     pub fn new(
         id: NodeId,
@@ -92,9 +85,6 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    /// Reconstitute a `Pipeline` from persistent storage without re-running
-    /// DAG validation. Bypassing validation is safe here because nodes were
-    /// validated at create/update time and JSONB is round-tripped verbatim.
     #[must_use]
     pub fn from_persistence(
         id: PipelineId,
@@ -188,13 +178,8 @@ impl Pipeline {
             }
         }
 
-        // Cycle detection runs last, on purpose: a dangling or self dependency
-        // also leaves a node permanently unready, so running those checks first
-        // is what makes the error below accurate.
-        //
-        // The duplicate-id and duplicate-dependency checks above are NOT made
-        // redundant by this one: both of those graphs drain cleanly. Removing
-        // either check would let them through silently. See DagPlan::drains_completely.
+        // Cycle check last: dangling and self deps never drain either, and the checks above own their errors.
+        // Duplicate ids and duplicate deps drain cleanly, so the checks above are their only rejection.
         if !DagPlan::build(nodes).drains_completely() {
             return Err(DomainError::business_rule("Cycle detected in pipeline"));
         }
@@ -289,12 +274,7 @@ mod tests {
         Pipeline::create(pipeline_name(), project_id(), nodes).unwrap_err()
     }
 
-    // The four tests below assert the error *variant*, not just `is_err()`.
-    // Structural problems are `Validation`, a cycle is a `BusinessRule`, and the
-    // gRPC mapper turns those into InvalidArgument and FailedPrecondition
-    // respectively: one tells a client its request is malformed, the other
-    // suggests retrying. Moving the cycle check ahead of the structural ones
-    // would silently swap them, and `is_err()` alone would stay green.
+    // The variant matters: Validation maps to InvalidArgument, BusinessRule to FailedPrecondition.
 
     #[test]
     fn rejects_cycle() {
@@ -314,15 +294,12 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_ids() {
-        // Not caught by cycle detection: this graph drains cleanly. This check
-        // is the only thing rejecting it. See DagPlan::drains_completely.
         let nodes = vec![action("a", &[]), action("a", &[])];
         assert!(matches!(create_err(nodes), DomainError::Validation(_)));
     }
 
     #[test]
     fn rejects_duplicate_deps() {
-        // Same: a repeated dependency drains cleanly, so only this check stops it.
         let nodes = vec![action("a", &[]), action("b", &["a", "a"])];
         assert!(matches!(create_err(nodes), DomainError::Validation(_)));
     }
@@ -355,14 +332,7 @@ mod tests {
         assert!(Step::exec("   ".into(), vec![]).is_err());
     }
 
-    /// Golden test for the `pipelines.nodes` JSONB column.
-    ///
-    /// The blob below is the on-disk shape. Renaming a field, changing a serde
-    /// tag, or dropping one of the two `#[serde(default)]` attributes would make
-    /// every pipeline already stored in a deployed database unreadable, and the
-    /// failure would surface as an opaque decode error at query time rather than
-    /// at compile time. This test is the only thing that turns that into a build
-    /// failure, so update it only together with a deliberate migration.
+    /// Golden: the on-disk shape of `pipelines.nodes`; change only with a migration.
     #[test]
     fn pipeline_nodes_jsonb_shape_is_stable() {
         const STORED: &str = r#"[
@@ -387,8 +357,6 @@ mod tests {
         assert_eq!(round_tripped, original, "serialized shape drifted");
     }
 
-    /// Rows written before `working_dir` and `env` existed omit both keys.
-    /// The two `#[serde(default)]` attributes are what keeps them readable.
     #[test]
     fn pipeline_nodes_jsonb_tolerates_missing_optional_keys() {
         const LEGACY: &str =

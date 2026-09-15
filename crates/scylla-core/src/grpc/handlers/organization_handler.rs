@@ -113,8 +113,6 @@ impl<
         }))
     }
 
-    /// Sets the active flag to the requested value, so a retried call lands on
-    /// the state the caller asked for instead of flipping it back.
     async fn set_organization_active(
         &self,
         request: Request<SetOrganizationActiveRequest>,

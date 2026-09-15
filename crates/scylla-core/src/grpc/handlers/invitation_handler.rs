@@ -36,8 +36,7 @@ where
     use_cases: Arc<InvitationUseCases<I, PS, O, U, H, S, PC>>,
 }
 
-// Manual Clone: only the `Arc` is cloned, so no `Clone` bound on the generics
-// (derive would wrongly require `Argon2HashService: Clone`, etc.).
+// Manual Clone: derive would require `Clone` on every generic.
 impl<I, PS, O, U, H, S, PC> Clone for InvitationHandler<I, PS, O, U, H, S, PC>
 where
     I: InvitationRepository,
@@ -55,8 +54,6 @@ where
     }
 }
 
-/// Domain status → proto enum. Total: every domain variant has a real proto
-/// variant, so `Unspecified` is never produced.
 fn status_to_proto(status: DomainInvitationStatus) -> InvitationStatus {
     match status {
         DomainInvitationStatus::Pending => InvitationStatus::Pending,

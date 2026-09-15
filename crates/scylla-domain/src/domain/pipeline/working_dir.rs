@@ -10,8 +10,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
             "Working directory must be relative to the job workspace",
         ));
     }
-    // Reject parent traversal so a node cannot escape its job workspace. The
-    // agent additionally canonicalizes and prefix-checks at spawn time.
     if s.split(['/', '\\']).any(|c| c == "..") {
         return Err(DomainError::validation(
             "Working directory must not contain `..`",
@@ -20,8 +18,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// A node's working directory, relative to the per-job workspace root. Rejects
-/// absolute paths and `..` traversal up front.
 #[nutype(
     sanitize(trim),
     validate(with = validate, error = DomainError),
@@ -30,7 +26,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
 pub struct WorkingDir(String);
 
 impl WorkingDir {
-    /// Construct from anything string-like.
     pub fn new(value: impl Into<String>) -> DomainResult<Self> {
         Self::try_new(value.into())
     }

@@ -25,14 +25,6 @@ use scylla_proto::trigger::v1::{
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
-/// gRPC surface for managing a pipeline's triggers. CRUD is delegated to
-/// [`TriggerUseCases`] (Cedar-gated by `manageTriggers`, with the create/update
-/// anti-escalation `runPipeline` check); manual firing is authorized against the
-/// caller's `runPipeline` on the trigger's pipeline, then goes through
-/// [`TriggerFireUseCases`], which runs as the org's trigger-runner App. On create,
-/// a webhook trigger's generated signing secret is returned ONCE in
-/// `webhook_secret`; the delivery URL lives inside the read model's webhook arm
-/// and is built from the configured ingress base URL.
 pub struct TriggerHandler<T, P, PR, A, H, PC, PS, J, W>
 where
     T: TriggerRepository,
@@ -47,10 +39,6 @@ where
 {
     use_cases: Arc<TriggerUseCases<T, P, PR, A, H, PC, PS>>,
     fire_uc: Arc<TriggerFireUseCases<T, P, PR, A, J, PS, W>>,
-    /// Public origin this instance is reachable at (e.g. `https://scylla.example.com`),
-    /// used to build `Trigger.webhook.url`. The ingress itself is always mounted;
-    /// this is `None` when `[webhook].public_base_url` is unset, and the URL is
-    /// then left empty rather than advertising an address we cannot know.
     webhook_base_url: Option<String>,
 }
 
@@ -78,8 +66,6 @@ where
         }
     }
 
-    /// Map a domain trigger to its proto read model, filling the webhook arm's
-    /// `url` from the configured ingress base URL.
     fn view(&self, trigger: &Trigger) -> ProtoTrigger {
         trigger_to_view(trigger, self.webhook_base_url.as_deref())
     }
@@ -118,7 +104,6 @@ where
 
         Ok(Response::new(CreateTriggerResponse {
             trigger: Some(self.view(&trigger)),
-            // Returned ONCE for webhook triggers; absent for cron.
             webhook_secret,
         }))
     }
@@ -228,22 +213,17 @@ where
         let caller = caller!(request);
         let id = TriggerId::new(&required(request.into_inner().trigger_id, "trigger_id")?);
 
-        // Manual fire is authorized inside the use case (`RunPipeline` on the
-        // trigger's pipeline), then runs as the org's trigger-runner App.
         let job = self
             .fire_uc
             .fire_now(&caller, &id)
             .await
             .map_err(domain_error_to_status)?;
 
-        // Only the minted job's id: fetch the job itself with JobService.GetJob.
         Ok(Response::new(FireTriggerNowResponse {
             job_id: wrap(job.id().to_string()),
         }))
     }
 }
-
-// ── proto → domain ───────────────────────────────────────────────────────────
 
 fn create_source_to_domain(
     source: Option<create_trigger_request::Source>,
@@ -303,8 +283,6 @@ fn proto_inputs_to_domain(inputs: Vec<ProtoTriggerInput>) -> Result<Vec<TriggerI
         .collect()
 }
 
-// ── domain → proto ───────────────────────────────────────────────────────────
-
 fn trigger_to_view(t: &Trigger, webhook_base_url: Option<&str>) -> ProtoTrigger {
     ProtoTrigger {
         trigger_id: wrap(t.id().to_string()),
@@ -332,7 +310,6 @@ fn activation_to_proto(activation: &TriggerActivation) -> proto_trigger::Activat
     }
 }
 
-/// The domain records `"ok"` on success and an error description otherwise.
 fn observation_to_proto(observation: &FireObservation) -> ProtoFireObservation {
     let result = if observation.status == "ok" {
         fire_observation::Result::Succeeded(fire_observation::Succeeded {})
@@ -347,9 +324,6 @@ fn observation_to_proto(observation: &FireObservation) -> ProtoFireObservation {
     }
 }
 
-/// Read-side source union. The delivery URL lives in the webhook arm and is
-/// built from the configured ingress base; an unconfigured ingress leaves it
-/// empty. A cron trigger has no URL field at all.
 fn source_to_proto(t: &Trigger, webhook_base_url: Option<&str>) -> proto_trigger::Source {
     match t.source() {
         TriggerSource::Cron(c) => proto_trigger::Source::Cron(proto_trigger::Cron {

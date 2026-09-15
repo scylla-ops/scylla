@@ -14,17 +14,12 @@ use uuid::Uuid;
 
 const DEFAULT_APP_TOKEN_DURATION_DAYS: i64 = 30;
 
-/// What a successful token issuance returns to the transport layer.
 pub struct AppTokenOutcome {
     pub token: String,
     pub expires_at: DateTime<Utc>,
 }
 
-/// Exchanges an App's id + the plaintext of any of its *enabled* secrets for a
-/// bearer token. Public (takes no `CallerContext`) — the secret is the
-/// credential, mirroring user login. An unknown app, an inactive app, a
-/// disabled/revoked secret, and a wrong secret all return the same opaque error
-/// so callers can't probe which apps or secrets exist.
+/// Unknown app, inactive app, disabled secret and wrong secret all return the same opaque error.
 #[derive(Constructor)]
 pub struct AppTokenUseCases<A, T, C, H>
 where
@@ -58,10 +53,7 @@ where
             return Err(invalid());
         }
 
-        // Accept the plaintext against any enabled secret. Verify all candidates
-        // (no early break) so timing doesn't leak which secret matched, but keep
-        // the matched one so the token is tied to it (revoke/disable that secret
-        // → this token dies).
+        // Verify every candidate, no early break, so timing does not leak which secret matched.
         let credentials = self
             .credential_repo
             .list_enabled_by_app(&app_id)

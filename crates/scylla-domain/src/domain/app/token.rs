@@ -2,12 +2,6 @@ use crate::domain::clock;
 use crate::domain::ids::{AppCredentialId, AppId, AppTokenId};
 use chrono::{DateTime, Duration, Utc};
 
-/// A bearer token issued to a machine [`App`](super::App) after it presents the
-/// plaintext of one of its secrets. Kept separate from user `Session`s: the
-/// auth interceptor resolves a token to an `App` principal. Carries the
-/// `secret_id` that minted it, so revoking that secret cascades the token away
-/// and disabling it lets the lookup reject the token at once. Cascades when its
-/// app (or that secret) is deleted.
 #[derive(Debug, Clone)]
 pub struct AppToken {
     id: AppTokenId,

@@ -1,5 +1,3 @@
-//! `Pipeline` test fixtures.
-
 use bon::bon;
 use chrono::{DateTime, Utc};
 
@@ -9,8 +7,6 @@ use crate::domain::pipeline::{NodeId, PipelineName, Step};
 use crate::domain::pipeline::{Pipeline, PipelineNode};
 use crate::domain::project::Project;
 
-/// Build a single pipeline node with the given id and deps. Defaults to an
-/// `echo <id>` exec step — non-empty by Pipeline rules.
 #[must_use]
 pub fn node(id: &str, deps: &[&str]) -> PipelineNode {
     PipelineNode::new(
@@ -29,7 +25,6 @@ pub struct PipelineBuilder;
 #[bon]
 #[allow(clippy::new_ret_no_self, clippy::must_use_candidate)]
 impl PipelineBuilder {
-    /// Default pipeline: a single trivial node `[a]`.
     #[builder(start_fn = new, finish_fn = build)]
     pub fn assemble(
         #[builder(start_fn)] project: &Project,

@@ -6,9 +6,6 @@ pub mod reaper;
 pub mod repository;
 pub mod use_case;
 
-/// The agent-to-control-plane job event vocabulary. Defined in the kernel so
-/// both binaries share one definition, re-exported here so callers keep naming
-/// it as part of the application layer.
 pub use scylla_domain::JobEvent;
 
 pub use log_repository::JobLogRepository;

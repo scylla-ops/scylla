@@ -1,5 +1,3 @@
-//! `Organization` test fixtures.
-
 use bon::bon;
 use chrono::{DateTime, Utc};
 

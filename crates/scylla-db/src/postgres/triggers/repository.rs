@@ -72,8 +72,6 @@ impl TriggerRepository for PgTriggerRepository {
     ) -> DomainResult<Vec<Trigger>> {
         let mut tx = self.pool.begin().await.to_domain()?;
 
-        // Lock the due rows; SKIP LOCKED so a concurrent pass/instance never waits
-        // on or double-claims the same trigger.
         let rows: Vec<TriggerRow> = sqlx::query_as!(
             TriggerRow,
             r#"
@@ -100,9 +98,7 @@ impl TriggerRepository for PgTriggerRepository {
         let mut claimed = Vec::with_capacity(rows.len());
         for row in rows {
             let trigger = Trigger::try_from(row)?;
-            // Advance to the next occurrence in the same tx so this occurrence is
-            // consumed exactly once. A trigger whose expression won't compute is
-            // left as-is and excluded (it was seeded valid, so this is defensive).
+            // Advanced in the same tx so the occurrence is consumed exactly once; an uncomputable one is left and excluded.
             let Ok(next) = compute_next(&trigger) else {
                 continue;
             };
@@ -127,9 +123,7 @@ impl TriggerRepository for PgTriggerRepository {
     }
 }
 
-/// Row shape for `SELECT ... FROM pipeline_triggers`. The denormalized `kind`
-/// column is written for indexing/routing but not read back — the source kind is
-/// recovered from the `source` JSONB tag.
+/// `kind` is written for indexing but never read back; the source kind comes from the JSONB tag.
 #[derive(sqlx::FromRow)]
 struct TriggerRow {
     id: String,
@@ -207,8 +201,6 @@ pub mod queries {
         Ok(trigger.clone())
     }
 
-    /// Read just the encrypted webhook secret (ingress path); normal reads never
-    /// select this column.
     pub async fn webhook_secret<'e, E>(executor: E, id: &TriggerId) -> DomainResult<Option<Vec<u8>>>
     where
         E: PgExecutor<'e>,
@@ -322,7 +314,6 @@ pub mod queries {
         rows.into_iter().map(Trigger::try_from).collect()
     }
 
-    /// Enabled cron triggers with no `next_fire_at` yet — the scheduler seeds them.
     pub async fn list_unscheduled_cron<'e, E>(executor: E) -> DomainResult<Vec<Trigger>>
     where
         E: PgExecutor<'e>,

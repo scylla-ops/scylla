@@ -10,8 +10,6 @@ use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 
-/// Project-scoped management of secrets. Every method is Cedar-gated. Values are
-/// encrypted on create and never returned; only metadata is read back.
 pub struct SecretUseCases<R, PS>
 where
     R: SecretRepository,
@@ -72,7 +70,6 @@ where
 
     #[instrument(skip_all, fields(secret_id = %secret_id))]
     pub async fn delete(&self, caller: &CallerContext, secret_id: &SecretId) -> DomainResult<()> {
-        // Load first so we can authorize against the owning project.
         let secret = self.secret_repo.find_by_id(secret_id).await?;
         self.permission_service
             .check(
@@ -92,8 +89,6 @@ mod tests {
     use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
     use async_trait::async_trait;
 
-    /// Secret repo + cipher that panic if touched: proves a denied call never
-    /// reaches a side effect.
     struct ForbiddenRepo;
     #[async_trait]
     impl SecretRepository for ForbiddenRepo {
@@ -120,7 +115,6 @@ mod tests {
         }
     }
 
-    /// A repo/cipher that accept writes, for the authorized happy path.
     struct OkRepo;
     #[async_trait]
     impl SecretRepository for OkRepo {
@@ -166,8 +160,6 @@ mod tests {
             .await
             .unwrap();
 
-        // The exact permission on the exact project must have been checked — a
-        // copy-paste against the wrong project id would fail here.
         assert_eq!(
             perms.permissions(),
             vec![Permission::CreateSecret(project())]
@@ -191,6 +183,5 @@ mod tests {
             matches!(err, DomainError::Forbidden(_)),
             "denial must surface as Forbidden, got {err:?}",
         );
-        // The panicking doubles prove authorization ran before any side effect.
     }
 }

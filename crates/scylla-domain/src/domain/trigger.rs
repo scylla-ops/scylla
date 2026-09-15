@@ -16,33 +16,18 @@ use crate::domain::ids::{PipelineId, TriggerId};
 use chrono::{DateTime, Utc};
 use std::collections::HashSet;
 
-/// Whether a trigger fires, and — for an enabled cron — when it is next due.
-/// A disabled trigger has no schedule, so `next_fire_at` cannot outlive being
-/// disabled: it lives only inside the `Enabled` variant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TriggerActivation {
     Disabled,
-    /// Fires. `next_fire_at` is the next due occurrence (cron only, once the
-    /// scheduler has computed it); `None` for a webhook or a not-yet-seeded cron.
-    Enabled {
-        next_fire_at: Option<DateTime<Utc>>,
-    },
+    Enabled { next_fire_at: Option<DateTime<Utc>> },
 }
 
-/// The outcome of the most recent fire attempt. The timestamp and its status
-/// move together — there is never one without the other.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FireObservation {
     pub fired_at: DateTime<Utc>,
-    /// `"ok"` or an error description, for observability.
     pub status: String,
 }
 
-/// A stored initiator that launches runs of a single pipeline. Firing always
-/// flows through the normal `PipelineUseCases::run` path (one `RunPipeline`
-/// check, one job minted) — a trigger is a new *source*, not a new execution
-/// path. The `source` decides *how* it fires (cron schedule, inbound webhook);
-/// `inputs` overlay literal env on each fired run.
 #[derive(Debug, Clone)]
 pub struct Trigger {
     id: TriggerId,
@@ -57,10 +42,6 @@ pub struct Trigger {
 }
 
 impl Trigger {
-    /// Reconstitute a `Trigger` from persistent storage. The flat columns are
-    /// normalised into the state machine here — a disabled trigger drops any stale
-    /// `next_fire_at`, and a lone `last_status`/`last_fired_at` collapses to a
-    /// coherent observation (or none).
     #[must_use]
     #[allow(clippy::too_many_arguments)]
     pub fn from_persistence(
@@ -98,8 +79,6 @@ impl Trigger {
         }
     }
 
-    /// Create a new, enabled trigger. Validates that the inputs are coherent with
-    /// the source kind (a JSON-pointer input requires a webhook payload).
     pub fn create(
         pipeline_id: PipelineId,
         name: TriggerName,
@@ -122,9 +101,6 @@ impl Trigger {
         })
     }
 
-    /// Update the editable fields. The source *kind* is immutable — switching
-    /// cron↔webhook requires delete + recreate (different secret/URL/schedule
-    /// lifecycle).
     pub fn update(
         &mut self,
         name: TriggerName,
@@ -144,22 +120,17 @@ impl Trigger {
         Ok(())
     }
 
-    /// Enable the trigger. Its schedule is re-anchored separately (the use case
-    /// computes the next occurrence right after), so it starts unscheduled.
+    /// Starts unscheduled; the use case computes the next occurrence.
     pub fn enable(&mut self) {
         self.activation = TriggerActivation::Enabled { next_fire_at: None };
         self.updated_at = clock::now();
     }
 
-    /// Disable the trigger. A disabled trigger never fires and structurally has no
-    /// due time — the schedule is dropped with the `Enabled` state.
     pub fn disable(&mut self) {
         self.activation = TriggerActivation::Disabled;
         self.updated_at = clock::now();
     }
 
-    /// Set the next due time (the scheduler owns this for cron sources). A no-op on
-    /// a disabled trigger, which by construction has no schedule.
     pub fn set_next_fire_at(&mut self, next_fire_at: Option<DateTime<Utc>>) {
         if let TriggerActivation::Enabled { next_fire_at: slot } = &mut self.activation {
             *slot = next_fire_at;
@@ -167,7 +138,6 @@ impl Trigger {
         }
     }
 
-    /// Record the outcome of a fire attempt (timestamp and status together).
     pub fn mark_fired(&mut self, fired_at: DateTime<Utc>, status: impl Into<String>) {
         self.last_observation = Some(FireObservation {
             fired_at,
@@ -352,10 +322,8 @@ mod tests {
 
         t.disable();
         assert!(!t.is_enabled());
-        // A disabled trigger structurally cannot carry a due time.
         assert!(t.next_fire_at().is_none());
 
-        // Scheduling a disabled trigger is a no-op.
         t.set_next_fire_at(Some(clock::now()));
         assert!(t.next_fire_at().is_none());
     }

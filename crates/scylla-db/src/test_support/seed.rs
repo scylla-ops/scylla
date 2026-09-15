@@ -1,9 +1,3 @@
-//! `seed_*` helpers: persist a fixture through the real Postgres repository.
-//!
-//! The in-memory builders they use (`org(..)`, `project(..)`, ...) live in
-//! `scylla_core::test_support`; these functions only add the round trip through
-//! the adapter, so a test can start from rows that exist.
-
 use crate::domain::ids::JobId;
 use crate::domain::ids::UserId;
 use crate::domain::job::Job;

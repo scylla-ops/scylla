@@ -23,7 +23,6 @@ fn cpu_count() -> i32 {
 fn hostname() -> String {
     let mut buf = vec![0u8; 256];
     // SAFETY: 256 covers the POSIX 255-byte cap plus terminator, and we pass
-    // buf's true length, so gethostname(3) cannot write out of bounds.
     let rc = unsafe { libc::gethostname(buf.as_mut_ptr().cast(), buf.len()) };
     if rc != 0 {
         return String::new();

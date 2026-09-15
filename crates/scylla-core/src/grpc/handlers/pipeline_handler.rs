@@ -245,21 +245,16 @@ impl<
         let req = request.into_inner();
         let pipeline_id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
 
-        // Single permission check + load + job mint, all inside the use case.
         let (job, dispatch) = self
             .use_cases
             .run(&caller, &pipeline_id)
             .await
             .map_err(domain_error_to_status)?;
 
-        // Hand the job to a connected, authorized agent. Best-effort: the job
-        // is already persisted, so a missing agent leaves it pending rather
-        // than failing the request (the use case logs the no-agent case).
         match self.dispatch_uc.dispatch_job(&pipeline_id, &dispatch).await {
             Ok(DispatchOutcome::Dispatched(app_id)) => {
                 tracing::info!(job_id = %job.id(), %app_id, "job dispatched to agent");
-                // Record attribution for agent stats. Best-effort: the job ran
-                // regardless, so a failed write must not fail the request.
+                // Best-effort: the job ran regardless.
                 if let Err(e) = self.use_cases.assign_agent(job.id(), &app_id).await {
                     tracing::warn!(job_id = %job.id(), %app_id, error = %e, "failed to record job agent attribution");
                 }
@@ -270,16 +265,12 @@ impl<
             }
         }
 
-        // Only the id: callers fetch the run with JobService.GetJob.
         Ok(Response::new(RunPipelineResponse {
             job_id: wrap(job.id().to_string()),
         }))
     }
 }
 
-/// Convert a wire `PipelineNode` into the validated domain node. Returns a
-/// `Status` (not a `DomainError`) so callers can `?` it directly inside a gRPC
-/// handler.
 fn proto_node_to_domain(n: ProtoPipelineNode) -> Result<PipelineNode, Status> {
     let node_id = NodeId::new(&required(n.node_id, "node_id")?).map_err(domain_error_to_status)?;
     let deps: Vec<NodeId> = n
@@ -313,8 +304,6 @@ fn proto_node_to_domain(n: ProtoPipelineNode) -> Result<PipelineNode, Status> {
     Ok(PipelineNode::new(node_id, deps, step, working_dir, env))
 }
 
-/// Map a wire env var to the domain: either an inline literal or a reference to
-/// a project secret (resolved + decrypted at dispatch time).
 fn proto_env_to_domain(e: ProtoEnvVar) -> Result<EnvVar, Status> {
     let key = EnvKey::new(&e.key).map_err(domain_error_to_status)?;
     match e.source {

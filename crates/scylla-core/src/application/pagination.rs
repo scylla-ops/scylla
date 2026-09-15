@@ -1,6 +1,5 @@
 use crate::domain::errors::{DomainError, DomainResult};
 
-/// Pagination parameters value object with validation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PaginationParams {
     page: u32,
@@ -36,25 +35,21 @@ impl PaginationParams {
         Ok(Self { page, page_size })
     }
 
-    /// Get the current page number (1-indexed)
     #[must_use]
     pub fn page(&self) -> u32 {
         self.page
     }
 
-    /// Get the page size
     #[must_use]
     pub fn page_size(&self) -> u32 {
         self.page_size
     }
 
-    /// Calculate the offset for database queries (0-indexed)
     #[must_use]
     pub fn offset(&self) -> u64 {
         u64::from(self.page - 1) * u64::from(self.page_size)
     }
 
-    /// Get limit for database queries
     #[must_use]
     pub fn limit(&self) -> u64 {
         u64::from(self.page_size)
@@ -70,7 +65,6 @@ impl Default for PaginationParams {
     }
 }
 
-/// Pagination metadata value object
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PaginationMetadata {
     total_count: u64,
@@ -103,44 +97,37 @@ impl PaginationMetadata {
         }
     }
 
-    /// Get total count of items across all pages
     #[must_use]
     pub fn total_count(&self) -> u64 {
         self.total_count
     }
 
-    /// Get current page number (1-indexed)
     #[must_use]
     pub fn page(&self) -> u32 {
         self.page
     }
 
-    /// Get page size
     #[must_use]
     pub fn page_size(&self) -> u32 {
         self.page_size
     }
 
-    /// Get total number of pages
     #[must_use]
     pub fn total_pages(&self) -> u32 {
         self.total_pages
     }
 
-    /// Check if there is a next page
     #[must_use]
     pub fn has_next(&self) -> bool {
         self.has_next
     }
 
-    /// Check if there is a previous page
     #[must_use]
     pub fn has_previous(&self) -> bool {
         self.has_previous
     }
 }
 
-/// Paginated result containing items and pagination metadata
 #[derive(Debug, Clone)]
 pub struct PaginatedResult<T> {
     items: Vec<T>,
@@ -154,19 +141,16 @@ impl<T> PaginatedResult<T> {
         Self { items, metadata }
     }
 
-    /// Get the items in this page
     #[must_use]
     pub fn items(&self) -> &Vec<T> {
         &self.items
     }
 
-    /// Get pagination metadata
     #[must_use]
     pub fn metadata(&self) -> &PaginationMetadata {
         &self.metadata
     }
 
-    /// Consume self and return items and metadata separately
     #[must_use]
     pub fn into_parts(self) -> (Vec<T>, PaginationMetadata) {
         (self.items, self.metadata)
@@ -189,7 +173,7 @@ mod tests {
     #[test]
     fn test_pagination_params_offset_calculation() {
         let params = PaginationParams::new(3, 20).unwrap();
-        assert_eq!(params.offset(), 40); // (3-1) * 20 = 40
+        assert_eq!(params.offset(), 40);
     }
 
     #[test]

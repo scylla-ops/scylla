@@ -20,22 +20,10 @@ use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;
 
-/// Name of the per-organization machine App that pipeline runs fire as. One is
-/// lazily provisioned per org on first trigger creation; it holds the
-/// `organization-trigger-runner` role at org scope, which confers `runPipeline`
-/// and nothing else (NOT the agent role, which only confers `executeJob`). It is
-/// used in-process as `CallerContext::App`, never via a token, so its credential
-/// is provisioned only to keep the App invariant.
+/// Holds `organization-trigger-runner` (only `runPipeline`); used in-process, never via a token.
 pub(crate) const TRIGGER_RUNNER_APP_NAME: &str = "trigger-runner";
 const RUNNER_SECRET_LABEL: &str = "default";
 
-/// Manage a pipeline's triggers. Every method is Cedar-gated by
-/// `ManageTriggers`; create/update additionally require `RunPipeline` on the
-/// caller (anti-escalation: you cannot set up a trigger that runs a pipeline you
-/// could not run yourself). Firing is handled separately (the firing engine /
-/// FireTrigger), all converging on the unchanged `PipelineUseCases::run`.
-// The derived `new` takes one arg per collaborator (8 with the cipher); that is
-// the composition-root wiring, not a call-site ergonomics problem.
 #[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
 pub struct TriggerUseCases<T, P, PR, A, H, PC, PS>
@@ -55,13 +43,8 @@ where
     hash_service: Arc<H>,
     policy_control: Arc<PC>,
     permission_service: Arc<PS>,
-    /// AEAD cipher for the webhook signing secret at rest (same master key as
-    /// project secrets). HMAC verification needs the plaintext back, so the secret
-    /// is encrypted-reversible, never one-way hashed.
+    /// Reversible: HMAC verification needs the plaintext back.
     cipher: Arc<dyn SecretCipher>,
-    /// Computes a cron trigger's `next_fire_at` at create / update / re-enable —
-    /// the same primitive the scheduler uses, so editing a schedule re-anchors it
-    /// instead of leaving a stale due time.
     schedule: Arc<dyn CronSchedule>,
 }
 
@@ -75,10 +58,6 @@ where
     PC: PolicyControl,
     PS: PermissionService,
 {
-    /// Create a trigger. For a webhook source a fresh HMAC signing secret is
-    /// generated, encrypted at rest, and returned ONCE as the second tuple element
-    /// (the caller surfaces it to the user; it is never readable again). Cron
-    /// triggers return `None`.
     #[instrument(skip_all, fields(pipeline_id = %pipeline_id, name = %name))]
     pub async fn create(
         &self,
@@ -91,25 +70,18 @@ where
         self.permission_service
             .check(caller, Permission::ManageTriggers(pipeline_id.clone()))
             .await?;
-        // Anti-escalation: managing triggers must not launder run rights — the
-        // creator must also be allowed to run the pipeline directly.
+        // Anti-escalation: managing triggers must not launder run rights.
         self.permission_service
             .check(caller, Permission::RunPipeline(pipeline_id.clone()))
             .await?;
 
-        // Resolve the owning org (pipeline → project → org) and make sure its
-        // trigger-runner App exists before persisting the trigger.
         let pipeline = self.pipeline_repo.find_by_id(&pipeline_id).await?;
         let project = self.project_repo.find_by_id(pipeline.project_id()).await?;
         self.ensure_runner_app(project.organization_id()).await?;
 
         let mut trigger = Trigger::create(pipeline_id, name, source, inputs)?;
-        // Anchor the first cron occurrence (and validate the expression) up front,
-        // through the same primitive the scheduler uses.
         self.schedule_next(&mut trigger)?;
 
-        // Webhook triggers carry a generated signing secret (encrypted at rest,
-        // plaintext returned once); cron triggers carry none.
         let (secret_plaintext, secret_enc) = match trigger.source() {
             TriggerSource::Webhook(_) => {
                 let plaintext = generate_webhook_secret();
@@ -170,8 +142,6 @@ where
                 Permission::ManageTriggers(trigger.pipeline_id().clone()),
             )
             .await?;
-        // Same anti-escalation fence as create: editing what a trigger fires
-        // (source/inputs) requires the right to run the pipeline.
         self.permission_service
             .check(
                 caller,
@@ -179,9 +149,7 @@ where
             )
             .await?;
         trigger.update(name, source, inputs)?;
-        // Re-anchor next_fire_at from now: a changed cron expression takes effect
-        // immediately (no stale fire at the old time); an unchanged one recomputes
-        // to the same occurrence; a webhook clears it.
+        // Re-anchor from now so a changed expression takes effect at once.
         self.schedule_next(&mut trigger)?;
         self.trigger_repo.update(&trigger).await
     }
@@ -200,8 +168,7 @@ where
                 Permission::ManageTriggers(trigger.pipeline_id().clone()),
             )
             .await?;
-        // Re-enabling re-anchors from now (no catch-up fire at a stale past time);
-        // disabling structurally drops the due time (see `Trigger::disable`).
+        // Re-anchor from now: no catch-up fire at a stale past time.
         if enabled {
             trigger.enable();
             self.schedule_next(&mut trigger)?;
@@ -223,19 +190,12 @@ where
         self.trigger_repo.delete(trigger_id).await
     }
 
-    /// (Re)anchor `next_fire_at` through the shared [`next_fire_time`] primitive:
-    /// the cron's next occurrence after now, or `None` for a webhook. The single
-    /// place CRUD touches scheduling — same rule the scheduler applies.
     fn schedule_next(&self, trigger: &mut Trigger) -> DomainResult<()> {
         let next = next_fire_time(trigger, &*self.schedule, clock::now())?;
         trigger.set_next_fire_at(next);
         Ok(())
     }
 
-    /// Ensure the org has its trigger-runner App (App + credential + an
-    /// `organization-trigger-runner` grant at org scope), provisioned once and
-    /// reused by every trigger in the org. Idempotent: a concurrent first-create that loses the
-    /// `UNIQUE(org, name)` race is treated as already-provisioned.
     async fn ensure_runner_app(&self, organization_id: &OrganizationId) -> DomainResult<()> {
         let existing = self.app_repo.list_by_organization(organization_id).await?;
         if existing
@@ -267,15 +227,13 @@ where
                 self.policy_control.reload().await?;
                 Ok(())
             }
-            // Lost the race to a concurrent first-create — the runner now exists.
+            // Lost the race to a concurrent first-create.
             Err(DomainError::Conflict(_)) => Ok(()),
             Err(e) => Err(e),
         }
     }
 }
 
-/// A fresh 256-bit webhook signing secret, hex-encoded (64 chars). High-entropy;
-/// returned to the user once and stored only encrypted.
 fn generate_webhook_secret() -> String {
     format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple())
 }

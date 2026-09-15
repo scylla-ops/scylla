@@ -21,26 +21,16 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::{instrument, warn};
 
-/// Label given to an agent's initial secret, created alongside the agent.
 const DEFAULT_SECRET_LABEL: &str = "default";
 
-/// Result of trying to place a job on an agent.
 pub enum DispatchOutcome {
     Dispatched(AppId),
     NoAgentAvailable,
 }
 
-/// Chooses a connected agent App and hands it a job. Eligibility is pure Cedar
-/// (`check(App, ExecuteJob(pipeline))` — the agent holds a grant covering the
-/// pipeline's org/project); among the eligible agents, jobs are spread
-/// round-robin so two equally-authorized agents share the load instead of the
-/// first one taking every job. No ad-hoc routing.
 pub struct DispatchUseCases<W: AgentDispatch, PS: PermissionService> {
     registry: Arc<W>,
     permission_service: Arc<PS>,
-    /// Rotating start offset into `connected()`: each dispatch begins its scan
-    /// one agent further along, so consecutive jobs land on different agents.
-    /// Wraps freely — only the offset's relative position matters.
     next: AtomicUsize,
 }
 
@@ -54,10 +44,6 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
         }
     }
 
-    /// Dispatch a pipeline's job to a connected agent authorized to execute it,
-    /// rotating the starting point each call so eligible agents share the load.
-    /// Best-effort: if none is connected+authorized the job stays pending
-    /// (`NoAgentAvailable`) rather than failing the run.
     #[instrument(skip_all, fields(pipeline_id = %pipeline_id, job_id = %dispatch.job_id))]
     pub async fn dispatch_job(
         &self,
@@ -70,10 +56,7 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
             return Ok(DispatchOutcome::NoAgentAvailable);
         }
 
-        // Least-loaded: try agents idlest-first (fewest in-flight jobs), and
-        // rotate among equally-idle agents by a per-dispatch offset so they
-        // still take turns. The first *eligible* agent in that order wins, so a
-        // busy or unauthorized agent is skipped for an idle authorized one.
+        // Idlest first, then rotate among equals so eligible agents take turns.
         let start = self.next.fetch_add(1, Ordering::Relaxed);
         let n = agents.len();
         let mut order: Vec<usize> = (0..n).collect();
@@ -93,17 +76,12 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
             {
                 Ok(()) => match self.registry.dispatch(app_id, dispatch).await {
                     Ok(()) => return Ok(DispatchOutcome::Dispatched(app_id.clone())),
-                    // The agent disconnected since `connected()` snapshotted
-                    // (check-then-act race) or its queue is gone — try the next
-                    // candidate rather than failing the whole run.
+                    // Disconnected since `connected()` was snapshotted: try the next one.
                     Err(e) => {
                         warn!(app_id = %app_id, error = %e, "dispatch to agent failed; trying next");
                     }
                 },
-                // Not authorized for this pipeline — expected; try the next agent.
                 Err(DomainError::Forbidden(_)) => {}
-                // A real failure (e.g. authz DB blip): don't silently treat it as
-                // a clean deny — log it, then still try the remaining agents.
                 Err(e) => {
                     warn!(app_id = %app_id, error = %e, "authz check errored during dispatch; skipping agent");
                 }
@@ -117,16 +95,11 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
     }
 }
 
-/// What a successful agent `create` returns: the persisted app backing the
-/// agent plus its plaintext secret, shown exactly once and never stored.
 pub struct CreatedAgent {
     pub app: App,
     pub secret: AppSecret,
 }
 
-/// Read model for an agent: its backing app identity, live connection state
-/// (from the in-memory registry), and durable last-seen. `connected` and the
-/// registry are infra state, so this is a use-case DTO, not a domain entity.
 pub struct AgentView {
     pub app: App,
     pub connected: bool,
@@ -135,10 +108,6 @@ pub struct AgentView {
     pub host: Option<AgentHost>,
 }
 
-/// Org-scoped management + introspection of Agents (specialized apps that run
-/// jobs). Creating an agent provisions an app, its `agents` row and an agent
-/// grant on the org, then reloads the policy set so the grant is live at once.
-/// Every method is Cedar-gated.
 #[derive(Constructor)]
 pub struct AgentUseCases<A, W, H, PC, PS>
 where
@@ -185,9 +154,6 @@ where
         );
         let agent = Agent::create(app.id().clone());
 
-        // The agent pulls and executes jobs across its org's pipelines via a
-        // scoped agent grant — the same role a plain app no longer gets. The
-        // initial secret is written in the same tx so the agent can authenticate.
         let grant = Grant::new(
             Principal::App(app.id().clone()),
             RoleName::new(ORGANIZATION_AGENT_ROLE)?,
@@ -273,8 +239,7 @@ where
         self.permission_service
             .check(caller, Permission::DeleteApp(app_id.clone()))
             .await?;
-        // Drop the live stream first so a removed agent stops at once; the app
-        // delete cascades the agents row + grants and nulls jobs.agent_app_id.
+        // Drop the stream first so a removed agent stops at once; the delete cascades the rest.
         self.registry.disconnect(&app_id);
         self.app_repo.delete(&app_id).await?;
         self.policy_control.reload().await
@@ -396,9 +361,6 @@ mod tests {
 
     #[tokio::test]
     async fn spreads_jobs_round_robin_across_authorized_agents() {
-        // Two equally-authorized connected agents. Before the round-robin fix
-        // every job went to the first one and the second starved; now four
-        // dispatches must split two-and-two.
         let registry = Arc::new(StubRegistry::new(vec![
             AppId::new("app-a"),
             AppId::new("app-b"),
@@ -427,8 +389,6 @@ mod tests {
 
     #[tokio::test]
     async fn picks_least_loaded_eligible_agent() {
-        // app-busy already has 3 in-flight jobs; app-idle has none. The next job
-        // must go to the idle one regardless of connection order.
         let mut loads = HashMap::new();
         loads.insert("app-busy".to_string(), 3);
         let registry = Arc::new(StubRegistry::with_loads(

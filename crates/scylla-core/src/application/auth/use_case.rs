@@ -19,9 +19,7 @@ pub struct AuthUseCases<U: UserRepository, S: SessionRepository, H: HashService>
 }
 
 impl<U: UserRepository, S: SessionRepository, H: HashService> AuthUseCases<U, S, H> {
-    /// Authenticate by an identifier that is either an email (contains `@`) or a
-    /// username. Both paths share the same opaque error so callers can't probe
-    /// which accounts exist.
+    /// Same opaque error for both paths so callers cannot probe which accounts exist.
     #[instrument(skip(self, password, identifier))]
     pub async fn login(
         &self,

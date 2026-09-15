@@ -8,14 +8,7 @@ use scylla_auth::authz::PermissionService;
 use std::sync::Arc;
 use tracing::{info, instrument, warn};
 
-/// (Re)dispatches the backlog of jobs that were minted while no agent was
-/// connected (or none authorized). A job is persisted by `run_pipeline` before
-/// it is handed to an agent, so if dispatch found no worker the job sits
-/// `pending` with no `agent_app_id` — without this it would stay there forever.
-///
-/// `drain` is meant to run when a worker connects (the new agent is idle, so the
-/// least-loaded selector hands it the waiting jobs) and as a periodic safety net
-/// in case a connect signal is missed.
+/// A job persisted while no eligible agent was connected stays `pending` with no agent; this places it later.
 pub struct PendingJobScheduler<J, P, W, PS>
 where
     J: JobRepository,
@@ -51,10 +44,6 @@ where
         }
     }
 
-    /// Try to place every pending, unassigned job on a connected eligible agent,
-    /// oldest first. Returns how many were dispatched this pass. Best-effort: a
-    /// job with no eligible agent is left pending for the next pass, and a single
-    /// job's failure never aborts the drain.
     #[instrument(skip(self))]
     pub async fn drain(&self) -> usize {
         let jobs = match self.job_repo.list_pending_unassigned().await {
@@ -70,9 +59,6 @@ where
 
         let mut dispatched = 0usize;
         for job in jobs {
-            // Re-assemble the dispatch via the SAME path the immediate run uses
-            // (resolve secrets + overlay the job's persisted inputs), so a job
-            // placed here is byte-for-byte what it would have been on dispatch.
             let dispatch = match assemble_dispatch(
                 &*self.pipeline_repo,
                 &*self.secret_resolver,
@@ -98,7 +84,6 @@ where
                     info!(job_id = %job.id(), %app_id, "pending job dispatched to agent");
                     dispatched += 1;
                 }
-                // Still no eligible agent — leave it pending for a later pass.
                 Ok(DispatchOutcome::NoAgentAvailable) => {}
                 Err(e) => {
                     warn!(job_id = %job.id(), error = %e, "pending-job drain: dispatch failed");
@@ -129,7 +114,6 @@ mod tests {
     use scylla_auth::caller::CallerContext;
     use std::sync::Mutex;
 
-    /// Job repo holding a fixed pending set; records `set_agent` attributions.
     struct StubJobs {
         pending: Vec<Job>,
         assigned: Mutex<Vec<(String, String)>>,
@@ -231,7 +215,6 @@ mod tests {
         }
     }
 
-    /// One always-idle connected agent that accepts every dispatch.
     struct StubRegistry {
         dispatched: Mutex<Vec<String>>,
     }
@@ -264,8 +247,6 @@ mod tests {
         }
     }
 
-    /// Resolver stub: maps nodes to dispatch nodes, literal env only (test
-    /// pipelines reference no secrets).
     struct StubResolver;
 
     #[async_trait]
@@ -295,7 +276,7 @@ mod tests {
     #[tokio::test]
     async fn drain_dispatches_pending_jobs_and_records_the_agent() {
         let pl = a_pipeline();
-        let job = crate::test_support::jobs::job(&pl); // Pending, unassigned
+        let job = crate::test_support::jobs::job(&pl);
         let job_id = job.id().to_string();
 
         let jobs = Arc::new(StubJobs {

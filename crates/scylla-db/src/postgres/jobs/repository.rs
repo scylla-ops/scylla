@@ -118,8 +118,6 @@ pub enum Scope<'a> {
     Organization(&'a OrganizationId),
 }
 
-/// Row shape for `SELECT ... FROM jobs`. Used with `query_as!` so the JSONB
-/// column and the `Option<DateTime>` columns get statically type-checked.
 #[derive(sqlx::FromRow)]
 struct JobRow {
     id: String,
@@ -189,8 +187,7 @@ pub mod queries {
         Ok(job.clone())
     }
 
-    /// Targeted attribution write: set only `agent_app_id` so it can't clobber
-    /// concurrent status / node_executions updates from the agent stream.
+    /// Sets only `agent_app_id` so it cannot clobber concurrent status writes.
     pub async fn set_agent<'e, E>(executor: E, job_id: &JobId, app_id: &AppId) -> DomainResult<()>
     where
         E: PgExecutor<'e>,
@@ -206,11 +203,6 @@ pub mod queries {
         Ok(())
     }
 
-    /// Orphan every `running` job whose `agent_app_id` is not among `connected`
-    /// (or is NULL), stamping `finished_at`/`updated_at`. `WHERE status =
-    /// 'running'` keeps this to the one valid `Running → Orphaned` transition; an
-    /// empty `connected` reaps every running job (boot reconciliation). Returns
-    /// the number reaped.
     pub async fn orphan_running_without_agents<'e, E>(
         executor: E,
         connected: &[AppId],
@@ -232,8 +224,6 @@ pub mod queries {
         Ok(result.rows_affected())
     }
 
-    /// Pending jobs with no agent yet — the backlog to (re)dispatch when a
-    /// worker connects. Oldest first so the queue drains FIFO.
     pub async fn list_pending_unassigned<'e, E>(executor: E) -> DomainResult<Vec<Job>>
     where
         E: PgExecutor<'e>,

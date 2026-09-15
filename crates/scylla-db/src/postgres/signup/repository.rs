@@ -10,9 +10,6 @@ use tracing::instrument;
 use super::super::error::SqlxResultExt;
 use super::super::{grants, organizations, users};
 
-/// Cross-aggregate atomic write for self-service signup: user, organization and
-/// the owner grant in one transaction, so a failure at any step (e.g. a username
-/// unique violation) rolls the whole account back.
 #[derive(Clone)]
 pub struct PgSignupRepository {
     pool: PgPool,

@@ -188,10 +188,7 @@ impl<
             let node_id = NodeId::new(node_id_str)
                 .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?;
 
-            // Gate: log_listener and status_listener are independent broker
-            // subscribers, so log rows can be persisted before the matching
-            // status update reaches the recorder. Defer to the domain rule
-            // before hitting the log store.
+            // Log rows can be persisted before the matching status update; the domain rule gates them.
             let job = self
                 .use_cases
                 .get(&caller, &job_id)

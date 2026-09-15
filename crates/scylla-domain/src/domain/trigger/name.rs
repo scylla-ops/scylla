@@ -15,8 +15,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// A human-facing trigger name, unique within its pipeline. Trimmed, non-empty,
-/// ≤255 chars.
 #[nutype(
     sanitize(trim),
     validate(with = validate, error = DomainError),

@@ -27,10 +27,6 @@ use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status, Streaming};
 use tracing::warn;
 
-/// Persistent agent stream: an authenticated App opens it, receives job
-/// dispatches, and streams back status + log events. Presence in the registry
-/// is the open stream. Reports are persisted as the App principal, so the
-/// agent role's `writeJobStatus` / `appendJobLog` grants gate them via Cedar.
 #[derive(Constructor)]
 pub struct AgentHandler<J, L, PS>
 where
@@ -42,10 +38,7 @@ where
     log_stream: Arc<InMemoryJobLogStream>,
     job_use_cases: Arc<JobUseCases<J, PS>>,
     log_use_cases: Arc<JobLogUseCases<L, PS>>,
-    /// Durable agent presence: stamped on connect, each report, and disconnect.
     agent_repo: Arc<dyn AgentRepository>,
-    /// Poked when an agent connects so the pending-job scheduler re-dispatches
-    /// the backlog onto the freshly-available worker.
     pending_signal: Arc<Notify>,
 }
 
@@ -72,12 +65,8 @@ impl<
         let inbound = request.into_inner();
         let (conn_id, dispatch_rx) = self.registry.register(&app_id);
 
-        // A new worker is available — nudge the scheduler to (re)dispatch any
-        // jobs left pending because nothing was connected when they were created.
         self.pending_signal.notify_one();
 
-        // Inbound reports run in the background; the App principal authorizes the
-        // persistence (writeJobStatus / appendJobLog) via its agent grant.
         tokio::spawn(read_reports(
             inbound,
             app_id.clone(),
@@ -89,11 +78,7 @@ impl<
             conn_id,
         ));
 
-        // Outbound: forward dispatches placed in the registry to the wire. The
-        // stream owns a `DisconnectGuard`, so when tonic drops it (client RST /
-        // transport close) the registry entry is removed at once — cleanup no
-        // longer depends solely on the inbound half closing (a half-closed client
-        // would otherwise leave a stale sender that fills the dispatch queue).
+        // The stream owns a `DisconnectGuard`: a half-closed client must not leave a stale sender.
         let down = ReceiverStream::new(dispatch_rx).map(|d| Ok(dispatch_to_proto(&d)));
         let guarded = GuardedStream {
             inner: down,
@@ -123,9 +108,7 @@ async fn read_reports<J, L, PS>(
     PS: PermissionService + Send + Sync + 'static,
 {
     let caller = CallerContext::App(app_id.clone());
-    // Stamp presence on connect (best-effort, never fails the stream).
     touch_last_seen(&agent_repo, &app_id).await;
-    // Loop ends when the agent disconnects (Ok(None)) or the stream errors.
     while let Ok(Some(up)) = inbound.message().await {
         match up.payload {
             Some(agent_up::Payload::Status(status)) => {
@@ -134,17 +117,10 @@ async fn read_reports<J, L, PS>(
                     if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
                         warn!(app_id = %app_id, job_id = %job_id, error = %e, "failed to record job status");
                     }
-                    // Open the live channel at job start so a reader tailing a
-                    // running job that hasn't logged yet still joins the stream
-                    // (subscribe never creates a channel, to avoid leaking one
-                    // for an already-finished job).
+                    // Open at start so a reader tailing before the first line joins; subscribe never creates a channel.
                     if matches!(event, JobEvent::JobStarted) {
                         log_stream.open(job_id.as_str());
                     }
-                    // A terminal job won't emit more log lines — evict its live
-                    // channel so the per-job stream map can't grow without bound,
-                    // and free the agent's load slot so least-loaded dispatch can
-                    // hand it the next job.
                     if matches!(event, JobEvent::JobCompleted | JobEvent::JobFailed { .. }) {
                         log_stream.close(job_id.as_str());
                         registry.release(&app_id);
@@ -171,17 +147,11 @@ async fn read_reports<J, L, PS>(
             None => {}
         }
     }
-    // Stamp final activity on disconnect, then drop the stream from the registry
-    // — but only if this connection is still the live one (a reconnect may have
-    // replaced it). The outbound `DisconnectGuard` does the same on its side.
+    // Only if this connection is still the live one: a reconnect may have replaced it.
     touch_last_seen(&agent_repo, &app_id).await;
     registry.unregister_if_current(&app_id, conn_id);
 }
 
-/// RAII cleanup tied to the outbound dispatch stream. When tonic drops the
-/// response stream (client disconnect / transport close), this removes the
-/// App's registry entry — generation-checked so it never evicts a newer
-/// reconnect.
 struct DisconnectGuard {
     registry: Arc<InMemoryAgentRegistry>,
     app_id: AppId,
@@ -195,8 +165,6 @@ impl Drop for DisconnectGuard {
     }
 }
 
-/// A stream that owns a value dropped with it. Used to attach a [`DisconnectGuard`]
-/// to the agent's outbound stream so client disconnect triggers registry cleanup.
 struct GuardedStream<S> {
     inner: S,
     _guard: DisconnectGuard,
@@ -222,8 +190,6 @@ fn hello_to_domain(hello: &scylla_proto::agent::v1::AgentHello) -> AgentHost {
     }
 }
 
-/// Best-effort durable presence update. Agent introspection must never break
-/// the live stream, so failures are logged and swallowed.
 async fn touch_last_seen(agent_repo: &Arc<dyn AgentRepository>, app_id: &AppId) {
     if let Err(e) = agent_repo.touch_last_seen(app_id, chrono::Utc::now()).await {
         warn!(app_id = %app_id, error = %e, "failed to update agent last_seen");
@@ -244,8 +210,6 @@ fn dispatch_to_proto(dispatch: &JobDispatch) -> AgentDown {
                 .map(|d| common::NodeId { value: d.clone() })
                 .collect(),
             working_dir: n.working_dir.clone().unwrap_or_default(),
-            // Env is already resolved (secret refs decrypted) with `masked` set
-            // for secret-sourced values so the agent can scrub them from logs.
             env: n
                 .env
                 .iter()
@@ -289,10 +253,7 @@ fn log_line_to_domain(line: &scylla_proto::agent::v1::JobLogLine) -> Option<JobL
     let node_id = NodeId::new(&node_id_str)
         .map_err(|e| warn!(node_id = %node_id_str, error = %e, "invalid node_id in agent log"))
         .ok()?;
-    // Total: unspecified and unknown both fold to stdout, so there is nothing to
-    // fail on. Shared with the agent, which encodes the same enum on the way out.
     let stream = scylla_proto::convert::log_stream_from_proto(line.stream);
-    // An agent that omits the timestamp gets server-side now, as before.
     let timestamp = dt(line.timestamp).unwrap_or_else(chrono::Utc::now);
     Some(JobLog::new(
         JobId::new(line.job_id.clone().unwrap_or_default().value),

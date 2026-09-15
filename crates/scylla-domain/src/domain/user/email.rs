@@ -1,11 +1,9 @@
 use crate::domain::errors::{DomainError, DomainResult};
 use nutype::nutype;
 
-const MAX_EMAIL_LENGTH: usize = 320; // RFC 5321 upper bound (64 local + @ + 255 domain)
+const MAX_EMAIL_LENGTH: usize = 320; // RFC 5321
 
-/// Deliberately light validation: a single `@` with a non-empty local part and
-/// a domain containing a dot. Full RFC 5322 validation is famously brittle; we
-/// rely on email *delivery* (verification mail) as the real check.
+/// Light on purpose: the verification mail is the real check.
 fn validate(s: &str) -> Result<(), DomainError> {
     if s.len() > MAX_EMAIL_LENGTH {
         return Err(DomainError::validation(format!(

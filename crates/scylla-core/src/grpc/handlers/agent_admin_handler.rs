@@ -19,8 +19,6 @@ use scylla_proto::agent::v1::{
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
-/// Unary management + introspection of Agents (specialized apps that run jobs).
-/// Distinct from the streaming `AgentService` used by the agent itself.
 #[derive(Constructor)]
 pub struct AgentAdminHandler<A, W, H, PC, PS>
 where

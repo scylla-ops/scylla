@@ -7,12 +7,9 @@ use std::time::Duration;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ControlPlaneConfig {
-    /// The one listener. `alias = "grpc"` so a config file written for the
-    /// pre-merge layout (when this was the gRPC-only port) still loads.
     #[serde(default, alias = "grpc")]
     pub server: ServerConfig,
 
-    /// Web UI. Absent means "serve the copy embedded in this binary".
     #[serde(default)]
     pub ui: UiConfig,
 
@@ -25,27 +22,19 @@ pub struct ControlPlaneConfig {
     #[serde(default)]
     pub bootstrap: Option<BootstrapConfig>,
 
-    /// SMTP settings. When absent, a no-op mailer is used.
     #[serde(default)]
     pub mail: Option<MailConfig>,
 
-    /// OAuth providers.
     #[serde(default)]
     pub oauth: OauthConfig,
 
-    /// Project-secret encryption. When absent, the secret store is disabled and
-    /// secret operations error with a clear message.
     #[serde(default)]
     pub secrets: Option<SecretsConfig>,
 
-    /// Inbound webhook ingress. The route itself is always mounted on the main
-    /// listener; this section only carries the URL advertised to users.
     #[serde(default)]
     pub webhook: Option<WebhookConfig>,
 }
 
-/// Connection pool settings. The pool itself is opened by the persistence
-/// crate; only the configuration shape lives here, next to the other sections.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DatabaseConfig {
     pub url: String,
@@ -53,7 +42,6 @@ pub struct DatabaseConfig {
     pub max_connections: u32,
     #[serde(default = "default_min_connections")]
     pub min_connections: u32,
-    /// Accepted as a human-friendly duration: `"30s"`, `"500ms"`, `"1m"`.
     #[serde(default = "default_acquire_timeout", with = "humantime_serde")]
     pub acquire_timeout: Duration,
     #[serde(default)]
@@ -86,36 +74,22 @@ impl Default for DatabaseConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WebhookConfig {
-    /// Public base URL advertised in `TriggerView.webhook_url`, e.g.
-    /// `https://scylla.example.com`. When absent, `webhook_url` is left empty.
     #[serde(default)]
     pub public_base_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SecretsConfig {
-    /// Master key for project-secret AEAD encryption, as 64 hex chars (32 bytes).
-    /// Keep it out of source control in real deployments (inject at deploy time
-    /// via [`MASTER_KEY_ENV`]).
     pub master_key: String,
 }
 
-/// Environment variable that overrides the project-secret master key, so real
-/// deployments inject it at deploy time instead of committing it to a config
-/// file. Set, it takes precedence over `[secrets].master_key` and enables the
-/// secret store even when the file omits `[secrets]`.
 pub const MASTER_KEY_ENV: &str = "SCYLLA_MASTER_KEY";
 
-/// The master key committed in the shipped dev/demo config (`config/docker.toml`).
-/// It is public, so using it in a real deployment makes every project secret and
-/// webhook HMAC secret trivially decryptable by anyone with the repo. Detected at
-/// startup to warn loudly.
+/// Public (committed in `config/docker.toml`): detected at startup to warn.
 pub const DEV_MASTER_KEY: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct OauthConfig {
-    /// GitHub OAuth app credentials. When absent, the OAuth service is not
-    /// registered.
     #[serde(default)]
     pub github: Option<GitHubOauthConfig>,
 }
@@ -134,7 +108,6 @@ pub struct MailConfig {
     pub port: u16,
     pub username: String,
     pub password: String,
-    /// Sender, e.g. `"Scylla <no-reply@scylla.dev>"` or `"no-reply@scylla.dev"`.
     pub from: String,
 }
 
@@ -142,38 +115,25 @@ fn default_smtp_port() -> u16 {
     465
 }
 
-/// The single listener: web UI, gRPC, gRPC-Web, reflection and webhook ingress
-/// all share it. Splitting them across ports is what forced CORS on the browser
-/// and froze the API URL into the frontend bundle.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServerConfig {
     pub address: SocketAddr,
 
-    /// Terminate TLS here. Absent means plain HTTP, which is the right answer
-    /// whenever a reverse proxy or an ingress already terminates it upstream.
     #[serde(default)]
     pub tls: Option<TlsConfig>,
 }
 
-/// PEM certificate chain and private key for [`ServerConfig::tls`].
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TlsConfig {
     pub cert: PathBuf,
     pub key: PathBuf,
 }
 
-/// Web UI serving. The SPA is compiled into the binary, so the common case is
-/// an empty section.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UiConfig {
-    /// Serve the web UI at all. Turn it off to run the API alone — the case that
-    /// matters is `pnpm dev`, where Vite owns the UI on :5173 and the binary has
-    /// no `dist/` to serve. `--no-ui` on the command line forces this to false.
     #[serde(default = "enabled_by_default")]
     pub enabled: bool,
 
-    /// Serve this directory instead of the embedded assets. An escape hatch for
-    /// swapping the UI without a rebuild; absent is the normal case.
     #[serde(default)]
     pub dir: Option<PathBuf>,
 }
@@ -246,7 +206,6 @@ pub struct BootstrapConfig {
 
     pub password: String,
 
-    /// Optional email for the bootstrap admin, enabling email login for it.
     #[serde(default)]
     pub email: Option<String>,
 }
@@ -296,19 +255,13 @@ impl ControlPlaneConfig {
         Ok(toml::from_str(&content)?)
     }
 
-    /// Overlay environment overrides on top of the file config. Currently only
-    /// [`MASTER_KEY_ENV`], so a deployment can inject the master key at deploy
-    /// time rather than committing it. Call once, right after loading the file.
     pub fn apply_env_overrides(&mut self) {
         if let Ok(key) = std::env::var(MASTER_KEY_ENV) {
             self.override_master_key(&key);
         }
     }
 
-    /// Set the project-secret master key, enabling the secret store if the file
-    /// omitted `[secrets]`. A blank value is ignored (an unset/empty env var must
-    /// not wipe a file-provided key). Separated from env reading so it is
-    /// unit-testable without touching process environment.
+    /// A blank value is ignored: an unset env var must not wipe a file-provided key.
     pub fn override_master_key(&mut self, key: &str) {
         let key = key.trim();
         if !key.is_empty() {
@@ -318,8 +271,6 @@ impl ControlPlaneConfig {
         }
     }
 
-    /// Whether the effective master key is the public dev/demo one. A real
-    /// deployment using it has no secret confidentiality at all.
     #[must_use]
     pub fn uses_dev_master_key(&self) -> bool {
         self.secrets
@@ -366,7 +317,6 @@ mod tests {
 
     #[test]
     fn override_master_key_ignores_blank() {
-        // An unset/empty env var must never wipe a file-provided key.
         let mut config = ControlPlaneConfig {
             secrets: Some(SecretsConfig {
                 master_key: "real-key".to_owned(),
@@ -384,7 +334,6 @@ mod tests {
 
         config.override_master_key(DEV_MASTER_KEY);
         assert!(config.uses_dev_master_key());
-        // Case-insensitive, whitespace-tolerant.
         config.override_master_key(&format!("  {}  ", DEV_MASTER_KEY.to_uppercase()));
         assert!(config.uses_dev_master_key());
 

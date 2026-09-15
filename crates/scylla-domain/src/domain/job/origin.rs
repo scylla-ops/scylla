@@ -1,8 +1,6 @@
 use crate::domain::ids::{AppId, TriggerId, UserId};
 use serde::{Deserialize, Serialize};
 
-/// The discriminant of a [`JobOrigin`] — the four mutually exclusive ways a run
-/// is initiated. Mirrors `TriggerSource::kind()`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobOriginKind {
     Human,
@@ -23,28 +21,18 @@ impl JobOriginKind {
     }
 }
 
-/// Why a [`Job`](crate::domain::job::Job) exists — its provenance, captured
-/// at creation and immutable thereafter. A sealed set: every run is born with
-/// exactly one origin, so a job is never unattributable.
-///
-/// - `Human` / `App`: a direct `RunPipeline` call, by a user or a machine
-///   principal respectively (the caller's identity).
-/// - `Cron` / `Webhook`: a trigger fired. The run executes as the org's
-///   trigger-runner App, but the origin is the *trigger*, not that App.
-///
-/// Internally tagged with `kind` so the persisted JSONB is self-describing
-/// (`{"kind":"cron","trigger_id":"..."}`), exactly like `TriggerSource`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum JobOrigin {
-    /// A human pressed "Run" — a direct `RunPipeline` by a `User` principal.
-    Human { user_id: UserId },
-    /// A machine principal called `RunPipeline` directly, outside any trigger.
-    App { app_id: AppId },
-    /// A cron trigger fired on schedule.
-    Cron { trigger_id: TriggerId },
-    /// A webhook trigger fired from an inbound delivery (`delivery_id` set when the
-    /// sender supplied one — e.g. GitHub's `X-GitHub-Delivery`).
+    Human {
+        user_id: UserId,
+    },
+    App {
+        app_id: AppId,
+    },
+    Cron {
+        trigger_id: TriggerId,
+    },
     Webhook {
         trigger_id: TriggerId,
         delivery_id: Option<String>,

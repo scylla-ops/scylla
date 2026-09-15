@@ -180,9 +180,7 @@ impl<
             .map_err(domain_error_to_status)?;
 
         Ok(Response::new(ListAuthzVocabularyResponse {
-            // resource_type is derivable from the permission, so it never ships;
-            // we keep min_scope (the one derived fact the client consumes) and
-            // compute it server-side from the permission's resource type.
+            // resource_type is derivable from the permission; only min_scope ships.
             actions: actions
                 .iter()
                 .map(|(key, resource_type)| AuthzAction {
@@ -201,8 +199,6 @@ fn effective_scope_to_proto(es: &EffectiveScope) -> ProtoEffectiveScope {
     }
 }
 
-/// The shared proto `Access` for a domain permission set: full control carries
-/// no list, anything else is the named permission keys.
 fn access_from_keys(full_control: bool, keys: &[String]) -> Access {
     let inner = if full_control {
         access::Access::FullControl(access::FullControl {})
@@ -219,9 +215,6 @@ fn access_from_keys(full_control: bool, keys: &[String]) -> Access {
     }
 }
 
-/// Build the domain permission set from the proto `Access`: full control → the
-/// `*` sentinel; otherwise the named permission keys. An absent oneof is a
-/// client error, never a silent empty set.
 fn permissions_from_proto(access: Option<Access>) -> Result<Vec<String>, Status> {
     let access = access.ok_or_else(|| Status::invalid_argument("access is required"))?;
     match access.access {
@@ -243,8 +236,6 @@ fn permissions_from_proto(access: Option<Access>) -> Result<Vec<String>, Status>
 }
 
 fn role_to_proto(role: &Role) -> ProtoRole {
-    // A builtin has a stable key and no owner; a custom role has an owner and no
-    // key. The oneof makes the mixed case unrepresentable.
     let origin = match &role.key {
         Some(key) => role::Origin::Builtin(role::Builtin { key: key.clone() }),
         None => role::Origin::Custom(role::Custom {

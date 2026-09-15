@@ -6,13 +6,6 @@ use crate::domain::pipeline::Step;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-/// Everything an agent needs to execute a pipeline job, handed to a connected
-/// agent through the [`AgentDispatch`](crate::application::AgentDispatch) port.
-/// This is an application/transport payload (the port's data contract), not a
-/// domain value object. Its nodes are **resolved**: every env var carries a
-/// concrete value (secret references already decrypted control-plane-side), with
-/// `masked` marking values that came from a secret so the agent can scrub them
-/// from logs.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobDispatch {
     pub job_id: String,
@@ -20,8 +13,6 @@ pub struct JobDispatch {
     pub nodes: Vec<DispatchNode>,
 }
 
-/// A pipeline node prepared for dispatch: identity + deps + the resolved step
-/// and environment. Mirrors the domain `PipelineNode` but with env resolved.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DispatchNode {
     pub id: String,
@@ -31,8 +22,6 @@ pub struct DispatchNode {
     pub env: Vec<DispatchEnv>,
 }
 
-/// A fully-resolved environment variable for dispatch. `masked` is true when the
-/// value originated from a secret (the agent redacts it from log output).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DispatchEnv {
     pub key: String,
@@ -40,15 +29,7 @@ pub struct DispatchEnv {
     pub masked: bool,
 }
 
-/// THE single way to turn a persisted [`Job`] into a [`JobDispatch`]: load its
-/// pipeline, resolve secret-ref env (decrypt), then overlay the job's stored
-/// trigger inputs as literal env. Both the immediate run path
-/// ([`PipelineUseCases::run_with_inputs`](crate::application::PipelineUseCases))
-/// and the pending-job retry path
-/// ([`PendingJobScheduler`](crate::application::PendingJobScheduler)) go through
-/// here, so a job dispatches identically however it is placed — there is no
-/// second, diverging assembly. Secrets are re-resolved here (never persisted
-/// decrypted); only the literal inputs are stored on the job.
+/// Both the immediate run and the pending retry go through here so a job dispatches identically.
 pub async fn assemble_dispatch<P>(
     pipeline_repo: &P,
     secret_resolver: &dyn SecretResolver,
@@ -69,11 +50,7 @@ where
     })
 }
 
-/// Overlay a job's literal `inputs` onto each dispatch node as unmasked env.
-/// Applied after secret resolution; a node's own env wins on a key collision, so
-/// a trigger can add context (e.g. `GIT_COMMIT`) but never override or shadow
-/// what the pipeline defined. Inputs are plain literals and can never reference a
-/// secret.
+/// A node's own env wins on a key collision: a trigger adds context, never overrides.
 fn apply_inputs(mut nodes: Vec<DispatchNode>, inputs: &[(String, String)]) -> Vec<DispatchNode> {
     if inputs.is_empty() {
         return nodes;

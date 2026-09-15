@@ -24,8 +24,6 @@ pub fn job_to_proto(job: &Job) -> ProtoJob {
     }
 }
 
-/// Map the domain lifecycle to the `Job.state` oneof — each arm builds
-/// exactly the variant that carries this state's timestamps.
 fn job_state_to_proto(state: &JobState) -> job::State {
     match state {
         JobState::Pending => job::State::Pending(job::Pending {}),
@@ -53,8 +51,6 @@ fn job_outcome_to_proto(outcome: TerminalOutcome) -> JobOutcome {
     }
 }
 
-/// Map the domain provenance to the `Job.origin` oneof (mirrors the
-/// trigger handler's `source_to_proto`).
 fn origin_to_proto(origin: &JobOrigin) -> job::Origin {
     match origin {
         JobOrigin::Human { user_id } => job::Origin::Human(job::Human {

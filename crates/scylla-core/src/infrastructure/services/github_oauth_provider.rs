@@ -14,9 +14,6 @@ const TOKEN_URL: &str = "https://github.com/login/oauth/access_token";
 const USER_URL: &str = "https://api.github.com/user";
 const EMAILS_URL: &str = "https://api.github.com/user/emails";
 
-/// Fully-configured oauth2 client type (all endpoints set, no
-/// device/introspection/revocation), kept as an alias to avoid repeating the
-/// long typestate signature.
 type ConfiguredClient = oauth2::Client<
     oauth2::basic::BasicErrorResponse,
     oauth2::basic::BasicTokenResponse,
@@ -30,8 +27,6 @@ type ConfiguredClient = oauth2::Client<
     EndpointSet,
 >;
 
-/// GitHub OAuth provider: `oauth2` drives the authorize/token protocol, while
-/// `reqwest` performs the token exchange transport and the user-info fetch.
 pub struct GitHubOAuthProvider {
     client: ConfiguredClient,
     http: reqwest::Client,
@@ -71,7 +66,7 @@ impl GitHubOAuthProvider {
                 RedirectUrl::new(redirect_uri)
                     .map_err(|e| DomainError::infrastructure(format!("redirect uri: {e}")))?,
             );
-        // oauth2 requires the HTTP client to forbid redirects (SSRF safety).
+        // oauth2 requires redirects disabled (SSRF).
         let http = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .user_agent("scylla")

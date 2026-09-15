@@ -8,20 +8,9 @@ use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tracing::{info, instrument, warn};
 
-/// Largest batch of due cron triggers fired per pass. Bounds how long one tick
-/// holds work; the rest are picked up on the next tick (or by another instance).
 const CRON_CLAIM_BATCH: i64 = 100;
 
-/// Periodically fires cron triggers whose schedule has come due. Each pass:
-/// (1) *seeds* `next_fire_at` for enabled cron triggers that don't have one yet
-/// (freshly created), and (2) *claims* the due ones — advancing `next_fire_at`
-/// atomically so they fire at-most-once per occurrence even with overlapping
-/// passes or multiple instances — and fires each through [`TriggerFiring`] (which
-/// runs as the org's trigger-runner App through the one `RunPipeline` check).
-///
-/// Best-effort and crash-tolerant: a single trigger's failure is logged and
-/// never aborts the pass; missed occurrences during downtime are skipped, not
-/// backfilled (the next future occurrence is computed from "now").
+/// Missed occurrences during downtime are skipped, not backfilled.
 pub struct TriggerCronScheduler<T>
 where
     T: TriggerRepository,
@@ -48,17 +37,12 @@ where
         }
     }
 
-    /// Run one scheduler pass. Returns how many triggers fired this pass.
     #[instrument(skip(self))]
     pub async fn tick(&self) -> usize {
         self.seed_unscheduled().await;
         self.fire_due().await
     }
 
-    /// Give enabled cron triggers without a `next_fire_at` their first occurrence.
-    /// A semantically-invalid expression (passed the 5-field shape check but
-    /// unparseable, e.g. `"99 * * * *"`) is logged and left unscheduled, so it
-    /// stays inert instead of spinning in the due path.
     async fn seed_unscheduled(&self) {
         let unscheduled = match self.trigger_repo.list_unscheduled_cron().await {
             Ok(t) => t,
@@ -75,7 +59,6 @@ where
                         warn!(trigger_id = %trigger.id(), error = %e, "cron seed: could not persist next_fire_at");
                     }
                 }
-                // Not a cron source — never happens (the query is cron-only).
                 Ok(None) => {}
                 Err(e) => {
                     warn!(trigger_id = %trigger.id(), error = %e, "cron seed: invalid expression; trigger will not fire");
@@ -84,11 +67,9 @@ where
         }
     }
 
-    /// Claim and fire every due cron trigger.
     async fn fire_due(&self) -> usize {
         let now = clock::now();
-        // Capture a clone of the schedule (not `&self`) so the callback is `Sync`
-        // regardless of the repository type `T`.
+        // A clone, not `&self`, so the callback is `Sync` whatever `T` is.
         let schedule = self.schedule.clone();
         let compute_next = move |trigger: &Trigger| -> DomainResult<DateTime<Utc>> {
             next_fire_time(trigger, &*schedule, now)?
@@ -114,9 +95,7 @@ where
                     info!(trigger_id = %trigger.id(), job_id = %job.id(), "cron trigger fired");
                     fired += 1;
                 }
-                // The occurrence was already consumed (next_fire_at advanced); the
-                // error is recorded on the trigger by `fire` where it can. Log and
-                // keep going — one bad trigger must not stall the rest.
+                // The occurrence is already consumed; one bad trigger must not stall the rest.
                 Err(e) => {
                     warn!(trigger_id = %trigger.id(), error = %e, "cron trigger fire failed");
                 }
@@ -149,7 +128,6 @@ mod tests {
         .unwrap()
     }
 
-    /// A repo that hands out canned seed/claim sets and records `update` writes.
     struct StubRepo {
         unscheduled: Vec<Trigger>,
         due: Vec<Trigger>,
@@ -167,7 +145,6 @@ mod tests {
             _limit: i64,
             compute_next: &(dyn for<'a> Fn(&'a Trigger) -> DomainResult<DateTime<Utc>> + Sync),
         ) -> DomainResult<Vec<Trigger>> {
-            // Exercise the compute closure the way the real impl does.
             for t in &self.due {
                 let _ = compute_next(t);
             }
@@ -197,7 +174,6 @@ mod tests {
         }
     }
 
-    /// Records fired trigger ids; fails for any id in `fail`.
     struct StubFiring {
         job: Job,
         fired: Mutex<Vec<String>>,
@@ -220,7 +196,6 @@ mod tests {
         }
     }
 
-    /// Returns `after + 60s`, or errors for the configured bad expression.
     struct StubSchedule;
 
     impl CronSchedule for StubSchedule {
@@ -279,7 +254,6 @@ mod tests {
         });
         let scheduler = TriggerCronScheduler::new(repo, firing.clone(), Arc::new(StubSchedule));
 
-        // Both are attempted; only the non-failing one counts as fired.
         assert_eq!(scheduler.tick().await, 1);
         assert_eq!(firing.fired.lock().unwrap().len(), 2);
     }
@@ -306,8 +280,6 @@ mod tests {
 
     #[tokio::test]
     async fn webhook_trigger_is_never_seeded_as_cron() {
-        // A webhook trigger should never appear in the cron seed/claim sets, but
-        // if one did, `next_fire_time` returns None and it is skipped silently.
         let webhook = Trigger::create(
             PipelineId::new("p"),
             TriggerName::new("hook").unwrap(),

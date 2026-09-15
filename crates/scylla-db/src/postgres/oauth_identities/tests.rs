@@ -15,7 +15,6 @@ use scylla_core::application::oauth::{
 use scylla_core::infrastructure::Argon2HashService;
 use std::sync::Arc;
 
-/// Returns a fixed identity, standing in for the GitHub HTTP exchange.
 struct StubProvider {
     info: OAuthUserInfo,
 }
@@ -77,8 +76,6 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
     let AccountOutcome::New { organization_id } = &first.account else {
         panic!("new account gets an organization");
     };
-    // Joining is the grant, so that is what proves the account was provisioned
-    // into its organization.
     let grants = PgGrantRepository::new(pool.clone())
         .list_all()
         .await
@@ -104,7 +101,6 @@ async fn first_login_provisions_account_then_second_reuses(pool: sqlx::PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn login_links_to_existing_user_by_email(pool: sqlx::PgPool) {
-    // An existing account with the same email gets the identity linked.
     let existing = UserBuilder::new("legacy")
         .email("match@example.com")
         .build();

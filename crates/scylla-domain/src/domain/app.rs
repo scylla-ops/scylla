@@ -16,12 +16,6 @@ use crate::domain::clock;
 use crate::domain::ids::{AppId, OrganizationId};
 use chrono::{DateTime, Utc};
 
-/// A machine principal owned by an organization (an agent or automation). Its
-/// credentials live separately as one or more [`AppCredential`]s — an App is
-/// just an identity here. It authenticates with an app token and acts under
-/// scoped grants (typically the `agent` role on its org).
-///
-/// [`AppCredential`]: super::AppCredential
 #[derive(Debug, Clone)]
 pub struct App {
     id: AppId,

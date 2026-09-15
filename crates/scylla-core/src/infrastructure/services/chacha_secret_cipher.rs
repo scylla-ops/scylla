@@ -1,10 +1,4 @@
-//! XChaCha20-Poly1305 AEAD adapter for [`SecretCipher`].
-//!
-//! Keyed by a 32-byte master key (64 hex chars) from the control-plane config.
-//! Each ciphertext embeds a fresh random 24-byte nonce as `nonce || ciphertext`,
-//! so encrypting any number of secrets under one key is safe. When no key is
-//! configured the cipher is disabled and every operation errors with a clear
-//! message rather than silently using a weak default.
+//! Ciphertext is `nonce || ciphertext` with a fresh 24-byte nonce; without a key every op errors.
 
 use chacha20poly1305::aead::{Aead, Generate, KeyInit};
 use chacha20poly1305::{XChaCha20Poly1305, XNonce};
@@ -15,13 +9,10 @@ use crate::domain::errors::{DomainError, DomainResult};
 const NONCE_LEN: usize = 24;
 
 pub struct ChaChaSecretCipher {
-    /// `None` when no master key was configured — every op then errors.
     cipher: Option<XChaCha20Poly1305>,
 }
 
 impl ChaChaSecretCipher {
-    /// Build from an optional 64-hex-char (32-byte) master key. `None` yields a
-    /// disabled cipher that errors on use.
     pub fn from_hex_key(master_key: Option<&str>) -> DomainResult<Self> {
         let cipher = match master_key {
             None => None,
@@ -61,7 +52,6 @@ impl SecretCipher for ChaChaSecretCipher {
             return Err(DomainError::internal("secret ciphertext is too short"));
         }
         let (nonce_bytes, ct) = ciphertext.split_at(NONCE_LEN);
-        // split_at guarantees NONCE_LEN bytes, so the conversion cannot fail.
         let nonce = XNonce::try_from(nonce_bytes)
             .map_err(|_| DomainError::internal("secret ciphertext is too short"))?;
         let pt = cipher
@@ -72,7 +62,6 @@ impl SecretCipher for ChaChaSecretCipher {
     }
 }
 
-/// Decode a 64-char hex string into 32 bytes.
 fn decode_hex_32(s: &str) -> DomainResult<[u8; 32]> {
     let s = s.trim();
     if s.len() != 64 {

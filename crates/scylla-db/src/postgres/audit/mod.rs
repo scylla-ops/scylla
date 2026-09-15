@@ -3,19 +3,12 @@ use sqlx::PgPool;
 use tokio::sync::mpsc;
 use tracing::warn;
 
-/// Persists audit entries to the `audit_log` table **out-of-band**: `record`
-/// only enqueues onto an unbounded channel, and a background task drains it and
-/// inserts. The authorization hot path therefore never waits on the database.
-///
-/// Trade-off: an unbounded queue favours completeness (no dropped audit) over
-/// bounded memory; if the writer can't keep up under sustained load, switch to a
-/// bounded channel + batched inserts.
+/// Unbounded queue: completeness over bounded memory; switch to bounded + batched inserts if the writer lags.
 pub struct PgAuditLog {
     tx: mpsc::UnboundedSender<AuditEntry>,
 }
 
 impl PgAuditLog {
-    /// Spawns the background writer. Must be called within a Tokio runtime.
     #[must_use]
     pub fn new(pool: PgPool) -> Self {
         let (tx, rx) = mpsc::unbounded_channel();
@@ -35,7 +28,6 @@ impl AuditLog for PgAuditLog {
 async fn writer_loop(pool: PgPool, mut rx: mpsc::UnboundedReceiver<AuditEntry>) {
     while let Some(entry) = rx.recv().await {
         if let Err(e) = insert(&pool, &entry).await {
-            // Never fail the caller for an audit write; surface and continue.
             warn!(error = %e, action = entry.action, "failed to persist audit entry");
         }
     }

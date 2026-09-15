@@ -50,7 +50,6 @@ async fn provision_account_persists_all_four_rows(pool: PgPool) {
 async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
     let repo = PgSignupRepository::new(pool.clone());
 
-    // First account succeeds.
     let first_user = user("dup");
     let first_org = org("FirstOrg");
     let first_grant = org_admin_grant(first_user.id().clone(), first_org.id().clone());
@@ -58,8 +57,7 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
         .await
         .expect("first provision");
 
-    // Second account reuses the username → unique violation mid-transaction.
-    let clash_user = UserBuilder::new("dup").build(); // same username, fresh id
+    let clash_user = UserBuilder::new("dup").build();
     let second_org = org("SecondOrg");
     let second_grant = org_admin_grant(clash_user.id().clone(), second_org.id().clone());
     let err = repo
@@ -71,7 +69,6 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
         "expected Conflict, got {err:?}"
     );
 
-    // Everything from the failed signup must be rolled back.
     let org_repo = PgOrganizationRepository::new(pool.clone());
     assert!(
         !org_repo.name_exists(second_org.name()).await.unwrap(),
@@ -84,8 +81,6 @@ async fn username_conflict_rolls_back_the_whole_account(pool: PgPool) {
     );
 }
 
-/// Login accepts either an email (contains `@`) or a username, and rejects a
-/// wrong password with the same opaque error.
 #[sqlx::test(migrations = "../../migrations")]
 async fn login_by_email_or_username(pool: PgPool) {
     use crate::domain::user::User;
@@ -137,10 +132,6 @@ async fn login_by_email_or_username(pool: PgPool) {
     ));
 }
 
-/// End-to-end: signup through the use case must yield a user who is org-admin of
-/// their own org (can update it) yet denied on any other org — the core tenant
-/// isolation guarantee. Exercises the full Cedar path: signup links the grant,
-/// reload makes it live, and a real `check` honours it.
 #[sqlx::test(migrations = "../../migrations")]
 async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::domain::organization::OrganizationName;
@@ -156,7 +147,6 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use scylla_core::infrastructure::Argon2HashService;
     use std::sync::Arc;
 
-    // A second, foreign org the new user has nothing to do with.
     let foreign = seed_org(&pool, "Foreign Corp").await;
 
     let permission = Arc::new(

@@ -1,10 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-/// Every .proto in the workspace, listed explicitly rather than globbed: the
-/// build stays deterministic and a stray scratch file cannot break everyone.
-/// Paths are relative to the single include root (`proto/`) and mirror their
-/// package exactly — `scylla.job.v1` lives in `scylla/job/v1/`.
+// Listed, not globbed: a stray file must not enter the build.
 const PROTOS: &[&str] = &[
     "scylla/common/v1/common.proto",
     "scylla/exec/v1/step.proto",
@@ -42,8 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tonic_prost_build::configure()
         .file_descriptor_set_path(out_dir.join("scylla_descriptor.bin"))
-        // A single include root. Two roots would make the same file addressable
-        // by two paths, which protoc treats as two different files.
+        // One include root: with two, protoc sees the same file under two paths.
         .compile_protos(&protos, &[proto_root])?;
 
     Ok(())

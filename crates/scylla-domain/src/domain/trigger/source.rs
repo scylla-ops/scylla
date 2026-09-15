@@ -1,8 +1,6 @@
 use super::{CronSpec, WebhookSpec};
 use serde::{Deserialize, Serialize};
 
-/// The discriminant of a [`TriggerSource`], denormalized into its own column for
-/// the engine's due-scan and routing (mirrors `grants.principal_kind`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TriggerKind {
     Cron,
@@ -19,9 +17,6 @@ impl TriggerKind {
     }
 }
 
-/// What initiates a trigger's run. A sealed, extensible set — `Poll` joins in
-/// v0.4 as a new arm. Internally tagged with `kind` so the persisted JSONB is
-/// self-describing: `{"kind":"cron","expression":"..."}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum TriggerSource {

@@ -1,15 +1,8 @@
-//! A `QuotaPolicy` double for use-case tests.
-//!
-//! [`DenyAfter`] allows a fixed number of checks per scope and denies from then
-//! on, counting the checks it was asked rather than any stored resource. It is
-//! enough to prove a use case asks the policy and honours a `Deny`.
-
 use async_trait::async_trait;
 use scylla_extension::{QuotaDecision, QuotaError, QuotaPolicy, QuotaUsage, Resource};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-/// Allows the first `limit` checks for a scope, denies every later one.
 pub struct DenyAfter {
     limit: u64,
     seen: Mutex<HashMap<String, u64>>,

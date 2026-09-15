@@ -6,19 +6,10 @@ use crate::domain::ids::{OrganizationId, ProjectId};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
-/// Which things a caller may see, expressed as scopes rather than as a list of
-/// ids: a grant on an organization covers every project inside it, including
-/// ones created after the grant, so enumerating projects here would go stale.
-///
-/// This is the listing counterpart of a per-item permission check. Both answer
-/// the same question; this one answers it for a whole page at once, so the
-/// filter can live in SQL and pagination stays honest.
+/// Scopes, not ids: an organization grant covers projects created after it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Visibility {
-    /// Holds the permission at System scope, so nothing is hidden.
     All,
-    /// Holds it on these organizations (covering their projects) and on these
-    /// individual projects. Empty on both sides means nothing is visible.
     Scoped {
         orgs: Vec<OrganizationId>,
         projects: Vec<ProjectId>,
@@ -26,7 +17,6 @@ pub enum Visibility {
 }
 
 impl Visibility {
-    /// Nothing at all — the caller holds the permission nowhere.
     #[must_use]
     pub fn none() -> Self {
         Self::Scoped {
@@ -35,22 +25,14 @@ impl Visibility {
         }
     }
 
-    /// Whether this can match anything. A listing whose visibility is empty can
-    /// skip the query entirely and answer with an empty page.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         matches!(self, Self::Scoped { orgs, projects } if orgs.is_empty() && projects.is_empty())
     }
 }
 
-/// Resolves what a caller may see, for filtering listings. Kept separate from
-/// [`crate::authz::service::PermissionService`] because the two
-/// answer different shapes of question: one decides a single access, this one
-/// describes a set.
 #[async_trait]
 pub trait VisibilityResolver: Send + Sync {
-    /// The scopes at which `caller` holds `permission_key`, directly or through
-    /// a role conferring full control.
     async fn visible_scopes(
         &self,
         caller: &CallerContext,
@@ -58,11 +40,6 @@ pub trait VisibilityResolver: Send + Sync {
     ) -> DomainResult<Visibility>;
 }
 
-/// Fold a principal's grants into a [`Visibility`] for one permission. Pure, so
-/// the rule is testable without a database or a policy engine.
-///
-/// `role_permissions` maps a role id to its permission keys; a role holding the
-/// [`FULL_CONTROL`] sentinel confers every permission within its scope.
 #[must_use]
 pub fn visibility_from_grants<S: std::hash::BuildHasher>(
     role_permissions: &HashMap<String, Vec<String>, S>,
@@ -85,7 +62,6 @@ pub fn visibility_from_grants<S: std::hash::BuildHasher>(
             continue;
         }
         match &grant.scope {
-            // System covers every organization, so nothing narrower matters.
             Scope::System => return Visibility::All,
             Scope::Organization(id) => orgs.push(id.clone()),
             Scope::Project(id) => projects.push(id.clone()),
@@ -152,8 +128,6 @@ mod tests {
 
     #[test]
     fn a_grant_that_does_not_confer_the_permission_is_ignored() {
-        // The runner role can launch pipelines but not read a project, so it
-        // must not make the project appear in a project listing.
         let v = visibility_from_grants(
             &roles(),
             &[grant("runner", Scope::Project(ProjectId::new("p1")))],

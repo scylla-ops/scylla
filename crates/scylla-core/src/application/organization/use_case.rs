@@ -48,10 +48,6 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
 
         let org = Organization::create(name, description)?;
 
-        // The human creator becomes the org's admin. The org row and the owner
-        // grant are written in ONE transaction, so a partial failure can never
-        // leave an org without an owner. Machine/anonymous callers have nobody
-        // to make owner, so they just get the bare org.
         match caller {
             CallerContext::User(user_id) => {
                 let role = RoleName::new(ORGANIZATION_ADMIN_ROLE)?;
@@ -61,8 +57,6 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
                     Scope::Organization(org.id().clone()),
                 );
                 self.org_repo.provision_with_owner(&org, &grant).await?;
-                // Make the org-admin grant live now so the creator can act on
-                // the org immediately, without a control-plane restart.
                 self.policy_control.reload().await?;
             }
             _ => {
@@ -112,9 +106,6 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         self.org_repo.update(&org).await
     }
 
-    /// Set the active flag to an explicit value and return the updated
-    /// organization. Idempotent, so a retried call is safe — see
-    /// [`Organization::set_active`].
     #[instrument(skip_all, fields(org_id = %id))]
     pub async fn set_active(
         &self,
@@ -137,10 +128,7 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
             .check(caller, Permission::DeleteOrganization(id.clone()))
             .await?;
         self.org_repo.find_by_id(id).await?;
-        // The row delete cascades the whole subtree, and DB triggers drop the
-        // grants bound to it (the org's own scope, its projects', and those held
-        // by its apps). Reload so the live policy set stops carrying the dead
-        // links those rows produced.
+        // DB triggers drop the grants bound to the subtree; reload so the live set stops carrying them.
         self.org_repo.delete(id).await?;
         self.policy_control.reload().await
     }
@@ -157,10 +145,6 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         self.org_repo.list_all(pagination).await
     }
 
-    /// Everyone with access to the organization: the principals holding a grant
-    /// on it or on one of its projects. There is no membership roster to read
-    /// from, so the grants themselves answer "who is here", which also means the
-    /// answer can never disagree with what those people can actually do.
     #[instrument(skip_all, fields(org_id = %org_id))]
     pub async fn list_users(
         &self,
@@ -175,8 +159,6 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         let paginated = self.org_repo.list_principals(org_id, pagination).await?;
         let (user_ids, metadata) = paginated.into_parts();
 
-        // One batched read instead of N `find_by_id`; re-order to the paginated
-        // order (the batch result order is unspecified).
         let mut by_id: std::collections::HashMap<String, User> = self
             .user_repo
             .find_by_ids(&user_ids)
@@ -192,11 +174,6 @@ impl<O: OrganizationRepository, U: UserRepository, PS: PermissionService, PC: Po
         Ok((users, metadata))
     }
 
-    /// The organizations a user belongs to, meaning those they hold a grant on
-    /// or that contain a project they hold a grant on. A System-scoped grant is
-    /// deliberately not expanded here: a platform operator reaching every
-    /// organization is not a member of each one, and listing them all under
-    /// "my organizations" would be noise.
     #[instrument(skip_all, fields(user_id = %user_id))]
     pub async fn list_user_orgs(
         &self,

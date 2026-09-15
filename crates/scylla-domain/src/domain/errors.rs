@@ -1,4 +1,3 @@
-/// Domain-level errors that represent business rule violations and domain concerns.
 #[derive(Debug, thiserror::Error)]
 pub enum DomainError {
     #[error("Entity not found: {entity_type} with id '{id}'")]
@@ -29,7 +28,6 @@ pub enum DomainError {
     Internal(String),
 }
 
-/// Convenience type alias for Results in the domain layer
 pub type DomainResult<T> = Result<T, DomainError>;
 
 impl DomainError {
@@ -72,9 +70,6 @@ impl DomainError {
         Self::Internal(message.into())
     }
 
-    /// True for [`DomainError::NotFound`]. Lets callers distinguish "row absent"
-    /// (often a normal control-flow branch — e.g. try the next auth principal)
-    /// from genuine failures (infrastructure, conflict) that must be surfaced.
     #[must_use]
     pub fn is_not_found(&self) -> bool {
         matches!(self, Self::NotFound { .. })

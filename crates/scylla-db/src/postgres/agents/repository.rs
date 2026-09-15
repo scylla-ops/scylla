@@ -9,8 +9,6 @@ use tracing::instrument;
 
 use super::super::error::SqlxResultExt;
 
-/// `None` unless `host_reported_at` is set: that column is the marker that an
-/// agent ever introduced itself.
 fn host_from_columns(
     reported_at: Option<DateTime<Utc>>,
     version: Option<String>,
@@ -31,8 +29,6 @@ fn host_from_columns(
     })
 }
 
-/// Insert a `agents` extension row on any executor (pool or transaction).
-/// Shared by the pool-backed repo and the atomic `provision_agent` transaction.
 pub async fn insert<'e, E>(executor: E, agent: &Agent) -> DomainResult<()>
 where
     E: PgExecutor<'e>,
@@ -52,8 +48,6 @@ where
     Ok(())
 }
 
-/// Persistence for the `agents` table — the 1:1 specialization marking an app
-/// as an agent. Run stats are derived from the `jobs` table, not stored here.
 #[derive(Clone)]
 pub struct PgAgentRepository {
     pool: PgPool,
@@ -138,8 +132,7 @@ impl AgentRepository for PgAgentRepository {
 
     #[instrument(skip_all, fields(app_id = %app_id))]
     async fn touch_last_seen(&self, app_id: &AppId, at: DateTime<Utc>) -> DomainResult<()> {
-        // Upsert so an agent connecting without a row (legacy / pre-migration)
-        // self-heals — presence must never depend on this table existing.
+        // Upsert: an agent without a row (pre-migration) self-heals.
         sqlx::query!(
             r#"
             INSERT INTO agents (app_id, last_seen, created_at)
@@ -215,8 +208,6 @@ impl AgentRepository for PgAgentRepository {
         .fetch_one(&self.pool)
         .await
         .to_domain()?;
-        // Per-day outcome series for the chart. 30 days bounds the scan; the
-        // UI derives its 7d/14d windows from the same data.
         let daily = sqlx::query!(
             r#"
             SELECT

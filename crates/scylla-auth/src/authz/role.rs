@@ -11,46 +11,27 @@ use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 use tracing::instrument;
 
-/// Sentinel permission meaning **full control** — any action within the grant's
-/// scope. Builtin admin roles hold exactly this; it maps to the unconstrained
-/// Cedar action body (the former full-control role template), so an admin role
-/// automatically covers any permission added later without a re-seed.
+/// Unconstrained Cedar action: an admin role covers permissions added later without a re-seed.
 pub const FULL_CONTROL: &str = "*";
 
-/// A role: a named, editable bundle of permissions bound to a scope kind.
-///
-/// Builtin roles (`builtin`, `owner_org` = `None`) are global and seeded on
-/// first boot; custom roles are owned by an organization (tenant-isolated). The
-/// live Cedar policy set is generated from these — a grant of a role confers the
-/// role's permissions within the grant's scope, so editing a role's permissions
-/// changes authorization on the next reload.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Role {
-    /// Opaque id. For builtins it equals [`Role::key`] (a stable string such as
-    /// `"organization-admin"`), which is also the value a grant references.
     pub id: String,
-    /// Stable identifier for builtins; `None` for tenant custom roles.
     pub key: Option<String>,
     pub name: String,
     pub description: String,
-    /// The scope kind a grant of this role must bind to.
     pub scope: ScopeKind,
-    /// Owning organization for a tenant custom role; `None` = global (builtin).
     pub owner_org: Option<OrganizationId>,
     pub builtin: bool,
-    /// Permission keys ([`crate::domain::permission::Permission::key`]),
-    /// or a single [`FULL_CONTROL`] entry.
     pub permissions: Vec<String>,
 }
 
 impl Role {
-    /// Whether this role confers full control (any action) within its scope.
     #[must_use]
     pub fn is_full_control(&self) -> bool {
         self.permissions.iter().any(|p| p == FULL_CONTROL)
     }
 
-    /// A new global custom role (no owner org, not builtin) with a fresh id.
     #[must_use]
     pub fn new_custom(
         name: String,
@@ -71,28 +52,14 @@ impl Role {
     }
 }
 
-/// The home scope of a resource type: the broadest scope whose Cedar subtree
-/// contains it. Mirrors the entity hierarchy (`Organization`, `User` ∈ System;
-/// `Project`, `App` ∈ Organization; `Pipeline`, `Job` ∈ Project). A permission
-/// targeting the type is usable in a role iff the role's scope [`ScopeKind::covers`]
-/// this home scope. Exposed so the API can publish each permission's minimal
-/// scope in the authz vocabulary (so a client can filter a role's checkboxes).
 pub fn resource_home_scope(resource_type: &str) -> ScopeKind {
     match resource_type {
         "organization" | "app" => ScopeKind::Organization,
         "project" | "pipeline" | "job" => ScopeKind::Project,
-        // "system", "user", and anything unrecognised resolve at System (broadest).
         _ => ScopeKind::System,
     }
 }
 
-/// Validate a role's permission set against its scope: the set must be non-empty
-/// (a role that confers nothing is almost always a mistake), every entry must be
-/// a known permission key (or the [`FULL_CONTROL`] sentinel), and each permission
-/// must be *coherent* with the role's scope — its target resource must live
-/// within that scope's subtree. This rejects e.g. `createOrganization` (targets
-/// `system`) in an organization- or project-scoped role, where it could never
-/// authorise anything.
 pub fn validate_role_permissions(permissions: &[String], scope: ScopeKind) -> DomainResult<()> {
     if permissions.is_empty() {
         return Err(DomainError::validation(
@@ -119,42 +86,22 @@ pub fn validate_role_permissions(permissions: &[String], scope: ScopeKind) -> Do
     Ok(())
 }
 
-/// A scope a principal holds grants at, with the union of permissions those
-/// grants confer there (role grants expanded to their permission sets, direct
-/// permission grants included). The resolved view that backs a permission matrix.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EffectiveScope {
     pub scope: Scope,
-    /// `true` if a grant here confers full control (`*`); `permissions` is then
-    /// returned empty (the set is conceptually the whole catalog).
     pub full_control: bool,
-    /// Permission keys conferred at this scope (empty when `full_control`).
     pub permissions: Vec<String>,
 }
 
-/// Read + write access to role definitions. `list_all` is read at
-/// `CedarPermissionService` construction and on every reload to generate the
-/// per-role Cedar templates; the rest back `RoleUseCases`.
 #[async_trait]
 pub trait RoleRepository: Send + Sync {
-    /// Every role with its permission set — global builtins plus all tenant
-    /// custom roles. Drives the Cedar policy-set generation.
     async fn list_all(&self) -> DomainResult<Vec<Role>>;
-    /// One role by id (with its permission set), or `None` if absent.
     async fn get(&self, id: &str) -> DomainResult<Option<Role>>;
-    /// Insert a new role and its permissions atomically.
     async fn create(&self, role: &Role) -> DomainResult<()>;
-    /// Replace a role's name / description / permission set atomically.
     async fn update(&self, role: &Role) -> DomainResult<()>;
-    /// Delete a role (its permissions cascade).
     async fn delete(&self, id: &str) -> DomainResult<()>;
 }
 
-/// Admin management of the dynamic role catalog — every method is gated by
-/// `Permission::ManageRoles` (system). A created/edited/deleted role is applied
-/// live via [`PolicyControl::reload`] (its generated Cedar template is rebuilt),
-/// so changes take effect without a control-plane restart. (First cut: global
-/// roles only; org-owned custom roles + org-admin management come later.)
 #[derive(Constructor)]
 pub struct RoleUseCases<RR, GR, PS, PC>
 where
@@ -184,10 +131,6 @@ where
         self.role_repo.list_all().await
     }
 
-    /// The authorization vocabulary a role may reference: every permission key
-    /// paired with the resource type it targets (the caller derives each
-    /// permission's coherent scope from that). Static — compiled into the
-    /// binary, no DB. Gated by `ManageRoles`, like the rest of role editing.
     #[instrument(skip(self, caller))]
     pub async fn authz_vocabulary(
         &self,
@@ -246,9 +189,6 @@ where
             .get(id)
             .await?
             .ok_or_else(|| DomainError::not_found("role", id))?;
-        // A role's scope kind and builtin status are immutable; only its name,
-        // description and permission set can change. Validate the new set against
-        // the role's existing scope (loaded above).
         validate_role_permissions(&permissions, role.scope)?;
         role.name = name;
         role.description = description;
@@ -273,8 +213,7 @@ where
                 "builtin roles cannot be deleted",
             ));
         }
-        // Refuse to orphan grants: a role still granted to someone must be
-        // unassigned first, otherwise those grants would silently stop working.
+        // A role still granted must be unassigned first; those grants would silently stop working.
         let grants = self.grant_repo.list_all().await?;
         if grants.iter().any(|g| g.role.as_str() == id) {
             return Err(DomainError::business_rule(
@@ -285,10 +224,6 @@ where
         self.policy_control.reload().await
     }
 
-    /// Resolve *another* principal's effective permissions, grouped by the scope
-    /// each grant binds to. Powers the admin "what can this principal do" matrix,
-    /// so it is gated by `manageSystemGrants`. To read your own, call
-    /// [`Self::my_permissions`], which needs no permission at all.
     #[instrument(skip_all, fields(principal = %principal))]
     pub async fn effective_permissions(
         &self,
@@ -301,16 +236,7 @@ where
         self.resolve_effective_permissions(principal).await
     }
 
-    /// The caller's own effective permissions. Deliberately takes no principal:
-    /// there is nothing to authorize, because the only readable principal is the
-    /// caller itself, and that is enforced by the shape of the call rather than
-    /// by a check on its argument. Backs the "my access" view and any client-side
-    /// decision about what to offer the current user.
-    ///
-    /// An internal `Service` caller acts as the system and holds no grants, so it
-    /// has nothing to report; `Anonymous` never reaches here (the transport
-    /// rejects it first). Both are refused rather than answered with an empty
-    /// list, which would read as "you have no permissions".
+    /// Service and Anonymous are refused: an empty list would read as "no permissions".
     #[instrument(skip(self, caller))]
     pub async fn my_permissions(
         &self,
@@ -322,13 +248,7 @@ where
         self.resolve_effective_permissions(&principal).await
     }
 
-    /// Group a principal's grants by scope and expand each grant's role to its
-    /// permission set. Shared by both entry points above, which differ only in
-    /// how they establish *whose* permissions may be read.
-    ///
-    /// Note: this returns grants AS BOUND per scope; it does not expand scope
-    /// inheritance (a System grant is reported at System, not re-listed under
-    /// every org/project beneath it).
+    /// Grants as bound per scope: a System grant is not re-listed under every org and project.
     async fn resolve_effective_permissions(
         &self,
         principal: &Principal,
@@ -379,20 +299,17 @@ mod tests {
 
     #[test]
     fn validate_role_permissions_accepts_keys_and_wildcard_rejects_others() {
-        // runPipeline/readJob target pipeline/job (home Project) — valid at System.
         assert!(
             validate_role_permissions(&["runPipeline".into(), "readJob".into()], ScopeKind::System)
                 .is_ok()
         );
         assert!(validate_role_permissions(&[FULL_CONTROL.into()], ScopeKind::Project).is_ok());
-        // Empty set and unknown keys are rejected.
         assert!(validate_role_permissions(&[], ScopeKind::System).is_err());
         assert!(validate_role_permissions(&["flyToTheMoon".into()], ScopeKind::System).is_err());
     }
 
     #[test]
     fn validate_role_permissions_enforces_scope_coherence() {
-        // createOrganization targets `system` → only usable in a System role.
         assert!(
             validate_role_permissions(&["createOrganization".into()], ScopeKind::System).is_ok()
         );
@@ -404,13 +321,11 @@ mod tests {
             validate_role_permissions(&["createOrganization".into()], ScopeKind::Project).is_err()
         );
 
-        // createProject targets `organization` (home Org) → Org/System, not Project.
         assert!(
             validate_role_permissions(&["createProject".into()], ScopeKind::Organization).is_ok()
         );
         assert!(validate_role_permissions(&["createProject".into()], ScopeKind::Project).is_err());
 
-        // runPipeline targets `pipeline` (home Project) → usable at every scope.
         assert!(validate_role_permissions(&["runPipeline".into()], ScopeKind::Project).is_ok());
         assert!(
             validate_role_permissions(&["runPipeline".into()], ScopeKind::Organization).is_ok()

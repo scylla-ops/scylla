@@ -2,21 +2,13 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::pipeline::EnvKey;
 use serde::{Deserialize, Serialize};
 
-/// Where a [`TriggerInput`]'s value comes from. Externally tagged so the
-/// persisted JSONB is self-describing: `{"literal":"prod"}` /
-/// `{"json_pointer":"/after"}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TriggerInputSource {
-    /// A constant value, usable by any source kind.
     Literal(String),
-    /// An RFC 6901 JSON pointer into the webhook payload (webhook sources only).
     JsonPointer(String),
 }
 
-/// One run input contributed by a trigger, merged into the run as a literal
-/// (unmasked) environment variable after secret resolution. The key reuses
-/// [`EnvKey`], so it cannot shadow the reserved `SCYLLA_` namespace.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TriggerInput {
     key: EnvKey,
@@ -24,7 +16,6 @@ pub struct TriggerInput {
 }
 
 impl TriggerInput {
-    /// An input with a constant value.
     #[must_use]
     pub fn literal(key: EnvKey, value: impl Into<String>) -> Self {
         Self {
@@ -33,8 +24,6 @@ impl TriggerInput {
         }
     }
 
-    /// An input extracted from the webhook payload via a JSON pointer. The
-    /// pointer must be a non-empty RFC 6901 reference (i.e. start with `/`).
     pub fn json_pointer(key: EnvKey, pointer: impl Into<String>) -> DomainResult<Self> {
         let pointer = pointer.into();
         if pointer.is_empty() || !pointer.starts_with('/') {

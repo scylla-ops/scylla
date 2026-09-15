@@ -24,8 +24,6 @@ pub trait JobLogRepository {
         pagination: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<JobLog>>;
 
-    /// Return every persisted log for `job_id` (optionally filtered by `node_id`),
-    /// ordered by timestamp ascending. Used as the historical snapshot for tailing.
     async fn list_all_by_job(
         &self,
         job_id: &JobId,

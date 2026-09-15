@@ -12,7 +12,6 @@ async fn nodes_jsonb_round_trips_exactly(pool: PgPool) {
     let project = seed_project(&pool, &org, "rocket").await;
     let repo = PgPipelineRepository::new(pool);
 
-    // Non-trivial DAG: deps order, args order, must survive JSONB round-trip.
     let pipeline = PipelineBuilder::new(&project)
         .nodes(vec![
             node("a", &[]),

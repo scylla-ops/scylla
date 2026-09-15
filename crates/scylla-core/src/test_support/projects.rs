@@ -1,5 +1,3 @@
-//! `Project` test fixtures.
-
 use bon::bon;
 use chrono::{DateTime, Utc};
 
@@ -14,7 +12,6 @@ pub struct ProjectBuilder;
 #[bon]
 #[allow(clippy::new_ret_no_self, clippy::must_use_candidate)]
 impl ProjectBuilder {
-    /// Build a project belonging to `org`.
     #[builder(start_fn = new, finish_fn = build)]
     pub fn assemble(
         #[builder(start_fn)] org: &Organization,
@@ -36,7 +33,6 @@ impl ProjectBuilder {
         )
     }
 
-    /// Variant for FK-violation tests: targets an `OrganizationId` that may not exist.
     #[builder(start_fn = for_org_id, finish_fn = build)]
     pub fn assemble_from_org_id(
         #[builder(start_fn)] organization_id: OrganizationId,

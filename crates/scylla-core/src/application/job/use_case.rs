@@ -19,13 +19,8 @@ pub struct JobUseCases<J: JobRepository, PS: PermissionService> {
 }
 
 impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
-    /// Persist a freshly minted job. Called by orchestrators (e.g. pipeline
-    /// run) and by the recorder when reconciling broker events; in both cases
-    /// the caller is `Service` and the Cedar service-permit rule allows it.
     #[instrument(skip(self, caller, job))]
     pub async fn create(&self, caller: &CallerContext, job: &Job) -> DomainResult<Job> {
-        // `create` is service-only today (orchestrator / recorder); the Cedar
-        // service-permit rule admits it. End-user job creation has no policy yet.
         self.permission_service
             .check(caller, Permission::CreateJob)
             .await?;
@@ -48,10 +43,7 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
         self.job_repo.update(job).await
     }
 
-    /// Apply a status event reported by an agent to its job and persist it.
-    /// Gated by a single [`Permission::WriteJobStatus`] check (the agent role
-    /// confers it); the load/update repo calls deliberately bypass per-step
-    /// Cedar so an agent needs only `writeJobStatus`, not `readJob`/`updateJob`.
+    /// One `WriteJobStatus` check; the repo calls bypass Cedar so an agent needs no `readJob`.
     #[instrument(skip_all, fields(job_id = %job_id))]
     pub async fn record_status(
         &self,
@@ -65,8 +57,6 @@ impl<J: JobRepository, PS: PermissionService> JobUseCases<J, PS> {
 
         let job = self.job_repo.find_by_id(job_id).await?;
         let now = chrono::Utc::now();
-        // Each arm consumes the loaded job and yields the next state; adding a
-        // `JobEvent` variant breaks this match until it is handled.
         let job = match event {
             JobEvent::JobStarted => job.start()?,
             JobEvent::NodeStarted { node_id } => {

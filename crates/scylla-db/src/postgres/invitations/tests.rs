@@ -54,9 +54,6 @@ async fn use_cases(
 async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
     let org = seed_org(&pool, "Acme").await;
     let inviter = seed_user(&pool, "boss").await;
-    // Make the inviter a global admin (System-scoped system-admin grant) so the
-    // manageInvitations check passes. Inserted BEFORE the permission service is
-    // built (grants are linked at construction).
     PgGrantRepository::new(pool.clone())
         .create(&Grant::new(
             Principal::User(inviter.id().clone()),

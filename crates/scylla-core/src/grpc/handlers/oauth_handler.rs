@@ -14,7 +14,6 @@ use scylla_proto::oauth::v1::{
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
-/// Public GitHub OAuth endpoints. Behind the `oauth-github` feature.
 #[derive(Constructor)]
 pub struct OAuthHandler<P, IR, SR, U, S, H, PC>
 where

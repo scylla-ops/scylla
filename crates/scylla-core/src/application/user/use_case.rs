@@ -52,9 +52,6 @@ impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl
         self.user_repo.find_by_id(id).await
     }
 
-    /// Look up a user by their username, gated by the all-users read policy.
-    /// Bootstrap uses this on the conflict branch to recover the existing
-    /// admin user's id when the username already exists.
     #[instrument(skip_all, fields(username = %username))]
     pub async fn get_by_username(
         &self,
@@ -98,8 +95,7 @@ impl<U: UserRepository, H: HashService, PS: PermissionService, PC: PolicyControl
             .check(caller, Permission::DeleteUser(id.clone()))
             .await?;
         self.user_repo.find_by_id(id).await?;
-        // A DB trigger drops every grant this user held, at any scope, with the
-        // row; reload so the live policy set stops carrying their dead links.
+        // A DB trigger drops the user's grants with the row; reload so the live set stops carrying them.
         self.user_repo.delete(id).await?;
         self.policy_control.reload().await
     }

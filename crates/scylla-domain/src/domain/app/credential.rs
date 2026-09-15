@@ -3,12 +3,6 @@ use crate::domain::clock;
 use crate::domain::ids::{AppCredentialId, AppId};
 use chrono::{DateTime, Utc};
 
-/// A named secret of an [`App`](super::App). An App can hold several; each one
-/// stores only the hash of its plaintext [`AppSecret`] (shown once at creation).
-/// A secret can be disabled (kept but rejected at auth) or revoked (deleted).
-/// Authentication accepts the App's id + the plaintext of *any enabled* secret.
-///
-/// [`AppSecret`]: crate::domain::app::AppSecret
 #[derive(Debug, Clone)]
 pub struct AppCredential {
     id: AppCredentialId,

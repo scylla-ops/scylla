@@ -14,9 +14,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// Value object representing a hashed password (PHC string format).
-/// Guarantees at the type level that the wrapped value is a hash, not plaintext.
-/// `Debug` and `Display` are masked.
 #[nutype(
     validate(with = validate, error = DomainError),
     derive(Clone, PartialEq, Eq, AsRef, Borrow, Into),

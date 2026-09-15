@@ -23,13 +23,7 @@ use tracing::{info, instrument, warn};
 const SCHEMA_SRC: &str = include_str!("schema.cedarschema");
 const POLICIES_SRC: &str = include_str!("policies.cedar");
 
-/// The Cedar permit body for a role, instantiated per grant via the `?principal`
-/// / `?resource` slots. A full-control role (`*` permission set) gets an
-/// unconstrained action; any other role lists its permission keys explicitly.
-/// The body carries no condition: holding the grant *is* the authority, and
-/// `resource in ?resource` is what bounds it. Returns `None` for a role that
-/// confers nothing (empty permission set): it gets no template, so a grant of it
-/// links to nothing (and is logged as unlinkable).
+/// No condition in the body: holding the grant is the authority; `resource in ?resource` bounds it.
 fn role_template_src(role: &Role) -> Option<String> {
     let action = if role.is_full_control() {
         "action".to_string()
@@ -49,30 +43,17 @@ fn role_template_src(role: &Role) -> Option<String> {
     ))
 }
 
-/// Cedar-backed authorization. Static policies + schema are compiled into the
-/// binary and validated at construction; per-role templates are generated from
-/// the role store and each stored grant links an instance of its role's
-/// template. The
-/// principal's org/project memberships, plus the resource's ancestor chain, are
-/// materialised per request via the [`AuthzEntityProvider`].
 pub struct CedarPermissionService<EP: AuthzEntityProvider> {
-    /// Live policy set behind an `RwLock<Arc<…>>` so it can be swapped atomically
-    /// on reload. The new set is built fully off-lock; the write lock is only held
-    /// for the pointer swap, so reads never block on a rebuild.
+    /// Built off-lock; the write lock is held only for the pointer swap.
     policies: RwLock<Arc<PolicySet>>,
     authorizer: Authorizer,
     entity_provider: Arc<EP>,
-    /// Stores backing the live set; re-read on every `reload` to rebuild it.
-    /// Roles supply the per-role template bodies; grants link instances of them.
     role_repo: Arc<dyn RoleRepository>,
     grant_repo: Arc<dyn GrantRepository>,
     audit: Arc<dyn AuditLog>,
 }
 
 impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
-    /// Build the live policy set from the stores, then keep handles to those
-    /// stores so the set can be rebuilt on demand (`reload`). Fails fast if the
-    /// embedded schema/policies don't typecheck — catching drift at startup.
     pub async fn new(
         entity_provider: Arc<EP>,
         role_repo: Arc<dyn RoleRepository>,
@@ -93,10 +74,6 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         })
     }
 
-    /// Assemble a complete policy set: static base + scoped-role templates,
-    /// validated against the schema, then the stored grants linked as template
-    /// instances. Shared by `new` and `reload`; on any error the caller keeps the
-    /// previous live set.
     fn build_policy_set(roles: &[Role], grants: &[Grant]) -> DomainResult<PolicySet> {
         let (schema, _warnings) = Schema::from_cedarschema_str(SCHEMA_SRC)
             .map_err(|e| DomainError::Internal(format!("cedar schema parse: {e}")))?;
@@ -104,10 +81,6 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         let mut policies = PolicySet::from_str(POLICIES_SRC)
             .map_err(|e| DomainError::Internal(format!("cedar policy parse: {e}")))?;
 
-        // Register a template per role, its action set generated from the role's
-        // permissions (full control → unconstrained action; otherwise an explicit
-        // list). Grants then link an instance of their role's template, matched
-        // by role id. A role that confers nothing gets no template.
         for role in roles {
             let Some(src) = role_template_src(role) else {
                 continue;
@@ -132,8 +105,6 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             )));
         }
 
-        // Grants are instances of an already-validated template, so they are
-        // linked after validation (matching original boot behaviour).
         for grant in grants {
             if let Err(e) = Self::link_grant(&mut policies, grant) {
                 warn!(grant_id = %grant.id, error = %e, "skipping unlinkable grant");
@@ -143,17 +114,12 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         Ok(policies)
     }
 
-    /// Emit a stored grant into the policy set: link an instance of its role's
-    /// template (template id == role id; `?principal` → the principal,
-    /// `?resource` → the granted scope), keyed `grant-<id>`.
     fn link_grant(policies: &mut PolicySet, grant: &Grant) -> DomainResult<()> {
         let principal_uid = match &grant.principal {
             Principal::User(id) => euid("Scylla::User", id.as_str())?,
             Principal::App(id) => euid("Scylla::App", id.as_str())?,
         };
         let resource_uid = match &grant.scope {
-            // System is the tenancy root; a grant here (e.g. system-admin) covers
-            // everything beneath via `resource in ?resource`.
             Scope::System => euid("Scylla::System", "root")?,
             Scope::Organization(id) => euid("Scylla::Organization", id.as_str())?,
             Scope::Project(id) => euid("Scylla::Project", id.as_str())?,
@@ -171,21 +137,13 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             .map_err(|e| DomainError::Internal(format!("cedar link: {e}")))
     }
 
-    /// Build the principal entity for the caller. Returns its UID and the entity
-    /// itself. No I/O: principals carry no attributes, which is exactly what
-    /// removing membership bought.
     fn principal_entities(caller: &CallerContext) -> DomainResult<(EntityUid, Vec<Entity>)> {
         match caller {
             CallerContext::User(id) => {
-                // Like every principal, a user carries no attributes: what it may
-                // do lives in the grants linked into the policy set, never on the
-                // entity, so nothing has to be materialised per request.
                 let uid = euid("Scylla::User", id.as_str())?;
                 Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
             }
             CallerContext::App(id) => {
-                // A machine principal carries no roles/ABAC attrs of its own; its
-                // access comes entirely from linked scoped grants (agent role).
                 let uid = euid("Scylla::App", id.as_str())?;
                 Ok((uid.clone(), vec![Entity::new_no_attrs(uid, HashSet::new())]))
             }
@@ -199,8 +157,6 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         }
     }
 
-    /// Build the resource entity and its ancestor chain so Cedar `in` checks
-    /// (RBAC scope + ABAC membership) resolve through the tenancy hierarchy.
     async fn resource_entities(
         &self,
         resource: &ResourceRef,
@@ -208,8 +164,6 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
         let uid = resource_uid(resource)?;
         let ancestors = self.entity_provider.resource_ancestors(resource).await?;
 
-        // System is the tenancy root: every Organization is `in` System, so a
-        // System-scoped grant (system-admin) reaches the whole tree.
         let system_uid = euid("Scylla::System", "root")?;
 
         let org_uid = ancestors
@@ -229,7 +183,6 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             .transpose()?;
 
         let mut entities = Vec::new();
-        // The System root entity (parent of every organization).
         entities.push(Entity::new_no_attrs(system_uid.clone(), HashSet::new()));
         if let Some(o) = &org_uid {
             entities.push(Entity::new_no_attrs(
@@ -250,32 +203,21 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
             ));
         }
 
-        // Direct parent of the resource leaf, deepest available level.
         let leaf_parent = match resource {
             ResourceRef::Job(_) => pipeline_uid.as_ref(),
             ResourceRef::Pipeline(_) => project_uid.as_ref(),
             ResourceRef::Project(_) | ResourceRef::App(_) => org_uid.as_ref(),
-            // An organization's parent is the System root, and so is a user's.
-            // The user arm used to be supplied by `user_entity`; without it a
-            // System-scoped grant stops reaching user-targeted actions, and no
-            // test catches it because self-access comes from the static `self`
-            // policy instead.
+            // A user's parent is System too: without it a System grant stops reaching user-targeted actions.
             ResourceRef::Organization(_) | ResourceRef::User(_) => Some(&system_uid),
-            // System is the root: it has no parent.
             ResourceRef::System => None,
         };
 
-        // The leaf entity itself. No entity in the schema carries attributes.
         let leaf = Entity::new_no_attrs(uid.clone(), parent_set(leaf_parent));
         entities.push(leaf);
 
         Ok((uid, entities))
     }
 
-    /// Emit both audit trails (the live `audit` tracing target + the persistent
-    /// store) for a single authorization verdict. Shared by the Cedar decision
-    /// path and the principal-liveness gate so every deny is recorded the same
-    /// way.
     fn record_decision(
         &self,
         caller: &CallerContext,
@@ -317,20 +259,11 @@ impl<EP: AuthzEntityProvider> CedarPermissionService<EP> {
 
 #[async_trait]
 impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionService<EP> {
-    // Deliberately field-free. The span used to carry `caller` and `action`, but
-    // the only event emitted inside it is the audit record, which already names
-    // both, and names them better: `%caller` renders `user:01ky…` where the span
-    // used `?caller` and spelled out `User(UserId("01ky…"))`. The span stays for
-    // the nesting and the timing.
     #[instrument(skip_all)]
     async fn check(&self, caller: &CallerContext, perm: Permission) -> DomainResult<()> {
         let resource = perm.resource();
 
-        // Durable liveness gate: re-validate the principal on EVERY action, not
-        // just at stream-open / token-issue time. A long-lived agent stream
-        // otherwise keeps acting after its backing App is disabled or deleted.
-        // This `check` is the single chokepoint every privileged operation flows
-        // through, so the guarantee holds for streamed and one-shot calls alike.
+        // Re-validated on every action: a long-lived stream must stop when its App is disabled or deleted.
         if let CallerContext::App(app_id) = caller {
             if !self.entity_provider.app_is_active(app_id).await? {
                 self.record_decision(
@@ -349,8 +282,7 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
         let (resource_uid, resource_entities) = self.resource_entities(&resource).await?;
         let action_uid = euid("Scylla::Action", perm.key())?;
 
-        // Dedup by UID (e.g. a user reading itself: principal == resource).
-        // Principal entities win so the principal keeps its roles + attrs.
+        // A user reading itself yields the same UID twice.
         let mut by_uid: HashMap<String, Entity> = HashMap::new();
         for e in resource_entities.into_iter().chain(principal_entities) {
             by_uid.insert(e.uid().to_string(), e);
@@ -367,8 +299,6 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
         )
         .map_err(|e| DomainError::Internal(format!("cedar request: {e}")))?;
 
-        // Snapshot the live set (cheap Arc clone) and release the lock before
-        // evaluating, so a concurrent reload never blocks a check.
         let policies = self
             .policies
             .read()
@@ -378,8 +308,6 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
             .authorizer
             .is_authorized(&request, &policies, &entities);
 
-        // The Cedar policy ids that determined the verdict (admin/ABAC rule or a
-        // linked grant) — captured for the audit trail.
         let policies: Vec<String> = response
             .diagnostics()
             .reason()
@@ -409,22 +337,13 @@ impl<EP: AuthzEntityProvider + 'static> PermissionService for CedarPermissionSer
 
 #[async_trait]
 impl<EP: AuthzEntityProvider + 'static> VisibilityResolver for CedarPermissionService<EP> {
-    /// Read the same stores the policy set is built from, and fold the caller's
-    /// grants into the scopes where they hold `permission_key`. Deliberately not
-    /// a Cedar query: Cedar answers "may this principal do X to that entity",
-    /// one entity at a time, which cannot express a filter over a page.
-    ///
-    /// The two paths agree because they read the same rows. A grant only widens
-    /// visibility here if its role confers the permission, which is the same
-    /// condition that puts the action in the role's generated template.
+    /// Not a Cedar query: Cedar decides one entity at a time and cannot filter a page.
     #[instrument(skip(self, caller))]
     async fn visible_scopes(
         &self,
         caller: &CallerContext,
         permission_key: &str,
     ) -> DomainResult<Visibility> {
-        // A service acts as the system; an App or User is filtered by its
-        // grants; Anonymous never reaches a listing.
         let principal = match caller {
             CallerContext::Service(_) => return Ok(Visibility::All),
             CallerContext::Anonymous => return Ok(Visibility::none()),
@@ -454,9 +373,6 @@ impl<EP: AuthzEntityProvider + 'static> VisibilityResolver for CedarPermissionSe
 
 #[async_trait]
 impl<EP: AuthzEntityProvider + 'static> PolicyControl for CedarPermissionService<EP> {
-    /// Rebuild the live policy set from the stores and swap it in atomically.
-    /// On failure the previous set is kept, so a check is never served by a
-    /// broken or partial set.
     #[instrument(skip(self))]
     async fn reload(&self) -> DomainResult<()> {
         let roles = self.role_repo.list_all().await?;
@@ -482,10 +398,7 @@ mod tests {
     use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
     use crate::domain::role::RoleName;
 
-    /// The five builtin roles as the seed migration defines them: admin roles
-    /// confer full control (`*`), agent roles the four job-execution
-    /// permissions. The Cedar templates are generated from these, so the stub
-    /// must match the seed for the admin/agent behaviour tests to hold.
+    /// Must match the seed migration: the templates are generated from these.
     fn builtin_roles() -> Vec<Role> {
         let admin = |id: &str, scope: ScopeKind| Role {
             id: id.to_string(),
@@ -637,8 +550,6 @@ mod tests {
         .expect("schema + policies must parse, validate, and link")
     }
 
-    /// Like `service`, but the App principal's backing row is disabled
-    /// (`app_is_active` → false). Exercises the liveness gate.
     async fn service_app_inactive(
         ancestors: ResourceAncestors,
         grants: Vec<Grant>,
@@ -660,8 +571,6 @@ mod tests {
         RoleName::new(name).unwrap()
     }
 
-    // Constructing the service runs Schema::from_cedarschema_str + strict
-    // Validator::validate. If the embedded schema/policies drift, this fails.
     #[tokio::test]
     async fn schema_and_policies_validate_and_admin_allows_everything() {
         let svc = service(
@@ -701,9 +610,6 @@ mod tests {
 
     #[tokio::test]
     async fn project_membership_alone_confers_nothing() {
-        // No implicit project tier: belonging to a project grants no capability,
-        // every right comes from a grant. The same call succeeds in the test
-        // below once a role is actually held.
         let svc = service(
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
@@ -753,9 +659,6 @@ mod tests {
 
     #[tokio::test]
     async fn project_membership_confers_nothing_without_org_membership() {
-        // The user was removed from the org but their project-membership row
-        // lingers. Membership gates authority: the stale row alone must not
-        // authorize anything.
         let svc = service(
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
@@ -777,7 +680,6 @@ mod tests {
     #[tokio::test]
     async fn project_member_denied_outside_scope() {
         let svc = service(
-            // pipeline lives under project p2, which the user is not a member of
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
                 project: Some(ProjectId::new("p2")),
@@ -820,13 +722,6 @@ mod tests {
 
     #[tokio::test]
     async fn a_grant_authorizes_on_its_own() {
-        // Grants used to be conditional: a Cedar guard re-read the membership
-        // tables on every check, so a grant went inert the moment someone left.
-        // With membership gone the grant IS the authority, unconditionally, and
-        // removing access means deleting the row. The completeness of that
-        // deletion is covered by `revoke_all_access_strips_the_whole_org_subtree`
-        // in the organizations persistence tests — that test is what replaces
-        // the guard this one used to describe.
         let svc = service(
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
@@ -848,7 +743,6 @@ mod tests {
             "the grant alone authorizes: nothing else has to be true"
         );
 
-        // And it reaches only its own scope.
         let elsewhere = service(
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
@@ -873,8 +767,6 @@ mod tests {
 
     #[tokio::test]
     async fn system_scoped_grants_need_no_org_membership() {
-        // system-admin authority comes from the System scope, above the org
-        // tree: it must keep working inside any org without membership there.
         let svc = service(
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o1")),
@@ -899,8 +791,6 @@ mod tests {
 
     #[tokio::test]
     async fn agent_app_grant_allows_execute_job_in_scope_only() {
-        // A machine App with an agent grant on an org may execute jobs on a
-        // pipeline beneath it, but not management actions outside the agent set.
         let grant = Grant::new(
             Principal::App(AppId::new("agent-1")),
             role(ORGANIZATION_AGENT_ROLE),
@@ -932,12 +822,6 @@ mod tests {
 
     #[tokio::test]
     async fn trigger_runner_app_grant_allows_run_pipeline_in_scope() {
-        // The per-org trigger-runner App holds the `organization-trigger-runner`
-        // role at org scope, which confers `runPipeline` and nothing else. This is
-        // the load-bearing authz path for triggers: it must authorize firing any
-        // pipeline beneath the org — which only links/typechecks because the
-        // schema widened `runPipeline` to allow App principals. The runner must
-        // NOT thereby gain trigger management.
         let grant = Grant::new(
             Principal::App(AppId::new("trigger-runner-1")),
             role(ORGANIZATION_TRIGGER_RUNNER_ROLE),
@@ -969,9 +853,6 @@ mod tests {
 
     #[tokio::test]
     async fn narrow_role_grant_allows_only_its_actions_in_scope() {
-        // A role conferring only `runPipeline`, granted to Alice on Org A. She may
-        // run pipelines beneath the org but the grant confers no other action
-        // there.
         let grant = Grant::new(
             Principal::User(UserId::new("alice")),
             role(ORGANIZATION_TRIGGER_RUNNER_ROLE),
@@ -1003,11 +884,6 @@ mod tests {
 
     #[tokio::test]
     async fn disabled_app_denied_even_with_valid_grant() {
-        // Same grant + in-scope resource as the "allows execute" test, but the
-        // App's backing row is disabled. The per-action liveness gate in `check`
-        // must deny regardless of the otherwise-sufficient agent grant. This is
-        // the durable guarantee that a disabled worker cannot keep acting over
-        // an already-open stream.
         let grant = Grant::new(
             Principal::App(AppId::new("agent-1")),
             role(ORGANIZATION_AGENT_ROLE),
@@ -1038,7 +914,6 @@ mod tests {
             role(ORGANIZATION_AGENT_ROLE),
             Scope::Organization(OrganizationId::new("o1")),
         );
-        // Pipeline lives under a different org the app has no grant on.
         let svc = service(
             ResourceAncestors {
                 organization: Some(OrganizationId::new("o2")),
@@ -1059,10 +934,6 @@ mod tests {
 
     #[tokio::test]
     async fn org_admin_manages_agents_in_its_org_only() {
-        // An agent is a specialized app, so agent actions target the org (create/
-        // list) or the App resource beneath it (read/stats/delete). An org-admin
-        // grant covers all of them within its org via the role template, and
-        // nothing outside it. Pure permission — no org-member broadening.
         let grant = Grant::new(
             Principal::User(UserId::new("u1")),
             role(ORGANIZATION_ADMIN_ROLE),
@@ -1165,9 +1036,6 @@ mod tests {
 
     #[tokio::test]
     async fn listing_members_does_not_confer_invitation_management() {
-        // The leak this guards: whoever can enumerate an organization's people
-        // must not thereby be able to enumerate its pending invites, which carry
-        // email addresses. `manageInvitations` belongs to the admin role only.
         let viewer = service(
             ResourceAncestors::default(),
             vec![Grant::new(
@@ -1199,7 +1067,6 @@ mod tests {
             "but must NOT manage its invitations"
         );
 
-        // An org admin may.
         let admin = service(
             ResourceAncestors::default(),
             vec![Grant::new(
@@ -1288,8 +1155,6 @@ mod tests {
 
     #[tokio::test]
     async fn user_lists_its_own_organizations() {
-        // A plain user (no role, no membership) may list its own orgs/projects
-        // via the `self` ABAC policy, but not another user's.
         let svc = service(ResourceAncestors::default(), vec![]).await;
         let caller = CallerContext::User(UserId::new("u1"));
         assert!(

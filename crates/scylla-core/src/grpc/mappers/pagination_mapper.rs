@@ -19,7 +19,6 @@ pub fn proto_to_domain_pagination(
 
 pub fn domain_to_proto_metadata(metadata: &PaginationMetadata) -> ProtoPaginationMetadata {
     ProtoPaginationMetadata {
-        // saturate at u32::MAX rather than truncating
         total_count: u32::try_from(metadata.total_count()).unwrap_or(u32::MAX),
         page: metadata.page(),
         page_size: metadata.page_size(),

@@ -10,8 +10,6 @@ use chrono::{DateTime, Duration, Utc};
 
 const INVITE_TTL_DAYS: i64 = 7;
 
-/// An email-based invitation to join an organization, optionally with a scoped
-/// role granted on acceptance.
 #[derive(Debug, Clone)]
 pub struct Invitation {
     id: InvitationId,
@@ -26,12 +24,7 @@ pub struct Invitation {
 }
 
 impl Invitation {
-    /// Assemble a pending invitation.
-    ///
-    /// `token` is supplied by the caller rather than generated here. It is the
-    /// secret that lets whoever holds the link join the organization, so picking
-    /// a random source is a security decision, and the kernel is a crate every
-    /// agent links. The control plane mints it; see `mint_invitation_token`.
+    /// `token` comes from the caller: the kernel carries no random source.
     #[must_use]
     pub fn create(
         organization_id: OrganizationId,
@@ -54,7 +47,6 @@ impl Invitation {
         }
     }
 
-    /// Rehydrate an invitation from persisted columns.
     #[must_use]
     #[allow(clippy::too_many_arguments)]
     pub fn from_persistence(

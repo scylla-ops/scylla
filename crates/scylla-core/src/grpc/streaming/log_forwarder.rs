@@ -1,8 +1,3 @@
-//! Forwards a domain `JobLogLiveStream` onto a bounded mpsc, exposed as a
-//! `ReceiverStream` for tonic. Applies back-pressure (awaits a slot) rather than
-//! dropping lines, so the full history replay + live tail reach the client
-//! intact; the task exits cleanly when the client disconnects.
-
 use crate::application::JobLogLiveStream;
 use crate::grpc::mappers::{domain_error_to_status, job_log_to_proto};
 use futures_util::StreamExt;
@@ -14,10 +9,6 @@ use tracing::info;
 
 const FORWARD_CHANNEL_CAPACITY: usize = 256;
 
-/// Spawn a forwarder task and return a tonic-ready stream.
-///
-/// The task terminates when the upstream ends, the receiver is dropped
-/// (client disconnect), or an unrecoverable transport error is observed.
 #[must_use]
 pub fn spawn_log_forwarder(
     stream: JobLogLiveStream,
@@ -38,17 +29,13 @@ async fn forward(
             item = stream.next() => match item {
                 Some(Ok(log)) => {
                     let evt = TailJobLogsResponse { log: Some(job_log_to_proto(&log)) };
-                    // Await a slot (back-pressure) instead of dropping: a noisy
-                    // job's full log must reach the client, not just the first
-                    // bufferful. If the client has gone, `send` errors -> stop.
+                    // Await a slot rather than drop: the full log must reach the client.
                     if tx.send(Ok(evt)).await.is_err() {
                         break;
                     }
                     forwarded += 1;
                 }
                 Some(Err(e)) => {
-                    // Route through the central mapper: correct gRPC code per
-                    // variant and internal detail suppressed (don't leak `{e}`).
                     let _ = tx.send(Err(domain_error_to_status(e))).await;
                 }
                 None => {

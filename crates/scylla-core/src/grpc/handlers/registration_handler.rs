@@ -11,7 +11,6 @@ use scylla_proto::registration::v1::{
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
-/// Public self-service signup.
 #[derive(Constructor)]
 pub struct RegistrationHandler<SR, S, H, PC>
 where

@@ -1,5 +1,3 @@
-//! `User` test fixtures.
-
 use bon::bon;
 use chrono::{DateTime, Utc};
 
@@ -8,8 +6,6 @@ use crate::domain::ids::UserId;
 use crate::domain::user::User;
 use crate::domain::user::{Email, PasswordHash, Username};
 
-/// A PHC-format Argon2id hash that satisfies `PasswordHash::new`. Constant so
-/// builders don't pay the hashing cost in tests.
 pub const VALID_ARGON2_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$abc$xyz";
 
 pub struct UserBuilder;
@@ -41,7 +37,6 @@ impl UserBuilder {
     }
 }
 
-/// Shortcut for "give me a fresh valid user named X".
 #[must_use]
 pub fn user(name: &str) -> User {
     UserBuilder::new(name).build()

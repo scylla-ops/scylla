@@ -8,10 +8,6 @@ use tracing::instrument;
 
 use super::error::SqlxResultExt;
 
-/// Resolves a resource's place in the tenancy tree for Cedar, over the
-/// pipeline→project→org foreign keys. Read-only. Principals need nothing
-/// materialised: their authority lives in the grants compiled into the policy
-/// set, so there is no per-principal query on the check path at all.
 #[derive(Clone)]
 pub struct PgAuthzEntityProvider {
     pool: PgPool,
@@ -43,8 +39,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                 })
             }
             ResourceRef::Pipeline(id) => {
-                // Joined columns: sqlx can't prove the inner join yields a row,
-                // so force NOT NULL with `!` — both FKs are NOT NULL in schema.
+                // `!`: sqlx cannot prove the inner join yields a row; both FKs are NOT NULL.
                 let row = sqlx::query!(
                     "SELECT pl.project_id AS \"project_id!\", pr.organization_id AS \"organization_id!\" \
                      FROM pipelines pl JOIN projects pr ON pr.id = pl.project_id \
@@ -98,7 +93,6 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
                     ..Default::default()
                 })
             }
-            // System / User / Organization have no tenancy parents.
             _ => Ok(ResourceAncestors::default()),
         }
     }
@@ -109,8 +103,7 @@ impl AuthzEntityProvider for PgAuthzEntityProvider {
             .fetch_optional(&self.pool)
             .await
             .to_domain()?;
-        // No row → the App was deleted; treat as inactive so an in-flight stream
-        // from a now-removed App is denied rather than trusted.
+        // No row: the App was deleted; inactive, so an in-flight stream is denied.
         Ok(row.is_some_and(|r| r.is_active))
     }
 }

@@ -11,9 +11,6 @@ const SCOPE_SYSTEM: &str = "system";
 const SCOPE_ORGANIZATION: &str = "organization";
 const SCOPE_PROJECT: &str = "project";
 
-/// Persistence for role definitions (`roles` + `role_permissions`). Read at
-/// `CedarPermissionService` construction and on each reload to generate the
-/// per-role Cedar templates.
 #[derive(Clone)]
 pub struct PgRoleRepository {
     pool: PgPool,
@@ -141,9 +138,6 @@ impl RoleRepository for PgRoleRepository {
 
     #[instrument(skip_all, fields(role_id = %role.id))]
     async fn update(&self, role: &Role) -> DomainResult<()> {
-        // The role's scope kind / builtin / owner are immutable; only name,
-        // description and the permission set change. Replace the permission set
-        // wholesale inside the transaction.
         let mut tx = self.pool.begin().await.to_domain()?;
         sqlx::query!(
             "UPDATE roles SET name = $2, description = $3, updated_at = NOW() WHERE id = $1",
@@ -173,7 +167,6 @@ impl RoleRepository for PgRoleRepository {
 
     #[instrument(skip(self))]
     async fn delete(&self, id: &str) -> DomainResult<()> {
-        // `role_permissions` cascades.
         sqlx::query!("DELETE FROM roles WHERE id = $1", id)
             .execute(&self.pool)
             .await
@@ -249,7 +242,6 @@ mod tests {
             }
         }
 
-        // A custom project-scoped role with two permissions.
         sqlx::query!(
             "INSERT INTO roles (id, name, scope_kind, builtin) VALUES ('ci', 'CI', 'project', FALSE)"
         )
@@ -265,7 +257,6 @@ mod tests {
             .await
             .unwrap();
         }
-        // A second role, held at org scope, so the two grants group separately.
         sqlx::query!(
             "INSERT INTO roles (id, name, scope_kind, builtin) \
              VALUES ('janitor', 'Janitor', 'organization', FALSE)"
@@ -279,7 +270,6 @@ mod tests {
         .execute(&pool)
         .await
         .unwrap();
-        // Alice holds `ci` at project p1 and `janitor` at org o1.
         sqlx::query!(
             "INSERT INTO grants (id, principal_kind, principal_id, role_id, scope_kind, scope_id) \
              VALUES ('g1', 'user', 'alice', 'ci', 'project', 'p1'), \
@@ -316,9 +306,6 @@ mod tests {
         assert_eq!(org.permissions, vec!["deleteJob".to_string()]);
     }
 
-    /// Reading your own access needs no permission, while reading someone else's
-    /// still requires `manageSystemGrants`. Both run against a permission service
-    /// that denies everything, so the split is what is under test, not the stub.
     #[sqlx::test(migrations = "../../migrations")]
     async fn my_permissions_needs_no_permission_unlike_the_admin_view(pool: PgPool) {
         use crate::domain::errors::{DomainError, DomainResult};
@@ -361,18 +348,15 @@ mod tests {
             Arc::new(NoopPolicy),
         );
 
-        // Alice reads her own access even though every permission check fails.
         let alice = CallerContext::User(UserId::new("alice"));
         let scopes = uc.my_permissions(&alice).await.expect("own permissions");
         assert_eq!(scopes.len(), 1);
         assert!(matches!(&scopes[0].scope, Scope::Organization(o) if o.as_str() == "o1"));
         assert!(scopes[0].full_control, "organization-admin confers '*'");
 
-        // A user with no grants gets an empty list, not an error.
         let bob = CallerContext::User(UserId::new("bob"));
         assert!(uc.my_permissions(&bob).await.unwrap().is_empty());
 
-        // The admin view over another principal is still gated.
         assert!(
             uc.effective_permissions(&alice, &Principal::User(UserId::new("bob")))
                 .await
@@ -380,7 +364,6 @@ mod tests {
             "reading another principal must still require manageSystemGrants",
         );
 
-        // A service acts as the system and holds no grants: refused, not empty.
         let service = CallerContext::Service(ServiceIdentity::recorder());
         assert!(uc.my_permissions(&service).await.is_err());
     }

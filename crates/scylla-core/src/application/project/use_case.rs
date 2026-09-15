@@ -27,11 +27,8 @@ pub struct ProjectUseCases<
     project_repo: Arc<P>,
     user_repo: Arc<U>,
     permission_service: Arc<PS>,
-    /// Narrows listings to what the caller holds, for the pages a single
-    /// yes/no check cannot answer.
     visibility: Arc<dyn VisibilityResolver>,
     policy_control: Arc<PC>,
-    /// The edition's quota policy, asked before a project is created.
     quota: Arc<dyn QuotaPolicy>,
 }
 
@@ -50,7 +47,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
             .check(caller, Permission::CreateProject(organization_id.clone()))
             .await?;
 
-        // Cap projects per organization: the edition's policy decides.
         quota::enforce(
             self.quota
                 .check(Resource::Project, organization_id.as_str())
@@ -59,10 +55,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
 
         let project = Project::create(name, description, organization_id)?;
 
-        // The human creator becomes the project's admin. The project row and the
-        // owner grant are written in ONE transaction, so a partial failure can
-        // never leave a project without an owner. Machine/anonymous callers have
-        // nobody to make owner, so they just get the bare project.
         match caller {
             CallerContext::User(user_id) => {
                 let role = RoleName::new(PROJECT_ADMIN_ROLE)?;
@@ -74,8 +66,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
                 self.project_repo
                     .provision_with_owner(&project, &grant)
                     .await?;
-                // Make the project-admin grant live now so the creator can act on
-                // the project immediately, without a control-plane restart.
                 self.policy_control.reload().await?;
                 Ok(project)
             }
@@ -115,8 +105,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         self.project_repo.update(&project).await
     }
 
-    /// Set the active flag to an explicit value and return the updated project.
-    /// Idempotent, so a retried call is safe — see [`Project::set_active`].
     #[instrument(skip_all, fields(project_id = %id))]
     pub async fn set_active(
         &self,
@@ -140,8 +128,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
             .check(caller, Permission::DeleteProject(id.clone()))
             .await?;
         self.project_repo.find_by_id(id).await?;
-        // A DB trigger drops the project-scoped grants with the row; reload so
-        // the live policy set stops carrying their dead links.
+        // A DB trigger drops the project's grants with the row; reload so the live set stops carrying them.
         self.project_repo.delete(id).await?;
         self.policy_control.reload().await
     }
@@ -158,14 +145,7 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         self.project_repo.list_all(pagination).await
     }
 
-    /// The organization's projects, narrowed to the ones the caller may see.
-    ///
-    /// Deliberately not gated on `listProjectsByOrganization`: that permission
-    /// means "see *all* of them" and comes from an organization-wide role.
-    /// Someone holding only a project role has no business being refused the
-    /// whole listing — they should see their own project and nothing else,
-    /// which is what the filter expresses. Reading the organization at all is
-    /// still required, so this is not an open endpoint.
+    /// Not gated on `listProjectsByOrganization`: a project-only role must see its own project, not be refused.
     #[instrument(skip_all, fields(organization_id = %organization_id))]
     pub async fn list_by_organization(
         &self,
@@ -180,8 +160,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
             )
             .await?;
 
-        // Holding the org-wide list permission means nothing is hidden; anything
-        // else is narrowed to the scopes the caller actually holds.
         let visible = if self
             .permission_service
             .check(
@@ -203,10 +181,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
             .await
     }
 
-    /// Everyone on the project: the principals holding a grant scoped to it.
-    /// Holders of an organization-wide grant are not listed — they administer
-    /// the organization rather than work here, and the scope hierarchy already
-    /// gives them the access they need.
     #[instrument(skip_all, fields(project_id = %project_id))]
     pub async fn list_users(
         &self,
@@ -224,7 +198,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
             .await?;
         let (user_ids, metadata) = paginated.into_parts();
 
-        // Batched read + re-order to the paginated order.
         let mut by_id: std::collections::HashMap<String, User> = self
             .user_repo
             .find_by_ids(&user_ids)
@@ -240,8 +213,6 @@ impl<P: ProjectRepository, U: UserRepository, PS: PermissionService, PC: PolicyC
         Ok((users, metadata))
     }
 
-    /// The projects a user works on: granted directly, or through a grant on the
-    /// owning organization.
     #[instrument(skip_all, fields(user_id = %user_id))]
     pub async fn list_user_projects(
         &self,

@@ -1,16 +1,3 @@
-//! Conversions between the kernel types and their wire form.
-//!
-//! These live here, and not on either side, because they are the one piece of
-//! code the control plane and the agent must agree on exactly. Each of them used
-//! to exist twice, once per binary: the agent encoded a [`JobEvent`] into a
-//! `JobStatus` while the control plane decoded the same message back, and
-//! nothing tied the two halves together. Adding a variant meant remembering to
-//! edit a file in the other crate, and no test would have noticed the omission.
-//!
-//! `scylla-proto` is the only crate both binaries link, which makes it the
-//! natural home. It depends on `scylla-domain` for the kernel types; the kernel
-//! depends on nothing here, so there is no cycle.
-
 use chrono::{DateTime, Utc};
 use prost_types::Timestamp;
 
@@ -25,7 +12,6 @@ use crate::agent::v1::job_status::{
 use crate::common::v1 as common;
 use crate::exec::v1 as exec;
 
-/// A `DateTime<Utc>` as a protobuf `Timestamp`.
 #[must_use]
 pub fn timestamp(dt: DateTime<Utc>) -> Option<Timestamp> {
     Some(Timestamp {
@@ -34,10 +20,6 @@ pub fn timestamp(dt: DateTime<Utc>) -> Option<Timestamp> {
     })
 }
 
-/// Encode a lifecycle event as the `JobStatus` an agent reports.
-///
-/// Each arm builds exactly the oneof variant carrying this event's fields: a
-/// job-level event names no node, a node event always names one.
 #[must_use]
 pub fn job_event_to_status(job_id: &str, event: JobEvent) -> JobStatus {
     let node = |value: String| Some(common::NodeId { value });
@@ -67,10 +49,6 @@ pub fn job_event_to_status(job_id: &str, event: JobEvent) -> JobStatus {
     }
 }
 
-/// Decode a reported `JobStatus` back into a lifecycle event.
-///
-/// Returns `None` when the oneof is absent, which is a malformed report rather
-/// than a valid state; the caller logs the skip.
 #[must_use]
 pub fn status_to_job_event(status: &JobStatus) -> Option<JobEvent> {
     let node_id = |id: &Option<common::NodeId>| id.clone().unwrap_or_default().value;
@@ -96,7 +74,6 @@ pub fn status_to_job_event(status: &JobStatus) -> Option<JobEvent> {
     })
 }
 
-/// A log stream as its proto enum.
 #[must_use]
 pub const fn log_stream_to_proto(stream: LogStream) -> common::LogStream {
     match stream {
@@ -105,8 +82,6 @@ pub const fn log_stream_to_proto(stream: LogStream) -> common::LogStream {
     }
 }
 
-/// A proto log stream as the kernel type. `UNSPECIFIED` and anything unknown
-/// fall back to stdout, matching how an unlabelled line has always been treated.
 #[must_use]
 pub fn log_stream_from_proto(raw: i32) -> LogStream {
     match common::LogStream::try_from(raw) {
@@ -115,7 +90,6 @@ pub fn log_stream_from_proto(raw: i32) -> LogStream {
     }
 }
 
-/// A shell as its proto enum.
 #[must_use]
 pub const fn shell_to_proto(shell: Shell) -> exec::Shell {
     match shell {
@@ -124,8 +98,6 @@ pub const fn shell_to_proto(shell: Shell) -> exec::Shell {
     }
 }
 
-/// A proto shell as the kernel type. `UNSPECIFIED` and anything unknown fall
-/// back to `sh`, the shell guaranteed present in the agent image.
 #[must_use]
 pub fn shell_from_proto(raw: i32) -> Shell {
     match exec::Shell::try_from(raw) {
@@ -156,8 +128,6 @@ mod tests {
         ]
     }
 
-    /// The encode and decode halves used to live in two different crates with
-    /// nothing tying them together. This is the test that was impossible then.
     #[test]
     fn every_job_event_survives_a_round_trip() {
         for event in every_variant() {
@@ -171,8 +141,6 @@ mod tests {
         }
     }
 
-    /// Guards against a variant being added to JobEvent and handled on only one
-    /// side. Both matches are exhaustive, so a new variant fails the build here.
     #[test]
     fn every_variant_is_covered() {
         assert_eq!(
@@ -197,7 +165,6 @@ mod tests {
             let raw = log_stream_to_proto(stream) as i32;
             assert_eq!(log_stream_from_proto(raw), stream);
         }
-        // Unknown and unspecified both mean stdout.
         assert_eq!(log_stream_from_proto(0), LogStream::Stdout);
         assert_eq!(log_stream_from_proto(99), LogStream::Stdout);
     }

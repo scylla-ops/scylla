@@ -37,8 +37,7 @@ impl<
     ) -> Result<Response<IssueTokenResponse>, Status> {
         let req = request.into_inner();
         let app_id = AppId::new(&required(req.app_id, "app_id")?);
-        // A malformed secret is treated as an auth failure, not a validation
-        // error, so the response never reveals why credentials were rejected.
+        // A malformed secret is an auth failure, so the response never says why.
         let secret = AppSecret::new(&req.secret)
             .map_err(|_| Status::unauthenticated("Invalid app credentials"))?;
 

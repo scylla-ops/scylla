@@ -1,7 +1,3 @@
-//! One-stop import for test code.
-//! `use scylla_core::test_support::prelude::*;` brings every builder, shortcut
-//! and double into scope.
-
 pub use super::authz::*;
 pub use super::job_logs::*;
 pub use super::jobs::*;

@@ -1,19 +1,9 @@
-//! Status reporting + terminal event guard.
-//!
-//! [`StatusPublisher`] wraps the agent up-stream channel and emits
-//! [`JobEvent`]s as `AgentUp` status messages. [`JobReporter`] wraps it with
-//! scope-exit semantics: `JobStarted` fires on construction, and exactly one of
-//! `JobCompleted`/`JobFailed` fires via [`JobReporter::finalize`] at the end of
-//! the run — regardless of which path the executor took.
-
 use scylla_domain::JobEvent;
 use scylla_proto::agent::v1::{AgentUp, agent_up};
 use tokio::sync::mpsc;
 
 use crate::error::ExecutionError;
 
-/// Emits [`JobEvent`]s as `AgentUp` status messages on the agent stream.
-/// Cheaply cloneable.
 #[derive(Clone)]
 pub struct StatusPublisher {
     up_tx: mpsc::Sender<AgentUp>,
@@ -37,22 +27,18 @@ impl StatusPublisher {
     }
 }
 
-/// Map a domain [`JobEvent`] to the proto [`JobStatus`] sent over the stream.
 enum JobOutcome {
     Pending,
     Success,
     Failure(String),
 }
 
-/// Guards the terminal lifecycle of a job: emits `JobStarted` on creation and a
-/// single `JobCompleted`/`JobFailed` on [`JobReporter::finalize`].
 pub struct JobReporter {
     publisher: StatusPublisher,
     outcome: JobOutcome,
 }
 
 impl JobReporter {
-    /// Start a new job: emits `JobStarted`.
     pub async fn start(publisher: StatusPublisher) -> Result<Self, ExecutionError> {
         publisher.emit(JobEvent::JobStarted).await?;
         Ok(Self {
@@ -69,7 +55,6 @@ impl JobReporter {
         self.outcome = JobOutcome::Failure(error);
     }
 
-    /// Emit the terminal event (`JobCompleted` / `JobFailed`) and consume the guard.
     pub async fn finalize(self) -> Result<(), ExecutionError> {
         let event = match self.outcome {
             JobOutcome::Success => JobEvent::JobCompleted,

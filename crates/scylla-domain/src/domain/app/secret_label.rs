@@ -15,8 +15,6 @@ fn validate(s: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
-/// Human-readable label distinguishing one secret of an App from another
-/// (e.g. `default`, `ci-runner`). Unique within its owning App.
 #[nutype(
     sanitize(trim),
     validate(with = validate, error = DomainError),

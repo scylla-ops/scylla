@@ -2,7 +2,6 @@ use crate::grpc::convert::{ts, wrap};
 use scylla_domain::domain::secret::Secret as DomainSecret;
 use scylla_proto::secret::v1::Secret;
 
-/// Domain secret → proto. Metadata only; the value is never included.
 pub fn secret_to_proto(secret: &DomainSecret) -> Secret {
     Secret {
         secret_id: wrap(secret.id().to_string()),
