@@ -1,4 +1,22 @@
 import { t } from '@lingui/core/macro';
+import type { GrpcStatusCode } from '@protobuf-ts/grpcweb-transport';
+
+/**
+ * Every code a `ScyllaError` can carry.
+ *
+ * `RpcError.code` is typed `string` upstream because the same class serves
+ * several transports, but the gRPC-Web one always fills it with a
+ * `GrpcStatusCode` member name — so the names are the vocabulary. `import type`
+ * keeps the enum out of the bundle: it is only ever read as a type here.
+ *
+ * The last entries are ours, minted by a data source when a gRPC code is too
+ * coarse for the call it answers (see `login`'s `INVALID_CREDENTIALS`). They
+ * live next to the `userMessage()` switch that consumes them.
+ */
+export type ScyllaErrorCode =
+  | keyof typeof GrpcStatusCode
+  | 'UNKNOWN_ERROR'
+  | 'INVALID_CREDENTIALS';
 
 /** Class to represent errors in the application.
  * @extends Error
@@ -15,8 +33,12 @@ export class ScyllaError extends Error {
     return !!cause && typeof cause === 'object' && 'code' in cause;
   }
 
-  public getCode(): string {
-    return this.hasCode(this.cause) ? this.cause.code : 'UNKNOWN_ERROR';
+  /**
+   * The cast is a boundary assumption, not a guarantee: the value comes from
+   * the wire. An unknown string simply matches no branch below.
+   */
+  public getCode(): ScyllaErrorCode {
+    return this.hasCode(this.cause) ? (this.cause.code as ScyllaErrorCode) : 'UNKNOWN_ERROR';
   }
 
   public isNetworkError(): boolean {
@@ -129,6 +151,17 @@ export class ScyllaResult<T> {
         new ScyllaError('Error during flatMapAsync operation', { cause: error }),
       );
     }
+  }
+
+  /**
+   * Rewrites the error of a failed result; a success passes through untouched.
+   *
+   * Meant for transport boundaries where a generic status code means something
+   * more precise for one specific call, so the ambiguity is resolved once,
+   * where the call's meaning is known, instead of at every consumer.
+   */
+  public mapError(fn: (error: ScyllaError) => ScyllaError): ScyllaResult<T> {
+    return this._value instanceof ScyllaError ? new ScyllaResult<T>(fn(this._value)) : this;
   }
 
   public unwrap(): T {

@@ -46,6 +46,17 @@ cleanup, which is exactly the kind of outside-React system effects are for.
 Zustand store for table UI state, and the `jobs-table/` folder holding the table, its columns
 and its cells (`JobStatus`, `JobTimeline`, `JobNodesList`, `JobActions`).
 
+The log viewer behaves like an IDE console, and `useStreamedLogView` is where that lives. A live
+log is a stream, but a React `value` prop is a snapshot, and the gap between the two is the whole
+problem: handing the growing string to `<ReactCodeMirror value>` makes it replace the entire
+document on every flush — seven times a second — which resets the scroll offset and destroys any
+selection the reader had made. So the hook appends the delta itself and keeps the prop frozen.
+
+On top of that it keeps one piece of state — are we still following the tail? — because "always
+scroll to the bottom" and "let me read this line" are in direct conflict. Any gesture that moves
+away from the end turns following off, any return to the end turns it back on, and a selection
+being made holds it off regardless.
+
 `useJobsByPipelines` is worth knowing about: it fetches runs for many pipelines with
 `useQueries` rather than a loop of `useQuery`, which is how the pipeline dashboard shows a "last
 run" column without an N+1 storm.

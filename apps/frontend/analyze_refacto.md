@@ -79,7 +79,7 @@ refacto d'architecture applicative**. Le reste du document détaille.
 |---|---|
 | Graphe acyclique | `depcruise:cycles` → 0 cycle sur 17 modules. Confirmé. |
 | Frontières machine-vérifiées | 8 règles, 0 violation, en gate CI (`frontend.yml` : `depcruise` et `depcruise:cycles` sans `\|\| true`). Confirmé. |
-| CI frontend | Existait pas ; existe maintenant, et se déclenche aussi sur `crates/scylla-protocol/proto/**`. Le raisonnement est juste : les clients TS ne sont pas commités, un changement proto peut casser le front sans toucher le front. Bien vu. |
+| CI frontend | Existait pas ; existe maintenant, et se déclenche aussi sur `crates/scylla-proto/proto/**`. Le raisonnement est juste : les clients TS ne sont pas commités, un changement proto peut casser le front sans toucher le front. Bien vu. |
 | `platform/` sous les features | Réel et respecté : `platform-knows-no-feature` est vert, et `platform/` n'importe effectivement aucune feature. C'est la bonne décision structurante — elle rend l'acyclicité vraie *par construction*, pas par discipline. |
 | Suppression des 64 use cases | Vérifié : il reste exactement 1 `*.use-case.ts` (`update-role.use-case.ts`). Le critère d'admission écrit dans `CLAUDE.md` est bon et défendable. |
 | Domain purifié du proto | `domain-is-pure` vert. `idValue` n'apparaît plus que dans `infrastructure/` — sauf un cas, § 4. |

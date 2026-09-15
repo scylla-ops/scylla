@@ -10,7 +10,6 @@ import LogoScylla from '@/assets/logo_scylla.png';
 import LogoScyllaDark from '@/assets/logo_scylla_dark.png';
 import { Trans } from '@lingui/react/macro';
 import { useLogin } from '@/modules/features/login/presentation/hooks/use-login.ts';
-import { type FormEvent } from 'react';
 import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 
 /**
@@ -32,12 +31,11 @@ const ScyllaLogo = ({ className }: { className: string }) => (
 export const LoginPage = () => {
   const { mutate: login, isPending, isSuccess } = useLogin();
 
-  const handleSubmit = (e: FormEvent, loginValue: string, passwordValue: string) => {
-    e.preventDefault();
+  const handleSubmit = (loginValue: string, passwordValue: string) => {
     login({ login: loginValue, password: passwordValue });
   };
 
-  if (isPending || isSuccess) return <ScyllaLoadingScreen />;
+  if (isSuccess) return <ScyllaLoadingScreen />;
 
   return (
     <div className={'flex items-center flex-col'}>
@@ -52,7 +50,7 @@ export const LoginPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm handleSubmit={handleSubmit} />
+          <LoginForm handleSubmit={handleSubmit} isPending={isPending} />
         </CardContent>
       </Card>
     </div>

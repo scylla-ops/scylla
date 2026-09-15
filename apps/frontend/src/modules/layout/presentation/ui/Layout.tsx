@@ -83,12 +83,10 @@ export const Layout = ({ navEntries }: LayoutProps) => {
               <CardContent>
                 <ScyllaForm
                   items={createOrganizationItems()}
-                  onSubmit={values => {
-                    const name = values.find(v => v.id === 'name')?.value;
-                    const description = values.find(v => v.id === 'description')?.value;
+                  onSubmit={({ name, description }) => {
                     if (name) {
                       createOrganization.mutate(
-                        { name, description: description || '' },
+                        { name, description },
                         {
                           onSuccess: data => {
                             const orgId = data?.id;
@@ -110,7 +108,12 @@ export const Layout = ({ navEntries }: LayoutProps) => {
   }
 
   return (
-    <SidebarProvider className='w-screen h-screen'>
+    // `w-full`, not `w-screen`: `100vw` ignores the gutter that `scrollbar-gutter:
+    // stable` reserves, so the shell overflowed the viewport and left a strip of
+    // bare canvas down the right. The backdrop between the panels stays shadcn's
+    // `bg-sidebar` (the `inset` variant's default), which is also what `html` and
+    // `body` are painted with — so the areas no element can cover match it.
+    <SidebarProvider className='w-full h-svh'>
       <AppSidebar navEntries={navEntries} />
       <SidebarInset className='flex p-2 flex-col flex-1 min-w-0 border border-sidebar-border bg-background'>
         <TopBar />

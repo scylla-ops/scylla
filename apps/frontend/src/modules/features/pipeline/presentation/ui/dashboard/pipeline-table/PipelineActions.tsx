@@ -107,7 +107,7 @@ export const PipelineActions = ({
               icon={isRunning ? Loader2 : PlayIcon}
               tooltip={<Trans>Run</Trans>}
               onClick={onRun}
-              disabled={isRunning}
+              busy={isRunning}
               iconClassName={isRunning ? 'animate-spin' : 'fill-current'}
             />
           )}
@@ -121,7 +121,7 @@ export const PipelineActions = ({
               icon={isDuplicating ? Loader2 : Copy}
               tooltip={<Trans>Duplicate</Trans>}
               onClick={onDuplicate}
-              disabled={isDuplicating}
+              busy={isDuplicating}
               iconClassName={isDuplicating ? 'animate-spin' : undefined}
             />
           )}

@@ -32,6 +32,7 @@
 
   --destructive: #BA4C43;
   --destructive-foreground: #F4F7EB;
+  --destructive-subtle: #F3D8D5;
 
   --border: #D1D3CA;
   --input: #AFB0AA;
@@ -72,8 +73,16 @@
   --sidebar-border: #D1D3CA;
   --sidebar-ring: #5D9972;
   --code-editor-bg: #F7F9EE;
-  --code-editor-line-bg: #d4e5ce;
-  --code-editor-selection-bg: rgba(93, 153, 114, 0.25);
+  /* Translucent: CodeMirror paints the selection *under* the lines, so an opaque
+     active-line background would hide the selection on the caret's own line. */
+  --code-editor-line-bg: rgba(93, 153, 114, 0.22);
+  /* Blue, not the accent green: the selection is composited *under* the green
+     active-line tint, so a green-on-green selection reads as "slightly darker
+     line" instead of a distinct band. A different hue survives that overlay. */
+  --code-editor-selection-bg: rgba(37, 78, 168, 0.42);
+  /* Occurrence + bracket matches: a passive hint, deliberately weaker than the
+     selection the user is actively dragging. */
+  --code-editor-match-bg: rgba(93, 153, 114, 0.25);
 }
 
 .dark {
@@ -91,7 +100,9 @@
   --primary: #5D9972;
   --primary-hover: #69A57E;
   --primary-foreground: #F4F7EB;
-  --primary-subtle: #1C2A20;
+  /* Hover surface for icon buttons: must lift clearly off --card (#21211E), which
+     the previous #1C2A20 did not — it sat within 1.1:1 of the surface behind it. */
+  --primary-subtle: #2F4838;
 
   --secondary: #282826;
   --secondary-foreground: #F4F7EC;
@@ -105,6 +116,7 @@
 
   --destructive: #BA4C43;
   --destructive-foreground: #F4F7EB;
+  --destructive-subtle: #4E2E28;
 
   --border: #333330;
   --input: #676865;
@@ -142,8 +154,13 @@
   --sidebar-ring: #5D9972;
 
   --code-editor-bg: #1D1E1C;
-  --code-editor-line-bg: #253128;
-  --code-editor-selection-bg: rgba(93, 153, 114, 0.35);
+  /* Translucent — see the light-theme note above. */
+  --code-editor-line-bg: rgba(93, 153, 114, 0.14);
+  /* Much lighter green than the light theme's: on a dark surface an overlay can
+     only add light, so the accent green barely lifts the active line it sits on. */
+  --code-editor-selection-bg: rgba(122, 192, 145, 0.45);
+  /* Matches keep the restrained accent — see the light-theme note above. */
+  --code-editor-match-bg: rgba(93, 153, 114, 0.35);
 }
 
 @theme inline {
@@ -170,6 +187,7 @@
 
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -224,6 +242,12 @@
     cursor: not-allowed;
   }
 
+  /* The canvas is `--sidebar` — the shell's base surface, which the panels sit on
+     top of. `index.html` hardcodes the same two hexes on `html` so the first paint
+     is not white. Since `html` carries a background of its own, the body's no
+     longer propagates to the canvas: it only paints the body box, and anything
+     outside it (the stable scrollbar gutter, overscroll) falls back to `html`.
+     The two must therefore agree. */
   body {
     @apply bg-sidebar text-foreground;
   }

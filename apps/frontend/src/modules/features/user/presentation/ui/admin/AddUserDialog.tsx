@@ -1,9 +1,9 @@
 import { useCreateUser } from '@/modules/features/user/presentation/hooks/use-create-user.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
-  type FormChange,
   type FormItem,
   FormItemType,
+  type FormValues,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
@@ -18,7 +18,7 @@ export function AddUserDialog({ open, setOpen }: AddUserDialogProps) {
   const { t, i18n } = useLingui();
   const createUser = useCreateUser();
 
-  const items: FormItem[] = [
+  const items: readonly FormItem<'username' | 'password'>[] = [
     {
       id: 'username',
       label: t`Username`,
@@ -35,11 +35,8 @@ export function AddUserDialog({ open, setOpen }: AddUserDialogProps) {
     },
   ];
 
-  const handleSubmit = (values: FormChange[]) => {
-    const username = values.find(v => v.id === 'username')?.value;
-    const password = values.find(v => v.id === 'password')?.value;
-
-    if (!username?.trim() || !password?.trim()) {
+  const handleSubmit = ({ username, password }: FormValues<'username' | 'password'>) => {
+    if (!username.trim() || !password.trim()) {
       toast.error(i18n._(ToastMessages.USER_CREDENTIALS_REQUIRED_ERROR));
       return;
     }

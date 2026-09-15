@@ -21,19 +21,23 @@ export type FormSelect = {
   options: SelectOption[];
 };
 
-export type FormItemBase = {
+export type FormItemBase<TId extends string = string> = {
   label: ReactNode;
   placeholder?: string;
-  id: string;
+  id: TId;
   className?: string;
   disabled?: boolean;
   optional?: boolean;
   defaultValue?: string;
 };
 
-export type FormItem = FormItemBase & (FormInput | FormSelect);
+export type FormItem<TId extends string = string> = FormItemBase<TId> & (FormInput | FormSelect);
 
-export type FormChange = {
-  id: string;
-  value: string;
-};
+/**
+ * What a form holds and submits: one string per declared item id.
+ *
+ * `TId` is inferred from the `items` array, so a form declared with literal ids
+ * submits `{ username: string; password: string }` and a typo is a type error.
+ * Items typed as plain `FormItem[]` fall back to `Record<string, string>`.
+ */
+export type FormValues<TId extends string = string> = Record<TId, string>;

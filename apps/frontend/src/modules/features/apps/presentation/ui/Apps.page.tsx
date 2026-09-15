@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
-import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
+import type { FormValues } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { KeyRound, Plus } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 
@@ -29,9 +29,8 @@ export const AppsPage = () => {
   const [created, setCreated] = useState<CreatedApp | null>(null);
   const [toDelete, setToDelete] = useState<string | null>(null);
 
-  const handleCreate = (values: FormChange[]) => {
-    const name = values.find(v => v.id === 'name')?.value;
-    if (!name?.trim()) return;
+  const handleCreate = ({ name }: FormValues<'name'>) => {
+    if (!name.trim()) return;
     createApp.mutate(name.trim(), {
       onSuccess: data => {
         setCreateOpen(false);

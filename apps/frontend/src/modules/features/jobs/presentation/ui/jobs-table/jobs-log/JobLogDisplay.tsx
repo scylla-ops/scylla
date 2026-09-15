@@ -1,6 +1,7 @@
 import ReactCodeMirror from '@uiw/react-codemirror';
 import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
 import { useTailJobLogs } from '@/modules/features/jobs/presentation/hooks/use-tail-job-logs.ts';
+import { useStreamedLogView } from '@/modules/features/jobs/presentation/hooks/use-streamed-log-view.ts';
 import { Trans } from '@lingui/react/macro';
 
 interface JobLogDisplayProps {
@@ -16,13 +17,16 @@ interface LogViewerProps {
 
 const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
   const editorTheme = useCodeMirrorTheme();
+  const { initialValue, onCreateEditor } = useStreamedLogView(logs);
 
-  if (isLoading) return (
+  if (isLoading)
+    return (
       <div>
         <Trans>Loading...</Trans>
       </div>
     );
-  if (isError) return (
+  if (isError)
+    return (
       <div>
         <Trans>Error loading logs...</Trans>
       </div>
@@ -34,9 +38,10 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
         readOnly
         editable={false}
         autoFocus={false}
-        value={logs}
+        value={initialValue}
         maxHeight={'28rem'}
         theme={editorTheme}
+        onCreateEditor={onCreateEditor}
       />
     </div>
   );

@@ -67,7 +67,7 @@ export const TriggerActions = ({ onFire, onEdit, onDelete, isFiring }: TriggerAc
             icon={isFiring ? Loader2 : PlayIcon}
             tooltip={<Trans>Fire now</Trans>}
             onClick={onFire}
-            disabled={isFiring}
+            busy={isFiring}
             iconClassName={isFiring ? 'animate-spin' : 'fill-current'}
           />
           <IconButton icon={EditIcon} tooltip={<Trans>Edit</Trans>} onClick={onEdit} />

@@ -1,9 +1,10 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type SyntheticEvent } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { Button } from '@shadcn';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { cn } from '@shared/presentation/utils';
+// Direct path, not the `ui` barrel: importing it from here would loop back through data-display.
+import { IconButton } from '../controls/IconButton.tsx';
 
 interface CopyableTextProps {
   /** The full text written to the clipboard. */
@@ -37,7 +38,7 @@ export const CopyableText = ({
 }: CopyableTextProps) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = (e: React.MouseEvent) => {
+  const handleCopy = (e: SyntheticEvent) => {
     e.stopPropagation();
     void navigator.clipboard.writeText(value);
     setCopied(true);
@@ -60,21 +61,13 @@ export const CopyableText = ({
       ) : (
         label
       )}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size='icon'
-            variant='ghost'
-            className='h-6 w-6 shrink-0 cursor-pointer transition-all hover:scale-125 hover:text-primary hover:bg-primary-hover rounded-full'
-            onClick={handleCopy}
-          >
-            {copied ? <Check className='w-3 h-3 text-green-500' /> : <Copy className='w-3 h-3' />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{copied ? <Trans>Copied!</Trans> : (copyLabel ?? <Trans>Copy</Trans>)}</p>
-        </TooltipContent>
-      </Tooltip>
+      <IconButton
+        icon={copied ? Check : Copy}
+        tooltip={copied ? <Trans>Copied!</Trans> : (copyLabel ?? <Trans>Copy</Trans>)}
+        onClick={handleCopy}
+        className='shrink-0'
+        iconClassName={copied ? 'text-status-passed' : undefined}
+      />
     </div>
   );
 };

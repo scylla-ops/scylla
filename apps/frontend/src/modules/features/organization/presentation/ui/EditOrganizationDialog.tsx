@@ -1,9 +1,9 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormDialog } from '@shared/presentation/ui';
 import {
-  type FormChange,
   type FormItem,
   FormItemType,
+  type FormValues,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { useUpdateOrganization } from '@/modules/features/organization/presentation/hooks/use-update-organization.ts';
 
@@ -21,7 +21,7 @@ export function EditOrganizationDialog({
   const { t } = useLingui();
   const updateOrganization = useUpdateOrganization();
 
-  const items: FormItem[] = [
+  const items: readonly FormItem<'name' | 'description'>[] = [
     {
       id: 'name',
       label: t`Organization name`,
@@ -38,15 +38,12 @@ export function EditOrganizationDialog({
     },
   ];
 
-  const handleSubmit = (values: FormChange[]) => {
-    const name = values.find(v => v.id === 'name')?.value;
-    const description = values.find(v => v.id === 'description')?.value;
-
+  const handleSubmit = ({ name, description }: FormValues<'name' | 'description'>) => {
     updateOrganization.mutate(
       {
         organizationId: organization.id,
-        name: name?.trim() || undefined,
-        description: description?.trim() || undefined,
+        name: name.trim() || undefined,
+        description: description.trim() || undefined,
       },
       { onSuccess: () => setOpen(false) },
     );

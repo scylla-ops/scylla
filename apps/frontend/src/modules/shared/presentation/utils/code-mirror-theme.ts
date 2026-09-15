@@ -38,6 +38,10 @@ export const buildCodeMirrorTheme = ({
       '.cm-scroller': { overflow: 'auto', backgroundColor: 'var(--code-editor-bg)' },
       '.cm-content': { padding: '0.5rem', caretColor: 'var(--foreground)' },
       '.cm-placeholder': { color: 'var(--muted-foreground)' },
+      // `--code-editor-line-bg` must stay translucent: CodeMirror draws the
+      // selection in a layer pinned under `.cm-content` (inline `z-index: -1`,
+      // so a theme rule cannot lift it), and an opaque line background would
+      // swallow the selection on the line holding the caret.
       '.cm-activeLine': { backgroundColor: 'var(--code-editor-line-bg)' },
       '.cm-activeLineGutter': {
         backgroundColor: 'var(--code-editor-line-bg)',
@@ -55,12 +59,18 @@ export const buildCodeMirrorTheme = ({
         border: 'none',
       },
       '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--foreground)' },
-      '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, .cm-content ::selection': {
-        backgroundColor: 'var(--code-editor-selection-bg)',
-      },
-      '.cm-selectionMatch': { backgroundColor: 'var(--code-editor-selection-bg)' },
+      // The focused selector must spell out the whole `.cm-scroller > .cm-selectionLayer`
+      // path: the base theme ships `&dark.cm-focused > .cm-scroller > .cm-selectionLayer
+      // .cm-selectionBackground { background: #233 }`, and anything shorter loses on
+      // specificity — leaving the selection near-invisible on the dark surface exactly
+      // while the editor is focused, i.e. whenever the user is selecting.
+      '.cm-selectionBackground, .cm-content ::selection, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground':
+        {
+          backgroundColor: 'var(--code-editor-selection-bg)',
+        },
+      '.cm-selectionMatch': { backgroundColor: 'var(--code-editor-match-bg)' },
       '.cm-matchingBracket, .cm-nonmatchingBracket': {
-        backgroundColor: 'var(--code-editor-selection-bg)',
+        backgroundColor: 'var(--code-editor-match-bg)',
         outline: '1px solid var(--border)',
       },
       '.cm-panels, .cm-tooltip': {

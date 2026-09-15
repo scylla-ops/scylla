@@ -25,7 +25,12 @@ export type StatusKey =
 export interface StatusConfig {
   /** Lazy message: this table is built at import time, outside any i18n context. */
   label: MessageDescriptor;
-  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  /**
+   * Classes for a `<Badge variant='outline'>`. The four shadcn variants can't tell
+   * six statuses apart — running and completed both landed on `default` (primary),
+   * so a running job read as a passed one. Tinted status tokens instead.
+   */
+  badgeClassName: string;
   icon: LucideIcon;
   iconClassName: string;
   barClassName: string;
@@ -48,7 +53,7 @@ export interface StatusConfig {
 export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   running: {
     label: msg`Running`,
-    variant: 'default',
+    badgeClassName: 'bg-status-running/15 border-status-running/30 text-status-running',
     icon: Loader2,
     iconClassName: 'text-status-running animate-spin',
     barClassName: 'bg-status-running/80 animate-[smooth-pulse_2s_infinite]',
@@ -59,7 +64,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
 
   pending: {
     label: msg`Pending`,
-    variant: 'secondary',
+    badgeClassName: 'bg-status-queued/15 border-status-queued/30 text-status-queued',
     icon: DiamondMinusIcon,
     iconClassName: 'text-status-queued',
     barClassName: 'bg-status-queued/40',
@@ -69,7 +74,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
   completed: {
     label: msg`Success`,
-    variant: 'default',
+    badgeClassName: 'bg-status-passed/15 border-status-passed/30 text-status-passed',
     icon: CheckCircle2,
     iconClassName: 'text-status-passed',
     barClassName: 'bg-status-passed',
@@ -79,7 +84,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
   failed: {
     label: msg`Failed`,
-    variant: 'destructive',
+    badgeClassName: 'bg-status-failed/15 border-status-failed/30 text-status-failed',
     icon: XCircle,
     iconClassName: 'text-status-failed',
     barClassName: 'bg-status-failed/80',
@@ -89,7 +94,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
   skipped: {
     label: msg`Skipped`,
-    variant: 'outline',
+    badgeClassName: 'bg-status-skipped/15 border-status-skipped/30 text-status-skipped',
     icon: SkipForward,
     iconClassName: 'text-status-skipped',
     barClassName: 'bg-status-skipped/35',
@@ -99,7 +104,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
   orphaned: {
     label: msg`Orphaned`,
-    variant: 'destructive',
+    badgeClassName: 'bg-status-canceled/15 border-status-canceled/30 text-status-canceled',
     icon: Unplug,
     iconClassName: 'text-status-canceled',
     barClassName: 'bg-status-canceled/80',
@@ -109,7 +114,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
   cancelled: {
     label: msg`Cancelled`,
-    variant: 'outline',
+    badgeClassName: 'bg-status-canceled/15 border-status-canceled/30 text-status-canceled',
     icon: Ban,
     iconClassName: 'text-status-canceled',
     barClassName: 'bg-status-canceled/60',
@@ -121,7 +126,7 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   // arm or enum value). Shown as-is rather than guessed at.
   unknown: {
     label: msg`Unknown`,
-    variant: 'outline',
+    badgeClassName: 'bg-muted-foreground/15 border-muted-foreground/30 text-muted-foreground',
     icon: CircleHelp,
     iconClassName: 'text-muted-foreground/60',
     barClassName: 'bg-muted-foreground/15',

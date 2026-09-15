@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const protoDir = resolve(root, '..', '..', 'crates', 'scylla-protocol', 'proto');
+const protoDir = resolve(root, '..', '..', 'crates', 'scylla-proto', 'proto');
 const outDir = resolve(root, 'src', 'generated');
 
 rmSync(outDir, { recursive: true, force: true });

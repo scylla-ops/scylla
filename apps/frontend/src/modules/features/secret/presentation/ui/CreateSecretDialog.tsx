@@ -1,7 +1,7 @@
 import { FormDialog } from '@shared/presentation/ui';
 import { createSecretsItems } from '@/modules/features/secret/presentation/utils/createSecretItems.ts';
 import { useCreateSecret } from '@/modules/features/secret/presentation/hooks/use-secrets.ts';
-import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
+import type { FormValues } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { Trans } from '@lingui/react/macro';
 
 interface CreateSecretDialogProps {
@@ -15,13 +15,14 @@ interface CreateSecretDialogProps {
 export const CreateSecretDialog = ({ projectId, isOpen, setOpen }: CreateSecretDialogProps) => {
   const createSecret = useCreateSecret(projectId);
 
-  const handleSubmit = (values: FormChange[]) => {
-    const name = values.find(value => value.id == 'name')?.value as string;
-    const description = values.find(value => value.id == 'description')?.value as string;
-    const value = values.find(value => value.id == 'value')?.value as string;
-    if (!name?.trim() || !value?.trim()) return;
+  const handleSubmit = ({
+    name,
+    description,
+    value,
+  }: FormValues<'name' | 'description' | 'value'>) => {
+    if (!name.trim() || !value.trim()) return;
 
-    createSecret.mutate({ name, description: description?.trim() || '', value });
+    createSecret.mutate({ name, description: description.trim(), value });
     setOpen(false);
   };
   return (

@@ -4,9 +4,9 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { FormDialog } from '@shared/presentation/ui';
 import {
-  type FormChange,
   type FormItem,
   FormItemType,
+  type FormValues,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { useContextStore } from '@platform/context';
 
@@ -20,7 +20,7 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
   const organizationId = useContextStore(state => state.organization.id);
   const createProject = useCreateProject();
 
-  const items: FormItem[] = [
+  const items: readonly FormItem<'name' | 'description'>[] = [
     {
       id: 'name',
       label: t`Project name`,
@@ -37,17 +37,14 @@ export function AddProjectDialog({ open, setOpen }: AddProjectDialogProps) {
     },
   ];
 
-  const handleSubmit = (values: FormChange[]) => {
-    const name = values.find(v => v.id === 'name')?.value;
-    const description = values.find(v => v.id === 'description')?.value;
-
-    if (!name?.trim() || !organizationId) {
+  const handleSubmit = ({ name, description }: FormValues<'name' | 'description'>) => {
+    if (!name.trim() || !organizationId) {
       toast.error(i18n._(ToastMessages.PROJECT_NAME_REQUIRED_ERROR));
       return;
     }
 
     createProject.mutate(
-      { name, organizationId, description: description?.trim() || undefined },
+      { name, organizationId, description: description.trim() || undefined },
       {
         onSuccess: () => {
           setOpen(false);

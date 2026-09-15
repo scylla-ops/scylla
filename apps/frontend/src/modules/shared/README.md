@@ -63,6 +63,9 @@ and behave alike:
 - **`FeatureHeader`** — the list header: item count, clear/delete selection, new-item button.
 - **`ScyllaForm`** — forms are declared as `FormItem[]` rather than assembled by hand.
   `FormDialog` wraps one in a dialog, `useFormState` owns values, dirty-checking and validation.
+  Both are generic over the item ids, so a form declared with literal ids submits a typed
+  `FormValues` record (`{ name: string; description: string }`) instead of a bag of pairs the
+  caller has to search through.
 - **`ConfirmOperationAlertDialog`** for destructive actions, **`SecretRevealDialog`** for values
   shown exactly once.
 - **`CheckboxTree`** — used by the role editor's permission tree.

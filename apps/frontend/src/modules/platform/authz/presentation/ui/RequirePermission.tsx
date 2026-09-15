@@ -34,7 +34,7 @@ export const RequirePermission = ({
   if (!ready) {
     return (
       <div className='flex h-full w-full items-center justify-center py-16'>
-        <Loader2 className='size-6 animate-spin text-muted-foreground' />
+        <Loader2 role='status' className='size-6 animate-spin text-muted-foreground' />
       </div>
     );
   }
