@@ -24,10 +24,22 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 });
 
+const divWithHeight = (height: number) => {
+  const el = document.createElement('div');
+  Object.defineProperty(el, 'clientHeight', { configurable: true, value: height });
+  return el;
+};
+
 describe('useResponsivePageSize', () => {
   it('starts at the minimum before any container is attached', () => {
     const { result } = renderHook(() => useResponsivePageSize({ rowHeight: 60, headerHeight: 40 }));
     expect(result.current.pageSize).toBe(5);
+  });
+
+  it('computes the page size synchronously on attach, without waiting for the observer', () => {
+    const { result } = renderHook(() => useResponsivePageSize({ rowHeight: 60, headerHeight: 40 }));
+    act(() => result.current.containerRef(divWithHeight(640)));
+    expect(result.current.pageSize).toBe(10);
   });
 
   it('starts observing once the containerRef callback is given a real element', () => {

@@ -31,9 +31,17 @@ export const useResponsivePageSize = (options?: UseResponsivePageSizeOptions) =>
     return () => observer.disconnect();
   }, [container, rowHeight, headerHeight]);
 
-  const containerRef = useCallback((node: HTMLElement | null) => {
-    setContainer(node);
-  }, []);
+  const containerRef = useCallback(
+    (node: HTMLElement | null) => {
+      setContainer(node);
+      // Read the size synchronously on attach, in the same commit the
+      // container replaces the loading placeholder - waiting for the
+      // observer's own (async) first callback would render once at
+      // MIN_PAGE_SIZE and visibly crop down a moment later.
+      if (node) setPageSize(computePageSize(node.clientHeight, rowHeight, headerHeight));
+    },
+    [rowHeight, headerHeight],
+  );
 
   return { pageSize, containerRef };
 };
