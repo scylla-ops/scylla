@@ -30,7 +30,7 @@ msgstr "Cron en 5 champs (min heure jour mois jour de semaine), évalué selon v
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "Un déclencheur lance automatiquement une exécution de ce pipeline."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:81
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:86
 msgid "Actions"
 msgstr "Actions"
 
@@ -113,7 +113,7 @@ msgstr "Modifier le déclencheur"
 msgid "enabled"
 msgstr "activé"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:63
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:68
 msgid "Enabled"
 msgstr "Activé"
 
@@ -188,7 +188,7 @@ msgid "Monthly"
 msgstr "Mensuel"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:121
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:28
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:29
 msgid "Name"
 msgstr "Nom"
 
@@ -196,7 +196,7 @@ msgstr "Nom"
 msgid "Never fired"
 msgstr "Jamais déclenché"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:35
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:111
 msgid "New trigger"
 msgstr "Nouveau déclencheur"
@@ -245,9 +245,9 @@ msgstr "Pipeline"
 msgid "Pipeline ID is missing"
 msgstr "L'identifiant de pipeline est manquant"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:43
-msgid "Pipeline ID: {pipelineId}"
-msgstr "ID de pipeline : {pipelineId}"
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:45
+msgid "Pipeline ID:"
+msgstr "ID de pipeline :"
 
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:31
 msgid "Sat"
@@ -265,11 +265,11 @@ msgstr "Planification"
 msgid "Signature header"
 msgstr "En-tête de signature"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:49
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
 msgid "Source"
 msgstr "Source"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:56
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:61
 msgid "Status"
 msgstr "Statut"
 
@@ -281,11 +281,11 @@ msgstr "Dim"
 msgid "Thu"
 msgstr "Jeu"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:32
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:33
 msgid "Trigger"
 msgstr "Déclencheur"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:33
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
 #: src/modules/features/triggers/triggers.module.ts:28
 msgid "Triggers"
 msgstr "Déclencheurs"
@@ -324,7 +324,7 @@ msgstr "Hebdomadaire"
 msgid "Write a cron expression"
 msgstr "Rédigez une expression cron"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:37
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:39
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:38
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:40
 msgid "You don't have permission to manage triggers."
 msgstr "Vous n'avez pas la permission de gérer les déclencheurs."

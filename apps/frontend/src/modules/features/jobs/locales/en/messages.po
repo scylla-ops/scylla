@@ -35,6 +35,14 @@ msgstr "Collapse"
 msgid "Copy ID"
 msgstr "Copy ID"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:58
+msgid "Copy job id"
+msgstr "Copy job id"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:71
+msgid "Copy node id"
+msgstr "Copy node id"
+
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:68
 msgid "Created"
 msgstr "Created"
@@ -61,7 +69,7 @@ msgstr "Error loading logs..."
 msgid "Finished: {0}"
 msgstr "Finished: {0}"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:43
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
 msgid "Job"
 msgstr "Job"
 
@@ -69,11 +77,11 @@ msgstr "Job"
 msgid "Job ID"
 msgstr "Job ID"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:41
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:49
 msgid "Job Logs"
 msgstr "Job Logs"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:45
 msgid "Jobs"
 msgstr "Jobs"
 
@@ -90,6 +98,10 @@ msgstr "No jobs found"
 msgid "No nodes"
 msgstr "No nodes"
 
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:68
+msgid "Node"
+msgstr "Node"
+
 #. placeholder {0}: nodeExecutions.length
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:73
 msgid "Node Executions ({0})"
@@ -104,20 +116,20 @@ msgstr "Open logs"
 msgid "Pipeline ID is missing"
 msgstr "Pipeline ID is missing"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:56
-msgid "Pipeline ID: {pipelineId}"
-msgstr "Pipeline ID: {pipelineId}"
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:57
+msgid "Pipeline ID:"
+msgstr "Pipeline ID:"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx:30
 msgid "queued — waiting for an agent"
 msgstr "queued — waiting for an agent"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:74
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:80
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:79
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:85
 msgid "Refresh"
 msgstr "Refresh"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:45
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:46
 msgid "Run"
 msgstr "Run"
 
@@ -139,7 +151,7 @@ msgstr "State: {0}"
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:56
+#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:81
 msgid "Streaming live output"
 msgstr "Streaming live output"
 
@@ -152,10 +164,10 @@ msgstr "Timeline"
 msgid "View"
 msgstr "View"
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:50
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:51
 msgid "You don't have permission to delete jobs."
 msgstr "You don't have permission to delete jobs."
 
-#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:48
+#: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:49
 msgid "You don't have permission to run this pipeline."
 msgstr "You don't have permission to run this pipeline."

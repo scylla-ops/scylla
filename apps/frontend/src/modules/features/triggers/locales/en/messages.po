@@ -30,7 +30,7 @@ msgstr "5-field cron (min hour day month weekday), evaluated in your local time.
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "A trigger starts a run of this pipeline automatically."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:81
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:86
 msgid "Actions"
 msgstr "Actions"
 
@@ -113,7 +113,7 @@ msgstr "Edit trigger"
 msgid "enabled"
 msgstr "enabled"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:63
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:68
 msgid "Enabled"
 msgstr "Enabled"
 
@@ -188,7 +188,7 @@ msgid "Monthly"
 msgstr "Monthly"
 
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:121
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:28
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:29
 msgid "Name"
 msgstr "Name"
 
@@ -196,7 +196,7 @@ msgstr "Name"
 msgid "Never fired"
 msgstr "Never fired"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:35
 #: src/modules/features/triggers/presentation/ui/dialogs/TriggerFormDialog.tsx:111
 msgid "New trigger"
 msgstr "New trigger"
@@ -245,9 +245,9 @@ msgstr "Pipeline"
 msgid "Pipeline ID is missing"
 msgstr "Pipeline ID is missing"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:43
-msgid "Pipeline ID: {pipelineId}"
-msgstr "Pipeline ID: {pipelineId}"
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:45
+msgid "Pipeline ID:"
+msgstr "Pipeline ID:"
 
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:31
 msgid "Sat"
@@ -265,11 +265,11 @@ msgstr "Schedule"
 msgid "Signature header"
 msgstr "Signature header"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:49
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
 msgid "Source"
 msgstr "Source"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:56
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:61
 msgid "Status"
 msgstr "Status"
 
@@ -281,11 +281,11 @@ msgstr "Sun"
 msgid "Thu"
 msgstr "Thu"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:32
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:33
 msgid "Trigger"
 msgstr "Trigger"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:33
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:34
 #: src/modules/features/triggers/triggers.module.ts:28
 msgid "Triggers"
 msgstr "Triggers"
@@ -324,7 +324,7 @@ msgstr "Weekly"
 msgid "Write a cron expression"
 msgstr "Write a cron expression"
 
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:37
-#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:39
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:38
+#: src/modules/features/triggers/presentation/ui/components/TriggersHeader.tsx:40
 msgid "You don't have permission to manage triggers."
 msgstr "You don't have permission to manage triggers."

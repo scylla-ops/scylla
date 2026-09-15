@@ -7,6 +7,7 @@ import { FeatureHeader } from '@shared/presentation/ui';
 import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-selection.ts';
 import { Permission } from '@platform/authz';
 import { useCan } from '@platform/authz';
+import { CopyableText } from '@shared/presentation/ui/data-display/CopyableText.tsx';
 
 interface JobsHeaderProps {
   numberOfJobs: number;
@@ -51,10 +52,14 @@ export const JobsHeader = ({
         {...headerProps}
         underLabel={
           <div className={'flex items-center justify-between'}>
-            <div className='flex items-baseline gap-2'>
+            <div className='flex items-center gap-2'>
               <span className='text-sm text-muted-foreground font-medium'>
-                <Trans>Pipeline ID: {pipelineId}</Trans>
+                <Trans>Pipeline ID:</Trans>
               </span>
+              <CopyableText
+                value={pipelineId}
+                className='text-sm text-muted-foreground font-medium'
+              />
             </div>
           </div>
         }

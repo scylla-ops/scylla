@@ -63,11 +63,11 @@ msgstr "Continuer"
 msgid "Copied"
 msgstr "Copié"
 
-#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:66
+#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:69
 msgid "Copied!"
 msgstr "Copié !"
 
-#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:66
+#: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:69
 #: src/modules/shared/presentation/ui/shadcn/code-snippet.tsx:89
 msgid "Copy"
 msgstr "Copier"
