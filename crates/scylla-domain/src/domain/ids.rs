@@ -2,7 +2,7 @@ use std::fmt;
 
 #[must_use]
 pub fn new_id() -> String {
-    ulid::Ulid::new().to_string().to_lowercase()
+    ulid::Ulid::generate().to_string().to_lowercase()
 }
 
 macro_rules! define_id {
