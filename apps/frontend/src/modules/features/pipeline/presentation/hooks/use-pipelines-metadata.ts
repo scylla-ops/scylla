@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { usePipelineDomain } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-domain.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
@@ -9,7 +9,14 @@ import { PIPELINES_QUERY_KEY } from '@/modules/features/pipeline/presentation/ho
 
 export const usePipelinesMetadata = (projectId: string) => {
   const { pipelineRepository } = usePipelineDomain();
-  const { paginationParams, paginationInfo, updatePaginationInfo, setPage, containerRef } = usePagination({
+  const {
+    paginationParams,
+    paginationInfo,
+    updatePaginationInfo,
+    setPage,
+    containerRef,
+    isPageSizeReady,
+  } = usePagination({
     responsive: true,
   });
 
@@ -19,6 +26,8 @@ export const usePipelinesMetadata = (projectId: string) => {
   >({
     queryKey: PIPELINES_QUERY_KEY(projectId, paginationParams),
     queryFn: async () => (await pipelineRepository.getMetadataByProjectId(projectId, paginationParams)).unwrap(),
+    enabled: isPageSizeReady,
+    placeholderData: keepPreviousData,
     staleTime: 5 * 1000, // 5 seconds //todo: more long and refresh button?
   });
 

@@ -16,7 +16,11 @@ interface UsePaginationOptions {
 
 export const usePagination = (options?: UsePaginationOptions) => {
   const isResponsive = (options?.responsive ?? false) && options?.initialPageSize === undefined;
-  const { pageSize: responsivePageSize, containerRef } = useResponsivePageSize({
+  const {
+    pageSize: responsivePageSize,
+    isMeasured,
+    containerRef,
+  } = useResponsivePageSize({
     rowHeight: options?.rowHeight,
     headerHeight: options?.headerHeight,
   });
@@ -78,5 +82,6 @@ export const usePagination = (options?: UsePaginationOptions) => {
     paginationInfo,
     updatePaginationInfo,
     containerRef,
+    isPageSizeReady: !isResponsive || isMeasured,
   };
 };

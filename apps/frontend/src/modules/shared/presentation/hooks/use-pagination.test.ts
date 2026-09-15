@@ -32,6 +32,24 @@ describe('usePagination', () => {
     expect(result.current.paginationParams).toEqual({ page: 1, pageSize: 10 });
   });
 
+  it('is ready right away without a responsive container', () => {
+    const { result } = renderHook(() => usePagination());
+    expect(result.current.isPageSizeReady).toBe(true);
+  });
+
+  it('is not ready until the responsive container has been measured', () => {
+    const { result } = renderHook(() => usePagination({ responsive: true }));
+    expect(result.current.isPageSizeReady).toBe(false);
+
+    act(() => result.current.containerRef(document.createElement('div')));
+    expect(result.current.isPageSizeReady).toBe(true);
+  });
+
+  it('is ready right away when an explicit initialPageSize opts out of measuring', () => {
+    const { result } = renderHook(() => usePagination({ responsive: true, initialPageSize: 15 }));
+    expect(result.current.isPageSizeReady).toBe(true);
+  });
+
   it('sizes to the responsive container once attached, instead of the flat default', () => {
     const { result } = renderHook(() => usePagination({ responsive: true, rowHeight: 60, headerHeight: 40 }));
 

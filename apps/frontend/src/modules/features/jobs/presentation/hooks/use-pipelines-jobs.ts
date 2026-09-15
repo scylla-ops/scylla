@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useJobsDomain } from '@/modules/features/jobs/presentation/hooks/use-jobs-domain.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
@@ -9,7 +9,14 @@ import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.enti
 
 export const usePipelinesJobs = (pipelineId: string) => {
   const { jobsRepository } = useJobsDomain();
-  const { paginationParams, paginationInfo, updatePaginationInfo, setPage, containerRef } = usePagination({
+  const {
+    paginationParams,
+    paginationInfo,
+    updatePaginationInfo,
+    setPage,
+    containerRef,
+    isPageSizeReady,
+  } = usePagination({
     responsive: true,
   });
 
@@ -19,7 +26,8 @@ export const usePipelinesJobs = (pipelineId: string) => {
   >({
     queryKey: [...JOBS_QUERY_KEY(pipelineId), paginationParams],
     queryFn: async () => (await jobsRepository.getByPipelineId(pipelineId, paginationParams)).unwrap(),
-    enabled: !!pipelineId,
+    enabled: !!pipelineId && isPageSizeReady,
+    placeholderData: keepPreviousData,
     staleTime: 0,
     refetchInterval: query => {
       const jobs = query.state.data?.items || [];

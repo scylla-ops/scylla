@@ -36,6 +36,23 @@ describe('useResponsivePageSize', () => {
     expect(result.current.pageSize).toBe(5);
   });
 
+  it('reports itself unmeasured until a container is attached', () => {
+    const { result } = renderHook(() => useResponsivePageSize({ rowHeight: 60, headerHeight: 40 }));
+    expect(result.current.isMeasured).toBe(false);
+
+    act(() => result.current.containerRef(divWithHeight(640)));
+    expect(result.current.isMeasured).toBe(true);
+  });
+
+  it('stays measured when the container detaches, keeping the last known size', () => {
+    const { result } = renderHook(() => useResponsivePageSize({ rowHeight: 60, headerHeight: 40 }));
+    act(() => result.current.containerRef(divWithHeight(640)));
+    act(() => result.current.containerRef(null));
+
+    expect(result.current.isMeasured).toBe(true);
+    expect(result.current.pageSize).toBe(10);
+  });
+
   it('computes the page size synchronously on attach, without waiting for the observer', () => {
     const { result } = renderHook(() => useResponsivePageSize({ rowHeight: 60, headerHeight: 40 }));
     act(() => result.current.containerRef(divWithHeight(640)));

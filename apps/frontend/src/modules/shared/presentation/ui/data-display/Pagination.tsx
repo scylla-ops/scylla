@@ -85,3 +85,28 @@ export const Pagination = ({ paginationInfo, onPageChange, className }: Paginati
     </div>
   );
 };
+
+const RESERVED_SLOT: PaginationInfo = {
+  totalCount: 0,
+  page: 1,
+  pageSize: 0,
+  totalPages: 1,
+  hasNext: false,
+  hasPrevious: false,
+};
+
+interface PaginationSlotProps {
+  paginationInfo: PaginationInfo | undefined;
+  onPageChange: (page: number) => void;
+}
+
+/** Always takes the bar's height: the table area above it is measured to decide how many rows fit, so it must not resize when the controls appear. */
+export const PaginationSlot = ({ paginationInfo, onPageChange }: PaginationSlotProps) => {
+  const isVisible = paginationInfo !== undefined && paginationInfo.totalPages > 1;
+
+  return (
+    <div className={`shrink-0 pt-2 ${isVisible ? '' : 'invisible'}`}>
+      <Pagination paginationInfo={paginationInfo ?? RESERVED_SLOT} onPageChange={onPageChange} />
+    </div>
+  );
+};
