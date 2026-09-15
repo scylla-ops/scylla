@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithI18n } from '@/test/render.tsx';
 import { JobTimeline } from './JobTimeline';
 import type { JobNodeExecution } from '@/modules/features/jobs/domain/structs/job.struct.ts';
@@ -44,5 +45,48 @@ describe('JobTimeline', () => {
     renderWithI18n(<JobTimeline nodeExecutions={nodes} />);
     // A single group spans 100% of the bar, comfortably over the 8% cutoff.
     expect(screen.getByText('11')).toBeInTheDocument();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows a finished node's duration in its tooltip", async () => {
+    const user = userEvent.setup();
+    const { container } = renderWithI18n(
+      <JobTimeline
+        nodeExecutions={[
+          node({ startedAt: '2026-01-01T00:00:00.000Z', finishedAt: '2026-01-01T00:01:05.000Z' }),
+        ]}
+      />,
+    );
+
+    await user.hover(container.querySelector('.flex-1.min-w-\\[2px\\]')!);
+    await waitFor(() => expect(screen.getAllByText('Duration: 1m 5s').length).toBeGreaterThan(0));
+  });
+
+  it('shows the elapsed-so-far duration for a still-running node', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-01-01T00:00:30.000Z'));
+    const user = userEvent.setup();
+    const { container } = renderWithI18n(
+      <JobTimeline
+        nodeExecutions={[
+          node({ state: 'running', startedAt: '2026-01-01T00:00:00.000Z', finishedAt: undefined }),
+        ]}
+      />,
+    );
+
+    await user.hover(container.querySelector('.flex-1.min-w-\\[2px\\]')!);
+    await waitFor(() => expect(screen.getAllByText('Duration: 30s').length).toBeGreaterThan(0));
+  });
+
+  it('shows no duration line for a node that has not started', async () => {
+    const user = userEvent.setup();
+    const { container } = renderWithI18n(<JobTimeline nodeExecutions={[node({ state: 'pending' })]} />);
+
+    await user.hover(container.querySelector('.flex-1.min-w-\\[2px\\]')!);
+    await waitFor(() => expect(screen.getAllByText(/^State:/).length).toBeGreaterThan(0));
+    expect(screen.queryByText(/^Duration:/)).not.toBeInTheDocument();
   });
 });
