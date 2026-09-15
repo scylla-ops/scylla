@@ -5,22 +5,29 @@ package scylla.app.v1;
 import "google/protobuf/timestamp.proto";
 import "scylla/common/v1/common.proto";
 
-// Public credential exchange: an App presents its id + secret and receives a
-// bearer token. No auth interceptor — the secret is the credential, like user
-// login. Kept in its own file because it is the one unauthenticated surface of
-// this package.
+// Credential exchange for Apps. AppService, the other service in this
+// package, creates the Apps and secrets this service accepts.
 service AppAuthService {
+  // Exchanges an App id and one of its enabled secrets for a new app token;
+  // earlier tokens stay valid. An unknown or inactive App and a revoked,
+  // disabled, wrong or malformed secret all fail with UNAUTHENTICATED and the
+  // message "Invalid app credentials".
   rpc IssueToken(IssueTokenRequest) returns (IssueTokenResponse);
 }
 
 message IssueTokenRequest {
   scylla.common.v1.AppId app_id = 1;
-  // The plaintext app secret exchanged for a token (opaque credential).
+  // Plaintext from AppService.CreateApp or CreateAppSecret; 32 to 512
+  // characters. Any other length fails with UNAUTHENTICATED, not
+  // INVALID_ARGUMENT.
   string secret = 2;
 }
 
 message IssueTokenResponse {
-  // Opaque bearer token; send as `authorization: Bearer <token>`.
+  // Opaque; do not parse it.
   string token = 1;
+  // 30 days after issue. After it the token fails with UNAUTHENTICATED; the
+  // message is "Token has expired" while the secret stays enabled and the App
+  // active.
   google.protobuf.Timestamp expires_at = 2;
 }

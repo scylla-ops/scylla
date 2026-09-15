@@ -5,56 +5,76 @@ package scylla.agent.v1;
 import "google/protobuf/timestamp.proto";
 import "scylla/common/v1/common.proto";
 
-// Management + introspection of Agents — specialized Apps that run jobs.
-// Creating an agent provisions an App credential under the hood (the secret is
-// returned exactly once) plus its agent grant. Distinct from the streaming
-// `AgentService` in the same package (the agent ↔ control-plane job stream):
-// this service is the unary control surface used by the dashboard.
-// Authorization is org-scoped: the caller must hold the matching agent
-// permission on the org / agent.
+// Unary management of agents: Apps that execute jobs. AgentService in this
+// package is the stream an agent opens to receive jobs.
 service AgentAdminService {
+  // Requires `createAgent` on organization_id. In one transaction, creates the
+  // App, a secret labelled "default", the agent record and a grant of the
+  // builtin "organization-agent" role on the organization. The grant takes
+  // effect at once.
+  // The agent then calls AppAuthService.IssueToken, then AgentService.Open.
   rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse);
+  // Requires `readApp` on agent_id. An App that exists but is not an agent
+  // fails with NOT_FOUND.
   rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+  // Requires `listAgents` on organization_id. Returns every agent of the
+  // organization, newest first, without pagination. With a system-scoped
+  // grant, an unknown organization_id returns an empty list, not
+  // PERMISSION_DENIED.
   rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  // Requires `readAppStats` on agent_id. An App that is not an agent returns
+  // all-zero stats.
   rpc GetAgentStats(GetAgentStatsRequest) returns (GetAgentStatsResponse);
+  // Requires `deleteApp` on agent_id. Closes the agent's open stream, then
+  // deletes the App with its secrets, tokens, agent record and grants. Jobs
+  // the agent ran stay; a job still running on it ends as orphaned. Works on
+  // any App id the caller may delete, agent or not. Not undoable.
   rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
 }
 
-// An agent: its backing app identity plus live presence and durable last-seen.
-// The id is the agent's app id (== jobs.agent_app_id).
+// One agent as seen by the control plane. `connected` and `in_flight` come
+// from the open stream; the other fields are stored.
 message Agent {
+  // The app_id of the backing App in AppService.
   scylla.common.v1.AppId agent_id = 1;
   scylla.common.v1.OrganizationId organization_id = 2;
   string name = 3;
+  // False after AppService.SetAppActive disables the App. The server then
+  // closes the agent's stream and denies every RPC the agent calls.
   bool is_active = 4;
-  // True while the agent currently holds an open agent stream. Derived live
-  // from the agent registry, not stored.
+  // True while the agent holds an open AgentService.Open stream.
   bool connected = 5;
-  // Last activity timestamp; unset if the agent has never connected.
+  // Set when the agent opens or closes its stream, sends an AgentHello or
+  // reports a job status. Unset while the agent has never connected.
   google.protobuf.Timestamp last_seen = 6;
   google.protobuf.Timestamp created_at = 7;
+  // Changes when the App is enabled or disabled.
   google.protobuf.Timestamp updated_at = 8;
-  // Current load. Live from the agent registry like `connected`, so a
-  // disconnected agent is 0 rather than a stale count.
+  // Jobs dispatched on the open stream that have not yet reported completion
+  // or failure. 0 while `connected` is false.
   int32 in_flight = 9;
-  // Last reported machine; unset until an agent has sent an AgentHello. Kept
-  // across disconnects.
+  // Unset until the first AgentHello. Survives disconnects; the next
+  // AgentHello replaces it.
   AgentHost host = 10;
 }
 
-// The machine an agent last reported running on (see AgentHello).
+// Machine details from the agent's last AgentHello (agent_stream.proto).
 message AgentHost {
   string version = 1;
   string os = 2;
   string arch = 3;
   string hostname = 4;
+  // 0 when the agent did not report it.
   int32 cpu_count = 5;
+  // 0 when the agent did not report it.
   int64 total_memory_mb = 6;
+  // Server time at which the AgentHello was received.
   google.protobuf.Timestamp reported_at = 7;
 }
 
-// Aggregate run stats for an agent, derived from the jobs it executed. Every
-// job status has a bucket, so the counters sum back to `total`.
+// Counters over every job assigned to the agent. Each job is in exactly one
+// bucket, so `pending` + `running` + `completed` + `failed` + `cancelled` +
+// `orphaned` equals `total`; all are 0 for an agent that never received a job.
 message AgentStats {
   int64 total = 1;
   int64 pending = 2;
@@ -62,37 +82,47 @@ message AgentStats {
   int64 completed = 4;
   int64 failed = 5;
   int64 cancelled = 6;
+  // Creation time of the newest job assigned to the agent; unset when none.
   google.protobuf.Timestamp last_run_at = 7;
-  // Finished jobs per day over the last 30 days, oldest first. Days with no
-  // finished job are absent — consumers zero-fill the gaps.
+  // Outcome counts of the jobs created in the last 30 days, grouped by creation
+  // day, oldest first. A day with no job has no entry; a day with only pending
+  // or running jobs has an entry with every counter at 0.
   repeated DailyOutcome daily = 8;
+  // Jobs whose agent disconnected before reporting a result.
   int64 orphaned = 9;
-  // Over jobs that started and finished. Unset means no job has run yet, as
-  // opposed to a 0 ms run.
+  // Median of finish time minus start time over the jobs that have both,
+  // rounded to whole milliseconds. Unset when no job qualifies.
   optional int64 median_duration_ms = 10;
+  // 95th percentile of the same jobs, rounded alike; unset when none qualify.
   optional int64 p95_duration_ms = 11;
 }
 
-// One day of finished-job outcomes for an agent.
+// Outcome counts of the jobs created on one day.
 message DailyOutcome {
+  // Start of the day.
   google.protobuf.Timestamp day = 1;
   int64 completed = 2;
   int64 failed = 3;
   int64 cancelled = 4;
-  // Unset when no job that day started and finished.
+  // Computed as AgentStats.median_duration_ms over that day's jobs. Unset
+  // when no job of the day qualifies.
   optional int64 median_duration_ms = 5;
   int64 orphaned = 6;
 }
 
 message CreateAgentRequest {
   scylla.common.v1.OrganizationId organization_id = 1;
+  // Trimmed; 1 to 255 bytes; unique among the Apps of the organization.
   string name = 2;
 }
 
-// The newly created agent plus its plaintext secret, shown exactly once. It is
-// never stored in recoverable form and cannot be fetched again.
 message CreateAgentResponse {
+  // `connected` is false, `in_flight` is 0, `last_seen` and `host` are unset.
   Agent agent = 1;
+  // 64 lowercase hex characters, returned only here: the server stores a hash.
+  // Pass it with `agent.agent_id` to AppAuthService.IssueToken.
+  // AppService.ListAppSecrets lists it under the label "default". To replace
+  // a lost secret, call AppService.CreateAppSecret on `agent.agent_id`.
   string secret = 2;
 }
 

@@ -2,87 +2,132 @@ syntax = "proto3";
 
 package scylla.common.v1;
 
-// Shared, strongly-typed value objects used across every Scylla service. They
-// exist so a client (frontend or otherwise) cannot accidentally pass a
-// ProjectId where an OrganizationId is expected, and so the exact format of each
-// value is documented in one place rather than guessed from a bare `string`.
+// Value objects shared by every Scylla service. This package imports nothing;
+// any other package may import it.
 //
-// This package is a deliberate leaf: it imports nothing, and every other package
-// may import it. Nothing lands here unless it is a primitive value object with
-// universal, glacial semantics. Domain concepts belong to their own context.
+// The rules below apply to every Scylla RPC. Other files state only what
+// differs from them.
 //
-// Each id wraps a single `value`. Unless noted, an id is a **lowercase ULID**
-// (Crockford base32, 26 chars, e.g. `01hb2k...`): opaque, lexicographically
-// sortable by creation time, case-sensitive — treat it as a token, do not parse
-// or upper-case it. Timestamps use the well-known `google.protobuf.Timestamp`.
+// Authentication. Every RPC reads the `authorization` metadata header and
+// expects the value `Bearer <token>`. The token is a user session token or
+// an app token. scylla.auth.v1.AuthService.Login,
+// scylla.registration.v1.RegistrationService.Signup,
+// scylla.invitation.v1.InvitationAcceptService.AcceptInvitation and
+// scylla.oauth.v1.OauthService.Callback return a session token.
+// scylla.app.v1.AppAuthService.IssueToken returns an app token. A missing,
+// malformed, unknown or expired token fails with UNAUTHENTICATED before the
+// handler runs. The public services skip this check: AuthService,
+// AppAuthService, RegistrationService, InvitationAcceptService and
+// OauthService.
+//
+// Authorization. Each RPC comment names the permission key it requires. The
+// server checks that permission before it looks the resource up. A caller
+// that lacks the permission fails with PERMISSION_DENIED, also when the id is
+// unknown. The server returns NOT_FOUND only after the check passes.
+//
+// Ids. Each id wraps a single `value`. Unless the message says otherwise, the
+// value is a lowercase ULID: 26 characters of Crockford base32, for example
+// `01hb2k...`. The server generates it. It sorts by creation time and is
+// case-sensitive. Send it back unchanged; do not parse or upper-case it. An
+// RPC that requires an id rejects a missing id message with INVALID_ARGUMENT.
+//
+// Validation. A request that breaks a validation rule fails with
+// INVALID_ARGUMENT. A request that would duplicate a unique value fails with
+// ALREADY_EXISTS.
+//
+// Responses. The server sets every field of a response message unless the
+// field's own comment says otherwise. Timestamps use
+// `google.protobuf.Timestamp`.
 
-// Identifies a user account.
 message UserId { string value = 1; }
-// Identifies an organization (top-level tenant).
+// The top-level tenant. Projects, apps and invitations each belong to one
+// organization.
 message OrganizationId { string value = 1; }
-// Identifies a project (a unit of work inside an organization).
+// A project belongs to one organization and owns pipelines and secrets.
 message ProjectId { string value = 1; }
-// Identifies a pipeline (a DAG blueprint inside a project).
+// A pipeline is the stored node graph inside a project. It is the definition,
+// not a run; one run is a Job.
 message PipelineId { string value = 1; }
-// Identifies a job (one execution of a pipeline).
+// One run of a pipeline. PipelineService.RunPipeline and
+// TriggerService.FireTriggerNow return it. Read the run with JobService.GetJob.
 message JobId { string value = 1; }
-// Identifies a single job log line.
+// One captured output line of a job. Only JobLogEntry carries it; no RPC
+// takes it.
 message JobLogId { string value = 1; }
-// Identifies an app — a machine principal owned by an organization.
+// A machine principal owned by an organization. It authenticates with one of
+// its secrets through AppAuthService.IssueToken.
 message AppId { string value = 1; }
-// Identifies an app secret (a hashed credential belonging to an app).
+// One credential of an app. The server stores only a hash. It returns the
+// plaintext once: in AppService.CreateAppResponse.secret for the first
+// secret, in AppService.CreateAppSecretResponse.secret for each later one.
+// Use this id with AppService.RevokeAppSecret and
+// AppService.SetAppSecretEnabled.
 message AppSecretId { string value = 1; }
-// Identifies an organization invitation.
+// An invitation to join an organization. Not the acceptance credential:
+// InvitationAcceptService.AcceptInvitation takes the token sent by email.
 message InvitationId { string value = 1; }
-// Identifies a project secret.
+// A project secret. Distinct from AppSecretId. A pipeline references a secret
+// by name through `EnvVar.secret_ref`, not by this id.
 message SecretId { string value = 1; }
-// Identifies a trigger — a stored initiator that launches a pipeline run.
+// A trigger belongs to one pipeline and starts runs of it. Each fire creates a
+// Job.
 message TriggerId { string value = 1; }
-// Identifies a runtime Cedar authorization policy. NOT a ULID: an opaque
-// Cedar-assigned policy id.
-// Identifies a scoped grant ("principal holds target within scope").
+// One grant: a principal holds a role within a scope. GrantService.CreateGrant
+// returns it; GrantService.RevokeGrant takes it.
 message GrantId { string value = 1; }
-// Identifies a role. NOT a ULID for builtins, where it equals the stable role
-// key (e.g. `organization-admin`); a generated id for tenant custom roles.
-// This is the value a grant references.
+// Not always a ULID. A builtin role's id is its stable key, for example
+// `organization-admin`. A custom role created with RoleService.CreateRole gets
+// a lowercase ULID. Grants and invitations reference a role by this id.
 message RoleId { string value = 1; }
-// Identifies one node within a pipeline. NOT a ULID: a caller-supplied id,
-// unique within its pipeline, lowercase ASCII alphanumeric plus `-`/`_`, ≤128
-// chars.
+// Not a ULID: the caller chooses it. The server trims surrounding whitespace
+// and accepts a non-empty value of at most 128 lowercase ASCII letters,
+// digits, `-` and `_`. It must be unique within its pipeline. The server
+// rejects any other value.
 message NodeId { string value = 1; }
 
-// An email address. Validated (RFC-5322-ish) and stored lowercased on write.
+// The server trims and lowercases the value on receipt. It accepts at most
+// 320 bytes in which the first `@` separates a non-empty local part from a
+// domain. The domain contains a dot and does not start or end with one. The
+// server rejects any other value. Values the server returns are already
+// lowercase.
 message Email { string value = 1; }
 
-// Which of a process's two output streams a log line came from. Universal and
-// closed — a line is one or the other, forever.
+// The process output stream that produced a log line. Lines the server
+// returns always carry STDOUT or STDERR. The server stores a line appended
+// with UNSPECIFIED or an unknown value as STDOUT.
 enum LogStream {
   LOG_STREAM_UNSPECIFIED = 0;
   LOG_STREAM_STDOUT      = 1;
   LOG_STREAM_STDERR      = 2;
 }
 
-// Pagination request parameters. Offset-based on purpose: the dashboard shows
-// "page 3 of 12", which a cursor cannot express.
+// Offset pagination for every List RPC that takes it. When the message is
+// absent the server serves page 1 with 20 items. The server does not clamp a
+// page_size above 100: it ignores the whole request and serves page 1 with 20
+// items. The response's PaginationMetadata reports the values actually used.
 message PaginationRequest {
-  // Page number, 1-indexed. 0 means unset and is treated as page 1.
+  // 1-indexed. 0 means page 1.
   uint32 page = 1;
-  // Items per page. 0 means unset and is treated as 20; capped server-side at 100.
+  // 0 means 20. Maximum 100; a larger value makes the server ignore the whole
+  // request and serve page 1 with 20 items.
   uint32 page_size = 2;
 }
 
-// Pagination metadata included in list responses.
+// The pagination the server applied. It can differ from the request; see
+// PaginationRequest.
 message PaginationMetadata {
-  // Total number of items across all pages.
+  // Total matching items, not only those on this page.
   uint32 total_count = 1;
-  // Current page number (1-indexed).
+  // The page served: the requested page, or 1 when the request was absent or
+  // rejected.
   uint32 page = 2;
-  // Number of items per page.
+  // The page size served: the requested size, or 20 when the request was
+  // absent or rejected.
   uint32 page_size = 3;
-  // Total number of pages.
+  // ceil(total_count / page_size). 0 when total_count is 0.
   uint32 total_pages = 4;
-  // Whether there is a next page.
+  // True when page < total_pages.
   bool has_next = 5;
-  // Whether there is a previous page.
+  // True when page > 1, even when page is beyond total_pages.
   bool has_previous = 6;
 }
