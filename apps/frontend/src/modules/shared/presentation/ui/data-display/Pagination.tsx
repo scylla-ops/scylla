@@ -44,7 +44,7 @@ export const Pagination = ({ paginationInfo, onPageChange, className }: Paginati
   return (
     <div className={`flex flex-col items-center gap-2 ${className ?? ''}`}>
       <PaginationRoot>
-        <PaginationContent>
+        <PaginationContent className='flex-wrap justify-center'>
           <PaginationItem>
             <PaginationPrevious
               onClick={() => hasPrevious && onPageChange(page - 1)}

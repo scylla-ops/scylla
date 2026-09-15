@@ -7,6 +7,7 @@ import { useLingui } from '@lingui/react';
 import { useState } from 'react';
 import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx';
 import { IconButton } from '@shared/presentation/ui';
+import { cn } from '@shared/presentation/utils';
 import { Trans } from '@lingui/react/macro';
 
 type JobNodesListProps = {
@@ -102,7 +103,7 @@ export const JobNodesList = ({
                         <div className='text-left'>
                           <p className='font-medium text-sm text-foreground'>{node.id}</p>
                         </div>
-                        <Badge variant={config.variant} className='text-xs'>
+                        <Badge variant='outline' className={cn('text-xs', config.badgeClassName)}>
                           {_(config.label)}
                         </Badge>
                       </div>

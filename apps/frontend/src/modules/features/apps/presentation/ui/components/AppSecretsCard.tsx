@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
 import { FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
-import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
+import type { FormValues } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { formatDate } from '@shared/utils/date-utils.ts';
 import { useAppSecrets } from '@/modules/features/apps/presentation/hooks/use-apps.ts';
 import { createAppSecretItems } from '@/modules/features/apps/presentation/utils/create-app-secret-form-items.ts';
@@ -35,9 +35,8 @@ export const AppSecretsCard = ({ app }: AppSecretsCardProps) => {
   const [created, setCreated] = useState<CreatedAppSecret | null>(null);
   const [toRevoke, setToRevoke] = useState<string | null>(null);
 
-  const handleCreate = (values: FormChange[]) => {
-    const label = values.find(v => v.id === 'label')?.value;
-    if (!label?.trim()) return;
+  const handleCreate = ({ label }: FormValues<'label'>) => {
+    if (!label.trim()) return;
     createSecret.mutate(label.trim(), {
       onSuccess: data => {
         setCreateOpen(false);

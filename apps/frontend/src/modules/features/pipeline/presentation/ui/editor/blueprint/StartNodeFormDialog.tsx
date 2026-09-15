@@ -1,8 +1,8 @@
 import { FormDialog } from '@shared/presentation/ui';
 import {
-  type FormChange,
   type FormItem,
   FormItemType,
+  type FormValues,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
 
@@ -21,7 +21,7 @@ export function StartNodeFormDialog({
 }: StartNodeFormDialogProps) {
   const { t } = useLingui();
 
-  const items: FormItem[] = [
+  const items: readonly FormItem<'name'>[] = [
     {
       id: 'name',
       label: t`Name`,
@@ -33,8 +33,7 @@ export function StartNodeFormDialog({
     },
   ];
 
-  const handleSubmit = (values: FormChange[]) => {
-    const name = values.find(v => v.id === 'name')?.value ?? '';
+  const handleSubmit = ({ name }: FormValues<'name'>) => {
     if (!name.trim()) return;
     onSave(name.trim());
     onOpenChange(false);

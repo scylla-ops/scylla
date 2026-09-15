@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAgents } from '@/modules/features/agents/presentation/hooks/use-agents.ts';
 import { createAgentItems } from '@/modules/features/agents/presentation/utils/create-agent-form-items.ts';
 import { AgentCard } from '@/modules/features/agents/presentation/ui/components/AgentCard.tsx';
-import { mockCardStats } from '@/modules/features/agents/presentation/utils/agent-mock-data.ts';
 import type { CreatedAgent } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import {
   AgentRunInstructions,
@@ -24,9 +23,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@shadcn/alert-dialog.tsx';
-import type { FormChange } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { Cpu, Plus } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import type { FormValues } from '@shared/presentation/structs/scylla-form.struct.ts';
 
 export const AgentsPage = () => {
   const { agents, isLoading, isError, createAgent, deleteAgent } = useAgents();
@@ -35,9 +34,8 @@ export const AgentsPage = () => {
   const [created, setCreated] = useState<CreatedAgent | null>(null);
   const [toDelete, setToDelete] = useState<string | null>(null);
 
-  const handleCreate = (values: FormChange[]) => {
-    const name = values.find(v => v.id === 'name')?.value;
-    if (!name?.trim()) return;
+  const handleCreate = ({ name }: FormValues<'name'>) => {
+    if (!name.trim()) return;
     // On error the dialog stays open so the name can be fixed in place;
     // the toast comes from the global MutationCache onError handler.
     createAgent.mutate(name.trim(), {
@@ -49,8 +47,6 @@ export const AgentsPage = () => {
   };
 
   const onlineCount = agents.filter(a => a.connected).length;
-  const runningTotal = agents.reduce((n, a) => n + mockCardStats(a.id, a.connected).running, 0);
-  const completedTotal = agents.reduce((n, a) => n + mockCardStats(a.id, a.connected).completed, 0);
 
   if (isError) return <ErrorState message={<Trans>Error loading agents</Trans>} />;
 
@@ -72,10 +68,6 @@ export const AgentsPage = () => {
                 <span className='flex items-center gap-1.5'>
                   <span className='h-2 w-2 rounded-full bg-destructive' />
                   {agents.length - onlineCount} <Trans>offline</Trans>
-                </span>
-                <span className='text-muted-foreground/70'>
-                  · {runningTotal} <Trans>running</Trans> · {completedTotal}{' '}
-                  <Trans>completed total</Trans>
                 </span>
               </p>
             )}

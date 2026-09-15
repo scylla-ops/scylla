@@ -17,11 +17,11 @@ msgstr ""
 msgid "Add a description..."
 msgstr "Ajouter une description..."
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:47
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:45
 msgid "Create a new organization"
 msgstr "Créer une nouvelle organisation"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:56
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:54
 msgid "Create Organization"
 msgstr "Créer l'organisation"
 
@@ -50,11 +50,11 @@ msgstr "ex. L'organisation principale de notre entreprise"
 msgid "Edit"
 msgstr "Modifier"
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:59
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:56
 msgid "Edit organization"
 msgstr "Modifier l'organisation"
 
-#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:49
+#: src/modules/features/organization/presentation/ui/AddOrganizationDialog.tsx:47
 msgid "Enter a name and description for your new organization. You can change these later in settings."
 msgstr "Entrez un nom et une description pour votre nouvelle organisation. Vous pourrez les modifier plus tard dans les paramètres."
 
@@ -67,15 +67,15 @@ msgstr "Membres"
 msgid "Organization name"
 msgstr "Nom de l'organisation"
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:63
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:60
 msgid "Save"
 msgstr "Enregistrer"
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:64
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:61
 msgid "Saving..."
 msgstr "Enregistrement..."
 
-#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:60
+#: src/modules/features/organization/presentation/ui/EditOrganizationDialog.tsx:57
 msgid "Update the organization name and description."
 msgstr "Mettez à jour le nom et la description de l'organisation."
 

@@ -78,7 +78,7 @@ export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) 
               icon={Trash}
               tooltip={<Trans>Delete</Trans>}
               onClick={onDelete}
-              className='hover:text-destructive hover:bg-destructive/10'
+              className='hover:text-destructive hover:bg-destructive-subtle'
             />
           )}
         </>

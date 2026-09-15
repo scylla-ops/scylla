@@ -17,15 +17,15 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:151
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:144
 msgid "Active account"
 msgstr "Active account"
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:54
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:51
 msgid "Create a new user"
 msgstr "Create a new user"
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:58
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:55
 msgid "Create User"
 msgstr "Create User"
 
@@ -41,11 +41,11 @@ msgstr "e.g., john.doe"
 msgid "Enter a password"
 msgstr "Enter a password"
 
-#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:55
+#: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:52
 msgid "Enter a username and password for the new user."
 msgstr "Enter a username and password for the new user."
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:95
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:88
 msgid "Error loading user information"
 msgstr "Error loading user information"
 
@@ -53,14 +53,14 @@ msgstr "Error loading user information"
 msgid "Error loading users"
 msgstr "Error loading users"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:75
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:68
 msgid "Loading user information..."
 msgstr "Loading user information..."
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:50
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:70
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:90
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:139
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:43
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:63
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:83
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:132
 msgid "Manage your account details."
 msgstr "Manage your account details."
 
@@ -72,7 +72,7 @@ msgstr "New user"
 msgid "Password"
 msgstr "Password"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:159
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:152
 msgid "Save"
 msgstr "Save"
 
@@ -81,18 +81,18 @@ msgstr "Save"
 msgid "User"
 msgstr "User"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:113
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:106
 msgid "User ID"
 msgstr "User ID"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:47
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:67
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:87
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:136
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:40
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:60
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:80
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:129
 msgid "User information"
 msgstr "User information"
 
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:55
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:48
 msgid "User information not available"
 msgstr "User information not available"
 
@@ -101,7 +101,7 @@ msgid "User settings"
 msgstr "User settings"
 
 #: src/modules/features/user/presentation/ui/admin/AddUserDialog.tsx:24
-#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:104
+#: src/modules/features/user/presentation/ui/settings/UserInformation.tsx:97
 msgid "Username"
 msgstr "Username"
 

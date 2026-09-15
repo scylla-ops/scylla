@@ -29,3 +29,4 @@ bun.lockb
 src/modules/**/messages.ts
 src/generated/**/messages.ts
 src/generated
+coverage

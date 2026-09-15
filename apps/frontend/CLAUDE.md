@@ -47,6 +47,9 @@ Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/fronten
 | `pnpm dev` | Run prebuild + Vite dev server |
 | `pnpm build` | prebuild + typecheck + production build |
 | `pnpm typecheck` | `tsc -b` — type check only |
+| `pnpm test` | Vitest, single run — **must be green** |
+| `pnpm test:watch` | Vitest in watch mode |
+| `pnpm coverage` | Vitest + v8 coverage, enforces the thresholds in `vitest.config.ts` |
 | `pnpm lint` | ESLint, `--max-warnings 0` (warnings are errors) |
 | `pnpm lint:fix` | ESLint with `--fix` |
 | `pnpm gen-proto` | Generate gRPC/protobuf-ts clients |
@@ -63,9 +66,9 @@ Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/fronten
 
 `prebuild` = `gen-proto` + `extract` + `compile`, and runs before `dev` and `build`. **Do not hand-edit generated proto code or compiled locale `messages.ts` files** — regenerate them.
 
-Before considering work done: `pnpm typecheck`, `pnpm lint`, `pnpm depcruise`,
+Before considering work done: `pnpm typecheck`, `pnpm test`, `pnpm lint`, `pnpm depcruise`,
 `pnpm depcruise:cycles` and `pnpm i18n:collisions` must all pass clean (zero warnings, zero
-violations, zero cycles, zero collisions). CI runs all five.
+failures, zero violations, zero cycles, zero collisions). CI runs all six.
 
 **After moving any component between modules**, run `node scripts/restore-translations.mjs` —
 Lingui catalogs are per-module and keyed by source string, so `extract` silently drops the
@@ -231,7 +234,7 @@ In mutation/query hooks, call `.unwrap()` inside `mutationFn`/`queryFn` so TanSt
 
 - **Selection**: `useSelection(key)` over a single `useSelectionStore`, keyed by feature. Used by `DataTable` + `FeatureHeader`. No per-feature selection store.
 - **List headers**: `FeatureHeader` (count, clear/delete selection, new button).
-- **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog; `useFormState(items)` manages values/changes/reset/validation.
+- **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog; `useFormState(items)` manages values/changes/reset/validation. Both are generic over the item ids — type the items `readonly FormItem<'a' | 'b'>[]` and `onSubmit` hands back a typed `FormValues` record, so never search the values by id.
 - **Pagination**: `usePagination()` (local page state merged with server `totalCount`/`totalPages`).
 - **Navigation**: `useScyllaNavigate()`.
 - **Global state**: only `useContextStore` (current org/project) and `useSelectionStore` are app-wide. Everything else = TanStack Query (server) or local `useState`.
@@ -332,6 +335,50 @@ Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `
 
 ---
 
+## Testing (Vitest)
+
+Tests live **next to the code they cover** — `use-grants.ts` → `use-grants.test.ts`,
+`GrantCreator.tsx` → `GrantCreator.test.tsx`. There is no `__tests__/` mirror tree. Several
+small hooks of one feature may share a file (`roles-hooks.test.tsx`); that is fine.
+
+The harness is three files in `src/test/`, and it is the only shared test code:
+
+| | |
+|---|---|
+| `src/test/setup.ts` | Runs before every file. Activates an empty `en` catalog, and stubs the browser APIs jsdom lacks (`ResizeObserver`, pointer capture, `scrollIntoView`, `scrollTo`, `matchMedia`). **Never re-stub these per file.** |
+| `src/test/render.tsx` | `renderWithI18n`, `renderWithProviders`, `renderHookWithProviders`, `createProvidersWrapper`, `createTestQueryClient`. |
+| `src/test/i18n.ts` | `withLocale(locale, messages)` — for the handful of tests that assert on a real translation. |
+
+### The rules that bite here
+
+- **Render through the helpers**, not through a locally rebuilt provider stack. A bare
+  `render()` from `@testing-library/react` is only right for a component with no `<Trans>`
+  in its tree — and the tooltip label inside an `IconButton` counts.
+- **A pure test opts out of jsdom** with `// @vitest-environment node` on the first line.
+  Mappers, `domain/`, `presentation/utils/` — anything that never touches the DOM. Building a
+  jsdom for `slugifyOrgName` was ~40% of the suite's wall time.
+- **Query by role and accessible name**, not by CSS class. `.lucide-pencil` and `.animate-spin`
+  are a library's private business — lucide has already renamed `pencil` to `square-pen` once.
+  An icon-only control that can't be found by name is a missing `sr-only` label in the
+  *component*, not a reason to reach for `querySelector`. App-owned attributes (`data-slot`,
+  `data-variant`) are fair game; a third party's class names are not.
+- **Inject a fake repository through `DependenciesProvider`** — that is what the DI layer is
+  for. Don't mock the hook under test; mock the boundary beneath it.
+- **Don't mock `useCan`/`usePermissionsStore` away.** Drive the real store with
+  `usePermissionsStore.setState(...)`, so the authorization chain is actually exercised.
+- **Name a test after the rule it pins**, not the action it performs: "still redirects for an
+  empty-string token" beats "test token". The suite output is the spec.
+- **No snapshots.** None exist; keep it that way.
+
+### Coverage
+
+`pnpm coverage` enforces the thresholds in `vite.config.ts`, and CI runs it in place of
+`pnpm test`. They are a **ratchet**: raise them when a batch of tests lands, never lower them to
+turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/`, barrels and
+`*.module.ts` are excluded — covering a re-export measures nothing.
+
+---
+
 ## i18n (Lingui)
 
 - Use `<Trans>...</Trans>` in JSX and `` t`...` `` for strings. `FormItem` labels accept `ReactNode`.
@@ -347,6 +394,10 @@ Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `
   When the two uses genuinely mean the same thing, unify the wording instead.
 - French copy uses **straight apostrophes** (`'`), never `’` — the two are different characters and
   produce two different messages for the same string.
+- `i18n:collisions` compares catalogs; it cannot tell you a French plural or interpolation
+  actually renders. That is what the `*.fr.test.tsx` files do, via `withLocale` — a handful of
+  them, on the messages with plural arms and placeholders. Add one when you add a message whose
+  French form is structurally different from the English (`_0` arms, gendered agreement).
 
 ---
 
@@ -386,5 +437,6 @@ React 18 · TypeScript 5.8 · TanStack Query 5 · Zustand 5 · React Router 7 ·
     table. Follow the shape of a neighbouring module's pair: `AGENTS.md` = public API, data
     contract, file map, routes/nav, the rules that bite there; `README.md` = what it is for and
     why it is built that way.
-11. `pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
-    all clean.
+11. Tests next to the code they cover (`*.test.ts` / `*.test.tsx`) — see "Testing" below.
+12. `pnpm typecheck && pnpm test && pnpm lint && pnpm depcruise && pnpm depcruise:cycles &&
+    pnpm i18n:collisions` all clean.

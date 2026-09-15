@@ -1,19 +1,22 @@
-//! Scylla's shared kernel: the domain model, plus the handful of types that
-//! travel between the control plane and the agents.
-//!
-//! This crate is deliberately dependency-light. It links no database driver, no
-//! HTTP or gRPC stack, no crypto and no mail client, so an agent can depend on
-//! it without dragging in the server's world. Anything that talks to an external
-//! system is an adapter and belongs in `scylla-control-plane` instead.
-//!
-//! Concretely: nothing here may depend on `sqlx`, `tonic`, `cedar-policy`,
-//! `reqwest`, `lettre`, `oauth2` or `argon2`. Reaching for one of those is the
-//! signal that the code belongs on the other side of the boundary.
-//!
-//! See [`domain`] for where a new file goes.
+/// `no_inline`: rustdoc would otherwise copy the whole model into this crate's docs.
+#[doc(no_inline)]
+pub use scylla_domain::domain;
 
-pub mod domain;
+pub mod application;
+pub mod infrastructure;
 
-/// The agent-to-control-plane event vocabulary, re-exported at the root because
-/// it is the one type an agent reaches for without caring which subject owns it.
-pub use domain::job::JobEvent;
+pub mod bootstrap;
+pub mod config;
+pub mod error;
+pub mod rest;
+pub mod tls;
+
+pub mod grpc;
+
+#[cfg(any(test, feature = "test-utils"))]
+pub mod test_support;
+
+pub use grpc::middleware::extract_auth_context;
+
+pub use config::{BootstrapConfig, ControlPlaneConfig, CorsConfig, ServerConfig, UiConfig};
+pub use error::{BootstrapError, ConfigError, StartupError};

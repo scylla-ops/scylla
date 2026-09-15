@@ -73,6 +73,11 @@ No nav entry — the sidebar only renders inside the authenticated shell.
   redirect is the shell's job, not this module's.
 - Never log, toast or store the password. Errors surface as a generic failure — do not leak
   whether the username exists.
+- **The data source re-codes `UNAUTHENTICATED` to `INVALID_CREDENTIALS`** (via `mapError`). On
+  every other call that code means "session expired", and `core`'s global `MutationCache`
+  handler reacts to it by clearing the token and hard-loading `/login` — from the login page
+  that is a silent reload that eats the error. Remove the translation and a wrong password
+  reloads the page instead of showing a message.
 
 ## Before done
 

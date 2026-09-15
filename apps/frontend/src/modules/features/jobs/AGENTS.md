@@ -69,6 +69,7 @@ presentation/
   hooks/use-job.ts, use-organization-jobs.ts, use-pipelines-jobs.ts,
   hooks/use-jobs-by-pipelines.ts     useQueries fan-out, avoids N+1
   hooks/use-job-logs.ts, use-tail-job-logs.ts, use-delete-jobs.ts
+  hooks/use-streamed-log-view.ts     owns the log viewer's document + tail-follow
   stores/use-jobs.store.ts           UI state only
   ui/Jobs.page.tsx, JobsHeader.tsx
   ui/jobs-table/                     JobsTable + columns + cells (index.ts is local, not public)
@@ -92,7 +93,16 @@ call site to update.
 - **`summarizeJobs`, `isActiveStatus`, `isFinishedStatus` are pure domain functions.** Status
   logic goes there, not into a component or a `useMemo`.
 - Log tailing is a subscription: `useEffect` is *correct* here. It is one of the few places in
-  the codebase where it is.
+  the codebase where it is. Same for `use-streamed-log-view.ts`, which drives an editor instance.
+- **Never pass the live log string as `<ReactCodeMirror value>`.** The library re-syncs a changed
+  `value` with `changes: { from: 0, to: doc.length }` — a whole-document replacement — which
+  resets the scroll offset and collapses the selection. At one flush per 150 ms the log appears
+  to jump back to the top and nothing can be selected. `useStreamedLogView` appends the delta
+  instead; give it the log string, pass its `initialValue` as `value` (it never changes) and its
+  `onCreateEditor` to the editor.
+- **Never scroll that viewer to the bottom on every `logs` change** either — same flush rate,
+  and it steals the viewport from a user who scrolled up or is dragging a selection. The same
+  hook owns that decision.
 - Lists go through `DataTable` + `usePagination()`. Row keys are job ids, never indices.
 
 ## Before done

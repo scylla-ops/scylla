@@ -45,7 +45,7 @@ export const MemberRowAction = ({
       tooltip={tooltip}
       disabled={disabled}
       onClick={onRemove}
-      className='size-8 hover:bg-destructive/10 hover:text-destructive'
+      className='size-8 hover:bg-destructive-subtle hover:text-destructive'
       iconClassName='h-3.5 w-3.5'
     />
   );

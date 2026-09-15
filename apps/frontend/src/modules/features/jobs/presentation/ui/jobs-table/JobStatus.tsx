@@ -2,6 +2,7 @@ import { Badge } from '@shadcn';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { TruncatedText } from '@shared/presentation/ui';
+import { cn } from '@shared/presentation/utils';
 import { Trans } from '@lingui/react/macro';
 import { useLingui } from '@lingui/react';
 
@@ -21,7 +22,7 @@ export const JobStatus = ({ job }: JobStatusProps) => {
     <div className='w-full flex items-center gap-2'>
       <Icon className={`w-5 h-5 ${config.iconClassName}`} />
       <div className='flex min-w-0 flex-col'>
-        <Badge variant={config.variant} className='w-fit'>
+        <Badge variant='outline' className={cn('w-fit', config.badgeClassName)}>
           {_(config.label)}
         </Badge>
         {job.status === 'pending' && (

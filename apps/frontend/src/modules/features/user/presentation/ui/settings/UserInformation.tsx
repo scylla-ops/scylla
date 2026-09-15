@@ -11,7 +11,7 @@ import {
 import {
   type FormItem,
   FormItemType,
-  type FormChange,
+  type FormValues,
 } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 import { Trans } from '@lingui/react/macro';
@@ -26,16 +26,9 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
   const { user, isLoading, isError } = useUser(userId || undefined);
   const updateUserMutation = useUpdateUser();
 
-  const handleSubmit = (values: FormChange[]) => {
+  const handleSubmit = ({ username }: FormValues<'username' | 'user-id'>) => {
     if (userId) {
-      const formData = values.reduce<Record<string, string>>(
-        (acc, { id, value }) => ({ ...acc, [id]: value }),
-        {},
-      );
-      updateUserMutation.mutate({
-        userId,
-        username: formData.username,
-      });
+      updateUserMutation.mutate({ userId, username });
     }
   };
 
@@ -99,7 +92,7 @@ export const UserInformation = ({ userId }: UserInformationProps) => {
     );
   }
 
-  const FormItems: FormItem[] = [
+  const FormItems: readonly FormItem<'username' | 'user-id'>[] = [
     {
       label: <Trans>Username</Trans>,
       placeholder: user.username,

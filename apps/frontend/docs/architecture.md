@@ -113,7 +113,7 @@ Reusable across all features — **no business logic**.
 | `presentation/ui/shadcn/` | shadcn/ui primitives |
 | `presentation/hooks/` | `useSelection`, `usePagination`, `usePipelineJobs`, `useScyllaNavigate` |
 | `presentation/stores/` | `useContextStore` (org/project context), `useSelectionStore` (generic selection) |
-| `presentation/structs/` | `ScyllaForm` shapes (`FormItem`, `FormChange`, `FormItemType`) |
+| `presentation/structs/` | `ScyllaForm` shapes (`FormItem`, `FormValues`, `FormItemType`) |
 | `utils/` | `ScyllaResult`, `dateUtils`, `jobStatusMapper` |
 
 ---
@@ -349,15 +349,22 @@ Provides: title with count, clear selection button, delete button with confirmat
 Declarative form rendering from `FormItem[]` definitions:
 
 ```typescript
-const items: FormItem[] = [
+const items: readonly FormItem<'name' | 'org'>[] = [
   { id: 'name', label: t`Name`, type: FormItemType.Input, inputType: 'text' },
   { id: 'org', label: t`Org`, type: FormItemType.Select, options: [...] },
 ];
+
+// values: { name: string; org: string } — inferred from the ids above
+<ScyllaForm items={items} onSubmit={({ name, org }) => ...} />;
 ```
 
 - **`ScyllaForm`**: Standalone form with customizable footer (render prop)
 - **`FormDialog`**: Wraps `ScyllaForm` inside a `Dialog` with Cancel/Submit buttons
 - **`useFormState`**: Hook managing form values, change handler, reset, validation
+- Both components are generic over the item ids: `onSubmit` receives `FormValues<TId>`, a
+  `Record<TId, string>`. Declaring the ids (via `FormItem<'a' | 'b'>` or an `as const` array)
+  is what turns a typo in a field name into a compile error; plain `FormItem[]` still works and
+  degrades to `Record<string, string>`.
 
 ### 5.4 Pagination — `usePagination`
 
