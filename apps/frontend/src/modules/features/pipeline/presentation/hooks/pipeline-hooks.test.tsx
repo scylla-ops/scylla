@@ -245,7 +245,7 @@ describe('usePipelinesMetadata', () => {
     await waitFor(() => expect(result.current.pipelines?.items).toEqual([metadata()]));
     expect(getMetadataByProjectId).toHaveBeenCalledWith('project-1', {
       page: 1,
-      pageSize: 10,
+      pageSize: 5,
     });
   });
 

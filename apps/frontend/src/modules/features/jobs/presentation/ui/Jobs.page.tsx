@@ -14,7 +14,7 @@ interface JobsPageProps {
 
 export const JobsPage = ({ onRun }: JobsPageProps) => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
-  const { isLoading, jobs, isError, errorMessage, refetch, paginationInfo, setPage } =
+  const { isLoading, jobs, isError, errorMessage, refetch, paginationInfo, setPage, containerRef } =
     usePipelinesJobs(pipelineId || '');
 
   if (!pipelineId) {
@@ -30,7 +30,7 @@ export const JobsPage = ({ onRun }: JobsPageProps) => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full'>
+    <div className='flex flex-col gap-4 w-full h-full min-h-0'>
       <JobsHeader
         numberOfJobs={paginationInfo?.totalCount ?? jobs.length}
         jobIds={jobs.map(job => job.id)}
@@ -39,7 +39,7 @@ export const JobsPage = ({ onRun }: JobsPageProps) => {
         onRun={onRun}
       />
       <NoAgentsBanner hasPendingJobs={jobs.some(j => j.status === 'pending')} />
-      <div className='flex-1 min-h-0 overflow-auto'>
+      <div ref={containerRef} className='flex-1 min-h-0 overflow-auto'>
         <div className={'relative'}>
           {jobs.length > 0 ? (
             <JobsTable jobs={jobs} pipelineId={pipelineId} />

@@ -9,7 +9,7 @@ import { PipelineTable } from '@/modules/features/pipeline/presentation/ui/dashb
 
 export const DashboardPipelinePage = () => {
   const { projectId } = useParams();
-  const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage } =
+  const { isLoading, pipelines, isError, errorMessage, paginationInfo, setPage, containerRef } =
     usePipelinesMetadata(projectId!);
 
   const pipelineIds = (pipelines?.items ?? []).map(p => p.id);
@@ -25,12 +25,12 @@ export const DashboardPipelinePage = () => {
   }
 
   return (
-    <div className='flex flex-col gap-4 w-full h-full'>
+    <div className='flex flex-col gap-4 w-full h-full min-h-0'>
       <PipelineDashboardHeader
         numberOfPipelines={paginationInfo?.totalCount ?? pipelines.items.length}
         pipelineIds={pipelineIds}
       />
-      <div className='flex-1 min-h-0 overflow-auto'>
+      <div ref={containerRef} className='flex-1 min-h-0 overflow-auto'>
         <div className='relative'>
           {pipelines.items.length > 0 ? (
             <PipelineTable

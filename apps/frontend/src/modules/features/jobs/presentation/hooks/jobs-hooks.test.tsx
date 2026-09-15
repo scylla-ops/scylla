@@ -195,7 +195,7 @@ describe('usePipelinesJobs', () => {
     const { result } = renderHook(() => usePipelinesJobs('pipeline-1'), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.jobs).toEqual([job()]));
-    expect(getByPipelineId).toHaveBeenCalledWith('pipeline-1', { page: 1, pageSize: 10 });
+    expect(getByPipelineId).toHaveBeenCalledWith('pipeline-1', { page: 1, pageSize: 5 });
   });
 
   it('does not query for an empty pipelineId', () => {
