@@ -67,6 +67,9 @@ message CronSpec {
 // X-GitHub-Delivery header deduplicates: a repeated id answers 200 and does
 // not fire again. Without one, the signature value is the dedupe key. An
 // accepted delivery answers 202; a JSON body feeds the json_pointer inputs.
+// A signed delivery whose X-Scylla-Event or X-GitHub-Event header is "ping"
+// answers 200 and does not fire: GitHub sends one when the webhook is
+// created, and a sender can use it to check the URL and the secret.
 message WebhookSpec {
   // Empty selects "X-Scylla-Signature-256"; GitHub uses "X-Hub-Signature-256".
   string signature_header = 1;
