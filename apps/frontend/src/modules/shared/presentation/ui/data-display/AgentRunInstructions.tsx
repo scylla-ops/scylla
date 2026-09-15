@@ -11,7 +11,6 @@ interface AgentRunInstructionsProps {
 }
 
 const SECRET_PLACEHOLDER = '<APP_SECRET>';
-const URL_PLACEHOLDER = '<CONTROL_PLANE_URL>';
 const DOCKER_IMAGE = 'godlyjaaaaj/scylla-agent:latest';
 
 /**
@@ -24,10 +23,13 @@ const DOCKER_IMAGE = 'godlyjaaaaj/scylla-agent:latest';
 export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProps) => {
   const { t } = useLingui();
   const secretValue = secret ?? SECRET_PLACEHOLDER;
+  // The control plane serves this very page, so the browser's own address
+  // bar already holds the value the snippets ask the user to type.
+  const controlPlaneUrl = window.location.origin;
 
   const cargoCommand = [
     'cargo run --release --bin scylla-agent -- \\',
-    `  --control-plane-url ${URL_PLACEHOLDER} \\`,
+    `  --control-plane-url ${controlPlaneUrl} \\`,
     `  --app-id ${appId} \\`,
     `  --app-secret ${secretValue} \\`,
     '  --workspace-root "$HOME/.scylla/workspaces"',
@@ -35,7 +37,7 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
 
   const dockerCommand = [
     `docker run ${DOCKER_IMAGE} \\`,
-    `  --control-plane-url ${URL_PLACEHOLDER} \\`,
+    `  --control-plane-url ${controlPlaneUrl} \\`,
     `  --app-id ${appId} \\`,
     `  --app-secret ${secretValue}`,
   ].join('\n');
@@ -101,9 +103,9 @@ export const AgentRunInstructions = ({ appId, secret }: AgentRunInstructionsProp
 
       <p className='text-xs text-muted-foreground leading-normal'>
         <Trans>
-          Replace CONTROL_PLANE_URL with the address your agent reaches the control plane at — for
-          example http://localhost:8080 on the same machine, or http://host.docker.internal:8080
-          from inside Docker.
+          The URL above is prefilled with this page's own address. Replace it if your agent
+          reaches the control plane another way — for example http://host.docker.internal:8080
+          from inside Docker, or a private-network address.
         </Trans>
       </p>
 
