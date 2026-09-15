@@ -26,10 +26,12 @@ import {
 import { Cpu, Plus } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import type { FormValues } from '@shared/presentation/structs/scylla-form.struct.ts';
+import { Permission, useCan } from '@platform/authz';
 
 export const AgentsPage = () => {
   const { agents, isLoading, isError, createAgent, deleteAgent } = useAgents();
   const navigate = useNavigate();
+  const canCreate = useCan(Permission.CREATE_AGENT);
   const [createOpen, setCreateOpen] = useState(false);
   const [created, setCreated] = useState<CreatedAgent | null>(null);
   const [toDelete, setToDelete] = useState<string | null>(null);
@@ -57,6 +59,8 @@ export const AgentsPage = () => {
         label={<Trans>Agent</Trans>}
         pluralLabel={<Trans>Agents</Trans>}
         onNew={() => setCreateOpen(true)}
+        canNew={canCreate}
+        newDeniedReason={<Trans>You don't have permission to create agents.</Trans>}
         underLabel={
           <>
             {!isLoading && agents.length > 0 && (
@@ -97,9 +101,11 @@ export const AgentsPage = () => {
                 jobs and report back.
               </Trans>
             </p>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Trans>Create your first agent</Trans>
-            </Button>
+            {canCreate && (
+              <Button onClick={() => setCreateOpen(true)}>
+                <Trans>Create your first agent</Trans>
+              </Button>
+            )}
           </Card>
         </div>
       ) : (
@@ -107,14 +113,16 @@ export const AgentsPage = () => {
           {agents.map(agent => (
             <AgentCard key={agent.id} agent={agent} onRequestDelete={setToDelete} />
           ))}
-          <button
-            type='button'
-            onClick={() => setCreateOpen(true)}
-            className='flex min-h-40 items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground'
-          >
-            <Plus className='h-4 w-4' />
-            <Trans>New Agent</Trans>
-          </button>
+          {canCreate && (
+            <button
+              type='button'
+              onClick={() => setCreateOpen(true)}
+              className='flex min-h-40 items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground'
+            >
+              <Plus className='h-4 w-4' />
+              <Trans>New Agent</Trans>
+            </button>
+          )}
         </div>
       )}
 

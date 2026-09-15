@@ -15,6 +15,7 @@ import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { toast } from 'sonner';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
+import { Permission, useCan } from '@platform/authz';
 
 interface AgentCardProps {
   agent: AgentEntity;
@@ -24,6 +25,7 @@ interface AgentCardProps {
 export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
   const navigate = useNavigate();
   const { i18n } = useLingui();
+  const canDelete = useCan(Permission.DELETE_APP);
 
   const copyId = async () => {
     await navigator.clipboard.writeText(agent.id);
@@ -81,10 +83,12 @@ export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
                 <Copy className='mr-2 h-4 w-4' />
                 <Trans>Copy id</Trans>
               </DropdownMenuItem>
-              <DropdownMenuItem variant='destructive' onClick={() => onRequestDelete(agent.id)}>
-                <Trash className='mr-2 h-4 w-4' />
-                <Trans>Delete</Trans>
-              </DropdownMenuItem>
+              {canDelete && (
+                <DropdownMenuItem variant='destructive' onClick={() => onRequestDelete(agent.id)}>
+                  <Trash className='mr-2 h-4 w-4' />
+                  <Trans>Delete</Trans>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -124,19 +128,21 @@ export const AgentCard = ({ agent, onRequestDelete }: AgentCardProps) => {
         <span className='text-xs text-muted-foreground'>
           <Trans>created</Trans> {formatDate(agent.createdAt)}
         </span>
-        <div className='flex items-center gap-2'>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='h-7 w-7 text-muted-foreground hover:text-destructive'
-            onClick={e => {
-              e.stopPropagation();
-              onRequestDelete(agent.id);
-            }}
-          >
-            <Trash className='h-4 w-4' />
-          </Button>
-        </div>
+        {canDelete && (
+          <div className='flex items-center gap-2'>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-7 w-7 text-muted-foreground hover:text-destructive'
+              onClick={e => {
+                e.stopPropagation();
+                onRequestDelete(agent.id);
+              }}
+            >
+              <Trash className='h-4 w-4' />
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );

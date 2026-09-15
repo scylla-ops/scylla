@@ -109,12 +109,14 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
   {
     id: Permission.UPDATE_ORGANIZATION,
     label: msg`Edit the organization`,
+    broadLabel: msg`Edit every organization`,
     scope: ORGANIZATION,
     dependsOn: Permission.READ_ORGANIZATION,
   },
   {
     id: Permission.DELETE_ORGANIZATION,
     label: msg`Delete the organization`,
+    broadLabel: msg`Delete every organization`,
     scope: ORGANIZATION,
     dependsOn: Permission.READ_ORGANIZATION,
   },
@@ -123,6 +125,30 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
     label: msg`View agents`,
     scope: ORGANIZATION,
     dependsOn: Permission.READ_ORGANIZATION,
+  },
+  {
+    id: Permission.CREATE_AGENT,
+    label: msg`Create agents`,
+    scope: ORGANIZATION,
+    dependsOn: Permission.LIST_AGENTS,
+  },
+  {
+    id: Permission.READ_APP,
+    label: msg`Open an agent`,
+    scope: ORGANIZATION,
+    dependsOn: Permission.LIST_AGENTS,
+  },
+  {
+    id: Permission.READ_APP_STATS,
+    label: msg`View agent statistics`,
+    scope: ORGANIZATION,
+    dependsOn: Permission.LIST_AGENTS,
+  },
+  {
+    id: Permission.DELETE_APP,
+    label: msg`Delete agents`,
+    scope: ORGANIZATION,
+    dependsOn: Permission.LIST_AGENTS,
   },
   {
     // Without it the project list is narrowed to the projects the holder has a

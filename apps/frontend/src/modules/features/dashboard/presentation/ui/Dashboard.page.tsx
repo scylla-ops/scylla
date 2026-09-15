@@ -272,7 +272,7 @@ export const DashboardPage = () => {
 
       {/* The chart reads agent stats — hide it whole rather than render a panel
           that can only fail for a user without agent access. */}
-      <Can permission={Permission.LIST_AGENTS}>
+      <Can permission={Permission.READ_APP_STATS}>
         <Separator className='shrink-0' />
 
         <section className='flex shrink-0 flex-col gap-3'>

@@ -4,6 +4,7 @@ import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
 import { AgentCard } from './AgentCard';
 import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
+import { usePermissionsStore, PermissionScope } from '@platform/authz';
 
 const navigateMock = vi.fn();
 vi.mock('react-router-dom', () => ({
@@ -30,6 +31,9 @@ const agent = (overrides: Partial<AgentEntity> = {}): AgentEntity => ({
 beforeEach(() => {
   navigateMock.mockClear();
   toastSuccess.mockClear();
+  usePermissionsStore.setState({
+    permissions: { scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }] },
+  });
 });
 
 describe('AgentCard', () => {
@@ -81,6 +85,13 @@ describe('AgentCard', () => {
 
     expect(onRequestDelete).toHaveBeenCalledWith('agent-1');
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('hides both delete affordances without DELETE_APP', () => {
+    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    const { container } = renderWithI18n(<AgentCard agent={agent()} onRequestDelete={vi.fn()} />);
+
+    expect(container.querySelector('.border-t button')).not.toBeInTheDocument();
   });
 
   it('copying the id writes the full id to the clipboard and toasts success', async () => {

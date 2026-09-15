@@ -26,6 +26,7 @@ import { Cpu } from 'lucide-react';
 import { cn } from '@shared/presentation/utils';
 import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { Permission, useCan } from '@platform/authz';
 
 const StripLabel = ({ children }: { children: React.ReactNode }) => (
   <span className='font-mono text-[10px] uppercase tracking-wide text-muted-foreground'>
@@ -38,7 +39,9 @@ export const AgentDetailsPage = () => {
   const { agentId } = useParams<{ agentId: string }>();
   const navigate = useNavigate();
   const { data: agent, isLoading, isError, error } = useAgent(agentId ?? '');
-  const { data: stats } = useAgentStats(agentId ?? '');
+  const canReadStats = useCan(Permission.READ_APP_STATS);
+  const { data: stats } = useAgentStats(agentId ?? '', { enabled: canReadStats });
+  const canDelete = useCan(Permission.DELETE_APP);
   const { deleteAgent } = useAgents();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -95,9 +98,11 @@ export const AgentDetailsPage = () => {
           </div>
         </div>
 
-        <Button variant='destructive' onClick={() => setConfirmDelete(true)}>
-          <Trans>Delete</Trans>
-        </Button>
+        {canDelete && (
+          <Button variant='destructive' onClick={() => setConfirmDelete(true)}>
+            <Trans>Delete</Trans>
+          </Button>
+        )}
       </div>
 
       {/* Identity strip */}
@@ -133,7 +138,7 @@ export const AgentDetailsPage = () => {
         </span>
       </div>
 
-      {/* Job stats */}
+      {canReadStats && (
       <div className='w-full'>
         <div className='mb-2 flex items-baseline gap-2'>
           <h2 className='text-lg font-semibold text-foreground'>
@@ -167,6 +172,7 @@ export const AgentDetailsPage = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* How to start a worker for this agent */}
       <div className='w-full'>
