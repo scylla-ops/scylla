@@ -224,7 +224,7 @@ export const JobNodeLogs = ({
                   header={
                     <>
                       <Icon className={cn('size-3.5 shrink-0', config.iconClassName)} />
-                      <span className='min-w-0 shrink truncate font-mono text-xs leading-none text-foreground'>
+                      <span className='min-w-0 shrink truncate px-1 font-mono text-xs font-semibold text-foreground'>
                         {id}
                       </span>
                       <Badge variant='outline' className={cn('shrink-0', config.badgeClassName)}>
