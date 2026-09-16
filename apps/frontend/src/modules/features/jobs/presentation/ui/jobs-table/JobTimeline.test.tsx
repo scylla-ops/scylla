@@ -47,6 +47,27 @@ describe('JobTimeline', () => {
     expect(screen.getByText('11')).toBeInTheDocument();
   });
 
+  it('clicking a node segment reports that node', async () => {
+    const onSelectNode = vi.fn();
+    const user = userEvent.setup();
+    renderWithI18n(
+      <JobTimeline nodeExecutions={[node({ id: 'build' })]} onSelectNode={onSelectNode} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Node build' }));
+    expect(onSelectNode).toHaveBeenCalledWith('build');
+  });
+
+  it('a grouped segment stands for several nodes, so it reports none', async () => {
+    const onSelectNode = vi.fn();
+    const user = userEvent.setup();
+    const nodes = Array.from({ length: 11 }, (_, i) => node({ id: `n-${i}` }));
+    renderWithI18n(<JobTimeline nodeExecutions={nodes} onSelectNode={onSelectNode} />);
+
+    await user.click(screen.getByRole('button', { name: /11/ }));
+    expect(onSelectNode).toHaveBeenCalledWith();
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });

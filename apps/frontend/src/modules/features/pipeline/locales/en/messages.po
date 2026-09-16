@@ -16,7 +16,7 @@ msgstr ""
 msgid "{0} (copy)"
 msgstr "{0} (copy)"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:66
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:74
 msgid "Actions"
 msgstr "Actions"
 
@@ -93,7 +93,7 @@ msgid "Duplicate"
 msgstr "Duplicate"
 
 #. placeholder {0}: formatDuration(duration)
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:89
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:93
 msgid "Duration: {0}"
 msgstr "Duration: {0}"
 
@@ -134,7 +134,7 @@ msgstr "Edit pipeline"
 msgid "Environment variables"
 msgstr "Environment variables"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:53
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:55
 msgid "Error loading jobs"
 msgstr "Error loading jobs"
 
@@ -143,11 +143,11 @@ msgid "Failed to load pipeline"
 msgstr "Failed to load pipeline"
 
 #. placeholder {0}: getRelativeTime(job.updatedAt)
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:87
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:91
 msgid "Finished {0}"
 msgstr "Finished {0}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:39
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:41
 msgid "History"
 msgstr "History"
 
@@ -163,7 +163,7 @@ msgstr "Jobs"
 msgid "KEY"
 msgstr "KEY"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:56
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:59
 msgid "Last Run"
 msgstr "Last Run"
 
@@ -188,8 +188,8 @@ msgstr "Name"
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:31
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:97
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:34
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:101
 msgid "No jobs yet"
 msgstr "No jobs yet"
 
@@ -200,6 +200,10 @@ msgstr "No pipeline found"
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:169
 msgid "Node ID"
 msgstr "Node ID"
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:60
+msgid "Open the last run"
+msgstr "Open the last run"
 
 #: src/modules/features/pipeline/pipeline.module.ts:45
 #: src/modules/features/pipeline/pipeline.module.ts:61
@@ -225,7 +229,8 @@ msgstr "Reference a secret"
 msgid "Run"
 msgstr "Run"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:73
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:72
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:77
 msgid "Run #{runNumber}"
 msgstr "Run #{runNumber}"
 
@@ -273,11 +278,11 @@ msgid "Shell"
 msgstr "Shell"
 
 #. placeholder {0}: getRelativeTime(job.createdAt)
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:85
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:89
 msgid "Started {0}"
 msgstr "Started {0}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:29
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:31
 msgid "Status"
 msgstr "Status"
 
@@ -320,6 +325,6 @@ msgstr "You don't have permission to delete pipelines."
 msgid "You don't have permission to edit this pipeline."
 msgstr "You don't have permission to edit this pipeline."
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:43
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:45
 msgid "You don't have permission to view this pipeline's jobs"
 msgstr "You don't have permission to view this pipeline's jobs"

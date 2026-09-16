@@ -8,6 +8,14 @@ export interface StatusBarItem {
   id: string;
   status: string;
   tooltip?: ReactNode;
+  /** Makes the segment activatable — it renders as a button instead of a plain bar. */
+  onSelect?: () => void;
+  /**
+   * Accessible name for the activatable form. A colored bar has no text of its
+   * own, and the tooltip is only `aria-describedby`, so without this the button
+   * is unnameable for a screen reader and unfindable by name in a test.
+   */
+  label?: string;
 }
 
 interface StatusBarProps {
@@ -43,17 +51,26 @@ export const StatusBar = ({ items, emptyLabel, className, height = 'h-6' }: Stat
       >
         {items.map(item => {
           const config = getStatusConfig(item.status);
+          const className = cn(
+            'flex-1 min-w-[2px] max-w-full h-full rounded-sm transition-all duration-150 shrink',
+            config.barClassName,
+            config.barHoverClassName,
+            (item.tooltip || item.onSelect) && 'cursor-pointer',
+          );
 
-          const bar = (
-            <div
+          const bar = item.onSelect ? (
+            <button
               key={item.id}
-              className={cn(
-                'flex-1 min-w-[2px] max-w-full h-full rounded-sm transition-all duration-150 shrink',
-                config.barClassName,
-                config.barHoverClassName,
-                item.tooltip && 'cursor-pointer',
-              )}
+              type='button'
+              aria-label={item.label}
+              onClick={event => {
+                event.stopPropagation();
+                item.onSelect?.();
+              }}
+              className={className}
             />
+          ) : (
+            <div key={item.id} className={className} />
           );
 
           if (!item.tooltip) return bar;

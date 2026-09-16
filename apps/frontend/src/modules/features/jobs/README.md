@@ -10,6 +10,8 @@ them, reading their status, following their logs while they happen, and deleting
 
 - **The jobs table** — runs for a pipeline or across an organization, paginated, with status,
   timing and the nodes each run touched.
+- **The job details page** — one run: its status, its timing, the nodes it touched and their
+  logs.
 - **Status semantics** — what counts as running, what counts as finished, and how a list of
   runs collapses into a single summary.
 - **Logs** — the full log of a finished run, and the **live tail** of one still in flight.
@@ -17,11 +19,19 @@ them, reading their status, following their logs while they happen, and deleting
 
 ## Where it appears
 
-`JobsModule` declares no routes. The page is mounted by
-[pipeline](../pipeline/README.md) at `/:org/projects/:projectId/pipelines/:pipelineId/jobs`,
-behind `PipelineJobsRoute`.
+`JobsModule` declares one route: the job details page, at
+`/:org/projects/:projectId/pipelines/:pipelineId/jobs/:jobId`.
 
-That inversion is deliberate. The jobs page needs a **Run** button, and running is a pipeline
+A job used to have no page of its own — its status lived in a table row and its logs in a modal
+opened from that row, so there was nothing to link to. The details page is now the single place
+a run is read, and every surface that shows a job links to it: the view action on the jobs
+table, a node in its timeline (which opens straight onto that node's logs, via a `nodeId` search
+param), and the history and last-run cells on the pipeline dashboard.
+
+The jobs **list**, though, is mounted by [pipeline](../pipeline/README.md) at
+`/:org/projects/:projectId/pipelines/:pipelineId/jobs`, behind `PipelineJobsRoute`.
+
+That inversion is deliberate. The jobs list page needs a **Run** button, and running is a pipeline
 operation, not a job one. Rather than have `jobs` import `pipeline` to get a mutation — or
 duplicate the mutation — `pipeline` owns the route, brings its own Run action, and composes
 `JobsPage` inside it. `JobsPage` is therefore one of only two pages in the codebase exported
@@ -42,9 +52,11 @@ non-trivial. `tailLogs` is the odd one out in the whole codebase: it returns
 awaiting a response. The presentation layer subscribes to it in an effect and closes it on
 cleanup, which is exactly the kind of outside-React system effects are for.
 
-**Presentation** is the largest layer: a query-key factory module, one hook per operation, a
-Zustand store for table UI state, and the `jobs-table/` folder holding the table, its columns
-and its cells (`JobStatus`, `JobTimeline`, `JobNodesList`, `JobActions`).
+**Presentation** is the largest layer: a query-key factory module, one hook per operation, the
+`jobs-table/` folder holding the table, its columns and its cells (`JobStatus`, `JobTimeline`,
+`JobActions`), and `job-details/` holding the two halves of the details page — `JobSummary`
+(what the run did) and `JobNodeLogs` (what it printed, per node). The streamed viewer itself,
+`jobs-log/JobLogDisplay`, is shared by both pages.
 
 The log viewer behaves like an IDE console, and `useStreamedLogView` is where that lives. A live
 log is a stream, but a React `value` prop is a snapshot, and the gap between the two is the whole

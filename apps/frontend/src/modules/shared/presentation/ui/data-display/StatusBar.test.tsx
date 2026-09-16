@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
@@ -20,6 +20,26 @@ describe('StatusBar', () => {
       <StatusBar items={[{ id: 'a', status: 'completed' }, { id: 'b', status: 'failed' }]} />,
     );
     expect(container.querySelectorAll('.flex-1')).toHaveLength(2);
+  });
+
+  it('leaves a segment inert unless it was given an onSelect', () => {
+    renderWithI18n(<StatusBar items={[{ id: 'a', status: 'completed' }]} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('an activatable segment is a button named by its label, and does not bubble to the row', async () => {
+    const onSelect = vi.fn();
+    const rowClick = vi.fn();
+    const user = userEvent.setup();
+    renderWithI18n(
+      <div onClick={rowClick}>
+        <StatusBar items={[{ id: 'a', status: 'completed', onSelect, label: 'Run #3' }]} />
+      </div>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Run #3' }));
+    expect(onSelect).toHaveBeenCalled();
+    expect(rowClick).not.toHaveBeenCalled();
   });
 
   it('only wraps a segment with a tooltip when it has one', async () => {

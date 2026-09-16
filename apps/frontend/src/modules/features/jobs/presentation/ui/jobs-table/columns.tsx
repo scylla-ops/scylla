@@ -15,8 +15,8 @@ import { Trans } from '@lingui/react/macro';
 type JobColumnMeta = {
   pipelineId: string;
   onDelete: (jobId: string) => void;
-  onView: (jobId: string) => void;
-  onOpenJobLog: (jobId: string) => void;
+  /** Opens the job details page, on the node's logs when one was clicked. */
+  onView: (jobId: string, nodeId?: string) => void;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -52,7 +52,12 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobEntity>[] {
     {
       id: 'timeline',
       header: () => <Trans>Timeline</Trans>,
-      cell: ({ row }) => <JobTimeline nodeExecutions={row.original.nodeExecutions} />,
+      cell: ({ row }) => (
+        <JobTimeline
+          nodeExecutions={row.original.nodeExecutions}
+          onSelectNode={nodeId => meta.onView(row.original.id, nodeId)}
+        />
+      ),
       // No size: takes every pixel the sized columns leave, down to 100px.
       minSize: 200,
     },
@@ -84,10 +89,6 @@ export function createJobColumns(meta: JobColumnMeta): ColumnDef<JobEntity>[] {
           onDelete={e => {
             e.stopPropagation();
             meta.onDelete(row.original.id);
-          }}
-          onOpenJobLog={e => {
-            e.stopPropagation();
-            meta.onOpenJobLog(row.original.id);
           }}
         />
       ),

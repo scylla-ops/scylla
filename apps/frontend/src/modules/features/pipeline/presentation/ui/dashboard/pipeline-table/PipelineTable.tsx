@@ -24,7 +24,7 @@ export const PipelineTable = ({
   canListJobs,
 }: PipelineTableProps) => {
   const { selectedIds, select } = useSelection('pipelines');
-  const { goToEditPipeline, goToJobs, goToTriggers } = useScyllaNavigate();
+  const { goToEditPipeline, goToJobs, goToJobDetails, goToTriggers } = useScyllaNavigate();
   const { mutateAsync } = useRunPipeline();
   const duplicatePipeline = useDuplicatePipeline();
   const [runningPipelines, setRunningPipelines] = useState<Set<string>>(new Set());
@@ -52,6 +52,9 @@ export const PipelineTable = ({
     },
     onViewJobs: pipeline => {
       goToJobs(pipeline.id, pipeline.name);
+    },
+    onViewJob: (pipeline, jobId) => {
+      goToJobDetails(pipeline.id, jobId, { pipelineName: pipeline.name });
     },
     onViewTriggers: pipeline => {
       goToTriggers(pipeline.id, pipeline.name);

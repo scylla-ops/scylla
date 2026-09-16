@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithI18n } from '@/test/render.tsx';
 import { PipelineLastJob } from './PipelineLastJob';
 import type { JobEntity } from '@/modules/features/jobs';
@@ -31,6 +32,20 @@ describe('PipelineLastJob', () => {
       />,
     );
     expect(screen.getByText('45s')).toBeInTheDocument();
+  });
+
+  it('stays inert, with no button, unless it was given an onSelectJob', () => {
+    renderWithI18n(<PipelineLastJob jobs={[job()]} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('reports the most recent job when clicked', async () => {
+    const onSelectJob = vi.fn();
+    const user = userEvent.setup();
+    renderWithI18n(<PipelineLastJob jobs={[job({ id: 'job-7' })]} onSelectJob={onSelectJob} />);
+
+    await user.click(screen.getByRole('button', { name: 'Open the last run' }));
+    expect(onSelectJob).toHaveBeenCalledWith('job-7');
   });
 
   it('shows a dash when the most recent job never started', () => {

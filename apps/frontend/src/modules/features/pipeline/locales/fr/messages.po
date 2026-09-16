@@ -16,7 +16,7 @@ msgstr ""
 msgid "{0} (copy)"
 msgstr "{0} (copie)"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:66
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:74
 msgid "Actions"
 msgstr "Actions"
 
@@ -93,7 +93,7 @@ msgid "Duplicate"
 msgstr "Dupliquer"
 
 #. placeholder {0}: formatDuration(duration)
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:89
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:93
 msgid "Duration: {0}"
 msgstr "Durée : {0}"
 
@@ -134,7 +134,7 @@ msgstr "Modifier la pipeline"
 msgid "Environment variables"
 msgstr "Variables d'environnement"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:53
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:55
 msgid "Error loading jobs"
 msgstr "Erreur lors du chargement des jobs"
 
@@ -143,11 +143,11 @@ msgid "Failed to load pipeline"
 msgstr "Impossible de charger la pipeline"
 
 #. placeholder {0}: getRelativeTime(job.updatedAt)
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:87
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:91
 msgid "Finished {0}"
 msgstr "Terminé {0}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:39
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:41
 msgid "History"
 msgstr "Historique"
 
@@ -163,7 +163,7 @@ msgstr "Jobs"
 msgid "KEY"
 msgstr "CLÉ"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:56
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:59
 msgid "Last Run"
 msgstr "Dernière exécution"
 
@@ -188,8 +188,8 @@ msgstr "Nom"
 msgid "New pipeline"
 msgstr "Nouveau pipeline"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:31
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:97
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:34
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:101
 msgid "No jobs yet"
 msgstr "Aucun job pour le moment"
 
@@ -200,6 +200,10 @@ msgstr "Aucun pipeline trouvé"
 #: src/modules/features/pipeline/presentation/ui/editor/blueprint/StepNodeFormDialog.tsx:169
 msgid "Node ID"
 msgstr "ID du nœud"
+
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/PipelineLastJob.tsx:60
+msgid "Open the last run"
+msgstr "Ouvrir la dernière exécution"
 
 #: src/modules/features/pipeline/pipeline.module.ts:45
 #: src/modules/features/pipeline/pipeline.module.ts:61
@@ -225,7 +229,8 @@ msgstr "Référencez un secret"
 msgid "Run"
 msgstr "Exécuter"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:73
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:72
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:77
 msgid "Run #{runNumber}"
 msgstr "Exécution n°{runNumber}"
 
@@ -273,11 +278,11 @@ msgid "Shell"
 msgstr "Shell"
 
 #. placeholder {0}: getRelativeTime(job.createdAt)
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:85
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:89
 msgid "Started {0}"
 msgstr "Démarré {0}"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:29
+#: src/modules/features/pipeline/presentation/ui/dashboard/pipeline-table/columns.tsx:31
 msgid "Status"
 msgstr "Statut"
 
@@ -320,6 +325,6 @@ msgstr "Vous n'avez pas la permission de supprimer des pipelines."
 msgid "You don't have permission to edit this pipeline."
 msgstr "Vous n'avez pas la permission de modifier cette pipeline."
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:43
+#: src/modules/features/pipeline/presentation/ui/dashboard/PipelineChart.tsx:45
 msgid "You don't have permission to view this pipeline's jobs"
 msgstr "Vous n'avez pas la permission de voir les jobs de cette pipeline"

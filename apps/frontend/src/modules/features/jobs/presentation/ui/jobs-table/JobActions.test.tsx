@@ -37,15 +37,16 @@ beforeEach(() => {
 });
 
 describe('JobActions', () => {
-  it('in the wide layout, shows View, logs and delete as separate icon buttons', () => {
-    renderWithI18n(<JobActions onView={vi.fn()} onDelete={vi.fn()} onOpenJobLog={vi.fn()} />);
-    expect(screen.getAllByRole('button')).toHaveLength(3);
-    expect(screen.queryByRole('button', { name: /more/i })).not.toBeInTheDocument();
+  it('in the wide layout, shows a single view action next to delete', () => {
+    renderWithI18n(<JobActions onView={vi.fn()} onDelete={vi.fn()} />);
+    expect(screen.getAllByRole('button')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /logs/i })).not.toBeInTheDocument();
   });
 
-  it('hides the logs and delete buttons without the matching permission', () => {
+  it('hides the delete button without the matching permission', () => {
     usePermissionsStore.setState({ permissions: { scopes: [] } });
-    renderWithI18n(<JobActions onView={vi.fn()} onDelete={vi.fn()} onOpenJobLog={vi.fn()} />);
+    renderWithI18n(<JobActions onView={vi.fn()} onDelete={vi.fn()} />);
     // Only the always-available View button remains.
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
@@ -53,31 +54,28 @@ describe('JobActions', () => {
   it('collapses into a single dropdown trigger once the container is too narrow', async () => {
     const onView = vi.fn();
     const onDelete = vi.fn();
-    const onOpenJobLog = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<JobActions onView={onView} onDelete={onDelete} onOpenJobLog={onOpenJobLog} />);
+    renderWithI18n(<JobActions onView={onView} onDelete={onDelete} />);
 
     act(() => ResizeObserverMock.instances[0].fire(50));
 
     const trigger = screen.getByRole('button');
     await user.click(trigger);
 
-    await user.click(await screen.findByText('Open logs'));
-    expect(onOpenJobLog).toHaveBeenCalled();
-    expect(onView).not.toHaveBeenCalled();
+    await user.click(await screen.findByText('View'));
+    expect(onView).toHaveBeenCalled();
     expect(onDelete).not.toHaveBeenCalled();
   });
 
-  it('the dropdown omits logs/delete items without the matching permission', async () => {
+  it('the dropdown omits the delete item without the matching permission', async () => {
     usePermissionsStore.setState({ permissions: { scopes: [] } });
     const user = userEvent.setup();
-    renderWithI18n(<JobActions onView={vi.fn()} onDelete={vi.fn()} onOpenJobLog={vi.fn()} />);
+    renderWithI18n(<JobActions onView={vi.fn()} onDelete={vi.fn()} />);
 
     act(() => ResizeObserverMock.instances[0].fire(50));
     await user.click(screen.getByRole('button'));
 
     expect(await screen.findByText('View')).toBeInTheDocument();
-    expect(screen.queryByText('Open logs')).not.toBeInTheDocument();
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   });
 });

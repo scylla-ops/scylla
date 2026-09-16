@@ -10,7 +10,9 @@ lifecycle — authoring a pipeline and watching it run.
 ## What it covers
 
 - **The project's pipeline dashboard** (the project index route) — every pipeline in the
-  project, with its last run, its status and a chart.
+  project, with its last run, its status and a chart. Each run in that chart, and the last-run
+  cell, opens that job's details page in [jobs](../jobs/README.md); "View jobs" still opens the
+  full, unclipped list.
 - **The editor** — creating and updating a pipeline, in two coordinated views.
 - **Running** — the Run action, and the jobs page that follows it.
 - **Organization-wide reads** — pipeline metadata across every project, for the

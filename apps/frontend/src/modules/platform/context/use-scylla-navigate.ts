@@ -35,10 +35,25 @@ export const useScyllaNavigate = () => {
     setPipeline(id, name);
   };
 
-  const goToJobs = (id: string, name: string) => {
+  // `name` is optional: a caller already inside the pipeline (its jobs, one of
+  // its jobs) navigates without renaming the context it is already in.
+  const goToJobs = (id: string, name?: string) => {
     const projectId = useContextStore.getState().project.id;
     void navigate(`${getOrgPrefix()}/projects/${projectId}/pipelines/${id}/jobs`);
-    setPipeline(id, name);
+    if (name) setPipeline(id, name);
+  };
+
+  const goToJobDetails = (
+    pipelineId: string,
+    jobId: string,
+    options: { nodeId?: string; pipelineName?: string } = {},
+  ) => {
+    const projectId = useContextStore.getState().project.id;
+    const query = options.nodeId ? `?nodeId=${encodeURIComponent(options.nodeId)}` : '';
+    void navigate(
+      `${getOrgPrefix()}/projects/${projectId}/pipelines/${pipelineId}/jobs/${jobId}${query}`,
+    );
+    if (options.pipelineName) setPipeline(pipelineId, options.pipelineName);
   };
 
   const goToTriggers = (id: string, name: string) => {
@@ -66,6 +81,7 @@ export const useScyllaNavigate = () => {
     goToSubRoute,
     goToCreatePipeline,
     goToJobs,
+    goToJobDetails,
     goToTriggers,
     goToAgentDetails,
     goBack: () => void navigate(-1),

@@ -84,9 +84,12 @@ presentation/
 
 **No nav entry** — pipelines are the project index, reached by entering a project.
 
-The jobs route is owned here, not by [`jobs`](../jobs/AGENTS.md): the page needs a **Run**
-action, which is a pipeline operation. `PipelineJobsRoute` renders `JobsPage` (imported from
-`jobs`'s public API) and supplies that action.
+The jobs **list** route is owned here, not by [`jobs`](../jobs/AGENTS.md): the page needs a
+**Run** action, which is a pipeline operation. `PipelineJobsRoute` renders `JobsPage` (imported
+from `jobs`'s public API) and supplies that action. The job **details** route
+(`pipelines/:pipelineId/jobs/:jobId`) is owned by `jobs` itself — it needs nothing from here —
+and this module links to it with `useScyllaNavigate().goToJobDetails(...)`, never by importing
+the page.
 
 ## Rules that bite here
 
