@@ -28,7 +28,6 @@ export const TriggerSourceCell = ({ trigger }: { trigger: TriggerEntity }) => {
   return (
     <CopyableText
       value={trigger.source.webhookUrl}
-      truncate={12}
       showFullOnHover
       copyLabel={<Trans>Copy url</Trans>}
       className='w-full justify-center'

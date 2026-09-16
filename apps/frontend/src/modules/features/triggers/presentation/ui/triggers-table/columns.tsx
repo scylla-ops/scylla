@@ -63,8 +63,8 @@ export const createTriggerColumns = (meta: TriggerColumnsMeta): ColumnDef<Trigge
     id: 'status',
     header: () => <Trans>Status</Trans>,
     cell: ({ row }) => <TriggerStatusCell trigger={row.original} />,
-    size: 180,
-    minSize: 140,
+    size: 140,
+    minSize: 120,
   },
   {
     id: 'enabled',
@@ -81,8 +81,8 @@ export const createTriggerColumns = (meta: TriggerColumnsMeta): ColumnDef<Trigge
         </div>
       );
     },
-    size: 100,
-    minSize: 80,
+    size: 70,
+    minSize: 60,
   },
   {
     id: 'actions',
@@ -108,7 +108,7 @@ export const createTriggerColumns = (meta: TriggerColumnsMeta): ColumnDef<Trigge
       );
     },
     // Floored so the compact dropdown stays reachable instead of collapsing away.
-    size: 140,
+    size: 100,
     minSize: 80,
   },
 ];
