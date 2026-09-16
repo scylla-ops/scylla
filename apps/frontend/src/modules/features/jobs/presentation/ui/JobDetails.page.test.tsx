@@ -244,7 +244,7 @@ describe('JobDetailsPage', () => {
 
     giveTheLogColumn(800);
 
-    expect(logHeights()).toEqual(['764']);
+    expect(logHeights()).toEqual(['762']);
   });
 
   it('keeps every node panel at the same readable height, scrolling the column instead', async () => {

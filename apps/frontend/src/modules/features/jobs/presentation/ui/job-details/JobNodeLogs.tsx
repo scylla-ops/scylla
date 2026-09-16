@@ -11,6 +11,8 @@ import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-log/
 
 /** The fixed `h-9` header standing above each log. */
 const PANEL_HEADER_HEIGHT = 36;
+/** The panel's own `border` (1px top + 1px bottom), on top of the header. */
+const PANEL_BORDER_HEIGHT = 2;
 /** Below this a log is a peephole; the column scrolls rather than shrink past it. */
 const MIN_LOG_HEIGHT = 192;
 /** What a node's log stands at, however many are open — the column takes the overflow. */
@@ -18,7 +20,9 @@ const NODE_LOG_HEIGHT = 448;
 
 /** The whole job is only ever shown alone, so its log gets the column entire. */
 const wholeJobLogHeight = (columnHeight: number | null): number | undefined =>
-  columnHeight === null ? undefined : Math.max(MIN_LOG_HEIGHT, columnHeight - PANEL_HEADER_HEIGHT);
+  columnHeight === null
+    ? undefined
+    : Math.max(MIN_LOG_HEIGHT, columnHeight - PANEL_HEADER_HEIGHT - PANEL_BORDER_HEIGHT);
 
 interface JobNodeLogsProps {
   job: JobEntity;
