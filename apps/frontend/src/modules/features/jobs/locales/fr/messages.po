@@ -15,7 +15,7 @@ msgstr ""
 
 #. placeholder {0}: group.count
 #. placeholder {1}: Math.round(pct)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:111
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:119
 msgid "{0} / {total} nodes ({1}%)"
 msgstr "{0} / {total} nœuds ({1} %)"
 
@@ -60,12 +60,17 @@ msgstr "Supprimer le job"
 msgid "Duration"
 msgstr "Durée"
 
+#. placeholder {0}: formatDuration(duration)
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:77
+msgid "Duration: {0}"
+msgstr "Durée : {0}"
+
 #: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:31
 msgid "Error loading logs..."
 msgstr "Erreur lors du chargement des journaux…"
 
 #. placeholder {0}: formatTime(node.finishedAt)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:70
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:72
 msgid "Finished: {0}"
 msgstr "Terminé : {0}"
 
@@ -94,7 +99,7 @@ msgid "No jobs found"
 msgstr "Aucun job trouvé"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:49
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:76
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:84
 msgid "No nodes"
 msgstr "Aucun nœud"
 
@@ -138,12 +143,12 @@ msgid "Run your pipeline to create the first job"
 msgstr "Exécutez votre pipeline pour créer le premier job"
 
 #. placeholder {0}: formatTime(node.startedAt)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:65
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:67
 msgid "Started: {0}"
 msgstr "Démarré : {0}"
 
 #. placeholder {0}: _(getStatusConfig(node.state).label)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:61
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:63
 msgid "State: {0}"
 msgstr "État : {0}"
 

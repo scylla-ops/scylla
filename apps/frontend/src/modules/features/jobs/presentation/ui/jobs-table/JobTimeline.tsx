@@ -6,7 +6,7 @@ import { useLingui } from '@lingui/react';
 import { cn } from '@shared/presentation/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
-import { formatTime } from '@shared/utils/date-utils.ts';
+import { formatTime, calculateExecutionDuration, formatDuration } from '@shared/utils/date-utils.ts';
 
 type JobTimelineProps = {
   nodeExecutions: JobNodeExecution[];
@@ -51,28 +51,36 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
 
   // Detailed view for small pipelines
   if (!shouldCollapse) {
-    const items: StatusBarItem[] = nodeExecutions.map((node, index) => ({
-      id: node.id || String(index),
-      status: node.state,
-      tooltip: (
-        <div className='text-xs'>
-          <p className='font-semibold'>{node.id}</p>
-          <p>
-            <Trans>State: {_(getStatusConfig(node.state).label)}</Trans>
-          </p>
-          {node.startedAt && (
+    const items: StatusBarItem[] = nodeExecutions.map((node, index) => {
+      const duration = calculateExecutionDuration(node.startedAt, node.finishedAt);
+      return {
+        id: node.id || String(index),
+        status: node.state,
+        tooltip: (
+          <div className='text-xs'>
+            <p className='font-semibold'>{node.id}</p>
             <p>
-              <Trans>Started: {formatTime(node.startedAt)}</Trans>
+              <Trans>State: {_(getStatusConfig(node.state).label)}</Trans>
             </p>
-          )}
-          {node.finishedAt && (
-            <p>
-              <Trans>Finished: {formatTime(node.finishedAt)}</Trans>
-            </p>
-          )}
-        </div>
-      ),
-    }));
+            {node.startedAt && (
+              <p>
+                <Trans>Started: {formatTime(node.startedAt)}</Trans>
+              </p>
+            )}
+            {node.finishedAt && (
+              <p>
+                <Trans>Finished: {formatTime(node.finishedAt)}</Trans>
+              </p>
+            )}
+            {duration !== null && (
+              <p>
+                <Trans>Duration: {formatDuration(duration)}</Trans>
+              </p>
+            )}
+          </div>
+        ),
+      };
+    });
     return <StatusBar items={items} emptyLabel={<Trans>No nodes</Trans>} />;
   }
 
