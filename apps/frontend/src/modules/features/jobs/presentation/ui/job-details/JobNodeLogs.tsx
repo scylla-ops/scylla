@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { ChevronDown, ChevronRight, Radio, Terminal, X } from 'lucide-react';
-import { Badge } from '@shadcn';
+import { Badge, Button } from '@shadcn';
 import { Permission, useCan } from '@platform/authz';
 import { cn } from '@shared/presentation/utils';
 import { useMeasuredHeight } from '@shared/presentation/hooks/use-measured-height.ts';
@@ -10,7 +10,7 @@ import { calculateExecutionDuration, formatDuration } from '@shared/utils/date-u
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-log/JobLogDisplay.tsx';
 
-/** The fixed `h-9` header standing above each log. */
+/** The whole job's `h-9` header, the only one whose height the column has to allow for. */
 const PANEL_HEADER_HEIGHT = 36;
 /** The panel's own `border` (1px top + 1px bottom), on top of the header. */
 const PANEL_BORDER_HEIGHT = 2;
@@ -39,59 +39,82 @@ interface JobNodeLogsProps {
 interface LogPanelProps {
   ariaLabel: string;
   header: ReactNode;
-  closeLabel?: string;
-  onClose?: () => void;
   collapsed?: boolean;
-  collapseLabel?: string;
-  expandLabel?: string;
-  onToggleCollapse?: () => void;
   children: ReactNode;
 }
 
-const LogPanel = ({
-  ariaLabel,
-  header,
-  closeLabel,
-  onClose,
-  collapsed = false,
-  collapseLabel,
-  expandLabel,
-  onToggleCollapse,
-  children,
-}: LogPanelProps) => (
+const LogPanel = ({ ariaLabel, header, collapsed = false, children }: LogPanelProps) => (
   <section
     aria-label={ariaLabel}
     className='flex min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm'
   >
-    <header className='flex h-9 shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3'>
-      <span className='flex min-w-0 flex-1 items-center gap-1.5'>{header}</span>
-      {onToggleCollapse && (
-        <button
-          type='button'
-          onClick={onToggleCollapse}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? expandLabel : collapseLabel}
-          className='rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
-        >
-          {collapsed ? <ChevronRight className='size-3.5' /> : <ChevronDown className='size-3.5' />}
-        </button>
-      )}
-      {onClose && (
-        <button
-          type='button'
-          onClick={onClose}
-          aria-label={closeLabel}
-          className='rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
-        >
-          <X className='size-3.5' />
-        </button>
-      )}
-    </header>
+    {header}
     {/* Collapsing only hides the log, so its stream stays open — no
         reconnect when the reader expands it again. */}
     <div className={cn(collapsed && 'hidden')}>{children}</div>
   </section>
 );
+
+interface NodeLogHeaderProps {
+  nodeId: string;
+  state: JobEntity['nodeExecutions'][number]['state'];
+  collapsed: boolean;
+  collapseLabel: string;
+  expandLabel: string;
+  closeLabel: string;
+  onToggleCollapse: () => void;
+  onClose: () => void;
+}
+
+/**
+ * The whole line collapses the panel, the way the node list this page replaced
+ * read: a chevron leading, then the status, the node and what it ended as. Only
+ * the close button is left out of it — a button inside a button is no HTML, and
+ * closing is not collapsing.
+ */
+const NodeLogHeader = ({
+  nodeId,
+  state,
+  collapsed,
+  collapseLabel,
+  expandLabel,
+  closeLabel,
+  onToggleCollapse,
+  onClose,
+}: NodeLogHeaderProps) => {
+  const { i18n } = useLingui();
+  const config = getStatusConfig(state);
+  const Icon = config.icon;
+  const Chevron = collapsed ? ChevronRight : ChevronDown;
+
+  return (
+    <header className='flex shrink-0 items-center border-b border-border bg-muted/40 pr-2'>
+      <Button
+        variant='ghost'
+        type='button'
+        onClick={onToggleCollapse}
+        aria-expanded={!collapsed}
+        aria-label={collapsed ? expandLabel : collapseLabel}
+        className='h-auto min-w-0 flex-1 justify-start gap-3 rounded-none p-3 hover:scale-100'
+      >
+        <Chevron className='size-4 text-muted-foreground' />
+        <Icon className={cn('size-5', config.iconClassName)} />
+        <p className='min-w-0 truncate text-sm font-medium text-foreground'>{nodeId}</p>
+        <Badge variant='outline' className={config.badgeClassName}>
+          {i18n._(config.label)}
+        </Badge>
+      </Button>
+      <button
+        type='button'
+        onClick={onClose}
+        aria-label={closeLabel}
+        className='shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+      >
+        <X className='size-4' />
+      </button>
+    </header>
+  );
+};
 
 /**
  * The job's logs: the job as a whole, or the nodes the reader picked out of it.
@@ -113,7 +136,7 @@ export const JobNodeLogs = ({
   onToggleNode,
   onShowWholeJob,
 }: JobNodeLogsProps) => {
-  const { t, i18n } = useLingui();
+  const { t } = useLingui();
   const canViewLogs = useCan(Permission.READ_JOB_LOGS);
   const { height, containerRef } = useMeasuredHeight();
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -209,40 +232,38 @@ export const JobNodeLogs = ({
           className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto'
         >
           {isWholeJobOpen ? (
-            <LogPanel ariaLabel={wholeJobLabel} header={wholeJobLabel}>
+            <LogPanel
+              ariaLabel={wholeJobLabel}
+              header={
+                <header className='flex h-9 shrink-0 items-center border-b border-border bg-muted/40 px-3'>
+                  {wholeJobLabel}
+                </header>
+              }
+            >
               <JobLogDisplay jobId={job.id} maxHeight={wholeJobLogHeight(height)} />
             </LogPanel>
           ) : (
-            openNodes.map(({ node, id }) => {
-              const config = getStatusConfig(node.state);
-              const Icon = config.icon;
-
-              return (
-                <LogPanel
-                  key={id}
-                  ariaLabel={id}
-                  header={
-                    <>
-                      <Icon className={cn('size-3.5 shrink-0', config.iconClassName)} />
-                      <span className='min-w-0 shrink truncate px-1 font-mono text-xs font-semibold text-foreground'>
-                        {id}
-                      </span>
-                      <Badge variant='outline' className={cn('shrink-0', config.badgeClassName)}>
-                        {i18n._(config.label)}
-                      </Badge>
-                    </>
-                  }
-                  closeLabel={closeLabelFor(id)}
-                  onClose={() => onToggleNode(id)}
-                  collapsed={collapsedIds.has(id)}
-                  collapseLabel={collapseLabelFor(id)}
-                  expandLabel={expandLabelFor(id)}
-                  onToggleCollapse={() => toggleCollapse(id)}
-                >
-                  <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={NODE_LOG_HEIGHT} />
-                </LogPanel>
-              );
-            })
+            openNodes.map(({ node, id }) => (
+              <LogPanel
+                key={id}
+                ariaLabel={id}
+                collapsed={collapsedIds.has(id)}
+                header={
+                  <NodeLogHeader
+                    nodeId={id}
+                    state={node.state}
+                    collapsed={collapsedIds.has(id)}
+                    collapseLabel={collapseLabelFor(id)}
+                    expandLabel={expandLabelFor(id)}
+                    closeLabel={closeLabelFor(id)}
+                    onToggleCollapse={() => toggleCollapse(id)}
+                    onClose={() => onToggleNode(id)}
+                  />
+                }
+              >
+                <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={NODE_LOG_HEIGHT} />
+              </LogPanel>
+            ))
           )}
         </div>
       </div>

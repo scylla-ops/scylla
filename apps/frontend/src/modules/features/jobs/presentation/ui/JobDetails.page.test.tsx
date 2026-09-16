@@ -240,6 +240,17 @@ describe('JobDetailsPage', () => {
     expect(testLog.parentElement).not.toHaveClass('hidden');
   });
 
+  it("collapses from anywhere on a node panel's header, not the chevron alone", async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
+
+    const panel = within(await screen.findByRole('region', { name: 'build' }));
+    const log = screen.getByTestId('job-log-display');
+    await user.click(panel.getByText('Success'));
+
+    expect(log.parentElement).toHaveClass('hidden');
+  });
+
   it('marks the entries of the panels that are open', async () => {
     renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
 
