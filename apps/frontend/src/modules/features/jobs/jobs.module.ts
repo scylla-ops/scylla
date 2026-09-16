@@ -19,20 +19,24 @@ export const JobsModule = {
   },
   routes: [
     {
-      // The jobs *list* is mounted by `pipeline` (it owns the Run action); one
-      // job needs nothing from that module, so it is declared here — which also
-      // keeps the page out of this module's public API.
+      // Declared as a child of the jobs path `pipeline` owns — the list needs a
+      // Run action, one job does not — so the trail keeps "Jobs" as a crumb of
+      // its own. `mergeSharedParents` folds the two declarations of this segment
+      // into one route; repeating the path literally is what pairs them, and
+      // neither module imports the other.
       mount: 'project',
-      path: 'pipelines/:pipelineId/jobs/:jobId',
-      permission: Permission.READ_JOB,
-      breadcrumb: ({ pipelineName }) => ({
-        label: msg`Pipeline`,
-        highlight: pipelineName,
-        detail: msg`Job`,
-      }),
-      lazy: async () => ({
-        Component: (await import('./presentation/ui/JobDetails.page.tsx')).JobDetailsPage,
-      }),
+      path: 'pipelines/:pipelineId/jobs',
+      children: [
+        {
+          mount: 'project',
+          path: ':jobId',
+          permission: Permission.READ_JOB,
+          breadcrumb: ({ jobId }) => ({ label: msg`Job`, highlight: jobId }),
+          lazy: async () => ({
+            Component: (await import('./presentation/ui/JobDetails.page.tsx')).JobDetailsPage,
+          }),
+        },
+      ],
     },
   ],
 } satisfies ScyllaModule;

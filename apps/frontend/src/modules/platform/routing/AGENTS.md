@@ -81,7 +81,7 @@ Never gate a page by wrapping it in `RequirePermission` *and* declaring `permiss
 locale. They are `` msg`…` `` **descriptors, not JSX**, which is what lets a module declare
 routes in a plain `.ts` file — and they are still translated at render time, so a locale switch
 updates them. `BreadcrumbParams` currently offers `projectName`, `organizationName`,
-`pipelineName`, `userId`; extend it here if a route needs more.
+`pipelineName`, `userId`, `jobId`; extend it here if a route needs more.
 
 ## Rules that bite here
 

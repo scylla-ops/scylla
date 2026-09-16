@@ -21,13 +21,14 @@ export const ScyllaBreadcrumbs = () => {
   const proj = useContextStore(state => state.project?.name);
   const pipelineName = useContextStore(state => state.pipeline?.name);
 
-  const { userId } = useParams();
+  const { userId, jobId } = useParams();
 
   const params: BreadcrumbParams = {
     projectName: proj || undefined,
     organizationName: org || undefined,
     pipelineName: pipelineName || undefined,
     userId: userId || undefined,
+    jobId: jobId || undefined,
   };
 
   const crumbs = matches

@@ -6,6 +6,7 @@ export interface BreadcrumbParams {
   organizationName?: string;
   pipelineName?: string;
   userId?: string;
+  jobId?: string;
 }
 
 /**
