@@ -95,12 +95,12 @@ export function useAgent(agentId: string) {
   });
 }
 
-export function useAgentStats(agentId: string) {
+export function useAgentStats(agentId: string, options?: { enabled?: boolean }) {
   const { agentsRepository } = useAgentsDomain();
 
   return useQuery({
     queryKey: [WORKERS_QUERY_KEY, 'stats', agentId],
-    enabled: !!agentId,
+    enabled: !!agentId && (options?.enabled ?? true),
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
     queryFn: async () => {

@@ -32,7 +32,7 @@ export const AgentsModule = {
         {
           mount: 'organization',
           path: ':agentId',
-          permission: Permission.LIST_AGENTS,
+          permission: Permission.READ_APP,
           breadcrumb: () => ({ label: msg`Agent details` }),
           lazy: async () => ({
             Component: (await import('./presentation/ui/AgentDetails.page.tsx')).AgentDetailsPage,

@@ -1,7 +1,6 @@
 import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { ShoppingCartIcon } from 'lucide-react';
-import { Permission } from '@platform/authz';
 import type MarketplaceRepository from '@/modules/features/marketplace/domain/repository/marketplace.repository.ts';
 import { DefaultMarketplaceRepository } from '@/modules/features/marketplace/infrastructure/repository/default-marketplace.repository.ts';
 
@@ -17,7 +16,6 @@ export const MarketplaceModule = {
     {
       mount: 'organization',
       path: 'marketplace',
-      permission: Permission.LIST_APPS_BY_ORGANIZATION,
       lazy: async () => ({
         Component: (await import('./presentation/ui/Marketplace.page.tsx')).MarketplacePage,
       }),
@@ -29,7 +27,6 @@ export const MarketplaceModule = {
       title: msg`Marketplace`,
       url: 'marketplace',
       icon: ShoppingCartIcon,
-      permission: Permission.LIST_APPS_BY_ORGANIZATION,
       order: 50,
     },
   ],
