@@ -36,19 +36,20 @@ interface JobNodeLogsProps {
 }
 
 interface LogPanelProps {
-  label: string;
+  ariaLabel: string;
+  header: ReactNode;
   closeLabel?: string;
   onClose?: () => void;
   children: ReactNode;
 }
 
-const LogPanel = ({ label, closeLabel, onClose, children }: LogPanelProps) => (
+const LogPanel = ({ ariaLabel, header, closeLabel, onClose, children }: LogPanelProps) => (
   <section
-    aria-label={label}
+    aria-label={ariaLabel}
     className='flex min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm'
   >
     <header className='flex h-9 shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3'>
-      <span className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>{label}</span>
+      <span className='flex min-w-0 flex-1 items-center gap-1.5'>{header}</span>
       {onClose && (
         <button
           type='button'
@@ -84,7 +85,7 @@ export const JobNodeLogs = ({
   onToggleNode,
   onShowWholeJob,
 }: JobNodeLogsProps) => {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const canViewLogs = useCan(Permission.READ_JOB_LOGS);
   const { height, containerRef } = useMeasuredHeight();
 
@@ -140,6 +141,7 @@ export const JobNodeLogs = ({
 
           {nodes.map(({ node, id }) => {
             const config = getStatusConfig(node.state);
+            const Icon = config.icon;
             const duration = calculateExecutionDuration(node.startedAt, node.finishedAt);
             const isOpen = openNodeIds.includes(id);
 
@@ -151,7 +153,7 @@ export const JobNodeLogs = ({
                 aria-pressed={isOpen}
                 className={cn('flex items-center gap-2', buttonClassName(isOpen))}
               >
-                <span className={cn('size-2 shrink-0 rounded-full', config.dotClassName)} />
+                <Icon className={cn('size-3.5 shrink-0', config.iconClassName)} />
                 <span className='min-w-0 flex-1 truncate font-mono text-xs'>{id}</span>
                 <span className='shrink-0 text-xs text-muted-foreground'>
                   {duration === null ? '-' : formatDuration(duration)}
@@ -168,20 +170,36 @@ export const JobNodeLogs = ({
           className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto'
         >
           {isWholeJobOpen ? (
-            <LogPanel label={wholeJobLabel}>
+            <LogPanel ariaLabel={wholeJobLabel} header={wholeJobLabel}>
               <JobLogDisplay jobId={job.id} maxHeight={wholeJobLogHeight(height)} />
             </LogPanel>
           ) : (
-            openNodes.map(({ id }) => (
-              <LogPanel
-                key={id}
-                label={id}
-                closeLabel={closeLabelFor(id)}
-                onClose={() => onToggleNode(id)}
-              >
-                <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={NODE_LOG_HEIGHT} />
-              </LogPanel>
-            ))
+            openNodes.map(({ node, id }) => {
+              const config = getStatusConfig(node.state);
+              const Icon = config.icon;
+
+              return (
+                <LogPanel
+                  key={id}
+                  ariaLabel={id}
+                  header={
+                    <>
+                      <Icon className={cn('size-3.5 shrink-0', config.iconClassName)} />
+                      <span className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>
+                        {id}
+                      </span>
+                      <span className={cn('shrink-0 text-xs', config.textClassName)}>
+                        {i18n._(config.label)}
+                      </span>
+                    </>
+                  }
+                  closeLabel={closeLabelFor(id)}
+                  onClose={() => onToggleNode(id)}
+                >
+                  <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={NODE_LOG_HEIGHT} />
+                </LogPanel>
+              );
+            })
           )}
         </div>
       </div>
