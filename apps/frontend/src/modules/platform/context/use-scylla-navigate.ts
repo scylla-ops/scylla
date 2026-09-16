@@ -49,7 +49,9 @@ export const useScyllaNavigate = () => {
     options: { nodeId?: string; pipelineName?: string } = {},
   ) => {
     const projectId = useContextStore.getState().project.id;
-    const query = options.nodeId ? `?nodeId=${encodeURIComponent(options.nodeId)}` : '';
+    // `nodes` is a list the page opens a panel per id for; one id opens that
+    // node's logs alone, which is what every caller here means.
+    const query = options.nodeId ? `?nodes=${encodeURIComponent(options.nodeId)}` : '';
     void navigate(
       `${getOrgPrefix()}/projects/${projectId}/pipelines/${pipelineId}/jobs/${jobId}${query}`,
     );

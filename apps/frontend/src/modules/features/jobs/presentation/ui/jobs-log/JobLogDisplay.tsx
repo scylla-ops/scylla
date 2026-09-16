@@ -33,7 +33,7 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
     );
 
   return (
-    <div className={'min-w-0 w-full rounded-xl overflow-hidden shadow-sm'}>
+    <div className={'min-w-0 w-full overflow-hidden'}>
       <ReactCodeMirror
         readOnly
         editable={false}

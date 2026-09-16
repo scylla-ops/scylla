@@ -3,14 +3,19 @@ import { Trans } from '@lingui/react/macro';
 import { Badge } from '@shadcn';
 import { CopyableText } from '@shared/presentation/ui/data-display/CopyableText.tsx';
 import { useNow } from '@shared/presentation/hooks/use-now.ts';
-import { calculateExecutionDuration, formatDate, formatDuration } from '@shared/utils/date-utils.ts';
+import {
+  calculateExecutionDuration,
+  formatDate,
+  formatDuration,
+} from '@shared/utils/date-utils.ts';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { JobStatus } from '@/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx';
 import { JobTimeline } from '@/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx';
 
 interface JobSummaryProps {
   job: JobEntity;
-  onSelectNode: (nodeId?: string) => void;
+  /** Opens that node's log panel, leaving the panels already open alone. */
+  onOpenNode: (nodeId?: string) => void;
 }
 
 const Fact = ({ label, children }: { label: ReactNode; children: ReactNode }) => (
@@ -22,7 +27,7 @@ const Fact = ({ label, children }: { label: ReactNode; children: ReactNode }) =>
   </span>
 );
 
-export const JobSummary = ({ job, onSelectNode }: JobSummaryProps) => {
+export const JobSummary = ({ job, onOpenNode }: JobSummaryProps) => {
   const isLive = job.status === 'running' || job.status === 'pending';
   useNow(isLive);
 
@@ -57,14 +62,16 @@ export const JobSummary = ({ job, onSelectNode }: JobSummaryProps) => {
           {job.finishedAt ? formatDate(job.finishedAt) : '-'}
         </Fact>
         <span className='text-muted-foreground/50'>·</span>
-        <Fact label={<Trans context='date-prefix'>Created</Trans>}>{formatDate(job.createdAt)}</Fact>
+        <Fact label={<Trans context='date-prefix'>Created</Trans>}>
+          {formatDate(job.createdAt)}
+        </Fact>
       </div>
 
       <div>
         <h2 className='mb-2 text-lg font-semibold text-foreground'>
           <Trans>Timeline</Trans>
         </h2>
-        <JobTimeline nodeExecutions={job.nodeExecutions} onSelectNode={onSelectNode} />
+        <JobTimeline nodeExecutions={job.nodeExecutions} onSelectNode={onOpenNode} />
       </div>
     </div>
   );

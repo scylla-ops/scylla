@@ -25,8 +25,9 @@ them, reading their status, following their logs while they happen, and deleting
 A job used to have no page of its own — its status lived in a table row and its logs in a modal
 opened from that row, so there was nothing to link to. The details page is now the single place
 a run is read, and every surface that shows a job links to it: the view action on the jobs
-table, a node in its timeline (which opens straight onto that node's logs, via a `nodeId` search
-param), and the history and last-run cells on the pipeline dashboard.
+table, a node in its timeline (which opens straight onto that node's logs, via a `nodes` search
+param), and the history and last-run cells on the pipeline dashboard. That param is a list: the
+page opens one log panel per node it names, so two nodes' output can be read side by side.
 
 The jobs **list**, though, is mounted by [pipeline](../pipeline/README.md) at
 `/:org/projects/:projectId/pipelines/:pipelineId/jobs`, behind `PipelineJobsRoute`.

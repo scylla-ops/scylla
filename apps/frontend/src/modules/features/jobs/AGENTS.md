@@ -117,8 +117,13 @@ already renders a page of its own.
 - Lists go through `DataTable` + `usePagination()`. Row keys are job ids, never indices.
 - **The details page is the one place a job's logs are read.** Everywhere a job is displayed —
   the jobs table's view action and timeline, the pipeline dashboard's history and last run —
-  links there through `useScyllaNavigate().goToJobDetails(...)`. The selected node is a `nodeId`
-  search param, not component state, so those links can open straight onto one node's logs.
+  links there through `useScyllaNavigate().goToJobDetails(...)`. Which log panels are open is a
+  `nodes` search param (plus `whole` for the job-wide one), not component state, so those links
+  can open straight onto one node's logs.
+- **Log panels are independent, and each one is a live stream.** The details page opens a
+  `JobLogDisplay` per node the URL names plus, optionally, the job as a whole; every one of them
+  holds its own `useTailJobLogs` subscription. Closing a panel unmounts it, which is what cancels
+  that stream — never hide one with CSS instead.
 
 ## Before done
 

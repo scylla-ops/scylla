@@ -1,5 +1,6 @@
+import type { ReactNode } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Radio, Terminal } from 'lucide-react';
+import { Radio, Terminal, X } from 'lucide-react';
 import { Permission, useCan } from '@platform/authz';
 import { cn } from '@shared/presentation/utils';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
@@ -9,12 +10,52 @@ import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-log/
 
 interface JobNodeLogsProps {
   job: JobEntity;
-  /** From the URL. An id no node matches falls back to the whole job. */
-  selectedNodeId?: string;
-  onSelectNode: (nodeId?: string) => void;
+  /** From the URL, in execution order. Ids no node matches are already dropped. */
+  openNodeIds: readonly string[];
+  isWholeJobOpen: boolean;
+  /** Opens or closes one panel. No id means the whole job. */
+  onTogglePanel: (nodeId?: string) => void;
 }
 
-export const JobNodeLogs = ({ job, selectedNodeId, onSelectNode }: JobNodeLogsProps) => {
+interface LogPanelProps {
+  label: string;
+  closeLabel: string;
+  onClose: () => void;
+  children: ReactNode;
+}
+
+const LogPanel = ({ label, closeLabel, onClose, children }: LogPanelProps) => (
+  <section
+    aria-label={label}
+    className='flex min-w-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm'
+  >
+    <header className='flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5'>
+      <span className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>{label}</span>
+      <button
+        type='button'
+        onClick={onClose}
+        aria-label={closeLabel}
+        className='rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+      >
+        <X className='size-3.5' />
+      </button>
+    </header>
+    {children}
+  </section>
+);
+
+/**
+ * The job's logs, as a set of panels the reader opens and closes independently:
+ * comparing what two nodes printed is the point, so the nav toggles panels
+ * rather than switching between them, and every open panel keeps its own live
+ * stream. Closing one unmounts it, which is what cancels that stream.
+ */
+export const JobNodeLogs = ({
+  job,
+  openNodeIds,
+  isWholeJobOpen,
+  onTogglePanel,
+}: JobNodeLogsProps) => {
   const { t } = useLingui();
   const canViewLogs = useCan(Permission.READ_JOB_LOGS);
 
@@ -26,7 +67,16 @@ export const JobNodeLogs = ({ job, selectedNodeId, onSelectNode }: JobNodeLogsPr
     );
   }
 
-  const selected = job.nodeExecutions.find(node => node.id === selectedNodeId);
+  const nodes = job.nodeExecutions.map((node, index) => ({ node, id: node.id || String(index) }));
+  const openNodes = nodes.filter(({ id }) => openNodeIds.includes(id));
+  const wholeJobLabel = t`Whole job`;
+  const closeLabelFor = (label: string) => t`Close the logs for ${label}`;
+
+  const buttonClassName = (isOpen: boolean) =>
+    cn(
+      'shrink-0 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
+      isOpen && 'border-primary bg-primary/10 text-primary',
+    );
 
   return (
     <div className='flex min-h-0 flex-col gap-3'>
@@ -43,42 +93,37 @@ export const JobNodeLogs = ({ job, selectedNodeId, onSelectNode }: JobNodeLogsPr
         </span>
       </div>
 
-      <div className='flex flex-col gap-3 lg:flex-row'>
+      <div className='flex min-h-0 flex-col gap-3 lg:flex-row'>
         <nav
           aria-label={t`Node executions`}
-          className='flex gap-1.5 overflow-x-auto lg:w-60 lg:shrink-0 lg:flex-col lg:overflow-x-visible'
+          className='flex gap-1.5 overflow-x-auto lg:w-60 lg:shrink-0 lg:flex-col lg:overflow-x-visible lg:overflow-y-auto'
         >
           <button
             type='button'
-            onClick={() => onSelectNode()}
-            aria-current={selected ? undefined : 'true'}
-            className={cn(
-              'shrink-0 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-              !selected && 'border-primary bg-primary/10 text-primary',
-            )}
+            onClick={() => onTogglePanel()}
+            aria-pressed={isWholeJobOpen}
+            className={buttonClassName(isWholeJobOpen)}
           >
             <Trans>Whole job</Trans>
           </button>
 
-          {job.nodeExecutions.map((node, index) => {
-            const nodeId = node.id || String(index);
+          <span aria-hidden className='w-px shrink-0 self-stretch bg-border lg:h-px lg:w-auto' />
+
+          {nodes.map(({ node, id }) => {
             const config = getStatusConfig(node.state);
             const duration = calculateExecutionDuration(node.startedAt, node.finishedAt);
-            const isSelected = selected?.id === node.id;
+            const isOpen = openNodeIds.includes(id);
 
             return (
               <button
-                key={nodeId}
+                key={id}
                 type='button'
-                onClick={() => onSelectNode(nodeId)}
-                aria-current={isSelected ? 'true' : undefined}
-                className={cn(
-                  'flex shrink-0 items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isSelected && 'border-primary bg-primary/10 text-primary',
-                )}
+                onClick={() => onTogglePanel(id)}
+                aria-pressed={isOpen}
+                className={cn('flex items-center gap-2', buttonClassName(isOpen))}
               >
                 <span className={cn('size-2 shrink-0 rounded-full', config.dotClassName)} />
-                <span className='min-w-0 flex-1 truncate font-mono text-xs'>{nodeId}</span>
+                <span className='min-w-0 flex-1 truncate font-mono text-xs'>{id}</span>
                 <span className='shrink-0 text-xs text-muted-foreground'>
                   {duration === null ? '-' : formatDuration(duration)}
                 </span>
@@ -87,10 +132,33 @@ export const JobNodeLogs = ({ job, selectedNodeId, onSelectNode }: JobNodeLogsPr
           })}
         </nav>
 
-        {/* Keyed so switching node remounts the viewer instead of replaying one
-            stream's lines into the document another stream opened. */}
-        <div className='min-w-0 flex-1'>
-          <JobLogDisplay key={selected?.id ?? 'job'} jobId={job.id} nodeId={selected?.id} />
+        <div className='flex min-h-0 min-w-0 flex-1 flex-col gap-3'>
+          {isWholeJobOpen && (
+            <LogPanel
+              label={wholeJobLabel}
+              closeLabel={closeLabelFor(wholeJobLabel)}
+              onClose={() => onTogglePanel()}
+            >
+              <JobLogDisplay jobId={job.id} />
+            </LogPanel>
+          )}
+
+          {openNodes.map(({ id }) => (
+            <LogPanel
+              key={id}
+              label={id}
+              closeLabel={closeLabelFor(id)}
+              onClose={() => onTogglePanel(id)}
+            >
+              <JobLogDisplay jobId={job.id} nodeId={id} />
+            </LogPanel>
+          ))}
+
+          {!isWholeJobOpen && openNodes.length === 0 && (
+            <p className='rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground'>
+              <Trans>No logs open — pick the whole job or a node to read its output</Trans>
+            </p>
+          )}
         </div>
       </div>
     </div>

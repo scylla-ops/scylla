@@ -50,6 +50,8 @@ const renderPage = (repository: JobsRepository, search = '') =>
     { registry: { jobs: { jobsRepository: repository } } },
   );
 
+const openPanels = () => screen.queryAllByTestId('job-log-display').map(panel => panel.textContent);
+
 beforeEach(() => {
   usePermissionsStore.setState({
     permissions: {
@@ -84,29 +86,80 @@ describe('JobDetailsPage', () => {
     );
   });
 
-  it('opens straight on a node\'s logs when the URL names one', async () => {
-    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodeId=test');
+  it("opens straight on a node's logs when the URL names one", async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=test');
 
     expect(await screen.findByTestId('job-log-display')).toHaveTextContent('logs for job-1/test');
   });
 
-  it('falls back to the whole job for a nodeId no execution matches', async () => {
-    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodeId=ghost');
+  it('falls back to the whole job for a node id no execution matches', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=ghost');
 
     expect(await screen.findByTestId('job-log-display')).toHaveTextContent(
       'logs for job-1/whole job',
     );
   });
 
-  it('picking a node in the list scopes the log view to it', async () => {
+  it('streams several nodes at once when the URL names them', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
+
+    await waitFor(() => expect(screen.queryAllByTestId('job-log-display')).toHaveLength(2));
+    expect(openPanels()).toEqual(['logs for job-1/build', 'logs for job-1/test']);
+  });
+
+  it('opens a second node without closing the first', async () => {
     const user = userEvent.setup();
-    renderPage(repositoryReturning(ScyllaResult.success(job())));
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
+
+    const nodes = within(await screen.findByRole('navigation', { name: 'Node executions' }));
+    await user.click(nodes.getByRole('button', { name: /test/ }));
+
+    await waitFor(() => expect(screen.queryAllByTestId('job-log-display')).toHaveLength(2));
+    expect(openPanels()).toEqual(['logs for job-1/build', 'logs for job-1/test']);
+  });
+
+  it("closes a node's logs when its entry is picked again, unmounting that view", async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
 
     const nodes = within(await screen.findByRole('navigation', { name: 'Node executions' }));
     await user.click(nodes.getByRole('button', { name: /build/ }));
 
+    await waitFor(() => expect(openPanels()).toEqual(['logs for job-1/test']));
+  });
+
+  it('marks the entries of the panels that are open', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
+
+    const nodes = within(await screen.findByRole('navigation', { name: 'Node executions' }));
+    expect(nodes.getByRole('button', { name: /build/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(nodes.getByRole('button', { name: /test/ })).toHaveAttribute('aria-pressed', 'false');
+    expect(nodes.getByRole('button', { name: 'Whole job' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('closes the whole job panel from its own header', async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())));
+
+    await user.click(await screen.findByRole('button', { name: 'Close the logs for Whole job' }));
+
+    await waitFor(() => expect(openPanels()).toEqual([]));
+    expect(
+      screen.getByText('No logs open — pick the whole job or a node to read its output'),
+    ).toBeInTheDocument();
+  });
+
+  it('opening a node from the timeline leaves the panels already open alone', async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())));
+
+    await user.click(await screen.findByRole('button', { name: 'Node build' }));
+
     await waitFor(() =>
-      expect(screen.getByTestId('job-log-display')).toHaveTextContent('logs for job-1/build'),
+      expect(openPanels()).toEqual(['logs for job-1/whole job', 'logs for job-1/build']),
     );
   });
 
