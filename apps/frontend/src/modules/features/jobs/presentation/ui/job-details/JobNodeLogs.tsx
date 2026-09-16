@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Radio, Terminal, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Radio, Terminal, X } from 'lucide-react';
 import { Badge } from '@shadcn';
 import { Permission, useCan } from '@platform/authz';
 import { cn } from '@shared/presentation/utils';
@@ -41,16 +41,41 @@ interface LogPanelProps {
   header: ReactNode;
   closeLabel?: string;
   onClose?: () => void;
+  collapsed?: boolean;
+  collapseLabel?: string;
+  expandLabel?: string;
+  onToggleCollapse?: () => void;
   children: ReactNode;
 }
 
-const LogPanel = ({ ariaLabel, header, closeLabel, onClose, children }: LogPanelProps) => (
+const LogPanel = ({
+  ariaLabel,
+  header,
+  closeLabel,
+  onClose,
+  collapsed = false,
+  collapseLabel,
+  expandLabel,
+  onToggleCollapse,
+  children,
+}: LogPanelProps) => (
   <section
     aria-label={ariaLabel}
     className='flex min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm'
   >
     <header className='flex h-9 shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3'>
       <span className='flex min-w-0 flex-1 items-center gap-1.5'>{header}</span>
+      {onToggleCollapse && (
+        <button
+          type='button'
+          onClick={onToggleCollapse}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? expandLabel : collapseLabel}
+          className='rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+        >
+          {collapsed ? <ChevronRight className='size-3.5' /> : <ChevronDown className='size-3.5' />}
+        </button>
+      )}
       {onClose && (
         <button
           type='button'
@@ -62,7 +87,9 @@ const LogPanel = ({ ariaLabel, header, closeLabel, onClose, children }: LogPanel
         </button>
       )}
     </header>
-    {children}
+    {/* Collapsing only hides the log, so its stream stays open — no
+        reconnect when the reader expands it again. */}
+    <div className={cn(collapsed && 'hidden')}>{children}</div>
   </section>
 );
 
@@ -89,6 +116,15 @@ export const JobNodeLogs = ({
   const { t, i18n } = useLingui();
   const canViewLogs = useCan(Permission.READ_JOB_LOGS);
   const { height, containerRef } = useMeasuredHeight();
+  const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  const toggleCollapse = (nodeId: string) =>
+    setCollapsedIds(current => {
+      const next = new Set(current);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
 
   if (!canViewLogs) {
     return (
@@ -102,6 +138,8 @@ export const JobNodeLogs = ({
   const openNodes = nodes.filter(({ id }) => openNodeIds.includes(id));
   const wholeJobLabel = t`Whole job`;
   const closeLabelFor = (label: string) => t`Close the logs for ${label}`;
+  const collapseLabelFor = (label: string) => t`Collapse the logs for ${label}`;
+  const expandLabelFor = (label: string) => t`Expand the logs for ${label}`;
 
   const buttonClassName = (isOpen: boolean) =>
     cn(
@@ -196,6 +234,10 @@ export const JobNodeLogs = ({
                   }
                   closeLabel={closeLabelFor(id)}
                   onClose={() => onToggleNode(id)}
+                  collapsed={collapsedIds.has(id)}
+                  collapseLabel={collapseLabelFor(id)}
+                  expandLabel={expandLabelFor(id)}
+                  onToggleCollapse={() => toggleCollapse(id)}
                 >
                   <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={NODE_LOG_HEIGHT} />
                 </LogPanel>

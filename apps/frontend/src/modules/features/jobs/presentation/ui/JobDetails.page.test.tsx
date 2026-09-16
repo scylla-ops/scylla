@@ -204,6 +204,42 @@ describe('JobDetailsPage', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('gives the whole job no way to collapse either, same as closing', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())));
+
+    await screen.findByTestId('job-log-display');
+    expect(
+      screen.queryByRole('button', { name: 'Collapse the logs for Whole job' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('collapses a node panel without unmounting its log, so the stream keeps running', async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
+
+    const log = await screen.findByTestId('job-log-display');
+    await user.click(screen.getByRole('button', { name: 'Collapse the logs for build' }));
+
+    expect(log.parentElement).toHaveClass('hidden');
+    expect(log).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Expand the logs for build' }));
+
+    expect(log.parentElement).not.toHaveClass('hidden');
+  });
+
+  it('collapses each node panel independently', async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
+
+    await waitFor(() => expect(screen.queryAllByTestId('job-log-display')).toHaveLength(2));
+    await user.click(screen.getByRole('button', { name: 'Collapse the logs for build' }));
+
+    const [buildLog, testLog] = screen.getAllByTestId('job-log-display');
+    expect(buildLog.parentElement).toHaveClass('hidden');
+    expect(testLog.parentElement).not.toHaveClass('hidden');
+  });
+
   it('marks the entries of the panels that are open', async () => {
     renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
 
