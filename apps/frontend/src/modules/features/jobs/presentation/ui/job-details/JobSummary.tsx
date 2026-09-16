@@ -14,8 +14,13 @@ import { JobTimeline } from '@/modules/features/jobs/presentation/ui/jobs-table/
 
 interface JobSummaryProps {
   job: JobEntity;
-  /** Opens that node's log panel, leaving the panels already open alone. */
-  onOpenNode: (nodeId?: string) => void;
+  /**
+   * Shows that node's logs alone, closing whatever else was open — picking a
+   * segment out of the timeline means reading that one, not adding to a pile.
+   * A grouped segment stands for several nodes at once and names none, which
+   * comes back to the job as a whole.
+   */
+  onSelectNode: (nodeId?: string) => void;
 }
 
 const Fact = ({ label, children }: { label: ReactNode; children: ReactNode }) => (
@@ -27,7 +32,7 @@ const Fact = ({ label, children }: { label: ReactNode; children: ReactNode }) =>
   </span>
 );
 
-export const JobSummary = ({ job, onOpenNode }: JobSummaryProps) => {
+export const JobSummary = ({ job, onSelectNode }: JobSummaryProps) => {
   const isLive = job.status === 'running' || job.status === 'pending';
   useNow(isLive);
 
@@ -71,7 +76,7 @@ export const JobSummary = ({ job, onOpenNode }: JobSummaryProps) => {
         <h2 className='mb-2 text-lg font-semibold text-foreground'>
           <Trans>Timeline</Trans>
         </h2>
-        <JobTimeline nodeExecutions={job.nodeExecutions} onSelectNode={onOpenNode} />
+        <JobTimeline nodeExecutions={job.nodeExecutions} onSelectNode={onSelectNode} />
       </div>
     </div>
   );

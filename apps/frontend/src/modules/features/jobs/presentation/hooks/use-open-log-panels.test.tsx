@@ -79,44 +79,53 @@ describe('useOpenLogPanels', () => {
     expect(result.current.search).toBe('');
   });
 
-  it('drops every node panel to show the whole job again', () => {
-    const { result } = renderPanels('?nodes=build,test');
+  it('selects one node in place of everything that was open', () => {
+    const { result } = renderPanels('?nodes=build,deploy');
 
-    act(() => result.current.showWholeJob());
+    act(() => result.current.selectNode('test'));
 
-    expect(result.current.isWholeJobOpen).toBe(true);
-    expect(result.current.search).toBe('');
+    expect(result.current.openNodeIds).toEqual(['test']);
+    expect(result.current.search).toBe('?nodes=test');
   });
 
-  it('opens the node a link points at, which is what hides the whole job', () => {
+  it('selects the node a link points at, which is what hides the whole job', () => {
     const { result } = renderPanels();
 
-    act(() => result.current.openPanel('test'));
+    act(() => result.current.selectNode('test'));
 
     expect(result.current.openNodeIds).toEqual(['test']);
     expect(result.current.isWholeJobOpen).toBe(false);
   });
 
-  it('opening a node twice is a no-op, not a close', () => {
+  it('selecting the open node again leaves it open, rather than closing it', () => {
     const { result } = renderPanels('?nodes=test');
 
-    act(() => result.current.openPanel('test'));
+    act(() => result.current.selectNode('test'));
 
     expect(result.current.openNodeIds).toEqual(['test']);
+  });
+
+  it('selects no node at all to come back to the whole job', () => {
+    const { result } = renderPanels('?nodes=build,test');
+
+    act(() => result.current.selectNode());
+
+    expect(result.current.isWholeJobOpen).toBe(true);
+    expect(result.current.search).toBe('');
   });
 
   it('never writes an id no execution matches back to the URL', () => {
     const { result } = renderPanels('?nodes=ghost');
 
-    act(() => result.current.openPanel('build'));
+    act(() => result.current.selectNode('build'));
 
     expect(result.current.search).toBe('?nodes=build');
   });
 
-  it('keeps unrelated search params across a toggle', () => {
+  it('keeps unrelated search params across a selection', () => {
     const { result } = renderPanels('?tab=summary');
 
-    act(() => result.current.openPanel('build'));
+    act(() => result.current.selectNode('build'));
 
     expect(result.current.search).toContain('tab=summary');
   });

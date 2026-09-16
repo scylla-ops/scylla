@@ -216,15 +216,26 @@ describe('JobDetailsPage', () => {
     );
   });
 
-  it('opening a node from the timeline leaves the panels already open alone', async () => {
+  it('opens the node picked in the timeline alone, dropping the panels open beside it', async () => {
     const user = userEvent.setup();
     renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=test');
 
     await user.click(await screen.findByRole('button', { name: 'Node build' }));
 
-    await waitFor(() =>
-      expect(openPanels()).toEqual(['logs for job-1/build', 'logs for job-1/test']),
-    );
+    await waitFor(() => expect(openPanels()).toEqual(['logs for job-1/build']));
+  });
+
+  it('comes back to the whole job from a timeline segment standing for several nodes', async () => {
+    const user = userEvent.setup();
+    const nodeExecutions = Array.from({ length: 11 }, (_, index) => ({
+      id: `node-${index}`,
+      state: 'completed' as const,
+    }));
+    renderPage(repositoryReturning(ScyllaResult.success(job({ nodeExecutions }))), '?nodes=node-3');
+
+    await user.click(await screen.findByRole('button', { name: '11 Success nodes' }));
+
+    await waitFor(() => expect(openPanels()).toEqual(['logs for job-1/whole job']));
   });
 
   it('gives the whole job every pixel the column has', async () => {

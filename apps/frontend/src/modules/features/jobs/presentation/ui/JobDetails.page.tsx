@@ -13,7 +13,8 @@ import { JobNodeLogs } from '@/modules/features/jobs/presentation/ui/job-details
  *
  * Which log panels are open lives in the URL rather than in state, so a link can
  * open the page already showing one node's logs — which is what the timeline
- * segments on the jobs list and the pipeline dashboard link to.
+ * segments on the jobs list and the pipeline dashboard link to, and what this
+ * page's own timeline does to the page it is already on.
  *
  * The page fills the viewport instead of growing with its content: the logs are
  * what the page is for, so they take the room the summary leaves and scroll
@@ -23,7 +24,7 @@ export const JobDetailsPage = () => {
   const { t } = useLingui();
   const { jobId } = useParams<{ jobId: string }>();
   const { job, isLoading, isError, error } = useJob(jobId ?? '');
-  const { openNodeIds, isWholeJobOpen, toggleNode, openPanel, showWholeJob } = useOpenLogPanels(
+  const { openNodeIds, isWholeJobOpen, toggleNode, selectNode } = useOpenLogPanels(
     job?.nodeExecutions.map((node, index) => node.id || String(index)) ?? [],
   );
 
@@ -43,13 +44,13 @@ export const JobDetailsPage = () => {
 
   return (
     <div className='flex h-full min-h-0 w-full flex-col gap-6'>
-      <JobSummary job={job} onOpenNode={openPanel} />
+      <JobSummary job={job} onSelectNode={selectNode} />
       <JobNodeLogs
         job={job}
         openNodeIds={openNodeIds}
         isWholeJobOpen={isWholeJobOpen}
         onToggleNode={toggleNode}
-        onShowWholeJob={showWholeJob}
+        onShowWholeJob={() => selectNode()}
       />
     </div>
   );

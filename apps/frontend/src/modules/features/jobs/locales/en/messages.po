@@ -41,7 +41,7 @@ msgstr "Close the logs for {label}"
 msgid "Copy ID"
 msgstr "Copy ID"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:44
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:49
 msgid "Copy job id"
 msgstr "Copy job id"
 
@@ -49,7 +49,7 @@ msgstr "Copy job id"
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:65
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:70
 msgctxt "date-prefix"
 msgid "Created"
 msgstr "Created"
@@ -63,7 +63,7 @@ msgstr "Delete"
 msgid "Delete Job"
 msgstr "Delete Job"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:53
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:58
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:66
 msgid "Duration"
 msgstr "Duration"
@@ -77,7 +77,7 @@ msgstr "Duration: {0}"
 msgid "Error loading logs..."
 msgstr "Error loading logs..."
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:61
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:66
 msgctxt "date-prefix"
 msgid "Finished"
 msgstr "Finished"
@@ -88,7 +88,7 @@ msgid "Finished: {0}"
 msgstr "Finished: {0}"
 
 #: src/modules/features/jobs/jobs.module.ts:34
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:41
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:46
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
 msgid "Job"
 msgstr "Job"
@@ -97,11 +97,11 @@ msgstr "Job"
 msgid "Job ID"
 msgstr "Job ID"
 
-#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:37
+#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:38
 msgid "Job ID is missing"
 msgstr "Job ID is missing"
 
-#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:33
+#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:34
 msgid "Job not found"
 msgstr "Job not found"
 
@@ -159,7 +159,7 @@ msgstr "Run"
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:57
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:62
 msgctxt "date-prefix"
 msgid "Started"
 msgstr "Started"
@@ -182,12 +182,12 @@ msgstr "Status"
 msgid "Streaming live output"
 msgstr "Streaming live output"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:72
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:77
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
 msgid "Timeline"
 msgstr "Timeline"
 
-#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:42
+#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:43
 msgid "Unable to load this job"
 msgstr "Unable to load this job"
 

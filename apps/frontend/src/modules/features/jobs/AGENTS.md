@@ -129,6 +129,11 @@ already renders a page of its own.
   the URL names, and the job as a whole only when it names none — the whole job is the page at
   rest, never a panel standing alongside the nodes, which is why its panel has no close button.
   Closing the last node panel is what comes back to it.
+- **The timeline picks one node, the log nav builds a set.** A click on a timeline segment shows
+  that node alone (`selectNode`) — the same jump the links from the jobs list and the pipeline
+  dashboard make, landing on the page rather than moving inside it. The nav under the summary
+  adds and removes panels instead (`toggleNode`), which is what lets two nodes' output be read
+  side by side.
 - **Log panels are independent, and each one is a live stream.** Every open panel holds its own
   `useTailJobLogs` subscription. Closing a panel unmounts it, which is what cancels that stream —
   never hide one with CSS instead.

@@ -14,7 +14,9 @@ const NODES_PARAM = 'nodes';
  * closing the last node panel comes back to it.
  *
  * Panels are read back in execution order, whatever order they were opened in,
- * and an id no node matches never survives a write.
+ * and an id no node matches never survives a write. The two ways in differ:
+ * `selectNode` jumps to one node alone, the way a click on the timeline means
+ * "show me this one", while `toggleNode` builds the set up panel by panel.
  */
 export const useOpenLogPanels = (nodeIds: readonly string[]) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,19 +44,11 @@ export const useOpenLogPanels = (nodeIds: readonly string[]) => {
     );
   };
 
-  /** Drops every node panel, which is what leaves the whole job showing. */
-  const showWholeJob = () => write([]);
+  /**
+   * Makes this node the whole selection, closing every other panel — or leaves
+   * the whole job showing when given no node.
+   */
+  const selectNode = (nodeId?: string) => write(nodeId === undefined ? [] : [nodeId]);
 
-  /** Opens the panel a link points at, on top of whatever is already open. */
-  const openPanel = (nodeId?: string) => {
-    if (nodeId === undefined) {
-      showWholeJob();
-      return;
-    }
-    if (openNodeIds.includes(nodeId)) return;
-
-    write([...openNodeIds, nodeId]);
-  };
-
-  return { openNodeIds, isWholeJobOpen, toggleNode, openPanel, showWholeJob };
+  return { openNodeIds, isWholeJobOpen, toggleNode, selectNode };
 };
