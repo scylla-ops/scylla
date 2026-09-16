@@ -46,7 +46,10 @@ export const createTriggerColumns = (meta: TriggerColumnsMeta): ColumnDef<Trigge
         </div>
       );
     },
-    // No size: the name takes whatever the sized columns leave.
+    // Sized like the other columns, so DataTable shares width proportionally
+    // instead of letting this be the one flexible column that absorbs
+    // whatever a wide screen leaves over.
+    size: 320,
     minSize: 220,
   },
   {
