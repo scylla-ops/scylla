@@ -237,16 +237,28 @@ describe('useOrganizationPipelines', () => {
 });
 
 describe('usePipelinesMetadata', () => {
+  /** The table area is what decides how many pipelines to ask for, so nothing is fetched before it exists. */
+  const attachTable = (containerRef: (node: HTMLElement | null) => void) =>
+    act(() => containerRef(document.createElement('div')));
+
   it('lists a project\'s pipelines, paginated', async () => {
     const { repository, getMetadataByProjectId } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
     const { result } = renderHook(() => usePipelinesMetadata('project-1'), { wrapper: Wrapper });
+    attachTable(result.current.containerRef);
 
     await waitFor(() => expect(result.current.pipelines?.items).toEqual([metadata()]));
     expect(getMetadataByProjectId).toHaveBeenCalledWith('project-1', {
       page: 1,
-      pageSize: 10,
+      pageSize: 5,
     });
+  });
+
+  it('does not query before the table area has been measured', () => {
+    const { repository, getMetadataByProjectId } = makeFakeRepository();
+    const { Wrapper } = wrapperFor(repository);
+    renderHook(() => usePipelinesMetadata('project-1'), { wrapper: Wrapper });
+    expect(getMetadataByProjectId).not.toHaveBeenCalled();
   });
 
   it('falls back to a generic error message on a non-Error rejection', async () => {
@@ -255,6 +267,7 @@ describe('usePipelinesMetadata', () => {
     });
     const { Wrapper } = wrapperFor(repository);
     const { result } = renderHook(() => usePipelinesMetadata('project-1'), { wrapper: Wrapper });
+    attachTable(result.current.containerRef);
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.errorMessage).toBe('Une erreur est survenue');

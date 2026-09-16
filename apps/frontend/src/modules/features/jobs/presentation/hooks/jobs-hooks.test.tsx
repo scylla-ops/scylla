@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { createProvidersWrapper } from '@/test/render.tsx';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
@@ -189,19 +189,32 @@ describe('useJobsByPipelines', () => {
 });
 
 describe('usePipelinesJobs', () => {
+  /** The table area is what decides how many jobs to ask for, so nothing is fetched before it exists. */
+  const attachTable = (containerRef: (node: HTMLElement | null) => void) =>
+    act(() => containerRef(document.createElement('div')));
+
   it('lists a pipeline\'s jobs, paginated', async () => {
     const { repository, getByPipelineId } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
     const { result } = renderHook(() => usePipelinesJobs('pipeline-1'), { wrapper: Wrapper });
+    attachTable(result.current.containerRef);
 
     await waitFor(() => expect(result.current.jobs).toEqual([job()]));
-    expect(getByPipelineId).toHaveBeenCalledWith('pipeline-1', { page: 1, pageSize: 10 });
+    expect(getByPipelineId).toHaveBeenCalledWith('pipeline-1', { page: 1, pageSize: 5 });
+  });
+
+  it('does not query before the table area has been measured', () => {
+    const { repository, getByPipelineId } = makeFakeRepository();
+    const { Wrapper } = wrapperFor(repository);
+    renderHook(() => usePipelinesJobs('pipeline-1'), { wrapper: Wrapper });
+    expect(getByPipelineId).not.toHaveBeenCalled();
   });
 
   it('does not query for an empty pipelineId', () => {
     const { repository, getByPipelineId } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
-    renderHook(() => usePipelinesJobs(''), { wrapper: Wrapper });
+    const { result } = renderHook(() => usePipelinesJobs(''), { wrapper: Wrapper });
+    attachTable(result.current.containerRef);
     expect(getByPipelineId).not.toHaveBeenCalled();
   });
 
@@ -209,6 +222,7 @@ describe('usePipelinesJobs', () => {
     const { repository } = makeFakeRepository({ getByPipelineId: vi.fn().mockRejectedValue('boom') });
     const { Wrapper } = wrapperFor(repository);
     const { result } = renderHook(() => usePipelinesJobs('pipeline-1'), { wrapper: Wrapper });
+    attachTable(result.current.containerRef);
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.errorMessage).toBe('Une erreur est survenue');

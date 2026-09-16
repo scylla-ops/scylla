@@ -81,7 +81,7 @@ msgstr "Jobs"
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:50
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "No jobs found"
 msgstr "No jobs found"
 
@@ -121,7 +121,7 @@ msgstr "Refresh"
 msgid "Run"
 msgstr "Run"
 
-#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:53
+#: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:50
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 
