@@ -71,7 +71,17 @@ let extensions = Extensions::new().with::<dyn QuotaPolicy>(Arc::new(MyQuota));
 let policy = extensions.get::<dyn QuotaPolicy>(); // None when the edition registered nothing
 ```
 
-`ProjectUseCases::create` asks the policy before creating a project and turns a `Deny` into `DomainError::QuotaExceeded` (gRPC `RESOURCE_EXHAUSTED`). The Community Edition registers nothing, so it gets the core's default, `UnlimitedQuota` (`scylla_core::application::quota_policy`), which always allows and consults nothing. `scope` is the organization id as a plain string so the contract stays free of the domain model.
+The core asks the policy before it creates a metered resource and turns a `Deny` into `DomainError::QuotaExceeded` (gRPC `RESOURCE_EXHAUSTED`). Each resource is counted in one container, and `scope` is that container's id as a plain string, so the contract stays free of the domain model; `Resource::scope_kind()` names it:
+
+| `Resource` | counted per | asked by |
+|---|---|---|
+| `Project` | organization | `ProjectUseCases::create` |
+| `Agent` | organization | `AgentUseCases::create` |
+| `Pipeline` | project | `PipelineUseCases::create` |
+| `Secret` | project | `SecretUseCases::create` |
+| `Trigger` | pipeline | `TriggerUseCases::create` |
+
+The check runs after the permission check and before any write, so a denied create leaves nothing behind (no runner App for a trigger, no encrypted value for a secret). The Community Edition registers nothing, so it gets the core's default, `UnlimitedQuota` (`scylla_core::application::quota_policy`), which always allows and consults nothing; the limits themselves live in the edition's implementation.
 
 Adding an extension point is: a trait and its boundary types in `scylla-extension`, a default implementation plus a `<point>(extensions)` accessor in `scylla-core`, and the call site that uses it. Nothing changes in the registry, the server builder or the Community binary; an edition that wants to override it adds one `.extension::<dyn Trait>(...)` line.
 

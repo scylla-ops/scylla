@@ -2,7 +2,7 @@
 
 pub mod quota;
 
-pub use quota::{QuotaDecision, QuotaError, QuotaPolicy, QuotaUsage, Resource};
+pub use quota::{QuotaDecision, QuotaError, QuotaPolicy, QuotaUsage, Resource, ScopeKind};
 
 use std::any::{Any, TypeId};
 use std::collections::HashMap;

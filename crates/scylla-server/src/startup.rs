@@ -245,18 +245,20 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
         permission_checker.clone(),
     ));
+    let quota = scylla_core::application::quota_policy(&extensions);
     let project_uc = Arc::new(ProjectUseCases::new(
         project_repo.clone(),
         user_repo.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        scylla_core::application::quota_policy(&extensions),
+        quota.clone(),
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),
         secret_cipher.clone(),
         permission_checker.clone(),
+        quota.clone(),
     ));
     let pipeline_uc = Arc::new(PipelineUseCases::new(
         pipeline_repo.clone(),
@@ -264,6 +266,7 @@ pub(crate) async fn init_services(
         job_repo.clone(),
         permission_checker.clone(),
         secret_resolver.clone(),
+        quota.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(
         job_repo.clone(),
@@ -296,6 +299,7 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
         permission_checker.clone(),
         agent_registry.clone(),
+        quota.clone(),
     ));
     let grant_uc = Arc::new(GrantUseCases::new(
         grant_repo.clone(),
@@ -387,6 +391,7 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
         secret_cipher.clone(),
         cron_schedule.clone(),
+        quota,
     ));
     let trigger_fire_uc = Arc::new(TriggerFireUseCases::new(
         trigger_repo.clone(),

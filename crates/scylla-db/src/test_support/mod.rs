@@ -1,3 +1,4 @@
+pub mod cedar;
 pub mod scenarios;
 pub mod seed;
 

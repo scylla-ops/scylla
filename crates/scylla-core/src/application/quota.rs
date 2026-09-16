@@ -37,8 +37,10 @@ pub fn enforce(decision: Result<QuotaDecision, QuotaError>) -> DomainResult<()> 
             current,
             upgrade_hint,
         }) => {
-            let mut message =
-                format!("{resource} quota reached for this organization ({current}/{limit})");
+            let mut message = format!(
+                "{resource} quota reached for this {} ({current}/{limit})",
+                resource.scope_kind()
+            );
             if let Some(hint) = upgrade_hint {
                 message.push_str(". ");
                 message.push_str(&hint);
@@ -99,6 +101,32 @@ mod tests {
         assert!(matches!(
             &err,
             DomainError::QuotaExceeded(m) if m == "project quota reached for this organization (2/2)"
+        ));
+    }
+
+    #[test]
+    fn deny_names_the_scope_of_the_resource() {
+        let err = enforce(Ok(QuotaDecision::Deny {
+            resource: Resource::Pipeline,
+            limit: 10,
+            current: 10,
+            upgrade_hint: None,
+        }))
+        .unwrap_err();
+        assert!(matches!(
+            &err,
+            DomainError::QuotaExceeded(m) if m == "pipeline quota reached for this project (10/10)"
+        ));
+        let err = enforce(Ok(QuotaDecision::Deny {
+            resource: Resource::Trigger,
+            limit: 3,
+            current: 3,
+            upgrade_hint: None,
+        }))
+        .unwrap_err();
+        assert!(matches!(
+            &err,
+            DomainError::QuotaExceeded(m) if m == "trigger quota reached for this pipeline (3/3)"
         ));
     }
 

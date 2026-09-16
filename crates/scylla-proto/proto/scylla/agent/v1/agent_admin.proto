@@ -11,7 +11,8 @@ service AgentAdminService {
   // Requires `createAgent` on organization_id. In one transaction, creates the
   // App, a secret labelled "default", the agent record and a grant of the
   // builtin "organization-agent" role on the organization. The grant takes
-  // effect at once.
+  // effect at once. Fails with RESOURCE_EXHAUSTED when the deployment sets an
+  // agent quota and the organization has reached it.
   // The agent then calls AppAuthService.IssueToken, then AgentService.Open.
   rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse);
   // Requires `readApp` on agent_id. An App that exists but is not an agent

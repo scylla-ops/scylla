@@ -1,3 +1,4 @@
+use crate::application::quota;
 use crate::application::secret::SecretCipher;
 use crate::application::secret::repository::SecretRepository;
 use crate::domain::errors::DomainResult;
@@ -7,6 +8,7 @@ use crate::domain::secret::Secret;
 use crate::domain::secret::SecretName;
 use scylla_auth::authz::PermissionService;
 use scylla_auth::caller::CallerContext;
+use scylla_extension::{QuotaPolicy, Resource};
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -18,6 +20,7 @@ where
     secret_repo: Arc<R>,
     cipher: Arc<dyn SecretCipher>,
     permission_service: Arc<PS>,
+    quota: Arc<dyn QuotaPolicy>,
 }
 
 impl<R, PS> SecretUseCases<R, PS>
@@ -30,11 +33,13 @@ where
         secret_repo: Arc<R>,
         cipher: Arc<dyn SecretCipher>,
         permission_service: Arc<PS>,
+        quota: Arc<dyn QuotaPolicy>,
     ) -> Self {
         Self {
             secret_repo,
             cipher,
             permission_service,
+            quota,
         }
     }
 
@@ -50,6 +55,11 @@ where
         self.permission_service
             .check(caller, Permission::CreateSecret(project_id.clone()))
             .await?;
+        quota::enforce(
+            self.quota
+                .check(Resource::Secret, project_id.as_str())
+                .await,
+        )?;
         let encrypted = self.cipher.encrypt(&value)?;
         let secret = Secret::create(project_id, name, description, encrypted);
         self.secret_repo.create(&secret).await?;
@@ -84,9 +94,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::UnlimitedQuota;
     use crate::domain::errors::DomainError;
     use crate::domain::ids::UserId;
     use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+    use crate::test_support::quota::DenyAfter;
     use async_trait::async_trait;
 
     struct ForbiddenRepo;
@@ -154,7 +166,12 @@ mod tests {
     #[tokio::test]
     async fn create_authorizes_create_secret_on_the_target_project() {
         let perms = Arc::new(RecordingPermissionService::new());
-        let uc = SecretUseCases::new(Arc::new(OkRepo), Arc::new(OkCipher), perms.clone());
+        let uc = SecretUseCases::new(
+            Arc::new(OkRepo),
+            Arc::new(OkCipher),
+            perms.clone(),
+            Arc::new(UnlimitedQuota),
+        );
 
         uc.create(&caller(), project(), name(), "desc".into(), "value".into())
             .await
@@ -172,6 +189,7 @@ mod tests {
             Arc::new(ForbiddenRepo),
             Arc::new(ForbiddenCipher),
             Arc::new(DenyingPermissionService::new()),
+            Arc::new(UnlimitedQuota),
         );
 
         let err = uc
@@ -183,5 +201,38 @@ mod tests {
             matches!(err, DomainError::Forbidden(_)),
             "denial must surface as Forbidden, got {err:?}",
         );
+    }
+
+    #[tokio::test]
+    async fn create_over_quota_never_encrypts_or_persists() {
+        let quota = Arc::new(DenyAfter::new(1));
+        let uc = SecretUseCases::new(
+            Arc::new(OkRepo),
+            Arc::new(OkCipher),
+            Arc::new(RecordingPermissionService::new()),
+            quota.clone(),
+        );
+        uc.create(&caller(), project(), name(), "desc".into(), "value".into())
+            .await
+            .expect("under quota");
+
+        let uc = SecretUseCases::new(
+            Arc::new(ForbiddenRepo),
+            Arc::new(ForbiddenCipher),
+            Arc::new(RecordingPermissionService::new()),
+            quota.clone(),
+        );
+        let err = uc
+            .create(&caller(), project(), name(), "desc".into(), "value".into())
+            .await
+            .expect_err("over quota");
+
+        assert!(matches!(err, DomainError::QuotaExceeded(_)), "got {err:?}");
+        let usage = quota
+            .usage(Resource::Secret, project().as_str())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!((usage.current, usage.limit), (1, 1));
     }
 }

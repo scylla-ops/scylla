@@ -1,8 +1,8 @@
-use crate::application::HashService;
 use crate::application::agent::dispatch::JobDispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::agent::repository::{AgentRepository, AgentStats};
 use crate::application::app::repository::AppRepository;
+use crate::application::{HashService, quota};
 use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
@@ -16,6 +16,7 @@ use scylla_auth::authz::{
     Grant, ORGANIZATION_AGENT_ROLE, PermissionService, PolicyControl, Principal, Scope,
 };
 use scylla_auth::caller::CallerContext;
+use scylla_extension::{QuotaPolicy, Resource};
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -123,6 +124,7 @@ where
     policy_control: Arc<PC>,
     permission_service: Arc<PS>,
     registry: Arc<dyn AgentDispatch>,
+    quota: Arc<dyn QuotaPolicy>,
 }
 
 impl<A, W, H, PC, PS> AgentUseCases<A, W, H, PC, PS>
@@ -143,6 +145,11 @@ where
         self.permission_service
             .check(caller, Permission::CreateAgent(organization_id.clone()))
             .await?;
+        quota::enforce(
+            self.quota
+                .check(Resource::Agent, organization_id.as_str())
+                .await,
+        )?;
 
         let secret = crate::application::app::mint_app_secret();
         let secret_hash = self.hash_service.hash_secret(&secret).await?;

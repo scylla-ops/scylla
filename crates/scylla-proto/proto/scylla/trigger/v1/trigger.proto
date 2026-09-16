@@ -19,7 +19,9 @@ import "scylla/common/v1/common.proto";
 // caller without the permission.
 service TriggerService {
   // Requires `manageTriggers` and `runPipeline` on `pipeline_id`. The new
-  // trigger is enabled. A webhook secret is returned only here.
+  // trigger is enabled. A webhook secret is returned only here. Fails with
+  // RESOURCE_EXHAUSTED when the deployment sets a trigger quota and the
+  // pipeline has reached it.
   rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse);
   // Requires `manageTriggers` on the trigger's pipeline.
   rpc GetTrigger(GetTriggerRequest) returns (GetTriggerResponse);

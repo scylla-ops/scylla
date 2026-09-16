@@ -247,3 +247,51 @@ async fn claim_due_cron_claims_due_advances_and_excludes_others(pool: PgPool) {
             .is_empty()
     );
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn trigger_quota_enforced_per_pipeline(pool: PgPool) {
+    use crate::postgres::{PgAppRepository, PgProjectRepository};
+    use scylla_auth::caller::{CallerContext, ServiceIdentity};
+    use scylla_core::application::TriggerUseCases;
+    use scylla_core::infrastructure::{Argon2HashService, ChaChaSecretCipher, CronScheduleService};
+    use std::sync::Arc;
+
+    let (_, project, full) = seed_org_project_pipeline(&pool, "q").await;
+    let other = seed_pipeline(&pool, &project).await;
+    let cedar = cedar(&pool).await;
+    let uc = TriggerUseCases::new(
+        Arc::new(PgTriggerRepository::new(pool.clone())),
+        Arc::new(PgPipelineRepository::new(pool.clone())),
+        Arc::new(PgProjectRepository::new(pool.clone())),
+        Arc::new(PgAppRepository::new(pool.clone())),
+        Arc::new(Argon2HashService::new()),
+        cedar.clone(),
+        cedar,
+        Arc::new(ChaChaSecretCipher::from_hex_key(None).unwrap()),
+        Arc::new(CronScheduleService::new()),
+        Arc::new(DenyAfter::new(2)),
+    );
+    let caller = CallerContext::Service(ServiceIdentity::recorder());
+    let create = |name: &str, pipeline: &Pipeline| {
+        uc.create(
+            &caller,
+            pipeline.id().clone(),
+            TriggerName::new(name).unwrap(),
+            TriggerSource::Cron(CronSpec::new("0 9 * * *").unwrap()),
+            vec![],
+        )
+    };
+
+    for n in ["a", "b"] {
+        create(n, &full).await.expect("under quota");
+    }
+    let err = create("c", &full).await.expect_err("over quota");
+    assert!(matches!(err, DomainError::QuotaExceeded(_)), "got {err:?}");
+    create("a", &other)
+        .await
+        .expect("another pipeline has its own count");
+
+    let repo = PgTriggerRepository::new(pool.clone());
+    assert_eq!(repo.list_by_pipeline(full.id()).await.unwrap().len(), 2);
+    assert_eq!(repo.list_by_pipeline(other.id()).await.unwrap().len(), 1);
+}

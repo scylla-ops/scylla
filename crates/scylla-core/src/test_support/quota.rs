@@ -5,7 +5,7 @@ use std::sync::Mutex;
 
 pub struct DenyAfter {
     limit: u64,
-    seen: Mutex<HashMap<String, u64>>,
+    seen: Mutex<HashMap<(Resource, String), u64>>,
 }
 
 impl DenyAfter {
@@ -22,7 +22,7 @@ impl DenyAfter {
 impl QuotaPolicy for DenyAfter {
     async fn check(&self, resource: Resource, scope: &str) -> Result<QuotaDecision, QuotaError> {
         let mut seen = self.seen.lock().unwrap();
-        let current = seen.entry(scope.to_owned()).or_insert(0);
+        let current = seen.entry((resource, scope.to_owned())).or_insert(0);
         if *current >= self.limit {
             return Ok(QuotaDecision::Deny {
                 resource,
@@ -40,7 +40,13 @@ impl QuotaPolicy for DenyAfter {
         resource: Resource,
         scope: &str,
     ) -> Result<Option<QuotaUsage>, QuotaError> {
-        let current = self.seen.lock().unwrap().get(scope).copied().unwrap_or(0);
+        let current = self
+            .seen
+            .lock()
+            .unwrap()
+            .get(&(resource, scope.to_owned()))
+            .copied()
+            .unwrap_or(0);
         Ok(Some(QuotaUsage {
             resource,
             current,

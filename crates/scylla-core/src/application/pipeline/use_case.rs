@@ -1,7 +1,7 @@
 use crate::application::agent::dispatch::assemble_dispatch;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::{
-    JobDispatch, JobRepository, PipelineRepository, ProjectRepository, SecretResolver,
+    JobDispatch, JobRepository, PipelineRepository, ProjectRepository, SecretResolver, quota,
 };
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
@@ -13,6 +13,7 @@ use crate::domain::pipeline::{Pipeline, PipelineNode};
 use derive_more::Constructor;
 use scylla_auth::authz::PermissionService;
 use scylla_auth::caller::CallerContext;
+use scylla_extension::{QuotaPolicy, Resource};
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -28,6 +29,7 @@ pub struct PipelineUseCases<
     job_repo: Arc<J>,
     permission_service: Arc<PS>,
     secret_resolver: Arc<dyn SecretResolver>,
+    quota: Arc<dyn QuotaPolicy>,
 }
 
 impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: PermissionService>
@@ -45,6 +47,11 @@ impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: Permiss
             .check(caller, Permission::CreatePipeline(project_id.clone()))
             .await?;
         self.project_repo.find_by_id(&project_id).await?;
+        quota::enforce(
+            self.quota
+                .check(Resource::Pipeline, project_id.as_str())
+                .await,
+        )?;
         let pipeline = Pipeline::create(name, project_id, nodes)?;
         self.pipeline_repo.create(&pipeline).await
     }

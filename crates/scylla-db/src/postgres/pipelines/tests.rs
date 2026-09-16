@@ -120,3 +120,53 @@ async fn delete_then_find_returns_not_found(pool: PgPool) {
         Err(DomainError::NotFound { .. }),
     ));
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn pipeline_quota_enforced_per_project(pool: PgPool) {
+    use crate::domain::pipeline::PipelineName;
+    use crate::postgres::{PgJobRepository, PgSecretRepository};
+    use scylla_auth::caller::{CallerContext, ServiceIdentity};
+    use scylla_core::application::{DispatchSecretResolver, PipelineUseCases};
+    use scylla_core::infrastructure::ChaChaSecretCipher;
+    use std::sync::Arc;
+
+    let org = seed_org(&pool, "limited").await;
+    let full = seed_project(&pool, &org, "full").await;
+    let other = seed_project(&pool, &org, "other").await;
+    let cipher = Arc::new(ChaChaSecretCipher::from_hex_key(None).unwrap());
+    let uc = PipelineUseCases::new(
+        Arc::new(PgPipelineRepository::new(pool.clone())),
+        Arc::new(PgProjectRepository::new(pool.clone())),
+        Arc::new(PgJobRepository::new(pool.clone())),
+        cedar(&pool).await,
+        Arc::new(DispatchSecretResolver::new(
+            Arc::new(PgSecretRepository::new(pool.clone())),
+            cipher,
+        )),
+        Arc::new(DenyAfter::new(2)),
+    );
+    let caller = CallerContext::Service(ServiceIdentity::recorder());
+    let create = |name: &str, project: &crate::domain::project::Project| {
+        uc.create(
+            &caller,
+            PipelineName::new(name).unwrap(),
+            project.id().clone(),
+            vec![node("a", &[])],
+        )
+    };
+
+    for n in ["a", "b"] {
+        create(n, &full).await.expect("under quota");
+    }
+    let err = create("c", &full).await.expect_err("over quota");
+    assert!(matches!(err, DomainError::QuotaExceeded(_)), "got {err:?}");
+    create("a", &other)
+        .await
+        .expect("another project has its own count");
+
+    let repo = PgPipelineRepository::new(pool.clone());
+    let listed = repo.list_by_project(full.id(), None).await.unwrap();
+    assert_eq!(listed.items().len(), 2);
+    let listed = repo.list_by_project(other.id(), None).await.unwrap();
+    assert_eq!(listed.items().len(), 1);
+}

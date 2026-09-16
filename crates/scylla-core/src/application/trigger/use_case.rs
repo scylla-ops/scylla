@@ -1,6 +1,6 @@
 use crate::application::{
     AppRepository, CronSchedule, HashService, PipelineRepository, ProjectRepository, SecretCipher,
-    TriggerRepository, next_fire_time,
+    TriggerRepository, next_fire_time, quota,
 };
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretLabel};
@@ -16,6 +16,7 @@ use scylla_auth::authz::{
     Grant, ORGANIZATION_TRIGGER_RUNNER_ROLE, PermissionService, PolicyControl, Principal, Scope,
 };
 use scylla_auth::caller::CallerContext;
+use scylla_extension::{QuotaPolicy, Resource};
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;
@@ -46,6 +47,7 @@ where
     /// Reversible: HMAC verification needs the plaintext back.
     cipher: Arc<dyn SecretCipher>,
     schedule: Arc<dyn CronSchedule>,
+    quota: Arc<dyn QuotaPolicy>,
 }
 
 impl<T, P, PR, A, H, PC, PS> TriggerUseCases<T, P, PR, A, H, PC, PS>
@@ -76,6 +78,12 @@ where
             .await?;
 
         let pipeline = self.pipeline_repo.find_by_id(&pipeline_id).await?;
+        // Before the runner App is provisioned: a denied create must leave nothing behind.
+        quota::enforce(
+            self.quota
+                .check(Resource::Trigger, pipeline_id.as_str())
+                .await,
+        )?;
         let project = self.project_repo.find_by_id(pipeline.project_id()).await?;
         self.ensure_runner_app(project.organization_id()).await?;
 

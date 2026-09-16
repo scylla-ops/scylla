@@ -3,6 +3,7 @@ use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretHash, AppSecretLabel};
 use crate::domain::clock;
+use crate::domain::errors::DomainError;
 use crate::domain::ids::{JobId, OrganizationId};
 use crate::domain::job::Job;
 use crate::domain::job::JobStatus;
@@ -373,5 +374,48 @@ async fn deleting_agent_keeps_jobs_and_nulls_attribution(pool: PgPool) {
     assert!(
         reloaded.agent_app_id().is_none(),
         "attribution nulled on agent delete"
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn agent_quota_enforced_per_organization(pool: PgPool) {
+    use scylla_auth::caller::{CallerContext, ServiceIdentity};
+    use scylla_core::application::AgentUseCases;
+    use scylla_core::infrastructure::{Argon2HashService, InMemoryAgentRegistry};
+    use std::sync::Arc;
+
+    let full = seed_org(&pool, "full").await;
+    let other = seed_org(&pool, "other").await;
+    let cedar = cedar(&pool).await;
+    let uc = AgentUseCases::new(
+        Arc::new(PgAppRepository::new(pool.clone())),
+        Arc::new(PgAgentRepository::new(pool.clone())),
+        Arc::new(Argon2HashService::new()),
+        cedar.clone(),
+        cedar,
+        Arc::new(InMemoryAgentRegistry::new()),
+        Arc::new(DenyAfter::new(2)),
+    );
+    let caller = CallerContext::Service(ServiceIdentity::recorder());
+    let create = |name: &str, org: &OrganizationId| {
+        uc.create(&caller, org.clone(), AppName::new(name).unwrap())
+    };
+
+    for n in ["a", "b"] {
+        create(n, full.id()).await.expect("under quota");
+    }
+    let Err(err) = create("c", full.id()).await else {
+        panic!("over quota")
+    };
+    assert!(matches!(err, DomainError::QuotaExceeded(_)), "got {err:?}");
+    create("a", other.id())
+        .await
+        .expect("another organization has its own count");
+
+    let repo = PgAgentRepository::new(pool.clone());
+    assert_eq!(repo.list_by_organization(full.id()).await.unwrap().len(), 2);
+    assert_eq!(
+        repo.list_by_organization(other.id()).await.unwrap().len(),
+        1
     );
 }

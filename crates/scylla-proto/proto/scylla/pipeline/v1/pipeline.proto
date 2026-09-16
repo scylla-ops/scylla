@@ -9,7 +9,8 @@ import "scylla/exec/v1/step.proto";
 // Pipelines: the DAG blueprints a project runs. RunPipeline creates one Job
 // per call and returns its id; read the run with JobService.GetJob.
 service PipelineService {
-  // Requires `createPipeline` on the project.
+  // Requires `createPipeline` on the project. Fails with RESOURCE_EXHAUSTED
+  // when the deployment sets a pipeline quota and the project has reached it.
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse);
   // Requires `readPipeline` on the pipeline.
   rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse);
