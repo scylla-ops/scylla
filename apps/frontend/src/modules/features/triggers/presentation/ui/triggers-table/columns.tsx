@@ -48,15 +48,17 @@ export const createTriggerColumns = (meta: TriggerColumnsMeta): ColumnDef<Trigge
     },
     // Sized like the other columns, so DataTable shares width proportionally
     // instead of letting this be the one flexible column that absorbs
-    // whatever a wide screen leaves over.
-    size: 320,
+    // whatever a wide screen leaves over. Kept close to its floor: the
+    // source (the webhook URL/cron expression) is what's worth reading in
+    // full, not the name.
+    size: 220,
     minSize: 220,
   },
   {
     id: 'source',
     header: () => <Trans>Source</Trans>,
     cell: ({ row }) => <TriggerSourceCell trigger={row.original} />,
-    size: 260,
+    size: 380,
     minSize: 200,
   },
   {
