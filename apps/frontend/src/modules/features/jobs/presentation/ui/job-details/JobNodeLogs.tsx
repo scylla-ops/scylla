@@ -3,10 +3,29 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { Radio, Terminal, X } from 'lucide-react';
 import { Permission, useCan } from '@platform/authz';
 import { cn } from '@shared/presentation/utils';
+import { useMeasuredHeight } from '@shared/presentation/hooks/use-measured-height.ts';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
 import { calculateExecutionDuration, formatDuration } from '@shared/utils/date-utils.ts';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-log/JobLogDisplay.tsx';
+
+/** `gap-3` between two panels, and the fixed `h-9` header inside each one. */
+const PANEL_GAP = 12;
+const PANEL_HEADER_HEIGHT = 36;
+/** Below this a log is a peephole; the column scrolls rather than shrink past it. */
+const MIN_LOG_HEIGHT = 192;
+
+/**
+ * Every open panel gets an equal share of the room the column was given, so one
+ * panel fills the window and three split it — each scrolling its own log once
+ * its share is full.
+ */
+const logHeightFor = (columnHeight: number | null, panelCount: number): number | undefined => {
+  if (columnHeight === null || panelCount === 0) return undefined;
+
+  const share = (columnHeight - PANEL_GAP * (panelCount - 1)) / panelCount;
+  return Math.max(MIN_LOG_HEIGHT, Math.floor(share - PANEL_HEADER_HEIGHT));
+};
 
 interface JobNodeLogsProps {
   job: JobEntity;
@@ -27,9 +46,9 @@ interface LogPanelProps {
 const LogPanel = ({ label, closeLabel, onClose, children }: LogPanelProps) => (
   <section
     aria-label={label}
-    className='flex min-w-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm'
+    className='flex min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border border-border shadow-sm'
   >
-    <header className='flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5'>
+    <header className='flex h-9 shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3'>
       <span className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>{label}</span>
       <button
         type='button'
@@ -58,6 +77,7 @@ export const JobNodeLogs = ({
 }: JobNodeLogsProps) => {
   const { t } = useLingui();
   const canViewLogs = useCan(Permission.READ_JOB_LOGS);
+  const { height, containerRef } = useMeasuredHeight();
 
   if (!canViewLogs) {
     return (
@@ -71,6 +91,7 @@ export const JobNodeLogs = ({
   const openNodes = nodes.filter(({ id }) => openNodeIds.includes(id));
   const wholeJobLabel = t`Whole job`;
   const closeLabelFor = (label: string) => t`Close the logs for ${label}`;
+  const logHeight = logHeightFor(height, openNodes.length + (isWholeJobOpen ? 1 : 0));
 
   const buttonClassName = (isOpen: boolean) =>
     cn(
@@ -79,7 +100,7 @@ export const JobNodeLogs = ({
     );
 
   return (
-    <div className='flex min-h-0 flex-col gap-3'>
+    <div className='flex min-h-0 flex-1 flex-col gap-3'>
       <div className='flex items-center gap-2'>
         <div className='flex size-8 items-center justify-center rounded-lg bg-primary/10'>
           <Terminal className='size-4 text-primary' />
@@ -93,10 +114,10 @@ export const JobNodeLogs = ({
         </span>
       </div>
 
-      <div className='flex min-h-0 flex-col gap-3 lg:flex-row'>
+      <div className='flex min-h-0 flex-1 flex-col gap-3 lg:flex-row'>
         <nav
           aria-label={t`Node executions`}
-          className='flex gap-1.5 overflow-x-auto lg:w-60 lg:shrink-0 lg:flex-col lg:overflow-x-visible lg:overflow-y-auto'
+          className='flex shrink-0 gap-1.5 overflow-x-auto lg:w-60 lg:flex-col lg:overflow-x-visible lg:overflow-y-auto'
         >
           <button
             type='button'
@@ -132,14 +153,19 @@ export const JobNodeLogs = ({
           })}
         </nav>
 
-        <div className='flex min-h-0 min-w-0 flex-1 flex-col gap-3'>
+        {/* The column's height comes from the layout and never from the panels
+            inside it, or measuring it would resize what it measures. */}
+        <div
+          ref={containerRef}
+          className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto'
+        >
           {isWholeJobOpen && (
             <LogPanel
               label={wholeJobLabel}
               closeLabel={closeLabelFor(wholeJobLabel)}
               onClose={() => onTogglePanel()}
             >
-              <JobLogDisplay jobId={job.id} />
+              <JobLogDisplay jobId={job.id} maxHeight={logHeight} />
             </LogPanel>
           )}
 
@@ -150,7 +176,7 @@ export const JobNodeLogs = ({
               closeLabel={closeLabelFor(id)}
               onClose={() => onTogglePanel(id)}
             >
-              <JobLogDisplay jobId={job.id} nodeId={id} />
+              <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={logHeight} />
             </LogPanel>
           ))}
 

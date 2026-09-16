@@ -14,6 +14,10 @@ import { JobNodeLogs } from '@/modules/features/jobs/presentation/ui/job-details
  * Which log panels are open lives in the URL rather than in state, so a link can
  * open the page already showing one node's logs — which is what the timeline
  * segments on the jobs list and the pipeline dashboard link to.
+ *
+ * The page fills the viewport instead of growing with its content: the logs are
+ * what the page is for, so they take the room the summary leaves and scroll
+ * inside it, rather than pushing the whole page into a scroll of its own.
  */
 export const JobDetailsPage = () => {
   const { t } = useLingui();
@@ -38,7 +42,7 @@ export const JobDetailsPage = () => {
   if (isError || !job) return <ErrorState message={<Trans>Unable to load this job</Trans>} />;
 
   return (
-    <div className='flex w-full min-h-full flex-col gap-6 pb-8'>
+    <div className='flex h-full min-h-0 w-full flex-col gap-6'>
       <JobSummary job={job} onOpenNode={openPanel} />
       <JobNodeLogs
         job={job}

@@ -114,6 +114,10 @@ already renders a page of its own.
 - **Never scroll that viewer to the bottom on every `logs` change** either — same flush rate,
   and it steals the viewport from a user who scrolled up or is dragging a selection. The same
   hook owns that decision.
+- **The log viewer is sized by its caller, never by itself.** `JobLogDisplay` takes a `maxHeight`
+  in pixels and grows with the log up to it; the details page measures the column it lays the
+  panels out in with `useMeasuredHeight()` and splits that room between them. A fixed height on
+  the editor is what this replaced — do not put one back.
 - Lists go through `DataTable` + `usePagination()`. Row keys are job ids, never indices.
 - **The details page is the one place a job's logs are read.** Everywhere a job is displayed —
   the jobs table's view action and timeline, the pipeline dashboard's history and last run —

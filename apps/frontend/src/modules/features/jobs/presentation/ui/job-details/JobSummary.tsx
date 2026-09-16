@@ -34,7 +34,7 @@ export const JobSummary = ({ job, onOpenNode }: JobSummaryProps) => {
   const duration = calculateExecutionDuration(job.startedAt, job.finishedAt);
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex shrink-0 flex-col gap-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div className='flex min-w-0 items-center gap-3'>
           <h1 className='text-xl font-semibold text-foreground'>

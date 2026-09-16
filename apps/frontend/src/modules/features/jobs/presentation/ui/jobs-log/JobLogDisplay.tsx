@@ -4,18 +4,24 @@ import { useTailJobLogs } from '@/modules/features/jobs/presentation/hooks/use-t
 import { useStreamedLogView } from '@/modules/features/jobs/presentation/hooks/use-streamed-log-view.ts';
 import { Trans } from '@lingui/react/macro';
 
+/** Fallback for a caller that has no measured room to offer, in pixels. */
+const DEFAULT_MAX_HEIGHT = 448;
+
 interface JobLogDisplayProps {
   jobId: string;
   nodeId?: string;
+  /** How tall the log may grow before it scrolls, in pixels. */
+  maxHeight?: number;
 }
 
 interface LogViewerProps {
   logs: string;
   isLoading: boolean;
   isError: boolean;
+  maxHeight: number;
 }
 
-const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
+const LogViewer = ({ logs, isLoading, isError, maxHeight }: LogViewerProps) => {
   const editorTheme = useCodeMirrorTheme();
   const { initialValue, onCreateEditor } = useStreamedLogView(logs);
 
@@ -39,7 +45,7 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
         editable={false}
         autoFocus={false}
         value={initialValue}
-        maxHeight={'28rem'}
+        maxHeight={`${maxHeight}px`}
         theme={editorTheme}
         onCreateEditor={onCreateEditor}
       />
@@ -51,9 +57,20 @@ const LogViewer = ({ logs, isLoading, isError }: LogViewerProps) => {
  * Job log view. Both the whole-job and per-node views use the same streaming
  * source (full persisted history + live tail), so logs are complete and live
  * regardless of when the view is opened.
+ *
+ * It grows with the log up to `maxHeight` and scrolls past it, rather than
+ * standing at a fixed size: the room a log is worth is the room the page has
+ * left, which only the caller laying the panels out can know.
  */
-export const JobLogDisplay = ({ jobId, nodeId }: JobLogDisplayProps) => {
+export const JobLogDisplay = ({ jobId, nodeId, maxHeight }: JobLogDisplayProps) => {
   const { logString, isLoading, isError } = useTailJobLogs(jobId, nodeId);
 
-  return <LogViewer logs={logString} isLoading={isLoading} isError={isError} />;
+  return (
+    <LogViewer
+      logs={logString}
+      isLoading={isLoading}
+      isError={isError}
+      maxHeight={maxHeight ?? DEFAULT_MAX_HEIGHT}
+    />
+  );
 };

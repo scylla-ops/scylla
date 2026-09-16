@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { renderWithProviders } from '@/test/render.tsx';
@@ -10,12 +10,48 @@ import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.enti
 import type { JobsRepository } from '@/modules/features/jobs/domain/repository/jobs.repository.ts';
 
 vi.mock('@/modules/features/jobs/presentation/ui/jobs-log/JobLogDisplay.tsx', () => ({
-  JobLogDisplay: ({ jobId, nodeId }: { jobId: string; nodeId?: string }) => (
-    <div data-testid='job-log-display'>
+  JobLogDisplay: ({
+    jobId,
+    nodeId,
+    maxHeight,
+  }: {
+    jobId: string;
+    nodeId?: string;
+    maxHeight?: number;
+  }) => (
+    <div data-testid='job-log-display' data-max-height={maxHeight}>
       logs for {jobId}/{nodeId ?? 'whole job'}
     </div>
   ),
 }));
+
+/**
+ * The log column measures itself to decide how tall its panels may grow, and
+ * jsdom lays nothing out — so the suite-wide inert stub is replaced here by one
+ * a test can report a real height through.
+ */
+class ResizeObserverMock {
+  static instances: ResizeObserverMock[] = [];
+  callback: ResizeObserverCallback;
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+    ResizeObserverMock.instances.push(this);
+  }
+
+  fire(height: number) {
+    this.callback([{ contentRect: { height } } as unknown as ResizeObserverEntry], this);
+  }
+}
+
+const giveTheLogColumn = (height: number) =>
+  act(() => ResizeObserverMock.instances.forEach(observer => observer.fire(height)));
+
+const logHeights = () =>
+  screen.queryAllByTestId('job-log-display').map(panel => panel.getAttribute('data-max-height'));
 
 const job = (overrides: Partial<JobEntity> = {}): JobEntity => ({
   id: 'job-1',
@@ -53,6 +89,8 @@ const renderPage = (repository: JobsRepository, search = '') =>
 const openPanels = () => screen.queryAllByTestId('job-log-display').map(panel => panel.textContent);
 
 beforeEach(() => {
+  ResizeObserverMock.instances = [];
+  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
   usePermissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
@@ -161,6 +199,33 @@ describe('JobDetailsPage', () => {
     await waitFor(() =>
       expect(openPanels()).toEqual(['logs for job-1/whole job', 'logs for job-1/build']),
     );
+  });
+
+  it('gives a single open panel every pixel the column has', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())));
+    await screen.findByTestId('job-log-display');
+
+    giveTheLogColumn(800);
+
+    expect(logHeights()).toEqual(['764']);
+  });
+
+  it('splits the column between the panels that are open', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
+    await waitFor(() => expect(screen.queryAllByTestId('job-log-display')).toHaveLength(2));
+
+    giveTheLogColumn(800);
+
+    expect(logHeights()).toEqual(['358', '358']);
+  });
+
+  it('stops shrinking the panels at a readable height, scrolling the column instead', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
+    await waitFor(() => expect(screen.queryAllByTestId('job-log-display')).toHaveLength(2));
+
+    giveTheLogColumn(300);
+
+    expect(logHeights()).toEqual(['192', '192']);
   });
 
   it('hides the logs, keeping the job itself, without READ_JOB_LOGS', async () => {

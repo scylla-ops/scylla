@@ -24,7 +24,11 @@ vi.mock('@uiw/react-codemirror', async importOriginal => {
   const actual = await importOriginal<typeof ReactCodeMirrorModule>();
   return {
     ...actual,
-    default: ({ value }: { value: string }) => <div data-testid='log-editor'>{value}</div>,
+    default: ({ value, maxHeight }: { value: string; maxHeight?: string }) => (
+      <div data-testid='log-editor' data-max-height={maxHeight}>
+        {value}
+      </div>
+    ),
   };
 });
 
@@ -52,5 +56,15 @@ describe('JobLogDisplay', () => {
     tailState.logString = 'line one\nline two';
     renderWithI18n(<JobLogDisplay jobId='job-1' nodeId='node-1' />);
     expect(screen.getByTestId('log-editor')).toHaveTextContent('line one line two');
+  });
+
+  it('scrolls only past the height the caller measured for it', () => {
+    renderWithI18n(<JobLogDisplay jobId='job-1' maxHeight={720} />);
+    expect(screen.getByTestId('log-editor')).toHaveAttribute('data-max-height', '720px');
+  });
+
+  it('falls back to a fixed height when the caller measured none', () => {
+    renderWithI18n(<JobLogDisplay jobId='job-1' />);
+    expect(screen.getByTestId('log-editor')).toHaveAttribute('data-max-height', '448px');
   });
 });
