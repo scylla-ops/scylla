@@ -115,19 +115,23 @@ already renders a page of its own.
   and it steals the viewport from a user who scrolled up or is dragging a selection. The same
   hook owns that decision.
 - **The log viewer is sized by its caller, never by itself.** `JobLogDisplay` takes a `maxHeight`
-  in pixels and grows with the log up to it; the details page measures the column it lays the
-  panels out in with `useMeasuredHeight()` and splits that room between them. A fixed height on
-  the editor is what this replaced — do not put one back.
+  in pixels and grows with the log up to it; the details page gives the whole job's panel the
+  column it measured with `useMeasuredHeight()`, and every node panel one fixed readable height
+  whatever the count — the column scrolls rather than shrink them. A fixed height on the editor
+  itself is what this replaced — do not put one back.
 - Lists go through `DataTable` + `usePagination()`. Row keys are job ids, never indices.
 - **The details page is the one place a job's logs are read.** Everywhere a job is displayed —
   the jobs table's view action and timeline, the pipeline dashboard's history and last run —
-  links there through `useScyllaNavigate().goToJobDetails(...)`. Which log panels are open is a
-  `nodes` search param (plus `whole` for the job-wide one), not component state, so those links
-  can open straight onto one node's logs.
-- **Log panels are independent, and each one is a live stream.** The details page opens a
-  `JobLogDisplay` per node the URL names plus, optionally, the job as a whole; every one of them
-  holds its own `useTailJobLogs` subscription. Closing a panel unmounts it, which is what cancels
-  that stream — never hide one with CSS instead.
+  links there through `useScyllaNavigate().goToJobDetails(...)`. Which log panels are open is the
+  `nodes` search param, not component state, so those links can open straight onto one node's
+  logs.
+- **The whole job and the nodes are exclusive.** The details page opens a `JobLogDisplay` per node
+  the URL names, and the job as a whole only when it names none — the whole job is the page at
+  rest, never a panel standing alongside the nodes, which is why its panel has no close button.
+  Closing the last node panel is what comes back to it.
+- **Log panels are independent, and each one is a live stream.** Every open panel holds its own
+  `useTailJobLogs` subscription. Closing a panel unmounts it, which is what cancels that stream —
+  never hide one with CSS instead.
 
 ## Before done
 

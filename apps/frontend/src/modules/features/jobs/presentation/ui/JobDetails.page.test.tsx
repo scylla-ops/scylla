@@ -26,9 +26,9 @@ vi.mock('@/modules/features/jobs/presentation/ui/jobs-log/JobLogDisplay.tsx', ()
 }));
 
 /**
- * The log column measures itself to decide how tall its panels may grow, and
- * jsdom lays nothing out — so the suite-wide inert stub is replaced here by one
- * a test can report a real height through.
+ * The log column measures itself to decide how tall the whole job's log may
+ * grow, and jsdom lays nothing out — so the suite-wide inert stub is replaced
+ * here by one a test can report a real height through.
  */
 class ResizeObserverMock {
   static instances: ResizeObserverMock[] = [];
@@ -145,6 +145,16 @@ describe('JobDetailsPage', () => {
     expect(openPanels()).toEqual(['logs for job-1/build', 'logs for job-1/test']);
   });
 
+  it('replaces the whole job with the first node picked, rather than adding to it', async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())));
+
+    const nodes = within(await screen.findByRole('navigation', { name: 'Node executions' }));
+    await user.click(nodes.getByRole('button', { name: /build/ }));
+
+    await waitFor(() => expect(openPanels()).toEqual(['logs for job-1/build']));
+  });
+
   it('opens a second node without closing the first', async () => {
     const user = userEvent.setup();
     renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
@@ -166,6 +176,34 @@ describe('JobDetailsPage', () => {
     await waitFor(() => expect(openPanels()).toEqual(['logs for job-1/test']));
   });
 
+  it('comes back to the whole job when the last node panel is closed', async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
+
+    await user.click(await screen.findByRole('button', { name: 'Close the logs for build' }));
+
+    await waitFor(() => expect(openPanels()).toEqual(['logs for job-1/whole job']));
+  });
+
+  it('brings the whole job back from its own entry, dropping the node panels', async () => {
+    const user = userEvent.setup();
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
+
+    const nodes = within(await screen.findByRole('navigation', { name: 'Node executions' }));
+    await user.click(nodes.getByRole('button', { name: 'Whole job' }));
+
+    await waitFor(() => expect(openPanels()).toEqual(['logs for job-1/whole job']));
+  });
+
+  it('gives the whole job no way to be closed, being what the page falls back to', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())));
+
+    await screen.findByTestId('job-log-display');
+    expect(
+      screen.queryByRole('button', { name: 'Close the logs for Whole job' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('marks the entries of the panels that are open', async () => {
     renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build');
 
@@ -178,30 +216,18 @@ describe('JobDetailsPage', () => {
     );
   });
 
-  it('closes the whole job panel from its own header', async () => {
-    const user = userEvent.setup();
-    renderPage(repositoryReturning(ScyllaResult.success(job())));
-
-    await user.click(await screen.findByRole('button', { name: 'Close the logs for Whole job' }));
-
-    await waitFor(() => expect(openPanels()).toEqual([]));
-    expect(
-      screen.getByText('No logs open — pick the whole job or a node to read its output'),
-    ).toBeInTheDocument();
-  });
-
   it('opening a node from the timeline leaves the panels already open alone', async () => {
     const user = userEvent.setup();
-    renderPage(repositoryReturning(ScyllaResult.success(job())));
+    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=test');
 
     await user.click(await screen.findByRole('button', { name: 'Node build' }));
 
     await waitFor(() =>
-      expect(openPanels()).toEqual(['logs for job-1/whole job', 'logs for job-1/build']),
+      expect(openPanels()).toEqual(['logs for job-1/build', 'logs for job-1/test']),
     );
   });
 
-  it('gives a single open panel every pixel the column has', async () => {
+  it('gives the whole job every pixel the column has', async () => {
     renderPage(repositoryReturning(ScyllaResult.success(job())));
     await screen.findByTestId('job-log-display');
 
@@ -210,22 +236,22 @@ describe('JobDetailsPage', () => {
     expect(logHeights()).toEqual(['764']);
   });
 
-  it('splits the column between the panels that are open', async () => {
+  it('keeps every node panel at the same readable height, scrolling the column instead', async () => {
     renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
     await waitFor(() => expect(screen.queryAllByTestId('job-log-display')).toHaveLength(2));
 
     giveTheLogColumn(800);
 
-    expect(logHeights()).toEqual(['358', '358']);
+    expect(logHeights()).toEqual(['448', '448']);
   });
 
-  it('stops shrinking the panels at a readable height, scrolling the column instead', async () => {
-    renderPage(repositoryReturning(ScyllaResult.success(job())), '?nodes=build,test');
-    await waitFor(() => expect(screen.queryAllByTestId('job-log-display')).toHaveLength(2));
+  it('stops shrinking the whole job at a readable height on a short window', async () => {
+    renderPage(repositoryReturning(ScyllaResult.success(job())));
+    await screen.findByTestId('job-log-display');
 
-    giveTheLogColumn(300);
+    giveTheLogColumn(100);
 
-    expect(logHeights()).toEqual(['192', '192']);
+    expect(logHeights()).toEqual(['192']);
   });
 
   it('hides the logs, keeping the job itself, without READ_JOB_LOGS', async () => {

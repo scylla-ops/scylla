@@ -17,7 +17,7 @@ const renderPanels = (search = '', nodeIds: string[] = NODE_IDS) => {
 };
 
 describe('useOpenLogPanels', () => {
-  it('opens on the whole job alone when the URL names nothing', () => {
+  it('opens on the whole job when the URL names no node', () => {
     const { result } = renderPanels();
 
     expect(result.current.isWholeJobOpen).toBe(true);
@@ -44,60 +44,61 @@ describe('useOpenLogPanels', () => {
     expect(result.current.isWholeJobOpen).toBe(true);
   });
 
-  it('keeps the whole job open when the URL says so alongside nodes', () => {
+  it('ignores the whole-job flag an older link may still carry', () => {
     const { result } = renderPanels('?nodes=build&whole=1');
 
     expect(result.current.openNodeIds).toEqual(['build']);
-    expect(result.current.isWholeJobOpen).toBe(true);
+    expect(result.current.isWholeJobOpen).toBe(false);
   });
 
   it('opens a second node without closing the first', () => {
-    const { result } = renderPanels('?nodes=build&whole=0');
+    const { result } = renderPanels('?nodes=build');
 
-    act(() => result.current.togglePanel('deploy'));
+    act(() => result.current.toggleNode('deploy'));
 
     expect(result.current.openNodeIds).toEqual(['build', 'deploy']);
-    expect(result.current.search).toBe('?nodes=build%2Cdeploy&whole=0');
+    expect(result.current.search).toBe('?nodes=build%2Cdeploy');
   });
 
   it('closes a node that is already open, leaving the others alone', () => {
-    const { result } = renderPanels('?nodes=build,deploy&whole=0');
+    const { result } = renderPanels('?nodes=build,deploy');
 
-    act(() => result.current.togglePanel('build'));
+    act(() => result.current.toggleNode('build'));
 
     expect(result.current.openNodeIds).toEqual(['deploy']);
+    expect(result.current.isWholeJobOpen).toBe(false);
   });
 
-  it('toggles the whole job panel on its own', () => {
-    const { result } = renderPanels('?nodes=build&whole=0');
+  it('comes back to the whole job once the last node is closed', () => {
+    const { result } = renderPanels('?nodes=build');
 
-    act(() => result.current.togglePanel());
+    act(() => result.current.toggleNode('build'));
 
     expect(result.current.isWholeJobOpen).toBe(true);
-    expect(result.current.openNodeIds).toEqual(['build']);
-  });
-
-  it('leaves nothing open once the last panel is closed', () => {
-    const { result } = renderPanels();
-
-    act(() => result.current.togglePanel());
-
-    expect(result.current.isWholeJobOpen).toBe(false);
     expect(result.current.openNodeIds).toEqual([]);
-    expect(result.current.search).toBe('?whole=0');
+    expect(result.current.search).toBe('');
   });
 
-  it('adds the node a link points at without closing what is open', () => {
+  it('drops every node panel to show the whole job again', () => {
+    const { result } = renderPanels('?nodes=build,test');
+
+    act(() => result.current.showWholeJob());
+
+    expect(result.current.isWholeJobOpen).toBe(true);
+    expect(result.current.search).toBe('');
+  });
+
+  it('opens the node a link points at, which is what hides the whole job', () => {
     const { result } = renderPanels();
 
     act(() => result.current.openPanel('test'));
 
     expect(result.current.openNodeIds).toEqual(['test']);
-    expect(result.current.isWholeJobOpen).toBe(true);
+    expect(result.current.isWholeJobOpen).toBe(false);
   });
 
   it('opening a node twice is a no-op, not a close', () => {
-    const { result } = renderPanels('?nodes=test&whole=0');
+    const { result } = renderPanels('?nodes=test');
 
     act(() => result.current.openPanel('test'));
 
@@ -109,7 +110,7 @@ describe('useOpenLogPanels', () => {
 
     act(() => result.current.openPanel('build'));
 
-    expect(result.current.search).toBe('?nodes=build&whole=1');
+    expect(result.current.search).toBe('?nodes=build');
   });
 
   it('keeps unrelated search params across a toggle', () => {

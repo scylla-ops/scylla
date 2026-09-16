@@ -1,16 +1,17 @@
 import { useSearchParams } from 'react-router-dom';
 
 const NODES_PARAM = 'nodes';
-const WHOLE_JOB_PARAM = 'whole';
 
 /**
  * Which log panels the job details page has open, held in the URL rather than in
  * component state so a link can open the page on exactly the panels it names.
  *
- * `?nodes=build,test` lists the open node panels and `?whole=1|0` the job-wide
- * one. With neither, the page opens on the whole job alone — so a link naming
- * only nodes (`?nodes=build`, what `goToJobDetails` writes) opens on those
- * nodes alone, and a node no execution matches leaves the whole job showing.
+ * `?nodes=build,test` lists the open node panels, and the job as a whole is what
+ * shows when that list is empty — the two are exclusive, the whole job being the
+ * page at rest rather than a panel competing with the nodes for room. So a link
+ * naming nodes (`?nodes=build`, what `goToJobDetails` writes) opens on those
+ * nodes alone, a node no execution matches leaves the whole job showing, and
+ * closing the last node panel comes back to it.
  *
  * Panels are read back in execution order, whatever order they were opened in,
  * and an id no node matches never survives a write.
@@ -20,44 +21,40 @@ export const useOpenLogPanels = (nodeIds: readonly string[]) => {
 
   const requested = (searchParams.get(NODES_PARAM) ?? '').split(',');
   const openNodeIds = nodeIds.filter(id => requested.includes(id));
-  const wholeJob = searchParams.get(WHOLE_JOB_PARAM);
-  const isWholeJobOpen = wholeJob === null ? openNodeIds.length === 0 : wholeJob === '1';
+  const isWholeJobOpen = openNodeIds.length === 0;
 
-  const write = (nextNodeIds: readonly string[], nextWholeJob: boolean) => {
+  const write = (nextNodeIds: readonly string[]) => {
     const ordered = nodeIds.filter(id => nextNodeIds.includes(id));
     const params = new URLSearchParams(searchParams);
 
     if (ordered.length > 0) params.set(NODES_PARAM, ordered.join(','));
     else params.delete(NODES_PARAM);
 
-    // The pristine default — whole job alone — stays a bare URL.
-    if (nextWholeJob && ordered.length === 0) params.delete(WHOLE_JOB_PARAM);
-    else params.set(WHOLE_JOB_PARAM, nextWholeJob ? '1' : '0');
-
     setSearchParams(params, { replace: true });
   };
 
-  const togglePanel = (nodeId?: string) => {
-    if (nodeId === undefined) {
-      write(openNodeIds, !isWholeJobOpen);
-      return;
-    }
-
-    const next = openNodeIds.includes(nodeId)
-      ? openNodeIds.filter(id => id !== nodeId)
-      : [...openNodeIds, nodeId];
-    write(next, isWholeJobOpen);
+  /** Adds or removes one node's panel, leaving the other open ones alone. */
+  const toggleNode = (nodeId: string) => {
+    write(
+      openNodeIds.includes(nodeId)
+        ? openNodeIds.filter(id => id !== nodeId)
+        : [...openNodeIds, nodeId],
+    );
   };
 
+  /** Drops every node panel, which is what leaves the whole job showing. */
+  const showWholeJob = () => write([]);
+
+  /** Opens the panel a link points at, on top of whatever is already open. */
   const openPanel = (nodeId?: string) => {
     if (nodeId === undefined) {
-      write(openNodeIds, true);
+      showWholeJob();
       return;
     }
     if (openNodeIds.includes(nodeId)) return;
 
-    write([...openNodeIds, nodeId], isWholeJobOpen);
+    write([...openNodeIds, nodeId]);
   };
 
-  return { openNodeIds, isWholeJobOpen, togglePanel, openPanel };
+  return { openNodeIds, isWholeJobOpen, toggleNode, openPanel, showWholeJob };
 };

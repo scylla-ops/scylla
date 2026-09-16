@@ -33,7 +33,7 @@ msgstr "Actions"
 msgid "agent disconnected mid-run"
 msgstr "agent déconnecté en cours d'exécution"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:93
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:98
 msgid "Close the logs for {label}"
 msgstr "Fermer les journaux de {label}"
 
@@ -113,17 +113,13 @@ msgstr "Jobs"
 msgid "Loading..."
 msgstr "Chargement…"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:109
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:113
 msgid "Logs"
 msgstr "Journaux"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "No jobs found"
 msgstr "Aucun job trouvé"
-
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:185
-msgid "No logs open — pick the whole job or a node to read its output"
-msgstr "Aucun journal ouvert — choisissez le job entier ou un nœud pour lire sa sortie"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:54
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:92
@@ -134,7 +130,7 @@ msgstr "Aucun nœud"
 msgid "Node {nodeId}"
 msgstr "Nœud {nodeId}"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:119
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:123
 msgid "Node executions"
 msgstr "Exécutions de nœuds"
 
@@ -182,7 +178,7 @@ msgstr "État : {0}"
 msgid "Status"
 msgstr "Statut"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:113
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:117
 msgid "Streaming live output"
 msgstr "Flux de sortie en direct"
 
@@ -200,8 +196,8 @@ msgstr "Impossible de charger ce job"
 msgid "View"
 msgstr "Voir"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:92
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:128
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:97
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:132
 msgid "Whole job"
 msgstr "Job entier"
 
@@ -213,6 +209,6 @@ msgstr "Vous n'avez pas la permission de supprimer des jobs."
 msgid "You don't have permission to run this pipeline."
 msgstr "Vous n'avez pas la permission d'exécuter cette pipeline."
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:85
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:90
 msgid "You don't have permission to view this job's logs"
 msgstr "Vous n'avez pas la permission de voir les journaux de ce job"

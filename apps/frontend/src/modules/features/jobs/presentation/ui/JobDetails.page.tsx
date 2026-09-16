@@ -23,7 +23,7 @@ export const JobDetailsPage = () => {
   const { t } = useLingui();
   const { jobId } = useParams<{ jobId: string }>();
   const { job, isLoading, isError, error } = useJob(jobId ?? '');
-  const { openNodeIds, isWholeJobOpen, togglePanel, openPanel } = useOpenLogPanels(
+  const { openNodeIds, isWholeJobOpen, toggleNode, openPanel, showWholeJob } = useOpenLogPanels(
     job?.nodeExecutions.map((node, index) => node.id || String(index)) ?? [],
   );
 
@@ -48,7 +48,8 @@ export const JobDetailsPage = () => {
         job={job}
         openNodeIds={openNodeIds}
         isWholeJobOpen={isWholeJobOpen}
-        onTogglePanel={togglePanel}
+        onToggleNode={toggleNode}
+        onShowWholeJob={showWholeJob}
       />
     </div>
   );

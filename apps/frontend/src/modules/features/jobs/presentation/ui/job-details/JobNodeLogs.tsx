@@ -9,37 +9,32 @@ import { calculateExecutionDuration, formatDuration } from '@shared/utils/date-u
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-log/JobLogDisplay.tsx';
 
-/** `gap-3` between two panels, and the fixed `h-9` header inside each one. */
-const PANEL_GAP = 12;
+/** The fixed `h-9` header standing above each log. */
 const PANEL_HEADER_HEIGHT = 36;
 /** Below this a log is a peephole; the column scrolls rather than shrink past it. */
 const MIN_LOG_HEIGHT = 192;
+/** What a node's log stands at, however many are open — the column takes the overflow. */
+const NODE_LOG_HEIGHT = 448;
 
-/**
- * Every open panel gets an equal share of the room the column was given, so one
- * panel fills the window and three split it — each scrolling its own log once
- * its share is full.
- */
-const logHeightFor = (columnHeight: number | null, panelCount: number): number | undefined => {
-  if (columnHeight === null || panelCount === 0) return undefined;
-
-  const share = (columnHeight - PANEL_GAP * (panelCount - 1)) / panelCount;
-  return Math.max(MIN_LOG_HEIGHT, Math.floor(share - PANEL_HEADER_HEIGHT));
-};
+/** The whole job is only ever shown alone, so its log gets the column entire. */
+const wholeJobLogHeight = (columnHeight: number | null): number | undefined =>
+  columnHeight === null ? undefined : Math.max(MIN_LOG_HEIGHT, columnHeight - PANEL_HEADER_HEIGHT);
 
 interface JobNodeLogsProps {
   job: JobEntity;
   /** From the URL, in execution order. Ids no node matches are already dropped. */
   openNodeIds: readonly string[];
   isWholeJobOpen: boolean;
-  /** Opens or closes one panel. No id means the whole job. */
-  onTogglePanel: (nodeId?: string) => void;
+  /** Adds or removes one node's panel, leaving the other open ones alone. */
+  onToggleNode: (nodeId: string) => void;
+  /** Drops every node panel, which is what brings the whole job back. */
+  onShowWholeJob: () => void;
 }
 
 interface LogPanelProps {
   label: string;
-  closeLabel: string;
-  onClose: () => void;
+  closeLabel?: string;
+  onClose?: () => void;
   children: ReactNode;
 }
 
@@ -50,30 +45,40 @@ const LogPanel = ({ label, closeLabel, onClose, children }: LogPanelProps) => (
   >
     <header className='flex h-9 shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3'>
       <span className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>{label}</span>
-      <button
-        type='button'
-        onClick={onClose}
-        aria-label={closeLabel}
-        className='rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
-      >
-        <X className='size-3.5' />
-      </button>
+      {onClose && (
+        <button
+          type='button'
+          onClick={onClose}
+          aria-label={closeLabel}
+          className='rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+        >
+          <X className='size-3.5' />
+        </button>
+      )}
     </header>
     {children}
   </section>
 );
 
 /**
- * The job's logs, as a set of panels the reader opens and closes independently:
- * comparing what two nodes printed is the point, so the nav toggles panels
- * rather than switching between them, and every open panel keeps its own live
- * stream. Closing one unmounts it, which is what cancels that stream.
+ * The job's logs: the job as a whole, or the nodes the reader picked out of it.
+ *
+ * Comparing what two nodes printed is the point, so the nav adds and removes
+ * node panels rather than switching between them, and each keeps the same
+ * readable height whether it is alone or one of five — past the room the page
+ * has, the column scrolls. The whole job is what shows when no node is picked,
+ * never a panel alongside them, which is why it has no close button: closing
+ * the last node is what comes back to it.
+ *
+ * Every open panel keeps its own live stream, and closing one unmounts it,
+ * which is what cancels that stream.
  */
 export const JobNodeLogs = ({
   job,
   openNodeIds,
   isWholeJobOpen,
-  onTogglePanel,
+  onToggleNode,
+  onShowWholeJob,
 }: JobNodeLogsProps) => {
   const { t } = useLingui();
   const canViewLogs = useCan(Permission.READ_JOB_LOGS);
@@ -91,7 +96,6 @@ export const JobNodeLogs = ({
   const openNodes = nodes.filter(({ id }) => openNodeIds.includes(id));
   const wholeJobLabel = t`Whole job`;
   const closeLabelFor = (label: string) => t`Close the logs for ${label}`;
-  const logHeight = logHeightFor(height, openNodes.length + (isWholeJobOpen ? 1 : 0));
 
   const buttonClassName = (isOpen: boolean) =>
     cn(
@@ -121,7 +125,7 @@ export const JobNodeLogs = ({
         >
           <button
             type='button'
-            onClick={() => onTogglePanel()}
+            onClick={onShowWholeJob}
             aria-pressed={isWholeJobOpen}
             className={buttonClassName(isWholeJobOpen)}
           >
@@ -139,7 +143,7 @@ export const JobNodeLogs = ({
               <button
                 key={id}
                 type='button'
-                onClick={() => onTogglePanel(id)}
+                onClick={() => onToggleNode(id)}
                 aria-pressed={isOpen}
                 className={cn('flex items-center gap-2', buttonClassName(isOpen))}
               >
@@ -159,31 +163,21 @@ export const JobNodeLogs = ({
           ref={containerRef}
           className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto'
         >
-          {isWholeJobOpen && (
-            <LogPanel
-              label={wholeJobLabel}
-              closeLabel={closeLabelFor(wholeJobLabel)}
-              onClose={() => onTogglePanel()}
-            >
-              <JobLogDisplay jobId={job.id} maxHeight={logHeight} />
+          {isWholeJobOpen ? (
+            <LogPanel label={wholeJobLabel}>
+              <JobLogDisplay jobId={job.id} maxHeight={wholeJobLogHeight(height)} />
             </LogPanel>
-          )}
-
-          {openNodes.map(({ id }) => (
-            <LogPanel
-              key={id}
-              label={id}
-              closeLabel={closeLabelFor(id)}
-              onClose={() => onTogglePanel(id)}
-            >
-              <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={logHeight} />
-            </LogPanel>
-          ))}
-
-          {!isWholeJobOpen && openNodes.length === 0 && (
-            <p className='rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground'>
-              <Trans>No logs open — pick the whole job or a node to read its output</Trans>
-            </p>
+          ) : (
+            openNodes.map(({ id }) => (
+              <LogPanel
+                key={id}
+                label={id}
+                closeLabel={closeLabelFor(id)}
+                onClose={() => onToggleNode(id)}
+              >
+                <JobLogDisplay jobId={job.id} nodeId={id} maxHeight={NODE_LOG_HEIGHT} />
+              </LogPanel>
+            ))
           )}
         </div>
       </div>
