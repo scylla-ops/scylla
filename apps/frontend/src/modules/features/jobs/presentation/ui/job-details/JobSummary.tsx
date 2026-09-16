@@ -1,18 +1,15 @@
 import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Badge } from '@shadcn';
-import { BackButton } from '@shared/presentation/ui';
 import { CopyableText } from '@shared/presentation/ui/data-display/CopyableText.tsx';
 import { useNow } from '@shared/presentation/hooks/use-now.ts';
 import { calculateExecutionDuration, formatDate, formatDuration } from '@shared/utils/date-utils.ts';
-import { useScyllaNavigate } from '@platform/context';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
 import { JobStatus } from '@/modules/features/jobs/presentation/ui/jobs-table/JobStatus.tsx';
 import { JobTimeline } from '@/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx';
 
 interface JobSummaryProps {
   job: JobEntity;
-  pipelineId: string;
   onSelectNode: (nodeId?: string) => void;
 }
 
@@ -25,8 +22,7 @@ const Fact = ({ label, children }: { label: ReactNode; children: ReactNode }) =>
   </span>
 );
 
-export const JobSummary = ({ job, pipelineId, onSelectNode }: JobSummaryProps) => {
-  const { goToJobs } = useScyllaNavigate();
+export const JobSummary = ({ job, onSelectNode }: JobSummaryProps) => {
   const isLive = job.status === 'running' || job.status === 'pending';
   useNow(isLive);
 
@@ -36,7 +32,6 @@ export const JobSummary = ({ job, pipelineId, onSelectNode }: JobSummaryProps) =
     <div className='flex flex-col gap-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div className='flex min-w-0 items-center gap-3'>
-          <BackButton label={<Trans>Jobs</Trans>} onClick={() => goToJobs(pipelineId)} />
           <h1 className='text-xl font-semibold text-foreground'>
             <Trans>Job</Trans>
           </h1>

@@ -37,7 +37,7 @@ msgstr "agent disconnected mid-run"
 msgid "Copy ID"
 msgstr "Copy ID"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:44
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:39
 msgid "Copy job id"
 msgstr "Copy job id"
 
@@ -45,7 +45,7 @@ msgstr "Copy job id"
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:65
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:60
 msgctxt "date-prefix"
 msgid "Created"
 msgstr "Created"
@@ -59,7 +59,7 @@ msgstr "Delete"
 msgid "Delete Job"
 msgstr "Delete Job"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:53
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:48
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:66
 msgid "Duration"
 msgstr "Duration"
@@ -73,7 +73,7 @@ msgstr "Duration: {0}"
 msgid "Error loading logs..."
 msgstr "Error loading logs..."
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:61
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:56
 msgctxt "date-prefix"
 msgid "Finished"
 msgstr "Finished"
@@ -84,7 +84,7 @@ msgid "Finished: {0}"
 msgstr "Finished: {0}"
 
 #: src/modules/features/jobs/jobs.module.ts:31
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:41
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:36
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
 msgid "Job"
 msgstr "Job"
@@ -101,7 +101,6 @@ msgstr "Job ID is missing"
 msgid "Job not found"
 msgstr "Job not found"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:39
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:45
 msgid "Jobs"
 msgstr "Jobs"
@@ -160,7 +159,7 @@ msgstr "Run"
 msgid "Run your pipeline to create the first job"
 msgstr "Run your pipeline to create the first job"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:57
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:52
 msgctxt "date-prefix"
 msgid "Started"
 msgstr "Started"
@@ -183,7 +182,7 @@ msgstr "Status"
 msgid "Streaming live output"
 msgstr "Streaming live output"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:70
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:65
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
 msgid "Timeline"
 msgstr "Timeline"

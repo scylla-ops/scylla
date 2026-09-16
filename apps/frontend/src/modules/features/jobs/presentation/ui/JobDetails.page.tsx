@@ -16,7 +16,7 @@ import { JobNodeLogs } from '@/modules/features/jobs/presentation/ui/job-details
  */
 export const JobDetailsPage = () => {
   const { t } = useLingui();
-  const { pipelineId, jobId } = useParams<{ pipelineId: string; jobId: string }>();
+  const { jobId } = useParams<{ jobId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { job, isLoading, isError, error } = useJob(jobId ?? '');
 
@@ -33,7 +33,7 @@ export const JobDetailsPage = () => {
     setSearchParams(next, { replace: true });
   };
 
-  if (!pipelineId || !jobId) {
+  if (!jobId) {
     return <ErrorState message={<Trans>Job ID is missing</Trans>} />;
   }
 
@@ -43,7 +43,7 @@ export const JobDetailsPage = () => {
 
   return (
     <div className='flex w-full min-h-full flex-col gap-6 pb-8'>
-      <JobSummary job={job} pipelineId={pipelineId} onSelectNode={selectNode} />
+      <JobSummary job={job} onSelectNode={selectNode} />
       <JobNodeLogs
         job={job}
         selectedNodeId={searchParams.get('nodeId') ?? undefined}

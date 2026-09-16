@@ -37,7 +37,7 @@ msgstr "agent déconnecté en cours d'exécution"
 msgid "Copy ID"
 msgstr "Copier l'ID"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:44
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:39
 msgid "Copy job id"
 msgstr "Copier l'id du job"
 
@@ -45,7 +45,7 @@ msgstr "Copier l'id du job"
 msgid "Created"
 msgstr "Créé"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:65
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:60
 msgctxt "date-prefix"
 msgid "Created"
 msgstr "Créé le"
@@ -59,7 +59,7 @@ msgstr "Supprimer"
 msgid "Delete Job"
 msgstr "Supprimer le job"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:53
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:48
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:66
 msgid "Duration"
 msgstr "Durée"
@@ -73,7 +73,7 @@ msgstr "Durée : {0}"
 msgid "Error loading logs..."
 msgstr "Erreur lors du chargement des journaux…"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:61
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:56
 msgctxt "date-prefix"
 msgid "Finished"
 msgstr "Terminé le"
@@ -84,7 +84,7 @@ msgid "Finished: {0}"
 msgstr "Terminé : {0}"
 
 #: src/modules/features/jobs/jobs.module.ts:31
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:41
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:36
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
 msgid "Job"
 msgstr "Job"
@@ -101,7 +101,6 @@ msgstr "L'identifiant de job est manquant"
 msgid "Job not found"
 msgstr "Job introuvable"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:39
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:45
 msgid "Jobs"
 msgstr "Jobs"
@@ -160,7 +159,7 @@ msgstr "Exécuter"
 msgid "Run your pipeline to create the first job"
 msgstr "Exécutez votre pipeline pour créer le premier job"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:57
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:52
 msgctxt "date-prefix"
 msgid "Started"
 msgstr "Démarré le"
@@ -183,7 +182,7 @@ msgstr "Statut"
 msgid "Streaming live output"
 msgstr "Flux de sortie en direct"
 
-#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:70
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:65
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
 msgid "Timeline"
 msgstr "Chronologie"
