@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { Radio, Terminal, X } from 'lucide-react';
+import { Badge } from '@shadcn';
 import { Permission, useCan } from '@platform/authz';
 import { cn } from '@shared/presentation/utils';
 import { useMeasuredHeight } from '@shared/presentation/hooks/use-measured-height.ts';
@@ -185,12 +186,12 @@ export const JobNodeLogs = ({
                   header={
                     <>
                       <Icon className={cn('size-3.5 shrink-0', config.iconClassName)} />
-                      <span className='min-w-0 flex-1 truncate font-mono text-xs text-foreground'>
+                      <span className='min-w-0 shrink truncate font-mono text-xs leading-none text-foreground'>
                         {id}
                       </span>
-                      <span className={cn('shrink-0 text-xs', config.textClassName)}>
+                      <Badge variant='outline' className={cn('shrink-0', config.badgeClassName)}>
                         {i18n._(config.label)}
-                      </span>
+                      </Badge>
                     </>
                   }
                   closeLabel={closeLabelFor(id)}
