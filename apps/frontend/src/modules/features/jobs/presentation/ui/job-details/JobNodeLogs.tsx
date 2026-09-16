@@ -215,8 +215,8 @@ export const JobNodeLogs = ({
                 aria-pressed={isOpen}
                 className={cn('flex items-center gap-2', buttonClassName(isOpen))}
               >
-                <Icon className={cn('size-3.5 shrink-0', config.iconClassName)} />
-                <span className='min-w-0 flex-1 truncate font-mono text-xs'>{id}</span>
+                <Icon className={cn('size-4 shrink-0', config.iconClassName)} />
+                <span className='min-w-0 flex-1 truncate text-sm font-medium'>{id}</span>
                 <span className='shrink-0 text-xs text-muted-foreground'>
                   {duration === null ? '-' : formatDuration(duration)}
                 </span>
@@ -236,7 +236,7 @@ export const JobNodeLogs = ({
               ariaLabel={wholeJobLabel}
               header={
                 <header className='flex h-9 shrink-0 items-center border-b border-border bg-muted/40 px-3'>
-                  {wholeJobLabel}
+                  <p className='truncate text-sm font-medium text-foreground'>{wholeJobLabel}</p>
                 </header>
               }
             >
