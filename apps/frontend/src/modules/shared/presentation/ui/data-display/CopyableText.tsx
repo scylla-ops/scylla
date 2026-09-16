@@ -19,6 +19,8 @@ interface CopyableTextProps {
   copyLabel?: ReactNode;
   /** Extra classes for the root wrapper. */
   className?: string;
+  /** Extra classes for the internal copy IconButton — shrink it for a compact context like a badge. */
+  copyButtonClassName?: string;
 }
 
 /**
@@ -35,6 +37,7 @@ export const CopyableText = ({
   showFullOnHover = false,
   copyLabel,
   className,
+  copyButtonClassName,
 }: CopyableTextProps) => {
   const [copied, setCopied] = useState(false);
 
@@ -65,7 +68,7 @@ export const CopyableText = ({
         icon={copied ? Check : Copy}
         tooltip={copied ? <Trans>Copied!</Trans> : (copyLabel ?? <Trans>Copy</Trans>)}
         onClick={handleCopy}
-        className='shrink-0'
+        className={cn('shrink-0', copyButtonClassName)}
         iconClassName={copied ? 'text-status-passed' : undefined}
       />
     </div>

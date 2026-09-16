@@ -10,6 +10,7 @@ import { Trans } from '@lingui/react/macro';
 import { Radio, Terminal } from 'lucide-react';
 
 import { JobLogDisplay } from '@/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx';
+import { CopyableText } from '@shared/presentation/ui/data-display/CopyableText.tsx';
 
 interface JobLogDialogProps {
   jobId?: string;
@@ -27,7 +28,11 @@ export const JobLogDialog = ({ jobId, nodeId, onClose }: JobLogDialogProps) => {
         }
       }}
     >
-      <DialogContent className={'max-w-5xl max-h-full flex flex-col'}>
+      <DialogContent
+        className={'max-w-5xl max-h-full flex flex-col'}
+        // avoids autofocus landing on a copy button, which swallows Escape
+        onOpenAutoFocus={e => e.preventDefault()}
+      >
         <DialogHeader className={'space-y-3'}>
           <div className={'flex items-center justify-between'}>
             <DialogTitle className={'flex items-center gap-2.5 text-lg font-semibold'}>
@@ -40,12 +45,29 @@ export const JobLogDialog = ({ jobId, nodeId, onClose }: JobLogDialogProps) => {
                 <span>
                   <Trans>Job Logs</Trans>
                 </span>
-                <Badge variant={nodeId ? 'outline' : 'default'} className={'font-mono text-xs'}>
-                  #{jobId}
+                <Badge
+                  variant={nodeId ? 'outline' : 'default'}
+                  className={'font-mono text-xs gap-1 pr-1'}
+                >
+                  <CopyableText
+                    value={jobId ?? ''}
+                    display={<>#{jobId}</>}
+                    copyLabel={<Trans>Copy job id</Trans>}
+                    copyButtonClassName='h-5 w-5 hover:scale-100'
+                  />
                 </Badge>
                 {nodeId && (
-                  <Badge variant={'default'} className={'font-mono text-xs'}>
-                    Node #{nodeId}
+                  <Badge variant={'default'} className={'font-mono text-xs gap-1 pr-1'}>
+                    <CopyableText
+                      value={nodeId}
+                      display={
+                        <>
+                          <Trans>Node</Trans> #{nodeId}
+                        </>
+                      }
+                      copyLabel={<Trans>Copy node id</Trans>}
+                      copyButtonClassName='h-5 w-5 hover:scale-100'
+                    />
                   </Badge>
                 )}
               </div>

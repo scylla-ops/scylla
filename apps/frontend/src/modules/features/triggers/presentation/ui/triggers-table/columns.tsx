@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { Switch } from '@shadcn/switch.tsx';
 import { TriggerKind } from '@/modules/features/triggers/domain/structs/trigger-source.struct.ts';
 import type { TriggerEntity } from '@/modules/features/triggers/domain/entities/trigger.entity.ts';
+import { CopyableText } from '@shared/presentation/ui/data-display/CopyableText.tsx';
 import { TriggerSourceCell } from './TriggerSourceCell.tsx';
 import { TriggerStatusCell } from './TriggerStatusCell.tsx';
 import { TriggerActions } from './TriggerActions.tsx';
@@ -36,7 +37,11 @@ export const createTriggerColumns = (meta: TriggerColumnsMeta): ColumnDef<Trigge
           </div>
           <div className='flex min-w-0 flex-col text-start'>
             <p className='truncate font-semibold text-foreground'>{trigger.name}</p>
-            <p className='truncate font-mono text-xs text-muted-foreground'>ID: {trigger.id}</p>
+            <CopyableText
+              className='text-xs text-muted-foreground/80'
+              value={trigger.id}
+              display={<>ID: {trigger.id}</>}
+            />
           </div>
         </div>
       );

@@ -4,6 +4,7 @@ import { useFeatureSelection } from '@shared/presentation/hooks/use-feature-sele
 import { useDeleteTrigger } from '@/modules/features/triggers/presentation/hooks/use-delete-trigger.ts';
 import { Permission } from '@platform/authz';
 import { useCan } from '@platform/authz';
+import { CopyableText } from '@shared/presentation/ui/data-display/CopyableText.tsx';
 
 interface TriggersHeaderProps {
   count: number;
@@ -39,9 +40,12 @@ export const TriggersHeader = ({
       deleteDeniedReason={<Trans>You don't have permission to manage triggers.</Trans>}
       {...headerProps}
       underLabel={
-        <span className='text-sm text-muted-foreground font-medium'>
-          <Trans>Pipeline ID: {pipelineId}</Trans>
-        </span>
+        <div className='flex items-center gap-2'>
+          <span className='text-sm text-muted-foreground font-medium'>
+            <Trans>Pipeline ID:</Trans>
+          </span>
+          <CopyableText value={pipelineId} className='text-sm text-muted-foreground font-medium' />
+        </div>
       }
     />
   );
