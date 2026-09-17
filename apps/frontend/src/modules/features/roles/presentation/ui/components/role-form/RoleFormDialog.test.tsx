@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { screen, fireEvent } from '@testing-library/react';
 import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
 import { RoleFormDialog } from './RoleFormDialog';
 import { Permission, PermissionScope } from '@platform/authz';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
 
-const createRoleState = { mutate: vi.fn(), isPending: false, isSuccess: false };
+const createRoleState = { mutate: vi.fn(), isPending: false, isSuccess: false, reset: vi.fn() };
 const updateRoleState = { mutate: vi.fn(), isPending: false, isSuccess: false, reset: vi.fn() };
 vi.mock('@/modules/features/roles/presentation/hooks/use-roles.ts', () => ({
   useRoles: () => ({ createRole: createRoleState, updateRole: updateRoleState }),
@@ -24,11 +24,17 @@ const role = (overrides: Partial<RoleEntity> = {}): RoleEntity => ({
 
 beforeEach(() => {
   createRoleState.mutate.mockReset();
+  createRoleState.reset.mockReset();
   createRoleState.isPending = false;
   createRoleState.isSuccess = false;
   updateRoleState.mutate.mockReset();
+  updateRoleState.reset.mockReset();
   updateRoleState.isPending = false;
   updateRoleState.isSuccess = false;
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 const selectAccessKind = async (user: ReturnType<typeof userEvent.setup>, label: string) => {
@@ -117,6 +123,19 @@ describe('RoleFormDialog', () => {
       expect.any(Object),
     );
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('resets createRole (not updateRole) after a successful create, so the next open is not stuck pending', () => {
+    createRoleState.mutate.mockImplementation((_vars, opts) => opts.onSuccess());
+    renderWithI18n(<RoleFormDialog open role={null} onClose={vi.fn()} />);
+
+    vi.useFakeTimers();
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'viewer' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create role' }));
+    vi.advanceTimersByTime(300);
+
+    expect(createRoleState.reset).toHaveBeenCalled();
+    expect(updateRoleState.reset).not.toHaveBeenCalled();
   });
 
   it('editing a role updates it by id, with no scope in the payload at all', async () => {

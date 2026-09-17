@@ -124,7 +124,7 @@ export const RoleFormDialog = ({ open, role, onClose }: RoleFormDialogProps) => 
           onSuccess: () => {
             onClose();
             setTimeout(() => {
-              updateRole.reset();
+              createRole.reset();
             }, 300);
           },
         },
