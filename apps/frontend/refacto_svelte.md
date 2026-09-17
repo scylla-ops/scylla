@@ -9,6 +9,24 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 
 ---
 
+## État d'avancement
+
+| Phase | État | Bundle initial | Total | Deps |
+|---|---|---|---|---|
+| — départ | | 294,8 kB | 660 kB | 41 |
+| **0 · Lot A** — nettoyage deps | ✅ **fait** | **253,6 kB** | **619 kB** | **39** |
+| **0 · Lot B** — dé-React-ification | 🔜 en cours | | | |
+| **1** — `shared/` + design system | ⬜ | | | |
+| **2** — 6 features pilotes | ⬜ | | | |
+| **3** — apps, agents, membership, jobs, triggers | ⬜ | | | |
+| **4** — roles + dashboard (`recharts` sort ici) | ⬜ | | | |
+| **5** — pipeline (`reactflow` sort ici) | ⬜ | | | |
+| **6** — shell + suppression de React | ⬜ | | | ~20 |
+
+Cible finale : ~170 kB initial, ~380 kB total, ~400 paquets transitifs.
+
+---
+
 ## 0. La décision, et ses raisons
 
 **Décidé : on migre. Svelte 5 + Vite. Pas SvelteKit.**
@@ -371,6 +389,27 @@ Ce composant est ensuite supprimé.
   chercher les valeurs par id, et ça se perd facilement dans un port.
 - `toast.ts` → `svelte-sonner` (un fichier).
 - `AnimatedOutlet`, `ScyllaLoadingScreen` → transitions natives.
+
+  **Dette à rembourser ici, explicitement.** Le Lot A a perdu les animations de *sortie* : le CSS
+  ne peut pas animer un nœud que React a déjà démonté, donc la navigation n'a plus son fade-out et
+  le libellé de statut de l'éditeur de pipeline n'a plus sa sortie vers le haut. Svelte n'a pas
+  cette limite — `out:`, `transition:` et surtout `{#key}` + `crossfade` gardent le nœud sortant
+  vivant le temps de l'animer. **Le rendu doit revenir au niveau d'avant le Lot A au minimum**, et
+  la cible est mieux que ça :
+
+  | Endroit | Avant (framer) | Après Lot A | Cible Phase 1 (Svelte) |
+  |---|---|---|---|
+  | Changement de route | fade + scale in/out, 200 ms | entrée seule | `crossfade` entrée+sortie, sans le délai de 200 ms qu'imposait `mode='wait'` |
+  | Écran « première orga » | fade + scale + y, 800 ms | entrée seule | `in:` / `out:` complets |
+  | Statut éditeur pipeline | crossfade vertical 150 ms | entrée seule | `{#key status}` + `in:fly` / `out:fly` |
+  | Logo de chargement | fade + rotation | identique | identique, la rotation reste du CSS |
+
+  Le `mode='wait'` de framer retenait la nouvelle page pendant 200 ms le temps que l'ancienne
+  sorte. `crossfade` fait se chevaucher les deux : on récupère l'animation de sortie **sans**
+  repayer ce délai. C'est le « plus propre » visé, pas seulement le retour à l'état antérieur.
+
+  `prefers-reduced-motion` doit continuer d'être respecté — le Lot A a élargi la règle dans
+  `index.css`, les transitions Svelte doivent y entrer aussi.
 - CodeMirror : `use-code-mirror-theme.ts` + `code-mirror-theme.ts` → une `action` Svelte sur
   `EditorView`. **`@uiw/react-codemirror` sort ici** (déplacé du Lot A) : son rôle est le montage,
   qui est exactement ce qu'une `action` remplace. Les deux usages actuels prennent son `basicSetup`
