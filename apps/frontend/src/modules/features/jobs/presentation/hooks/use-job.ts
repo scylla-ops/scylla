@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useJobsDomain } from '@/modules/features/jobs/presentation/hooks/use-jobs-domain.ts';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 import type { JobEntity } from '@/modules/features/jobs/domain/entities/job.entity.ts';
+import { JOB_QUERY_KEY } from '@/modules/features/jobs/presentation/hooks/jobs.query-keys.ts';
 
 export const useJob = (jobId: string) => {
   const { jobsRepository } = useJobsDomain();
@@ -12,7 +13,7 @@ export const useJob = (jobId: string) => {
     error,
     isError,
   } = useQuery<JobEntity, ScyllaError>({
-    queryKey: ['jobs', jobId],
+    queryKey: JOB_QUERY_KEY(jobId),
     queryFn: async () => (await jobsRepository.getById(jobId)).unwrap(),
     enabled: !!jobId,
     refetchInterval: query => {

@@ -36,7 +36,7 @@ beforeEach(() => {
 });
 
 describe('createJobColumns', () => {
-  const meta = { pipelineId: 'pipeline-1', onDelete: vi.fn(), onView: vi.fn(), onOpenJobLog: vi.fn() };
+  const meta = { pipelineId: 'pipeline-1', onDelete: vi.fn(), onView: vi.fn() };
   const columns = createJobColumns(meta);
 
   it('the duration cell shows a dash for a job that never started', () => {
@@ -75,12 +75,24 @@ describe('createJobColumns', () => {
     expect(screen.getByText(/\S/)).toBeInTheDocument();
   });
 
+  it('the timeline cell opens the job scoped to the node that was clicked', async () => {
+    const onView = vi.fn();
+    const user = userEvent.setup();
+    const columnsWithView = createJobColumns({ ...meta, onView });
+    renderCell(
+      findColumn(columnsWithView, 'timeline'),
+      job({ id: 'job-9', nodeExecutions: [{ id: 'build', state: 'completed' }] }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Node build' }));
+    expect(onView).toHaveBeenCalledWith('job-9', 'build');
+  });
+
   it('the actions cell stops the row click and forwards the id to each handler', async () => {
     const onView = vi.fn();
     const onDelete = vi.fn();
-    const onOpenJobLog = vi.fn();
     const rowClick = vi.fn();
-    const actionColumns = createJobColumns({ ...meta, onView, onDelete, onOpenJobLog });
+    const actionColumns = createJobColumns({ ...meta, onView, onDelete });
     const cell = findColumn(actionColumns, 'actions').cell;
     if (typeof cell !== 'function') throw new Error('no cell renderer');
 

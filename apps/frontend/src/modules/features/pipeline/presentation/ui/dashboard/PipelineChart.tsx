@@ -1,5 +1,4 @@
-import { Trans } from '@lingui/react/macro';
-import { useLingui } from '@lingui/react';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@shared/presentation/utils';
 import { Skeleton } from '@shadcn/skeleton.tsx';
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
@@ -14,6 +13,8 @@ type PipelineChartProps = {
   isError?: boolean;
   /** The job history was never fetched — the user may not list this project's jobs. */
   isForbidden?: boolean;
+  /** Makes each run in the history open that job's details page. */
+  onSelectJob?: (jobId: string) => void;
 };
 
 export const PipelineChart = ({
@@ -22,8 +23,9 @@ export const PipelineChart = ({
   isError,
   isForbidden,
   maxJobs,
+  onSelectJob,
 }: PipelineChartProps) => {
-  const { _ } = useLingui();
+  const { i18n, t } = useLingui();
   if (isLoading) {
     return (
       <div className='w-full flex items-center gap-2 h-10 py-1 overflow-hidden rounded-md px-1'>
@@ -66,6 +68,8 @@ export const PipelineChart = ({
       return {
         id: job.id,
         status: job.status,
+        onSelect: onSelectJob ? () => onSelectJob(job.id) : undefined,
+        label: t`Run #${runNumber}`,
         tooltip: (
           <div className='flex flex-col gap-1.5'>
             <div className='flex items-center justify-between gap-4'>
@@ -78,7 +82,7 @@ export const PipelineChart = ({
             </div>
             <div className='flex items-center gap-2'>
               <div className={cn('w-2 h-2 rounded-full', config.dotClassName)} />
-              <span className={cn('font-semibold', config.textClassName)}>{_(config.label)}</span>
+              <span className={cn('font-semibold', config.textClassName)}>{i18n._(config.label)}</span>
             </div>
             <span className='text-[10px] text-muted-foreground italic border-t pt-1 mt-1'>
               {job.status === 'running' || job.status === 'pending' ? (

@@ -14,12 +14,18 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: group.count
+#. placeholder {1}: i18n._(config.label)
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:122
+msgid "{0} {1} nodes"
+msgstr "{0} nœuds {1}"
+
+#. placeholder {0}: group.count
 #. placeholder {1}: Math.round(pct)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:119
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:142
 msgid "{0} / {total} nodes ({1}%)"
 msgstr "{0} / {total} nœuds ({1} %)"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:77
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:82
 msgid "Actions"
 msgstr "Actions"
 
@@ -27,53 +33,70 @@ msgstr "Actions"
 msgid "agent disconnected mid-run"
 msgstr "agent déconnecté en cours d'exécution"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:70
-msgid "Collapse"
-msgstr "Réduire"
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:163
+msgid "Close the logs for {label}"
+msgstr "Fermer les journaux de {label}"
+
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:164
+msgid "Collapse the logs for {label}"
+msgstr "Réduire les journaux de {label}"
 
 #: src/modules/features/jobs/presentation/ui/jobs-table/JobIdCell.tsx:6
 msgid "Copy ID"
 msgstr "Copier l'ID"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:58
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:49
 msgid "Copy job id"
 msgstr "Copier l'id du job"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:71
-msgid "Copy node id"
-msgstr "Copier l'id du nœud"
-
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:68
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:73
 msgid "Created"
 msgstr "Créé"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:59
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:79
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:70
+msgctxt "date-prefix"
+msgid "Created"
+msgstr "Créé le"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:52
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:64
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:80
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobsTable.tsx:62
 msgid "Delete Job"
 msgstr "Supprimer le job"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:61
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:58
+#: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:66
 msgid "Duration"
 msgstr "Durée"
 
 #. placeholder {0}: formatDuration(duration)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:77
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:85
 msgid "Duration: {0}"
 msgstr "Durée : {0}"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:31
+#: src/modules/features/jobs/presentation/ui/jobs-log/JobLogDisplay.tsx:37
 msgid "Error loading logs..."
 msgstr "Erreur lors du chargement des journaux…"
 
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:165
+msgid "Expand the logs for {label}"
+msgstr "Développer les journaux de {label}"
+
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:66
+msgctxt "date-prefix"
+msgid "Finished"
+msgstr "Terminé le"
+
 #. placeholder {0}: formatTime(node.finishedAt)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:72
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:80
 msgid "Finished: {0}"
 msgstr "Terminé : {0}"
 
+#: src/modules/features/jobs/jobs.module.ts:34
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:46
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:44
 msgid "Job"
 msgstr "Job"
@@ -82,40 +105,42 @@ msgstr "Job"
 msgid "Job ID"
 msgstr "ID du job"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:49
-msgid "Job Logs"
-msgstr "Journaux de job"
+#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:38
+msgid "Job ID is missing"
+msgstr "L'identifiant de job est manquant"
+
+#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:34
+msgid "Job not found"
+msgstr "Job introuvable"
 
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:45
 msgid "Jobs"
 msgstr "Jobs"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDisplay.tsx:25
+#: src/modules/features/jobs/presentation/ui/jobs-log/JobLogDisplay.tsx:31
 msgid "Loading..."
 msgstr "Chargement…"
+
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:180
+msgid "Logs"
+msgstr "Journaux"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:47
 msgid "No jobs found"
 msgstr "Aucun job trouvé"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:49
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:84
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:54
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:92
 msgid "No nodes"
 msgstr "Aucun nœud"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:68
-msgid "Node"
-msgstr "Nœud"
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:66
+msgid "Node {nodeId}"
+msgstr "Nœud {nodeId}"
 
-#. placeholder {0}: nodeExecutions.length
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobNodesList.tsx:73
-msgid "Node Executions ({0})"
-msgstr "Exécutions de nœuds ({0})"
-
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:53
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:71
-msgid "Open logs"
-msgstr "Ouvrir les journaux"
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:190
+msgid "Node executions"
+msgstr "Exécutions de nœuds"
 
 #: src/modules/features/jobs/presentation/ui/Jobs.page.tsx:21
 msgid "Pipeline ID is missing"
@@ -142,13 +167,18 @@ msgstr "Exécuter"
 msgid "Run your pipeline to create the first job"
 msgstr "Exécutez votre pipeline pour créer le premier job"
 
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:62
+msgctxt "date-prefix"
+msgid "Started"
+msgstr "Démarré le"
+
 #. placeholder {0}: formatTime(node.startedAt)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:67
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:75
 msgid "Started: {0}"
 msgstr "Démarré : {0}"
 
-#. placeholder {0}: _(getStatusConfig(node.state).label)
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:63
+#. placeholder {0}: i18n._(getStatusConfig(node.state).label)
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobTimeline.tsx:71
 msgid "State: {0}"
 msgstr "État : {0}"
 
@@ -156,18 +186,28 @@ msgstr "État : {0}"
 msgid "Status"
 msgstr "Statut"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/jobs-log/JobLogDialog.tsx:81
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:184
 msgid "Streaming live output"
 msgstr "Flux de sortie en direct"
 
+#: src/modules/features/jobs/presentation/ui/job-details/JobSummary.tsx:77
 #: src/modules/features/jobs/presentation/ui/jobs-table/columns.tsx:54
 msgid "Timeline"
 msgstr "Chronologie"
 
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:48
-#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:66
+#: src/modules/features/jobs/presentation/ui/JobDetails.page.tsx:43
+msgid "Unable to load this job"
+msgstr "Impossible de charger ce job"
+
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:47
+#: src/modules/features/jobs/presentation/ui/jobs-table/JobActions.tsx:59
 msgid "View"
 msgstr "Voir"
+
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:162
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:199
+msgid "Whole job"
+msgstr "Job entier"
 
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:51
 msgid "You don't have permission to delete jobs."
@@ -176,3 +216,7 @@ msgstr "Vous n'avez pas la permission de supprimer des jobs."
 #: src/modules/features/jobs/presentation/ui/JobsHeader.tsx:49
 msgid "You don't have permission to run this pipeline."
 msgstr "Vous n'avez pas la permission d'exécuter cette pipeline."
+
+#: src/modules/features/jobs/presentation/ui/job-details/JobNodeLogs.tsx:155
+msgid "You don't have permission to view this job's logs"
+msgstr "Vous n'avez pas la permission de voir les journaux de ce job"

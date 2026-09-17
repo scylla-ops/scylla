@@ -51,6 +51,7 @@ describe('createPipelineColumns', () => {
     onEdit: vi.fn(),
     onDuplicate: vi.fn(),
     onViewJobs: vi.fn(),
+    onViewJob: vi.fn(),
     onViewTriggers: vi.fn(),
     runningPipelines: new Set<string>(),
     duplicatingPipelineId: undefined,
@@ -81,6 +82,34 @@ describe('createPipelineColumns', () => {
     });
     renderCell(findColumn(columns, 'metadata'), pipeline());
     expect(screen.getByText('30s')).toBeInTheDocument();
+  });
+
+  it('the history cell opens the run that was clicked', async () => {
+    const onViewJob = vi.fn();
+    const user = userEvent.setup();
+    const columns = createPipelineColumns({
+      ...baseMeta,
+      onViewJob,
+      jobsByPipelineId: new Map([['pipeline-1', [job({ id: 'job-7' })]]]),
+    });
+    renderCell(findColumn(columns, 'history'), pipeline());
+
+    await user.click(screen.getByRole('button', { name: 'Run #1' }));
+    expect(onViewJob).toHaveBeenCalledWith(expect.objectContaining({ id: 'pipeline-1' }), 'job-7');
+  });
+
+  it('the metadata cell opens the last run', async () => {
+    const onViewJob = vi.fn();
+    const user = userEvent.setup();
+    const columns = createPipelineColumns({
+      ...baseMeta,
+      onViewJob,
+      jobsByPipelineId: new Map([['pipeline-1', [job({ id: 'job-7' })]]]),
+    });
+    renderCell(findColumn(columns, 'metadata'), pipeline());
+
+    await user.click(screen.getByRole('button', { name: 'Open the last run' }));
+    expect(onViewJob).toHaveBeenCalledWith(expect.objectContaining({ id: 'pipeline-1' }), 'job-7');
   });
 
   it('the actions cell forwards the row\'s id/pipeline and stops the click from bubbling', async () => {

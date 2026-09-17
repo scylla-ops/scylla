@@ -52,19 +52,28 @@ export const PipelineModule = {
       }),
     },
     {
-      // Owned here rather than by `jobs`: the page needs a Run action, which is
-      // a pipeline operation. See PipelineJobsRoute.
+      // A grouping route rather than a page: it owns the segment and its crumb,
+      // so one job's page — contributed by `jobs` on the same path — nests under
+      // it and keeps a clickable "Jobs" crumb ahead of its own.
       mount: 'project',
       path: 'pipelines/:pipelineId/jobs',
-      permission: Permission.LIST_JOBS_BY_PIPELINE,
       breadcrumb: ({ pipelineName }) => ({
         label: msg`Pipeline`,
         highlight: pipelineName,
         detail: msg`Jobs`,
       }),
-      lazy: async () => ({
-        Component: (await import('./presentation/ui/PipelineJobsRoute.tsx')).PipelineJobsRoute,
-      }),
+      children: [
+        {
+          // Owned here rather than by `jobs`: the page needs a Run action, which
+          // is a pipeline operation. See PipelineJobsRoute.
+          mount: 'project',
+          index: true,
+          permission: Permission.LIST_JOBS_BY_PIPELINE,
+          lazy: async () => ({
+            Component: (await import('./presentation/ui/PipelineJobsRoute.tsx')).PipelineJobsRoute,
+          }),
+        },
+      ],
     },
   ],
 } satisfies ScyllaModule;

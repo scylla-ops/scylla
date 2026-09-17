@@ -20,5 +20,13 @@ export const ORGANIZATION_JOBS_QUERY_KEY = (
   pagination?: PaginationParams,
 ) => ['jobs', 'organization', organizationId, pagination] as const;
 
+/**
+ * One job, by id — what the job details page reads.
+ *
+ * Under the same `'jobs'` root as the listings, so invalidating `['jobs']` after
+ * a run or a deletion refreshes the open job too.
+ */
+export const JOB_QUERY_KEY = (jobId: string) => ['jobs', 'detail', jobId] as const;
+
 /** Prefix matching every job listing, whatever the scope. */
 export const JOBS_QUERY_ROOT = ['jobs'] as const;

@@ -2,14 +2,19 @@ import type { JobNodeExecution } from '@/modules/features/jobs/domain/structs/jo
 import { StatusBar, type StatusBarItem } from '@shared/presentation/ui/data-display/StatusBar.tsx';
 import { useMemo } from 'react';
 import { getStatusConfig } from '@shared/utils/status-config.ts';
-import { useLingui } from '@lingui/react';
 import { cn } from '@shared/presentation/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn/tooltip.tsx';
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { formatTime, calculateExecutionDuration, formatDuration } from '@shared/utils/date-utils.ts';
 
 type JobTimelineProps = {
   nodeExecutions: JobNodeExecution[];
+  /**
+   * Makes the segments activatable. The detailed view targets the node that was
+   * clicked; the grouped view stands for several nodes at once, so it passes
+   * none and the caller falls back to the job itself.
+   */
+  onSelectNode?: (nodeId?: string) => void;
 };
 
 /** Threshold above which nodes are grouped by status */
@@ -25,8 +30,8 @@ interface StatusGroup {
  * Display a timeline bar showing the execution state of each node.
  * When there are many nodes, they are grouped by status into proportional segments.
  */
-export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
-  const { _ } = useLingui();
+export const JobTimeline = ({ nodeExecutions, onSelectNode }: JobTimelineProps) => {
+  const { i18n, t } = useLingui();
   const shouldCollapse = nodeExecutions.length > COLLAPSE_THRESHOLD;
 
   // Grouped view for large pipelines
@@ -53,14 +58,17 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
   if (!shouldCollapse) {
     const items: StatusBarItem[] = nodeExecutions.map((node, index) => {
       const duration = calculateExecutionDuration(node.startedAt, node.finishedAt);
+      const nodeId = node.id || String(index);
       return {
-        id: node.id || String(index),
+        id: nodeId,
         status: node.state,
+        onSelect: onSelectNode ? () => onSelectNode(nodeId) : undefined,
+        label: t`Node ${nodeId}`,
         tooltip: (
           <div className='text-xs'>
             <p className='font-semibold'>{node.id}</p>
             <p>
-              <Trans>State: {_(getStatusConfig(node.state).label)}</Trans>
+              <Trans>State: {i18n._(getStatusConfig(node.state).label)}</Trans>
             </p>
             {node.startedAt && (
               <p>
@@ -93,28 +101,43 @@ export const JobTimeline = ({ nodeExecutions }: JobTimelineProps) => {
         {groups.map(group => {
           const config = getStatusConfig(group.status);
           const pct = (group.count / total) * 100;
+          const groupClassName = cn(
+            'h-full rounded-sm transition-all duration-150 relative flex items-center justify-center',
+            config.barClassName,
+            config.barHoverClassName,
+            onSelectNode && 'cursor-pointer',
+          );
+          const count = pct > 8 && (
+            <span className='text-[10px] font-semibold text-primary-foreground drop-shadow-sm select-none'>
+              {group.count}
+            </span>
+          );
 
           return (
             <Tooltip key={group.status}>
               <TooltipTrigger asChild>
-                <div
-                  className={cn(
-                    'h-full rounded-sm transition-all duration-150 relative flex items-center justify-center',
-                    config.barClassName,
-                    config.barHoverClassName,
-                  )}
-                  style={{ width: `${pct}%`, minWidth: 18 }}
-                >
-                  {pct > 8 && (
-                    <span className='text-[10px] font-semibold text-primary-foreground drop-shadow-sm select-none'>
-                      {group.count}
-                    </span>
-                  )}
-                </div>
+                {onSelectNode ? (
+                  <button
+                    type='button'
+                    aria-label={t`${group.count} ${i18n._(config.label)} nodes`}
+                    onClick={event => {
+                      event.stopPropagation();
+                      onSelectNode();
+                    }}
+                    className={groupClassName}
+                    style={{ width: `${pct}%`, minWidth: 18 }}
+                  >
+                    {count}
+                  </button>
+                ) : (
+                  <div className={groupClassName} style={{ width: `${pct}%`, minWidth: 18 }}>
+                    {count}
+                  </div>
+                )}
               </TooltipTrigger>
               <TooltipContent side='top' className='text-xs p-3 shadow-lg'>
                 <div className='space-y-1'>
-                  <p className='font-semibold capitalize'>{_(config.label)}</p>
+                  <p className='font-semibold capitalize'>{i18n._(config.label)}</p>
                   <p>
                     <Trans>
                       {group.count} / {total} nodes ({Math.round(pct)}%)

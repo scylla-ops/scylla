@@ -12,6 +12,8 @@ type PipelineColumnMeta = {
   onEdit: (pipeline: PipelineMetadata) => void;
   onDuplicate: (pipeline: PipelineMetadata) => void;
   onViewJobs: (pipeline: PipelineMetadata) => void;
+  /** Opens one job's details page — the history and last-run cells link to it. */
+  onViewJob: (pipeline: PipelineMetadata, jobId: string) => void;
   onViewTriggers: (pipeline: PipelineMetadata) => void;
 
   runningPipelines: Set<string>;
@@ -46,6 +48,7 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
           isError={meta.isJobsError}
           isForbidden={meta.canListJobs === false}
           maxJobs={10}
+          onSelectJob={jobId => meta.onViewJob(row.original, jobId)}
         />
       );
     },
@@ -56,7 +59,12 @@ export const createPipelineColumns = (meta: PipelineColumnMeta): ColumnDef<Pipel
     header: () => <Trans>Last Run</Trans>,
     cell: ({ row }) => {
       const jobs = meta.jobsByPipelineId.get(row.original.id) ?? [];
-      return <PipelineLastJob jobs={jobs} />;
+      return (
+        <PipelineLastJob
+          jobs={jobs}
+          onSelectJob={jobId => meta.onViewJob(row.original, jobId)}
+        />
+      );
     },
     size: 200,
     minSize: 180,

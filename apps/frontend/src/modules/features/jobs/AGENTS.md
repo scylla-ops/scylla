@@ -24,7 +24,8 @@ JobsPage                              ← the documented page exception
 
 `JobsPage` is exported because `pipeline` composes it behind its own route (it owns the Run
 action). That consumer is itself lazily loaded, which is what makes the exception safe. Do not
-add a second page export.
+add a second page export — `JobDetailsPage` is mounted by this module's own route instead, which
+is why it stays private.
 
 Never add: `jobs.module.ts`, `use-jobs-domain.ts`.
 
@@ -50,7 +51,7 @@ Reach the repository with `useJobsDomain()` **inside a hook only**.
 ## Layout
 
 ```
-jobs.module.ts                       DI wiring only — no routes, no nav
+jobs.module.ts                       DI wiring + the job details route (no nav)
 index.ts                             public API
 domain/
   entities/job.entity.ts             JobEntity
@@ -70,24 +71,34 @@ presentation/
   hooks/use-jobs-by-pipelines.ts     useQueries fan-out, avoids N+1
   hooks/use-job-logs.ts, use-tail-job-logs.ts, use-delete-jobs.ts
   hooks/use-streamed-log-view.ts     owns the log viewer's document + tail-follow
-  stores/use-jobs.store.ts           UI state only
   ui/Jobs.page.tsx, JobsHeader.tsx
+  ui/JobDetails.page.tsx             one job: info + per-node logs
+  ui/job-details/                    JobSummary, JobNodeLogs
   ui/jobs-table/                     JobsTable + columns + cells (index.ts is local, not public)
-  ui/jobs-table/jobs-log/            JobLogDialog, JobLogDisplay
+  ui/jobs-log/JobLogDisplay.tsx      the streamed viewer, shared by both pages
 ```
 
 ## Routes & nav
 
-**None.** `JobsModule` declares `domain` only. The page is mounted by
+| Mount | Path | Permission | Component |
+|---|---|---|---|
+| `project` | `pipelines/:pipelineId/jobs/:jobId` | `READ_JOB` | `JobDetailsPage` |
+
+No nav entry. The jobs **list** is not declared here: it is mounted by
 [`pipeline`](../pipeline/AGENTS.md) at `project` → `pipelines/:pipelineId/jobs`, gated on
-`LIST_JOBS_BY_PIPELINE`, via `PipelineJobsRoute`. If you change `JobsPage`'s props, that is the
-call site to update.
+`LIST_JOBS_BY_PIPELINE`, via `PipelineJobsRoute`, because that page needs a Run action. If you
+change `JobsPage`'s props, that is the call site to update.
+
+One job needs nothing from `pipeline`, so its route lives here — a flat sibling of the list route
+rather than a child of it, since two modules cannot share one path segment when the parent
+already renders a page of its own.
 
 ## Rules that bite here
 
-- **Query keys come from `jobs.query-keys.ts`.** Three exist (`JOBS_QUERY_KEY`,
-  `ORGANIZATION_JOBS_QUERY_KEY`, `JOBS_QUERY_ROOT`) and they are exported publicly so other
-  modules invalidate the *same* key this module queries. Never hand-write `['jobs', ...]`.
+- **Query keys come from `jobs.query-keys.ts`.** Four exist; three (`JOBS_QUERY_KEY`,
+  `ORGANIZATION_JOBS_QUERY_KEY`, `JOBS_QUERY_ROOT`) are exported publicly so other modules
+  invalidate the *same* key this module queries, and `JOB_QUERY_KEY` (one job, read by the
+  details page) stays internal. Never hand-write `['jobs', ...]`.
 - `JOBS_QUERY_ROOT` is the prefix for "invalidate everything jobs-related" after a run;
   `JOBS_QUERY_KEY(pipelineId)` is exact. Pick deliberately.
 - **`summarizeJobs`, `isActiveStatus`, `isFinishedStatus` are pure domain functions.** Status
@@ -103,7 +114,29 @@ call site to update.
 - **Never scroll that viewer to the bottom on every `logs` change** either — same flush rate,
   and it steals the viewport from a user who scrolled up or is dragging a selection. The same
   hook owns that decision.
+- **The log viewer is sized by its caller, never by itself.** `JobLogDisplay` takes a `maxHeight`
+  in pixels and grows with the log up to it; the details page gives the whole job's panel the
+  column it measured with `useMeasuredHeight()`, and every node panel one fixed readable height
+  whatever the count — the column scrolls rather than shrink them. A fixed height on the editor
+  itself is what this replaced — do not put one back.
 - Lists go through `DataTable` + `usePagination()`. Row keys are job ids, never indices.
+- **The details page is the one place a job's logs are read.** Everywhere a job is displayed —
+  the jobs table's view action and timeline, the pipeline dashboard's history and last run —
+  links there through `useScyllaNavigate().goToJobDetails(...)`. Which log panels are open is the
+  `nodes` search param, not component state, so those links can open straight onto one node's
+  logs.
+- **The whole job and the nodes are exclusive.** The details page opens a `JobLogDisplay` per node
+  the URL names, and the job as a whole only when it names none — the whole job is the page at
+  rest, never a panel standing alongside the nodes, which is why its panel has no close button.
+  Closing the last node panel is what comes back to it.
+- **The timeline picks one node, the log nav builds a set.** A click on a timeline segment shows
+  that node alone (`selectNode`) — the same jump the links from the jobs list and the pipeline
+  dashboard make, landing on the page rather than moving inside it. The nav under the summary
+  adds and removes panels instead (`toggleNode`), which is what lets two nodes' output be read
+  side by side.
+- **Log panels are independent, and each one is a live stream.** Every open panel holds its own
+  `useTailJobLogs` subscription. Closing a panel unmounts it, which is what cancels that stream —
+  never hide one with CSS instead.
 
 ## Before done
 

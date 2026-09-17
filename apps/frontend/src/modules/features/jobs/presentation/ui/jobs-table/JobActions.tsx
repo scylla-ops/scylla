@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/modules/shared/presentation/ui/shadcn/dropdown-menu';
-import { Eye, Trash, MoreHorizontal, TerminalSquare } from 'lucide-react';
+import { Eye, Trash, MoreHorizontal } from 'lucide-react';
 import type { SyntheticEvent } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { IconButton } from '@shared/presentation/ui';
@@ -14,17 +14,16 @@ import { Permission } from '@platform/authz';
 import { useCan } from '@platform/authz';
 
 type JobActionsProps = {
+  /** Opens the job details page — info and per-node logs both live there now. */
   onView: (e: SyntheticEvent) => void;
   onDelete: (e: SyntheticEvent) => void;
-  onOpenJobLog: (e: SyntheticEvent) => void;
 };
 
 /**
  * Display actions for a job: view details and delete
  * Automatically switches to dropdown mode when space is limited
  */
-export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) => {
-  const canViewLogs = useCan(Permission.READ_JOB_LOGS);
+export const JobActions = ({ onView, onDelete }: JobActionsProps) => {
   const canDelete = useCan(Permission.DELETE_JOB);
   const { containerRef, isCompact } = useCompactContainer();
 
@@ -47,12 +46,6 @@ export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) 
               <Eye className='w-4 h-4 mr-2' />
               <Trans>View</Trans>
             </DropdownMenuItem>
-            {canViewLogs && (
-              <DropdownMenuItem onClick={onOpenJobLog}>
-                <TerminalSquare className='w-4 h-4 mr-2' />
-                <Trans>Open logs</Trans>
-              </DropdownMenuItem>
-            )}
             {canDelete && (
               <DropdownMenuItem onClick={onDelete} className='text-destructive'>
                 <Trash className='w-4 h-4 mr-2' />
@@ -64,14 +57,6 @@ export const JobActions = ({ onView, onDelete, onOpenJobLog }: JobActionsProps) 
       ) : (
         <>
           <IconButton icon={Eye} tooltip={<Trans>View</Trans>} onClick={onView} />
-
-          {canViewLogs && (
-            <IconButton
-              icon={TerminalSquare}
-              tooltip={<Trans>Open logs</Trans>}
-              onClick={onOpenJobLog}
-            />
-          )}
 
           {canDelete && (
             <IconButton

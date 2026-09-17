@@ -74,6 +74,7 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
 | List header (count, clear, delete, new) | `FeatureHeader` |
 | A form | `FormItem[]` → `ScyllaForm`; `FormDialog` wraps it; `useFormState(items)` owns values/validation — it is exported from `ui/forms/ScyllaForm.tsx`, not from `hooks/`. Declare the ids in the item type (`readonly FormItem<'name' \| 'description'>[]`) and `onSubmit` receives a typed `FormValues` record — never re-index the values by hand |
 | Pagination | `usePagination()` — local page merged with server `totalCount`/`totalPages` |
+| How much room the layout left a component | `useMeasuredHeight()` — a `ResizeObserver` behind a callback ref; put it on a container sized by the layout, never by its content |
 | A table | `DataTable` (+ `usePagination`) — row keys are business ids, never indices |
 | Confirm a destructive action | `ConfirmOperationAlertDialog` |
 | Show a one-time secret | `SecretRevealDialog` |
