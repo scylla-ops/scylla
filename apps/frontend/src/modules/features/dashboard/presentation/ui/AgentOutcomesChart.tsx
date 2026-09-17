@@ -173,6 +173,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
               <Area
                 type='monotone'
                 dataKey='completed'
+                stackId='outcomes'
                 stroke='var(--success)'
                 strokeWidth={2}
                 fill='url(#grad-completed)'
@@ -184,6 +185,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
               <Area
                 type='monotone'
                 dataKey='failed'
+                stackId='outcomes'
                 stroke='var(--destructive)'
                 strokeWidth={2}
                 fill='url(#grad-failed)'
@@ -195,6 +197,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
               <Area
                 type='monotone'
                 dataKey='cancelled'
+                stackId='outcomes'
                 stroke='var(--warning)'
                 strokeWidth={2}
                 fill='url(#grad-cancelled)'
