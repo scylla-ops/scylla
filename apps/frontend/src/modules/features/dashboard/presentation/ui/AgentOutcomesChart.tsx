@@ -169,9 +169,27 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
                 />
               }
             />
+            {/* Stack order is paint order: whichever Area is declared last
+                draws its boundary line on top when two series coincide (a
+                day where the upper one is 0 traces the same y as the one
+                below it). Cancelled is almost always 0, so it goes first -
+                its flat line then sits on the axis baseline instead of
+                painting over completed/failed's real boundary. */}
+            {(status === 'all' || status === 'cancelled') && (
+              <Area
+                type='monotone'
+                dataKey='cancelled'
+                stackId='outcomes'
+                stroke='var(--warning)'
+                strokeWidth={2}
+                fill='url(#grad-cancelled)'
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            )}
             {(status === 'all' || status === 'completed') && (
               <Area
-                type='linear'
+                type='monotone'
                 dataKey='completed'
                 stackId='outcomes'
                 stroke='var(--success)'
@@ -183,24 +201,12 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
             )}
             {(status === 'all' || status === 'failed') && (
               <Area
-                type='linear'
+                type='monotone'
                 dataKey='failed'
                 stackId='outcomes'
                 stroke='var(--destructive)'
                 strokeWidth={2}
                 fill='url(#grad-failed)'
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-            )}
-            {(status === 'all' || status === 'cancelled') && (
-              <Area
-                type='linear'
-                dataKey='cancelled'
-                stackId='outcomes'
-                stroke='var(--warning)'
-                strokeWidth={2}
-                fill='url(#grad-cancelled)'
                 dot={false}
                 activeDot={{ r: 4 }}
               />
