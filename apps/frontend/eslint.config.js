@@ -3,6 +3,8 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import svelte from 'eslint-plugin-svelte'
+import svelteParser from 'svelte-eslint-parser'
 import { globalIgnores } from 'eslint/config'
 
 export default tseslint.config([
@@ -99,6 +101,34 @@ export default tseslint.config([
       'react-refresh/only-export-components': 'off',
     },
   },
+
+  // ── Svelte ────────────────────────────────────────────────────────────────────
+  // `.svelte` files are invisible to `tsc -b`; `pnpm typecheck` runs svelte-check
+  // after it for exactly that reason. Here we only need the parser and the
+  // plugin's own rules.
+  ...svelte.configs.recommended,
+  {
+    files: ['**/*.svelte', '**/*.svelte.ts'],
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    languageOptions: {
+      parser: svelteParser,
+      globals: globals.browser,
+      parserOptions: {
+        parser: tseslint.parser,
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+        extraFileExtensions: ['.svelte'],
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
+    },
+  },
+
 ])
 
 

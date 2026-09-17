@@ -20,7 +20,8 @@ Permission, PermissionScope, PrincipalKind, RoleKind
 type AccessEntity, AccessSpec, PrincipalEntity
 canAccess
 type EffectivePermissionsEntity, EffectiveScopeEntity, PermissionTarget
-useAuthorization, useCan
+useAuthorization, useCan                           // React: re-renders when permissions land
+can, authorizationReady                            // no React: same answer, read from the store
 usePermissionsStore
 Can, PermissionButton, PermissionDenied, RequirePermission
 ```
@@ -29,6 +30,11 @@ Can, PermissionButton, PermissionDenied, RequirePermission
 
 **Everything here is read-only and dependency-free.** `useCan` answers from a store,
 synchronously. It never calls the backend.
+
+`can()` is the same check without the hook, for callers that have no React around them — a
+Svelte island, an event handler. It reads `usePermissionsStore.getState()`, so it gives the
+answer at *call* time and does not re-render anything; a component that must react to
+permissions landing still uses `useCan`.
 
 That is precisely what lets authz sit below the features: any feature may gate its UI without
 depending on the feature that administers roles.

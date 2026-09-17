@@ -15,8 +15,8 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 |---|---|---|---|---|
 | — départ | | 294,8 kB | 660 kB | 41 |
 | **0 · Lot A** — nettoyage deps | ✅ **fait** | **253,6 kB** | **619 kB** | **39** |
-| **0 · Lot B** — dé-React-ification | 🔜 en cours | | | |
-| **1** — `shared/` + design system | ⬜ | | | |
+| **0 · Lot B** — dé-React-ification | ✅ **fait** | 253,5 kB | 619 kB | 43 |
+| **1** — `shared/` + design system | 🔜 suivante | | | |
 | **2** — 6 features pilotes | ⬜ | | | |
 | **3** — apps, agents, membership, jobs, triggers | ⬜ | | | |
 | **4** — roles + dashboard (`recharts` sort ici) | ⬜ | | | |
@@ -24,6 +24,11 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 | **6** — shell + suppression de React | ⬜ | | | ~20 |
 
 Cible finale : ~170 kB initial, ~380 kB total, ~400 paquets transitifs.
+
+Le Lot B ajoute 4 dépendances (`svelte`, `@tanstack/svelte-query`, `@tanstack/query-core`,
+`@sveltejs/vite-plugin-svelte` & co) **sans toucher au bundle de production** : aucune UI Svelte
+n'est encore livrée, donc rien de tout ça n'entre dans un chunk. Le compte redescend à partir de
+la Phase 2, quand les paires React sortent.
 
 ---
 
@@ -267,18 +272,17 @@ déplace beaucoup de fichiers. À lancer en fin de chaque phase, avec `--dry-run
 
 Aucune phase n'est terminée si un gate est désactivé « le temps de la migration ».
 
-- **`depcruise`** : `enhancedResolveOptions.extensions` accepte `.svelte`, avec pré-traitement
-  `svelte2tsx`. Si ça résiste : **plan B obligatoire** — `eslint-plugin-svelte` + une règle
-  `no-restricted-imports` qui rejoue les six règles de barrel (`feature-api-only`,
-  `platform-api-only`, `module-declaration-is-private`, `domain-accessor-is-private`, …).
-  La protection ne baisse pas d'un cran.
+- **`depcruise`** : ✅ fonctionne tel quel sur `.svelte`, sans configuration ni pré-traitement.
+  Vérifié par violation délibérée, pas supposé. Le plan B ESLint n'existe plus.
 - **`module-permissions.test.ts`** et **`feature-permissions.test.ts`** : ils lisent
   `core/di/registry.ts` et le source de `presentation/ui/`. Ils continuent de fonctionner à
   condition que `ScyllaModule.routes[].lazy` garde sa forme et que leurs globs incluent `.svelte`.
   **Vérifié en Phase 0, pas après.**
-- **Couverture** : `coverage.include` passe à `src/modules/**/*.{ts,tsx,svelte}`. Les seuils sont un
-  cliquet : ils ne baissent jamais, même temporairement. Un module migré rend ses tests, sinon il
-  n'est pas migré.
+- **Couverture** : ✅ `coverage.include` est passé à `src/modules/**/*.{ts,tsx,svelte}`. Les seuils
+  restent un cliquet : ils ne baissent jamais, même temporairement. Un module migré rend ses tests,
+  sinon il n'est pas migré.
+- **`svelte-check`** : `.svelte` est invisible pour `tsc -b`. `pnpm typecheck` enchaîne donc
+  `tsc -b && svelte-check` — le gate garde son nom et rien ne passe entre les mailles.
 - **`i18n:collisions`** : zéro à chaque phase.
 
 ---

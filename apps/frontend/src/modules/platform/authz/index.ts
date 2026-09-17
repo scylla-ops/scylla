@@ -25,6 +25,7 @@ export {
   type PermissionTarget,
 } from './domain/entities/effective-permissions.entity.ts';
 export { useAuthorization, useCan } from './presentation/hooks/use-authorization.ts';
+export { authorizationReady, can } from './presentation/authorization.ts';
 export { usePermissionsStore } from './presentation/stores/use-permissions.store.ts';
 export { Can } from './presentation/ui/Can.tsx';
 export { PermissionButton } from './presentation/ui/PermissionButton.tsx';

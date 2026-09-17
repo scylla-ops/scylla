@@ -27,7 +27,8 @@ enforces that no *other* module does the same.
 di/registry.ts                       THE module list + the DI map
 di/module-permissions.test.ts        conformance: every page declares a gate
 di/feature-permissions.test.ts       conformance: features gate, shared hooks check
-presentation/ui/App.tsx              provider stack, QueryClient, global error handling
+presentation/ui/App.tsx              provider stack (the QueryClient is @platform/query)
+presentation/ui/svelte/              Phase 0 conformance: a Svelte island needs no React context
 presentation/ui/router/
   Core.router.tsx                    the shell skeleton
   Auth.guard.tsx                     token present? → Outlet, else /login
@@ -111,7 +112,11 @@ routesFor(modules, 'public')                     ← outside the guard
 **Never add a page here.** Adding a page is a change to one module's `*.module.ts`; this file
 does not move. It changes only when a *mount point* is added or the shell's structure changes.
 
-## Global error handling lives in `App.tsx`
+## Global error handling lives in `@platform/query`
+
+It used to be in `App.tsx`; it moved because features must be able to reach the client without
+importing the shell, and because React and Svelte have to be handed the same instance. `App.tsx`
+now only hands `queryClient` to `QueryClientProvider`.
 
 The `QueryClient` carries a `QueryCache` **and** a `MutationCache` `onError`:
 
@@ -123,6 +128,18 @@ toast. This is the codebase's documented rule for mutations.
 
 Two `//todo`s are recorded there deliberately (production console noise; domain errors ideally
 toasted by the owning module). Leave them unless you are addressing them.
+
+## `presentation/ui/svelte/` — Phase 0's conformance test
+
+`PlatformSingletons.fixture.svelte` + its test pin that a Svelte component mounted inside the
+React tree reaches the translation, the permission, the context store and the DI registry with
+**no React provider above it**. Each assertion fails the day one of those goes back behind a
+context.
+
+It lives in `core/` and not next to `SvelteIsland` in `shared/` for a layering reason: it imports
+`@platform/*`, and `shared/` sits below platform. The same test also pins that `react-query` and
+`svelte-query` resolve the **same** `@tanstack/query-core` — two copies fork the cache in silence,
+with nothing failing anywhere.
 
 ## Rules that bite here
 

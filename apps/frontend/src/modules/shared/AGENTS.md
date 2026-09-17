@@ -81,6 +81,30 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
 | Error state | `ErrorState` / `useResourceError` |
 | Class names | `cn()` |
 | Toasts | `toast` from `presentation/utils/toast.ts` |
+| Light/dark | `useTheme()` in React; `getTheme`/`setTheme`/`subscribeToTheme` from `stores/theme.store.ts` anywhere else |
+| Mounting a Svelte component in the React tree | `SvelteIsland` — see below |
+| Reading a Zustand store from Svelte | `toSvelteStore(store, selector)` |
+| Translating from Svelte | `t()` from `presentation/utils/i18n-svelte.svelte.ts`, over a `*.messages.ts` |
+
+## The Svelte migration lives partly here
+
+`shared/` holds the bridge, because it is generic and has no business meaning:
+
+```
+presentation/ui/svelte/SvelteIsland.tsx    mounts a Svelte component inside React
+presentation/stores/to-svelte-store.ts     Zustand store -> Svelte store contract
+presentation/stores/theme.store.ts         framework-agnostic; `hooks/use-theme.ts` binds it to React
+presentation/utils/i18n-svelte.svelte.ts   `t()` + locale reactivity for components
+```
+
+**The fixture proving the platform singletons are reachable is *not* here** — it is
+`core/presentation/ui/svelte/`. It imports `@platform/*`, and `shared/` sits below platform and
+may not (`shared-is-generic`). Verified: **dependency-cruiser parses `.svelte` and enforces every
+rule on it**, so this is caught, not trusted.
+
+The pattern to follow when a store is de-React-ified: the **agnostic core** in
+`stores/*.store.ts`, the **React binding** in `hooks/use-*.ts` — the binding is what gets deleted
+in Phase 6, the core is what survives. `theme.store.ts` is the worked example.
 
 ## Rules that bite here
 

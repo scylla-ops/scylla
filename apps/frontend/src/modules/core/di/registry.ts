@@ -1,4 +1,4 @@
-import type { DomainRegistry } from '@platform/di';
+import { setDependencyRegistry, type DomainRegistry } from '@platform/di';
 import type { ScyllaModule } from '@platform/routing';
 import { LoginModule } from '@/modules/features/login/login.module.ts';
 import { MarketplaceModule } from '@/modules/features/marketplace/marketplace.module.ts';
@@ -46,3 +46,10 @@ export const modules = [
 export const dependencies: DomainRegistry = Object.fromEntries(
   modules.map(module => [module.id, module.domain]),
 );
+
+// Also installed outside React, at import time and therefore before the first
+// render. `DependenciesProvider` stays the door for components — a test swapping
+// the registry for one subtree depends on the context for that isolation. This
+// copy is for the callers that have no context to read: a Svelte island mounted
+// inside a React page sees none of the tree above it.
+setDependencyRegistry(dependencies);

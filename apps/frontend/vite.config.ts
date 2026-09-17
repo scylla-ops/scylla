@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { lingui } from '@lingui/vite-plugin';
@@ -20,6 +21,10 @@ import { lingui } from '@lingui/vite-plugin';
  */
 const VENDOR_CHUNKS: Record<string, string[]> = {
   'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'],
+  // Svelte compiles away, so this only ever holds the small shared runtime.
+  // It exists so the React chunk can shrink and disappear on its own schedule
+  // while both frameworks are in the tree — see `refacto_svelte.md`.
+  'vendor-svelte': ['svelte'],
   'vendor-ui': [
     '@radix-ui',
     'radix-ui',
@@ -50,13 +55,25 @@ const matches = (packageName: string, entry: string): boolean =>
   (entry.endsWith('-') && packageName.startsWith(entry));
 
 export default defineConfig({
+  // Svelte ships a server build and a client one, and picks by export condition.
+  // Under Vitest the default resolution lands on the server build, where `mount`
+  // throws `lifecycle_function_unavailable`. Scoped to the test run on purpose:
+  // forcing `browser` for the production build would change how every dependency
+  // resolves, not just Svelte.
+  resolve: process.env.VITEST ? { conditions: ['browser'] } : {},
   plugins: [
     lingui(),
     react({
       plugins: [['@lingui/swc-plugin', {}]],
     }),
+    // Handles `.svelte` only; `.tsx` stays with the React plugin. The two
+    // coexist for the whole migration.
+    svelte(),
     tailwindcss(),
-    tsconfigPaths(),
+    // `loose` is what makes `@platform/…` resolve from a `.svelte` file: by
+    // default the plugin only rewrites imports coming from a JS/TS importer, so
+    // every alias inside a component silently failed to resolve.
+    tsconfigPaths({ loose: true }),
   ],
   build: {
     rollupOptions: {
@@ -94,7 +111,7 @@ export default defineConfig({
       // `include` is what makes untested files count: everything matching is
       // reported at 0% rather than being absent, which is the difference
       // between a real number and one that flatters itself.
-      include: ['src/modules/**/*.{ts,tsx}'],
+      include: ['src/modules/**/*.{ts,tsx,svelte}'],
       exclude: [
         // Machine output: generated proto clients and compiled Lingui catalogs.
         'src/generated/**',

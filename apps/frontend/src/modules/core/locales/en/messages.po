@@ -13,6 +13,10 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/modules/core/presentation/ui/svelte/platform-singletons.messages.ts:12
+msgid "Island is mounted"
+msgstr "Island is mounted"
+
 #: src/modules/core/presentation/ui/router/Core.router.tsx:60
 msgid "Project"
 msgstr "Project"
@@ -21,6 +25,6 @@ msgstr "Project"
 msgid "Projects"
 msgstr "Projects"
 
-#: src/modules/core/presentation/ui/App.tsx:83
+#: src/modules/core/presentation/ui/App.tsx:30
 msgid "Toggle dark mode"
 msgstr "Toggle dark mode"

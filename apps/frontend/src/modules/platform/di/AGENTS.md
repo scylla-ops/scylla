@@ -14,8 +14,24 @@ The dependency-injection mechanism. The *wiring* lives in `core/di/registry.ts`,
 ```typescript
 DependenciesContext, type DomainRegistry
 DependenciesProvider
-useModuleDomain
+useModuleDomain                                    // React: reads the context
+getModuleDomain                                    // no React: reads the singleton
+setDependencyRegistry, getDependencyRegistry
 ```
+
+### Two doors, and which one to use
+
+| Calling from | Use | Why |
+|---|---|---|
+| a component or a hook | `useModuleDomain` (through the feature's own accessor) | reads the **context**, so a test can swap the registry for one subtree |
+| anywhere else — a Svelte island, an event handler, a route guard | `getModuleDomain` | a Svelte component mounted in a React page sees no React context at all |
+
+`core/di/registry.ts` calls `setDependencyRegistry(dependencies)` at import time, so the
+singleton is installed before the first render. `DependenciesProvider` is unchanged and remains
+the door for React — the two can never disagree, because the provider is handed the same object.
+
+**A test reaching the domain without React must call `setDependencyRegistry` itself**, and
+restore it in `afterEach`: it is module state, so it leaks between tests otherwise.
 
 ## Layout
 
@@ -23,7 +39,8 @@ useModuleDomain
 index.ts                             public API
 dependencies.context.ts              the React context + DomainRegistry type
 Dependencies.provider.tsx            provider — mounted once by core
-use-module-domain.ts                 the typed accessor
+use-module-domain.ts                 the typed accessor (React)
+dependencies.registry.ts             the same registry, reachable without React
 ```
 
 ## `DomainRegistry` is untyped per module — on purpose
