@@ -31,7 +31,7 @@ describe('TriggerSourceCell', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('shows a webhook trigger\'s URL, truncated (12 chars) and copyable', () => {
+  it('shows a webhook trigger\'s full URL and lets it be copied', () => {
     renderWithI18n(
       <TriggerSourceCell
         trigger={trigger({
@@ -39,8 +39,9 @@ describe('TriggerSourceCell', () => {
         })}
       />,
     );
-    // CopyableText truncates the displayed text to 12 chars + an ellipsis.
-    expect(screen.getByText('https://x/we...')).toBeInTheDocument();
+    // No fixed truncate() anymore: the column's own width decides via CSS
+    // ellipsis, so the full string is what's actually in the DOM.
+    expect(screen.getByText('https://x/webhooks/1')).toBeInTheDocument();
   });
 
   it('shows a plain em dash for a source arm this build does not understand', () => {
