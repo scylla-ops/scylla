@@ -17,9 +17,11 @@ import { ToastMessages } from '@shared/utils/toast-messages.ts';
 interface AppCardProps {
   app: AppEntity;
   onRequestDelete: (id: string) => void;
+  /** False disables both delete affordances — the backend checks `DeleteApp`. */
+  canDelete?: boolean;
 }
 
-export const AppCard = ({ app, onRequestDelete }: AppCardProps) => {
+export const AppCard = ({ app, onRequestDelete, canDelete = true }: AppCardProps) => {
   const navigate = useNavigate();
   const { i18n } = useLingui();
 
@@ -60,7 +62,11 @@ export const AppCard = ({ app, onRequestDelete }: AppCardProps) => {
                 <Copy className='mr-2 h-4 w-4' />
                 <Trans>Copy id</Trans>
               </DropdownMenuItem>
-              <DropdownMenuItem variant='destructive' onClick={() => onRequestDelete(app.id)}>
+              <DropdownMenuItem
+                variant='destructive'
+                disabled={!canDelete}
+                onClick={() => onRequestDelete(app.id)}
+              >
                 <Trash className='mr-2 h-4 w-4' />
                 <Trans>Delete</Trans>
               </DropdownMenuItem>
@@ -82,6 +88,7 @@ export const AppCard = ({ app, onRequestDelete }: AppCardProps) => {
         <Button
           variant='ghost'
           size='icon'
+          disabled={!canDelete}
           className='h-7 w-7 text-muted-foreground hover:text-destructive'
           onClick={e => {
             e.stopPropagation();
@@ -89,6 +96,11 @@ export const AppCard = ({ app, onRequestDelete }: AppCardProps) => {
           }}
         >
           <Trash className='h-4 w-4' />
+          {/* Icon-only: without this the control has no accessible name, and no
+              test can reach it except through its CSS classes. */}
+          <span className='sr-only'>
+            <Trans>Delete app</Trans>
+          </span>
         </Button>
       </div>
     </Card>

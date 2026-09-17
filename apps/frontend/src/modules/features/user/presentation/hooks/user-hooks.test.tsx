@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
+import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
 import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import { useCreateUser } from './use-create-user';
@@ -41,7 +42,19 @@ const makeFakeRepository = (overrides: Partial<UserRepository> = {}) => {
 
 const wrapperFor = (repository: UserRepository) => createProvidersWrapper({ user: { userRepository: repository } });
 
+/** Drives the real permissions store, so the authorization chain is exercised. */
+const grantOnly = (...permissions: Permission[]) =>
+  usePermissionsStore.setState({
+    permissions: {
+      scopes: [
+        { scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'restricted', permissions } },
+      ],
+    },
+  });
+
 describe('useUsers', () => {
+  beforeEach(() => grantOnly(Permission.LIST_USERS));
+
   it('lists the user directory', async () => {
     const { repository } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
@@ -50,14 +63,38 @@ describe('useUsers', () => {
     await waitFor(() => expect(result.current.users?.items).toHaveLength(1));
   });
 
-  it('is enabled by default', () => {
+  it('queries without being asked to, once LIST_USERS is held', () => {
     const { repository, getAll } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
     renderHook(() => useUsers(), { wrapper: Wrapper });
     expect(getAll).toHaveBeenCalled();
   });
 
-  it('does not fetch when the caller explicitly disables it (no LIST_USERS)', () => {
+  it('never asks for the directory without LIST_USERS, even when the caller enables it', () => {
+    grantOnly(Permission.MANAGE_ROLES);
+    const { repository, getAll } = makeFakeRepository();
+    const { Wrapper } = wrapperFor(repository);
+    renderHook(() => useUsers({ enabled: true }), { wrapper: Wrapper });
+    expect(getAll).not.toHaveBeenCalled();
+  });
+
+  it('stays silent while the permissions are still unknown', () => {
+    usePermissionsStore.setState({ permissions: null });
+    const { repository, getAll } = makeFakeRepository();
+    const { Wrapper } = wrapperFor(repository);
+    renderHook(() => useUsers(), { wrapper: Wrapper });
+    expect(getAll).not.toHaveBeenCalled();
+  });
+
+  it('reports the denial through canListUsers, so an empty list is not read as "none"', () => {
+    grantOnly(Permission.MANAGE_ROLES);
+    const { repository } = makeFakeRepository();
+    const { Wrapper } = wrapperFor(repository);
+    const { result } = renderHook(() => useUsers(), { wrapper: Wrapper });
+    expect(result.current.canListUsers).toBe(false);
+  });
+
+  it('does not fetch when the caller explicitly disables it', () => {
     const { repository, getAll } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
     renderHook(() => useUsers({ enabled: false }), { wrapper: Wrapper });

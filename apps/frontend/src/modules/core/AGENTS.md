@@ -25,6 +25,8 @@ enforces that no *other* module does the same.
 
 ```
 di/registry.ts                       THE module list + the DI map
+di/module-permissions.test.ts        conformance: every page declares a gate
+di/feature-permissions.test.ts       conformance: features gate, shared hooks check
 presentation/ui/App.tsx              provider stack, QueryClient, global error handling
 presentation/ui/router/
   Core.router.tsx                    the shell skeleton
@@ -49,6 +51,48 @@ decides sidebar and route order within a section** (after `NavEntry.order`), so 
 roughly top-to-bottom as the app does.
 
 Adding a feature = add its `*.module.ts` here. There is no second list.
+
+## `di/module-permissions.test.ts` — the gate that reads that list
+
+Because everything is derived from `modules`, one test can hold the whole app to a rule instead
+of thirteen. It enumerates the *composed* route trees (`routesFor`) and asserts:
+
+1. **Every page behind `AuthGuard` declares a `permission`** — on itself or on an ancestor,
+   matching `RouteGuard`'s deepest-match rule. A route with no `lazy` is a grouping node and is
+   walked through, not reported.
+2. **A sidebar link and the page it opens require the same permission.** `permission` is written
+   twice — once in `routes`, once in `nav` — and nothing but this test stops the two drifting.
+   It also fails on a nav `url` that no route renders.
+
+The point is the *default*: a page added tomorrow is checked the day its module joins the
+registry, without anyone remembering to write a test for it. Per-component tests pin gates that
+exist; this one fails for gates that don't.
+
+`UNGATED_PAGES` is a **ratchet** — entries may be removed, never added without a real reason,
+and a stale entry fails the suite too. `mount: 'public'` is exempt structurally.
+
+A new mount in `Core.router.tsx` means adding it to `GUARDED_MOUNTS` (and `SHELL_SEGMENTS`, if
+the shell owns the segment a nav entry addresses — `projects` is the one such case today).
+
+## `di/feature-permissions.test.ts` — the same idea, one level down
+
+Route declarations are typed, so the rules above can walk them. The gating a feature applies to
+its own *buttons* is not declared anywhere, so this file reads source instead. Two rules,
+enumerated from `modules` so a new feature is checked on arrival:
+
+1. **A feature that mutates gates something in its UI.** If nothing under its `presentation/ui/`
+   ever mentions a `Permission`, every write it offers is open to anyone who reaches the page.
+2. **A query hook another feature imports checks for itself.** Crossing a barrel means running
+   outside the owner's route guard — the consumer's page was entered on the *consumer's*
+   permission. `useJobsByPipelines` is the one that already does this.
+
+Both are **completeness, never correctness**: they catch a feature with no gating and a hook that
+trusts its caller; they cannot catch the wrong permission on the right button. Doing that would
+need the mutation→permission mapping declared somewhere — today it is spread across a hook, a
+table, a child component and a route. Until then, correctness lives in the per-component tests.
+
+`UNGATED_FEATURES` and `UNCHECKED_SHARED_HOOKS` are ratchets, seeded with today's state and
+shrinking only. Entries marked `SEEDED DEBT` or `TRIAGE` are open questions, not decisions.
 
 ## `Core.router.tsx` — the skeleton, and only the skeleton
 
