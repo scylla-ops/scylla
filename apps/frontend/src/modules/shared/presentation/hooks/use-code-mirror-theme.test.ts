@@ -1,41 +1,44 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCodeMirrorTheme } from './use-code-mirror-theme';
-
-let resolvedThemeFixture: string | undefined = 'dark';
-vi.mock('next-themes', () => ({
-  useTheme: () => ({ resolvedTheme: resolvedThemeFixture }),
-}));
+import { setTheme } from '@shared/presentation/stores/theme.store.ts';
 
 const buildCodeMirrorTheme = vi.fn().mockReturnValue('fake-extension');
 vi.mock('@shared/presentation/utils/code-mirror-theme.ts', () => ({
   buildCodeMirrorTheme: (...args: unknown[]) => buildCodeMirrorTheme(...args),
 }));
 
+// The real store, not a mocked `useTheme`: the rule under test is how the hook
+// reads the app theme, and mocking that away would leave nothing to check.
+beforeEach(() => {
+  setTheme('dark');
+  buildCodeMirrorTheme.mockClear();
+});
+
 describe('useCodeMirrorTheme', () => {
-  it('is dark whenever resolvedTheme is anything other than exactly "light"', () => {
-    for (const resolvedTheme of ['dark', undefined, 'system', 'anything-else']) {
-      resolvedThemeFixture = resolvedTheme;
-      renderHook(() => useCodeMirrorTheme());
-      expect(buildCodeMirrorTheme).toHaveBeenLastCalledWith({ isDark: true, hasError: false });
-    }
+  it('builds the dark theme when the app theme is dark', () => {
+    renderHook(() => useCodeMirrorTheme());
+
+    expect(buildCodeMirrorTheme).toHaveBeenLastCalledWith({ isDark: true, hasError: false });
   });
 
-  it('is light only for the exact string "light"', () => {
-    resolvedThemeFixture = 'light';
+  it('builds the light theme only for the exact theme "light"', () => {
+    setTheme('light');
+
     renderHook(() => useCodeMirrorTheme());
+
     expect(buildCodeMirrorTheme).toHaveBeenLastCalledWith({ isDark: false, hasError: false });
   });
 
   it('forwards hasError unchanged', () => {
-    resolvedThemeFixture = 'light';
+    setTheme('light');
+
     renderHook(() => useCodeMirrorTheme({ hasError: true }));
+
     expect(buildCodeMirrorTheme).toHaveBeenLastCalledWith({ isDark: false, hasError: true });
   });
 
   it('memoizes the extension: an unrelated re-render does not rebuild it', () => {
-    resolvedThemeFixture = 'light';
-    buildCodeMirrorTheme.mockClear();
     const { result, rerender } = renderHook(() => useCodeMirrorTheme());
     const first = result.current;
 
@@ -46,8 +49,6 @@ describe('useCodeMirrorTheme', () => {
   });
 
   it('rebuilds the extension when hasError changes', () => {
-    resolvedThemeFixture = 'light';
-    buildCodeMirrorTheme.mockClear();
     const { rerender } = renderHook(
       ({ hasError }: { hasError: boolean }) => useCodeMirrorTheme({ hasError }),
       { initialProps: { hasError: false } },
@@ -56,5 +57,14 @@ describe('useCodeMirrorTheme', () => {
     rerender({ hasError: true });
 
     expect(buildCodeMirrorTheme).toHaveBeenCalledTimes(2);
+  });
+
+  it('rebuilds the extension when the app theme changes under it', () => {
+    const { rerender } = renderHook(() => useCodeMirrorTheme());
+
+    setTheme('light');
+    rerender();
+
+    expect(buildCodeMirrorTheme).toHaveBeenLastCalledWith({ isDark: false, hasError: false });
   });
 });

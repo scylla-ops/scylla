@@ -37,7 +37,7 @@ msgstr "Ajouter un nœud"
 msgid "Add variable"
 msgstr "Ajouter une variable"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:31
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:30
 msgid "All changes saved"
 msgstr "Tous les changements enregistrés"
 
@@ -45,7 +45,7 @@ msgstr "Tous les changements enregistrés"
 msgid "Arguments"
 msgstr "Arguments"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:63
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:62
 msgid "Blueprint"
 msgstr "Blueprint"
 
@@ -83,7 +83,7 @@ msgstr "Supprimer la liaison"
 msgid "Delete node"
 msgstr "Supprimer le nœud"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:28
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:27
 msgid "Draft — not created yet"
 msgstr "Brouillon — non créé pour le moment"
 
@@ -240,7 +240,7 @@ msgstr "Exécution n°{runNumber}"
 msgid "Save"
 msgstr "Enregistrer"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:29
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:28
 msgid "Saving…"
 msgstr "Enregistrement…"
 
@@ -249,7 +249,7 @@ msgstr "Enregistrement…"
 msgid "Script"
 msgstr "Script"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:60
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:59
 msgid "Scripting"
 msgstr "Écriture de scripts"
 
@@ -291,7 +291,7 @@ msgstr "Statut"
 msgid "Triggers"
 msgstr "Déclencheurs"
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:30
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:29
 msgid "Unsaved changes"
 msgstr "Modifications non enregistrées"
 
@@ -313,7 +313,7 @@ msgid "Working directory"
 msgstr "Répertoire de travail"
 
 #: src/modules/features/pipeline/presentation/ui/dashboard/PipelineDashboardHeader.tsx:40
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:113
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:109
 msgid "You don't have permission to create pipelines."
 msgstr "Vous n'avez pas la permission de créer des pipelines."
 
@@ -321,7 +321,7 @@ msgstr "Vous n'avez pas la permission de créer des pipelines."
 msgid "You don't have permission to delete pipelines."
 msgstr "Vous n'avez pas la permission de supprimer des pipelines."
 
-#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:115
+#: src/modules/features/pipeline/presentation/ui/editor/PipelineEditorHeader.tsx:111
 msgid "You don't have permission to edit this pipeline."
 msgstr "Vous n'avez pas la permission de modifier cette pipeline."
 

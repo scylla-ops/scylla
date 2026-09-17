@@ -22,7 +22,7 @@ msgstr "{0}"
 msgid "Build your own roles and grant them fine-grained permissions on an organization or a project."
 msgstr "Créez vos propres rôles et accordez-leur des permissions fines sur une organisation ou un projet."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:100
+#: src/modules/layout/presentation/ui/Layout.tsx:91
 msgid "Create"
 msgstr "Créer"
 
@@ -106,7 +106,7 @@ msgstr "Paramètres"
 msgid "System"
 msgstr "Système"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:80
+#: src/modules/layout/presentation/ui/Layout.tsx:71
 msgid "To get started, please create your first organization."
 msgstr "Pour commencer, veuillez créer votre première organisation."
 
@@ -119,7 +119,7 @@ msgstr "Afficher/masquer la barre latérale"
 msgid "Users"
 msgstr "Utilisateurs"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:77
+#: src/modules/layout/presentation/ui/Layout.tsx:68
 msgid "Welcome to Scylla!"
 msgstr "Bienvenue sur Scylla !"
 

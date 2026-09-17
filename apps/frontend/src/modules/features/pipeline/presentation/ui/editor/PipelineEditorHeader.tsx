@@ -3,7 +3,6 @@ import { TabsList, TabsTrigger } from '@shadcn/tabs.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn/tooltip.tsx';
 import { Trans } from '@lingui/react/macro';
 import { Loader2 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@shared/presentation/utils';
 import { Permission } from '@platform/authz';
@@ -79,18 +78,15 @@ export const PipelineEditorHeader = ({
               )}
             />
           </span>
-          <AnimatePresence mode='wait' initial={false}>
-            <motion.span
-              key={status}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              className='hidden whitespace-nowrap md:inline-flex'
-            >
-              {STATUS_LABEL[status]}
-            </motion.span>
-          </AnimatePresence>
+          {/* `key` remounts the label on every status change, which replays the
+              enter animation. The outgoing label is not animated out: it is
+              replaced in the same frame by the incoming one. */}
+          <span
+            key={status}
+            className='hidden whitespace-nowrap md:inline-flex animate-in fade-in-0 slide-in-from-bottom-1 duration-150 ease-out'
+          >
+            {STATUS_LABEL[status]}
+          </span>
         </div>
 
         {canSubmit ? (

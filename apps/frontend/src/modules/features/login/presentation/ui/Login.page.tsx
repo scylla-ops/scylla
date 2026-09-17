@@ -16,8 +16,8 @@ import { ScyllaLoadingScreen } from '@shared/presentation/ui';
  * The wordmark is flat black, unreadable on the dark background — the dark
  * variant is the white cut of the same logo.
  *
- * Swapped by CSS rather than by reading `resolvedTheme`: next-themes only knows
- * the theme after mount, so a JS swap would paint the wrong logo first and
+ * Swapped by CSS rather than by reading the theme store: React only mounts
+ * after the first paint, so a JS swap would paint the wrong logo first and
  * flash. The `.dark` class is on <html> before first paint, so this is right
  * from the start.
  */

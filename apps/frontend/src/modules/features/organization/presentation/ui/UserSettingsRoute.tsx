@@ -1,6 +1,12 @@
-import { div } from 'framer-motion/m';
+import type { ComponentProps } from 'react';
 import { UserSettingsPage } from '@/modules/features/user';
 import { OrganizationList } from '@/modules/features/organization/presentation/ui/OrganizationList.tsx';
+
+/**
+ * `OrganizationList` renders every entry through a wrapper so the sidebar can
+ * make them menu items. Here they are plain blocks.
+ */
+const PlainWrapper = (props: ComponentProps<'div'>) => <div {...props} />;
 
 /**
  * User settings with the organizations panel filled in.
@@ -9,4 +15,6 @@ import { OrganizationList } from '@/modules/features/organization/presentation/u
  * this side keeps the dependency one-way (organization → user) instead of the
  * mutual import the panel used to require.
  */
-export const UserSettingsRoute = () => <UserSettingsPage organizations={<OrganizationList Wrapper={div} />} />;
+export const UserSettingsRoute = () => (
+  <UserSettingsPage organizations={<OrganizationList Wrapper={PlainWrapper} />} />
+);

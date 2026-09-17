@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import iconScylla from '@/assets/icon_scylla.png';
 
@@ -24,24 +23,17 @@ export const ScyllaLoadingScreen = () => {
   return (
     <div className='flex items-center justify-center h-screen w-screen bg-background'>
       {showLogo && (
-        <motion.img
-          src={iconScylla}
-          alt='Scylla'
-          className='h-28 w-28'
-          initial={{ opacity: 0 }}
-          // Fading in rather than cutting in keeps the boundary soft: a load
-          // that ends just after the delay never reaches full opacity.
-          animate={{ opacity: 1, rotate: [0, 270, 360] }}
-          transition={{
-            opacity: { duration: 0.2, ease: 'easeOut' },
-            rotate: {
-              duration: 1.8,
-              repeat: Infinity,
-              times: [0, 0.4, 1],
-              ease: 'easeInOut',
-            },
-          }}
-        />
+        // Two nodes because both animations drive `animation` and would
+        // overwrite each other on one: the wrapper fades in — softening the
+        // boundary, so a load ending just after the delay never reaches full
+        // opacity — while the logo spins.
+        <span className='animate-in fade-in-0 duration-200 ease-out'>
+          <img
+            src={iconScylla}
+            alt='Scylla'
+            className='h-28 w-28 animate-[scylla-spin_1.8s_ease-in-out_infinite]'
+          />
+        </span>
       )}
     </div>
   );

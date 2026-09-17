@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@shared/presentation/hooks/use-theme.ts';
 import type { Extension } from '@uiw/react-codemirror';
 import { buildCodeMirrorTheme } from '@shared/presentation/utils/code-mirror-theme.ts';
 
@@ -14,8 +14,8 @@ interface UseCodeMirrorThemeOptions {
  * token colors follow light/dark like the rest of the app.
  */
 export const useCodeMirrorTheme = ({ hasError = false }: UseCodeMirrorThemeOptions = {}) => {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== 'light';
+  const { theme } = useTheme();
+  const isDark = theme !== 'light';
 
   return useMemo<Extension>(() => buildCodeMirrorTheme({ isDark, hasError }), [isDark, hasError]);
 };

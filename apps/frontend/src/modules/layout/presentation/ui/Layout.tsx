@@ -18,12 +18,11 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/card.tsx';
 import scyllaLogo from '@/assets/logo_scylla.png';
 import scyllaLogoDark from '@/assets/logo_scylla_dark.png';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { usePermissionSync } from '@/modules/features/roles';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@shared/presentation/hooks/use-theme.ts';
 import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 
 interface LayoutProps {
@@ -53,57 +52,48 @@ export const Layout = ({ navEntries }: LayoutProps) => {
   //todo: "No organization / first connexion page, move from here"
   if (!organizations || organizations.length === 0) {
     return (
-      <AnimatePresence mode='wait'>
-        <motion.main
-          key={location.pathname}
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-          transition={{
-            duration: 0.8,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          className='flex flex-col h-full w-full p-2'
-        >
-          <div className='w-full h-full flex flex-col items-center min-h-screen bg-background'>
-            <img
-              src={isDarkTheme ? scyllaLogoDark : scyllaLogo}
-              alt='Scylla'
-              className='h-2/6 w-2/6'
-            />
-            <Card className='w-full max-w-md'>
-              <CardHeader className='text-center'>
-                <CardTitle className='text-2xl'>
-                  <Trans>Welcome to Scylla!</Trans>
-                </CardTitle>
-                <CardDescription>
-                  <Trans>To get started, please create your first organization.</Trans>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScyllaForm
-                  items={createOrganizationItems()}
-                  onSubmit={({ name, description }) => {
-                    if (name) {
-                      createOrganization.mutate(
-                        { name, description },
-                        {
-                          onSuccess: data => {
-                            const orgId = data?.id;
-                            setOrganization(orgId, name);
-                            void navigate(`/${slugifyOrgName(name)}/users/me`);
-                          },
+      <main
+        key={location.pathname}
+        className='flex flex-col h-full w-full p-2 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-5 duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
+      >
+        <div className='w-full h-full flex flex-col items-center min-h-screen bg-background'>
+          <img
+            src={isDarkTheme ? scyllaLogoDark : scyllaLogo}
+            alt='Scylla'
+            className='h-2/6 w-2/6'
+          />
+          <Card className='w-full max-w-md'>
+            <CardHeader className='text-center'>
+              <CardTitle className='text-2xl'>
+                <Trans>Welcome to Scylla!</Trans>
+              </CardTitle>
+              <CardDescription>
+                <Trans>To get started, please create your first organization.</Trans>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScyllaForm
+                items={createOrganizationItems()}
+                onSubmit={({ name, description }) => {
+                  if (name) {
+                    createOrganization.mutate(
+                      { name, description },
+                      {
+                        onSuccess: data => {
+                          const orgId = data?.id;
+                          setOrganization(orgId, name);
+                          void navigate(`/${slugifyOrgName(name)}/users/me`);
                         },
-                      );
-                    }
-                  }}
-                  buttonLabel={<Trans>Create</Trans>}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </motion.main>
-      </AnimatePresence>
+                      },
+                    );
+                  }
+                }}
+                buttonLabel={<Trans>Create</Trans>}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     );
   }
 

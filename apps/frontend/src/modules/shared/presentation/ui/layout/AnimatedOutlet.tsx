@@ -1,5 +1,4 @@
 import { useLocation, useOutlet } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
 
 //TODO: make the animation launchable from a children
 // and when the loading is finished, start the animation
@@ -7,21 +6,16 @@ export const AnimatedOutlet = () => {
   const location = useLocation();
   const element = useOutlet();
 
+  // `key` is what replays the animation: a new pathname remounts the node, and
+  // the enter utilities run again. There is no leave animation — CSS cannot
+  // animate a node React has already unmounted, and the 200ms fade-out this
+  // used to do only held the next page back.
   return (
-    <AnimatePresence mode='wait'>
-      <motion.main
-        key={location.pathname}
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.98 }}
-        transition={{
-          duration: 0.2,
-          ease: [0.4, 0, 0.2, 1],
-        }}
-        className='flex flex-col h-full w-full p-2'
-      >
-        {element}
-      </motion.main>
-    </AnimatePresence>
+    <main
+      key={location.pathname}
+      className='flex flex-col h-full w-full p-2 animate-in fade-in-0 zoom-in-[0.98] duration-200 ease-in-out'
+    >
+      {element}
+    </main>
   );
 };

@@ -6,7 +6,7 @@ import { i18n } from '@lingui/core';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider } from '@platform/di';
 import { dependencies } from '@core/di/registry.ts';
-import { ThemeProvider, useTheme } from 'next-themes';
+import { useTheme } from '@shared/presentation/hooks/use-theme.ts';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/modules/shared/presentation/ui/shadcn/button.tsx';
 
@@ -71,8 +71,8 @@ const queryClient = new QueryClient({
 
 function ThemeToggle() {
   const { t } = useLingui();
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
     <Button
@@ -92,25 +92,20 @@ function ThemeToggle() {
   );
 }
 
+// No theme provider: `index.html` applies the class before the first paint and
+// the theme store owns it from there, so nothing about the theme needs React
+// context — see `shared/presentation/stores/theme.store.ts`.
 function App() {
   return (
-    <ThemeProvider
-      attribute='class'
-      defaultTheme='dark'
-      enableSystem={false}
-      storageKey='scylla-theme'
-      disableTransitionOnChange
-    >
-      <I18nProvider i18n={i18n}>
-        <QueryClientProvider client={queryClient}>
-          <DependenciesProvider registry={dependencies}>
-            <ThemeToggle />
-            <RouterProvider router={CoreRouter} />
-            <Toaster />
-          </DependenciesProvider>
-        </QueryClientProvider>
-      </I18nProvider>
-    </ThemeProvider>
+    <I18nProvider i18n={i18n}>
+      <QueryClientProvider client={queryClient}>
+        <DependenciesProvider registry={dependencies}>
+          <ThemeToggle />
+          <RouterProvider router={CoreRouter} />
+          <Toaster />
+        </DependenciesProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
 

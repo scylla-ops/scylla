@@ -25,7 +25,6 @@ const VENDOR_CHUNKS: Record<string, string[]> = {
     'radix-ui',
     'lucide-react',
     'sonner',
-    'next-themes',
     'class-variance-authority',
     'tailwind-merge',
     'clsx',
@@ -35,7 +34,6 @@ const VENDOR_CHUNKS: Record<string, string[]> = {
   'vendor-flow': ['reactflow', '@reactflow'],
   'vendor-codemirror': ['@uiw', 'codemirror', '@codemirror', '@lezer'],
   'vendor-charts': ['recharts', 'victory-vendor', 'd3-', 'internmap', 'decimal.js-light'],
-  'vendor-motion': ['framer-motion', 'motion-dom', 'motion-utils'],
   'vendor-grpc': ['@protobuf-ts'],
 };
 
