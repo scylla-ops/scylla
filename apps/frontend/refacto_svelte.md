@@ -16,7 +16,7 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 | — départ | | 294,8 kB | 660 kB | 41 |
 | **0 · Lot A** — nettoyage deps | ✅ **fait** | **253,6 kB** | **619 kB** | **39** |
 | **0 · Lot B** — dé-React-ification | ✅ **fait** | 253,5 kB | 619 kB | 43 |
-| **1** — `shared/` + design system | 🔜 suivante | | | |
+| **1** — `shared/` + design system | 🟡 **en cours** — voir le découpage ci-dessous | | | |
 | **2** — 6 features pilotes | ⬜ | | | |
 | **3** — apps, agents, membership, jobs, triggers | ⬜ | | | |
 | **4** — roles + dashboard (`recharts` sort ici) | ⬜ | | | |
@@ -381,8 +381,52 @@ Ce composant est ensuite supprimé.
 
 ### Phase 1 — `shared/` : le design system Svelte + le harnais de test
 
-*76 fichiers, ~6 000 LOC. La plus grosse phase, la plus mécanique, et elle débloque tout le reste.*
-**Bloquante : rien d'autre ne peut avancer avant.**
+*76 fichiers, ~6 000 LOC annoncés. **Mesuré : beaucoup moins.** La plus mécanique, et elle
+débloque le reste.* **Bloquante : rien d'autre ne peut avancer avant.**
+
+#### Ce que la Phase 2 a réellement besoin (mesuré, pas estimé)
+
+Un script a résolu les imports transitifs des six features pilotes jusqu'aux primitives. Résultat :
+
+- **10 primitives shadcn sur 31** : `alert-dialog`, `avatar`, `button`, `card`, `checkbox`,
+  `dialog`, `input`, `skeleton`, `table`, `tooltip`.
+- **21 différées**, sans consommateur Svelte avant longtemps : `sidebar` (Phase 6), `chart`
+  (Phase 4), `select`, `tabs`, `sheet`, `dropdown-menu`, `breadcrumb`, `collapsible`,
+  `scroll-area`, `progress`, `switch`, `radio-group`, `toggle`, `toggle-group`, `separator`,
+  `badge`, `label`, `field`, `pagination`, `code-snippet`, `sonner`.
+
+On porte à la demande : une primitive arrive la phase où son premier consommateur Svelte arrive.
+Porter les 31 d'un coup, c'est 21 composants sans usage — exactement ce que la règle de
+minimalisme interdit.
+
+**Deux simplifications tombées de cette mesure :**
+
+- **`toast.ts` n'a rien à porter.** Le fichier est `export { toast } from 'sonner'`, et le
+  `toast()` de sonner est un singleton de module agnostique qui pousse dans un store global. Un
+  composant Svelte l'importe tel quel. `svelte-sonner` ne devient nécessaire qu'avec le
+  `<Toaster>`, donc en **Phase 6**.
+- **L'action CodeMirror part en Phase 3**, où vit son premier consommateur (`jobs`). L'écrire ici
+  serait du code sans usage.
+
+#### Découpage et avancement
+
+| Tranche | État |
+|---|---|
+| Harnais de test (`src/test/render.svelte.ts`) | ✅ |
+| Primitives sans dépendance headless : `button`, `card` (×7), `input`, `skeleton` | ✅ |
+| Primitives sur `bits-ui` : `tooltip`, `dialog`, `alert-dialog`, `checkbox`, `avatar` | ⬜ |
+| `table` + `DataTable` sur `@tanstack/svelte-table` | ⬜ |
+| Wrappers génériques : `IconButton`, `TruncatedText`, `CopyableText`, `ContextItem`, `ErrorState`, `ConfirmOperationAlertDialog`, `FeatureHeader` | ⬜ |
+| Formulaires : `ScyllaForm`, `FormDialog`, `useFormState` (le typage générique doit survivre) | ⬜ |
+| Hooks : `use-selection`, `use-pagination`, `use-feature-selection` | ⬜ |
+| Dette d'animations (tableau ci-dessous) | ⬜ |
+
+#### Une règle apprise en portant `button`
+
+**`tsc` ne voit d'un `.svelte` que son export par défaut.** Les exports d'un `<script module>`
+lui sont invisibles, donc tout ce qu'un `.ts` doit importer — une config `cva`, un type de
+variante — vit dans un `.ts` à côté (`button-variants.ts`), jamais dans le composant. Le gate
+`typecheck` attrape la faute, mais autant ne pas la faire.
 
 - Port `shadcn/ui` → **`shadcn-svelte`** pour les 33 primitives. Les classes Tailwind sont
   identiques : transposition de syntaxe, pas redesign. Radix → `bits-ui`.

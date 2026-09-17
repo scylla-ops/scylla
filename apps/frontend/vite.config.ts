@@ -117,8 +117,10 @@ export default defineConfig({
         'src/generated/**',
         '**/locales/**',
         '**/*.test.{ts,tsx}',
-        // Vendored shadcn primitives — upstream code we don't own.
+        // Vendored shadcn primitives — upstream code we don't own. Both ports:
+        // the React one is frozen for the migration, the Svelte one replaces it.
         '**/shadcn/**',
+        '**/shadcn-svelte/**',
         // Barrels and module declarations are re-exports and wiring: covering
         // them measures nothing, and `*.module.ts` pulls a feature's gRPC
         // client in just by being imported.

@@ -1,15 +1,40 @@
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@core/*": ["src/modules/core/*"],
-      "@platform/*": ["src/modules/platform/*"],
-      "@shared/*": ["src/modules/shared/*"],
-      "@shadcn/*": ["src/modules/shared/presentation/ui/shadcn/*"],
-      "@shadcn": ["src/modules/shared/presentation/ui/shadcn"]
+      "@/*": [
+        "src/*"
+      ],
+      "@core/*": [
+        "src/modules/core/*"
+      ],
+      "@platform/*": [
+        "src/modules/platform/*"
+      ],
+      "@shared/*": [
+        "src/modules/shared/*"
+      ],
+      "@shadcn/*": [
+        "src/modules/shared/presentation/ui/shadcn/*"
+      ],
+      "@shadcn": [
+        "src/modules/shared/presentation/ui/shadcn"
+      ],
+      "@shadcn-svelte/*": [
+        "src/modules/shared/presentation/ui/shadcn-svelte/*"
+      ],
+      "@shadcn-svelte": [
+        "src/modules/shared/presentation/ui/shadcn-svelte"
+      ]
     }
   }
 }
