@@ -370,6 +370,35 @@ The harness is three files in `src/test/`, and it is the only shared test code:
   empty-string token" beats "test token". The suite output is the spec.
 - **No snapshots.** None exist; keep it that way.
 
+### Permission conformance — the one test that enumerates
+
+`src/modules/core/di/module-permissions.test.ts` holds the whole app to two rules, derived from
+`core/di/registry.ts` rather than from a hand-written list:
+
+1. every page behind `AuthGuard` declares a `permission` (its own or an ancestor's, matching
+   `RouteGuard`'s deepest-match rule);
+2. a sidebar entry and the page it opens require the **same** permission — `permission` is
+   written twice, in `routes` and in `nav`, and nothing else stops the two drifting.
+
+**A new page is checked the day its module joins the registry**, with no test to remember to
+write. That is the point: a per-component test pins a gate that exists, this one fails for a
+gate that doesn't. If a page genuinely needs no permission, add it to `UNGATED_PAGES` **with the
+reason** — a ratchet, like the coverage thresholds, and a stale entry fails the suite too.
+
+`feature-permissions.test.ts` applies the same idea one level down, by reading source because
+the gating of a *button* is declared nowhere a type can see it:
+
+3. a feature whose hooks call `useMutation` must mention a `Permission` somewhere under its
+   `presentation/ui/`;
+4. a query hook another feature imports through the barrel must check for itself — crossing a
+   barrel means running outside the owner's route guard, on the *consumer's* permission.
+   `useJobsByPipelines` is the model: `enabled: ready && can(...)`.
+
+All four rules answer **completeness, not correctness**: they cannot tell you the permission on
+a button is the wrong one. That stays the job of the per-component tests. `UNGATED_FEATURES` and
+`UNCHECKED_SHARED_HOOKS` are ratchets seeded with today's state; `SEEDED DEBT` and `TRIAGE`
+entries are open questions, not decisions.
+
 ### Coverage
 
 `pnpm coverage` enforces the thresholds in `vite.config.ts`, and CI runs it in place of

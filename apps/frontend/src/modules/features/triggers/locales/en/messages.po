@@ -30,7 +30,7 @@ msgstr "5-field cron (min hour day month weekday), evaluated in your local time.
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "A trigger starts a run of this pipeline automatically."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:86
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:91
 msgid "Actions"
 msgstr "Actions"
 
@@ -62,7 +62,7 @@ msgstr "Cancel"
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copy the secret below — it is shown only once."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:33
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:32
 msgid "Copy url"
 msgstr "Copy url"
 
@@ -113,7 +113,7 @@ msgstr "Edit trigger"
 msgid "enabled"
 msgstr "enabled"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:68
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:73
 msgid "Enabled"
 msgstr "Enabled"
 
@@ -265,11 +265,11 @@ msgstr "Schedule"
 msgid "Signature header"
 msgstr "Signature header"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:59
 msgid "Source"
 msgstr "Source"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:61
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:66
 msgid "Status"
 msgstr "Status"
 

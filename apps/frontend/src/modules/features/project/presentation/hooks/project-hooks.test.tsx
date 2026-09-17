@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
 import { createProvidersWrapper } from '@/test/render.tsx';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { useCreateProject } from './useCreateProject';
@@ -21,6 +22,24 @@ vi.mock('sonner', () => ({
 }));
 
 const ORG_ID = 'org-1';
+
+/**
+ * Drives the real permissions store rather than mocking `useCan` away, so the
+ * scope resolution in `canAccess` is part of what these tests exercise.
+ */
+const grantListProjectsOn = (...organizationIds: string[]) =>
+  usePermissionsStore.setState({
+    permissions: {
+      scopes: organizationIds.map(scopeId => ({
+        scope: PermissionScope.ORGANIZATION,
+        scopeId,
+        access: {
+          kind: 'restricted' as const,
+          permissions: [Permission.LIST_PROJECTS_BY_ORGANIZATION],
+        },
+      })),
+    },
+  });
 
 const project = (overrides: Partial<ProjectEntity> = {}): ProjectEntity => ({
   id: 'project-1',
@@ -113,6 +132,27 @@ describe('useDeleteProject', () => {
 });
 
 describe('useProjects', () => {
+  beforeEach(() => grantListProjectsOn('org-1', 'org-2'));
+
+  it('never asks for a list it may not read', () => {
+    grantListProjectsOn('some-other-org');
+    const { repository, getByOrganizationId } = makeFakeRepository();
+    const { Wrapper } = wrapperFor(repository);
+    const { result } = renderHook(() => useProjects(ORG_ID), { wrapper: Wrapper });
+
+    expect(getByOrganizationId).not.toHaveBeenCalled();
+    // An empty list must not be mistaken for "this organization has none".
+    expect(result.current.canListProjects).toBe(false);
+  });
+
+  it('stays silent while the permissions are still unknown', () => {
+    usePermissionsStore.setState({ permissions: null });
+    const { repository, getByOrganizationId } = makeFakeRepository();
+    const { Wrapper } = wrapperFor(repository);
+    renderHook(() => useProjects(ORG_ID), { wrapper: Wrapper });
+    expect(getByOrganizationId).not.toHaveBeenCalled();
+  });
+
   it('fetches the first page for the given organization', async () => {
     const { repository, getByOrganizationId } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
@@ -149,6 +189,8 @@ describe('useProjects', () => {
 });
 
 describe('useOrganizationProjects', () => {
+  beforeEach(() => grantListProjectsOn(ORG_ID));
+
   it('fetches the whole list (lookup page) for the organization', async () => {
     const { repository, getByOrganizationId } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
@@ -190,6 +232,53 @@ describe('useOrganizationProjects', () => {
 });
 
 describe('useProjectsByOrganizations', () => {
+  beforeEach(() => grantListProjectsOn('org-a', 'org-b', ORG_ID));
+
+  it('skips the organizations it may not read rather than collecting denials', async () => {
+    grantListProjectsOn('org-a');
+    const getByOrganizationId = vi.fn((organizationId: string) =>
+      Promise.resolve(
+        ScyllaResult.success({
+          projects: [project({ id: `p-${organizationId}` })],
+          pagination: pagination(),
+        }),
+      ),
+    );
+    const { repository } = makeFakeRepository({ getByOrganizationId });
+    const { Wrapper } = wrapperFor(repository);
+    const { result } = renderHook(() => useProjectsByOrganizations(['org-a', 'org-b']), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.size).toBe(1));
+    expect(getByOrganizationId).toHaveBeenCalledTimes(1);
+    expect(getByOrganizationId).toHaveBeenCalledWith('org-a', PROJECTS_LOOKUP_PAGE);
+  });
+
+  it('keeps each result attached to the organization it came from when some are skipped', async () => {
+    grantListProjectsOn('org-b');
+    const getByOrganizationId = vi.fn((organizationId: string) =>
+      Promise.resolve(
+        ScyllaResult.success({
+          projects: [project({ id: `p-${organizationId}`, name: `Project of ${organizationId}` })],
+          pagination: pagination(),
+        }),
+      ),
+    );
+    const { repository } = makeFakeRepository({ getByOrganizationId });
+    const { Wrapper } = wrapperFor(repository);
+    const { result } = renderHook(() => useProjectsByOrganizations(['org-a', 'org-b']), {
+      wrapper: Wrapper,
+    });
+
+    // The filtered fan-out must not shift the index the combiner reads back.
+    await waitFor(() => expect(result.current.size).toBe(1));
+    expect(result.current.get('p-org-b')).toEqual({
+      name: 'Project of org-b',
+      organizationId: 'org-b',
+    });
+  });
+
   it('fans out one query per organization and combines into a projectId -> {name, organizationId} map', async () => {
     const getByOrganizationId = vi.fn((organizationId: string) =>
       Promise.resolve(

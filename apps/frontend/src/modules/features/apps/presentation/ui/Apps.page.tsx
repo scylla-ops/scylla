@@ -6,7 +6,7 @@ import { AppCard } from '@/modules/features/apps/presentation/ui/components/AppC
 import type { CreatedApp } from '@/modules/features/apps/domain/structs/app.struct.ts';
 import { FeatureHeader, FormDialog, SecretRevealDialog } from '@shared/presentation/ui';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
-import { Button, Card } from '@shadcn';
+import { Card } from '@shadcn';
 import { Skeleton } from '@shadcn/skeleton.tsx';
 import {
   AlertDialog,
@@ -21,6 +21,7 @@ import {
 import type { FormValues } from '@shared/presentation/structs/scylla-form.struct.ts';
 import { KeyRound, Plus } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { Permission, PermissionButton, useCan } from '@platform/authz';
 
 export const AppsPage = () => {
   const { apps, isLoading, isError, createApp, deleteApp } = useApps();
@@ -28,6 +29,9 @@ export const AppsPage = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [created, setCreated] = useState<CreatedApp | null>(null);
   const [toDelete, setToDelete] = useState<string | null>(null);
+
+  const canCreate = useCan(Permission.CREATE_APP);
+  const canDelete = useCan(Permission.DELETE_APP);
 
   const handleCreate = ({ name }: FormValues<'name'>) => {
     if (!name.trim()) return;
@@ -49,7 +53,14 @@ export const AppsPage = () => {
         <p className='mb-1 font-mono text-xs uppercase tracking-wider text-muted-foreground'>
           <Trans>Service</Trans>
         </p>
-        <FeatureHeader count={apps.length} label={<Trans>App</Trans>} pluralLabel={<Trans>Apps</Trans>} onNew={() => setCreateOpen(true)} />
+        <FeatureHeader
+          count={apps.length}
+          label={<Trans>App</Trans>}
+          pluralLabel={<Trans>Apps</Trans>}
+          onNew={() => setCreateOpen(true)}
+          canNew={canCreate}
+          newDeniedReason={<Trans>You don't have permission to create apps.</Trans>}
+        />
         {!isLoading && (
           <p className='mt-1 font-mono text-xs text-muted-foreground'>
             {activeCount} <Trans>active</Trans> · {apps.length - activeCount}{' '}
@@ -79,24 +90,32 @@ export const AppsPage = () => {
                 the Scylla API.
               </Trans>
             </p>
-            <Button onClick={() => setCreateOpen(true)}>
+            <PermissionButton
+              permission={Permission.CREATE_APP}
+              onClick={() => setCreateOpen(true)}
+              deniedReason={<Trans>You don't have permission to create apps.</Trans>}
+            >
               <Trans>Create your first app</Trans>
-            </Button>
+            </PermissionButton>
           </Card>
         </div>
       ) : (
         <div className='grid gap-3 p-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3'>
           {apps.map(app => (
-            <AppCard key={app.id} app={app} onRequestDelete={setToDelete} />
+            <AppCard key={app.id} app={app} onRequestDelete={setToDelete} canDelete={canDelete} />
           ))}
-          <button
-            type='button'
-            onClick={() => setCreateOpen(true)}
-            className='flex min-h-32 items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground'
-          >
-            <Plus className='h-4 w-4' />
-            <Trans>New App</Trans>
-          </button>
+          {/* The header already shows a disabled "New" without CREATE_APP, so
+              this duplicate tile is hidden rather than disabled. */}
+          {canCreate && (
+            <button
+              type='button'
+              onClick={() => setCreateOpen(true)}
+              className='flex min-h-32 items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground'
+            >
+              <Plus className='h-4 w-4' />
+              <Trans>New App</Trans>
+            </button>
+          )}
         </div>
       )}
 

@@ -1,4 +1,5 @@
 import { useQueries } from '@tanstack/react-query';
+import { Permission, useAuthorization } from '@platform/authz';
 import { useProjectDomain } from '@/modules/features/project/presentation/hooks/use-project-domain.ts';
 import {
   PROJECTS_LOOKUP_PAGE,
@@ -22,27 +23,38 @@ export interface ProjectLookupEntry {
  *
  * Shares {@link PROJECTS_QUERY_KEY} with the paginated list, so an organization
  * already loaded elsewhere is served from cache rather than refetched.
+ *
+ * The fan-out is filtered by permission before it goes out: the backend checks
+ * `ListProjectsByOrganization` per organization, and this hook is called from
+ * `roles`, on a page entered with `MANAGE_ROLES`. Asking for all of them would
+ * mean one denial per organization the caller cannot read — the same mistake
+ * the dashboard's per-project fan-out once made.
  */
 export const useProjectsByOrganizations = (organizationIds: string[], enabled = true) => {
   const { projectRepository } = useProjectDomain();
+  const { can, ready } = useAuthorization();
+
+  const readableIds =
+    enabled && ready
+      ? organizationIds.filter(organizationId =>
+          can(Permission.LIST_PROJECTS_BY_ORGANIZATION, { organizationId }),
+        )
+      : [];
 
   return useQueries({
-    queries: enabled
-      ? organizationIds.map(organizationId => ({
-          queryKey: PROJECTS_QUERY_KEY(organizationId, PROJECTS_LOOKUP_PAGE),
-          queryFn: async () =>
-            (
-              await projectRepository.getByOrganizationId(organizationId, PROJECTS_LOOKUP_PAGE)
-            ).unwrap(),
-          staleTime: 30_000,
-        }))
-      : [],
+    queries: readableIds.map(organizationId => ({
+      queryKey: PROJECTS_QUERY_KEY(organizationId, PROJECTS_LOOKUP_PAGE),
+      queryFn: async () =>
+        (await projectRepository.getByOrganizationId(organizationId, PROJECTS_LOOKUP_PAGE)).unwrap(),
+      staleTime: 30_000,
+    })),
     // Folded here rather than by the caller so TanStack Query can memoize the
     // map on the underlying results instead of rebuilding it every render.
     combine: results => {
       const byProjectId = new Map<string, ProjectLookupEntry>();
       results.forEach((result, index) => {
-        const organizationId = organizationIds[index];
+        // Indexes line up with `readableIds`, which is what was queried.
+        const organizationId = readableIds[index];
         for (const project of result.data?.projects ?? []) {
           byProjectId.set(project.id, { name: project.name, organizationId });
         }

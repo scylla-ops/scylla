@@ -30,7 +30,7 @@ msgstr "Cron en 5 champs (min heure jour mois jour de semaine), évalué selon v
 msgid "A trigger starts a run of this pipeline automatically."
 msgstr "Un déclencheur lance automatiquement une exécution de ce pipeline."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:86
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:91
 msgid "Actions"
 msgstr "Actions"
 
@@ -62,7 +62,7 @@ msgstr "Annuler"
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copiez le secret ci-dessous — il est affiché une seule fois."
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:33
+#: src/modules/features/triggers/presentation/ui/triggers-table/TriggerSourceCell.tsx:32
 msgid "Copy url"
 msgstr "Copier l'URL"
 
@@ -113,7 +113,7 @@ msgstr "Modifier le déclencheur"
 msgid "enabled"
 msgstr "activé"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:68
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:73
 msgid "Enabled"
 msgstr "Activé"
 
@@ -265,11 +265,11 @@ msgstr "Planification"
 msgid "Signature header"
 msgstr "En-tête de signature"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:54
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:59
 msgid "Source"
 msgstr "Source"
 
-#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:61
+#: src/modules/features/triggers/presentation/ui/triggers-table/columns.tsx:66
 msgid "Status"
 msgstr "Statut"
 

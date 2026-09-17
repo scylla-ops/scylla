@@ -133,7 +133,7 @@ msgstr "New {label}"
 msgid "Next"
 msgstr "Next"
 
-#: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:29
+#: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:37
 msgid "No data"
 msgstr "No data"
 
