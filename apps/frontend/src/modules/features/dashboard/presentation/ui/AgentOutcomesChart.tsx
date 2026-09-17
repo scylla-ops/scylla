@@ -171,7 +171,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
             />
             {(status === 'all' || status === 'completed') && (
               <Area
-                type='monotone'
+                type='linear'
                 dataKey='completed'
                 stackId='outcomes'
                 stroke='var(--success)'
@@ -183,7 +183,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
             )}
             {(status === 'all' || status === 'failed') && (
               <Area
-                type='monotone'
+                type='linear'
                 dataKey='failed'
                 stackId='outcomes'
                 stroke='var(--destructive)'
@@ -195,7 +195,7 @@ const AgentChartInner = ({ agentId }: { agentId: string }) => {
             )}
             {(status === 'all' || status === 'cancelled') && (
               <Area
-                type='monotone'
+                type='linear'
                 dataKey='cancelled'
                 stackId='outcomes'
                 stroke='var(--warning)'
