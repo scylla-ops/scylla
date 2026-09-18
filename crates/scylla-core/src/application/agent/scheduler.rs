@@ -102,6 +102,7 @@ mod tests {
     use super::*;
     use crate::application::agent::dispatch::{DispatchNode, JobDispatch};
     use crate::application::pagination::{PaginatedResult, PaginationParams};
+    use crate::domain::caller::CallerContext;
     use crate::domain::errors::DomainResult;
     use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
     use crate::domain::job::Job;
@@ -111,7 +112,6 @@ mod tests {
     use crate::test_support::pipelines::pipeline;
     use crate::test_support::projects::project;
     use async_trait::async_trait;
-    use scylla_auth::caller::CallerContext;
     use std::sync::Mutex;
 
     struct StubJobs {

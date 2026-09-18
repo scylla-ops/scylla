@@ -2,6 +2,7 @@ use crate::application::invitation::repository::InvitationRepository;
 use crate::application::invitation::token::mint_invitation_token;
 use crate::application::mail::Mailer;
 use crate::application::{HashService, OrganizationRepository, SessionRepository, UserRepository};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{InvitationId, OrganizationId, UserId};
 use crate::domain::invitation::Invitation;
@@ -16,7 +17,6 @@ use scylla_auth::authz::{
     Grant, ORGANIZATION_MEMBER_ROLE, PermissionService, PolicyControl, Principal, RoleRepository,
     Scope, validate_role_in_db,
 };
-use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;

@@ -1,4 +1,4 @@
-use crate::caller::CallerContext;
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::ResourceRef;
 use cedar_policy::EntityUid;

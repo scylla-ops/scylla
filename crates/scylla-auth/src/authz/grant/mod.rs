@@ -1,5 +1,5 @@
 use crate::authz::role::RoleRepository;
-use crate::caller::CallerContext;
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::role::RoleName;

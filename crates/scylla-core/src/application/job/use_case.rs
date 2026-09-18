@@ -1,6 +1,7 @@
 use crate::application::JobRepository;
 use crate::application::job::JobEvent;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::job::{Job, NodeOutcome};
@@ -8,7 +9,6 @@ use crate::domain::permission::Permission;
 use crate::domain::pipeline::NodeId;
 use derive_more::Constructor;
 use scylla_auth::authz::PermissionService;
-use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 

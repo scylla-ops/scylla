@@ -268,6 +268,7 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 - `domain/value_objects/` — immutable validated wrappers.
 - `domain/dag.rs` — the DAG planner, see [Kahn's algorithm](#kahns-algorithm).
 - `domain/errors.rs` — `DomainError` / `DomainResult`.
+- `domain/caller.rs` — [`CallerContext`](#caller), the identity every use case and hook receives.
 - `domain/job/event.rs`: [`JobEvent`](#jobevent).
 
 `crates/scylla-core/src/`:
@@ -278,7 +279,7 @@ The hexagon is split across several crates. The model sits in the kernel; the us
 - `grpc/` and `rest/` — the inbound adapters.
 - `config.rs`: the server configuration and its TOML loader.
 
-`crates/scylla-auth/src/`: `authz/` (the permission, role, grant and visibility ports and types), `caller.rs`, `audit.rs`, and `cedar/` (the Cedar adapter with its schema and policies).
+`crates/scylla-auth/src/`: `authz/` (the permission, role, grant and visibility ports and types), `audit.rs`, and `cedar/` (the Cedar adapter with its schema and policies).
 
 `crates/scylla-db/src/`: `postgres/<aggregate>/` (one `Pg…Repository` per aggregate) and `pool.rs` (the pool and the embedded migrations).
 

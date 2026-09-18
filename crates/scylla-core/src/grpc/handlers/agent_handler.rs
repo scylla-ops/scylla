@@ -2,12 +2,12 @@ use crate::application::{
     AgentDispatch, AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
 };
 use crate::application::{JobDispatch, JobEvent};
+use crate::domain::caller::CallerContext;
 use crate::extract_auth_context;
 use crate::grpc::convert::dt;
 use crate::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use derive_more::Constructor;
 use scylla_auth::authz::PermissionService;
-use scylla_auth::caller::CallerContext;
 use scylla_domain::domain::agent::AgentHost;
 use scylla_domain::domain::ids::{AppId, JobId};
 use scylla_domain::domain::job::JobLog;

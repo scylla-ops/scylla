@@ -1,3 +1,4 @@
+use crate::domain::caller::CallerContext;
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, Username};
 use crate::postgres::{
@@ -7,7 +8,6 @@ use crate::postgres::{
 use crate::test_support::prelude::*;
 use scylla_auth::audit::NoopAuditLog;
 use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
-use scylla_auth::caller::CallerContext;
 use scylla_auth::cedar::CedarPermissionService;
 use scylla_core::application::invitation::InvitationUseCases;
 use scylla_core::application::{Mailer, NoopMailer};

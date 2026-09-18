@@ -6,6 +6,7 @@ use crate::application::app::repository::AppRepository;
 use crate::domain::agent::{Agent, AgentHost};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, PipelineId};
 use crate::domain::permission::Permission;
@@ -15,7 +16,6 @@ use derive_more::Constructor;
 use scylla_auth::authz::{
     Grant, ORGANIZATION_AGENT_ROLE, PermissionService, PolicyControl, Principal, Scope,
 };
-use scylla_auth::caller::CallerContext;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};

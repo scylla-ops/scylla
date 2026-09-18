@@ -4,6 +4,7 @@ use crate::application::{
 };
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecretLabel};
+use crate::domain::caller::CallerContext;
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, PipelineId, TriggerId};
@@ -15,7 +16,6 @@ use derive_more::Constructor;
 use scylla_auth::authz::{
     Grant, ORGANIZATION_TRIGGER_RUNNER_ROLE, PermissionService, PolicyControl, Principal, Scope,
 };
-use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 use uuid::Uuid;

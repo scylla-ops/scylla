@@ -1,7 +1,7 @@
 use crate::authz::grant::{GrantRepository, Principal, Scope, ScopeKind};
 use crate::authz::policy::PolicyControl;
 use crate::authz::service::PermissionService;
-use crate::caller::CallerContext;
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::OrganizationId;
 use crate::domain::permission::{PERMISSION_CATALOG, Permission, permission_resource_type};

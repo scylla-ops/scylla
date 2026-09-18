@@ -4,6 +4,7 @@ use crate::application::{
     AppRepository, DispatchOutcome, DispatchUseCases, JobRepository, PipelineRepository,
     PipelineUseCases, ProjectRepository, TriggerRepository,
 };
+use crate::domain::caller::CallerContext;
 use crate::domain::clock;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, OrganizationId, TriggerId};
@@ -14,7 +15,6 @@ use crate::domain::trigger::Trigger;
 use crate::domain::trigger::{TriggerInputSource, TriggerSource};
 use async_trait::async_trait;
 use scylla_auth::authz::PermissionService;
-use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::{instrument, warn};
 

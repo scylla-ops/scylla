@@ -134,6 +134,7 @@ async fn login_by_email_or_username(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
+    use crate::domain::caller::CallerContext;
     use crate::domain::organization::OrganizationName;
     use crate::domain::permission::Permission;
     use crate::domain::user::{Email, Password, Username};
@@ -141,7 +142,6 @@ async fn signed_up_user_is_org_admin_of_own_org_only(pool: PgPool) {
     use crate::postgres::PgSessionRepository;
     use scylla_auth::audit::NoopAuditLog;
     use scylla_auth::authz::PermissionService;
-    use scylla_auth::caller::CallerContext;
     use scylla_auth::cedar::CedarPermissionService;
     use scylla_core::application::SignupUseCases;
     use scylla_core::infrastructure::Argon2HashService;

@@ -1,6 +1,7 @@
 use crate::application::GrantUseCases;
 use crate::application::user::UserUseCases;
 use crate::application::{HashService, UserRepository};
+use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, Username};
@@ -8,7 +9,6 @@ use derive_more::Constructor;
 use scylla_auth::authz::{
     Grant, GrantRepository, PermissionService, PolicyControl, Principal, Scope,
 };
-use scylla_auth::caller::{CallerContext, ServiceIdentity};
 use std::sync::Arc;
 use tracing::instrument;
 

@@ -1,5 +1,6 @@
 use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
 use crate::application::{OrganizationRepository, UserRepository};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::Organization;
@@ -11,7 +12,6 @@ use derive_more::Constructor;
 use scylla_auth::authz::{
     Grant, ORGANIZATION_ADMIN_ROLE, PermissionService, PolicyControl, Principal, Scope,
 };
-use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 

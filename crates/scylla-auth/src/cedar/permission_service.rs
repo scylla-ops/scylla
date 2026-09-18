@@ -6,7 +6,7 @@ use crate::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::authz::policy::PolicyControl;
 use crate::authz::role::{Role, RoleRepository};
 use crate::authz::visibility::{Visibility, VisibilityResolver, visibility_from_grants};
-use crate::caller::CallerContext;
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::{Permission, ResourceRef};
 use async_trait::async_trait;
@@ -394,7 +394,7 @@ mod tests {
         SYSTEM_ADMIN_ROLE, ScopeKind,
     };
     use crate::authz::role::FULL_CONTROL;
-    use crate::caller::ServiceIdentity;
+    use crate::domain::caller::ServiceIdentity;
     use crate::domain::ids::{AppId, OrganizationId, PipelineId, ProjectId, UserId};
     use crate::domain::role::RoleName;
 

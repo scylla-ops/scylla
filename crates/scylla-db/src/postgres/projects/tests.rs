@@ -22,13 +22,13 @@ async fn create_then_find_round_trip(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn project_quota_enforced(pool: PgPool) {
+    use crate::domain::caller::CallerContext;
+    use crate::domain::caller::ServiceIdentity;
     use crate::domain::project::ProjectName;
     use crate::postgres::{
         PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
     };
     use scylla_auth::audit::NoopAuditLog;
-    use scylla_auth::caller::CallerContext;
-    use scylla_auth::caller::ServiceIdentity;
     use scylla_auth::cedar::CedarPermissionService;
     use scylla_core::application::ProjectUseCases;
     use std::sync::Arc;
@@ -230,6 +230,7 @@ async fn provision_with_owner_rolls_back_on_failure(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
+    use crate::domain::caller::CallerContext;
     use crate::domain::role::RoleName;
     use crate::postgres::{PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository};
     use scylla_auth::audit::NoopAuditLog;
@@ -237,7 +238,6 @@ async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
         Grant, GrantRepository, PROJECT_VIEWER_ROLE, Principal, Scope, Visibility,
         VisibilityResolver,
     };
-    use scylla_auth::caller::CallerContext;
     use scylla_auth::cedar::CedarPermissionService;
     use std::sync::Arc;
 

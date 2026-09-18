@@ -1,4 +1,5 @@
 use crate::application::{JobLogLiveStream, JobLogRepository, JobLogStreamPort};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::JobId;
 use crate::domain::job::JobLog;
@@ -9,7 +10,6 @@ use chrono::{DateTime, Utc};
 use derive_more::Constructor;
 use futures_util::stream::{self, StreamExt, TryStreamExt};
 use scylla_auth::authz::PermissionService;
-use scylla_auth::caller::CallerContext;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tracing::instrument;

@@ -217,6 +217,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../../migrations")]
     async fn effective_permissions_resolves_roles_and_direct_grants(pool: PgPool) {
+        use crate::domain::caller::{CallerContext, ServiceIdentity};
         use crate::domain::errors::DomainResult;
         use crate::domain::ids::UserId;
         use crate::domain::permission::Permission;
@@ -224,7 +225,6 @@ mod tests {
         use scylla_auth::authz::{
             PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
         };
-        use scylla_auth::caller::{CallerContext, ServiceIdentity};
         use std::sync::Arc;
 
         struct AllowAll;
@@ -308,6 +308,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../../migrations")]
     async fn my_permissions_needs_no_permission_unlike_the_admin_view(pool: PgPool) {
+        use crate::domain::caller::{CallerContext, ServiceIdentity};
         use crate::domain::errors::{DomainError, DomainResult};
         use crate::domain::ids::UserId;
         use crate::domain::permission::Permission;
@@ -315,7 +316,6 @@ mod tests {
         use scylla_auth::authz::{
             PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
         };
-        use scylla_auth::caller::{CallerContext, ServiceIdentity};
         use std::sync::Arc;
 
         struct DenyAll;

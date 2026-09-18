@@ -1,8 +1,8 @@
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use scylla_auth::authz::PermissionService;
-use scylla_auth::caller::CallerContext;
 use std::sync::Mutex;
 
 #[derive(Default)]

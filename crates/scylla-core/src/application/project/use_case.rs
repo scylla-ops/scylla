@@ -1,5 +1,6 @@
 use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
 use crate::application::{ProjectRepository, UserRepository, quota};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
@@ -12,7 +13,6 @@ use scylla_auth::authz::{
     Grant, PROJECT_ADMIN_ROLE, PermissionService, PolicyControl, Principal, Scope, Visibility,
     VisibilityResolver,
 };
-use scylla_auth::caller::CallerContext;
 use scylla_extension::{QuotaPolicy, Resource};
 use std::sync::Arc;
 use tracing::instrument;

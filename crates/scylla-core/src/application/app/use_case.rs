@@ -4,12 +4,12 @@ use crate::application::app::credential_repository::AppCredentialRepository;
 use crate::application::app::repository::AppRepository;
 use crate::domain::app::{App, AppCredential};
 use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
+use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppCredentialId, AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use derive_more::Constructor;
 use scylla_auth::authz::{PermissionService, PolicyControl};
-use scylla_auth::caller::CallerContext;
 use std::sync::Arc;
 use tracing::instrument;
 
