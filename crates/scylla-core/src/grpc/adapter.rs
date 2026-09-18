@@ -5,18 +5,18 @@
 use crate::grpc::convert::Parse;
 use crate::grpc::mappers::domain_error_to_status;
 use crate::grpc::middleware::extract_auth_context;
-use scylla_extension::{Actions, Describe, Path};
+use scylla_extension::{Actions, Kind, Path};
 use tonic::{Request, Status};
 
-pub async fn run<Req, R>(
+pub async fn run<Req, K, R>(
     actions: &Actions,
     runner: &R,
     request: Request<Req>,
-) -> Result<<<Req::Into as Describe>::Path as Path<Req::Into, R>>::Output, Status>
+) -> Result<<Req::Into as Path<K, R>>::Output, Status>
 where
     Req: Parse,
-    Req::Into: Describe,
-    <Req::Into as Describe>::Path: Path<Req::Into, R>,
+    Req::Into: Path<K, R>,
+    K: Kind,
 {
     let caller = extract_auth_context(&request)?.caller;
     let action = request.into_inner().parse()?;

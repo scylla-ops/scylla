@@ -1,5 +1,6 @@
 //! Where one action's chain forks. `Authorize` is the same for every action; what follows is
-//! decided by the type: a `Write` goes through prepare and persist, a `Read` through fetch.
+//! decided by the trait the action implements: a `Command` goes through prepare and persist, a
+//! `Query` through fetch.
 
 use crate::action::{Authorized, Command, Describe, Query};
 use crate::domain::errors::DomainResult;
@@ -30,21 +31,28 @@ impl Kind for Read {
     const NAME: &'static str = "query";
 }
 
-/// The rest of the chain for an action `A` run by `R`: the stages after `Authorize`, the bound
-/// the runner must satisfy, and what comes out. One impl per path.
+/// The rest of the chain for an action run by `R`: the stages after `Authorize`, the bound the
+/// runner must satisfy, and what comes out. The marker `K` is a trait parameter and not a
+/// declaration on the action: with one impl per marker, the compiler infers it from the trait
+/// the action implements, which is what two blanket impls of a single trait could not do.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` has no path through `{R}`",
+    label = "no `Run` impl on the runner for this action",
+    note = "a `Command` needs `Run<Prepare<{Self}>>` and `Run<Persist<{Self}>>` on `{R}`, a `Query` needs `Run<Fetch<{Self}>>`"
+)]
 #[async_trait]
-pub trait Path<A: Describe, R>: Kind {
+pub trait Path<K: Kind, R>: Describe + Sized {
     type Output;
 
     async fn run(
         hooks: &Hooks,
         runner: &R,
-        authorized: Authorized<A>,
+        authorized: Authorized<Self>,
     ) -> DomainResult<Self::Output>;
 }
 
 #[async_trait]
-impl<C, R> Path<C, R> for Write
+impl<C, R> Path<Write, R> for C
 where
     C: Command,
     R: Run<Prepare<C>> + Run<Persist<C>>,
@@ -63,7 +71,7 @@ where
 }
 
 #[async_trait]
-impl<Q, R> Path<Q, R> for Read
+impl<Q, R> Path<Read, R> for Q
 where
     Q: Query,
     R: Run<Fetch<Q>>,

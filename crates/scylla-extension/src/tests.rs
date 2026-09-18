@@ -7,8 +7,8 @@ use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::{
     Action, ActionId, Actions, Around, Authorized, Authorizer, Command, Committed, Deleted,
-    Describe, Done, Draft, Extension, Fetch, Fetched, Gate, Hooks, Listener, Next, Observer, Path,
-    Persist, Policy, Prepare, Prepared, Proceed, Query, Read, Run, StageKind, Wrap, Write,
+    Describe, Done, Draft, Extension, Fetch, Fetched, Gate, Hooks, Kind, Listener, Next, Observer,
+    Path, Persist, Policy, Prepare, Prepared, Proceed, Query, Run, StageKind, Wrap,
 };
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -42,8 +42,6 @@ struct ReadNote {
 }
 
 impl Describe for CreateNote {
-    type Path = Write;
-
     fn permission(&self) -> Permission {
         Permission::CreateProject(self.org.clone())
     }
@@ -55,8 +53,6 @@ impl Command for CreateNote {
 }
 
 impl Describe for RenameNote {
-    type Path = Write;
-
     fn permission(&self) -> Permission {
         Permission::UpdateProject(self.id.clone())
     }
@@ -68,8 +64,6 @@ impl Command for RenameNote {
 }
 
 impl Describe for DeleteNote {
-    type Path = Write;
-
     fn permission(&self) -> Permission {
         Permission::DeleteProject(self.id.clone())
     }
@@ -81,8 +75,6 @@ impl Command for DeleteNote {
 }
 
 impl Describe for ReadNote {
-    type Path = Read;
-
     fn permission(&self) -> Permission {
         Permission::ReadProject(self.id.clone())
     }
@@ -477,13 +469,10 @@ struct Lab {
 }
 
 impl Lab {
-    async fn run<A: Describe>(
-        &self,
-        caller: &CallerContext,
-        action: A,
-    ) -> DomainResult<<A::Path as Path<A, Notes>>::Output>
+    async fn run<A, K>(&self, caller: &CallerContext, action: A) -> DomainResult<A::Output>
     where
-        A::Path: Path<A, Notes>,
+        A: Path<K, Notes>,
+        K: Kind,
     {
         self.actions.run(&*self.notes, caller, action).await
     }
@@ -750,3 +739,4 @@ async fn a_run_can_move_to_another_task() {
 
     assert_eq!(lab.notes.find(&done.id).unwrap().title, "one");
 }
+

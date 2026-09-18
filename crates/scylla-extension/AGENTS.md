@@ -17,7 +17,7 @@ pipeline is proven here before it reaches a use case.
 src/
   action/        the event
     id.rs          ActionId: one per send
-    command.rs     Describe: Path, permission(); Command: Staged, Committed; Query: Output
+    command.rs     Describe: permission(); Command: Staged, Committed; Query: Output
     value.rs       Draft<T> (not stored), Deleted<T> (tombstone)
     envelope.rs    Envelope<C>: id, at, caller, permission, command; built once, shared by Arc
     phase.rs       Requested, Authorized, Prepared, Committed, Fetched; Prepared::commit
@@ -29,14 +29,14 @@ src/
     next.rs        Next: the rest of a typed chain; Proceed and Done: the erased one
     registry.rs    Hooks: registration and run()
     extension.rs   Extension: register(self: &Arc<Self>, &mut Hooks)
-  path.rs        Write, Read: where the chain forks after Authorize; Path: the rest of it
+  path.rs        Path<K, R>: the chain after Authorize, one impl per marker (Write, Read)
   actions.rs     Actions: run(runner, caller, action) for a command or a query
   tests.rs       the checks, on a fake aggregate
 ```
 
 The core side lives in `scylla-core`: `application/actions.rs` adapts
-`PermissionService` to `Authorizer`, `application/project/{commands, queries,
-prepare, persist, fetch}.rs` is the reference use case, and
+`PermissionService` to `Authorizer`, `application/project/` is the reference
+use case (`commands.rs`, `queries.rs`, the ports in `mod.rs`), and
 `grpc/handlers/project_handler.rs` is the reference adapter.
 
 ## The event
@@ -61,15 +61,14 @@ earlier phase, and each transition consumes its input.
 `AuthorizeStage` makes one, and `Requested::authorized` consumes it, so an
 `Authorized<C>` is proof that the permission check ran.
 
-A command or a query declares its permission and its path through `Describe`,
-and its payload types through `Command` or `Query`:
+A command or a query declares its permission through `Describe`, and its
+payload types through `Command` or `Query`. Nothing else: which path it takes
+follows from the trait.
 
 ```rust
 pub struct CreateProject { pub organization_id: OrganizationId, pub name: ProjectName, ... }
 
 impl Describe for CreateProject {
-    type Path = Write;
-
     fn permission(&self) -> Permission {
         Permission::CreateProject(self.organization_id.clone())
     }
@@ -83,8 +82,6 @@ impl Command for CreateProject {
 pub struct GetProject { pub id: ProjectId }
 
 impl Describe for GetProject {
-    type Path = Read;
-
     fn permission(&self) -> Permission {
         Permission::ReadProject(self.id.clone())
     }
@@ -95,12 +92,14 @@ impl Query for GetProject {
 }
 ```
 
-The path is declared, not inferred. Coherence forbids "every `Command` takes
-the write path" and "every `Query` takes the read path" as two impls of one
-trait, because nothing stops a type from being both; the marker on
-`Describe` is what lets one `run` serve both, and `Command` requires
-`Path = Write`, `Query` requires `Path = Read`, so a wrong marker does not
-compile.
+How the compiler picks the path (`path.rs`): coherence forbids "every
+`Command`" and "every `Query`" as two blanket impls of one trait, because
+nothing stops a type from being both. So the trait takes a marker parameter,
+`Path<K, R>`, with one impl for `K = Write` over every `Command` and one for
+`K = Read` over every `Query`. At a call `actions.run(runner, caller, action)`
+the compiler tries both impls, keeps the one whose bounds hold, and infers `K`
+from it. A wrong or missing `Run` impl on the runner is a compile error at the
+call site, worded by `#[diagnostic::on_unimplemented]` on `Path`.
 
 A query is not a command with an empty write. `Committed<T>` means "this is in
 the store"; a read that went through a fake `Persist` would make that word
@@ -138,11 +137,11 @@ first three, a query takes the first and the last:
 fixed by `S`; the compiler, not the author, decides the phases.
 
 `Actions::run(runner, caller, action)` is the one entry point. It mints the
-envelope, opens the span and runs `Authorize`; then `A::Path` takes over
-(`path.rs`): `Write` runs prepare and persist and returns `C::Committed`,
-`Read` runs fetch and returns `Q::Output`. The `Path` trait also carries the
-bound the runner must satisfy, so a missing `Run` impl is a compile error at
-the call site. The runner is the use case struct: one object that implements
+envelope, opens the span and runs `Authorize`; then `Path::run` takes over
+(`path.rs`): a `Command` runs prepare and persist and returns `C::Committed`,
+a `Query` runs fetch and returns `Q::Output`. The `Path` impls carry the bound
+the runner must satisfy, so a missing `Run` impl is a compile error at the
+call site. The runner is the use case struct: one object that implements
 the `Run` traits for its commands and queries. There is one `Actions` per
 server, built in `init_services` with the permission service and the hooks,
 and every action runs in one tracing span with its kind, id, caller,
@@ -187,14 +186,17 @@ request field itself.
 
 ### Adding a command or a query
 
-A command is three files: `commands.rs` (the struct with public fields,
-`impl Describe` with `type Path = Write` and the permission, `impl Command`
-with the two payload types), `prepare.rs` (`impl Run<Prepare<C>>`: read through the port, build the
-domain value, `input.prepared(staged)`) and `persist.rs`
-(`impl Run<Persist<C>>`: `input.commit(async |staged| self.repo.write(&staged).await).await`).
-
-A query is two: `queries.rs` (the struct, `impl Describe` with
-`type Path = Read` and the permission, `impl Query` with the output type) and `fetch.rs` (`impl Run<Fetch<Q>>`: read, `input.fetched(output)`).
+A use case is one directory: `mod.rs` holds the struct with its ports,
+`repository.rs` the port, `commands.rs` the writes, `queries.rs` the reads,
+`tests.rs` the checks. Inside `commands.rs`, one block per command in the
+order it runs: the struct with public fields, `impl Describe` with the
+permission, `impl Command` with the two payload types, `impl Run<Prepare<C>>`
+(read through the port, build the domain value, `input.prepared(staged)`),
+`impl Run<Persist<C>>` (`input.commit(async |staged| self.repo.write(&staged).await).await`).
+Inside `queries.rs`, one block per query: the struct, `impl Describe`,
+`impl Query` with the output type, `impl Run<Fetch<Q>>` (read,
+`input.fetched(output)`). A new action is one block in the right file, and
+the outline of the file is the list of actions.
 
 A permission check that never refuses is not a gate. `ListOrganizationProjects`
 asks a second time for `ListProjectsByOrganization` only to choose between

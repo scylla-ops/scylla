@@ -2,7 +2,7 @@
 //! commands, `Run<Fetch<Q>>` for its queries, and an adapter calls `run` with it for both. The
 //! use case has no hook code, no permission code and no method of its own.
 
-use crate::action::{Describe, Requested};
+use crate::action::Requested;
 use crate::authz::{AuthorizeStage, Authorizer};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
@@ -29,19 +29,20 @@ impl Actions {
     /// Authorize, then the action's path, each stage through the hooks. The runner is one object
     /// for every stage of the action; the turbofish on `Hooks::run` selects which impl a stage
     /// uses. Every action runs in one span; use cases carry no `#[instrument]` of their own.
-    pub async fn run<A: Describe, R>(
+    pub async fn run<A, K, R>(
         &self,
         runner: &R,
         caller: &CallerContext,
         action: A,
-    ) -> DomainResult<<A::Path as Path<A, R>>::Output>
+    ) -> DomainResult<A::Output>
     where
-        A::Path: Path<A, R>,
+        A: Path<K, R>,
+        K: Kind,
     {
         let requested = Requested::new(caller.clone(), action);
         let span = info_span!(
             "action",
-            kind = <A::Path as Kind>::NAME,
+            kind = K::NAME,
             action = %requested.id(),
             caller = %requested.caller(),
             permission = requested.permission().key(),
@@ -52,7 +53,7 @@ impl Actions {
                 .hooks
                 .run::<Authorize<A>>(&self.authorize, requested)
                 .await?;
-            A::Path::run(&self.hooks, runner, authorized).await
+            A::run(&self.hooks, runner, authorized).await
         }
         .instrument(span)
         .await
