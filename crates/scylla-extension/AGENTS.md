@@ -139,24 +139,31 @@ so its signature is the proof that the check ran.
 A use case struct (`ProjectUseCases`) holds the ports and implements the `Run`
 traits. It has no method of its own, no `Actions` field, no permission code
 and no hook code. The adapter (a gRPC handler) holds `Arc<Actions>` and
-`Arc<ProjectUseCases>`, turns each request into a command or a query, and
-calls the engine:
+`Arc<ProjectUseCases>`, and each RPC is one call and its response:
 
 ```rust
-let project = self
-    .actions
-    .send(&*self.projects, &caller, CreateProject { organization_id, name, description })
-    .await
-    .map_err(domain_error_to_status)?;
+async fn create_project(&self, request: Request<CreateProjectRequest>)
+    -> Result<Response<CreateProjectResponse>, Status> {
+    let project = send(&self.actions, &*self.projects, request).await?;
+    Ok(Response::new(CreateProjectResponse { project: Some(project_to_proto(&project)) }))
+}
 
-let project = self
-    .actions
-    .query(&*self.projects, &caller, GetProject { id })
-    .await
-    .map_err(domain_error_to_status)?;
+async fn list_projects(&self, request: Request<ListProjectsRequest>)
+    -> Result<Response<ListProjectsResponse>, Status> {
+    let page = query(&self.actions, &*self.projects, request).await?;
+    Ok(Response::new(page.into()))
+}
 ```
 
-Every RPC has that shape, reads and writes alike.
+`grpc::adapter::send` and `query` (in `scylla-core`) take the caller from the
+interceptor, turn the request into its command or query through
+`grpc::convert::Parse`, run the engine and map a `DomainError` to a `Status`.
+The request types implement `Parse` in the aggregate's mapper
+(`grpc/mappers/project_mapper.rs`), built from the small converters in
+`grpc::convert`: `id` for a required id wrapper, `valid` for a domain value
+built from a wire string, `proto_to_domain_pagination` for a page. The same
+mapper turns a page into its response with `From`. A handler never reads a
+request field itself.
 
 ### Adding a command or a query
 

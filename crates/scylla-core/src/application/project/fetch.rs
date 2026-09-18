@@ -4,6 +4,7 @@ use super::queries::{
     GetProject, ListOrganizationProjects, ListProjectMembers, ListProjects, ListUserProjects,
 };
 use super::use_case::ProjectUseCases;
+use crate::application::pagination::PaginatedResult;
 use crate::application::{ProjectRepository, UserRepository};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::ProjectId;
@@ -115,7 +116,7 @@ where
             .iter()
             .filter_map(|id| by_id.remove(id.as_str()))
             .collect();
-        Ok(input.fetched((users, metadata)))
+        Ok(input.fetched(PaginatedResult::from_parts(users, metadata)))
     }
 }
 
@@ -132,10 +133,10 @@ where
         input: Authorized<ListUserProjects>,
     ) -> DomainResult<Fetched<ListUserProjects>> {
         let query = input.command();
-        let paginated = self
+        let page = self
             .project_repo
             .list_for_user(&query.user_id, query.pagination.as_ref())
             .await?;
-        Ok(input.fetched(paginated.into_parts()))
+        Ok(input.fetched(page))
     }
 }

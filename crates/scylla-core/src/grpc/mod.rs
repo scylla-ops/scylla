@@ -1,3 +1,4 @@
+pub mod adapter;
 pub mod convert;
 mod handlers;
 pub mod mappers;

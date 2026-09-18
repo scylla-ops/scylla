@@ -1,12 +1,13 @@
 //! One struct per read. A query has a permission and an output, and no staged value.
 
-use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
+use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::project::Project;
 use crate::domain::user::User;
 use scylla_extension::{Describe, Query};
 
+#[derive(Debug)]
 pub struct GetProject {
     pub id: ProjectId,
 }
@@ -21,6 +22,7 @@ impl Query for GetProject {
     type Output = Project;
 }
 
+#[derive(Debug)]
 pub struct ListProjects {
     pub pagination: Option<PaginationParams>,
 }
@@ -37,6 +39,7 @@ impl Query for ListProjects {
 
 /// Gated on `readOrganization`, not on `listProjectsByOrganization`: a project-only role must
 /// see its own project, not be refused. The wider permission only widens the visible set.
+#[derive(Debug)]
 pub struct ListOrganizationProjects {
     pub organization_id: OrganizationId,
     pub pagination: Option<PaginationParams>,
@@ -52,6 +55,7 @@ impl Query for ListOrganizationProjects {
     type Output = PaginatedResult<Project>;
 }
 
+#[derive(Debug)]
 pub struct ListProjectMembers {
     pub project_id: ProjectId,
     pub pagination: Option<PaginationParams>,
@@ -64,9 +68,10 @@ impl Describe for ListProjectMembers {
 }
 
 impl Query for ListProjectMembers {
-    type Output = (Vec<User>, PaginationMetadata);
+    type Output = PaginatedResult<User>;
 }
 
+#[derive(Debug)]
 pub struct ListUserProjects {
     pub user_id: UserId,
     pub pagination: Option<PaginationParams>,
@@ -79,5 +84,5 @@ impl Describe for ListUserProjects {
 }
 
 impl Query for ListUserProjects {
-    type Output = (Vec<Project>, PaginationMetadata);
+    type Output = PaginatedResult<Project>;
 }

@@ -7,6 +7,7 @@ use crate::domain::project::{Project, ProjectDescription, ProjectName};
 use scylla_auth::authz::Grant;
 use scylla_extension::{Command, Deleted, Describe, Draft};
 
+#[derive(Debug)]
 pub struct CreateProject {
     pub organization_id: OrganizationId,
     pub name: ProjectName,
@@ -15,6 +16,7 @@ pub struct CreateProject {
 
 /// For a user caller, the grant that makes them the project's admin; both rows go in one
 /// transaction, so they are staged together.
+#[derive(Debug)]
 pub struct NewProject {
     pub project: Project,
     pub owner: Option<Grant>,
@@ -31,6 +33,7 @@ impl Command for CreateProject {
     type Committed = Project;
 }
 
+#[derive(Debug)]
 pub struct UpdateProject {
     pub id: ProjectId,
     pub name: Option<ProjectName>,
@@ -48,6 +51,7 @@ impl Command for UpdateProject {
     type Committed = Project;
 }
 
+#[derive(Debug)]
 pub struct SetProjectActive {
     pub id: ProjectId,
     pub is_active: bool,
@@ -64,6 +68,7 @@ impl Command for SetProjectActive {
     type Committed = Project;
 }
 
+#[derive(Debug)]
 pub struct DeleteProject {
     pub id: ProjectId,
 }
