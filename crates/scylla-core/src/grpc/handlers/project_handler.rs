@@ -1,5 +1,5 @@
-use crate::application::ProjectUseCases;
-use crate::application::{ProjectRepository, UserRepository};
+use crate::application::project::{CreateProject, DeleteProject, SetProjectActive, UpdateProject};
+use crate::application::{ProjectRepository, ProjectUseCases, UserRepository};
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::{
@@ -55,7 +55,14 @@ impl<
 
         let project = self
             .use_cases
-            .create(&caller, name, description, organization_id)
+            .create(
+                &caller,
+                CreateProject {
+                    organization_id,
+                    name,
+                    description,
+                },
+            )
             .await
             .map_err(domain_error_to_status)?;
 
@@ -104,7 +111,14 @@ impl<
 
         let project = self
             .use_cases
-            .update(&caller, &id, name, description)
+            .update(
+                &caller,
+                UpdateProject {
+                    id,
+                    name,
+                    description,
+                },
+            )
             .await
             .map_err(domain_error_to_status)?;
 
@@ -123,7 +137,13 @@ impl<
 
         let project = self
             .use_cases
-            .set_active(&caller, &id, req.is_active)
+            .set_active(
+                &caller,
+                SetProjectActive {
+                    id,
+                    is_active: req.is_active,
+                },
+            )
             .await
             .map_err(domain_error_to_status)?;
 
@@ -141,7 +161,7 @@ impl<
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         self.use_cases
-            .delete(&caller, &id)
+            .delete(&caller, DeleteProject { id })
             .await
             .map_err(domain_error_to_status)?;
 

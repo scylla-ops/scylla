@@ -16,9 +16,9 @@ repository.workspace = true
 # edition binaries.
 register = []
 
-# Exposes the `test_support` builders and the PermissionService / QuotaPolicy
-# doubles to downstream test code (the persistence crate's tests seed through
-# the builders).
+# Exposes the `test_support` builders and the PermissionService doubles to
+# downstream test code (the persistence crate's tests seed through the
+# builders).
 test-utils = []
 
 [dependencies]
@@ -26,7 +26,7 @@ test-utils = []
 scylla-domain = { workspace = true }
 # the access model (RBAC ports, scoped grants, the Cedar adapter)
 scylla-auth = { workspace = true }
-# the edition boundary: the extension traits the use cases call through
+# the edition boundary: the action pipeline every write goes through
 scylla-extension = { workspace = true }
 tokio.workspace = true
 async-trait.workspace = true

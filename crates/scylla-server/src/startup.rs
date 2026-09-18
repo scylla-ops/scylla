@@ -9,9 +9,9 @@ use scylla_core::application::{
     AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases,
     CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
     JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
-    OrganizationUseCases, PendingJobScheduler, PipelineUseCases, ProjectUseCases, SecretCipher,
-    SecretResolver, SecretUseCases, TriggerCronScheduler, TriggerFireUseCases, TriggerFiring,
-    TriggerUseCases, UserUseCases, WebhookIngressUseCases,
+    OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer, PipelineUseCases,
+    ProjectUseCases, SecretCipher, SecretResolver, SecretUseCases, TriggerCronScheduler,
+    TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases, WebhookIngressUseCases,
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;
@@ -28,7 +28,7 @@ use scylla_db::{
     PgSessionRepository, PgSignupRepository, PgTriggerDeliveryRepository, PgTriggerRepository,
     PgUserRepository,
 };
-use scylla_extension::Extensions;
+use scylla_extension::{Actions, Hooks};
 use sqlx::PgPool;
 use std::future::Future;
 use std::sync::Arc;
@@ -179,7 +179,7 @@ pub(crate) struct Services {
 pub(crate) async fn init_services(
     config: &ControlPlaneConfig,
     db: PgPool,
-    extensions: Extensions,
+    hooks: Arc<Hooks>,
 ) -> Result<Services, StartupError> {
     let user_repo = Arc::new(PgUserRepository::new(db.clone()));
     let session_repo = Arc::new(PgSessionRepository::new(db.clone()));
@@ -220,6 +220,10 @@ pub(crate) async fn init_services(
         .await
         .map_err(|e| StartupError::Permission(e.to_string()))?,
     );
+    let actions = Arc::new(Actions::new(
+        Arc::new(PermissionAuthorizer::new(permission_checker.clone())),
+        hooks,
+    ));
 
     let auth_uc = Arc::new(AuthUseCases::new(
         user_repo.clone(),
@@ -251,7 +255,7 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        scylla_core::application::quota_policy(&extensions),
+        actions,
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),

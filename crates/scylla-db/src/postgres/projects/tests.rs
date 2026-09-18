@@ -20,17 +20,48 @@ async fn create_then_find_round_trip(pool: PgPool) {
     assert_eq!(found.created_at(), project.created_at());
 }
 
+/// The quota scenario the Enterprise Edition needs: a `Policy` on `Prepare` that counts creates
+/// per organization and vetoes past a limit, registered in the hooks the pipeline runs.
+struct DenyAfter {
+    limit: usize,
+    seen: std::sync::Mutex<std::collections::HashMap<String, usize>>,
+}
+
+#[async_trait::async_trait]
+impl scylla_extension::Policy for DenyAfter {
+    async fn enforce(
+        &self,
+        _: scylla_extension::StageKind,
+        action: &dyn scylla_extension::Action,
+    ) -> crate::domain::errors::DomainResult<()> {
+        let crate::domain::permission::Permission::CreateProject(org) = action.permission() else {
+            return Ok(());
+        };
+        let mut seen = self.seen.lock().unwrap();
+        let count = seen.entry(org.as_str().to_owned()).or_insert(0);
+        if *count >= self.limit {
+            return Err(DomainError::quota_exceeded(format!(
+                "project quota reached for this organization ({count}/{})",
+                self.limit
+            )));
+        }
+        *count += 1;
+        Ok(())
+    }
+}
+
 #[sqlx::test(migrations = "../../migrations")]
-async fn project_quota_enforced(pool: PgPool) {
-    use crate::domain::caller::CallerContext;
-    use crate::domain::caller::ServiceIdentity;
+async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
+    use crate::domain::caller::{CallerContext, ServiceIdentity};
     use crate::domain::project::ProjectName;
     use crate::postgres::{
         PgAuthzEntityProvider, PgGrantRepository, PgRoleRepository, PgUserRepository,
     };
     use scylla_auth::audit::NoopAuditLog;
     use scylla_auth::cedar::CedarPermissionService;
-    use scylla_core::application::ProjectUseCases;
+    use scylla_core::application::project::CreateProject;
+    use scylla_core::application::{PermissionAuthorizer, ProjectUseCases};
+    use scylla_extension::{Actions, Hooks, StageKind};
     use std::sync::Arc;
 
     let org = seed_org(&pool, "limited").await;
@@ -44,33 +75,38 @@ async fn project_quota_enforced(pool: PgPool) {
         .await
         .expect("cedar"),
     );
+    let mut hooks = Hooks::new();
+    hooks.policy(
+        StageKind::Prepare,
+        Arc::new(DenyAfter {
+            limit: 2,
+            seen: std::sync::Mutex::default(),
+        }),
+    );
+    let actions = Arc::new(Actions::new(
+        Arc::new(PermissionAuthorizer::new(permission.clone())),
+        Arc::new(hooks),
+    ));
     let uc = ProjectUseCases::new(
         Arc::new(PgProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),
         permission.clone(),
         permission.clone(),
         permission,
-        Arc::new(DenyAfter::new(2)),
+        actions,
     );
     let caller = CallerContext::Service(ServiceIdentity::recorder());
+    let create = |name: &str| CreateProject {
+        organization_id: org.id().clone(),
+        name: ProjectName::new(name).unwrap(),
+        description: None,
+    };
 
     for n in ["a", "b"] {
-        uc.create(
-            &caller,
-            ProjectName::new(n).unwrap(),
-            None,
-            org.id().clone(),
-        )
-        .await
-        .expect("under quota");
+        uc.create(&caller, create(n)).await.expect("under quota");
     }
     let err = uc
-        .create(
-            &caller,
-            ProjectName::new("c").unwrap(),
-            None,
-            org.id().clone(),
-        )
+        .create(&caller, create("c"))
         .await
         .expect_err("over quota");
     assert!(matches!(err, DomainError::QuotaExceeded(_)));
