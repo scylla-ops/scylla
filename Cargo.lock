@@ -3012,7 +3012,10 @@ name = "scylla-extension"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
+ "scylla-domain",
  "thiserror 2.0.20",
+ "tokio",
 ]
 
 [[package]]
