@@ -10,6 +10,7 @@ pub mod action;
 pub mod actions;
 pub mod authz;
 pub mod hooks;
+pub mod path;
 pub mod stage;
 
 pub use action::{
@@ -21,6 +22,7 @@ pub use authz::{AuthorizeStage, Authorizer, Granted};
 pub use hooks::{
     Around, Done, Extension, Gate, Hooks, Listener, Next, Observer, Policy, Proceed, Wrap,
 };
+pub use path::{Kind, Path, Read, Write};
 pub use stage::{Authorize, Fetch, Persist, Prepare, Run, Stage, StageKind};
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::project::Project;
 use crate::domain::user::User;
-use scylla_extension::{Describe, Query};
+use scylla_extension::{Describe, Query, Read};
 
 #[derive(Debug)]
 pub struct GetProject {
@@ -13,6 +13,8 @@ pub struct GetProject {
 }
 
 impl Describe for GetProject {
+    type Path = Read;
+
     fn permission(&self) -> Permission {
         Permission::ReadProject(self.id.clone())
     }
@@ -28,6 +30,8 @@ pub struct ListProjects {
 }
 
 impl Describe for ListProjects {
+    type Path = Read;
+
     fn permission(&self) -> Permission {
         Permission::ListProjects
     }
@@ -46,6 +50,8 @@ pub struct ListOrganizationProjects {
 }
 
 impl Describe for ListOrganizationProjects {
+    type Path = Read;
+
     fn permission(&self) -> Permission {
         Permission::ReadOrganization(self.organization_id.clone())
     }
@@ -62,6 +68,8 @@ pub struct ListProjectMembers {
 }
 
 impl Describe for ListProjectMembers {
+    type Path = Read;
+
     fn permission(&self) -> Permission {
         Permission::ListProjectMembers(self.project_id.clone())
     }
@@ -78,6 +86,8 @@ pub struct ListUserProjects {
 }
 
 impl Describe for ListUserProjects {
+    type Path = Read;
+
     fn permission(&self) -> Permission {
         Permission::ListUserProjects(self.user_id.clone())
     }

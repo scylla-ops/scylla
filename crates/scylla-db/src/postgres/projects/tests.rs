@@ -103,12 +103,12 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
 
     for n in ["a", "b"] {
         actions
-            .send(&uc, &caller, create(n))
+            .run(&uc, &caller, create(n))
             .await
             .expect("under quota");
     }
     let err = actions
-        .send(&uc, &caller, create("c"))
+        .run(&uc, &caller, create("c"))
         .await
         .expect_err("over quota");
     assert!(matches!(err, DomainError::QuotaExceeded(_)));

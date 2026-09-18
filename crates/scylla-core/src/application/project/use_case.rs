@@ -4,8 +4,7 @@ use scylla_auth::authz::{PermissionService, PolicyControl, VisibilityResolver};
 use std::sync::Arc;
 
 /// The project aggregate's stage runners: `prepare.rs` and `persist.rs` for the commands,
-/// `fetch.rs` for the queries. It has no method of its own; `Actions::send` and
-/// `Actions::query` drive it. `permission_service` serves one scoping decision in `fetch.rs`,
+/// `fetch.rs` for the queries. It has no method of its own; `Actions::run` drives it. `permission_service` serves one scoping decision in `fetch.rs`,
 /// never a gate.
 #[derive(Constructor)]
 pub struct ProjectUseCases<
@@ -201,7 +200,7 @@ mod tests {
 
     impl<PS: PermissionService> Lab<PS> {
         async fn create(&self, name: &str) -> DomainResult<Project> {
-            self.actions.send(&self.uc, &alice(), create(name)).await
+            self.actions.run(&self.uc, &alice(), create(name)).await
         }
     }
 
@@ -286,7 +285,7 @@ mod tests {
 
         let updated = lab
             .actions
-            .send(
+            .run(
                 &lab.uc,
                 &alice(),
                 UpdateProject {
@@ -318,7 +317,7 @@ mod tests {
 
         let deleted = lab
             .actions
-            .send(
+            .run(
                 &lab.uc,
                 &alice(),
                 DeleteProject {
@@ -343,7 +342,7 @@ mod tests {
 
         let err = lab
             .actions
-            .query(
+            .run(
                 &lab.uc,
                 &alice(),
                 GetProject {

@@ -7,8 +7,8 @@ use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::{
     Action, ActionId, Actions, Around, Authorized, Authorizer, Command, Committed, Deleted,
-    Describe, Done, Draft, Extension, Fetch, Fetched, Gate, Hooks, Listener, Next, Observer,
-    Persist, Policy, Prepare, Prepared, Proceed, Query, Run, StageKind, Wrap,
+    Describe, Done, Draft, Extension, Fetch, Fetched, Gate, Hooks, Listener, Next, Observer, Path,
+    Persist, Policy, Prepare, Prepared, Proceed, Query, Read, Run, StageKind, Wrap, Write,
 };
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -42,6 +42,8 @@ struct ReadNote {
 }
 
 impl Describe for CreateNote {
+    type Path = Write;
+
     fn permission(&self) -> Permission {
         Permission::CreateProject(self.org.clone())
     }
@@ -53,6 +55,8 @@ impl Command for CreateNote {
 }
 
 impl Describe for RenameNote {
+    type Path = Write;
+
     fn permission(&self) -> Permission {
         Permission::UpdateProject(self.id.clone())
     }
@@ -64,6 +68,8 @@ impl Command for RenameNote {
 }
 
 impl Describe for DeleteNote {
+    type Path = Write;
+
     fn permission(&self) -> Permission {
         Permission::DeleteProject(self.id.clone())
     }
@@ -75,6 +81,8 @@ impl Command for DeleteNote {
 }
 
 impl Describe for ReadNote {
+    type Path = Read;
+
     fn permission(&self) -> Permission {
         Permission::ReadProject(self.id.clone())
     }
@@ -469,22 +477,15 @@ struct Lab {
 }
 
 impl Lab {
-    async fn send<C: Command>(
+    async fn run<A: Describe>(
         &self,
         caller: &CallerContext,
-        command: C,
-    ) -> DomainResult<C::Committed>
+        action: A,
+    ) -> DomainResult<<A::Path as Path<A, Notes>>::Output>
     where
-        Notes: Run<Prepare<C>> + Run<Persist<C>>,
+        A::Path: Path<A, Notes>,
     {
-        self.actions.send(&*self.notes, caller, command).await
-    }
-
-    async fn query<Q: Query>(&self, caller: &CallerContext, query: Q) -> DomainResult<Q::Output>
-    where
-        Notes: Run<Fetch<Q>>,
-    {
-        self.actions.query(&*self.notes, caller, query).await
+        self.actions.run(&*self.notes, caller, action).await
     }
 }
 
@@ -553,7 +554,7 @@ fn read(id: &ProjectId) -> ReadNote {
 #[tokio::test]
 async fn one_command_crosses_the_three_stages_in_order() {
     let lab = lab(10);
-    lab.send(&alice(), create("one")).await.unwrap();
+    lab.run(&alice(), create("one")).await.unwrap();
 
     let entries = lab.journal.entries();
     let action = &entries[0].0;
@@ -574,9 +575,9 @@ async fn one_command_crosses_the_three_stages_in_order() {
 #[tokio::test]
 async fn one_query_crosses_two_stages_and_takes_the_same_hooks() {
     let lab = lab(10);
-    let note = lab.send(&alice(), create("one")).await.unwrap();
+    let note = lab.run(&alice(), create("one")).await.unwrap();
 
-    let seen = lab.query(&alice(), read(&note.id)).await.unwrap();
+    let seen = lab.run(&alice(), read(&note.id)).await.unwrap();
 
     assert_eq!(seen, note);
     let entries = lab.journal.entries();
@@ -588,7 +589,7 @@ async fn one_query_crosses_two_stages_and_takes_the_same_hooks() {
         lab.timing.stages.lock().unwrap()[3..],
         [StageKind::Authorize, StageKind::Fetch]
     );
-    let err = lab.query(&bob(), read(&note.id)).await.unwrap_err();
+    let err = lab.run(&bob(), read(&note.id)).await.unwrap_err();
     assert!(matches!(err, DomainError::Forbidden(_)));
 }
 
@@ -597,11 +598,11 @@ async fn a_wrap_on_fetch_serves_the_second_read_from_its_cache() {
     let lab = lab_with(10, |hooks| {
         hooks.wrap::<Fetch<ReadNote>>(Arc::new(Cache(Mutex::default())));
     });
-    let note = lab.send(&alice(), create("one")).await.unwrap();
+    let note = lab.run(&alice(), create("one")).await.unwrap();
 
-    let first = lab.query(&alice(), read(&note.id)).await.unwrap();
-    lab.send(&alice(), rename(&note.id, "two")).await.unwrap();
-    let second = lab.query(&alice(), read(&note.id)).await.unwrap();
+    let first = lab.run(&alice(), read(&note.id)).await.unwrap();
+    lab.run(&alice(), rename(&note.id, "two")).await.unwrap();
+    let second = lab.run(&alice(), read(&note.id)).await.unwrap();
 
     assert_eq!(first.title, "one");
     assert_eq!(second.title, "one");
@@ -614,7 +615,7 @@ async fn the_committed_event_names_the_caller_and_the_permission() {
     let lab = lab_with(10, |hooks| {
         hooks.listen::<Persist<CreateNote>>(witness.clone());
     });
-    let note = lab.send(&alice(), create("one")).await.unwrap();
+    let note = lab.run(&alice(), create("one")).await.unwrap();
 
     assert_eq!(note.title, "one");
     assert_eq!(lab.notes.count_in(&acme()), 1);
@@ -627,10 +628,10 @@ async fn the_committed_event_names_the_caller_and_the_permission() {
 #[tokio::test]
 async fn a_policy_veto_stops_the_chain_and_is_observed() {
     let lab = lab(2);
-    lab.send(&alice(), create("one")).await.unwrap();
-    let second = lab.send(&alice(), create("two")).await.unwrap();
+    lab.run(&alice(), create("one")).await.unwrap();
+    let second = lab.run(&alice(), create("two")).await.unwrap();
 
-    let err = lab.send(&alice(), create("three")).await.unwrap_err();
+    let err = lab.run(&alice(), create("three")).await.unwrap_err();
     assert!(matches!(
         &err,
         DomainError::QuotaExceeded(m) if m == "project quota reached for this organization (2/2)"
@@ -639,17 +640,17 @@ async fn a_policy_veto_stops_the_chain_and_is_observed() {
     let vetoed = lab.journal.entries().last().unwrap().clone();
     assert_eq!((vetoed.1, vetoed.2), (StageKind::Prepare, false));
 
-    lab.send(&alice(), delete(&second.id)).await.unwrap();
+    lab.run(&alice(), delete(&second.id)).await.unwrap();
     assert_eq!(lab.quota.used_in(&acme()), 1);
-    lab.send(&alice(), create("three")).await.unwrap();
+    lab.run(&alice(), create("three")).await.unwrap();
 }
 
 #[tokio::test]
 async fn a_gate_veto_on_persist_leaves_the_row() {
     let lab = lab(10);
-    let prod = lab.send(&alice(), create("prod-db")).await.unwrap();
+    let prod = lab.run(&alice(), create("prod-db")).await.unwrap();
 
-    let err = lab.send(&alice(), delete(&prod.id)).await.unwrap_err();
+    let err = lab.run(&alice(), delete(&prod.id)).await.unwrap_err();
 
     assert!(matches!(err, DomainError::BusinessRule(_)));
     assert!(lab.notes.find(&prod.id).is_some());
@@ -659,7 +660,7 @@ async fn a_gate_veto_on_persist_leaves_the_row() {
 #[tokio::test]
 async fn a_forbidden_caller_is_journaled_at_authorize_only() {
     let lab = lab(10);
-    let err = lab.send(&bob(), create("mine")).await.unwrap_err();
+    let err = lab.run(&bob(), create("mine")).await.unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
     let entries = lab.journal.entries();
@@ -672,10 +673,8 @@ async fn a_forbidden_caller_is_journaled_at_authorize_only() {
 #[tokio::test]
 async fn an_around_registered_once_covers_every_command() {
     let lab = lab(10);
-    let created = lab.send(&alice(), create("one")).await.unwrap();
-    lab.send(&alice(), rename(&created.id, "two"))
-        .await
-        .unwrap();
+    let created = lab.run(&alice(), create("one")).await.unwrap();
+    lab.run(&alice(), rename(&created.id, "two")).await.unwrap();
 
     let write = [StageKind::Authorize, StageKind::Prepare, StageKind::Persist];
     assert_eq!(
@@ -689,7 +688,7 @@ async fn a_wrap_may_skip_the_stage_for_a_simulation() {
     let lab = lab_with(10, |hooks| {
         hooks.wrap::<Persist<CreateNote>>(Arc::new(DryRun));
     });
-    let done = lab.send(&alice(), create("ghost")).await.unwrap();
+    let done = lab.run(&alice(), create("ghost")).await.unwrap();
 
     assert_eq!(done.title, "ghost");
     assert_eq!(lab.notes.count_in(&acme()), 0);
@@ -702,13 +701,13 @@ async fn two_writes_staged_from_the_same_read_commit_once() {
     let lab = lab_with(10, |hooks| {
         hooks.wrap::<Persist<RenameNote>>(Arc::new(Meet(barrier.clone())));
     });
-    let created = lab.send(&alice(), create("one")).await.unwrap();
+    let created = lab.run(&alice(), create("one")).await.unwrap();
     let id = created.id.clone();
     let alice = alice();
 
     let (a, b) = tokio::join!(
-        lab.send(&alice, rename(&id, "a")),
-        lab.send(&alice, rename(&id, "b")),
+        lab.run(&alice, rename(&id, "a")),
+        lab.run(&alice, rename(&id, "b")),
     );
     let (won, lost) = match (a, b) {
         (Ok(won), Err(lost)) | (Err(lost), Ok(won)) => (won, lost),
@@ -727,12 +726,12 @@ async fn a_delete_of_an_unknown_note_is_refused_before_prepare() {
     let lab = lab(10);
     let missing = ProjectId::new("missing");
 
-    let err = lab.send(&alice(), delete(&missing)).await.unwrap_err();
+    let err = lab.run(&alice(), delete(&missing)).await.unwrap_err();
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert_eq!(lab.journal.entries().len(), 1);
 
     let system = CallerContext::Service(ServiceIdentity::recorder());
-    let err = lab.send(&system, delete(&missing)).await.unwrap_err();
+    let err = lab.run(&system, delete(&missing)).await.unwrap_err();
     assert!(matches!(err, DomainError::NotFound { .. }));
     let entries = lab.journal.entries();
     assert_eq!(entries.len(), 3);
@@ -741,10 +740,10 @@ async fn a_delete_of_an_unknown_note_is_refused_before_prepare() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn a_send_runs_on_another_task() {
+async fn a_run_can_move_to_another_task() {
     let lab = Arc::new(lab(10));
     let spawned = lab.clone();
-    let done = tokio::spawn(async move { spawned.send(&alice(), create("one")).await })
+    let done = tokio::spawn(async move { spawned.run(&alice(), create("one")).await })
         .await
         .unwrap()
         .unwrap();

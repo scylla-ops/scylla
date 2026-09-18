@@ -1,8 +1,8 @@
-//! The adapter: each RPC is one `send` or `query` and its response. Parsing lives in the
+//! The adapter: each RPC is one `run` and its response. Parsing lives in the
 //! project mapper, behind `Parse`; no RPC checks a permission or touches a port.
 
 use crate::application::{ProjectRepository, ProjectUseCases, UserRepository};
-use crate::grpc::adapter::{query, send};
+use crate::grpc::adapter::run;
 use crate::grpc::mappers::project_to_proto;
 use derive_more::Constructor;
 use scylla_auth::authz::{PermissionService, PolicyControl};
@@ -41,7 +41,7 @@ impl<
         &self,
         request: Request<CreateProjectRequest>,
     ) -> Result<Response<CreateProjectResponse>, Status> {
-        let project = send(&self.actions, &*self.projects, request).await?;
+        let project = run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(CreateProjectResponse {
             project: Some(project_to_proto(&project)),
         }))
@@ -51,7 +51,7 @@ impl<
         &self,
         request: Request<GetProjectRequest>,
     ) -> Result<Response<GetProjectResponse>, Status> {
-        let project = query(&self.actions, &*self.projects, request).await?;
+        let project = run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(GetProjectResponse {
             project: Some(project_to_proto(&project)),
         }))
@@ -61,7 +61,7 @@ impl<
         &self,
         request: Request<UpdateProjectRequest>,
     ) -> Result<Response<UpdateProjectResponse>, Status> {
-        let project = send(&self.actions, &*self.projects, request).await?;
+        let project = run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(UpdateProjectResponse {
             project: Some(project_to_proto(&project)),
         }))
@@ -71,7 +71,7 @@ impl<
         &self,
         request: Request<SetProjectActiveRequest>,
     ) -> Result<Response<SetProjectActiveResponse>, Status> {
-        let project = send(&self.actions, &*self.projects, request).await?;
+        let project = run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(SetProjectActiveResponse {
             project: Some(project_to_proto(&project)),
         }))
@@ -81,7 +81,7 @@ impl<
         &self,
         request: Request<DeleteProjectRequest>,
     ) -> Result<Response<DeleteProjectResponse>, Status> {
-        send(&self.actions, &*self.projects, request).await?;
+        run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(DeleteProjectResponse {}))
     }
 
@@ -89,7 +89,7 @@ impl<
         &self,
         request: Request<ListProjectsRequest>,
     ) -> Result<Response<ListProjectsResponse>, Status> {
-        let page = query(&self.actions, &*self.projects, request).await?;
+        let page = run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(page.into()))
     }
 
@@ -97,15 +97,7 @@ impl<
         &self,
         request: Request<ListOrganizationProjectsRequest>,
     ) -> Result<Response<ListOrganizationProjectsResponse>, Status> {
-        let page = query(&self.actions, &*self.projects, request).await?;
-        Ok(Response::new(page.into()))
-    }
-
-    async fn list_project_members(
-        &self,
-        request: Request<ListProjectMembersRequest>,
-    ) -> Result<Response<ListProjectMembersResponse>, Status> {
-        let page = query(&self.actions, &*self.projects, request).await?;
+        let page = run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(page.into()))
     }
 
@@ -113,7 +105,15 @@ impl<
         &self,
         request: Request<ListUserProjectsRequest>,
     ) -> Result<Response<ListUserProjectsResponse>, Status> {
-        let page = query(&self.actions, &*self.projects, request).await?;
+        let page = run(&self.actions, &*self.projects, request).await?;
+        Ok(Response::new(page.into()))
+    }
+
+    async fn list_project_members(
+        &self,
+        request: Request<ListProjectMembersRequest>,
+    ) -> Result<Response<ListProjectMembersResponse>, Status> {
+        let page = run(&self.actions, &*self.projects, request).await?;
         Ok(Response::new(page.into()))
     }
 }

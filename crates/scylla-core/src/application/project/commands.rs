@@ -5,7 +5,7 @@ use crate::domain::ids::{OrganizationId, ProjectId};
 use crate::domain::permission::Permission;
 use crate::domain::project::{Project, ProjectDescription, ProjectName};
 use scylla_auth::authz::Grant;
-use scylla_extension::{Command, Deleted, Describe, Draft};
+use scylla_extension::{Command, Deleted, Describe, Draft, Write};
 
 #[derive(Debug)]
 pub struct CreateProject {
@@ -23,6 +23,8 @@ pub struct NewProject {
 }
 
 impl Describe for CreateProject {
+    type Path = Write;
+
     fn permission(&self) -> Permission {
         Permission::CreateProject(self.organization_id.clone())
     }
@@ -41,6 +43,8 @@ pub struct UpdateProject {
 }
 
 impl Describe for UpdateProject {
+    type Path = Write;
+
     fn permission(&self) -> Permission {
         Permission::UpdateProject(self.id.clone())
     }
@@ -58,6 +62,8 @@ pub struct SetProjectActive {
 }
 
 impl Describe for SetProjectActive {
+    type Path = Write;
+
     fn permission(&self) -> Permission {
         Permission::UpdateProject(self.id.clone())
     }
@@ -74,6 +80,8 @@ pub struct DeleteProject {
 }
 
 impl Describe for DeleteProject {
+    type Path = Write;
+
     fn permission(&self) -> Permission {
         Permission::DeleteProject(self.id.clone())
     }
