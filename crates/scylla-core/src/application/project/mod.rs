@@ -1,14 +1,34 @@
 pub mod commands;
-mod fetch;
-mod persist;
-mod prepare;
 pub mod queries;
 pub mod repository;
-pub mod use_case;
 
 pub use commands::{CreateProject, DeleteProject, NewProject, SetProjectActive, UpdateProject};
 pub use queries::{
     GetProject, ListOrganizationProjects, ListProjectMembers, ListProjects, ListUserProjects,
 };
 pub use repository::ProjectRepository;
-pub use use_case::ProjectUseCases;
+
+use crate::application::UserRepository;
+use derive_more::Constructor;
+use scylla_auth::authz::{PermissionService, PolicyControl, VisibilityResolver};
+use std::sync::Arc;
+
+/// The project aggregate's stage runners, one block per action in `commands.rs` and
+/// `queries.rs`. It has no method of its own; `Actions::run` drives it. `permission_service` serves one scoping decision in `fetch.rs`,
+/// never a gate.
+#[derive(Constructor)]
+pub struct ProjectUseCases<
+    P: ProjectRepository,
+    U: UserRepository,
+    PS: PermissionService,
+    PC: PolicyControl,
+> {
+    pub(super) project_repo: Arc<P>,
+    pub(super) user_repo: Arc<U>,
+    pub(super) permission_service: Arc<PS>,
+    pub(super) visibility: Arc<dyn VisibilityResolver>,
+    pub(super) policy_control: Arc<PC>,
+}
+
+#[cfg(test)]
+mod tests;
