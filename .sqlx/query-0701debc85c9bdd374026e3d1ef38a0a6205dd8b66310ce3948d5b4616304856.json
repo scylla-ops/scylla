@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, name, description, organization_id, is_active, created_at, updated_at\n            FROM projects p\n            WHERE p.id IN (\n                SELECT scope_id FROM grants\n                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'project'\n              )\n              OR p.organization_id IN (\n                SELECT scope_id FROM grants\n                WHERE principal_kind = 'user' AND principal_id = $1 AND scope_kind = 'organization'\n              )\n            ORDER BY created_at DESC\n            LIMIT $2 OFFSET $3\n            ",
+  "query": "\n            SELECT id, name, description, organization_id, is_active, created_at, updated_at, version\n            FROM projects\n            WHERE (NOT $3 OR is_active)\n              AND ($4::text IS NULL OR organization_id = $4)\n              AND ($5 OR organization_id = ANY($6) OR id = ANY($7))\n            ORDER BY created_at DESC\n            LIMIT $1 OFFSET $2\n            ",
   "describe": {
     "columns": [
       {
@@ -79,13 +79,28 @@
             "name": "updated_at"
           }
         }
+      },
+      {
+        "ordinal": 7,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "version"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
         "Int8",
-        "Int8"
+        "Int8",
+        "Bool",
+        "Text",
+        "Bool",
+        "TextArray",
+        "TextArray"
       ]
     },
     "nullable": [
@@ -95,8 +110,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "01f192f60881c3dfee3055d1357b289bc931ef5bf9b0f1b20e44c9842127d9cb"
+  "hash": "0701debc85c9bdd374026e3d1ef38a0a6205dd8b66310ce3948d5b4616304856"
 }

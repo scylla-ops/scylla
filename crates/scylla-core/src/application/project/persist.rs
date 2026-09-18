@@ -81,7 +81,7 @@ where
     async fn run(&self, input: Prepared<DeleteProject>) -> DomainResult<Committed<DeleteProject>> {
         input
             .commit(async |project| {
-                self.project_repo.delete(project.id()).await?;
+                self.project_repo.delete(&project).await?;
                 self.policy_control.reload().await?;
                 Ok(Deleted::new(project))
             })

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, name, description, organization_id, is_active, created_at, updated_at\n            FROM projects\n            WHERE (NOT $3 OR is_active)\n              AND ($4::text IS NULL OR organization_id = $4)\n              AND ($5 OR organization_id = ANY($6) OR id = ANY($7))\n            ORDER BY created_at DESC\n            LIMIT $1 OFFSET $2\n            ",
+  "query": "\n            SELECT id, name, description, organization_id, is_active, created_at, updated_at, version\n            FROM projects\n            WHERE id = ANY($1::text[])\n            ",
   "describe": {
     "columns": [
       {
@@ -79,16 +79,21 @@
             "name": "updated_at"
           }
         }
+      },
+      {
+        "ordinal": 7,
+        "name": "version",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "version"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8",
-        "Bool",
-        "Text",
-        "Bool",
-        "TextArray",
         "TextArray"
       ]
     },
@@ -99,8 +104,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "f7f80bce115c979bc3d10e7e9e3f0e109d5feb0e32299d13060daebac5974330"
+  "hash": "38266d63dcde19c3b96c44b3dbde868c374737d81dfcd2b09e26b1e0601f9b73"
 }

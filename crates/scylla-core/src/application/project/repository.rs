@@ -28,9 +28,12 @@ pub trait ProjectRepository {
 
     async fn find_by_ids(&self, ids: &[ProjectId]) -> DomainResult<Vec<Project>>;
 
+    /// Writes only if the row still carries `project.version()`, and returns the row with the
+    /// bumped version. A stale value is `Conflict`; a missing row is `NotFound`.
     async fn update(&self, project: &Project) -> DomainResult<Project>;
 
-    async fn delete(&self, id: &ProjectId) -> DomainResult<()>;
+    /// Same version rule as `update`.
+    async fn delete(&self, project: &Project) -> DomainResult<()>;
 
     async fn list_all(
         &self,

@@ -325,3 +325,74 @@ async fn a_project_listing_shows_only_what_the_caller_holds(pool: PgPool) {
     );
     assert_eq!(page.items()[0].id(), mine.id());
 }
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_update_from_a_stale_read_is_a_conflict_and_the_first_write_wins(pool: PgPool) {
+    use crate::domain::project::ProjectName;
+
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgProjectRepository::new(pool);
+    let project = project(&org, "one");
+    repo.create(&project).await.expect("create");
+
+    let mut first = repo.find_by_id(project.id()).await.expect("first read");
+    let mut second = repo.find_by_id(project.id()).await.expect("second read");
+    assert_eq!(first.version(), 0);
+
+    first.update_name(ProjectName::new("a").unwrap()).unwrap();
+    let written = repo.update(&first).await.expect("first write");
+    assert_eq!(written.version(), 1);
+
+    second.update_name(ProjectName::new("b").unwrap()).unwrap();
+    let err = repo.update(&second).await.expect_err("stale write");
+    assert!(matches!(err, DomainError::Conflict(_)));
+
+    let stored = repo.find_by_id(project.id()).await.expect("find");
+    assert_eq!(stored.name().as_str(), "a");
+    assert_eq!(stored.version(), 1);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_delete_with_a_stale_version_is_a_conflict(pool: PgPool) {
+    use crate::domain::project::ProjectName;
+
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgProjectRepository::new(pool);
+    let project = project(&org, "one");
+    repo.create(&project).await.expect("create");
+
+    let stale = repo.find_by_id(project.id()).await.expect("read");
+    let mut fresh = stale.clone();
+    fresh
+        .update_name(ProjectName::new("renamed").unwrap())
+        .unwrap();
+    let fresh = repo.update(&fresh).await.expect("write");
+
+    let err = repo.delete(&stale).await.expect_err("stale delete");
+    assert!(matches!(err, DomainError::Conflict(_)));
+    assert!(repo.find_by_id(project.id()).await.is_ok());
+
+    repo.delete(&fresh)
+        .await
+        .expect("delete at the current version");
+    assert!(matches!(
+        repo.find_by_id(project.id()).await,
+        Err(DomainError::NotFound { .. })
+    ));
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_write_on_a_missing_row_is_not_found(pool: PgPool) {
+    let org = seed_org(&pool, "acme").await;
+    let repo = PgProjectRepository::new(pool);
+    let never_persisted = project(&org, "ghost");
+
+    assert!(matches!(
+        repo.update(&never_persisted).await,
+        Err(DomainError::NotFound { .. })
+    ));
+    assert!(matches!(
+        repo.delete(&never_persisted).await,
+        Err(DomainError::NotFound { .. })
+    ));
+}

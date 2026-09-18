@@ -96,8 +96,8 @@ mod tests {
         async fn update(&self, project: &Project) -> DomainResult<Project> {
             self.create(project).await
         }
-        async fn delete(&self, id: &ProjectId) -> DomainResult<()> {
-            self.rows.lock().unwrap().remove(id);
+        async fn delete(&self, project: &Project) -> DomainResult<()> {
+            self.rows.lock().unwrap().remove(project.id());
             Ok(())
         }
         async fn list_all(
