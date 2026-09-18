@@ -73,6 +73,7 @@ pub fn init_tracing(edition_targets: &[&str]) {
     let core_targets = [
         "scylla_server",
         "scylla_core",
+        "scylla_extension",
         "scylla_auth",
         "scylla_db",
         "scylla_domain",
