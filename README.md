@@ -20,7 +20,7 @@ The workspace is a stack of library crates under `crates/` with the two binaries
 
 ```
 crates/
-  scylla-extension/   the edition boundary: extension traits + the Extensions bundle (no workspace dependency)
+  scylla-extension/   the edition boundary: the action pipeline every write goes through (depends on scylla-domain only)
   scylla-domain/      the shared kernel: domain model, JobEvent (no I/O, no crypto)
   scylla-proto/       the wire contract: .proto files + generated bindings (also consumed by the frontend)
   scylla-auth/        the access model: RBAC ports and types, the Cedar adapter
@@ -37,9 +37,9 @@ migrations/           the SQL schema, embedded by scylla-db
 Dependencies point one way, bottom to top:
 
 ```
-scylla-extension
-scylla-domain <- scylla-proto <- scylla-core <- scylla-db <- scylla-server <- scylla-ce
-scylla-domain <- scylla-auth  <- scylla-core
+scylla-domain <- scylla-proto     <- scylla-core <- scylla-db <- scylla-server <- scylla-ce
+scylla-domain <- scylla-auth      <- scylla-core
+scylla-domain <- scylla-extension <- scylla-core
 ```
 
 `scylla-core` is generic over the ports declared in `scylla-core` and `scylla-auth`; `scylla-db` implements them; `scylla-server` is the only crate that names the concrete implementations side by side. The binaries are a `main.rs` each: parse the command line, load the configuration, open the pool with `scylla_db::init_db`, then `Server::new(config, db)`, the edition's contributions as builder methods, `serve()`.
@@ -50,32 +50,33 @@ A WebAssembly plugin runtime is planned as `crates/scylla-wasm/`; it does not ex
 
 This repository is the open source core and ships the Community Edition binary, `scylla-ce`. A separate, private repository builds an Enterprise binary on top of it. The dependency is strictly one way: the private repository depends on this one by a pinned git tag, and nothing here knows it exists.
 
-The seam between the two is `crates/scylla-extension`: a small crate holding only traits and the types that appear in their signatures, with no dependency on any other workspace crate. An edition implements the traits and registers the implementations on the server, each under its trait (`Server::extension::<dyn QuotaPolicy>(...)`); they land in an `Extensions` registry keyed by trait that the core looks up, supplying its own default for any point left unregistered. The core calls through the traits and never knows which edition built it. The pool the binary opened is available to the implementations, so they share the database.
+The seam between the two is `crates/scylla-extension`, the action pipeline. Every write in the core is a command (`CreateProject { organization_id, name, description }`) that `Actions::send` moves through three typed stages: `Authorize` (the permission check, run by the core for every command), `Prepare` (the use case reads and builds a staged value, it does not write) and `Persist` (the store writes inside `Prepared::commit`). Around each stage the `Hooks` registry runs six positions, in this order:
 
-One extension point exists today, the quota:
-
-```rust
-#[async_trait]
-pub trait QuotaPolicy: Send + Sync {
-    async fn check(&self, resource: Resource, scope: &str) -> Result<QuotaDecision, QuotaError>;
-    async fn usage(&self, resource: Resource, scope: &str) -> Result<Option<QuotaUsage>, QuotaError>;
-}
-
-pub enum QuotaDecision {
-    Allow,
-    Deny { resource: Resource, limit: u64, current: u64, upgrade_hint: Option<String> },
-}
-
-// The registry, keyed by extension trait.
-let extensions = Extensions::new().with::<dyn QuotaPolicy>(Arc::new(MyQuota));
-let policy = extensions.get::<dyn QuotaPolicy>(); // None when the edition registered nothing
+```
+Policy -> Gate<S> -> Around [ Wrap<S> [ Run ] ] -> Listener<S> -> Observer
+ veto      veto      control   control            side effect     record
+ every     one       every     one                one             every
 ```
 
-`ProjectUseCases::create` asks the policy before creating a project and turns a `Deny` into `DomainError::QuotaExceeded` (gRPC `RESOURCE_EXHAUSTED`). The Community Edition registers nothing, so it gets the core's default, `UnlimitedQuota` (`scylla_core::application::quota_policy`), which always allows and consults nothing. `scope` is the organization id as a plain string so the contract stays free of the domain model.
+`Policy`, `Around` and `Observer` are erased: registered on a stage kind, they fire for every command, including commands that do not exist yet, and see the caller, the `Permission` and the action id. `Gate<S>`, `Wrap<S>` and `Listener<S>` are typed: registered on one stage of one command, they see the exact phase. A veto is a `DomainError` (`quota_exceeded`, `business_rule`) and maps to gRPC like any other. The crate depends on `scylla-domain` and nothing else, so an edition builds against a pinned git tag without the access model, the database or the gRPC stack.
 
-Adding an extension point is: a trait and its boundary types in `scylla-extension`, a default implementation plus a `<point>(extensions)` accessor in `scylla-core`, and the call site that uses it. Nothing changes in the registry, the server builder or the Community binary; an edition that wants to override it adds one `.extension::<dyn Trait>(...)` line.
+An edition bundles its hooks in a type that implements `Extension` and registers it once:
 
-The same builder takes what else an edition contributes, usually bundled as a `scylla_server::Feature` (its extension implementations, its migrations on the shared pool, its services): `authenticated_grpc_service` / `grpc_service` (its own gRPC services on the same listener, behind the core's bearer-token interceptor or not), `file_descriptor_set` (so reflection lists them) and `http_routes`. A feature's `install` step receives a `Context` with the pool and the core's authorization ports, so its use cases enforce the same policies as the core's. A private edition therefore adds whole features without touching this repository.
+```rust
+impl Extension for MeteredQuota {
+    fn register(self: &Arc<Self>, hooks: &mut Hooks) {
+        hooks
+            .policy(StageKind::Prepare, self.clone())   // veto a create over the plan's limit
+            .observe(StageKind::Persist, self.clone()); // count what was stored
+    }
+}
+
+Server::new(config, db).extension(&Arc::new(MeteredQuota::new(plans))).serve()
+```
+
+The Community Edition registers nothing: the pipeline runs the permission check, the two stages and no hook. A use case adds a command with three files and no hook code: `commands.rs` (the struct, its `Permission`, its staged and committed types), `prepare.rs` (`impl Run<Prepare<C>>`) and `persist.rs` (`impl Run<Persist<C>>`); its public method is one line, `self.actions.send(self, caller, command)`. The project use case is the reference; see `crates/scylla-extension/AGENTS.md` for the positions, the decision table and the failure semantics.
+
+The same builder takes what else an edition contributes, usually bundled as a `scylla_server::Feature` (its hooks, its migrations on the shared pool, its services): `authenticated_grpc_service` / `grpc_service` (its own gRPC services on the same listener, behind the core's bearer-token interceptor or not), `file_descriptor_set` (so reflection lists them) and `http_routes`. A feature's `install` step receives a `Context` with the pool and the core's authorization ports, so its use cases enforce the same policies as the core's. A private edition therefore adds whole features without touching this repository.
 
 ## Prerequisites
 

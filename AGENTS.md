@@ -10,20 +10,20 @@ libraries they link.
 
 | Path | What it is |
 |---|---|
-| `crates/scylla-extension` | the edition boundary: extension traits (`QuotaPolicy`) + `Extensions`; no workspace dependency |
+| `crates/scylla-extension` | the edition boundary: the action pipeline (commands, stages, `Hooks`); depends on `scylla-domain` only. Guide: [`crates/scylla-extension/AGENTS.md`](./crates/scylla-extension/AGENTS.md) |
 | `crates/scylla-domain` | dependency-light shared kernel (domain model, `JobEvent`) |
 | `crates/scylla-proto` | the wire contract — protos under `proto/scylla/<domain>/v1/` |
 | `crates/scylla-auth` | the access model: RBAC ports and types, the Cedar adapter |
 | `crates/scylla-core` | use cases and ports, gRPC + HTTP surfaces, config, in-memory adapters |
 | `crates/scylla-db` | the Postgres adapters, the pool, the embedded migrations |
-| `crates/scylla-server` | the composition root: the `Server` builder (extensions by trait, extra gRPC/HTTP services) and the `cli` every edition binary shares |
+| `crates/scylla-server` | the composition root: the `Server` builder (hook extensions, extra gRPC/HTTP services) and the `cli` every edition binary shares |
 | `binaries/scylla-ce` | the Community Edition binary: a `main.rs` and the config files |
 | `binaries/scylla-agent` | the worker installed per machine |
 | `apps/frontend` | the web UI's source; compiled into the `scylla-ce` binary through `scylla-core` |
 
 Dependencies point one way: `domain <- auth <- core <- db <- server <- ce`, with
-`extension` below everything. A private Enterprise repo depends on this one by
-git tag and provides its own `Extensions`; nothing here depends on it.
+`extension` between `domain` and `core`. A private Enterprise repo depends on
+this one by git tag and registers its own hooks; nothing here depends on it.
 
 Every package sits exactly two directories below the root, and for two of
 them that depth is load-bearing: `sqlx::migrate!("../../migrations")` (scylla-db)
@@ -36,6 +36,7 @@ resolve against `CARGO_MANIFEST_DIR`.
 |---|---|
 | **Publishing release images** | [`RELEASING.md`](./RELEASING.md) |
 | Access model (grants, roles, permissions) | [`docs/src/access-model.md`](./docs/src/access-model.md) |
+| The action pipeline (commands, stages, hooks) | [`crates/scylla-extension/AGENTS.md`](./crates/scylla-extension/AGENTS.md) |
 | Domain vocabulary | [`GLOSSARY.md`](./GLOSSARY.md) |
 | Running the stack | [`README.md`](./README.md) |
 | Frontend architecture and module rules | [`apps/frontend/CLAUDE.md`](./apps/frontend/CLAUDE.md) |
