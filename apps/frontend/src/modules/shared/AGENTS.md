@@ -37,6 +37,9 @@ presentation/
   ui/controls/                       IconButton, BackButton
   ui/layout/                         FeatureHeader, ContextItem, AnimatedOutlet
   ui/shadcn/                         shadcn/ui primitives — @shadcn/*
+  ui/shadcn-svelte/                  their Svelte port, on bits-ui — see below
+  ui-svelte/                         the Svelte half of ui/, group for group
+  state/                             the Svelte half of hooks/ — runes, not hooks
   utils/                             cn, toast, i18n, code-mirror-theme
 locales/                             shared's own catalog
 ```
@@ -105,6 +108,106 @@ rule on it**, so this is caught, not trusted.
 The pattern to follow when a store is de-React-ified: the **agnostic core** in
 `stores/*.store.ts`, the **React binding** in `hooks/use-*.ts` — the binding is what gets deleted
 in Phase 6, the core is what survives. `theme.store.ts` is the worked example.
+
+### `ui-svelte/` and `state/` — the Svelte halves
+
+```
+ui-svelte/{controls,data-display,feedback,forms,layout,motion}/   mirrors ui/, group for group
+state/                                                           mirrors hooks/
+```
+
+Parallel trees rather than `.svelte` files dropped beside their `.tsx` originals: the two versions
+of a component share a name, so one barrel cannot export both. `ui/` and `hooks/` are **frozen** —
+bug fixes only — and Phase 6 deletes them and renames these into place.
+
+**There are no hooks in `state/`.** `use-selection.ts` became `createSelection(key)`,
+`use-pagination.ts` became `createPagination(options)`, `use-feature-selection.ts` became
+`createFeatureSelection(key, allIds)`. Three things carry over from the port and will bite again:
+
+- **A list that arrives later is passed as a getter, not an array.** `createFeatureSelection`
+  takes `() => string[]` and `createFormState` takes `() => items`. React re-ran the whole hook on
+  every render and got this for free; capturing the value once freezes the helper on whatever the
+  first, usually empty, render held.
+- **`toRune(store)`** (`stores/to-rune.svelte.ts`) is how rune code reads a Zustand store —
+  `to-svelte-store.ts` produces the `$store` contract a *template* consumes, which a `.svelte.ts`
+  module cannot use. It is built on `createSubscriber`, so the subscription starts only while
+  something is reading and the helpers stay testable in plain TypeScript, outside any component.
+- **Derive instead of mirroring.** `usePagination` kept `pageSize` in state and ran an effect to
+  copy the measured size into it; `createPagination` derives it, so there is no effect and no
+  frame where the two disagree. Only "the user picked a size" is remembered, because nothing else
+  records it.
+
+DOM measurement is a **Svelte action**, never an effect: `createMeasuredHeight()` returns
+`{ height, measure }` and the caller writes `use:measure`. That is also what replaces React's
+callback-ref trick for elements that mount late.
+
+`motion/` holds the transitions. `prefersReducedMotion()` is not optional decoration: the
+`@media (prefers-reduced-motion: reduce)` block in `index.css` neutralises CSS animations, but a
+Svelte transition writes inline styles from JavaScript and that query never sees it — every
+transition here asks and collapses its duration to zero.
+
+### `ui/shadcn-svelte/` — the ported primitives
+
+Radix → **`bits-ui`**, with the Tailwind class strings copied verbatim, which is why the design
+survives the port untouched. `ui/shadcn/` next door is **frozen** — bug fixes only — so the two
+cannot drift while both are alive. Both folders go in Phase 6.
+
+Ported so far, and **only these**: `Button`, `Card` (+ the six parts), `Input`, `Skeleton`,
+`Tooltip`, `Dialog`, `AlertDialog`, `Checkbox`, `Avatar`, `Table` (the five parts `DataTable`
+composes), `Label`, `Field`/`FieldGroup`/`FieldLabel`, `Select`. A primitive lands here the phase
+its first Svelte consumer does — porting the rest now would be components with no usage.
+
+What a port has to get right, all of it invisible to the compiler:
+
+- **`tsc` sees only a `.svelte` file's default export.** Anything a `.ts` must import — a `cva`
+  config, a variant type — lives in a `.ts` beside it (`button-variants.ts`), never in
+  `<script module>`.
+- **`asChild` is bits-ui's `child` snippet**, and it rides through `...rest`. The trigger's props
+  land *on* the caller's element: `<TooltipTrigger>{#snippet child({ props })}<Button {...props}/>`.
+  The merged `data-slot` wins over the Button's own — `data-variant` is what still identifies it.
+- **Parts that carry no styling are aliased from bits-ui in `index.ts`**, not wrapped.
+  `Dialog`, `DialogTrigger`, `DialogClose`, `DialogPortal`, `AlertDialog`, `AlertDialogTrigger`.
+- **`AlertDialogAction` / `AlertDialogCancel` are plain `Button`s**, not bits-ui's own, which close
+  the dialog on click. Every confirmation here keeps the dialog open and disabled while its
+  mutation runs; the parent owns `open`. Do not "fix" this.
+- The alert dialog is a **real** `role="alertdialog"` that ignores an outside click — something
+  `shadcn/alert-dialog.tsx`, built on Radix's plain dialog, never was.
+- **bits-ui drops ARIA roles Radix set, and the wrapper puts them back.** The tooltip content had
+  no `role="tooltip"`; the select trigger had every piece of the combobox pattern —
+  `aria-haspopup`, `aria-expanded`, `aria-activedescendant` — but no `role="combobox"`. Nothing
+  breaks loudly: `aria-describedby` still carries the tooltip text, the button still opens. Check
+  the role when you port a primitive, and add it to *our* wrapper when it is missing.
+- **CSS variable names change**: `--radix-*-content-transform-origin` becomes
+  `--bits-floating-transform-origin`, and the select's available-height/anchor-width variables
+  likewise. Nothing fails loudly if you miss one.
+- **Radix's `Indicator` parts become an `{#if}` in a children snippet** (checkbox, select item),
+  because bits-ui hands the state to the snippet instead of mounting a separate node.
+- **Highlight styles need `data-highlighted:`, not just `focus:`.** bits-ui never moves DOM focus
+  into a listbox; it tracks the active option with `aria-activedescendant`.
+- Composed primitives are driven from a `*.fixture.svelte`: their parts are components, so a
+  `createRawSnippet` cannot build them.
+
+Three things about testing them, all in the shared harness so nobody re-derives them:
+
+- **`setup.ts` clears `document.body.style.pointerEvents` before every test.** bits-ui locks the
+  page behind an open dialog and the lock outlives unmounting, which made the *next* test in the
+  file fail with an error pointing at an innocent line.
+- **`setup.ts` stubs `Element.prototype.animate`.** jsdom has no Web Animations API, and a Svelte
+  `transition:` runs on it. The stub stays *running* rather than resolving, so a leaving node is
+  still observable.
+- **`findFloating(role, name?)` / `findTooltip()` from `render.svelte.ts`** for anything in a
+  floating layer — tooltip content, select options. floating-ui has no layout to measure in jsdom,
+  so it leaves the wrapper at `visibility: hidden` forever: `getByRole` skips the subtree, *and*
+  the accessible-name algorithm ignores its text, which is why the helper matches `name` against
+  the element's text. Do not fall back to `getByText` — that would keep passing if the element
+  lost its role, which is exactly the regression above.
+
+An open-outside click is still out of `userEvent`'s reach; use `fireEvent.pointerDown(document.body)`,
+which is what the dismiss layer listens for.
+
+In `vite.config.ts`, `vendor-ui-svelte` holds **only Svelte-only packages**. `@floating-ui` and
+`tabbable` are shared with Radix: claiming them there moved 8.7 kB gzip of React positioning code
+into a Svelte-named chunk and preloaded it from the entry. Leave shared packages unassigned.
 
 ## Rules that bite here
 

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { createRawSnippet, type Snippet } from 'svelte';
 import { setDependencyRegistry, type DomainRegistry } from '@platform/di';
 
@@ -44,3 +44,48 @@ export const withRegistry = (registry: DomainRegistry): (() => void) => {
  */
 export const textSnippet = (text: string): Snippet =>
   createRawSnippet(() => ({ render: () => `<span>${text}</span>` }));
+
+/**
+ * Finds an element bits-ui rendered into a floating layer — a tooltip's
+ * content, a select's options, a dropdown's items.
+ *
+ * Two jsdom facts make the plain query useless here, and both come from the
+ * same place. bits-ui positions floating content with floating-ui, which has no
+ * layout to measure in jsdom and therefore leaves the wrapper at
+ * `visibility: hidden` forever:
+ *
+ * 1. `getByRole` skips the subtree as inaccessible — hence `hidden: true`;
+ * 2. the accessible-*name* algorithm ignores text inside a hidden subtree, so
+ *    `{ name: 'Pro' }` matches nothing however the option is labelled. That is
+ *    why `name` here is compared against the element's text rather than passed
+ *    through to testing-library.
+ *
+ * In a browser the wrapper becomes visible as soon as it is positioned and both
+ * problems disappear, so this is an artifact of the environment and not
+ * something the component gets wrong. Still query by role: falling back to
+ * `getByText` would keep passing if the element lost the role its behaviour
+ * advertises, which is exactly the regression these ports kept introducing.
+ */
+/** Whatever `findAllByRole` accepts — derived rather than imported, because
+ *  `@testing-library/dom` is a transitive dependency, not one we declare. */
+type RoleMatcher = Parameters<typeof screen.findAllByRole>[0];
+
+export const findFloating = async (role: RoleMatcher, name?: string): Promise<HTMLElement> => {
+  const candidates = await screen.findAllByRole(role, { hidden: true });
+  const matches =
+    name === undefined
+      ? candidates
+      : candidates.filter(element => element.textContent?.trim() === name);
+
+  if (matches.length !== 1) {
+    const described = name === undefined ? String(role) : `${String(role)} named "${name}"`;
+    throw new Error(`Expected exactly one ${described} in a floating layer, found ${matches.length}`);
+  }
+
+  return matches[0];
+};
+
+export const findTooltip = (): Promise<HTMLElement> => findFloating('tooltip');
+
+export const queryTooltip = (): HTMLElement | null =>
+  screen.queryByRole('tooltip', { hidden: true });

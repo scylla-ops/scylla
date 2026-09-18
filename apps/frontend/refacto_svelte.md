@@ -16,8 +16,8 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 | — départ | | 294,8 kB | 660 kB | 41 |
 | **0 · Lot A** — nettoyage deps | ✅ **fait** | **253,6 kB** | **619 kB** | **39** |
 | **0 · Lot B** — dé-React-ification | ✅ **fait** | 253,5 kB | 619 kB | 43 |
-| **1** — `shared/` + design system | 🟡 **en cours** — voir le découpage ci-dessous | | | |
-| **2** — 6 features pilotes | ⬜ | | | |
+| **1** — `shared/` + design system | ✅ **fait** | 253,5 kB | 619 kB | 47 |
+| **2** — 6 features pilotes | 🟢 **débloquée** | | | |
 | **3** — apps, agents, membership, jobs, triggers | ⬜ | | | |
 | **4** — roles + dashboard (`recharts` sort ici) | ⬜ | | | |
 | **5** — pipeline (`reactflow` sort ici) | ⬜ | | | |
@@ -29,6 +29,12 @@ Le Lot B ajoute 4 dépendances (`svelte`, `@tanstack/svelte-query`, `@tanstack/q
 `@sveltejs/vite-plugin-svelte` & co) **sans toucher au bundle de production** : aucune UI Svelte  
 n'est encore livrée, donc rien de tout ça n'entre dans un chunk. Le compte redescend à partir de  
 la Phase 2, quand les paires React sortent.
+
+Même remarque pour les 4 dépendances qu'ajoute la Phase 1 (`bits-ui`, `@lucide/svelte`,  
+`@tanstack/svelte-table`, `@tanstack/table-core`) : aucun code de production ne les importe encore  
+— le `shared` Svelte n'a pas de consommateur avant la Phase 2 — donc le build est **identique au  
+bit près**, vérifié en comparant les hashes de chunks et non supposé. `vendor-ui-svelte` n'existe  
+même pas encore dans `dist/`.
 
 ---
 
@@ -353,12 +359,14 @@ endroit** à changer.
 | `sonner` (24 fichiers, **1 seul point d'entrée** : `shared/presentation/utils/toast.ts`) | `svelte-sonner` | échange trivial |
 | `lucide-react` (89) | `@lucide/svelte` | mapping 1:1, mécanique |
 | `@radix-ui` + `radix-ui` (38 fichiers, 33 primitives shadcn) | `shadcn-svelte` (sur `bits-ui`) | **Tailwind et classes identiques → tout le style survit tel quel** |
-| `@tanstack/react-table` (12) | `@tanstack/svelte-table` | `ColumnDef` vient de `table-core` : les défs survivent, seuls les `cell:` JSX sont réécrits |
+| `@tanstack/react-table` (12) | `@tanstack/svelte-table` **v9** | ⚠️ corrigé en Phase 1 : pas de v8 pour Svelte 5. La *forme* des défs survit, la signature générique non — voir « Ce que la fin de la Phase 1 a appris » |
 | `@uiw/react-codemirror` (8) | CodeMirror 6 direct via une `action` Svelte | **−1 dép** (le wrapper React disparaît, pas CodeMirror) |
 | `reactflow` (6) | `@xyflow/svelte` | port officiel, API proche |
 | `recharts` (2) | SVG maison | **−119 kB** ; un seul graphe concerné |
 
-Cible : **41 → ~20 dépendances runtime** (39 après Lot A), **861 → ~400 paquets transitifs**.  
+Cible : **41 → ~20 dépendances runtime** (39 après Lot A, 47 au pic de la Phase 1 — les deux
+moitiés du design system coexistent, et le compte ne redescend qu'à partir de la Phase 2 quand les
+paires React sortent), **861 → ~400 paquets transitifs**.  
 `vendor-react`, `vendor-motion` et `vendor-charts` disparaissent des `VENDOR_CHUNKS`.
 
 ### 4.4 Points durs
@@ -550,12 +558,26 @@ minimalisme interdit.
 |---|---|
 | Harnais de test (`src/test/render.svelte.ts`) | ✅ |
 | Primitives sans dépendance headless : `button`, `card` (×7), `input`, `skeleton` | ✅ |
-| Primitives sur `bits-ui` : `tooltip`, `dialog`, `alert-dialog`, `checkbox`, `avatar` | ⬜ |
-| `table` + `DataTable` sur `@tanstack/svelte-table` | ⬜ |
-| Wrappers génériques : `IconButton`, `TruncatedText`, `CopyableText`, `ContextItem`, `ErrorState`, `ConfirmOperationAlertDialog`, `FeatureHeader` | ⬜ |
-| Formulaires : `ScyllaForm`, `FormDialog`, `useFormState` (le typage générique doit survivre) | ⬜ |
-| Hooks : `use-selection`, `use-pagination`, `use-feature-selection` | ⬜ |
-| Dette d'animations (tableau ci-dessous) | ⬜ |
+| Primitives sur `bits-ui` : `tooltip`, `dialog`, `alert-dialog`, `checkbox`, `avatar` | ✅ |
+| `table` + `DataTable` sur `@tanstack/svelte-table` | ✅ |
+| Wrappers génériques : `IconButton`, `TruncatedText`, `CopyableText`, `ContextItem`, `ErrorState`, `ConfirmOperationAlertDialog`, `FeatureHeader` | ✅ |
+| Formulaires : `ScyllaForm`, `FormDialog`, `useFormState` (le typage générique doit survivre) | ✅ |
+| Hooks : `use-selection`, `use-pagination`, `use-feature-selection` | ✅ |
+| Dette d'animations (tableau ci-dessous) | ✅ pour `shared/` — les 2 autres sites vivent dans `layout/` et `pipeline/`, donc Phases 6 et 5 |
+
+Primitives ajoutées en cours de route, chacune parce que son premier consommateur Svelte est  
+arrivé : `table` (les 5 parties que compose `DataTable`), puis `label`, `field` et `select` que  
+`ScyllaForm` exige. Restent différées, sans consommateur : `sheet`, `dropdown-menu`, `breadcrumb`,  
+`collapsible`, `scroll-area`, `progress`, `switch`, `radio-group`, `toggle`, `toggle-group`,  
+`separator`, `badge`, `pagination`, `code-snippet`, `tabs`, `sidebar` (Phase 6), `chart` (Phase 4),  
+`sonner` (Phase 6).
+
+**Non porté, et délibérément** : `Pagination` / `PaginationSlot` et sa primitive `pagination`,  
+`ListCard`, `StatusBar`, `CheckboxTree`. Le texte de la Phase 1 les citait, mais le tableau des  
+tranches — qui est la checklist — ne les demande pas, et la mesure des six features pilotes ne les  
+fait pas remonter. `CheckboxTree` en particulier appartient à `roles` (Phase 4), dont il est la  
+logique UI la plus dense. Les écrire ici, ce serait exactement les composants sans usage que la  
+règle de minimalisme interdit.
 
 #### Une règle apprise en portant `button`
 
@@ -563,6 +585,80 @@ minimalisme interdit.
 lui sont invisibles, donc tout ce qu'un `.ts` doit importer — une config `cva`, un type de  
 variante — vit dans un `.ts` à côté (`button-variants.ts`), jamais dans le composant. Le gate  
 `typecheck` attrape la faute, mais autant ne pas la faire.
+
+#### Cinq règles apprises en portant Radix → `bits-ui`
+
+Aucune n'est attrapée par le compilateur ; toutes cassent à l'exécution. Elles valent pour les
+21 primitives restantes.
+
+1. **`asChild` devient le snippet `child`**, qui passe par `...rest` sans code dédié :
+   `<TooltipTrigger>{#snippet child({ props })}<Button {...props}/>{/snippet}`. Les props du
+   trigger atterrissent **sur** l'élément de l'appelant, donc son `data-slot` gagne sur celui du
+   `Button` — c'est `data-variant` qui identifie encore ce dernier. `IconButton` en dépend.
+2. **Un nom de variable CSS change** : `--radix-*-content-transform-origin` devient
+   `--bits-floating-transform-origin`. Rien n'échoue bruyamment si on l'oublie, l'animation part
+   juste du mauvais coin.
+3. **Les parties sans style s'aliasent depuis `bits-ui` dans l'`index.ts`**, elles ne se wrappent
+   pas — `shadcn/dialog.tsx` fait déjà exactement ça avec Radix. Un fichier dont tout le corps est
+   `<Primitive {...rest} />` est un fichier à maintenir pour rien.
+4. **`AlertDialogAction` / `AlertDialogCancel` restent de simples `Button`**, pas ceux de bits-ui
+   qui ferment la boîte au clic : toutes les confirmations d'ici gardent la boîte ouverte et
+   désactivée pendant la mutation (`ConfirmOperationAlertDialog`, `isLoading`). En prime, bits-ui
+   a un vrai `role="alertdialog"` qui ignore le clic extérieur — ce que la version Radix, bâtie
+   sur un dialog ordinaire, n'a jamais été.
+5. **Tester un dialog** : bits-ui verrouille `<body>` en `pointer-events: none`, et le verrou
+   survivait au démontage — il faisait échouer le test *suivant* du fichier avec une erreur qui
+   désignait un innocent. `setup.ts` le nettoie désormais avant chaque test. Un clic « à
+   l'extérieur » reste hors de portée de `userEvent` : `fireEvent.pointerDown(document.body)`,
+   c'est ce que la couche de dismiss écoute.
+
+Et une règle pour `VENDOR_CHUNKS` : **`vendor-ui-svelte` ne liste que des paquets exclusivement
+Svelte.** `@floating-ui` et `tabbable` sont partagés avec Radix ; revendiquer le scope a déplacé
+8,7 kB gzip de positionnement *React* dans un chunk au nom de Svelte, préchargé depuis l'entrée.
+Les paquets partagés restent non assignés jusqu'à la Phase 6. Vérifié en comparant les hashes de
+build : à ce stade le bundle de production est **inchangé au bit près**, aucune UI Svelte n'étant
+encore livrée.
+
+#### Ce que la fin de la Phase 1 a appris
+
+Quatre choses qu'aucun des deux documents n'anticipait, et qui coûteront cher aux Phases 2 à 5 si
+on les redécouvre module par module.
+
+1. **`@tanstack/svelte-table` est en v9, pas en v8 — les `ColumnDef` ne « survivent » donc pas
+   tels quels.** §4.3 le promettait ; c'est faux. La v8 de l'adaptateur a un peer `svelte ^4` et
+   est inutilisable ici. En v9 les *features* portent des types, donc
+   `ColumnDef<TData, TValue>` devient `ColumnDef<TFeatures, TData, TValue>`, `useReactTable`
+   devient `createTable({ features, get data() {…} })`, et `flexRender(def, ctx)` devient le
+   composant `<FlexRender {cell} />`. La **forme** des définitions survit — `accessorKey`,
+   `header`, `size`, `minSize`, `meta` — et c'est ça le vrai dividende : `DataTableColumn<TData>`
+   masque le jeu de features, et une feature migrée ne réécrit que ses `cell:`.
+   Conséquence : `@tanstack/table-core` v9 est épinglé en dépendance directe, comme `query-core`,
+   parce qu'une augmentation de module (`ColumnMeta.align`) doit viser le paquet qui *déclare*
+   l'interface, pas celui qui la ré-exporte.
+2. **Le nom d'un placeholder fait partie du msgid.** Porter
+   `plural(selectedCount, …)` en `plural(count, …)` a créé un second message, vide, pendant que le
+   premier gardait sa traduction. Rien n'aurait échoué : `extract` écrit l'entrée, `i18n:collisions`
+   reste à zéro, la couverture ne bouge pas, et l'arme plurielle rend en anglais. **Un message porté
+   garde les noms de variables de l'original** — et c'est le `*.fr.test.ts` qui le prouve, pas un
+   gate.
+3. **bits-ui laisse tomber des rôles ARIA que Radix posait.** Le contenu de tooltip n'avait pas
+   `role="tooltip"` ; le trigger de select avait `aria-haspopup`, `aria-expanded` et
+   `aria-activedescendant` mais pas `role="combobox"`. Rien ne casse bruyamment — le texte passe
+   quand même par `aria-describedby`, le bouton s'ouvre quand même. **Vérifier le rôle à chaque
+   primitive portée**, et le remettre dans *notre* wrapper.
+4. **`tsc -b` et `svelte-check` ne voient pas le même code, et c'est le plus faible qui dicte la
+   syntaxe.** Pour `tsc`, tout import `.svelte` est le `LegacyComponentType` ambiant de Svelte :
+   sans paramètres de type, donc une expression d'instanciation (`DataTable<Datum>`) échoue en
+   TS2635 alors que `svelte-check` l'accepte. La sortie est un `*.fixture.svelte` qui instancie le
+   générique *dans* un fichier `.svelte`, là où `tsc` ne regarde pas et où `svelte-check` vérifie
+   pour de vrai. Le test rend la fixture. Même remède pour les trois composants génériques —
+   `DataTable`, `ScyllaForm`, `FormDialog`.
+
+Trois ajouts au harnais partagé, faits une fois pour toutes dans `setup.ts` / `render.svelte.ts` :
+le nettoyage de `pointer-events` sur `<body>`, un stub de `Element.prototype.animate` (jsdom n'a
+aucune Web Animations API, dont dépend chaque `transition:`), et `findFloating(role, name?)` —
+floating-ui n'ayant rien à mesurer sous jsdom, il laisse ses wrappers en `visibility: hidden`, ce
+qui masque le nœud à `getByRole` **et** vide son nom accessible.
 
 - Port `shadcn/ui` → **`shadcn-svelte`** pour les 33 primitives. Les classes Tailwind sont  
   identiques : transposition de syntaxe, pas redesign. Radix → `bits-ui`.
@@ -581,19 +677,36 @@ variante — vit dans un `.ts` à côté (`button-variants.ts`), jamais dans le 
   vivant le temps de l'animer. **Le rendu doit revenir au niveau d'avant le Lot A au minimum**, et  
   la cible est mieux que ça :
 
-  | Endroit | Avant (framer) | Après Lot A | Cible Phase 1 (Svelte) |
-    |---|---|---|---|
-  | Changement de route | fade + scale in/out, 200 ms | entrée seule | `crossfade` entrée+sortie, sans le délai de 200 ms qu'imposait `mode='wait'` |
-  | Écran « première orga » | fade + scale + y, 800 ms | entrée seule | `in:` / `out:` complets |
-  | Statut éditeur pipeline | crossfade vertical 150 ms | entrée seule | `{#key status}` + `in:fly` / `out:fly` |
-  | Logo de chargement | fade + rotation | identique | identique, la rotation reste du CSS |
+  | Endroit | Avant (framer) | Après Lot A | État | Livré |
+    |---|---|---|---|---|
+  | Changement de route | fade + scale in/out, 200 ms | entrée seule | ✅ | `PageTransition.svelte` — `{#key}` + `in:pageIn` / `out:pageOut` |
+  | Logo de chargement | fade + rotation | identique | ✅ | `ScyllaLoadingScreen.svelte` — et il gagne la sortie que React ne pouvait pas faire |
+  | Écran « première orga » | fade + scale + y, 800 ms | entrée seule | ⬜ | vit dans `layout/Layout.tsx` → **Phase 6** |
+  | Statut éditeur pipeline | crossfade vertical 150 ms | entrée seule | ⬜ | vit dans `pipeline/PipelineEditorHeader.tsx` → **Phase 5** |
 
-  Le `mode='wait'` de framer retenait la nouvelle page pendant 200 ms le temps que l'ancienne  
-  sorte. `crossfade` fait se chevaucher les deux : on récupère l'animation de sortie **sans**  
-  repayer ce délai. C'est le « plus propre » visé, pas seulement le retour à l'état antérieur.
+  Les deux sites restants ne sont pas un oubli : ce sont des composants React de modules non
+  migrés, et les convertir voudrait dire migrer `layout/` et `pipeline/` en avance. Les
+  transitions dont ils ont besoin existent déjà dans `ui-svelte/motion/` ; il ne restera qu'à les
+  appliquer.
 
-  `prefers-reduced-motion` doit continuer d'être respecté — le Lot A a élargi la règle dans  
-  `index.css`, les transitions Svelte doivent y entrer aussi.
+  **Pas de `crossfade`, finalement.** Le `crossfade` de Svelte apparie des éléments *envoyés* et
+  *reçus* entre deux blocs — c'est l'outil du « cet élément se déplace d'ici à là », pas celui de
+  « cette page remplace celle-là ». Un `{#key}` avec `in:` et `out:` donne le chevauchement
+  recherché, sans appariement à déclarer. Le wrapper est `relative` et les deux panneaux
+  `absolute inset-0` : sinon la page sortante occupe la mise en page et pousse l'entrante vers le
+  bas pendant 140 ms.
+
+  Le `mode='wait'` de framer retenait la nouvelle page pendant 200 ms le temps que l'ancienne
+  sorte. Ici les deux se chevauchent : **entrée 200 ms sans aucun délai, sortie 140 ms**, donc
+  rien n'est jamais retenu et le contenu est lisible bien avant la fin — sur une courbe `cubicOut`
+  l'opacité passe 0,8 vers 100 ms. L'échelle part de 0,99, pas de 0,95 : à l'échelle d'une page,
+  un zoom visible donne l'impression que l'interface se reconstruit.
+
+  `prefers-reduced-motion` doit continuer d'être respecté — et le Lot A ne suffit pas ici : la
+  règle CSS de `index.css` neutralise les animations CSS, mais **une transition Svelte écrit des
+  styles inline depuis JavaScript et cette media query ne la voit jamais**. D'où
+  `motion/reduced-motion.ts` : chaque transition interroge la préférence et ramène sa durée à zéro.
+  Même préférence, honorée deux fois, parce qu'il y a deux mécanismes.
 - CodeMirror : `use-code-mirror-theme.ts` + `code-mirror-theme.ts` → une `action` Svelte sur  
   `EditorView`. **`@uiw/react-codemirror` sort ici** (déplacé du Lot A) : son rôle est le montage,  
   qui est exactement ce qu'une `action` remplace. Les deux usages actuels prennent son `basicSetup`  

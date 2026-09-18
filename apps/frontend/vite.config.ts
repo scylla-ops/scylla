@@ -34,6 +34,16 @@ const VENDOR_CHUNKS: Record<string, string[]> = {
     'tailwind-merge',
     'clsx',
   ],
+  // The Svelte half of `vendor-ui`, kept apart rather than merged into it: a
+  // page that has been migrated must not pull Radix along, and this chunk is
+  // what `vendor-ui` becomes once Phase 6 deletes the React one.
+  //
+  // Only packages that belong to Svelte alone are listed. `@floating-ui` and
+  // `tabbable` are deliberately absent: Radix reaches them too, so claiming the
+  // scope here moved 8.7 kB gzip of *React* positioning code into a chunk named
+  // for Svelte, and preloaded it from the entry. Shared packages stay
+  // unassigned until the React side is gone.
+  'vendor-ui-svelte': ['bits-ui', '@lucide/svelte', 'svelte-toolbelt', 'runed'],
   'vendor-query': ['@tanstack'],
   'vendor-i18n': ['@lingui', 'messageformat-parser', '@messageformat'],
   'vendor-flow': ['reactflow', '@reactflow'],
@@ -117,6 +127,10 @@ export default defineConfig({
         'src/generated/**',
         '**/locales/**',
         '**/*.test.{ts,tsx}',
+        // Test scaffolding too: a `*.fixture.svelte` exists to pin a generic or
+        // to compose parts a raw snippet cannot build, and it is rendered only
+        // by the test beside it.
+        '**/*.fixture.{ts,svelte}',
         // Vendored shadcn primitives — upstream code we don't own. Both ports:
         // the React one is frozen for the migration, the Svelte one replaces it.
         '**/shadcn/**',
@@ -132,10 +146,10 @@ export default defineConfig({
       // number can only go up. Raise them when a batch of tests lands; never
       // lower them to make a red run green.
       thresholds: {
-        statements: 60,
-        branches: 60,
-        functions: 58,
-        lines: 60,
+        statements: 69,
+        branches: 66,
+        functions: 65,
+        lines: 69,
       },
     },
   },

@@ -446,6 +446,27 @@ React 18 · TypeScript 5.8 · TanStack Query 5 · Zustand 5 · React Router 7 ·
 
 ## Adding a feature (checklist)
 
+> **A new feature's presentation layer is written in Svelte, not React.** Phase 1 of
+> `refacto_svelte.md` has landed: the Svelte design system, test harness and shared state helpers
+> all exist, and `shared/presentation/ui/` + `hooks/` are **frozen** — bug fixes only. Steps 1 to 4
+> and 7 to 12 below are unchanged (domain, infrastructure and the `ScyllaModule` contract are
+> framework-agnostic and stay exactly as they are); steps 5, 6 and 11 read differently:
+>
+> - **No `use-<feature>-domain.ts` hook.** Call `getModuleDomain('<id>')` directly — DI is a module
+>   singleton since Phase 0, so there is no provider to be inside of. The rule it enforced still
+>   holds: a component never reaches the domain, only a `*.state.svelte.ts` or a `*.queries.ts` does.
+> - **No custom hooks.** Follow the decision matrix in `refacto_svelte.md` §4.1: simple UI state is
+>   `$state` in the component, page orchestration is a `*.state.svelte.ts` ViewModel, DOM work is a
+>   Svelte action, heavy pure computation is a `*.calculator.ts`.
+> - **Messages go in a `*.messages.ts`** beside the component, declared with `msg` — `lingui extract`
+>   does not read `.svelte`, and a message declared inside one disappears without failing any gate.
+>   Keep the original's placeholder names when porting: they are part of the msgid.
+> - **Import shared UI from `@shared/presentation/ui-svelte`** and primitives from `@shadcn-svelte`.
+>   Read `src/modules/shared/AGENTS.md` first — it holds what the ports get wrong.
+> - **Tests** use `@testing-library/svelte` through `src/test/render.svelte.ts`.
+>
+> Migrating an existing feature: follow the recipe in `refacto_svelte.md` §6, not this checklist.
+
 1. Create `src/modules/features/<feature>/` with `domain/ infrastructure/ locales/ presentation/`.
 2. Domain: repository interface (+ its input types), `entities/*.entity.ts` and `structs/*.struct.ts`.
    **Add a use case only if it orchestrates** — see "Use cases are optional".

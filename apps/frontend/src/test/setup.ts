@@ -35,12 +35,54 @@ class ResizeObserverStub {
   disconnect = vi.fn();
 }
 
+/**
+ * jsdom implements no Web Animations API, and a Svelte `transition:` runs on
+ * `element.animate()` — without this, every component with one throws
+ * "element.animate is not a function" the moment it enters or leaves.
+ *
+ * The stub stays *running* rather than resolving: a transition that finished
+ * instantly would tear its node down before a test could observe the leaving
+ * state, which is precisely what the page transitions are about. Tests that
+ * care about the end of an animation call `finish()` on the returned handle.
+ */
+class AnimationStub {
+  currentTime = 0;
+  startTime = 0;
+  playState = 'running';
+  onfinish: (() => void) | null = null;
+  onremove: (() => void) | null = null;
+  finished = new Promise<void>(() => {});
+  effect = { getComputedTiming: () => ({ duration: 0 }), setKeyframes: () => {} };
+
+  pause = () => (this.playState = 'paused');
+  play = () => (this.playState = 'running');
+  cancel = () => (this.playState = 'idle');
+  reverse = vi.fn();
+  commitStyles = vi.fn();
+  addEventListener = vi.fn();
+  removeEventListener = vi.fn();
+
+  finish = () => {
+    this.playState = 'finished';
+    this.onfinish?.();
+  };
+}
+
 beforeEach(() => {
   // Mappers, utils and domain tests opt out of jsdom with
   // `// @vitest-environment node` — there is nothing to stub there.
   if (typeof window === 'undefined') return;
 
+  // bits-ui locks the page behind an open dialog with an inline
+  // `pointer-events: none` on `<body>`, and unmounting the component during
+  // testing-library's cleanup does not always get to restore it. The stale lock
+  // then makes `userEvent` refuse every click in the *next* test of the file,
+  // with an error that points at the innocent test. Clearing it at the start of
+  // each test is unambiguous: no test begins with a dialog already open.
+  document.body.style.pointerEvents = '';
+
   vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+  Element.prototype.animate = vi.fn(() => new AnimationStub() as unknown as Animation);
   Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
   Element.prototype.setPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();

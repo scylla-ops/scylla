@@ -13,6 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:23
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:63
 msgid "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
 msgstr "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
@@ -21,6 +22,7 @@ msgstr "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
 msgid "Agent id copied"
 msgstr "Agent id copied"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/error-state.messages.ts:5
 #: src/modules/shared/presentation/ui/feedback/ErrorState.tsx:13
 msgid "An error occurred"
 msgstr "An error occurred"
@@ -33,10 +35,13 @@ msgstr "An unexpected error occurred"
 msgid "App id copied"
 msgstr "App id copied"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/confirm-operation.messages.ts:4
 #: src/modules/shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx:34
 msgid "Are you absolutely sure?"
 msgstr "Are you absolutely sure?"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/confirm-operation.messages.ts:6
+#: src/modules/shared/presentation/ui-svelte/forms/form-dialog.messages.ts:4
 #: src/modules/shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx:39
 #: src/modules/shared/presentation/ui/forms/FormDialog.tsx:60
 msgid "Cancel"
@@ -46,6 +51,7 @@ msgstr "Cancel"
 msgid "Cancelled"
 msgstr "Cancelled"
 
+#: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:7
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:99
 msgid "Clear"
 msgstr "Clear"
@@ -55,6 +61,7 @@ msgstr "Clear"
 msgid "Command copied"
 msgstr "Command copied"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/confirm-operation.messages.ts:7
 #: src/modules/shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx:42
 msgid "Continue"
 msgstr "Continue"
@@ -63,10 +70,12 @@ msgstr "Continue"
 msgid "Copied"
 msgstr "Copied"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/copyable-text.messages.ts:5
 #: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:69
 msgid "Copied!"
 msgstr "Copied!"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/copyable-text.messages.ts:4
 #: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:69
 #: src/modules/shared/presentation/ui/shadcn/code-snippet.tsx:89
 msgid "Copy"
@@ -80,14 +89,17 @@ msgstr "Copy your secret"
 msgid "Could not copy — select the id manually"
 msgstr "Could not copy — select the id manually"
 
+#: src/modules/shared/presentation/ui-svelte/forms/form-dialog.messages.ts:5
 #: src/modules/shared/presentation/ui/forms/FormDialog.tsx:66
 msgid "Create"
 msgstr "Create"
 
+#: src/modules/shared/presentation/ui-svelte/forms/form-dialog.messages.ts:6
 #: src/modules/shared/presentation/ui/forms/FormDialog.tsx:65
 msgid "Creating..."
 msgstr "Creating..."
 
+#: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:8
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:123
 msgid "Delete"
 msgstr "Delete"
@@ -96,6 +108,7 @@ msgstr "Delete"
 msgid "Done"
 msgstr "Done"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/error-state.messages.ts:4
 #: src/modules/shared/presentation/ui/feedback/ErrorState.tsx:12
 msgid "Error"
 msgstr "Error"
@@ -116,6 +129,7 @@ msgstr "Go to next page"
 msgid "Go to previous page"
 msgstr "Go to previous page"
 
+#: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:5
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:82
 msgid "in total"
 msgstr "in total"
@@ -124,6 +138,7 @@ msgstr "in total"
 msgid "Job queued — no agent connected"
 msgstr "Job queued — no agent connected"
 
+#: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:10
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:134
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:140
 msgid "New {label}"
@@ -137,6 +152,7 @@ msgstr "Next"
 msgid "No data"
 msgstr "No data"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/data-table.messages.ts:4
 #: src/modules/shared/presentation/ui/data-display/DataTable.tsx:218
 msgid "No results."
 msgstr "No results."
@@ -245,6 +261,7 @@ msgstr "Secret created"
 msgid "Secret deleted"
 msgstr "Secret deleted"
 
+#: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:6
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:94
 msgid "Select all"
 msgstr "Select all"
@@ -277,6 +294,7 @@ msgstr "The agent starts in the foreground: its logs show up right in the termin
 msgid "The URL above is prefilled with this page's own address. Replace it if your agent reaches the control plane another way — for example http://host.docker.internal:8080 from inside Docker, or a private-network address."
 msgstr "The URL above is prefilled with this page's own address. Replace it if your agent reaches the control plane another way — for example http://host.docker.internal:8080 from inside Docker, or a private-network address."
 
+#: src/modules/shared/presentation/ui-svelte/feedback/confirm-operation.messages.ts:5
 #: src/modules/shared/presentation/ui/feedback/ConfirmOperationAlertDialog.tsx:35
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
@@ -335,6 +353,7 @@ msgstr "Username and password are required."
 msgid "You cannot delete your own account."
 msgstr "You cannot delete your own account."
 
+#: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:9
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:125
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:145
 msgid "You don't have permission to do this."
