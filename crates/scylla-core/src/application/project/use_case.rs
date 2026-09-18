@@ -1,20 +1,12 @@
-use super::commands::{CreateProject, DeleteProject, SetProjectActive, UpdateProject};
-use crate::application::pagination::{PaginatedResult, PaginationMetadata, PaginationParams};
 use crate::application::{ProjectRepository, UserRepository};
-use crate::domain::caller::CallerContext;
-use crate::domain::errors::DomainResult;
-use crate::domain::ids::{OrganizationId, ProjectId, UserId};
-use crate::domain::permission::Permission;
-use crate::domain::project::Project;
-use crate::domain::user::User;
 use derive_more::Constructor;
-use scylla_auth::authz::{PermissionService, PolicyControl, Visibility, VisibilityResolver};
-use scylla_extension::{Actions, Committed, Deleted};
+use scylla_auth::authz::{PermissionService, PolicyControl, VisibilityResolver};
 use std::sync::Arc;
-use tracing::instrument;
 
-/// Writes go through `actions`: the permission check, the hooks and the two stages in
-/// `prepare.rs` and `persist.rs`. Reads stay plain methods; they are not commands.
+/// The project aggregate's stage runners: `prepare.rs` and `persist.rs` for the commands,
+/// `fetch.rs` for the queries. It has no method of its own; `Actions::send` and
+/// `Actions::query` drive it. `permission_service` serves one scoping decision in `fetch.rs`,
+/// never a gate.
 #[derive(Constructor)]
 pub struct ProjectUseCases<
     P: ProjectRepository,
@@ -23,183 +15,28 @@ pub struct ProjectUseCases<
     PC: PolicyControl,
 > {
     pub(super) project_repo: Arc<P>,
-    user_repo: Arc<U>,
-    permission_service: Arc<PS>,
-    visibility: Arc<dyn VisibilityResolver>,
+    pub(super) user_repo: Arc<U>,
+    pub(super) permission_service: Arc<PS>,
+    pub(super) visibility: Arc<dyn VisibilityResolver>,
     pub(super) policy_control: Arc<PC>,
-    actions: Arc<Actions>,
-}
-
-impl<
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-> ProjectUseCases<P, U, PS, PC>
-{
-    #[instrument(skip_all, fields(name = %command.name, org_id = %command.organization_id))]
-    pub async fn create(
-        &self,
-        caller: &CallerContext,
-        command: CreateProject,
-    ) -> DomainResult<Project> {
-        self.actions
-            .send(self, caller, command)
-            .await
-            .map(Committed::into_outcome)
-    }
-
-    #[instrument(skip_all, fields(project_id = %id))]
-    pub async fn get(&self, caller: &CallerContext, id: &ProjectId) -> DomainResult<Project> {
-        self.permission_service
-            .check(caller, Permission::ReadProject(id.clone()))
-            .await?;
-        self.project_repo.find_by_id(id).await
-    }
-
-    #[instrument(skip_all, fields(project_id = %command.id))]
-    pub async fn update(
-        &self,
-        caller: &CallerContext,
-        command: UpdateProject,
-    ) -> DomainResult<Project> {
-        self.actions
-            .send(self, caller, command)
-            .await
-            .map(Committed::into_outcome)
-    }
-
-    #[instrument(skip_all, fields(project_id = %command.id, is_active = command.is_active))]
-    pub async fn set_active(
-        &self,
-        caller: &CallerContext,
-        command: SetProjectActive,
-    ) -> DomainResult<Project> {
-        self.actions
-            .send(self, caller, command)
-            .await
-            .map(Committed::into_outcome)
-    }
-
-    #[instrument(skip_all, fields(project_id = %command.id))]
-    pub async fn delete(
-        &self,
-        caller: &CallerContext,
-        command: DeleteProject,
-    ) -> DomainResult<Deleted<Project>> {
-        self.actions
-            .send(self, caller, command)
-            .await
-            .map(Committed::into_outcome)
-    }
-
-    #[instrument(skip(self, caller, pagination))]
-    pub async fn list(
-        &self,
-        caller: &CallerContext,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        self.permission_service
-            .check(caller, Permission::ListProjects)
-            .await?;
-        self.project_repo.list_all(pagination).await
-    }
-
-    /// Not gated on `listProjectsByOrganization`: a project-only role must see its own project, not be refused.
-    #[instrument(skip_all, fields(organization_id = %organization_id))]
-    pub async fn list_by_organization(
-        &self,
-        caller: &CallerContext,
-        organization_id: &OrganizationId,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        self.permission_service
-            .check(
-                caller,
-                Permission::ReadOrganization(organization_id.clone()),
-            )
-            .await?;
-
-        let visible = if self
-            .permission_service
-            .check(
-                caller,
-                Permission::ListProjectsByOrganization(organization_id.clone()),
-            )
-            .await
-            .is_ok()
-        {
-            Visibility::All
-        } else {
-            self.visibility
-                .visible_scopes(caller, Permission::ReadProject(ProjectId::new("_")).key())
-                .await?
-        };
-
-        self.project_repo
-            .list_by_organization(organization_id, pagination, &visible)
-            .await
-    }
-
-    #[instrument(skip_all, fields(project_id = %project_id))]
-    pub async fn list_users(
-        &self,
-        caller: &CallerContext,
-        project_id: &ProjectId,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<(Vec<User>, PaginationMetadata)> {
-        self.permission_service
-            .check(caller, Permission::ListProjectMembers(project_id.clone()))
-            .await?;
-
-        let paginated = self
-            .project_repo
-            .list_principals(project_id, pagination)
-            .await?;
-        let (user_ids, metadata) = paginated.into_parts();
-
-        let mut by_id: std::collections::HashMap<String, User> = self
-            .user_repo
-            .find_by_ids(&user_ids)
-            .await?
-            .into_iter()
-            .map(|u| (u.id().as_str().to_owned(), u))
-            .collect();
-        let users = user_ids
-            .iter()
-            .filter_map(|id| by_id.remove(id.as_str()))
-            .collect();
-
-        Ok((users, metadata))
-    }
-
-    #[instrument(skip_all, fields(user_id = %user_id))]
-    pub async fn list_user_projects(
-        &self,
-        caller: &CallerContext,
-        user_id: &UserId,
-        pagination: Option<&PaginationParams>,
-    ) -> DomainResult<(Vec<Project>, PaginationMetadata)> {
-        self.permission_service
-            .check(caller, Permission::ListUserProjects(user_id.clone()))
-            .await?;
-
-        let paginated = self.project_repo.list_for_user(user_id, pagination).await?;
-        Ok(paginated.into_parts())
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::application::PermissionAuthorizer;
-    use crate::domain::errors::DomainError;
-    use crate::domain::project::ProjectName;
+    use crate::application::pagination::{PaginatedResult, PaginationParams};
+    use crate::application::project::{CreateProject, DeleteProject, GetProject, UpdateProject};
+    use crate::domain::caller::CallerContext;
+    use crate::domain::errors::{DomainError, DomainResult};
+    use crate::domain::ids::{OrganizationId, ProjectId, UserId};
+    use crate::domain::permission::Permission;
+    use crate::domain::project::{Project, ProjectName};
     use crate::domain::user::{Email, User, Username};
     use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
     use async_trait::async_trait;
-    use scylla_auth::authz::Grant;
-    use scylla_extension::{Action, Hooks, Policy, StageKind};
+    use scylla_auth::authz::{Grant, Visibility};
+    use scylla_extension::{Action, Actions, Hooks, Policy, StageKind};
     use std::collections::HashMap;
     use std::sync::Mutex;
 
@@ -356,26 +193,32 @@ mod tests {
     }
 
     struct Lab<PS: PermissionService> {
+        actions: Actions,
         uc: ProjectUseCases<StubProjects, StubUsers, PS, StubPolicy>,
         projects: Arc<StubProjects>,
         policy: Arc<StubPolicy>,
     }
 
+    impl<PS: PermissionService> Lab<PS> {
+        async fn create(&self, name: &str) -> DomainResult<Project> {
+            self.actions.send(&self.uc, &alice(), create(name)).await
+        }
+    }
+
     fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>, hooks: Hooks) -> Lab<PS> {
         let projects = Arc::new(StubProjects::default());
         let policy = Arc::new(StubPolicy::default());
-        let actions = Arc::new(Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(hooks),
-        ));
         Lab {
+            actions: Actions::new(
+                Arc::new(PermissionAuthorizer::new(permissions.clone())),
+                Arc::new(hooks),
+            ),
             uc: ProjectUseCases::new(
                 projects.clone(),
                 Arc::new(StubUsers),
                 permissions,
                 Arc::new(StubVisibility),
                 policy.clone(),
-                actions,
             ),
             projects,
             policy,
@@ -399,7 +242,7 @@ mod tests {
         let permissions = Arc::new(RecordingPermissionService::new());
         let lab = lab(permissions.clone(), Hooks::new());
 
-        let project = lab.uc.create(&alice(), create("rocket")).await.unwrap();
+        let project = lab.create("rocket").await.unwrap();
 
         assert_eq!(
             permissions.permissions(),
@@ -414,7 +257,7 @@ mod tests {
     async fn a_denied_caller_writes_nothing() {
         let lab = lab(Arc::new(DenyingPermissionService::new()), Hooks::new());
 
-        let err = lab.uc.create(&alice(), create("rocket")).await.unwrap_err();
+        let err = lab.create("rocket").await.unwrap_err();
 
         assert!(matches!(err, DomainError::Forbidden(_)));
         assert!(lab.projects.rows.lock().unwrap().is_empty());
@@ -428,7 +271,7 @@ mod tests {
         hooks.policy(StageKind::Prepare, Arc::new(Veto));
         let lab = lab(permissions.clone(), hooks);
 
-        let err = lab.uc.create(&alice(), create("rocket")).await.unwrap_err();
+        let err = lab.create("rocket").await.unwrap_err();
 
         assert!(matches!(&err, DomainError::QuotaExceeded(m) if m == "vetoed createProject"));
         assert_eq!(permissions.permissions().len(), 1);
@@ -439,11 +282,12 @@ mod tests {
     async fn an_update_stages_the_change_and_persists_it() {
         let permissions = Arc::new(RecordingPermissionService::new());
         let lab = lab(permissions.clone(), Hooks::new());
-        let created = lab.uc.create(&alice(), create("old")).await.unwrap();
+        let created = lab.create("old").await.unwrap();
 
         let updated = lab
-            .uc
-            .update(
+            .actions
+            .send(
+                &lab.uc,
                 &alice(),
                 UpdateProject {
                     id: created.id().clone(),
@@ -470,11 +314,12 @@ mod tests {
     #[tokio::test]
     async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
         let lab = lab(Arc::new(RecordingPermissionService::new()), Hooks::new());
-        let created = lab.uc.create(&alice(), create("gone")).await.unwrap();
+        let created = lab.create("gone").await.unwrap();
 
         let deleted = lab
-            .uc
-            .delete(
+            .actions
+            .send(
+                &lab.uc,
                 &alice(),
                 DeleteProject {
                     id: created.id().clone(),
@@ -486,5 +331,32 @@ mod tests {
         assert_eq!(deleted.last_state().id(), created.id());
         assert!(lab.projects.rows.lock().unwrap().is_empty());
         assert_eq!(*lab.policy.reloads.lock().unwrap(), 2);
+    }
+
+    #[tokio::test]
+    async fn a_read_checks_its_permission_and_takes_the_same_hooks() {
+        let permissions = Arc::new(RecordingPermissionService::new());
+        let mut hooks = Hooks::new();
+        hooks.policy(StageKind::Fetch, Arc::new(Veto));
+        let lab = lab(permissions.clone(), hooks);
+        let created = lab.create("seen").await.unwrap();
+
+        let err = lab
+            .actions
+            .query(
+                &lab.uc,
+                &alice(),
+                GetProject {
+                    id: created.id().clone(),
+                },
+            )
+            .await
+            .unwrap_err();
+
+        assert!(matches!(&err, DomainError::QuotaExceeded(m) if m == "vetoed readProject"));
+        assert_eq!(
+            permissions.permissions()[1],
+            Permission::ReadProject(created.id().clone())
+        );
     }
 }

@@ -1,4 +1,4 @@
-use super::command::Command;
+use super::command::{Command, Describe, Query};
 use super::envelope::Envelope;
 use crate::authz::Granted;
 use crate::domain::caller::CallerContext;
@@ -24,8 +24,13 @@ pub struct Committed<C: Command> {
     outcome: C::Committed,
 }
 
-impl<C: Command> Requested<C> {
-    /// Only `Actions::send` mints an envelope: an adapter cannot enter the pipeline halfway.
+pub struct Fetched<Q: Query> {
+    pub(super) env: Arc<Envelope<Q>>,
+    output: Q::Output,
+}
+
+impl<C: Describe> Requested<C> {
+    /// Only `Actions` mints an envelope: an adapter cannot enter the pipeline halfway.
     pub(crate) fn new(caller: CallerContext, command: C) -> Self {
         Self {
             env: Arc::new(Envelope::new(caller, command)),
@@ -38,11 +43,24 @@ impl<C: Command> Requested<C> {
     }
 }
 
-impl<C: Command> Authorized<C> {
-    pub fn prepared(self, staged: C::Staged) -> Prepared<C> {
+impl<C: Describe> Authorized<C> {
+    pub fn prepared(self, staged: C::Staged) -> Prepared<C>
+    where
+        C: Command,
+    {
         Prepared {
             env: self.env,
             staged,
+        }
+    }
+
+    pub fn fetched(self, output: C::Output) -> Fetched<C>
+    where
+        C: Query,
+    {
+        Fetched {
+            env: self.env,
+            output,
         }
     }
 }
@@ -77,6 +95,16 @@ impl<C: Command> Committed<C> {
     }
 }
 
+impl<Q: Query> Fetched<Q> {
+    pub fn output(&self) -> &Q::Output {
+        &self.output
+    }
+
+    pub fn into_output(self) -> Q::Output {
+        self.output
+    }
+}
+
 impl<C: Command> fmt::Debug for Committed<C>
 where
     C::Committed: fmt::Debug,
@@ -87,6 +115,20 @@ where
             .field("caller", self.env.caller())
             .field("permission", self.env.permission())
             .field("outcome", &self.outcome)
+            .finish()
+    }
+}
+
+impl<Q: Query> fmt::Debug for Fetched<Q>
+where
+    Q::Output: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Fetched")
+            .field("id", self.env.id())
+            .field("caller", self.env.caller())
+            .field("permission", self.env.permission())
+            .field("output", &self.output)
             .finish()
     }
 }

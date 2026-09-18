@@ -152,6 +152,7 @@ pub(crate) struct Services {
     pub oauth_uc: Option<SharedOAuthUc>,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
+    pub actions: Arc<Actions>,
     pub project_uc: SharedProjectUc,
     pub pipeline_uc: SharedPipelineUc,
     pub trigger_uc: SharedTriggerUc,
@@ -255,7 +256,6 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
         permission_checker.clone(),
         permission_checker.clone(),
-        actions,
     ));
     let secret_uc = Arc::new(SecretUseCases::new(
         secret_repo.clone(),
@@ -468,6 +468,7 @@ pub(crate) async fn init_services(
         oauth_uc,
         user_uc,
         org_uc,
+        actions,
         project_uc,
         pipeline_uc,
         trigger_uc,
@@ -610,7 +611,8 @@ where
     let auth_handler = AuthHandler::new(services.auth_uc.clone());
     let user_handler = UserHandler::new(services.user_uc.clone());
     let org_handler = OrganizationHandler::new(services.org_uc.clone());
-    let project_handler = ProjectHandler::new(services.project_uc.clone());
+    let project_handler =
+        ProjectHandler::new(services.actions.clone(), services.project_uc.clone());
     let pipeline_handler =
         PipelineHandler::new(services.pipeline_uc.clone(), services.dispatch_uc.clone());
     let trigger_handler = TriggerHandler::new(

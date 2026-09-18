@@ -13,15 +13,15 @@ pub mod hooks;
 pub mod stage;
 
 pub use action::{
-    Action, ActionId, Authorized, Command, Committed, Deleted, Draft, Envelope, Phase, Prepared,
-    Requested,
+    Action, ActionId, Authorized, Command, Committed, Deleted, Describe, Draft, Envelope, Fetched,
+    Phase, Prepared, Query, Requested,
 };
 pub use actions::Actions;
 pub use authz::{AuthorizeStage, Authorizer, Granted};
 pub use hooks::{
     Around, Done, Extension, Gate, Hooks, Listener, Next, Observer, Policy, Proceed, Wrap,
 };
-pub use stage::{Authorize, Persist, Prepare, Run, Stage, StageKind};
+pub use stage::{Authorize, Fetch, Persist, Prepare, Run, Stage, StageKind};
 
 #[cfg(test)]
 mod tests;

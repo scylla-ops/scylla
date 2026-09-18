@@ -1,7 +1,7 @@
-use super::command::Command;
+use super::command::{Command, Describe, Query};
 use super::envelope::Envelope;
 use super::id::ActionId;
-use super::phase::{Authorized, Committed, Prepared, Requested};
+use super::phase::{Authorized, Committed, Fetched, Prepared, Requested};
 use crate::domain::caller::CallerContext;
 use crate::domain::permission::Permission;
 use chrono::{DateTime, Utc};
@@ -33,7 +33,7 @@ impl dyn Action + '_ {
     }
 }
 
-impl<C: Command> Action for Envelope<C> {
+impl<C: Describe> Action for Envelope<C> {
     fn id(&self) -> &ActionId {
         Envelope::id(self)
     }
@@ -56,9 +56,9 @@ impl<C: Command> Action for Envelope<C> {
 }
 
 macro_rules! phase {
-    ($($phase:ident),*) => {
+    ($($phase:ident: $bound:ident),*) => {
         $(
-            impl<C: Command> Deref for $phase<C> {
+            impl<C: $bound> Deref for $phase<C> {
                 type Target = Envelope<C>;
 
                 fn deref(&self) -> &Envelope<C> {
@@ -66,7 +66,7 @@ macro_rules! phase {
                 }
             }
 
-            impl<C: Command> Action for $phase<C> {
+            impl<C: $bound> Action for $phase<C> {
                 fn id(&self) -> &ActionId {
                     self.env.id()
                 }
@@ -88,7 +88,7 @@ macro_rules! phase {
                 }
             }
 
-            impl<C: Command> Phase for $phase<C> {
+            impl<C: $bound> Phase for $phase<C> {
                 fn envelope(&self) -> Arc<dyn Action> {
                     self.env.clone()
                 }
@@ -97,4 +97,10 @@ macro_rules! phase {
     };
 }
 
-phase!(Requested, Authorized, Prepared, Committed);
+phase!(
+    Requested: Describe,
+    Authorized: Describe,
+    Prepared: Command,
+    Committed: Command,
+    Fetched: Query
+);

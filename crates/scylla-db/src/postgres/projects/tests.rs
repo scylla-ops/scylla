@@ -83,17 +83,16 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
             seen: std::sync::Mutex::default(),
         }),
     );
-    let actions = Arc::new(Actions::new(
+    let actions = Actions::new(
         Arc::new(PermissionAuthorizer::new(permission.clone())),
         Arc::new(hooks),
-    ));
+    );
     let uc = ProjectUseCases::new(
         Arc::new(PgProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),
         permission.clone(),
         permission.clone(),
         permission,
-        actions,
     );
     let caller = CallerContext::Service(ServiceIdentity::recorder());
     let create = |name: &str| CreateProject {
@@ -103,10 +102,13 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
     };
 
     for n in ["a", "b"] {
-        uc.create(&caller, create(n)).await.expect("under quota");
+        actions
+            .send(&uc, &caller, create(n))
+            .await
+            .expect("under quota");
     }
-    let err = uc
-        .create(&caller, create("c"))
+    let err = actions
+        .send(&uc, &caller, create("c"))
         .await
         .expect_err("over quota");
     assert!(matches!(err, DomainError::QuotaExceeded(_)));

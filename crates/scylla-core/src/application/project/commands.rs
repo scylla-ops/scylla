@@ -5,7 +5,7 @@ use crate::domain::ids::{OrganizationId, ProjectId};
 use crate::domain::permission::Permission;
 use crate::domain::project::{Project, ProjectDescription, ProjectName};
 use scylla_auth::authz::Grant;
-use scylla_extension::{Command, Deleted, Draft};
+use scylla_extension::{Command, Deleted, Describe, Draft};
 
 pub struct CreateProject {
     pub organization_id: OrganizationId,
@@ -20,13 +20,15 @@ pub struct NewProject {
     pub owner: Option<Grant>,
 }
 
-impl Command for CreateProject {
-    type Staged = Draft<NewProject>;
-    type Committed = Project;
-
+impl Describe for CreateProject {
     fn permission(&self) -> Permission {
         Permission::CreateProject(self.organization_id.clone())
     }
+}
+
+impl Command for CreateProject {
+    type Staged = Draft<NewProject>;
+    type Committed = Project;
 }
 
 pub struct UpdateProject {
@@ -35,13 +37,15 @@ pub struct UpdateProject {
     pub description: Option<Option<ProjectDescription>>,
 }
 
-impl Command for UpdateProject {
-    type Staged = Draft<Project>;
-    type Committed = Project;
-
+impl Describe for UpdateProject {
     fn permission(&self) -> Permission {
         Permission::UpdateProject(self.id.clone())
     }
+}
+
+impl Command for UpdateProject {
+    type Staged = Draft<Project>;
+    type Committed = Project;
 }
 
 pub struct SetProjectActive {
@@ -49,24 +53,28 @@ pub struct SetProjectActive {
     pub is_active: bool,
 }
 
-impl Command for SetProjectActive {
-    type Staged = Draft<Project>;
-    type Committed = Project;
-
+impl Describe for SetProjectActive {
     fn permission(&self) -> Permission {
         Permission::UpdateProject(self.id.clone())
     }
+}
+
+impl Command for SetProjectActive {
+    type Staged = Draft<Project>;
+    type Committed = Project;
 }
 
 pub struct DeleteProject {
     pub id: ProjectId,
 }
 
-impl Command for DeleteProject {
-    type Staged = Project;
-    type Committed = Deleted<Project>;
-
+impl Describe for DeleteProject {
     fn permission(&self) -> Permission {
         Permission::DeleteProject(self.id.clone())
     }
+}
+
+impl Command for DeleteProject {
+    type Staged = Project;
+    type Committed = Deleted<Project>;
 }

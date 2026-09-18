@@ -1,7 +1,7 @@
 //! The permission check is a stage, not a hook: it runs with zero extensions registered, and its
 //! output type is the proof that it ran.
 
-use crate::action::{Authorized, Command, Requested};
+use crate::action::{Authorized, Describe, Requested};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::permission::Permission;
@@ -33,7 +33,7 @@ impl AuthorizeStage {
 }
 
 #[async_trait]
-impl<C: Command> Run<Authorize<C>> for AuthorizeStage {
+impl<C: Describe> Run<Authorize<C>> for AuthorizeStage {
     async fn run(&self, input: Requested<C>) -> DomainResult<Authorized<C>> {
         self.authorizer
             .authorize(input.caller(), input.permission().clone())

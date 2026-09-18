@@ -1,7 +1,8 @@
 # scylla-extension: the action pipeline
 
-Every write in Scylla is a command that moves through three typed stages, and
-an extension attaches to each stage. This crate holds the pipeline. It depends
+Every write in Scylla is a command that moves through three typed stages,
+every read is a query that moves through two, and an extension attaches to
+each stage. This crate holds the pipeline. It depends
 on `scylla-domain` and nothing else: no access model, no database, no gRPC, no
 Cedar. A hook sees `CallerContext`, `Permission` and `DomainError`, never a
 repository or a wire type. An Enterprise build compiles it from a pinned tag.
@@ -16,31 +17,32 @@ pipeline is proven here before it reaches a use case.
 src/
   action/        the event
     id.rs          ActionId: one per send
-    command.rs     Command: Staged, Committed, permission()
+    command.rs     Describe: permission(); Command: Staged, Committed; Query: Output
     value.rs       Draft<T> (not stored), Deleted<T> (tombstone)
     envelope.rs    Envelope<C>: id, at, caller, permission, command; built once, shared by Arc
-    phase.rs       Requested, Authorized, Prepared, Committed; Prepared::commit
+    phase.rs       Requested, Authorized, Prepared, Committed, Fetched; Prepared::commit
     erased.rs      Action: the erased view of any phase; Phase: gives the envelope
-  stage.rs       StageKind, Stage, Authorize/Prepare/Persist<C>, Run<S>
+  stage.rs       StageKind, Stage, Authorize/Prepare/Persist<C>, Fetch<Q>, Run<S>
   authz.rs       Granted (private constructor), Authorizer, AuthorizeStage
   hooks/         the extension seam
     position.rs    Policy, Gate, Around, Wrap, Listener, Observer
     next.rs        Next: the rest of a typed chain; Proceed and Done: the erased one
     registry.rs    Hooks: registration and run()
     extension.rs   Extension: register(self: &Arc<Self>, &mut Hooks)
-  actions.rs     Actions: send(runner, caller, command) through the three stages
+  actions.rs     Actions: send(runner, caller, command), query(runner, caller, query)
   tests.rs       the checks, on a fake aggregate
 ```
 
 The core side lives in `scylla-core`: `application/actions.rs` adapts
-`PermissionService` to `Authorizer`, and `application/project/{commands,
-prepare, persist}.rs` is the reference use case.
+`PermissionService` to `Authorizer`, `application/project/{commands, queries,
+prepare, persist, fetch}.rs` is the reference use case, and
+`grpc/handlers/project_handler.rs` is the reference adapter.
 
 ## The event
 
 One action is one event. It is born in `Requested<C>`, where `C` is the
-command. `Requested<C>` holds an `Arc<Envelope<C>>`: the action id, the time,
-the caller, the permission and the complete command. Every later phase keeps
+command or the query. `Requested<C>` holds an `Arc<Envelope<C>>`: the action
+id, the time, the caller, the permission and the complete command. Every later phase keeps
 the same envelope. All phases deref to it, so `caller()`, `permission()`,
 `command()` and `id()` are available at each step. No phase has a public
 constructor. The only way to get a later phase is a transition method on the
@@ -48,29 +50,44 @@ earlier phase, and each transition consumes its input.
 
 | phase           | new data                       | who produces it       |
 |-----------------|--------------------------------|-----------------------|
-| `Requested<C>`  | envelope                       | `Actions::send`       |
+| `Requested<C>`  | envelope                       | `Actions`             |
 | `Authorized<C>` | nothing; `Granted` is consumed | the authorize stage   |
 | `Prepared<C>`   | `C::Staged`                    | the use case          |
 | `Committed<C>`  | `C::Committed`                 | the store             |
+| `Fetched<Q>`    | `Q::Output`                    | the use case          |
 
 `Granted` is a token with a private constructor and no data. Only
 `AuthorizeStage` makes one, and `Requested::authorized` consumes it, so an
 `Authorized<C>` is proof that the permission check ran.
 
-The command declares its two payload types and its permission:
+A command or a query declares its permission through `Describe`, and its
+payload types through `Command` or `Query`:
 
 ```rust
 pub struct CreateProject { pub organization_id: OrganizationId, pub name: ProjectName, ... }
 
-impl Command for CreateProject {
-    type Staged = Draft<NewProject>;
-    type Committed = Project;
-
+impl Describe for CreateProject {
     fn permission(&self) -> Permission {
         Permission::CreateProject(self.organization_id.clone())
     }
 }
+
+impl Command for CreateProject {
+    type Staged = Draft<NewProject>;
+    type Committed = Project;
+}
+
+pub struct GetProject { pub id: ProjectId }
+
+impl Query for GetProject {
+    type Output = Project;
+}
 ```
+
+A query is not a command with an empty write. `Committed<T>` means "this is in
+the store"; a read that went through a fake `Persist` would make that word
+false. So a query has its own second stage and its own output phase, and
+shares everything else: the envelope, the authorize stage, the hooks.
 
 A `Draft<T>` is a value that is not in the store. A `Project` that comes out of
 `Committed<CreateProject>` is in the store. For `DeleteProject`, `Staged` is
@@ -84,25 +101,32 @@ what a dry-run `Wrap` does.
 
 ## The stages
 
-Three stages move the event. Each is a type with an `In` and an `Out` phase:
+Four stages, each a type with an `In` and an `Out` phase. A command takes the
+first three, a query takes the first and the last:
 
 - `Authorize<C>`: `Requested<C>` to `Authorized<C>`. `AuthorizeStage` runs it
-  for every command; it asks the `Authorizer` (in the core, the Cedar
-  `PermissionService`) and mints the `Granted`.
+  for every command and query; it asks the `Authorizer` (in the core, the
+  Cedar `PermissionService`) and mints the `Granted`.
 - `Prepare<C>`: `Authorized<C>` to `Prepared<C>`. The use case runs it. It
   builds the draft or loads the target. It reads, it does not write.
 - `Persist<C>`: `Prepared<C>` to `Committed<C>`. The use case runs it too,
   against its repository port, by calling `commit` and writing inside the
   closure.
+- `Fetch<Q>`: `Authorized<Q>` to `Fetched<Q>`. The use case runs it: it reads
+  through the ports and returns the output.
 
 `Run<S>` is the trait a stage implementation satisfies:
 `async fn run(&self, input: S::In) -> DomainResult<S::Out>`. The signature is
 fixed by `S`; the compiler, not the author, decides the phases.
 
-`Actions::send(runner, caller, command)` chains the three stages through
-`Hooks::run`. The runner is one object that implements `Run<Prepare<C>>` and
-`Run<Persist<C>>`; a use case passes `self`. There is one `Actions` per
-server, built in `init_services` with the permission service and the hooks.
+`Actions::send(runner, caller, command)` chains authorize, prepare and persist
+through `Hooks::run` and returns `C::Committed`. `Actions::query(runner,
+caller, query)` chains authorize and fetch and returns `Q::Output`. The runner
+is the use case struct: one object that implements the `Run` traits for its
+commands and queries. There is one `Actions` per server, built in
+`init_services` with the permission service and the hooks, and every action
+runs in one tracing span with its id, caller, permission and resource; use
+cases carry no `#[instrument]` of their own.
 
 The permission check is a stage and not a hook for two reasons. It runs with
 zero hooks registered, because `send` calls it in code; a hook is something a
@@ -110,30 +134,50 @@ binary may or may not register. And it has an output, `Authorized<C>`, that a
 `Gate` cannot produce: the use case's `Run<Prepare<C>>` takes `Authorized<C>`,
 so its signature is the proof that the check ran.
 
-### Adding a command to a use case
+### The use case and the adapter
 
-Three files and no hook code:
-
-1. `commands.rs`: the struct with public fields, `impl Command` with the
-   permission and the two payload types.
-2. `prepare.rs`: `impl Run<Prepare<C>> for XUseCases`. Read through the port,
-   build the domain value, `input.prepared(staged)`.
-3. `persist.rs`: `impl Run<Persist<C>> for XUseCases`.
-   `input.commit(async |staged| self.repo.write(&staged).await).await`.
-
-Then one public method on the use case:
+A use case struct (`ProjectUseCases`) holds the ports and implements the `Run`
+traits. It has no method of its own, no `Actions` field, no permission code
+and no hook code. The adapter (a gRPC handler) holds `Arc<Actions>` and
+`Arc<ProjectUseCases>`, turns each request into a command or a query, and
+calls the engine:
 
 ```rust
-pub async fn create(&self, caller: &CallerContext, command: CreateProject) -> DomainResult<Project> {
-    self.actions.send(self, caller, command).await.map(Committed::into_outcome)
-}
+let project = self
+    .actions
+    .send(&*self.projects, &caller, CreateProject { organization_id, name, description })
+    .await
+    .map_err(domain_error_to_status)?;
+
+let project = self
+    .actions
+    .query(&*self.projects, &caller, GetProject { id })
+    .await
+    .map_err(domain_error_to_status)?;
 ```
 
-Reads (`get`, `list`) are not commands and take no hooks.
+Every RPC has that shape, reads and writes alike.
+
+### Adding a command or a query
+
+A command is three files: `commands.rs` (the struct with public fields,
+`impl Describe` with the permission, `impl Command` with the two payload
+types), `prepare.rs` (`impl Run<Prepare<C>>`: read through the port, build the
+domain value, `input.prepared(staged)`) and `persist.rs`
+(`impl Run<Persist<C>>`: `input.commit(async |staged| self.repo.write(&staged).await).await`).
+
+A query is two: `queries.rs` (the struct, `impl Describe`, `impl Query` with
+the output type) and `fetch.rs` (`impl Run<Fetch<Q>>`: read, `input.fetched(output)`).
+
+A permission check that never refuses is not a gate. `ListOrganizationProjects`
+asks a second time for `ListProjectsByOrganization` only to choose between
+every project of the organization and the ones the caller's grants reach; that
+decision lives in the `Fetch` runner, next to the read it scopes.
 
 ## The hook positions
 
-`Hooks::run` surrounds each stage with six positions. They run in this order:
+`Hooks::run` surrounds each stage, `Fetch` included, with six positions. They
+run in this order:
 
 ```
 Policy -> Gate<S> -> Around [ Wrap<S> [ Run ] ] -> Listener<S> -> Observer
@@ -179,6 +223,8 @@ Which `StageKind`:
   default position for a policy.
 - `Persist`: runs after the use case and before the store. Use it when the
   rule needs the staged value, reached through `downcast_ref`.
+- `Fetch`: runs after the permission check and before the read. A rate limit
+  on reads goes here, or on `Authorize` to cover reads and writes at once.
 
 A `Policy` must be idempotent and must not write.
 
@@ -225,10 +271,12 @@ outermost. Every `Around` runs outside every `Wrap`.
 A typed hook that controls how the stage's work runs for one command.
 Signature: `wrap(&self, input: S::In, next: Next<'_, S>) -> DomainResult<S::Out>`.
 
-Use it for: a cache in front of the stage, a dry-run mode, anything that needs
+Use it for: a cache in front of a read, a dry-run mode, anything that needs
 the typed input or output. It calls `next.run(input)` exactly once in normal
-operation. A dry run is a `Wrap<Persist<C>>` that never calls `next` and builds
-its output with `input.commit(async |draft| Ok(draft.into_inner()))`.
+operation. A read cache is a `Wrap<Fetch<GetProject>>` that answers with
+`input.fetched(cached)` on a hit and stores `fetched.output()` on a miss. A dry
+run is a `Wrap<Persist<C>>` that never calls `next` and builds its output with
+`input.commit(async |draft| Ok(draft.into_inner()))`.
 
 Do not use it for: a business rule (a `Wrap` that returns `Err` to refuse is
 a `Gate` in disguise), a side effect after success (use a `Listener`), a
@@ -300,8 +348,10 @@ hook wants to be a `Listener`).
 | refuse before the permission check (rate limit)  | `Policy` on `Authorize`       |
 | refuse one action on its fields                  | `Gate<Prepare<C>>`            |
 | refuse one action on its staged value            | `Gate<Persist<C>>`            |
-| time, trace, count failures, for every command   | `Around` on each kind         |
-| cache one command, simulate without writing      | `Wrap<S>`                     |
+| time, trace, count failures, for every action    | `Around` on each kind         |
+| rate-limit reads and writes together             | `Policy` on `Authorize`       |
+| cache one read                                   | `Wrap<Fetch<Q>>`              |
+| simulate a write without writing                 | `Wrap<Persist<C>>`, skips next|
 | notify after one action                          | `Listener<Persist<C>>`        |
 | record every attempt, with its result            | `Observer` on each kind       |
 | count what was stored                            | `Observer` on `Persist`       |

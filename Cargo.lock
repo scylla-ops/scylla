@@ -3016,6 +3016,7 @@ dependencies = [
  "chrono",
  "scylla-domain",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

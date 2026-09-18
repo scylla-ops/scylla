@@ -1,4 +1,4 @@
-use super::command::Command;
+use super::command::Describe;
 use super::id::ActionId;
 use crate::domain::caller::CallerContext;
 use crate::domain::clock;
@@ -15,7 +15,7 @@ pub struct Envelope<C> {
     command: C,
 }
 
-impl<C: Command> Envelope<C> {
+impl<C: Describe> Envelope<C> {
     pub(super) fn new(caller: CallerContext, command: C) -> Self {
         Self {
             id: ActionId::generate(),

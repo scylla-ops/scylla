@@ -1,4 +1,10 @@
-use crate::application::project::{CreateProject, DeleteProject, SetProjectActive, UpdateProject};
+//! The adapter: each RPC turns the request into a command or a query and hands it to `Actions`
+//! with the project runner. No RPC checks a permission or touches a port itself.
+
+use crate::application::project::{
+    CreateProject, DeleteProject, GetProject, ListOrganizationProjects, ListProjectMembers,
+    ListProjects, ListUserProjects, SetProjectActive, UpdateProject,
+};
 use crate::application::{ProjectRepository, ProjectUseCases, UserRepository};
 use crate::extract_auth_context;
 use crate::grpc::convert::{required, wrap};
@@ -9,6 +15,7 @@ use derive_more::Constructor;
 use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::{OrganizationId, ProjectId, UserId};
 use scylla_domain::domain::project::{ProjectDescription, ProjectName};
+use scylla_extension::Actions;
 use scylla_proto::project::v1::{
     CreateProjectRequest, CreateProjectResponse, DeleteProjectRequest, DeleteProjectResponse,
     GetProjectRequest, GetProjectResponse, ListOrganizationProjectsRequest,
@@ -27,7 +34,8 @@ pub struct ProjectHandler<
     PS: PermissionService,
     PC: PolicyControl,
 > {
-    use_cases: Arc<ProjectUseCases<P, U, PS, PC>>,
+    actions: Arc<Actions>,
+    projects: Arc<ProjectUseCases<P, U, PS, PC>>,
 }
 
 #[async_trait::async_trait]
@@ -54,8 +62,9 @@ impl<
             OrganizationId::new(&required(req.organization_id, "organization_id")?);
 
         let project = self
-            .use_cases
-            .create(
+            .actions
+            .send(
+                &*self.projects,
                 &caller,
                 CreateProject {
                     organization_id,
@@ -80,8 +89,8 @@ impl<
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         let project = self
-            .use_cases
-            .get(&caller, &id)
+            .actions
+            .query(&*self.projects, &caller, GetProject { id })
             .await
             .map_err(domain_error_to_status)?;
 
@@ -97,7 +106,6 @@ impl<
         let caller = caller!(request);
         let req = request.into_inner();
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
-
         let name = req
             .name
             .map(|n| ProjectName::new(&n))
@@ -110,8 +118,9 @@ impl<
             .map_err(domain_error_to_status)?;
 
         let project = self
-            .use_cases
-            .update(
+            .actions
+            .send(
+                &*self.projects,
                 &caller,
                 UpdateProject {
                     id,
@@ -136,8 +145,9 @@ impl<
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
         let project = self
-            .use_cases
-            .set_active(
+            .actions
+            .send(
+                &*self.projects,
                 &caller,
                 SetProjectActive {
                     id,
@@ -160,8 +170,8 @@ impl<
         let req = request.into_inner();
         let id = ProjectId::new(&required(req.project_id, "project_id")?);
 
-        self.use_cases
-            .delete(&caller, DeleteProject { id })
+        self.actions
+            .send(&*self.projects, &caller, DeleteProject { id })
             .await
             .map_err(domain_error_to_status)?;
 
@@ -177,8 +187,8 @@ impl<
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
-            .use_cases
-            .list(&caller, pagination.as_ref())
+            .actions
+            .query(&*self.projects, &caller, ListProjects { pagination })
             .await
             .map_err(domain_error_to_status)?;
 
@@ -202,8 +212,15 @@ impl<
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let result = self
-            .use_cases
-            .list_by_organization(&caller, &organization_id, pagination.as_ref())
+            .actions
+            .query(
+                &*self.projects,
+                &caller,
+                ListOrganizationProjects {
+                    organization_id,
+                    pagination,
+                },
+            )
             .await
             .map_err(domain_error_to_status)?;
 
@@ -226,8 +243,15 @@ impl<
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let (users, metadata) = self
-            .use_cases
-            .list_users(&caller, &project_id, pagination.as_ref())
+            .actions
+            .query(
+                &*self.projects,
+                &caller,
+                ListProjectMembers {
+                    project_id,
+                    pagination,
+                },
+            )
             .await
             .map_err(domain_error_to_status)?;
 
@@ -255,8 +279,15 @@ impl<
         let pagination = proto_to_domain_pagination(req.pagination);
 
         let (projects, metadata) = self
-            .use_cases
-            .list_user_projects(&caller, &user_id, pagination.as_ref())
+            .actions
+            .query(
+                &*self.projects,
+                &caller,
+                ListUserProjects {
+                    user_id,
+                    pagination,
+                },
+            )
             .await
             .map_err(domain_error_to_status)?;
 

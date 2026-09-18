@@ -13,6 +13,7 @@ repository.workspace = true
 scylla-domain = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }
+tracing = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
