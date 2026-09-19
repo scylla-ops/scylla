@@ -121,10 +121,12 @@ msgstr "Échoué"
 msgid "From source"
 msgstr "Depuis la source"
 
+#: src/modules/shared/presentation/ui/shadcn-svelte/pagination.messages.ts:14
 #: src/modules/shared/presentation/ui/shadcn/pagination.tsx:96
 msgid "Go to next page"
 msgstr "Aller à la page suivante"
 
+#: src/modules/shared/presentation/ui/shadcn-svelte/pagination.messages.ts:13
 #: src/modules/shared/presentation/ui/shadcn/pagination.tsx:76
 msgid "Go to previous page"
 msgstr "Aller à la page précédente"
@@ -138,12 +140,17 @@ msgstr "au total"
 msgid "Job queued — no agent connected"
 msgstr "Travail mis en file d'attente — aucun agent connecté"
 
+#: src/modules/shared/presentation/ui/shadcn-svelte/pagination.messages.ts:15
+msgid "More pages"
+msgstr "Plus de pages"
+
 #: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:10
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:134
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:140
 msgid "New {label}"
 msgstr "Nouveau {label}"
 
+#: src/modules/shared/presentation/ui/shadcn-svelte/pagination.messages.ts:12
 #: src/modules/shared/presentation/ui/shadcn/pagination.tsx:102
 msgid "Next"
 msgstr "Suivant"
@@ -201,6 +208,7 @@ msgstr "Pipeline exécuté"
 msgid "Pipeline ran — check that your agents are connected"
 msgstr "Pipeline exécutée — vérifiez que vos agents sont bien connectés"
 
+#: src/modules/shared/presentation/ui/shadcn-svelte/pagination.messages.ts:11
 #: src/modules/shared/presentation/ui/shadcn/pagination.tsx:83
 msgid "Previous"
 msgstr "Précédent"
@@ -270,6 +278,7 @@ msgstr "Tout sélectionner"
 msgid "Server unreachable"
 msgstr "Serveur injoignable"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/pagination.messages.ts:6
 #: src/modules/shared/presentation/ui/data-display/Pagination.tsx:81
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Affichage de {start}-{end} sur {totalCount}"

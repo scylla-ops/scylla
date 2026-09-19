@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
-import { renderWithI18n } from '@/test/render.tsx';
+import { renderWithProviders } from '@/test/render.tsx';
+import { stubQuery } from '@/test/queries.ts';
 import userEvent from '@testing-library/user-event';
 import { StepNodeFormDialog } from './StepNodeFormDialog';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
@@ -13,7 +14,7 @@ vi.mock('react-router-dom', () => ({
 
 const secretsMock = vi.fn(() => ({ secrets: [] as { id: string; name: string }[] }));
 vi.mock('@/modules/features/secret', () => ({
-  useSecrets: () => secretsMock(),
+  secretQueries: { byProject: () => stubQuery(['secrets'], secretsMock().secrets) },
 }));
 
 // The real editor needs a lot jsdom can't give it (measurement, ResizeObserver,
@@ -51,7 +52,7 @@ beforeEach(() => {
 
 describe('StepNodeFormDialog', () => {
   it('add mode: titles the dialog "Add a new node" and defaults to script mode', () => {
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={vi.fn()} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={vi.fn()} onEdit={vi.fn()} />);
     expect(screen.getByText('Add a new node')).toBeInTheDocument();
     expect(screen.getByTestId('script-editor')).toBeInTheDocument();
     expect(screen.queryByLabelText('Command')).not.toBeInTheDocument();
@@ -59,7 +60,7 @@ describe('StepNodeFormDialog', () => {
 
   it('switching to command mode swaps the script editor for a command + arguments UI', async () => {
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={vi.fn()} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={vi.fn()} onEdit={vi.fn()} />);
 
     await user.click(screen.getByText('Command'));
     expect(screen.queryByTestId('script-editor')).not.toBeInTheDocument();
@@ -70,7 +71,7 @@ describe('StepNodeFormDialog', () => {
   it('submitting a script node calls onAdd with the trimmed id and script payload', async () => {
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.type(screen.getByLabelText('Node ID'), '  build  ');
     await user.type(screen.getByTestId('script-editor'), 'cargo build');
@@ -88,7 +89,7 @@ describe('StepNodeFormDialog', () => {
   it('an empty script blocks submission entirely', async () => {
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.type(screen.getByLabelText('Node ID'), 'build');
     await user.click(screen.getByRole('button', { name: 'Add Node' }));
@@ -98,7 +99,7 @@ describe('StepNodeFormDialog', () => {
   it('an empty node id blocks submission entirely', async () => {
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.type(screen.getByTestId('script-editor'), 'cargo build');
     await user.click(screen.getByRole('button', { name: 'Add Node' }));
@@ -108,7 +109,7 @@ describe('StepNodeFormDialog', () => {
   it('command mode: adds/edits/removes argument rows and only keeps non-empty ones on submit', async () => {
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.type(screen.getByLabelText('Node ID'), 'test');
     await user.click(screen.getByText('Command'));
@@ -136,7 +137,7 @@ describe('StepNodeFormDialog', () => {
   it('a blank command in command mode blocks submission', async () => {
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.type(screen.getByLabelText('Node ID'), 'test');
     await user.click(screen.getByText('Command'));
@@ -147,7 +148,7 @@ describe('StepNodeFormDialog', () => {
   it('a literal env row with a blank key is dropped, a filled one is trimmed and included', async () => {
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.type(screen.getByLabelText('Node ID'), 'build');
     await user.type(screen.getByTestId('script-editor'), 'go build');
@@ -173,7 +174,7 @@ describe('StepNodeFormDialog', () => {
   it('a working directory is trimmed, and left as undefined when blank', async () => {
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={vi.fn()} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.type(screen.getByLabelText('Node ID'), 'build');
     await user.type(screen.getByTestId('script-editor'), 'go build');
@@ -196,8 +197,7 @@ describe('StepNodeFormDialog', () => {
       workingDir: '/infra',
       env: [{ key: 'ENV', kind: 'literal', value: 'prod' }],
     };
-    renderWithI18n(
-      <StepNodeFormDialog open onOpenChange={vi.fn()} editingNode={editingNode} onAdd={vi.fn()} onEdit={vi.fn()} />,
+    renderWithProviders(      <StepNodeFormDialog open onOpenChange={vi.fn()} editingNode={editingNode} onAdd={vi.fn()} onEdit={vi.fn()} />,
     );
 
     expect(screen.getByText('Edit node')).toBeInTheDocument();
@@ -221,8 +221,7 @@ describe('StepNodeFormDialog', () => {
       shell: 'sh',
       env: [],
     };
-    renderWithI18n(
-      <StepNodeFormDialog open onOpenChange={vi.fn()} editingNode={editingNode} onAdd={vi.fn()} onEdit={onEdit} />,
+    renderWithProviders(      <StepNodeFormDialog open onOpenChange={vi.fn()} editingNode={editingNode} onAdd={vi.fn()} onEdit={onEdit} />,
     );
 
     const idInput = screen.getByLabelText('Node ID');
@@ -243,7 +242,7 @@ describe('StepNodeFormDialog', () => {
     const onOpenChange = vi.fn();
     const onAdd = vi.fn();
     const user = userEvent.setup();
-    renderWithI18n(<StepNodeFormDialog open onOpenChange={onOpenChange} onAdd={onAdd} onEdit={vi.fn()} />);
+    renderWithProviders(<StepNodeFormDialog open onOpenChange={onOpenChange} onAdd={onAdd} onEdit={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);

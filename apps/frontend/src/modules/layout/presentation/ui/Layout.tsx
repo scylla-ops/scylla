@@ -4,9 +4,10 @@ import { SidebarInset, SidebarProvider } from '@/modules/shared/presentation/ui/
 import { TopBar } from '@/modules/layout/presentation/ui/TopBar.tsx';
 import { AnimatedOutlet } from '@/modules/shared/presentation/ui/layout/AnimatedOutlet.tsx';
 import { WhatsNewDialog } from '@/modules/layout/presentation/ui/WhatsNewDialog.tsx';
-import { useOrganizations } from '@/modules/features/organization';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { organizationQueries } from '@/modules/features/organization';
 import { Trans } from '@lingui/react/macro';
-import { useCreateOrganization } from '@/modules/features/organization';
+import { organizationMutations } from '@/modules/features/organization';
 import { ScyllaForm } from '@shared/presentation/ui/forms/ScyllaForm.tsx';
 import { createOrganizationItems } from '@/modules/features/organization';
 import {
@@ -35,8 +36,8 @@ interface LayoutProps {
 }
 
 export const Layout = ({ navEntries }: LayoutProps) => {
-  const { organizations, isLoading } = useOrganizations();
-  const createOrganization = useCreateOrganization();
+  const { data: organizations, isLoading } = useQuery(organizationQueries.mine());
+  const createOrganization = useMutation(organizationMutations.create());
   const navigate = useNavigate();
   const setOrganization = useContextStore(state => state.setOrganization);
   const isDarkTheme = useTheme().theme === 'dark';

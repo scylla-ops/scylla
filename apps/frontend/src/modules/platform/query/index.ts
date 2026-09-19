@@ -6,3 +6,13 @@
  * React → Svelte migration both bindings have to be handed the same instance.
  */
 export { queryClient } from './query-client.ts';
+export { getQueryClient, setQueryClient } from './active-query-client.ts';
+export {
+  createMutation,
+  createQueries,
+  createQuery,
+  mutationOptions,
+  queryOptions,
+  type CreateMutationResult,
+  type CreateQueryResult,
+} from './svelte-query.ts';

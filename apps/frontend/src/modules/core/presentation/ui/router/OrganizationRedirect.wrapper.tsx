@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useContextStore } from '@platform/context';
-import { useOrganizations } from '@/modules/features/organization';
+import { useQuery } from '@tanstack/react-query';
+import { organizationQueries } from '@/modules/features/organization';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 /**
@@ -9,7 +10,7 @@ import { slugifyOrgName } from '@shared/utils/slug.ts';
  */
 export const OrganizationRedirectWrapper = () => {
   const storedOrgName = useContextStore(state => state.organization.name);
-  const { organizations, isLoading } = useOrganizations();
+  const { data: organizations, isLoading } = useQuery(organizationQueries.mine());
 
   if (isLoading) return null;
 

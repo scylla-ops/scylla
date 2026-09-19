@@ -13,22 +13,22 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/marketplace/presentation/ui/MarketItemCard.tsx:38
+#: src/modules/features/marketplace/presentation/ui/marketplace.messages.ts:7
 msgid "Download"
 msgstr "Télécharger"
 
-#: src/modules/features/marketplace/presentation/ui/MarketItemCard.tsx:37
+#: src/modules/features/marketplace/presentation/ui/marketplace.messages.ts:6
 msgid "Learn more"
 msgstr "En savoir plus"
 
-#: src/modules/features/marketplace/marketplace.module.ts:27
+#: src/modules/features/marketplace/marketplace.module.ts:29
 msgid "Marketplace"
 msgstr "Marketplace"
 
-#: src/modules/features/marketplace/presentation/ui/MarketplaceTopBar.tsx:16
+#: src/modules/features/marketplace/presentation/ui/marketplace.messages.ts:8
 msgid "Search"
 msgstr "Rechercher"
 
-#: src/modules/features/marketplace/presentation/ui/Marketplace.page.tsx:9
+#: src/modules/features/marketplace/presentation/ui/marketplace.messages.ts:5
 msgid "This feature will be available soon"
 msgstr "Cette fonctionnalité sera bientôt disponible"

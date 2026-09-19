@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from '@/test/render.tsx';
+import { stubQuery } from '@/test/queries.ts';
 import { useContextStore } from '@platform/context';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper';
 
@@ -16,7 +18,12 @@ const organizationsState: { organizations?: { id: string; name: string }[]; isLo
   isLoading: false,
 };
 vi.mock('@/modules/features/organization', () => ({
-  useOrganizations: () => organizationsState,
+  organizationQueries: {
+    mine: () =>
+      stubQuery(['organizations', 'mine'], organizationsState.organizations, {
+        loading: organizationsState.isLoading,
+      }),
+  },
 }));
 
 beforeEach(() => {
@@ -32,12 +39,12 @@ beforeEach(() => {
 
 describe('OrganizationSyncWrapper', () => {
   it('always renders the outlet', () => {
-    render(<OrganizationSyncWrapper />);
+    renderWithProviders(<OrganizationSyncWrapper />);
     expect(screen.getByTestId('outlet')).toBeInTheDocument();
   });
 
   it('does nothing without a slug param', () => {
-    render(<OrganizationSyncWrapper />);
+    renderWithProviders(<OrganizationSyncWrapper />);
     expect(useContextStore.getState().organization.id).toBeNull();
     expect(navigateMock).not.toHaveBeenCalled();
   });
@@ -45,14 +52,14 @@ describe('OrganizationSyncWrapper', () => {
   it('does nothing while organizations are still loading', () => {
     paramsMock.mockReturnValue({ organizationSlug: 'acme-corp' });
     organizationsState.isLoading = true;
-    render(<OrganizationSyncWrapper />);
+    renderWithProviders(<OrganizationSyncWrapper />);
     expect(useContextStore.getState().organization.id).toBeNull();
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it('adopts the organization matching the slug into the context store', () => {
     paramsMock.mockReturnValue({ organizationSlug: 'globex-inc' });
-    render(<OrganizationSyncWrapper />);
+    renderWithProviders(<OrganizationSyncWrapper />);
     expect(useContextStore.getState().organization).toEqual({ id: 'org-2', name: 'Globex Inc' });
     expect(navigateMock).not.toHaveBeenCalled();
   });
@@ -61,13 +68,13 @@ describe('OrganizationSyncWrapper', () => {
     useContextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
     const setStateSpy = vi.spyOn(useContextStore, 'setState');
     paramsMock.mockReturnValue({ organizationSlug: 'acme-corp' });
-    render(<OrganizationSyncWrapper />);
+    renderWithProviders(<OrganizationSyncWrapper />);
     expect(setStateSpy).not.toHaveBeenCalled();
   });
 
   it('falls back to the first organization and redirects when the slug matches none', () => {
     paramsMock.mockReturnValue({ organizationSlug: 'no-such-org' });
-    render(<OrganizationSyncWrapper />);
+    renderWithProviders(<OrganizationSyncWrapper />);
     expect(navigateMock).toHaveBeenCalledWith('/acme-corp/dashboard', { replace: true });
     expect(useContextStore.getState().organization).toEqual({ id: 'org-1', name: 'Acme Corp' });
   });
@@ -75,7 +82,7 @@ describe('OrganizationSyncWrapper', () => {
   it('does nothing when the slug matches none and there are no organizations to fall back on', () => {
     paramsMock.mockReturnValue({ organizationSlug: 'no-such-org' });
     organizationsState.organizations = [];
-    render(<OrganizationSyncWrapper />);
+    renderWithProviders(<OrganizationSyncWrapper />);
     expect(navigateMock).not.toHaveBeenCalled();
     expect(useContextStore.getState().organization.id).toBeNull();
   });

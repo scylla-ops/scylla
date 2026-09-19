@@ -13,8 +13,12 @@ import {
   AddMemberDialog,
   MembersList,
 } from '@/modules/features/membership/presentation/ui/components/index.ts';
-import { useOrganizationMembers } from '@/modules/features/organization';
-import { useUsers } from '@/modules/features/user';
+import {
+  invalidateOrganizationMembers,
+  organizationQueries,
+} from '@/modules/features/organization';
+import { useQuery } from '@tanstack/react-query';
+import { userQueries } from '@/modules/features/user';
 
 /** The builtin whose whole content is "belongs here, sees it exists". */
 const ORGANIZATION_MEMBER_ROLE_ID = 'organization-member';
@@ -51,12 +55,17 @@ export const OrganizationMembersPage = () => {
   // hold; without it, roles can still be moved around among people already here.
   const canListUsers = can(Permission.LIST_USERS);
 
-  const {
-    members,
-    isLoading: membersLoading,
-    refetchMembers,
-  } = useOrganizationMembers(organizationId);
-  const { users } = useUsers({ enabled: canListUsers });
+  const { data: members = [], isLoading: membersLoading } = useQuery(
+    organizationQueries.members(organizationId),
+  );
+  // The member list is derived from grants on the backend, so a grant mutation
+  // changes it. `useGrants` cannot reach this key without coupling the two
+  // features, which is why the caller invalidates it.
+  const refetchMembers = useCallback(
+    () => invalidateOrganizationMembers(organizationId),
+    [organizationId],
+  );
+  const { data: users } = useQuery(userQueries.list({ enabled: canListUsers }));
   const {
     assignableRoles,
     labelFor,

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createProvidersWrapper } from '@/test/render.tsx';
 import { useContextStore } from '@platform/context';
@@ -15,14 +15,19 @@ import type { PipelineRepository } from '@/modules/features/pipeline/domain/repo
 import type { PipelineEntity } from '@/modules/features/pipeline/domain/entities/pipeline.entity.ts';
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import type * as AgentsModule from '@/modules/features/agents';
+import { installTestNavigator } from '@/test/navigator.ts';
 
 type AgentEntity = AgentsModule.AgentEntity;
 
+// `use-run-pipeline` still calls `useNavigate` itself, which is why the mock
+// stays; everything else in this file navigates through `scyllaNavigate` and is
+// observed on the installed navigator instead.
 const navigateMock = vi.fn();
 vi.mock('react-router-dom', () => ({
   useNavigate: () => navigateMock,
-  useLocation: () => ({ pathname: '/acme/projects/project-1' }),
 }));
+
+let testNavigator: ReturnType<typeof installTestNavigator>;
 
 const toastSuccess = vi.fn();
 const toastWarning = vi.fn();
@@ -116,7 +121,10 @@ const makeFakeRepository = (overrides: Partial<PipelineRepository> = {}) => {
 
 const wrapperFor = (repository: PipelineRepository) => createProvidersWrapper({ pipeline: { pipelineRepository: repository } });
 
+afterEach(() => testNavigator.restore());
+
 beforeEach(() => {
+  testNavigator = installTestNavigator({ pathname: '/acme/projects/project-1' });
   navigateMock.mockClear();
   toastSuccess.mockClear();
   toastWarning.mockClear();
@@ -144,7 +152,7 @@ describe('useCreatePipeline', () => {
     expect(create).toHaveBeenCalledWith({ projectId: 'project-1', name: 'ci', nodes: [] });
     expect(toastSuccess).toHaveBeenCalledWith('Pipeline created');
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pipelines', 'project-1'] });
-    expect(navigateMock).toHaveBeenCalled();
+    expect(testNavigator.navigate).toHaveBeenCalled();
   });
 
   it('does not invalidate or navigate when there is no active project in context', async () => {
@@ -157,7 +165,7 @@ describe('useCreatePipeline', () => {
 
     expect(toastSuccess).toHaveBeenCalledWith('Pipeline created');
     expect(invalidateSpy).not.toHaveBeenCalled();
-    expect(navigateMock).not.toHaveBeenCalled();
+    expect(testNavigator.navigate).not.toHaveBeenCalled();
   });
 });
 
@@ -197,7 +205,7 @@ describe('useDuplicatePipeline', () => {
     });
     expect(toastSuccess).toHaveBeenCalledWith('Pipeline duplicated successfully');
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pipelines'] });
-    expect(navigateMock).toHaveBeenCalled();
+    expect(testNavigator.navigate).toHaveBeenCalled();
   });
 
   it('propagates a failure from the read step without ever calling create', async () => {
@@ -377,7 +385,7 @@ describe('useUpdatePipeline', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pipelines', 'project-1'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['pipeline', 'pipeline-1'] });
     expect(toastSuccess).toHaveBeenCalledWith('Pipeline edited');
-    expect(navigateMock).toHaveBeenCalled();
+    expect(testNavigator.navigate).toHaveBeenCalled();
   });
 
   it('does not navigate when there is no active project in context', async () => {
@@ -388,6 +396,6 @@ describe('useUpdatePipeline', () => {
     await result.current.mutateAsync({ id: 'pipeline-1', nodes: [] });
 
     expect(toastSuccess).toHaveBeenCalledWith('Pipeline edited');
-    expect(navigateMock).not.toHaveBeenCalled();
+    expect(testNavigator.navigate).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,8 @@ import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.e
 import type { GrantEntity } from '@/modules/features/roles/domain/entities/grant.entity.ts';
 import { PrincipalKind } from '@platform/authz';
 import { useGrants } from '@/modules/features/roles/presentation/hooks/use-grants.ts';
-import { useUsers } from '@/modules/features/user';
+import { useQuery } from '@tanstack/react-query';
+import { userQueries } from '@/modules/features/user';
 
 export interface RoleAssignee {
   grant: GrantEntity;
@@ -18,7 +19,9 @@ export interface RoleAssignee {
  */
 export const useRoleAssignees = (role: RoleEntity | null) => {
   const { grants, revokeGrant } = useGrants();
-  const { users } = useUsers();
+  // `userQueries.list()` is a plain options object — the same one the (now
+  // Svelte) `user` module runs, so both share one cache entry.
+  const { data: users } = useQuery(userQueries.list());
 
   const usernameById = useMemo(
     () => new Map((users?.items ?? []).map(user => [user.userId, user.username])),

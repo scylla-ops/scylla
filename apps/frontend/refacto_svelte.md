@@ -17,13 +17,28 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 | **0 · Lot A** — nettoyage deps | ✅ **fait** | **253,6 kB** | **619 kB** | **39** |
 | **0 · Lot B** — dé-React-ification | ✅ **fait** | 253,5 kB | 619 kB | 43 |
 | **1** — `shared/` + design system | ✅ **fait** | 253,5 kB | 619 kB | 47 |
-| **2** — 6 features pilotes | 🟢 **débloquée** | | | |
+| **2** — 6 features pilotes | ✅ **fait** | **292,3 kB** | **862 kB** | 47 |
 | **3** — apps, agents, membership, jobs, triggers | ⬜ | | | |
 | **4** — roles + dashboard (`recharts` sort ici) | ⬜ | | | |
 | **5** — pipeline (`reactflow` sort ici) | ⬜ | | | |
 | **6** — shell + suppression de React | ⬜ | | | ~20 |
 
 Cible finale : ~170 kB initial, ~380 kB total, ~400 paquets transitifs.
+
+**La Phase 2 fait monter le chargement initial, et c'est attendu** : 253,6 → 292,3 kB gzip.  
+Le détail, mesuré : le runtime Svelte (`vendor-svelte`, 20,3 kB) devient nécessaire dès l'entrée —  
+`sveltePage` est dans le graphe eager du registre —, `@tanstack/svelte-query` rejoint  
+`vendor-query` (24 → 35,3 kB), et le code applicatif prend 1,7 kB. Les deux moitiés du design  
+system coexistent, donc le total passe de 619 à 862 kB. Tout cela repart en Phase 6 avec  
+`vendor-react` (77,1 kB) et la moitié React de `vendor-ui` et `vendor-query`.
+
+**`vendor-ui-svelte` (35,9 kB), lui, n'est *pas* dans l'entrée, et il a fallu le faire exprès.**  
+La shell importe le barrel d'`organization` pour ses queries ; un composant `.svelte` réexporté  
+par ce barrel n'est pas éliminable par Rollup, et tirait bits-ui au premier paint pour deux  
+dialogues que personne n'a ouverts. D'où `loadAddOrganizationDialog()` /  
+`loadEditOrganizationDialog()` — des fonctions, donc tree-shakeables — et `LazySvelteIsland` en  
+face. **Règle générale : un barrel que la shell importe n'exporte pas de composant Svelte, il  
+exporte un loader.**
 
 Le Lot B ajoute 4 dépendances (`svelte`, `@tanstack/svelte-query`, `@tanstack/query-core`,  
 `@sveltejs/vite-plugin-svelte` & co) **sans toucher au bundle de production** : aucune UI Svelte  
@@ -230,6 +245,28 @@ export const userQueries = {
       queryFn: () => repo.getUsers(filters()),
     }),
 };
+
+```
+
+### *.mutations.ts (same principle as queries.ts but for mutations, if we multiple state or component use the same mutation)
+exemple : 
+```typescript
+export const userMutations = {
+    create: (repo: UserRepository, queryClient: QueryClient) =>
+        mutationOptions({
+            mutationFn: (newUserData: CreateUserDTO) => repo.createUser(newUserData),
+            onSuccess: () => {
+                // La grosse force ici : on invalide la liste des users automatiquement partout !
+                queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
+            },
+        }),
+};
+
+usage :
+
+private mutation = createMutation(() =>
+    userMutations.create(this.repo, this.queryClient)
+);
 ```
 
 ##### 2. `*.state.svelte.ts` (Le ViewModel / State)
@@ -351,8 +388,8 @@ endroit** à changer.
 | Aujourd'hui | Demain | Note |
 |---|---|---|
 | `react`, `react-dom` | `svelte` | |
-| `react-router-dom` (45 fichiers) | `@platform/routing` maison | −1 dép |
-| `@tanstack/react-query` (49) | `@tanstack/svelte-query` | **même `query-core`, même `QueryClient`, cache partagé** |
+| `react-router-dom` (45 fichiers) | `@platform/routing` maison | −1 dép ; depuis la Phase 2, la navigation passe par `setAppNavigator` / `navigateTo` et **`Core.router.tsx` est le seul fichier à changer** |
+| `@tanstack/react-query` (49) | `@tanstack/svelte-query` | **même `query-core`, même `QueryClient`, cache partagé**. ⚠ Phase 2 : `createQuery`/`createMutation` s'importent de `@platform/query`, qui y lie le client — un îlot n'a pas le contexte Svelte que les originaux lisent |
 | `zustand` (7) | runes (`$state` en module / classes `*.state.svelte.ts`) | −1 dép |
 | `framer-motion` (5) | `transition:` / `animate:` / `crossfade` natifs | −1 dép, −41 kB |
 | `next-themes` (6) | ~25 lignes maison | −1 dép |
@@ -725,15 +762,73 @@ qui masque le nœud à `getByRole` **et** vide son nom accessible.
 
 ---
 
-### Phase 2 — Features pilotes : `login`, `marketplace`, `secret`, `user`, `project`, `organization`
+### Phase 2 — Features pilotes : `login`, `marketplace`, `secret`, `user`, `project`, `organization` ✅ **fait**
 
 *~2 400 LOC, 59 fichiers, aucune dépendance exotique.*
 
-Six features indépendantes, six PRs, recette identique. C'est la phase qui **valide la recette à  
+Six features indépendantes, recette identique. C'est la phase qui **valide la recette à  
 l'échelle** — si quelque chose cloche dans le plan, ça se voit ici et pas au milieu de `pipeline`.
 
-`login` en premier (134 LOC) : le plus petit chemin complet page + formulaire + mutation. Il sert  
-d'étalon — c'est lui qui dit si la recette de §6 tient.
+`login` en premier (134 LOC) : le plus petit chemin complet page + formulaire + mutation. Il a  
+servi d'étalon, et la recette de §6 a tenu — au prix de quatre pièces que le plan n'avait pas vues.
+
+#### Ce qu'il a fallu construire avant de migrer quoi que ce soit
+
+1. **`sveltePage()`** (`@platform/routing`) : `lazy` doit rendre un composant que react-router sait  
+   monter, donc un îlot. `ScyllaModule` ne change que d'une ligne, et `module-permissions.test.ts`  
+   continue de vérifier le gating sans qu'on y touche. **Les paramètres de route arrivent en props**  
+   — c'est la seule chose qu'une page ne peut pas lire dans un singleton : ils vivent dans l'état du  
+   routeur React, et les relire depuis `window.location` reviendrait à réécrire le matching.
+2. **Un navigateur agnostique** (`setAppNavigator` / `navigateTo`, dans `@platform/context`).  
+   Le Lot B annonçait l'interdiction d'importer react-router dans les features ; elle n'avait jamais  
+   été posée, et `useScyllaNavigate` était un hook. Il est devenu la **liaison React** d'un objet  
+   `scyllaNavigate` sans framework : une seule implémentation des URLs, et `Core.router.tsx` est  
+   désormais la seule ligne du projet qui nomme react-router pour naviguer.
+3. **`createQuery` / `createMutation` re-exportés par `@platform/query`.** Ceux de  
+   `@tanstack/svelte-query` lisent leur client dans le contexte Svelte — qu'un îlot monté dans  
+   l'arbre React n'a pas. Le client est lié une fois ; `no-restricted-imports` interdit l'import  
+   direct, parce que les deux sont indiscernables au point d'appel et que l'oubli ne casse qu'à  
+   l'exécution.
+4. **`can()` est devenu réactif** (`toRune` sur les deux stores). Il lisait `getState()` : correct  
+   dans un handler, faux dans un `$derived`. Une page rendue avant que `usePermissionSync` ne  
+   réponde serait restée refusée pour toujours. Hors contexte réactif, rien ne change.
+
+#### Ce que la phase a appris
+
+1. **Les hooks de lecture deviennent des `*.queries.ts`, et c'est ce qui sauve les consommateurs.**  
+   Le vrai obstacle n'était pas de porter une page, c'était que `roles`, `membership`, `dashboard`,  
+   `core` et `layout` — tous encore en React — consomment `useUsers`, `useProjects`,  
+   `useOrganizations`, `useSecrets`. Un objet `queryOptions` n'a pas de framework : react-query le  
+   prend tel quel. Les 14 sites d'appel changent d'une ligne, **partagent la même entrée de cache**,  
+   et la règle 4 de `feature-permissions.test.ts` s'applique encore — elle lit maintenant les  
+   fabriques en plus des hooks, sinon elle se serait vidée en silence au fil des migrations.
+2. **Un composant React passé en prop est le seul pont qu'on ne peut pas construire.**  
+   `OrganizationList` recevait son wrapper de ligne (`DropdownMenuItem`) de la sidebar. Ni îlot ni  
+   snippet ne franchissent ça : le roving focus de Radix passe par un contexte React. Le rendu a  
+   donc **déménagé dans `layout/`**, où vivent ses primitives et où il mourra en Phase 6 ; la  
+   version Svelte d'`organization` sert le panneau des réglages. C'est le seul endroit des six où  
+   le code existe en double, et c'est délibéré. **À vérifier avant d'ouvrir un module : qui lui  
+   passe un composant ?**
+3. **bits-ui volait le focus du premier champ d'un formulaire en dialogue.** Radix focalisait le  
+   premier élément tabulable du contenu, bits-ui focalise le contenu lui-même : le curseur  
+   n'arrivait plus dans le champ. En test, la conséquence était une valeur tronquée — `"DATA"` pour  
+   `"DATABASE_URL"`, à une longueur différente à chaque exécution, sans rien qui échoue bruyamment.  
+   Corrigé dans `dialog-content.svelte` (`onOpenAutoFocus` honore `autofocus`), plus  
+   `focusSettled()` dans le harnais pour attendre que ça se pose.
+4. **Un test qui moque un barrel migré moque désormais une fabrique**, pas un hook : `stubQuery()`  
+   (`src/test/queries.ts`) rend des options avec `initialData`, ce qui garde ces tests synchrones.  
+   Et `runQueryFn` / `runMutationFn` exécutent une fabrique sans composant : ce que  
+   `use-marketplace.test.tsx` demandait à un arbre React, une pile de providers et un `waitFor` est  
+   devenu un appel de fonction, en environnement `node`.
+
+#### Deux dettes assumées, nommées
+
+- **`marketplace` et `secret` portent des composants que personne ne monte** (`MarketItemList` &
+  co., `SecretHealthOverview`, `SecretPagination`). Ils ont été portés tels quels plutôt que
+  supprimés — ce n'est pas au chantier de migration de trancher —, et c'est écrit dans leur
+  `AGENTS.md`. Le seul dommage réel : les trois nombres de `SecretPagination` perdent leur gras,
+  parce que `<Trans>` pouvait les envelopper dans des éléments et qu'une chaîne `t()` ne peut pas.
+- **La liste du sélecteur d'organisation existe en double** jusqu'à la Phase 6 (point 2 ci-dessus).
 
 ---
 
@@ -821,7 +916,8 @@ Identique de la Phase 2 à la Phase 5. C'est le cœur réutilisable de ce docume
     - Si calcul lourd purement algorithmique : créer `*.calculator.ts`.
 5. Réécrire les composants de bas en haut (feuilles → racine : composants présentationnels, puis conteneurs, puis `*.page.svelte`).
 6. Messages i18n extraits dans `*.messages.ts` (§4.5).
-7. `*.module.ts` : seul le `lazy:` change (`import(...)` dynamique Svelte). `permission`, `breadcrumb`, `nav`, `id`, `domain` sont **inchangés** — donc `module-permissions.test.ts` continue de garantir le gating sans qu'on y touche.
+7. `*.module.ts` : seul le `lazy:` change — `Component: sveltePage((await import('./…​.page.svelte')).default)`. `permission`, `breadcrumb`, `nav`, `id`, `domain` sont **inchangés**, donc `module-permissions.test.ts` continue de garantir le gating sans qu'on y touche. Les paramètres de route arrivent en props de la page (`let { projectId }: { projectId?: string } = $props()`).
+7 bis. **Les consommateurs d'abord.** Avant de supprimer un hook exporté par le barrel, chercher qui l'importe (`grep "from '@/modules/features/<id>'"`). Un hook de lecture devient une fabrique `*.queries.ts` que react-query sait exécuter telle quelle : le consommateur React change d'une ligne et garde la même entrée de cache. Un **composant** passé en prop par la shell, lui, n'a pas de pont — voir Phase 2, point 2.
 8. Retirer le `<SvelteIsland>` du parent quand tout le sous-arbre est passé.
 9. `index.ts`, `AGENTS.md`, `README.md` mis à jour dans la même PR.
 10. Lancer `node scripts/restore-translations.mjs --dry-run` si des fichiers ont changé de module.

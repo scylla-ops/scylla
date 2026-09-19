@@ -90,6 +90,31 @@ export default tseslint.config([
     },
   },
 
+  // ── The Svelte query bindings come from @platform/query ───────────────────────
+  // `createQuery` from `@tanstack/svelte-query` reads its client from Svelte
+  // context, which an island mounted in the React tree does not have. The
+  // re-export in `@platform/query` binds the app's client; the two are
+  // indistinguishable at the call site, so the wrong import fails at runtime.
+  {
+    files: ['src/modules/**/*.{ts,tsx,svelte}'],
+    ignores: ['src/modules/platform/query/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@tanstack/svelte-query',
+              message:
+                'Import createQuery / createMutation from @platform/query — they carry the ' +
+                "app's QueryClient, which a Svelte island has no context to find.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // ── shadcn UI library files ───────────────────────────────────────────────────
   // These are auto-generated / copy-pasted from shadcn and follow their own
   // conventions. We relax a few rules that would otherwise fire on every update.

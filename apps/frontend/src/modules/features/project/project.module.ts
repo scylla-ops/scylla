@@ -1,4 +1,4 @@
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { WorkflowIcon } from 'lucide-react';
 import { Permission } from '@platform/authz';
@@ -22,7 +22,7 @@ export const ProjectModule = {
       // Reading the organization is the real gate.
       permission: Permission.READ_ORGANIZATION,
       lazy: async () => ({
-        Component: (await import('./presentation/ui/ProjectPage.tsx')).ProjectPage,
+        Component: sveltePage((await import('./presentation/ui/Project.page.svelte')).default),
       }),
     },
   ],

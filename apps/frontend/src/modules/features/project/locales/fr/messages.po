@@ -13,97 +13,95 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:33
+#: src/modules/features/project/presentation/ui/project.messages.ts:27
 msgid "Add a description..."
 msgstr "Ajouter une description..."
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:60
+#: src/modules/features/project/presentation/ui/project.messages.ts:28
 msgid "Create a new project"
 msgstr "Créer un nouveau projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:66
+#: src/modules/features/project/presentation/ui/project.messages.ts:30
 msgid "Create Project"
 msgstr "Créer le projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:33
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:32
+#: src/modules/features/project/presentation/ui/project.messages.ts:25
 msgid "Description"
 msgstr "Description"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:34
+#: src/modules/features/project/presentation/ui/project.messages.ts:26
 msgid "e.g., A short description of the project"
 msgstr "ex. Une courte description du projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:27
+#: src/modules/features/project/presentation/ui/project.messages.ts:24
 msgid "e.g., My project"
 msgstr "ex. Mon projet"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:50
+#: src/modules/features/project/presentation/ui/project.messages.ts:18
 msgid "Edit"
 msgstr "Modifier"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:55
+#: src/modules/features/project/presentation/ui/project.messages.ts:31
 msgid "Edit project"
 msgstr "Modifier le projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:62
+#: src/modules/features/project/presentation/ui/project.messages.ts:29
 msgid "Enter a name for your new project and select the organization it belongs to."
 msgstr "Entrez un nom pour votre nouveau projet et sélectionnez l'organisation à laquelle il appartient."
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:35
+#: src/modules/features/project/presentation/ui/project.messages.ts:13
 msgid "New project"
 msgstr "Nouveau projet"
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:85
+#: src/modules/features/project/presentation/ui/project.messages.ts:20
 msgid "No description"
 msgstr "Aucune description"
 
-#: src/modules/features/project/presentation/ui/ProjectPage.tsx:18
+#: src/modules/features/project/presentation/ui/project.messages.ts:6
 msgid "No organization selected"
 msgstr "Aucune organisation sélectionnée"
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:31
+#: src/modules/features/project/presentation/ui/project.messages.ts:11
 msgid "Project"
 msgstr "Projet"
 
-#: src/modules/features/project/presentation/ui/AddProjectDialog.tsx:26
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:24
+#: src/modules/features/project/presentation/ui/project.messages.ts:23
 msgid "Project name"
 msgstr "Nom du projet"
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:32
+#: src/modules/features/project/presentation/ui/project.messages.ts:12
 #: src/modules/features/project/project.module.ts:32
 msgid "Projects"
 msgstr "Projets"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:59
+#: src/modules/features/project/presentation/ui/project.messages.ts:33
 msgid "Save"
 msgstr "Enregistrer"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:60
+#: src/modules/features/project/presentation/ui/project.messages.ts:34
 msgid "Saving..."
 msgstr "Enregistrement..."
 
-#: src/modules/features/project/presentation/ui/ProjectCard.tsx:73
+#: src/modules/features/project/presentation/ui/project.messages.ts:19
 msgid "Select"
 msgstr "Sélectionner"
 
-#: src/modules/features/project/presentation/ui/ProjectPage.tsx:21
+#: src/modules/features/project/presentation/ui/project.messages.ts:7
 msgid "Select an organization from the sidebar to view its projects"
 msgstr "Sélectionnez une organisation dans la barre latérale pour voir ses projets"
 
-#: src/modules/features/project/presentation/ui/ProjectPage.tsx:33
+#: src/modules/features/project/presentation/ui/project.messages.ts:8
 msgid "Unable to load projects"
 msgstr "Impossible de charger les projets"
 
-#: src/modules/features/project/presentation/ui/EditProjectDialog.tsx:56
+#: src/modules/features/project/presentation/ui/project.messages.ts:32
 msgid "Update the project name and description."
 msgstr "Mettez à jour le nom du projet et sa description."
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:37
+#: src/modules/features/project/presentation/ui/project.messages.ts:14
 msgid "You don't have permission to create projects."
 msgstr "Vous n'avez pas la permission de créer des projets."
 
-#: src/modules/features/project/presentation/ui/ProjectHeader.tsx:39
+#: src/modules/features/project/presentation/ui/project.messages.ts:15
 msgid "You don't have permission to delete projects."
 msgstr "Vous n'avez pas la permission de supprimer des projets."

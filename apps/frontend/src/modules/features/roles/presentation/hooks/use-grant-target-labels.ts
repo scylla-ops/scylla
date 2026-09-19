@@ -1,7 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import { PermissionScope } from '@platform/authz';
-import { useOrganizations } from '@/modules/features/organization';
-import { useProjectsByOrganizations } from '@/modules/features/project';
+import { useQuery } from '@tanstack/react-query';
+import { organizationQueries } from '@/modules/features/organization';
+import { useQueries } from '@tanstack/react-query';
+import { projectLookupQueries } from '@/modules/features/project';
 
 /** A grant's scope target, resolved to human-readable names. */
 export interface GrantTargetLabel {
@@ -16,12 +18,12 @@ export interface GrantTargetLabel {
 /**
  * Resolves a grant's `scopeId` to a display name for a given role scope.
  * - SYSTEM       → "System".
- * - ORGANIZATION → the organization name (from {@link useOrganizations}).
+ * - ORGANIZATION → the organization name (from `organizationQueries.mine`).
  * - PROJECT      → the project name (+ its org), fanned out across the user's
  *                  organizations since a project grant only carries the project id.
  */
 export const useGrantTargetLabels = (scope: PermissionScope) => {
-  const { organizations } = useOrganizations();
+  const { data: organizations } = useQuery(organizationQueries.mine());
 
   const orgIds = useMemo(() => (organizations ?? []).map(org => org.id), [organizations]);
 
@@ -33,9 +35,8 @@ export const useGrantTargetLabels = (scope: PermissionScope) => {
   // Only project scope needs the lookup — a project grant carries the project
   // id alone, so resolving it to a name means fanning out over the user's
   // organizations. `project` owns that query.
-  const projectInfoById = useProjectsByOrganizations(
-    orgIds,
-    scope === PermissionScope.PROJECT,
+  const projectInfoById = useQueries(
+    projectLookupQueries(orgIds, scope === PermissionScope.PROJECT),
   );
 
   const labelFor = useCallback(

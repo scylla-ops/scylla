@@ -1,7 +1,8 @@
 import { useContextStore } from '@platform/context';
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useProjects } from '@/modules/features/project';
+import { useQuery } from '@tanstack/react-query';
+import { projectQueries } from '@/modules/features/project';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 /**Middleware used to clean the context store depending on the actual route */
@@ -15,7 +16,8 @@ export const ContextCleanerWrapper = () => {
   const organizationId = useContextStore(state => state.organization.id);
   const organizationName = useContextStore(state => state.organization.name);
 
-  const { projects, isLoading } = useProjects(organizationId);
+  const { data, isLoading } = useQuery(projectQueries.byOrganization(organizationId));
+  const projects = data?.projects;
 
   useEffect(() => {
     if (isLoading || !projects || !projectId) return;

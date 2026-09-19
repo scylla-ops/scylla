@@ -17,11 +17,11 @@ msgstr ""
 msgid "Island is mounted"
 msgstr "Island is mounted"
 
-#: src/modules/core/presentation/ui/router/Core.router.tsx:60
+#: src/modules/core/presentation/ui/router/Core.router.tsx:61
 msgid "Project"
 msgstr "Project"
 
-#: src/modules/core/presentation/ui/router/Core.router.tsx:50
+#: src/modules/core/presentation/ui/router/Core.router.tsx:51
 msgid "Projects"
 msgstr "Projects"
 

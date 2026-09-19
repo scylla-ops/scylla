@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/svelte';
 import { createRawSnippet, type Snippet } from 'svelte';
+import { QueryClient } from '@tanstack/query-core';
 import { setDependencyRegistry, type DomainRegistry } from '@platform/di';
+import { setQueryClient } from '@platform/query';
 
 /**
  * Svelte counterpart of `render.tsx`, and deliberately much smaller.
@@ -33,6 +35,68 @@ export { render };
 export const withRegistry = (registry: DomainRegistry): (() => void) => {
   setDependencyRegistry(registry);
   return () => setDependencyRegistry(null);
+};
+
+/**
+ * Installs a fresh query cache for a test that renders anything fetching data.
+ *
+ * `createQuery` from `@platform/query` reads the active client at call time, so
+ * this is the Svelte equivalent of wrapping React in a `QueryClientProvider`
+ * with `createTestQueryClient()`. Same leak as `withRegistry`, same remedy —
+ * and same reason for `retry: false`: without it a rejecting query is retried
+ * three times with backoff and the test times out instead of reporting the
+ * error.
+ *
+ * ```ts
+ * let cache: ReturnType<typeof withQueryClient>;
+ * beforeEach(() => (cache = withQueryClient()));
+ * afterEach(() => cache.restore());
+ * ```
+ */
+export const withQueryClient = (): { queryClient: QueryClient; restore: () => void } => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  setQueryClient(queryClient);
+
+  return {
+    queryClient,
+    restore: () => {
+      queryClient.clear();
+      setQueryClient(null);
+    },
+  };
+};
+
+/**
+ * Waits until nothing is still moving focus around.
+ *
+ * Call it after rendering a dialog and **before typing into it**. bits-ui
+ * focuses the dialog's content asynchronously once it opens, and `userEvent`
+ * types far faster than a person can: the scheduled focus lands in the middle
+ * of a `user.type()` call, takes the caret away from the field, and the value
+ * ends up truncated — `"DATA"` where the test typed `"DATABASE_URL"`, at a
+ * different length on every run. Nothing throws; the assertion just fails on a
+ * value nobody wrote.
+ *
+ * It resolves once two consecutive polls agree on `document.activeElement`,
+ * which is also true when nothing ever takes focus, so it is safe anywhere.
+ */
+export const focusSettled = async (): Promise<void> => {
+  // A macrotask, not `waitFor`: the moves being waited out are scheduled tasks,
+  // and `waitFor`'s checks can all land inside the same one — which is exactly
+  // how this reads as "settled" and then moves anyway, one keystroke later.
+  const tick = async () => {
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+    await new Promise(resolve => setTimeout(resolve, 0));
+  };
+
+  await tick();
+  let previous = document.activeElement;
+  await tick();
+
+  while (document.activeElement !== previous) {
+    previous = document.activeElement;
+    await tick();
+  }
 };
 
 /**

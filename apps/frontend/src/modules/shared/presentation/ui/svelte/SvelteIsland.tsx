@@ -5,6 +5,12 @@ interface SvelteIslandProps<TProps extends Record<string, unknown>> {
   /** The Svelte component, imported as `import X from './X.svelte'`. */
   component: Component<TProps>;
   props: TProps;
+  /**
+   * Classes for the host element. React owns that node, so a `h-full` chain the
+   * island sits in has to be restated here or it stops at the wrapper — see
+   * `sveltePage`, which is the only caller that needs it.
+   */
+  className?: string;
 }
 
 /**
@@ -26,6 +32,7 @@ interface SvelteIslandProps<TProps extends Record<string, unknown>> {
 export const SvelteIsland = <TProps extends Record<string, unknown>>({
   component,
   props,
+  className,
 }: SvelteIslandProps<TProps>) => {
   const host = useRef<HTMLDivElement>(null);
   const instance = useRef<Record<string, unknown> | null>(null);
@@ -56,5 +63,5 @@ export const SvelteIsland = <TProps extends Record<string, unknown>>({
     Object.assign(instance.current, props);
   }, [props]);
 
-  return <div ref={host} />;
+  return <div ref={host} className={className} />;
 };

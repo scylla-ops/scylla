@@ -1,6 +1,7 @@
 import { useContextStore } from '@platform/context';
 import { Permission, useAuthorization } from '@platform/authz';
-import { useOrganizationProjects } from '@/modules/features/project';
+import { useQuery } from '@tanstack/react-query';
+import { projectQueries } from '@/modules/features/project';
 import { useOrganizationPipelines, type PipelineMetadata } from '@/modules/features/pipeline';
 import { useOrganizationJobs, type JobsSummary } from '@/modules/features/jobs';
 
@@ -29,10 +30,11 @@ export const useOrgOverview = () => {
   const { can } = useAuthorization();
 
   const {
-    projects,
+    data: projectsPage,
     isLoading: projectsLoading,
     isError: projectsError,
-  } = useOrganizationProjects(organizationId);
+  } = useQuery(projectQueries.lookup(organizationId));
+  const projects = projectsPage?.projects ?? [];
 
   const {
     pipelines,

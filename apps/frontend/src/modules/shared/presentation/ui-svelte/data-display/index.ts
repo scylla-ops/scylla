@@ -8,3 +8,5 @@ export {
   type DataTableColumn,
   type DataTableFeatures,
 } from './data-table.ts';
+export { default as Pagination } from './Pagination.svelte';
+export { generatePageNumbers, type PageItem } from './pagination.ts';

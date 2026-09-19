@@ -10,19 +10,28 @@ User accounts: the system-wide directory and a user's own settings.
 - Must never import: `core/`, `layout/`, another feature's internals.
 - Outside code reaches this module **only** through `index.ts`.
 
+**Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
+unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
+options objects in `presentation/*.queries.ts`, which both bindings can run — `createQuery` here,
+react-query's `useQuery` in the modules still on React.
+
 ## Public API — `index.ts`
 
 ```typescript
 type UserEntity
-useUser, useUsers
+userQueries, userMutations, canListUsers, USERS_QUERY_KEY, USER_QUERY_KEY
 UserSettingsPage                      ← the documented page exception
 ```
 
+`roles`, `membership` and `layout` consume `userQueries` through react-query's `useQuery` —
+the options object is the same one `createQuery` runs here, so there is one cache entry.
+
 `UserSettingsPage` is exported because [`organization`](../organization/AGENTS.md) composes it
 behind its own `users/:userId` route, to render the organizations panel. That consumer is
-lazily loaded, which is what makes the exception safe. Do not add a second page export.
+lazily loaded, which is what makes the exception safe. Do not add a second page export. The
+panel is a **snippet** prop now, where it used to be a `ReactNode`.
 
-Never add: `user.module.ts`, `use-user-domain.ts`.
+Never add: `user.module.ts`.
 
 ## Data contract
 
@@ -36,8 +45,8 @@ Never add: `user.module.ts`, `use-user-domain.ts`.
 | `update(userId, username?)` | `UserEntity` |
 | `delete(userId)` | `void` |
 
-`update` takes **no password** — password changes are not exposed here. Reach the repository
-with `useUserDomain()` **inside a hook only**.
+`update` takes **no password** — password changes are not exposed here. The repository is
+reached from `presentation/user.queries.ts` and nowhere else.
 
 ## Layout
 
@@ -54,19 +63,18 @@ infrastructure/
   repository/mappers/grpc-user.mapper.ts
   repository/default-user.repository.ts
 presentation/
-  hooks/use-user-domain.ts           DI accessor (private)
-  hooks/use-user.ts, use-users.ts, use-create-user.ts,
-  hooks/use-update-user.ts, use-delete-user.ts
-  ui/admin/UserAdmin.page.tsx, AddUserDialog.tsx
-  ui/admin/user-table/UserTable.tsx, UserColumns.tsx
-  ui/settings/UserSettings.page.tsx, UserInformation.tsx
+  user.queries.ts                    the two reads, the three writes, `canListUsers`
+  ui/user.messages.ts                every string the screens show
+  ui/admin/UserAdmin.page.svelte, AddUserDialog.svelte
+  ui/admin/user-table/UserTable.svelte, user-columns.ts
+  ui/settings/UserSettings.page.svelte, UserInformation.svelte
 ```
 
 ## Routes & nav
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `organization` | `users` (index) | `LIST_USERS` | `UserAdminPage` |
+| `organization` | `users` (index) | `LIST_USERS` | `UserAdmin.page.svelte`, via `sveltePage()` |
 
 Sidebar: section **`system`** (not `organization`), order `10`, icon `UsersIcon`.
 

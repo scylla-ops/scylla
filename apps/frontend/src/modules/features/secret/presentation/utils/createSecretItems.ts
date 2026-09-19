@@ -1,8 +1,20 @@
-import { type FormItem, FormItemType } from '@shared/presentation/structs/scylla-form.struct.ts';
+import { type FormItem, FormItemType } from '@shared/presentation/ui-svelte';
 import { t } from '@lingui/core/macro';
 
-export const createSecretsItems: () => readonly FormItem<'name' | 'description' | 'value'>[] = () => {
-  return [
+/**
+ * The create-secret form, as data.
+ *
+ * Still `t` from the Lingui macro rather than the Svelte `t()`: this returns a
+ * plain array built at call time, and the Svelte `FormItem` takes `string`
+ * labels where the React one took `ReactNode`. The caller rebuilds the items
+ * when the locale changes.
+ *
+ * The filename stays camelCase — renaming it would move Lingui's message
+ * ownership and need `scripts/restore-translations.mjs`. New files are
+ * kebab-case.
+ */
+export const createSecretsItems: () => readonly FormItem<'name' | 'description' | 'value'>[] =
+  () => [
     {
       id: 'name',
       label: t`Secret name`,
@@ -27,4 +39,3 @@ export const createSecretsItems: () => readonly FormItem<'name' | 'description' 
       inputType: 'text',
     },
   ];
-};

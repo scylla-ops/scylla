@@ -1,25 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithI18n } from '@/test/render.tsx';
 import userEvent from '@testing-library/user-event';
 import { usePermissionsStore, PermissionScope } from '@platform/authz';
 import { useContextStore } from '@platform/context';
 import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { installTestNavigator } from '@/test/navigator.ts';
 import { PipelineDashboardHeader } from './PipelineDashboardHeader';
-
-const navigateMock = vi.fn();
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => navigateMock,
-  useLocation: () => ({ pathname: '/acme/projects/project-1' }),
-}));
 
 const mutateAsyncMock = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/modules/features/pipeline/presentation/hooks/use-delete-pipeline.ts', () => ({
   useDeletePipeline: () => ({ mutateAsync: mutateAsyncMock }),
 }));
 
+let testNavigator: ReturnType<typeof installTestNavigator>;
+
+afterEach(() => testNavigator.restore());
+
 beforeEach(() => {
-  navigateMock.mockClear();
+  testNavigator = installTestNavigator({ pathname: '/acme/projects/project-1' });
   mutateAsyncMock.mockClear();
   useSelectionStore.setState({ selectedIds: {} });
   useContextStore.setState({
@@ -42,7 +41,7 @@ describe('PipelineDashboardHeader', () => {
     const user = userEvent.setup();
     renderWithI18n(<PipelineDashboardHeader numberOfPipelines={0} pipelineIds={[]} />);
     await user.click(screen.getByRole('button', { name: 'New pipeline' }));
-    expect(navigateMock).toHaveBeenCalledWith('/acme/projects/project-1/create');
+    expect(testNavigator.navigate).toHaveBeenCalledWith('/acme/projects/project-1/create', undefined);
   });
 
   it('"New pipeline" is disabled without CREATE_PIPELINE', () => {
@@ -56,10 +55,10 @@ describe('PipelineDashboardHeader', () => {
     renderWithI18n(<PipelineDashboardHeader numberOfPipelines={0} pipelineIds={[]} />);
 
     await user.click(screen.getByRole('button', { name: 'Members' }));
-    expect(navigateMock).toHaveBeenCalledWith('/acme/projects/project-1/members', {});
+    expect(testNavigator.navigate).toHaveBeenCalledWith('/acme/projects/project-1/members', {});
 
     await user.click(screen.getByRole('button', { name: 'Secrets' }));
-    expect(navigateMock).toHaveBeenCalledWith('/acme/projects/project-1/secrets', {});
+    expect(testNavigator.navigate).toHaveBeenCalledWith('/acme/projects/project-1/secrets', {});
   });
 
   it('hides Members/Secrets without their respective permissions', () => {

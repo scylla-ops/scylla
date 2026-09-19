@@ -85,6 +85,9 @@ export default defineConfig({
     // every alias inside a component silently failed to resolve.
     tsconfigPaths({ loose: true }),
   ],
+  optimizeDeps: {
+    exclude: ['@lucide/svelte', 'bits-ui', '@tanstack/svelte-query', '@tanstack/svelte-table'],
+  },
   build: {
     rollupOptions: {
       output: {

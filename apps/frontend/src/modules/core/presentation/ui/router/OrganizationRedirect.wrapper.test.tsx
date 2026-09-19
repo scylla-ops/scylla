@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from '@/test/render.tsx';
+import { stubQuery } from '@/test/queries.ts';
 import { useContextStore } from '@platform/context';
 import { OrganizationRedirectWrapper } from './OrganizationRedirect.wrapper';
 
@@ -12,7 +14,12 @@ const organizationsState: { organizations?: { id: string; name: string }[]; isLo
   isLoading: false,
 };
 vi.mock('@/modules/features/organization', () => ({
-  useOrganizations: () => organizationsState,
+  organizationQueries: {
+    mine: () =>
+      stubQuery(['organizations', 'mine'], organizationsState.organizations, {
+        loading: organizationsState.isLoading,
+      }),
+  },
 }));
 
 beforeEach(() => {
@@ -24,14 +31,14 @@ beforeEach(() => {
 describe('OrganizationRedirectWrapper', () => {
   it('renders nothing while organizations are loading', () => {
     organizationsState.isLoading = true;
-    const { container } = render(<OrganizationRedirectWrapper />);
+    const { container } = renderWithProviders(<OrganizationRedirectWrapper />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it('redirects to the stored organization when one is already set', () => {
     useContextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
     organizationsState.organizations = [{ id: 'org-2', name: 'Other Co' }];
-    render(<OrganizationRedirectWrapper />);
+    renderWithProviders(<OrganizationRedirectWrapper />);
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/acme-corp/dashboard');
   });
 
@@ -40,13 +47,13 @@ describe('OrganizationRedirectWrapper', () => {
       { id: 'org-1', name: 'Globex Inc' },
       { id: 'org-2', name: 'Other Co' },
     ];
-    render(<OrganizationRedirectWrapper />);
+    renderWithProviders(<OrganizationRedirectWrapper />);
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/globex-inc/dashboard');
   });
 
   it('renders nothing when there is no stored organization and none to fall back on', () => {
     organizationsState.organizations = [];
-    const { container } = render(<OrganizationRedirectWrapper />);
+    const { container } = renderWithProviders(<OrganizationRedirectWrapper />);
     expect(container).toBeEmptyDOMElement();
   });
 });

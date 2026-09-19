@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
+import { renderHookWithProviders } from '@/test/render.tsx';
+import { stubQuery } from '@/test/queries.ts';
 import { useContextStore } from '@platform/context';
 import { usePermissionsStore, PermissionScope, Permission } from '@platform/authz';
 import { useOrgOverview } from './use-org-overview';
@@ -29,11 +31,19 @@ vi.mock('@/modules/features/project', async importOriginal => {
   const actual = await importOriginal<typeof ProjectModule>();
   return {
     ...actual,
-    useOrganizationProjects: () => ({
-      projects: projectsFixture,
-      isLoading: projectsLoadingFixture,
-      isError: projectsErrorFixture,
-    }),
+    projectQueries: {
+      ...actual.projectQueries,
+      lookup: () =>
+        projectsErrorFixture
+          ? {
+              queryKey: ['projects', 'stub', 'error'],
+              queryFn: () => Promise.reject(new Error('boom')),
+              retry: false,
+            }
+          : stubQuery(['projects', 'stub'], { projects: projectsFixture }, {
+              loading: projectsLoadingFixture,
+            }),
+    },
   };
 });
 
@@ -101,7 +111,7 @@ beforeEach(() => {
 
 describe('useOrgOverview', () => {
   it('reads the current organizationId from context and passes it straight through', () => {
-    const { result } = renderHook(() => useOrgOverview());
+    const { result } = renderHookWithProviders(() => useOrgOverview());
     expect(result.current.organizationId).toBe('org-1');
   });
 
@@ -109,7 +119,7 @@ describe('useOrgOverview', () => {
     projectsFixture = [project({ id: 'project-1', name: 'Acme project' })];
     pipelinesFixture = [pipeline({ projectId: 'project-1' })];
 
-    const { result } = renderHook(() => useOrgOverview());
+    const { result } = renderHookWithProviders(() => useOrgOverview());
 
     expect(result.current.allPipelines).toEqual([
       { ...pipeline({ projectId: 'project-1' }), projectName: 'Acme project' },
@@ -120,12 +130,12 @@ describe('useOrgOverview', () => {
     projectsFixture = [];
     pipelinesFixture = [pipeline({ projectId: 'project-404' })];
 
-    const { result } = renderHook(() => useOrgOverview());
+    const { result } = renderHookWithProviders(() => useOrgOverview());
 
     expect(result.current.allPipelines[0].projectName).toBe('');
   });
 
-  it('passes through each half\'s own loading/error/truncation flags unchanged', () => {
+  it('passes through each half\'s own loading/error/truncation flags unchanged', async () => {
     projectsLoadingFixture = true;
     projectsErrorFixture = true;
     pipelinesLoadingFixture = true;
@@ -133,10 +143,12 @@ describe('useOrgOverview', () => {
     jobsLoadingFixture = true;
     jobsTruncatedFixture = true;
 
-    const { result } = renderHook(() => useOrgOverview());
+    const { result } = renderHookWithProviders(() => useOrgOverview());
 
     expect(result.current.projectsLoading).toBe(true);
-    expect(result.current.projectsError).toBe(true);
+    // The error is a real rejection now that the query is real, so it arrives a
+    // tick later — the flag is still this hook's, passed straight through.
+    await waitFor(() => expect(result.current.projectsError).toBe(true));
     expect(result.current.pipelinesLoading).toBe(true);
     expect(result.current.pipelinesTruncated).toBe(true);
     expect(result.current.runsLoading).toBe(true);
@@ -156,7 +168,7 @@ describe('useOrgOverview', () => {
     ];
     jobsTotalFixture = 1;
 
-    const { result } = renderHook(() => useOrgOverview());
+    const { result } = renderHookWithProviders(() => useOrgOverview());
 
     expect(result.current.recentJobs).toEqual(jobsFixture);
     expect(result.current.runs.completed).toBe(1);
@@ -165,7 +177,7 @@ describe('useOrgOverview', () => {
 
   describe('canOpenProject', () => {
     it('denies while permissions are unknown', () => {
-      const { result } = renderHook(() => useOrgOverview());
+      const { result } = renderHookWithProviders(() => useOrgOverview());
       expect(result.current.canOpenProject('project-1')).toBe(false);
     });
 
@@ -182,7 +194,7 @@ describe('useOrgOverview', () => {
         },
       });
 
-      const { result } = renderHook(() => useOrgOverview());
+      const { result } = renderHookWithProviders(() => useOrgOverview());
       expect(result.current.canOpenProject('project-1')).toBe(true);
       expect(result.current.canOpenProject('project-2')).toBe(false);
     });

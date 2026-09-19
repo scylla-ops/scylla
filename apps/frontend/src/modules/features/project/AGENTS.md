@@ -10,18 +10,27 @@ Projects: the unit that owns pipelines, secrets and its own member list.
 - Must never import: `core/`, `layout/`, another feature's internals.
 - Outside code reaches this module **only** through `index.ts`.
 
+**Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
+unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
+options objects in `presentation/*.queries.ts`, which both bindings can run — `createQuery` here,
+react-query's `useQuery` in the modules still on React.
+
 ## Public API — `index.ts`
 
 ```typescript
-type ProjectEntity, ProjectMember
-PROJECTS_QUERY_KEY
-useProjects                          paginated list
-useOrganizationProjects              org-wide overview
-useProjectsByOrganizations, type ProjectLookupEntry   batched lookup (useQueries)
-useProjectMembers, PROJECT_MEMBERS_QUERY_KEY
+type ProjectEntity, ProjectMember, ProjectLookupEntry
+projectQueries        byOrganization (paginated) · lookup (org-wide) · members
+projectLookupQueries  the batched fan-out: { queries, combine } for useQueries/createQueries
+projectMutations      create · update · remove
+canListProjects, invalidateProjectMembers
+PROJECTS_QUERY_KEY, PROJECTS_QUERY_ROOT, PROJECTS_LOOKUP_PAGE, PROJECT_MEMBERS_QUERY_KEY
 ```
 
-Never add: `project.module.ts`, `use-project-domain.ts`, pages.
+`core`, `roles`, `membership` and `dashboard` all still run these through react-query's
+`useQuery` / `useQueries` — the options objects are framework-agnostic, which is what keeps the
+three ways of reading an organization's projects on one cache entry.
+
+Never add: `project.module.ts`, pages.
 
 ## Data contract
 
@@ -54,14 +63,12 @@ infrastructure/
   repository/mappers/grpc-project-member.mapper.ts
   repository/default-project.repository.ts
 presentation/
-  hooks/projects.query-keys.ts       key factory — import it, never inline a key
-  hooks/use-project-domain.ts        DI accessor (private)
-  hooks/useProjects.ts               ⚠ camelCase filename — see below
-  hooks/useCreateProject.ts          ⚠ camelCase filename
-  hooks/use-organization-projects.ts, use-projects-by-organizations.ts,
-  hooks/use-project-members.ts, use-update-project.ts, use-delete-project.ts
-  ui/ProjectPage.tsx, ProjectHeader.tsx, ProjectCard.tsx,
-  ui/AddProjectDialog.tsx, EditProjectDialog.tsx
+  project.queries.ts                 every read and write, plus the key factories
+  ui/Project.page.svelte             picks the organization, or says there is none
+  ui/ProjectList.svelte              keyed on the organization — that is the page reset
+  ui/ProjectHeader.svelte, ProjectCard.svelte
+  ui/AddProjectDialog.svelte, EditProjectDialog.svelte
+  ui/project.messages.ts
 ```
 
 ## Routes & nav

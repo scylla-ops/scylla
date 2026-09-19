@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHookWithProviders } from '@/test/render.tsx';
+import { stubQuery } from '@/test/queries.ts';
 import { PrincipalKind } from '@platform/authz';
 import { useRoleAssignees } from './use-role-assignees';
 import type { RoleEntity } from '@/modules/features/roles/domain/entities/role.entity.ts';
@@ -16,7 +17,7 @@ vi.mock('@/modules/features/roles/presentation/hooks/use-grants.ts', () => ({
 
 const usersFixture = { items: [{ userId: 'user-1', username: 'ravenne' }] };
 vi.mock('@/modules/features/user', () => ({
-  useUsers: () => ({ users: usersFixture }),
+  userQueries: { list: () => stubQuery(['users'], usersFixture) },
 }));
 
 const role = (overrides: Partial<RoleEntity> = {}): RoleEntity =>
@@ -24,7 +25,7 @@ const role = (overrides: Partial<RoleEntity> = {}): RoleEntity =>
 
 describe('useRoleAssignees', () => {
   it('returns no assignees when role is null', () => {
-    const { result } = renderHook(() => useRoleAssignees(null));
+    const { result } = renderHookWithProviders(() => useRoleAssignees(null));
     expect(result.current.assignees).toEqual([]);
   });
 
@@ -36,7 +37,7 @@ describe('useRoleAssignees', () => {
       { id: 'g2', principal: { kind: PrincipalKind.USER, id: 'user-2' }, roleId: 'other-role', scope: 0, scopeId: '' },
     );
 
-    const { result } = renderHook(() => useRoleAssignees(role()));
+    const { result } = renderHookWithProviders(() => useRoleAssignees(role()));
 
     expect(result.current.assignees).toHaveLength(1);
     expect(result.current.assignees[0]).toEqual({
@@ -54,7 +55,7 @@ describe('useRoleAssignees', () => {
       scopeId: '',
     });
 
-    const { result } = renderHook(() => useRoleAssignees(role()));
+    const { result } = renderHookWithProviders(() => useRoleAssignees(role()));
     expect(result.current.assignees[0].label).toBe('ghost-user');
   });
 
@@ -67,12 +68,12 @@ describe('useRoleAssignees', () => {
       scopeId: '',
     });
 
-    const { result } = renderHook(() => useRoleAssignees(role()));
+    const { result } = renderHookWithProviders(() => useRoleAssignees(role()));
     expect(result.current.assignees[0].label).toBe('app-42');
   });
 
   it('removeAssignee revokes the grant by id', () => {
-    const { result } = renderHook(() => useRoleAssignees(role()));
+    const { result } = renderHookWithProviders(() => useRoleAssignees(role()));
     result.current.removeAssignee('grant-to-remove');
     expect(revokeGrantMutate).toHaveBeenCalledWith('grant-to-remove');
   });

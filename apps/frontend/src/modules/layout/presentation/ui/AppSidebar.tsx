@@ -16,8 +16,8 @@ import {
 import { NavUser } from '@/modules/layout/presentation/ui/NavUser.tsx';
 import { Skeleton } from '@/modules/shared/presentation/ui/shadcn/skeleton.tsx';
 import { ContextSelector } from '@/modules/layout/presentation/ui/context-selector/ContextSelector.tsx';
-import { OrganizationList } from '@/modules/features/organization';
-import { AddOrganizationDialog } from '@/modules/features/organization';
+import { OrganizationSwitcherList } from '@/modules/layout/presentation/ui/context-selector/OrganizationSwitcherList.tsx';
+import { AddOrganizationModal } from '@/modules/layout/presentation/ui/context-selector/AddOrganizationModal.tsx';
 import { CurrentContextDisplay } from '@/modules/layout/presentation/ui/context-selector/CurrentContextDisplay.tsx';
 import { useContextStore } from '@platform/context';
 import { useLingui } from '@lingui/react/macro';
@@ -108,8 +108,8 @@ export function AppSidebar({ navEntries, ...props }: AppSidebarProps) {
           icon={Building2}
         />
       }
-      list={OrganizationList}
-      addModal={AddOrganizationDialog}
+      list={<OrganizationSwitcherList />}
+      addModal={AddOrganizationModal}
       canAdd={canCreateOrganization}
     />
   );

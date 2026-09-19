@@ -21,7 +21,8 @@ import {
 } from '@/modules/shared/presentation/ui/shadcn/sidebar.tsx';
 import { useScyllaNavigate } from '@platform/context';
 import { useContextStore } from '@platform/context';
-import { useUser } from '@/modules/features/user';
+import { useQuery } from '@tanstack/react-query';
+import { userQueries } from '@/modules/features/user';
 
 export function NavUser() {
   const { isMobile } = useSidebar();
@@ -32,7 +33,7 @@ export function NavUser() {
 
   //fixme: dependency to user module here (if we are in layout)
   //todo: handle error properly here
-  const { user, isLoading } = useUser(userId || undefined);
+  const { data: user, isLoading } = useQuery(userQueries.byId(userId || undefined));
 
   //todo: better loading (skeleton if loading too slow ?)
   if (isLoading) {

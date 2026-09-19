@@ -107,12 +107,23 @@ describe('feature permission conformance', () => {
    * `LIST_JOBS_BY_PIPELINE` itself rather than trusting whoever called it.
    */
   describe('a query hook consumed across a feature boundary checks for itself', () => {
-    /** Hook names a feature re-exports through its barrel, by owning feature. */
+    /**
+     * What a read looks like on either side of the migration.
+     *
+     * A React feature exports a `use*` hook; a migrated one exports a
+     * `*Queries` factory of options objects. The rule is the same for both —
+     * the consumer's route guard does not cover the owner's permission — so
+     * both shapes are collected here rather than the rule quietly emptying out
+     * as features move to Svelte.
+     */
+    const isSharedRead = (name: string) => /^use[A-Z]/.test(name) || /Queries$/.test(name);
+
+    /** Read names a feature re-exports through its barrel, by owning feature. */
     const barrelExports = new Map(
       featureDirs.map(feature => {
         const barrel = join(feature.dir, 'index.ts');
         const names = existsSync(barrel)
-          ? [...read(barrel).matchAll(/\buse[A-Z]\w*/g)].map(match => match[0])
+          ? [...read(barrel).matchAll(/\b(?:use[A-Z]\w*|\w+Queries)\b/g)].map(match => match[0])
           : [];
         return [feature.id, new Set(names)];
       }),
@@ -129,7 +140,7 @@ describe('feature permission conformance', () => {
           if (owner === feature.id) continue;
           for (const raw of names.split(',')) {
             const name = raw.trim().replace(/^type\s+/, '');
-            if (!/^use[A-Z]/.test(name)) continue;
+            if (!isSharedRead(name)) continue;
             const key = `${owner}.${name}`;
             consumersOf.set(key, (consumersOf.get(key) ?? new Set()).add(feature.id));
           }
@@ -143,29 +154,53 @@ describe('feature permission conformance', () => {
       readonly selfGated: boolean;
     }
 
-    const sharedHooks: SharedHook[] = featureDirs.flatMap(feature =>
-      sourcesIn(feature.hooks).flatMap(file => {
-        const source = read(file);
-        // `useQueryClient` is not a query — match the call, not the prefix.
-        if (!/\buseQuery\(|\buseQueries\(/.test(source)) return [];
+    /** Collects the exported reads of one file that cross a barrel. */
+    const sharedReadsIn = (
+      featureId: string,
+      file: string,
+      exportPattern: RegExp,
+      gatePattern: RegExp,
+    ): SharedHook[] => {
+      const source = read(file);
+      const exported = barrelExports.get(featureId) ?? new Set<string>();
 
-        const exported = barrelExports.get(feature.id) ?? new Set<string>();
-        return [...source.matchAll(/export const (use[A-Z]\w*)/g)]
-          .map(match => match[1])
-          .filter(name => exported.has(name))
-          .flatMap(name => {
-            const consumers = consumersOf.get(`${feature.id}.${name}`);
-            if (!consumers) return [];
-            return [
-              {
-                key: `${feature.id}.${name}`,
-                consumers: [...consumers],
-                selfGated: /useAuthorization|useCan/.test(source),
-              },
-            ];
-          });
-      }),
-    );
+      return [...source.matchAll(exportPattern)]
+        .map(match => match[1])
+        .filter(name => exported.has(name))
+        .flatMap(name => {
+          const consumers = consumersOf.get(`${featureId}.${name}`);
+          if (!consumers) return [];
+          return [
+            {
+              key: `${featureId}.${name}`,
+              consumers: [...consumers],
+              selfGated: gatePattern.test(source),
+            },
+          ];
+        });
+    };
+
+    const sharedHooks: SharedHook[] = featureDirs.flatMap(feature => [
+      // The React half: a `use*` hook under `presentation/hooks/`.
+      ...sourcesIn(feature.hooks).flatMap(file =>
+        // `useQueryClient` is not a query — match the call, not the prefix.
+        /\buseQuery\(|\buseQueries\(/.test(read(file))
+          ? sharedReadsIn(
+              feature.id,
+              file,
+              /export const (use[A-Z]\w*)/g,
+              /useAuthorization|useCan/,
+            )
+          : [],
+      ),
+      // The Svelte half: a `*.queries.ts` factory. There is no hook to look at,
+      // so the gate is a `can(...)` inside the options it builds.
+      ...sourcesIn(join(feature.dir, 'presentation'))
+        .filter(file => file.endsWith('.queries.ts'))
+        .flatMap(file =>
+          sharedReadsIn(feature.id, file, /export const (\w+Queries)\b/g, /\bcan\(/),
+        ),
+    ]);
 
     /**
      * Cross-feature hooks that deliberately do not check, and why. A ratchet.
@@ -181,17 +216,15 @@ describe('feature permission conformance', () => {
         'one PERMISSION_DENIED toast per unreadable project — see use-org-overview.ts.',
       'pipeline.useOrganizationPipelines':
         'Same org-scoped, server-filtered read as useOrganizationJobs.',
-      'project.useOrganizationProjects':
-        'Same org-scoped, server-filtered read as useOrganizationJobs.',
-      'organization.useOrganizationMembers':
-        'Consumed by membership, whose route requires LIST_ORGANIZATION_MEMBERS — the same ' +
-        'permission the read needs, so the route guard already covers it.',
-      'project.useProjectMembers':
-        'Consumed by membership, whose route requires LIST_PROJECT_MEMBERS — the same permission ' +
-        'the read needs, so the route guard already covers it.',
-      'organization.useOrganizations':
-        'TRIAGE: consumed by roles, whose route requires MANAGE_ROLES. Listing organizations is ' +
-        'a different permission.',
+      'organization.organizationQueries':
+        'One entry where there were three hooks, and the same reasons. `members` is consumed by ' +
+        'membership, whose route requires LIST_ORGANIZATION_MEMBERS — the permission the read ' +
+        'needs, so the route guard covers it. TRIAGE for `mine`: roles consumes it on a route ' +
+        'requiring MANAGE_ROLES, and listing organizations is a different permission.',
+      'secret.secretQueries':
+        'TRIAGE: consumed by pipeline\'s step dialog to offer secret names, on an editor route ' +
+        'requiring UPDATE_PIPELINE rather than LIST_SECRETS. Newly listed rather than newly ' +
+        'true — `useSecrets` crossed the same boundary before the factory replaced it.',
       'roles.useGrantableRoles':
         'TRIAGE: consumed by membership, whose route requires LIST_ORGANIZATION_MEMBERS rather ' +
         'than the grant permissions this read needs.',

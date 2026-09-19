@@ -10,19 +10,36 @@ Organizations: the top-level tenant, its members, and the switcher in the shell.
 - Must never import: `core/`, `layout/`, another feature's internals.
 - Outside code reaches this module **only** through `index.ts`.
 
+**Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
+unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
+options objects in `presentation/organization.queries.ts`, which both bindings can run —
+`createQuery` here, react-query's `useQuery` in the modules still on React.
+
+**One piece of this module's UI moved out rather than across.** The organization switcher's list
+used to live here and take its row wrapper as a component prop, so the sidebar could make each
+row a `DropdownMenuItem`. A Svelte component cannot be handed a React one — Radix's menu item
+provides roving focus and `onSelect` through React context — so the rendering moved to
+`layout/presentation/ui/context-selector/OrganizationSwitcherList.tsx`, next to the dropdown it
+belongs to, and reads this module's queries through the barrel. `OrganizationList.svelte` here
+renders the same list as plain blocks for the user settings panel. The two meet again in Phase 6,
+when the sidebar becomes Svelte and the React copy goes.
+
 ## Public API — `index.ts`
 
 ```typescript
 type OrganizationEntity
-useOrganizations, useCreateOrganization
-useOrganizationMembers, ORGANIZATION_MEMBERS_QUERY_KEY
+organizationQueries        mine · members
+organizationMutations      create · update · remove
+invalidateOrganizationMembers
+ORGANIZATIONS_QUERY_KEY, MY_ORGANIZATIONS_QUERY_KEY, ORGANIZATION_MEMBERS_QUERY_KEY
 createOrganizationItems
-OrganizationList, AddOrganizationDialog     ← consumed by layout's context selector
+OrganizationList                              ← the settings panel (Svelte)
+AddOrganizationDialog, EditOrganizationDialog ← mounted as islands by the React shell
 ```
 
-`OrganizationList` and `AddOrganizationDialog` are part of the contract because the shell builds
-the organization switcher from them. Never add: `organization.module.ts`,
-`use-organization-domain.ts`, `UserSettingsRoute`.
+The two dialogs are part of the contract because the shell still opens them, through
+`SvelteIsland`: every prop they take is a plain value or a callback, so no adapter is needed
+beyond the island itself. Never add: `organization.module.ts`, `UserSettingsRoute`.
 
 ## Data contract
 
@@ -52,13 +69,11 @@ infrastructure/
   repository/mappers/grpc-organization-member.mapper.ts
   repository/default-organization.repository.ts
 presentation/
-  hooks/use-organization-domain.ts   DI accessor (private)
-  hooks/useOrganizations.ts          ⚠ camelCase filename — see below
-  hooks/useCreateOrganization.ts     ⚠ camelCase filename
-  hooks/use-update-organization.ts, use-delete-organization.ts,
-  hooks/use-organization-members.ts
-  ui/OrganizationList.tsx, AddOrganizationDialog.tsx, EditOrganizationDialog.tsx
-  ui/UserSettingsRoute.tsx           composes user's UserSettingsPage
+  organization.queries.ts            every read and write, plus the key factories
+  ui/OrganizationList.svelte         plain rows, for the settings panel
+  ui/AddOrganizationDialog.svelte, EditOrganizationDialog.svelte
+  ui/UserSettingsRoute.svelte        composes user's UserSettingsPage
+  ui/organization.messages.ts
   utils/create-organization-form-items.ts
 ```
 

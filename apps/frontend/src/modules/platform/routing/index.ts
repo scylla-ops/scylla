@@ -15,3 +15,4 @@ export type {
 export type { RouteHandle, Crumb, BreadcrumbParams } from './route-handle.struct.ts';
 export { routesFor, navEntriesFor } from './compose-module-routes.ts';
 export { RouteGuard } from './RouteGuard.tsx';
+export { sveltePage, type RouteParams } from './svelte-page.tsx';

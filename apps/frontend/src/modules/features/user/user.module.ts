@@ -1,4 +1,4 @@
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { UsersIcon } from 'lucide-react';
 import { Permission } from '@platform/authz';
@@ -26,7 +26,9 @@ export const UserModule = {
           index: true,
           permission: Permission.LIST_USERS,
           lazy: async () => ({
-            Component: (await import('./presentation/ui/admin/UserAdmin.page.tsx')).UserAdminPage,
+            Component: sveltePage(
+              (await import('./presentation/ui/admin/UserAdmin.page.svelte')).default,
+            ),
           }),
         },
       ],

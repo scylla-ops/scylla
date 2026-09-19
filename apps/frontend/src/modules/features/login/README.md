@@ -4,14 +4,15 @@
 > [agent guide](./AGENTS.md) · [architecture](../../../../docs/architecture.md)
 
 The sign-in screen, and nothing else. This is the smallest feature in the codebase: one route,
-one repository method, one hook, two components.
+one repository method, one view model, two components — and the first one migrated to Svelte,
+which is why `refacto_svelte.md` uses it as the yardstick for the recipe.
 
 ## The session, end to end
 
 Signing in touches three modules, and it helps to see the whole path at once:
 
-1. `LoginForm` collects a username and password and calls `useLogin`.
-2. `useLogin` runs the mutation against `LoginRepository.login()`.
+1. `LoginForm` collects a username and password and calls `LoginState.submit`.
+2. `LoginState` runs the mutation against `LoginRepository.login()`.
 3. The gRPC data source calls the backend and, on success, writes `token` and `userId` into
    `localStorage`.
 4. Every later request picks the token up: the transport in

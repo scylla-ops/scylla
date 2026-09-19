@@ -25,9 +25,10 @@ import { Permission, PermissionScope, PrincipalKind, } from '@platform/authz';
 import { PermissionButton } from '@platform/authz';
 import { useGrants } from '@/modules/features/roles/presentation/hooks/use-grants.ts';
 import { useProjectGrantEligibility } from '@/modules/features/roles/presentation/hooks/use-project-grant-eligibility.ts';
-import { useUsers } from '@/modules/features/user';
-import { useOrganizations } from '@/modules/features/organization';
-import { useProjects } from '@/modules/features/project';
+import { useQuery } from '@tanstack/react-query';
+import { userQueries } from '@/modules/features/user';
+import { organizationQueries } from '@/modules/features/organization';
+import { projectQueries } from '@/modules/features/project';
 
 interface GrantCreatorProps {
   role: RoleEntity;
@@ -67,7 +68,7 @@ export const GrantCreator = ({ role }: GrantCreatorProps) => {
   const [open, setOpen] = useState(false);
 
   const { grants, createGrant } = useGrants();
-  const { users } = useUsers();
+  const { data: users } = useQuery(userQueries.list());
 
   const [userId, setUserId] = useState('');
   // Chosen scope targets, keyed by id → display name (accumulates across orgs).
@@ -341,7 +342,7 @@ interface TargetsProps {
 }
 
 const OrganizationTargets = ({ disabled, selected, alreadyGranted, onToggle }: TargetsProps) => {
-  const { organizations, isLoading } = useOrganizations();
+  const { data: organizations, isLoading } = useQuery(organizationQueries.mine());
   const options: TargetOption[] = (organizations ?? []).map(org => ({
     id: org.id,
     name: org.name,
@@ -385,8 +386,11 @@ const ProjectScopeFields = ({
   alreadyGranted,
   onToggle,
 }: ProjectScopeFieldsProps) => {
-  const { organizations, isLoading: orgsLoading } = useOrganizations();
-  const { projects, isLoading: projectsLoading } = useProjects(browseOrgId);
+  const { data: organizations, isLoading: orgsLoading } = useQuery(organizationQueries.mine());
+  const { data: projectsPage, isLoading: projectsLoading } = useQuery(
+    projectQueries.byOrganization(browseOrgId),
+  );
+  const projects = projectsPage?.projects;
 
   const options: TargetOption[] = (projects ?? []).map(project => ({
     id: project.id,

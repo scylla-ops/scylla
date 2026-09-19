@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { useContextStore } from '@platform/context';
-import { useOrganizations } from '@/modules/features/organization';
+import { useQuery } from '@tanstack/react-query';
+import { organizationQueries } from '@/modules/features/organization';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 /**
@@ -13,7 +14,7 @@ export const OrganizationSyncWrapper = () => {
   const { organizationSlug } = useParams<{ organizationSlug: string }>();
   const setOrganization = useContextStore(state => state.setOrganization);
   const currentOrgId = useContextStore(state => state.organization.id);
-  const { organizations, isLoading } = useOrganizations();
+  const { data: organizations, isLoading } = useQuery(organizationQueries.mine());
   const navigate = useNavigate();
 
   useEffect(() => {

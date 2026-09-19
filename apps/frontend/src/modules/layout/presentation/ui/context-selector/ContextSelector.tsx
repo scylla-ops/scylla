@@ -18,9 +18,13 @@ import { type ComponentType, type ReactNode, useState } from 'react';
 type ContextSelectorProps = {
   label: string;
   display: ReactNode;
-  list: ComponentType<{
-    Wrapper: ComponentType<{ children: ReactNode; onSelect?: () => void; className?: string }>;
-  }>;
+  /**
+   * The rows, already rendered. They used to be a component taking a row
+   * wrapper so this file could inject `DropdownMenuItem`; the list now renders
+   * its own, because a Svelte list cannot be handed a React component and the
+   * indirection bought nothing else.
+   */
+  list: ReactNode;
   addModal: ComponentType<{ open: boolean; setOpen: (open: boolean) => void }>;
   /** When false, the "Create new …" entry is hidden. Defaults to allowed. */
   canAdd?: boolean;
@@ -29,7 +33,7 @@ type ContextSelectorProps = {
 export const ContextSelector = ({
   label,
   display,
-  list: List,
+  list,
   addModal: AddModal,
   canAdd = true,
 }: ContextSelectorProps) => {
@@ -69,7 +73,7 @@ export const ContextSelector = ({
                 {label}
               </DropdownMenuLabel>
 
-              <List Wrapper={DropdownMenuItem} />
+              {list}
 
               {canAdd && (
                 <>

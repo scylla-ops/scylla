@@ -4,6 +4,7 @@ import { Layout } from '@/modules/layout/presentation/ui/Layout.tsx';
 import { AuthGuard } from '@core/presentation/ui/router/Auth.guard.tsx';
 import { RouteGuard } from '@platform/routing';
 import { navEntriesFor, routesFor } from '@platform/routing';
+import { setAppNavigator } from '@platform/context';
 import { modules } from '@core/di/registry.ts';
 import { ContextCleanerWrapper } from './ContextCleaner.wrapper.tsx';
 import { OrganizationSyncWrapper } from './OrganizationSync.wrapper.tsx';
@@ -86,3 +87,17 @@ export const CoreRouter = createBrowserRouter([
     ],
   },
 ]);
+
+/**
+ * Hands the router to `@platform/routing` so code outside React can navigate.
+ *
+ * Here rather than in a component: a data router exposes `navigate` and its
+ * current location on the object itself, so there is nothing to subscribe to
+ * and nothing to clean up. This is also the single line that names react-router
+ * for every navigation in the app — Phase 6 replaces it and nothing else.
+ */
+setAppNavigator({
+  navigate: (to, options) => void CoreRouter.navigate(to, options),
+  back: () => void CoreRouter.navigate(-1),
+  pathname: () => CoreRouter.state.location.pathname,
+});

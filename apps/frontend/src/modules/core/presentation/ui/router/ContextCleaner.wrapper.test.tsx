@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from '@/test/render.tsx';
+import { stubQuery } from '@/test/queries.ts';
 import { useContextStore } from '@platform/context';
 import { ContextCleanerWrapper } from './ContextCleaner.wrapper';
 
@@ -18,7 +20,14 @@ const projectsState: { projects?: { id: string; name: string }[]; isLoading: boo
   isLoading: false,
 };
 vi.mock('@/modules/features/project', () => ({
-  useProjects: () => projectsState,
+  projectQueries: {
+    byOrganization: () =>
+      stubQuery(
+        ['projects'],
+        projectsState.projects && { projects: projectsState.projects },
+        { loading: projectsState.isLoading },
+      ),
+  },
 }));
 
 beforeEach(() => {
@@ -36,33 +45,33 @@ beforeEach(() => {
 
 describe('ContextCleanerWrapper', () => {
   it('always renders the outlet', () => {
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(screen.getByTestId('outlet')).toBeInTheDocument();
   });
 
   it('does nothing while projects are still loading', () => {
     paramsMock.mockReturnValue({ projectId: 'project-1' });
     projectsState.isLoading = true;
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it('does nothing without a projectId param', () => {
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(navigateMock).not.toHaveBeenCalled();
     expect(useContextStore.getState().project.id).toBe('project-1');
   });
 
   it('leaves an existing project alone when it is still in the list', () => {
     paramsMock.mockReturnValue({ projectId: 'project-1' });
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(navigateMock).not.toHaveBeenCalled();
     expect(useContextStore.getState().project).toEqual({ id: 'project-1', name: 'web' });
   });
 
   it('clears project and pipeline and navigates back to the org\'s projects list when the project no longer exists', () => {
     paramsMock.mockReturnValue({ projectId: 'deleted-project' });
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(useContextStore.getState().project).toEqual({ id: null, name: null });
     expect(useContextStore.getState().pipeline).toEqual({ id: null, name: null });
     expect(navigateMock).toHaveBeenCalledWith('/acme-corp/projects', { replace: true });
@@ -71,7 +80,7 @@ describe('ContextCleanerWrapper', () => {
   it('falls back to "/" when there is no organization name to slugify', () => {
     useContextStore.setState({ organization: { id: null, name: null } });
     paramsMock.mockReturnValue({ projectId: 'deleted-project' });
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(navigateMock).toHaveBeenCalledWith('/', { replace: true });
   });
 
@@ -79,7 +88,7 @@ describe('ContextCleanerWrapper', () => {
     useContextStore.setState({ pipeline: { id: 'pipeline-1', name: 'ci' } });
     locationMock.mockReturnValue({ pathname: '/acme/projects/project-1/settings' });
     paramsMock.mockReturnValue({ projectId: 'project-1' });
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(useContextStore.getState().pipeline).toEqual({ id: null, name: null });
   });
 
@@ -87,7 +96,7 @@ describe('ContextCleanerWrapper', () => {
     useContextStore.setState({ pipeline: { id: 'pipeline-1', name: 'ci' } });
     locationMock.mockReturnValue({ pathname: '/acme/projects/project-1/pipelines/pipeline-1/edit/' });
     paramsMock.mockReturnValue({ projectId: 'project-1' });
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(useContextStore.getState().pipeline).toEqual({ id: 'pipeline-1', name: 'ci' });
   });
 
@@ -95,7 +104,7 @@ describe('ContextCleanerWrapper', () => {
     useContextStore.setState({ pipeline: { id: 'pipeline-1', name: 'ci' } });
     locationMock.mockReturnValue({ pathname: '/acme/projects/project-1/pipelines/pipeline-1' });
     paramsMock.mockReturnValue({ projectId: 'project-1' });
-    render(<ContextCleanerWrapper />);
+    renderWithProviders(<ContextCleanerWrapper />);
     expect(useContextStore.getState().pipeline).toEqual({ id: 'pipeline-1', name: 'ci' });
   });
 });

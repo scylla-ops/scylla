@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. placeholder {0}: scopeIds.length
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:167
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:168
 msgid "{0} grants created"
 msgstr "{0} grants created"
 
@@ -30,7 +30,7 @@ msgstr "{memberCount} members"
 msgid "Access"
 msgstr "Access"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:197
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:198
 msgid "Add grant"
 msgstr "Add grant"
 
@@ -42,16 +42,16 @@ msgstr "Always"
 msgid "Built-in"
 msgstr "Built-in"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:109
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:110
 msgid "can't see this organization's projects"
 msgstr "can't see this organization's projects"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:280
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:281
 #: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:241
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:207
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:208
 msgid "Choose who receives this role and where it applies."
 msgstr "Choose who receives this role and where it applies."
 
@@ -59,7 +59,7 @@ msgstr "Choose who receives this role and where it applies."
 msgid "Create agents"
 msgstr "Create agents"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:283
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:284
 msgid "Create grant"
 msgstr "Create grant"
 
@@ -169,7 +169,7 @@ msgstr "Edit the organization"
 msgid "Edit the project"
 msgstr "Edit the project"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:170
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:171
 msgid "Failed to create grant"
 msgstr "Failed to create grant"
 
@@ -179,7 +179,7 @@ msgid "Full control"
 msgstr "Full control"
 
 #. placeholder {0}: role.name
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:204
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:205
 msgid "Grant “{0}”"
 msgstr "Grant “{0}”"
 
@@ -203,11 +203,11 @@ msgstr "Grant and revoke roles on every project"
 msgid "Grant and revoke roles on the project"
 msgstr "Grant and revoke roles on the project"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:167
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:168
 msgid "Grant created"
 msgstr "Grant created"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:496
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:500
 msgid "Granted"
 msgstr "Granted"
 
@@ -223,7 +223,7 @@ msgstr "Grants full control over its scope."
 msgid "Holding a role in an organization is what belonging to it means, so every organization role carries it. An organization role applies to every project of the organization."
 msgstr "Holding a role in an organization is what belonging to it means, so every organization role carries it. An organization role applies to every project of the organization."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:471
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:475
 msgid "Loading…"
 msgstr "Loading…"
 
@@ -256,7 +256,7 @@ msgstr "No description"
 msgid "No one holds this role yet."
 msgstr "No one holds this role yet."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:353
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:354
 msgid "No organizations available."
 msgstr "No organizations available."
 
@@ -264,7 +264,7 @@ msgstr "No organizations available."
 msgid "No permissions."
 msgstr "No permissions."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:435
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:439
 msgid "No projects in this organization."
 msgstr "No projects in this organization."
 
@@ -272,11 +272,11 @@ msgstr "No projects in this organization."
 msgid "No roles yet. Create one to get started."
 msgstr "No roles yet. Create one to get started."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:425
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:429
 msgid "Nobody can receive a project grant here yet. Admit someone to the organization first — from the organization switcher, under “Members” — and they will show up here."
 msgstr "Nobody can receive a project grant here yet. Admit someone to the organization first — from the organization switcher, under “Members” — and they will show up here."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:105
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:106
 msgid "not a member of this organization"
 msgstr "not a member of this organization"
 
@@ -296,12 +296,12 @@ msgstr "Open any pipeline"
 msgid "Open any project"
 msgstr "Open any project"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:400
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:404
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:346
 msgid "Organization"
 msgstr "Organization"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:352
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:353
 msgid "Organizations"
 msgstr "Organizations"
 
@@ -310,11 +310,11 @@ msgstr "Organizations"
 msgid "Permissions"
 msgstr "Permissions"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:408
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:412
 msgid "Pick an organization"
 msgstr "Pick an organization"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:181
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:182
 msgid "Pick an organization first"
 msgstr "Pick an organization first"
 
@@ -322,7 +322,7 @@ msgstr "Pick an organization first"
 msgid "Project"
 msgstr "Project"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:434
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:438
 msgid "Projects"
 msgstr "Projects"
 
@@ -396,12 +396,12 @@ msgstr "See who works on the project"
 msgid "Select a role to see its permissions and members."
 msgstr "Select a role to see its permissions and members."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:181
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:182
 msgid "Select a user"
 msgstr "Select a user"
 
 #. placeholder {0}: selected.size
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:250
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:251
 msgid "Selected ({0})"
 msgstr "Selected ({0})"
 
@@ -413,7 +413,7 @@ msgstr "System"
 msgid "This role also holds {preservedCount} permission(s) not managed here. They are kept unchanged."
 msgstr "This role also holds {preservedCount} permission(s) not managed here. They are kept unchanged."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:217
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:218
 msgid "This role grants access across the whole system."
 msgstr "This role grants access across the whole system."
 
@@ -427,7 +427,7 @@ msgstr "Unknown"
 msgid "Unknown access."
 msgstr "Unknown access."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:310
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:311
 msgid "User"
 msgstr "User"
 
@@ -471,7 +471,7 @@ msgstr "What is this role for?"
 msgid "You don't have permission to edit roles."
 msgstr "You don't have permission to edit roles."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:194
+#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:195
 msgid "You don't have permission to grant this role."
 msgstr "You don't have permission to grant this role."
 

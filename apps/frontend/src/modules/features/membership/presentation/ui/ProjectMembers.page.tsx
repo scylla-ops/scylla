@@ -21,8 +21,9 @@ import {
   MembersHint,
   MembersList,
 } from '@/modules/features/membership/presentation/ui/components/index.ts';
-import { useOrganizationMembers } from '@/modules/features/organization';
-import { useProjectMembers } from '@/modules/features/project';
+import { useQuery } from '@tanstack/react-query';
+import { organizationQueries } from '@/modules/features/organization';
+import { invalidateProjectMembers, projectQueries } from '@/modules/features/project';
 
 /** Who is being removed — the id to act on, the name to name in the prompt. */
 interface PendingRemoval {
@@ -74,16 +75,18 @@ export const ProjectMembersPage = () => {
   const canReadOrganizationGrants = can(Permission.MANAGE_ORG_GRANTS, target);
   const canListOrganizationMembers = can(Permission.LIST_ORGANIZATION_MEMBERS, target);
 
-  const {
-    members: projectMembers,
-    isLoading: membersLoading,
-    refetchMembers,
-  } = useProjectMembers(projectId, {
-    enabled: can(Permission.LIST_PROJECT_MEMBERS, target),
-  });
-  const { members: organizationMembers } = useOrganizationMembers(organizationId, {
-    enabled: canListOrganizationMembers,
-  });
+  const { data: projectMembers = [], isLoading: membersLoading } = useQuery(
+    projectQueries.members(projectId, {
+      enabled: can(Permission.LIST_PROJECT_MEMBERS, target),
+    }),
+  );
+  // Members are derived from grants on the backend, so a grant mutation changes
+  // the list. `useScopedGrants` cannot reach this key without coupling the two
+  // features, which is why the caller invalidates it.
+  const refetchMembers = useCallback(() => invalidateProjectMembers(projectId), [projectId]);
+  const { data: organizationMembers = [] } = useQuery(
+    organizationQueries.members(organizationId, { enabled: canListOrganizationMembers }),
+  );
 
   const {
     grants: projectGrants,

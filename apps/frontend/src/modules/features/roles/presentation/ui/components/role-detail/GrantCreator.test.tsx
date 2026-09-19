@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithI18n } from '@/test/render.tsx';
+import { renderWithProviders } from '@/test/render.tsx';
+import { stubQuery } from '@/test/queries.ts';
 import userEvent from '@testing-library/user-event';
 import { usePermissionsStore, PermissionScope, PrincipalKind } from '@platform/authz';
 import { GrantCreator } from './GrantCreator';
@@ -28,7 +29,7 @@ const usersState: { users: { userId: string; username: string }[] } = {
   ],
 };
 vi.mock('@/modules/features/user', () => ({
-  useUsers: () => ({ users: { items: usersState.users } }),
+  userQueries: { list: () => stubQuery(['users'], { items: usersState.users }) },
 }));
 
 const orgsState: { organizations: { id: string; name: string }[] } = {
@@ -38,14 +39,18 @@ const orgsState: { organizations: { id: string; name: string }[] } = {
   ],
 };
 vi.mock('@/modules/features/organization', () => ({
-  useOrganizations: () => ({ organizations: orgsState.organizations, isLoading: false }),
+  organizationQueries: {
+    mine: () => stubQuery(['organizations', 'mine'], orgsState.organizations),
+  },
 }));
 
 const projectsState: { projects: { id: string; name: string }[] } = {
   projects: [{ id: 'project-1', name: 'web' }],
 };
 vi.mock('@/modules/features/project', () => ({
-  useProjects: () => ({ projects: projectsState.projects, isLoading: false }),
+  projectQueries: {
+    byOrganization: () => stubQuery(['projects'], { projects: projectsState.projects }),
+  },
 }));
 
 const toastSuccess = vi.fn();
@@ -96,14 +101,14 @@ const selectUser = async (user: ReturnType<typeof userEvent.setup>, name: string
 describe('GrantCreator', () => {
   it('opens the dialog with the role name in the title', async () => {
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ name: 'Developer' })} />);
+    renderWithProviders(<GrantCreator role={role({ name: 'Developer' })} />);
     await openDialog(user);
     expect(screen.getByText(/Grant.*Developer/)).toBeInTheDocument();
   });
 
   it('a SYSTEM-scoped role shows only the user picker plus a system-wide notice, no target checklist', async () => {
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ scope: PermissionScope.SYSTEM })} />);
+    renderWithProviders(<GrantCreator role={role({ scope: PermissionScope.SYSTEM })} />);
     await openDialog(user);
 
     expect(screen.getByText('This role grants access across the whole system.')).toBeInTheDocument();
@@ -112,7 +117,7 @@ describe('GrantCreator', () => {
 
   it('a SYSTEM-scoped grant is created with an empty scopeId', async () => {
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ id: 'role-sys', scope: PermissionScope.SYSTEM })} />);
+    renderWithProviders(<GrantCreator role={role({ id: 'role-sys', scope: PermissionScope.SYSTEM })} />);
     await openDialog(user);
     await selectUser(user, 'alice');
     await user.click(screen.getByRole('button', { name: 'Create grant' }));
@@ -128,7 +133,7 @@ describe('GrantCreator', () => {
 
   it('an ORGANIZATION-scoped role lists organizations to toggle, with a removable "Selected" summary', async () => {
     const user = userEvent.setup();
-    const { container } = renderWithI18n(<GrantCreator role={role({ scope: PermissionScope.ORGANIZATION })} />);
+    const { container } = renderWithProviders(<GrantCreator role={role({ scope: PermissionScope.ORGANIZATION })} />);
     await openDialog(user);
 
     expect(screen.getByText('Organizations')).toBeInTheDocument();
@@ -143,7 +148,7 @@ describe('GrantCreator', () => {
 
   it('creates one grant per selected organization and reports the count', async () => {
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ id: 'role-org', scope: PermissionScope.ORGANIZATION })} />);
+    renderWithProviders(<GrantCreator role={role({ id: 'role-org', scope: PermissionScope.ORGANIZATION })} />);
     await openDialog(user);
     await selectUser(user, 'alice');
     await user.click(screen.getByText('Acme'));
@@ -171,7 +176,7 @@ describe('GrantCreator', () => {
       },
     ];
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ id: 'role-1', scope: PermissionScope.ORGANIZATION })} />);
+    renderWithProviders(<GrantCreator role={role({ id: 'role-1', scope: PermissionScope.ORGANIZATION })} />);
     await openDialog(user);
     await selectUser(user, 'alice');
 
@@ -183,7 +188,7 @@ describe('GrantCreator', () => {
 
   it('a PROJECT-scoped role disables the user picker until an organization is picked', async () => {
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ scope: PermissionScope.PROJECT })} />);
+    renderWithProviders(<GrantCreator role={role({ scope: PermissionScope.PROJECT })} />);
     await openDialog(user);
 
     expect(screen.getByRole('combobox', { name: /^user$/i })).toBeDisabled();
@@ -197,7 +202,7 @@ describe('GrantCreator', () => {
       userId === 'user-1' ? 'not-admitted' : 'cannot-see-projects',
     );
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ scope: PermissionScope.PROJECT })} />);
+    renderWithProviders(<GrantCreator role={role({ scope: PermissionScope.PROJECT })} />);
     await openDialog(user);
     await user.click(screen.getByRole('combobox', { name: /organization/i }));
     await user.click(await screen.findByText('Acme'));
@@ -213,7 +218,7 @@ describe('GrantCreator', () => {
   it('switching organization drops a user who is no longer eligible in the new one', async () => {
     eligibilityForMock.mockReturnValue('eligible');
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ scope: PermissionScope.PROJECT })} />);
+    renderWithProviders(<GrantCreator role={role({ scope: PermissionScope.PROJECT })} />);
     await openDialog(user);
     await user.click(screen.getByRole('combobox', { name: /organization/i }));
     await user.click(await screen.findByText('Acme'));
@@ -229,7 +234,7 @@ describe('GrantCreator', () => {
   it('an error from the mutation is toasted and the dialog stays open', async () => {
     createGrantMock.mockRejectedValueOnce(new Error('backend rejected it'));
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role({ scope: PermissionScope.SYSTEM })} />);
+    renderWithProviders(<GrantCreator role={role({ scope: PermissionScope.SYSTEM })} />);
     await openDialog(user);
     await selectUser(user, 'alice');
     await user.click(screen.getByRole('button', { name: 'Create grant' }));
@@ -240,7 +245,7 @@ describe('GrantCreator', () => {
 
   it('Cancel closes the dialog', async () => {
     const user = userEvent.setup();
-    renderWithI18n(<GrantCreator role={role()} />);
+    renderWithProviders(<GrantCreator role={role()} />);
     await openDialog(user);
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('button', { name: 'Create grant' })).not.toBeInTheDocument();

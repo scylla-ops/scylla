@@ -1,4 +1,4 @@
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { ShoppingCartIcon } from 'lucide-react';
 import type MarketplaceRepository from '@/modules/features/marketplace/domain/repository/marketplace.repository.ts';
@@ -17,7 +17,9 @@ export const MarketplaceModule = {
       mount: 'organization',
       path: 'marketplace',
       lazy: async () => ({
-        Component: (await import('./presentation/ui/Marketplace.page.tsx')).MarketplacePage,
+        Component: sveltePage(
+          (await import('./presentation/ui/Marketplace.page.svelte')).default,
+        ),
       }),
     },
   ],

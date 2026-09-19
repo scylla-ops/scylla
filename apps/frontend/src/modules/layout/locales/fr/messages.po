@@ -22,7 +22,7 @@ msgstr "{0}"
 msgid "Build your own roles and grant them fine-grained permissions on an organization or a project."
 msgstr "Créez vos propres rôles et accordez-leur des permissions fines sur une organisation ou un projet."
 
-#: src/modules/layout/presentation/ui/Layout.tsx:91
+#: src/modules/layout/presentation/ui/Layout.tsx:92
 msgid "Create"
 msgstr "Créer"
 
@@ -34,6 +34,14 @@ msgstr "Mode sombre"
 #: src/modules/layout/whats-new.ts:44
 msgid "Dashboard"
 msgstr "Tableau de bord"
+
+#: src/modules/layout/presentation/ui/context-selector/OrganizationSwitcherList.tsx:143
+msgid "Delete"
+msgstr "Supprimer"
+
+#: src/modules/layout/presentation/ui/context-selector/OrganizationSwitcherList.tsx:124
+msgid "Edit"
+msgstr "Modifier"
 
 #: src/modules/layout/presentation/ui/WhatsNewDialog.tsx:51
 msgid "Got it"
@@ -56,14 +64,15 @@ msgstr "Langue"
 msgid "Live metrics for your agents, pipelines and recent runs, all in one place."
 msgstr "Les métriques en direct de vos agents, pipelines et exécutions récentes, au même endroit."
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:41
+#: src/modules/layout/presentation/ui/NavUser.tsx:42
 msgid "Loading..."
 msgstr "Chargement…"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:112
+#: src/modules/layout/presentation/ui/NavUser.tsx:113
 msgid "Log out"
 msgstr "Se déconnecter"
 
+#: src/modules/layout/presentation/ui/context-selector/OrganizationSwitcherList.tsx:105
 #: src/modules/layout/whats-new.ts:58
 msgid "Members"
 msgstr "Membres"
@@ -98,7 +107,7 @@ msgstr "Secrets"
 msgid "Select Organization"
 msgstr "Sélectionner une organisation"
 
-#: src/modules/layout/presentation/ui/NavUser.tsx:98
+#: src/modules/layout/presentation/ui/NavUser.tsx:99
 msgid "Settings"
 msgstr "Paramètres"
 
@@ -106,7 +115,7 @@ msgstr "Paramètres"
 msgid "System"
 msgstr "Système"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:71
+#: src/modules/layout/presentation/ui/Layout.tsx:72
 msgid "To get started, please create your first organization."
 msgstr "Pour commencer, veuillez créer votre première organisation."
 
@@ -119,7 +128,7 @@ msgstr "Afficher/masquer la barre latérale"
 msgid "Users"
 msgstr "Utilisateurs"
 
-#: src/modules/layout/presentation/ui/Layout.tsx:68
+#: src/modules/layout/presentation/ui/Layout.tsx:69
 msgid "Welcome to Scylla!"
 msgstr "Bienvenue sur Scylla !"
 

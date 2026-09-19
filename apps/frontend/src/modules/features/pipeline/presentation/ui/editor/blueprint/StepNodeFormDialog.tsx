@@ -24,7 +24,8 @@ import type {
   Shell,
 } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import type { PipelineNodeData } from '@/modules/features/pipeline/presentation/utils/blueprint-converter.ts';
-import { useSecrets } from '@/modules/features/secret';
+import { useQuery } from '@tanstack/react-query';
+import { secretQueries } from '@/modules/features/secret';
 import ReactCodeMirror from '@uiw/react-codemirror';
 import { shell as shellLang } from '@codemirror/legacy-modes/mode/shell';
 import { useCodeMirrorTheme } from '@shared/presentation/hooks/use-code-mirror-theme.ts';
@@ -72,7 +73,9 @@ export function StepNodeFormDialog({
 }: StepNodeFormDialogProps) {
   const { t } = useLingui();
   const { projectId } = useParams();
-  const { secrets } = useSecrets(projectId ?? '');
+  // A plain options object, shared with the (now Svelte) `secret` module —
+  // same query key, same cache entry.
+  const { data: secrets = [] } = useQuery(secretQueries.byProject(projectId ?? ''));
   const editorTheme = useCodeMirrorTheme();
   const isEditMode = !!editingNode;
 

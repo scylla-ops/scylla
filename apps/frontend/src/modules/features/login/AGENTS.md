@@ -10,14 +10,18 @@ Sign-in. Owns the credentials exchange and nothing else.
 - Must never import: `core/`, `layout/`, another feature's internals.
 - Outside code reaches this module **only** through `index.ts`.
 
+**Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
+unchanged — they never had a framework in them.
+
 ## Public API — `index.ts`
 
 ```typescript
-useLogin
+LoginState, type Credentials
 ```
 
 That is the whole surface, and it should stay that way. Never add: `login.module.ts`,
-`use-login-domain.ts`, `LoginPage`.
+`LoginPage`. There is no `use-login-domain.ts` any more: a view model calls
+`getModuleDomain('login')` directly.
 
 ## Data contract
 
@@ -43,9 +47,9 @@ infrastructure/
   data/remote/grpc-login-remote.data-source.ts          impl — writes localStorage
   repository/default-login.repository.ts
 presentation/
-  hooks/use-login-domain.ts          DI accessor (private)
-  hooks/use-login.ts                 the mutation
-  ui/Login.page.tsx, LoginForm.tsx
+  login.state.svelte.ts              the view model: the mutation + the redirect
+  ui/Login.page.svelte, LoginForm.svelte
+  ui/login.messages.ts               the screen's strings (extraction cannot read `.svelte`)
 ```
 
 No entities, no structs, no mappers — there is nothing to model.
@@ -54,7 +58,7 @@ No entities, no structs, no mappers — there is nothing to model.
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `public` | `/login` | none | `LoginPage` |
+| `public` | `/login` | none | `Login.page.svelte`, via `sveltePage()` |
 
 `mount: 'public'` puts it **outside** `AuthGuard`. It must stay there: mounting it anywhere else
 makes signing in require being signed in.
@@ -67,6 +71,9 @@ No nav entry — the sidebar only renders inside the authenticated shell.
   they must agree: this data source writes them, `platform/grpc`'s transport reads `token` for
   the `Authorization: Bearer` header, and `core/.../Auth.guard.tsx` reads it to decide whether
   to redirect. Changing the key or the mechanism means changing all three in the same commit.
+- **`LoginState` must be constructed during a component's initialisation.** The mutation inside
+  it installs an `$effect.pre`; built from an event handler, Svelte throws `effect_orphan`. True
+  of every view model holding a query or a mutation.
 - No permission gate anywhere in this module — the user has none yet. Permissions are loaded
   *after* sign-in by `usePermissionSync` in [`roles`](../roles/AGENTS.md).
 - After a successful login the app must land somewhere the user can actually reach; that
