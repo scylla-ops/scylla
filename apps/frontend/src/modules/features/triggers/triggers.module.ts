@@ -1,4 +1,4 @@
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { Permission } from '@platform/authz';
 import { grpcTransport } from '@platform/grpc';
@@ -28,7 +28,9 @@ export const TriggersModule = {
         detail: msg`Triggers`,
       }),
       lazy: async () => ({
-        Component: (await import('./presentation/ui/Triggers.page.tsx')).TriggersPage,
+        Component: sveltePage(
+          (await import('./presentation/ui/Triggers.page.svelte')).default,
+        ),
       }),
     },
   ],

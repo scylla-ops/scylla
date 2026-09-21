@@ -1,5 +1,5 @@
 import { msg } from '@lingui/core/macro';
-import type { MessageDescriptor } from '@lingui/core';
+import { i18n, type MessageDescriptor } from '@lingui/core';
 import { Permission, PermissionScope, } from '@platform/authz';
 
 /**
@@ -346,6 +346,35 @@ export const SCOPE_LABELS: Record<PermissionScope, MessageDescriptor> = {
   [PermissionScope.ORGANIZATION]: msg`Organization`,
   [PermissionScope.PROJECT]: msg`Project`,
   [PermissionScope.UNSPECIFIED]: msg({ context: 'feminine', message: 'Unknown' }),
+};
+
+/**
+ * The translated name of a scope.
+ *
+ * A function rather than the map, so callers outside this module never index
+ * `SCOPE_LABELS` themselves — and so the `i18n._` call sits in one place.
+ * `membership` calls it through the barrel; every screen here calls it directly.
+ */
+export const scopeLabelOf = (scope: PermissionScope): string => i18n._(SCOPE_LABELS[scope]);
+
+/**
+ * The translated name of a permission.
+ *
+ * Catalog entries are translated; a permission outside the catalog — one the
+ * backend or another client put on the role — falls back to its humanized enum
+ * key rather than disappearing behind a generic "unknown".
+ *
+ * `roleScope` is the scope of the role *carrying* the permission, not the
+ * permission's own. Pass it wherever the reader is looking at one specific
+ * role: a project permission held by an organization role applies to every
+ * project of that organization, and gets the plural wording that says so.
+ */
+export const permissionLabelOf = (permission: Permission, roleScope?: PermissionScope): string => {
+  const definition = getPermissionDefinition(permission);
+  if (!definition) return humanizePermission(permission);
+
+  const broadened = roleScope !== undefined && roleScope !== definition.scope;
+  return i18n._(broadened ? (definition.broadLabel ?? definition.label) : definition.label);
 };
 
 /**

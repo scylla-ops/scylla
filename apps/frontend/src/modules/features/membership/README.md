@@ -51,7 +51,7 @@ produce a revoke button that silently does nothing.
 
 ## You can only grant what you may grant
 
-`useAssignableRoles` answers a narrower question than "which roles exist": which roles is the
+`createAssignableRoles` answers a narrower question than "which roles exist": which roles is the
 *current user* permitted to hand out, at this scope. It combines the role catalog, the grantable
 list from the backend, and the user's own permissions. The add-member dialog is built from that,
 so a user is never offered a role the server would refuse.
@@ -59,13 +59,25 @@ so a user is never offered a role the server would refuse.
 ## Structure at a glance
 
 - `domain/structs/scope-member.struct.ts` — the whole domain: types and the two builders.
-- `presentation/hooks/use-scope-membership.ts` — grants for a scope, plus grant and revoke
+- `presentation/scope-membership.state.svelte.ts` — grants for a scope, plus grant and revoke
   mutations, with toasts.
-- `presentation/hooks/use-assignable-roles.ts` — the assignable-role calculation.
+- `presentation/assignable-roles.state.svelte.ts` — the assignable-role calculation.
 - `presentation/ui/` — two pages over one set of scope-agnostic components.
 
 Neither page is exported from `index.ts`. They are lazily loaded by the module declaration, and
-exporting them would drag them into the bundle of anything importing this module's hooks.
+exporting them would drag them into the bundle of anything importing this module.
+
+## A note on the Svelte port
+
+This module went Svelte in Phase 3, ahead of `roles`, which it reads from. That is why `roles`
+now carries `roles.queries.ts`: a Svelte component cannot call `useScopedGrants`, and declaring
+the same grant list a second time here would have forked one resource into two cache entries
+that disagree after a mutation. The factories are the shared declaration, and `roles`' hooks
+became thin bindings over them — so the React screens and these pages read the same entry.
+
+The two files above are ViewModels, not hooks: they hold `$state`/`$derived` and are created by
+the page. They take **getters** for the scope id and the permission, because both arrive after
+the first render and capturing either once would freeze the view empty.
 
 ## Related modules
 

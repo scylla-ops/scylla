@@ -9,6 +9,8 @@
       variant?: ButtonVariant;
       size?: ButtonSize;
       children?: Snippet;
+      /** The rendered element, for the rare caller that has to focus it. */
+      ref?: HTMLElement | null;
     };
 
   let {
@@ -17,6 +19,7 @@
     class: className,
     href,
     children,
+    ref = $bindable(null),
     ...rest
   }: Props = $props();
 </script>
@@ -29,6 +32,7 @@
 -->
 {#if href}
   <a
+    bind:this={ref}
     {href}
     data-slot="button"
     data-variant={variant}
@@ -40,6 +44,7 @@
   </a>
 {:else}
   <button
+    bind:this={ref}
     data-slot="button"
     data-variant={variant}
     data-size={size}

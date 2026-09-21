@@ -4,6 +4,7 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DependenciesProvider, type DomainRegistry } from '@platform/di';
+import { setQueryClient } from '@platform/query';
 
 /**
  * Render helpers for the suite. Every component in this app sits under at least
@@ -82,6 +83,14 @@ export const createProvidersWrapper = (registry: DomainRegistry) => {
   return { Wrapper, queryClient };
 };
 
+/**
+ * The active client is installed as the **module singleton** as well as handed
+ * to the provider, for the same reason `DependenciesProvider` installs the
+ * registry: since Phase 3 a React hook may be a thin binding over a
+ * `*.queries.ts` factory, and a factory's `onSuccess` invalidates through
+ * `getQueryClient()` — which reads the singleton and knows nothing about this
+ * tree. Without it, a test spying on its own client sees no invalidation at all.
+ */
 const providers = ({
   children,
   registry,
@@ -90,10 +99,14 @@ const providers = ({
   children: ReactNode;
   registry: DomainRegistry;
   queryClient: QueryClient;
-}) => (
-  <I18nProvider i18n={i18n}>
-    <QueryClientProvider client={queryClient}>
-      <DependenciesProvider registry={registry}>{children}</DependenciesProvider>
-    </QueryClientProvider>
-  </I18nProvider>
-);
+}) => {
+  setQueryClient(queryClient);
+
+  return (
+    <I18nProvider i18n={i18n}>
+      <QueryClientProvider client={queryClient}>
+        <DependenciesProvider registry={registry}>{children}</DependenciesProvider>
+      </QueryClientProvider>
+    </I18nProvider>
+  );
+};

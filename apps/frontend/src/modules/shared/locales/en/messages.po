@@ -13,6 +13,10 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:21
+msgid "(crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
+msgstr "(crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
+
 #: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:23
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:63
 msgid "{selectedCount, plural, one {# item deleted} other {# items deleted}}"
@@ -47,7 +51,7 @@ msgstr "Are you absolutely sure?"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/shared/utils/status-config.ts:116
+#: src/modules/shared/utils/status-config.ts:107
 msgid "Cancelled"
 msgstr "Cancelled"
 
@@ -56,6 +60,7 @@ msgstr "Cancelled"
 msgid "Clear"
 msgstr "Clear"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:17
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:69
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:92
 msgid "Command copied"
@@ -77,10 +82,12 @@ msgstr "Copied!"
 
 #: src/modules/shared/presentation/ui-svelte/data-display/copyable-text.messages.ts:4
 #: src/modules/shared/presentation/ui/data-display/CopyableText.tsx:69
+#: src/modules/shared/presentation/ui/shadcn-svelte/code-snippet.messages.ts:5
 #: src/modules/shared/presentation/ui/shadcn/code-snippet.tsx:89
 msgid "Copy"
 msgstr "Copy"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/secret-reveal.messages.ts:9
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:112
 msgid "Copy your secret"
 msgstr "Copy your secret"
@@ -104,6 +111,7 @@ msgstr "Creating..."
 msgid "Delete"
 msgstr "Delete"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/secret-reveal.messages.ts:15
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:173
 msgid "Done"
 msgstr "Done"
@@ -113,10 +121,11 @@ msgstr "Done"
 msgid "Error"
 msgstr "Error"
 
-#: src/modules/shared/utils/status-config.ts:86
+#: src/modules/shared/utils/status-config.ts:80
 msgid "Failed"
 msgstr "Failed"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:14
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:57
 msgid "From source"
 msgstr "From source"
@@ -155,6 +164,7 @@ msgstr "New {label}"
 msgid "Next"
 msgstr "Next"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/status-bar.messages.ts:4
 #: src/modules/shared/presentation/ui/data-display/StatusBar.tsx:37
 msgid "No data"
 msgstr "No data"
@@ -176,11 +186,11 @@ msgstr "Organization deleted"
 msgid "Organization updated"
 msgstr "Organization updated"
 
-#: src/modules/shared/utils/status-config.ts:106
+#: src/modules/shared/utils/status-config.ts:98
 msgid "Orphaned"
 msgstr "Orphaned"
 
-#: src/modules/shared/utils/status-config.ts:66
+#: src/modules/shared/utils/status-config.ts:62
 msgid "Pending"
 msgstr "Pending"
 
@@ -229,34 +239,44 @@ msgstr "Project name is required and you must select an organization."
 msgid "Project updated"
 msgstr "Project updated"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:25
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:114
 msgid "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
 msgstr "Replace APP_SECRET with the secret revealed when this agent was created — it cannot be shown again. Lost it? Delete this agent and create a new one."
+
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:19
+msgid "Requires the Rust toolchain, from a clone of"
+msgstr "Requires the Rust toolchain, from a clone of"
 
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:73
 msgid "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 msgstr "Requires the Rust toolchain, from a clone of <0>the scylla repo</0> (crate scylla-agent). The agent runs in the foreground and Ctrl-C stops it."
 
+#: src/modules/shared/presentation/ui-svelte/feedback/secret-reveal.messages.ts:12
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:133
 msgid "Reveal"
 msgstr "Reveal"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/secret-reveal.messages.ts:13
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:169
 msgid "Reveal the secret first"
 msgstr "Reveal the secret first"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:15
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:70
 msgid "Run from a repo checkout"
 msgstr "Run from a repo checkout"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:16
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:93
 msgid "Run with Docker"
 msgstr "Run with Docker"
 
-#: src/modules/shared/utils/status-config.ts:55
+#: src/modules/shared/utils/status-config.ts:52
 msgid "Running"
 msgstr "Running"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/secret-reveal.messages.ts:11
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:121
 msgid "Secret copied"
 msgstr "Secret copied"
@@ -283,22 +303,29 @@ msgstr "Server unreachable"
 msgid "Showing {start}-{end} of {totalCount}"
 msgstr "Showing {start}-{end} of {totalCount}"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/secret-reveal.messages.ts:10
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:114
 msgid "shown once"
 msgstr "shown once"
 
-#: src/modules/shared/utils/status-config.ts:96
+#: src/modules/shared/utils/status-config.ts:89
 msgid "Skipped"
 msgstr "Skipped"
 
-#: src/modules/shared/utils/status-config.ts:76
+#: src/modules/shared/utils/status-config.ts:71
 msgid "Success"
 msgstr "Success"
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:23
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:96
 msgid "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
 msgstr "The agent starts in the foreground: its logs show up right in the terminal and Ctrl-C stops it."
 
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:20
+msgid "the scylla repo"
+msgstr "the scylla repo"
+
+#: src/modules/shared/presentation/ui-svelte/data-display/agent-run-instructions.messages.ts:24
 #: src/modules/shared/presentation/ui/data-display/AgentRunInstructions.tsx:105
 msgid "The URL above is prefilled with this page's own address. Replace it if your agent reaches the control plane another way — for example http://host.docker.internal:8080 from inside Docker, or a private-network address."
 msgstr "The URL above is prefilled with this page's own address. Replace it if your agent reaches the control plane another way — for example http://host.docker.internal:8080 from inside Docker, or a private-network address."
@@ -338,7 +365,7 @@ msgstr "Trigger fired — run started"
 msgid "Trigger updated"
 msgstr "Trigger updated"
 
-#: src/modules/shared/utils/status-config.ts:128
+#: src/modules/shared/utils/status-config.ts:118
 msgid "Unknown"
 msgstr "Unknown"
 
@@ -362,6 +389,7 @@ msgstr "Username and password are required."
 msgid "You cannot delete your own account."
 msgstr "You cannot delete your own account."
 
+#: src/modules/shared/presentation/ui-svelte/controls/gated-button.messages.ts:8
 #: src/modules/shared/presentation/ui-svelte/layout/feature-header.messages.ts:9
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:125
 #: src/modules/shared/presentation/ui/layout/FeatureHeader.tsx:145
@@ -372,6 +400,7 @@ msgstr "You don't have permission to do this."
 msgid "You don't have permission to perform this action"
 msgstr "You don't have permission to perform this action"
 
+#: src/modules/shared/presentation/ui-svelte/feedback/secret-reveal.messages.ts:14
 #: src/modules/shared/presentation/ui/feedback/SecretRevealDialog.tsx:164
 msgid "You won't see this secret again."
 msgstr "You won't see this secret again."

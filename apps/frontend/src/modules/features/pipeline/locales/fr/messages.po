@@ -63,7 +63,7 @@ msgstr "Commande"
 msgid "Create"
 msgstr "Créer"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:49
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:56
 msgid "Create your first pipeline to get started"
 msgstr "Créez votre premier pipeline pour commencer"
 
@@ -193,7 +193,7 @@ msgstr "Nouveau pipeline"
 msgid "No jobs yet"
 msgstr "Aucun job pour le moment"
 
-#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:46
+#: src/modules/features/pipeline/presentation/ui/dashboard/DashboardPipeline.page.tsx:53
 msgid "No pipeline found"
 msgstr "Aucun pipeline trouvé"
 

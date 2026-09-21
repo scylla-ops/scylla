@@ -100,4 +100,5 @@ setAppNavigator({
   navigate: (to, options) => void CoreRouter.navigate(to, options),
   back: () => void CoreRouter.navigate(-1),
   pathname: () => CoreRouter.state.location.pathname,
+  search: () => CoreRouter.state.location.search,
 });

@@ -3,6 +3,7 @@ export type { TriggerEntity, TriggerDraft, CreatedTrigger } from './domain/entit
 export type { TriggerSource, TriggerInput } from './domain/structs/trigger-source.struct.ts';
 export { TriggerKind } from './domain/structs/trigger-source.struct.ts';
 export {
-  usePipelineTriggers,
+  triggerQueries,
+  triggerMutations,
   TRIGGERS_QUERY_KEY,
-} from './presentation/hooks/use-pipeline-triggers.ts';
+} from './presentation/triggers.queries.ts';

@@ -18,12 +18,19 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 | **0 · Lot B** — dé-React-ification | ✅ **fait** | 253,5 kB | 619 kB | 43 |
 | **1** — `shared/` + design system | ✅ **fait** | 253,5 kB | 619 kB | 47 |
 | **2** — 6 features pilotes | ✅ **fait** | **292,3 kB** | **862 kB** | 47 |
-| **3** — apps, agents, membership, jobs, triggers | ⬜ | | | |
-| **4** — roles + dashboard (`recharts` sort ici) | ⬜ | | | |
+| **3** — apps, agents, membership, jobs, triggers | ✅ **fait** | **336,1 kB** | **779,5 kB** | 49 |
+| **4** — roles + dashboard (`recharts` sort ici) | ✅ **fait** | **331,3 kB** | **676,8 kB** | **48** |
 | **5** — pipeline (`reactflow` sort ici) | ⬜ | | | |
 | **6** — shell + suppression de React | ⬜ | | | ~20 |
 
 Cible finale : ~170 kB initial, ~380 kB total, ~400 paquets transitifs.
+
+**La Phase 4 fait baisser le chargement initial pour la première fois** : 336,1 → 331,3 kB, et le
+total passe sous le point de départ — 676,8 kB contre 779,5 en Phase 3 et **660 kB avant la
+migration**, alors que les deux moitiés du design system coexistent encore. Le mérite est presque
+entièrement à `recharts` : 119 kB gzip pour un seul graphe, remplacés par ~150 lignes
+d'arithmétique et du SVG. C'est la mesure qui justifiait de le déplacer du Lot A vers ici plutôt
+que d'écrire le composant deux fois.
 
 **La Phase 2 fait monter le chargement initial, et c'est attendu** : 253,6 → 292,3 kB gzip.  
 Le détail, mesuré : le runtime Svelte (`vendor-svelte`, 20,3 kB) devient nécessaire dès l'entrée —  
@@ -159,7 +166,7 @@ Build du `main` actuel, gzip :
 | Chunk | gzip | Après migration |
 |---|---|---|
 | `vendor-codemirror` | **137 kB** | ≈ inchangé — CodeMirror 6 est agnostique |
-| `vendor-charts` (recharts + d3) | **119 kB** | **−119 kB**, et supprimable *sans* Svelte |
+| `vendor-charts` (recharts + d3) | **119 kB** | ✅ **−119 kB**, encaissés en Phase 4 — le chunk n'existe plus |
 | `vendor-react` | 77 kB | −65 kB (runtime Svelte ≈ 12 kB) |
 | `vendor-ui` (Radix + lucide + sonner) | 69 kB | −20 kB (bits-ui ≈ Radix en poids) |
 | `index` (code applicatif) | 53 kB | −15 kB environ |
@@ -177,6 +184,9 @@ Deux enseignements à garder en tête :
   être supprimé cette semaine sans toucher au framework. D'où le **Lot A** de la Phase 0.
 - **Après Lot A** : 253,6 kB initial / 619 kB total — `recharts` et `@uiw/react-codemirror`  
   ayant été déplacés en phases 4 et 1 pour ne pas écrire deux fois le même composant.  
+  **Après Phase 4** (mesuré) : 331,3 kB initial / 676,8 kB total. L'initial est encore gonflé par  
+  `vendor-react` (76,5 kB) et la moitié React de `vendor-ui` (59,4) et `vendor-query` — tout ce  
+  que la Phase 6 emporte.  
   **Après migration complète** : ~170 kB initial / ~380 kB total.
 
 Le bundle est un bénéfice réel mais secondaire. Le bénéfice principal reste les 461 paquets npm  
@@ -399,7 +409,7 @@ endroit** à changer.
 | `@tanstack/react-table` (12) | `@tanstack/svelte-table` **v9** | ⚠️ corrigé en Phase 1 : pas de v8 pour Svelte 5. La *forme* des défs survit, la signature générique non — voir « Ce que la fin de la Phase 1 a appris » |
 | `@uiw/react-codemirror` (8) | CodeMirror 6 direct via une `action` Svelte | **−1 dép** (le wrapper React disparaît, pas CodeMirror) |
 | `reactflow` (6) | `@xyflow/svelte` | port officiel, API proche |
-| `recharts` (2) | SVG maison | **−119 kB** ; un seul graphe concerné |
+| `recharts` (2) | ✅ SVG maison + `outcomes-chart.calculator.ts` | **−119 kB**, encaissés en Phase 4 |
 
 Cible : **41 → ~20 dépendances runtime** (39 après Lot A, 47 au pic de la Phase 1 — les deux
 moitiés du design system coexistent, et le compte ne redescend qu'à partir de la Phase 2 quand les
@@ -415,8 +425,9 @@ paires React sortent), **861 → ~400 paquets transitifs**.
 2. **`dependency-cruiser` ne parse pas `.svelte`.** Les six règles `error` qui protègent les barrels  
    et le sens des couches deviendraient **aveugles** sur tout le code neuf. Traité en Phase 0, §4.6.
 3. **Lingui n'extrait pas depuis `.svelte`.** Voir §4.5.
-4. **`recharts`** n'a aucun portage Svelte. Décision prise : SVG maison (un seul graphe), ce qui  
-   sort aussi `d3-*` et `victory-vendor`. Repli si ça dérape : `LayerChart`.
+4. ~~**`recharts`** n'a aucun portage Svelte.~~ ✅ **Réglé en Phase 4** : SVG maison, la géométrie
+   dans un `.ts` pur testé sans DOM. `d3-*` et `victory-vendor` sont sortis avec lui, et le repli
+   `LayerChart` n'a pas servi.
 
 ### 4.5 i18n — la règle à ne pas rater
 
@@ -461,7 +472,8 @@ Aucune phase n'est terminée si un gate est désactivé « le temps de la migrat
   **Vérifié en Phase 0, pas après.**
 - **Couverture** : ✅ `coverage.include` est passé à `src/modules/**/*.{ts,tsx,svelte}`. Les seuils  
   restent un cliquet : ils ne baissent jamais, même temporairement. Un module migré rend ses tests,  
-  sinon il n'est pas migré.
+  sinon il n'est pas migré. Trajet : 55,8 % (creux de la Phase 3) → 74,5 % → **75,7 %** de lignes,  
+  seuils à **74 / 69 / 71 / 74**. C'est le seul gate qui voie un module arriver sans tests.
 - **`svelte-check`** : `.svelte` est invisible pour `tsc -b`. `pnpm typecheck` enchaîne donc  
   `tsc -b && svelte-check` — le gate garde son nom et rien ne passe entre les mailles.
 - **`i18n:collisions`** : zéro à chaque phase.
@@ -683,6 +695,9 @@ on les redécouvre module par module.
    `aria-activedescendant` mais pas `role="combobox"`. Rien ne casse bruyamment — le texte passe
    quand même par `aria-describedby`, le bouton s'ouvre quand même. **Vérifier le rôle à chaque
    primitive portée**, et le remettre dans *notre* wrapper.
+   *Élargi en Phase 4* : il laisse aussi tomber des **noms**. Une `Checkbox` bits-ui est un
+   `<button role="checkbox">`, que le `<Label for>` de Radix ne nomme plus — vérifier le rôle
+   **et** le nom accessible.
 4. **`tsc -b` et `svelte-check` ne voient pas le même code, et c'est le plus faible qui dicte la
    syntaxe.** Pour `tsc`, tout import `.svelte` est le `LegacyComponentType` ambiant de Svelte :
    sans paramètres de type, donc une expression d'instanciation (`DataTable<Datum>`) échoue en
@@ -832,9 +847,39 @@ servi d'étalon, et la recette de §6 a tenu — au prix de quatre pièces que l
 
 ---
 
-### Phase 3 — Le gros bloc : `apps`, `agents`, `membership`, `jobs`, `triggers`
+### Phase 3 — Le gros bloc : `apps`, `agents`, `membership`, `jobs`, `triggers` ✅ **fait**
 
 *~7 200 LOC, 80 fichiers. Même recette, en volume.*
+
+#### Ce que la phase a appris
+
+1. **Le total baisse pour la première fois : 862 → 779,5 kB.** C'est la phase où les moitiés React
+   de cinq features sortent pour de bon, et le solde devient négatif. **Le chargement initial, lui,
+   monte encore (292,3 → 336,1 kB)** : `vendor-ui-svelte` est désormais dans le graphe de l'entrée.
+   Ce n'est pas `agents` ni `user` — leurs barrels ont été repassés en loaders ici, ce qui sort
+   bits-ui des chunks de `dashboard` et `pipeline` sans rien changer à l'entrée. **Le chemin eager
+   restant n'est pas identifié**, et c'est une dette nommée, pas un oubli : elle se solde en Phase 6
+   avec `vendor-react` et la moitié React de `vendor-ui`.
+2. **« Un module migré rend ses tests » n'est pas une formule.** Le premier passage a supprimé
+   10 fichiers de test sur `triggers` et 9 sur `membership` sans les remplacer, et **aucun des six
+   gates ne l'a vu** : `pnpm test` était vert, `typecheck`, `lint`, `depcruise` et `i18n:collisions`
+   aussi. Seule la couverture l'a dit — 69 % de seuil contre 55,8 % réels. **Le gate qui protège une
+   migration est la couverture, pas la suite de tests**, parce qu'une suite qui rétrécit reste verte.
+   `pnpm coverage` est donc à lancer *pendant* une migration de module, pas à la fin de la phase.
+3. **Une page Svelte testée entraîne ses enfants.** Remonter de 55,8 % à 74,5 % s'est joué sur une
+   dizaine de fichiers, pas cent : un test de `Agents.page.svelte` couvre `AgentCard`,
+   `NoAgentsBanner` et le dialogue de révélation d'un coup. Les seuils sont remontés à
+   **73 / 67 / 69 / 73** — le cliquet, appliqué.
+4. **`onCreated?.(await mutateAsync(draft))` ne crée rien.** L'appel optionnel court-circuite
+   *l'évaluation de l'argument* : sans callback, la mutation n'est jamais lancée, et `onDone()`
+   ferme quand même la boîte comme si elle avait marché. Le seul appelant passait `onCreated`, donc
+   le défaut était dormant et aucun test ne le tenait. Corrigé dans `TriggerForm.svelte` en awaitant
+   dans une liaison d'abord. **À relire partout où un `?.()` enveloppe un `await`.**
+5. **Le formulaire d'un dialogue est un composant à part, et `{#key open}` est son reset.**
+   Recréer l'enfant ré-exécute ses initialiseurs `$state` : c'est le reset pour lequel React avait
+   besoin d'un effet sur `[open, trigger]`, avec une frame où l'ancienne valeur était encore là.
+6. **`CronScheduleBuilder` n'émet pas au montage**, et c'est délibéré : le parent sème son propre
+   état depuis la même chaîne. L'effet React réémettait à chaque ouverture.
 
 - `jobs` embarque le **premier CodeMirror** (affichage de logs en lecture seule, via  
   `use-streamed-log-view.ts`) : le cas le plus simple des deux, à faire ici pour dé-risquer la  
@@ -843,19 +888,86 @@ servi d'étalon, et la recette de §6 a tenu — au prix de quatre pièces que l
 - `triggers`, `jobs` : tables sur `svelte-table` (les `ColumnDef` survivent, les `cell:` deviennent  
   des snippets).
 
-À l'issue de cette phase, **10 features sur 14 sont en Svelte**.
+À l'issue de cette phase, **10 features sur 14 sont en Svelte** — et la couverture est repartie de
+55,8 % à **74,5 %** de lignes (206 fichiers de test, 1 612 tests).
+
+**Règle confirmée, et élargie : un barrel n'exporte jamais un composant `.svelte`, il exporte un
+loader.** La Phase 2 la posait pour « un barrel que la shell importe » ; c'est trop étroit. Dès
+qu'un module encore React prend *autre chose* dans ce barrel — `dashboard` et `pipeline` y prennent
+`agentQueries` —, Rollup ne peut pas éliminer le composant réexporté et bits-ui part dans leur
+chunk. `loadNoAgentsBanner`, `loadUserSettingsPage`, `loadJobsPage` et les deux dialogues
+d'`organization` suivent tous le même patron ; côté Svelte le consommateur fait `{#await load() then M}`.
 
 ---
 
-### Phase 4 — `roles` + `dashboard`
+### Phase 4 — `roles` + `dashboard` ✅ **fait**
 
 - **`roles`** (2 463 LOC, 19 tests) : la matrice de permissions et `CheckboxTree` sont la logique UI  
-  la plus dense du projet. **Porter les tests d'abord** — ils sont le cahier des charges.
-- **`dashboard`** : **`recharts` sort ici** (déplacé du Lot A), remplacé par du SVG maison écrit  
-  directement en Svelte — **−119 kB gzip**, et sortent avec lui `d3-*` et `victory-vendor`.  
-  Faire porter la géométrie (échelles, courbes monotones, ticks) par un `.ts` pur testé en  
-  `@vitest-environment node` : c'est la partie qui survivrait à un changement de framework.  
-  Repli si ça dérape : `LayerChart`.
+  la plus dense du projet.
+- **`dashboard`** : **`recharts` est sorti ici** (déplacé du Lot A), remplacé par du SVG maison —  
+  la géométrie (échelles, courbe monotone Fritsch–Carlson, ticks entiers) vit dans  
+  `outcomes-chart.calculator.ts`, pur et testé en `@vitest-environment node` ; le `.svelte` n'a  
+  que le balisage. Le repli `LayerChart` n'a pas servi.
+
+**12 features sur 14 sont en Svelte.** Il ne reste que `pipeline` (Phase 5) et la shell (Phase 6).
+
+#### Ce que la phase a appris
+
+1. **bits-ui ne laisse pas seulement tomber des rôles ARIA : il laisse tomber des *noms*.**
+   La Phase 1 disait « vérifier le rôle à chaque primitive portée » ; c'est trop étroit. Une
+   `Checkbox` bits-ui est un `<button role="checkbox">`, et le `<Label for>` qui nommait l'`input`
+   de Radix ne nomme plus rien — l'arbre de permissions entier s'annonçait « case à cocher », et
+   aucun test ne pouvait atteindre une case par son nom. Rien n'échoue bruyamment : le libellé est
+   bien à l'écran, il n'est simplement plus attaché. **Tout contrôle porté depuis Radix a besoin
+   d'un `aria-label` explicite**, et c'est le test qui le prouve — pas le compilateur.
+2. **`depcruise` interdit l'idiome de récursion de Svelte 5.** `<svelte:self>` est déprécié en mode
+   runes et la doc recommande à la place qu'un composant s'importe lui-même. C'est un cycle d'un
+   seul module, et `no-circular` est un gate `error` — à raison, puisqu'il ne peut pas distinguer
+   ce cas de deux fichiers qui n'en font qu'un. La sortie n'est pas une exception dans la config :
+   **un snippet peut se référencer lui-même**, ce qui donne la même récursion sans aucune arête.
+   `CheckboxTreeNode.svelte` est devenu un `{#snippet level(nodes, chainChecked)}` qui se rend
+   lui-même, et perd au passage son `collapsed` par niveau au profit d'un seul, clé par id.
+3. **Migrer un hook partagé renomme une entrée de cliquet, et le gate ne le dit qu'à la fin.**
+   `feature-permissions.test.ts` lit l'arbre des sources et indexe `UNCHECKED_SHARED_HOOKS` par le
+   *nom exporté*. Faire passer `pipeline` de `useOrganizationPipelines` à `pipelineQueries` — pour
+   que le `dashboard` Svelte lise la même entrée de cache — a donc laissé une clé morte **et** une
+   fabrique non listée, deux échecs apparus au moment de lancer les gates, dans un fichier que la
+   phase ne touchait pas. **Quand un hook exporté devient une fabrique, chercher son nom dans
+   `core/di/`** avant de lancer la suite.
+4. **La leçon de couverture de la Phase 3, appliquée à l'endroit.** `roles` est arrivé avec ses
+   19 fichiers de test React supprimés et aucun remplacement : `typecheck`, `test`, `lint`,
+   `depcruise` et `i18n:collisions` étaient tous verts sur un module sans un seul test. Les tests
+   ont été écrits avant de lancer les gates, et la couverture est montée de 74,5 % à **75,7 %** de
+   lignes (230 tests rien que sur `roles`). Seuils remontés à **74 / 69 / 71 / 74**.
+5. **`CheckboxTree` est revenu à la maison.** Il vivait dans `shared/presentation/ui/forms/` au
+   nom d'une généricité qu'il n'a jamais utilisée — un seul consommateur en deux ans, et les
+   règles qu'il applique (un enfant ne compte que si toute sa chaîne de parents est cochée,
+   décocher un parent efface ses descendants) sont celles du modèle de permissions, pas celles
+   d'un widget. Elles vivent maintenant dans `roles/…/checkbox-tree.ts`, pures et testées sans
+   DOM. Le générique React sur `string | number` n'était instancié qu'avec `Permission` : le
+   typer concrètement ici est ce qui permet au composant de se passer de l'attribut `generics`,
+   sur lequel `tsc` et `svelte-check` ne sont pas d'accord (fin de Phase 1, point 4).
+6. **`usePermissionSync` a déménagé dans `layout/`, et le garde est descendu dans la fonction.**
+   Le hook tenait sa règle — « n'appeler le backend que si user/org/projet a changé » — dans une
+   `ref` React. `syncMyPermissions(orgId, projectId)` la tient maintenant lui-même, sans
+   framework : la shell peut l'appeler aussi souvent qu'elle veut. `roles` ne contient plus une
+   ligne de React alors que la shell, elle, en est encore faite ; la Phase 6 remplace la liaison
+   et la fonction ne bouge pas.
+7. **`svelte/prefer-svelte-reactivity` se trompe systématiquement sur l'idiome des ViewModels.**
+   La règle signale tout `new Map()` / `new Set()` dans un `.svelte`/`.svelte.ts` sans aucune
+   analyse d'échappement — or reconstruire une table de correspondance *à l'intérieur* d'un
+   `$derived` est précisément la façon de mémoïser une jointure en runes. Sur les quatre modules
+   Svelte concernés, **douze signalements, zéro vrai positif** : les collections qui sont
+   réellement de l'état sont déjà des `SvelteMap`/`SvelteSet` (`grant-creator`, `selected`). La
+   règle reste active — elle protège le cas où quelqu'un mettra une `Map` mutée dans un `$state`
+   — mais chaque site porte un `eslint-disable-next-line` avec sa raison. Accessoirement, le gate
+   `lint` était **déjà rouge sur du code Phase 3 commité** : `pnpm lint` prend plus de dix minutes
+   et n'avait manifestement pas été relancé jusqu'au bout. Les deux ont été corrigés ici.
+8. **Le `{#key open}` de la Phase 3 tient à l'échelle du formulaire le plus gros.** `RoleForm` est
+   un composant séparé de `RoleFormDialog` uniquement pour ça : rouvrir la boîte reconstruit le
+   formulaire et ré-exécute `createRoleForm(role)`. Là où React avait un effet sur `[open, role]`
+   *et* un `setTimeout` pour défaire le drapeau de succès de la mutation avant l'ouverture
+   suivante, il ne reste rien.
 
 ---
 
@@ -930,4 +1042,9 @@ Identique de la Phase 2 à la Phase 5. C'est le cœur réutilisable de ce docume
 - **Le `shared` React est gelé** dès la fin de Phase 1 : correctifs uniquement. Toute divergence entre les deux versions est une dette payée deux fois.
 - **Un module est soit 100 % React soit 100 % Svelte** : aucun mélange interne n'est toléré à la fin d'une PR. Le `<SvelteIsland>` vit à l'intérieur d'une PR, pas entre deux.
 - **Aucun gate désactivé**, même temporairement. Couverture, lint, typage et tests d'architecture doivent rester au vert continu.
+  Corollaire appris en Phase 4 : **les lancer *tous* avant de déclarer une phase finie**. `pnpm lint`
+  dure plus de dix minutes et c'est exactement ce qui fait qu'on le saute — le gate était rouge sur
+  du code déjà commité. Désactiver une règle qui ne produit que des faux positifs (voir Phase 4,
+  point 7) n'est pas la même chose que désactiver un gate : la règle reste active, chaque exception
+  porte sa raison à son site.
 - **Interdiction de mettre des calculs lourds dans les `.svelte`** : utilisez la séparation en `*.calculator.ts` ou dans un ViewModel via `$derived.by()`.

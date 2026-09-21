@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { usePipelinesMetadata } from '../../hooks/use-pipelines-metadata.ts';
-import { useJobsByPipelines } from '@/modules/features/jobs';
+import { useQueries } from '@tanstack/react-query';
+import { jobsByPipelinesQueries } from '@/modules/features/jobs';
+import { useAuthorization } from '@platform/authz';
 import { ErrorState } from '@shared/presentation/ui/feedback/ErrorState.tsx';
 import { Trans } from '@lingui/react/macro';
 import { PaginationSlot } from '@shared/presentation/ui/data-display/Pagination.tsx';
@@ -13,8 +15,13 @@ export const DashboardPipelinePage = () => {
     usePipelinesMetadata(projectId!);
 
   const pipelineIds = (pipelines?.items ?? []).map(p => p.id);
-  const { jobsByPipelineId, isJobsError, isJobsLoading, canListJobs } =
-    useJobsByPipelines(pipelineIds);
+  // `jobs` is Svelte as of Phase 3, so what was `useJobsByPipelines` is now a
+  // plain fan-out description `useQueries` runs unchanged. `useAuthorization`
+  // is what subscribes this component to the permissions store — `can()` inside
+  // the factory reads it, but only a hook makes React re-render when it lands.
+  useAuthorization();
+  const { queries, combine, canListJobs } = jobsByPipelinesQueries(pipelineIds);
+  const { jobsByPipelineId, isJobsError, isJobsLoading } = useQueries({ queries, combine });
 
   if (isError) {
     return <ErrorState message={String(errorMessage) || 'Unable to load pipelines'} />;

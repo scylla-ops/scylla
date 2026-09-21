@@ -17,4 +17,15 @@ export {
   USERS_QUERY_KEY,
   USER_QUERY_KEY,
 } from './presentation/user.queries.ts';
-export { default as UserSettingsPage } from './presentation/ui/settings/UserSettings.page.svelte';
+/**
+ * The settings page `organization` composes behind its own route, as a loader.
+ *
+ * Re-exporting the component put the Svelte runtime, bits-ui and the whole
+ * Svelte design system in the **entry chunk**: `layout/NavUser.tsx` imports this
+ * barrel eagerly for `userQueries`, and Rollup cannot drop a component a barrel
+ * re-exports. A loader is a plain function — tree-shakeable — and the page
+ * arrives when its route mounts. Same rule, and same remedy, as
+ * `organization`'s dialogs and `jobs`' page.
+ */
+export const loadUserSettingsPage = () =>
+  import('./presentation/ui/settings/UserSettings.page.svelte');

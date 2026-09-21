@@ -22,7 +22,7 @@ import scyllaLogoDark from '@/assets/logo_scylla_dark.png';
 import { useNavigate } from 'react-router-dom';
 import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
-import { usePermissionSync } from '@/modules/features/roles';
+import { usePermissionSync } from '@/modules/layout/presentation/hooks/use-permission-sync.ts';
 import { useTheme } from '@shared/presentation/hooks/use-theme.ts';
 import { ScyllaLoadingScreen } from '@shared/presentation/ui';
 

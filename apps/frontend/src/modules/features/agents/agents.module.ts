@@ -1,4 +1,4 @@
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { HardDriveIcon } from 'lucide-react';
 import { Permission } from '@platform/authz';
@@ -26,7 +26,9 @@ export const AgentsModule = {
           index: true,
           permission: Permission.LIST_AGENTS,
           lazy: async () => ({
-            Component: (await import('./presentation/ui/Agents.page.tsx')).AgentsPage,
+            Component: sveltePage(
+              (await import('./presentation/ui/Agents.page.svelte')).default,
+            ),
           }),
         },
         {
@@ -35,7 +37,9 @@ export const AgentsModule = {
           permission: Permission.READ_APP,
           breadcrumb: () => ({ label: msg`Agent details` }),
           lazy: async () => ({
-            Component: (await import('./presentation/ui/AgentDetails.page.tsx')).AgentDetailsPage,
+            Component: sveltePage(
+              (await import('./presentation/ui/AgentDetails.page.svelte')).default,
+            ),
           }),
         },
       ],

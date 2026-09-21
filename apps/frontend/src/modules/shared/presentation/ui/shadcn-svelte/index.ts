@@ -12,6 +12,7 @@
 import {
   AlertDialog as AlertDialogPrimitive,
   Dialog as DialogPrimitive,
+  DropdownMenu as DropdownMenuPrimitive,
   Select as SelectPrimitive,
 } from 'bits-ui';
 
@@ -85,6 +86,34 @@ export { default as SelectContent } from './select-content.svelte';
 export { default as SelectItem } from './select-item.svelte';
 export { default as SelectTrigger } from './select-trigger.svelte';
 export { default as SelectValue } from './select-value.svelte';
+
+export { default as Badge } from './badge.svelte';
+export { badgeVariants, type BadgeVariant } from './badge-variants.ts';
+
+export { default as Switch } from './switch.svelte';
+
+export { default as Separator } from './separator.svelte';
+
+export { default as CodeSnippet } from './code-snippet.svelte';
+
+export { default as RadioGroup } from './radio-group.svelte';
+export { default as RadioGroupItem } from './radio-group-item.svelte';
+
+export { default as ToggleGroup } from './toggle-group.svelte';
+export { default as ToggleGroupItem } from './toggle-group-item.svelte';
+export { toggleVariants, type ToggleSize, type ToggleVariant } from './toggle-variants.ts';
+
+export { default as Tabs } from './tabs.svelte';
+export { default as TabsContent } from './tabs-content.svelte';
+export { default as TabsList } from './tabs-list.svelte';
+export { default as TabsTrigger } from './tabs-trigger.svelte';
+
+// Root and trigger carry no styling — bits-ui's own, aliased rather than
+// wrapped, as with `Dialog` above.
+export const DropdownMenu = DropdownMenuPrimitive.Root;
+export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+export { default as DropdownMenuContent } from './dropdown-menu-content.svelte';
+export { default as DropdownMenuItem } from './dropdown-menu-item.svelte';
 
 export { default as Pagination } from './pagination.svelte';
 export { default as PaginationContent } from './pagination-content.svelte';

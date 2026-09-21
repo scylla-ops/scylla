@@ -50,29 +50,33 @@ and on the org overview, and there is no second opinion about what "running" mea
 implementation, mappers under `repository/mappers/` — because streaming makes the transport
 non-trivial. `tailLogs` is the odd one out in the whole codebase: it returns
 `ScyllaResult<JobLogStream>` **synchronously**, since it opens a server stream rather than
-awaiting a response. The presentation layer subscribes to it in an effect and closes it on
-cleanup, which is exactly the kind of outside-React system effects are for.
+awaiting a response. The presentation layer subscribes to it in `tail-job-logs.svelte.ts` and
+closes it on teardown — a stream is a system outside the framework, and that is what actions and
+`*.svelte.ts` owners are for, not reactivity.
 
-**Presentation** is the largest layer: a query-key factory module, one hook per operation, the
-`jobs-table/` folder holding the table, its columns and its cells (`JobStatus`, `JobTimeline`,
-`JobActions`), and `job-details/` holding the two halves of the details page — `JobSummary`
-(what the run did) and `JobNodeLogs` (what it printed, per node). The streamed viewer itself,
-`jobs-log/JobLogDisplay`, is shared by both pages.
+**Presentation** is the largest layer: a query-key factory module, the `*.queries.ts` factories
+that replaced the hooks, the `jobs-table/` folder holding the table, its columns and its cells
+(`JobStatus`, `JobTimeline`, `JobActions`), and `job-details/` holding the two halves of the
+details page — `JobSummary` (what the run did) and `JobNodeLogs` (what it printed, per node).
+The streamed viewer itself, `jobs-log/JobLogDisplay`, is shared by both pages.
 
-The log viewer behaves like an IDE console, and `useStreamedLogView` is where that lives. A live
-log is a stream, but a React `value` prop is a snapshot, and the gap between the two is the whole
-problem: handing the growing string to `<ReactCodeMirror value>` makes it replace the entire
-document on every flush — seven times a second — which resets the scroll offset and destroys any
-selection the reader had made. So the hook appends the delta itself and keeps the prop frozen.
+The log viewer behaves like an IDE console, and `streamed-log-view.svelte.ts` is where that
+lives. A live log is a stream, but a document you re-seed is a snapshot, and the gap between the
+two is the whole problem: replacing the editor's content on every flush — seven times a second —
+resets the scroll offset and destroys any selection the reader had made. So it appends the delta
+itself and never re-seeds. Mounting the editor is a Svelte action for the same reason: CodeMirror
+is an outside system, and a `value` prop would invite exactly that replacement.
 
 On top of that it keeps one piece of state — are we still following the tail? — because "always
 scroll to the bottom" and "let me read this line" are in direct conflict. Any gesture that moves
 away from the end turns following off, any return to the end turns it back on, and a selection
 being made holds it off regardless.
 
-`useJobsByPipelines` is worth knowing about: it fetches runs for many pipelines with
-`useQueries` rather than a loop of `useQuery`, which is how the pipeline dashboard shows a "last
-run" column without an N+1 storm.
+`jobsByPipelinesQueries` is worth knowing about: it describes the runs of many pipelines as a
+*list* of query options, so the caller fans them out in one batch rather than looping one call
+per pipeline — which is how the pipeline dashboard shows a "last run" column without an N+1
+storm. Because the options carry no framework, `pipeline` (still React) hands them to
+`useQueries` and the Svelte pages hand them to their own runner, sharing one cache.
 
 ## Query keys are part of the contract
 

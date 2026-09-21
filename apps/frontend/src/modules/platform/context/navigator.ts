@@ -21,6 +21,14 @@ export interface AppNavigator {
   back: () => void;
   /** A function, not a value: the pathname changes under the same navigator. */
   pathname: () => string;
+  /**
+   * The query string, leading `?` included, exactly as the router holds it.
+   *
+   * Separate from `pathname` because that is how every router models it, and
+   * because the two are written independently: a page that keeps state in the
+   * URL rewrites the query and must leave the path alone.
+   */
+  search: () => string;
 }
 
 let current: AppNavigator | null = null;
@@ -56,3 +64,7 @@ export const navigateBack = (): void => require().back();
  */
 export const currentPathname = (): string =>
   current ? current.pathname() : window.location.pathname;
+
+/** The query string currently displayed, `?` included. Same fallback as above. */
+export const currentSearch = (): string =>
+  current ? current.search() : window.location.search;

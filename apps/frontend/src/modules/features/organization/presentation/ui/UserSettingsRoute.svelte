@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { UserSettingsPage } from '@/modules/features/user';
+  import { loadUserSettingsPage } from '@/modules/features/user';
   import OrganizationList from './OrganizationList.svelte';
 
   interface Props {
@@ -17,8 +17,14 @@
   this side keeps the dependency one-way (organization → user) instead of the
   mutual import the panel would otherwise need. The slot is a snippet now, where
   it used to be a `ReactNode`.
+
+  The page arrives through a loader, not a direct import: `layout` imports the
+  `user` barrel eagerly, so a component re-exported from it would land in the
+  entry chunk along with all of bits-ui.
 -->
-<UserSettingsPage {userId} organizations={organizationsPanel} />
+{#await loadUserSettingsPage() then page}
+  <page.default {userId} organizations={organizationsPanel} />
+{/await}
 
 {#snippet organizationsPanel()}
   <OrganizationList />

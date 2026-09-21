@@ -1,5 +1,10 @@
-import { EditorView, oneDarkHighlightStyle } from '@uiw/react-codemirror';
-import type { Extension } from '@uiw/react-codemirror';
+// From the CodeMirror packages themselves, not from `@uiw/react-codemirror`
+// which re-exports them: this file is `utils/`, so it must stay framework-free,
+// and a Svelte editor importing it through the React wrapper would pull React
+// into its chunk. Same objects either way — `@uiw` only re-exports these.
+import { EditorView } from '@codemirror/view';
+import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark';
+import type { Extension } from '@codemirror/state';
 import { syntaxHighlighting } from '@codemirror/language';
 
 export interface CodeMirrorThemeOptions {

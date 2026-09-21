@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTheme } from '@shared/presentation/hooks/use-theme.ts';
-import type { Extension } from '@uiw/react-codemirror';
+import type { Extension } from '@codemirror/state';
 import { buildCodeMirrorTheme } from '@shared/presentation/utils/code-mirror-theme.ts';
 
 interface UseCodeMirrorThemeOptions {

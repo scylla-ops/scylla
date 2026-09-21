@@ -1,10 +1,11 @@
 import { usePipelineDomain } from '@/modules/features/pipeline/presentation/hooks/use-pipeline-domain.ts';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { useLingui } from '@lingui/react/macro';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { JOBS_QUERY_KEY } from '@/modules/features/jobs';
-import { useAgents } from '@/modules/features/agents';
+import { agentQueries } from '@/modules/features/agents';
+import { Permission, useCan } from '@platform/authz';
 import { useContextStore } from '@platform/context';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +13,14 @@ import { useNavigate } from 'react-router-dom';
 export const useRunPipeline = () => {
   const { pipelineRepository } = usePipelineDomain();
   const queryClient = useQueryClient();
-  const { agents, canListAgents } = useAgents();
+  // `agents` went Svelte in Phase 3: what was a hook is now an options object
+  // react-query takes unchanged, sharing the same cache entry as the Svelte
+  // pages. `useCan` is not decoration — it subscribes this hook to the
+  // permissions store, which is what makes the query's own `enabled` (a
+  // `can(LIST_AGENTS)` inside the factory) re-evaluate once they land.
+  const canListAgents = useCan(Permission.LIST_AGENTS);
+  const organizationId = useContextStore(state => state.organization.id);
+  const { data: agents = [] } = useQuery(agentQueries.byOrganization(organizationId ?? ''));
   const navigate = useNavigate();
   const orgName = useContextStore(state => state.organization.name);
   const { i18n } = useLingui();

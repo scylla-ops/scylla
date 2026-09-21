@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
 import { LayoutDashboard } from 'lucide-react';
 import { Permission } from '@platform/authz';
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 
 /**
  * The organization overview. It owns no data of its own — it composes other
@@ -19,7 +19,7 @@ export const DashboardModule = {
       permission: Permission.READ_ORGANIZATION,
       breadcrumb: () => ({ label: msg`Dashboard` }),
       lazy: async () => ({
-        Component: (await import('./presentation/ui/Dashboard.page.tsx')).DashboardPage,
+        Component: sveltePage((await import('./presentation/ui/Dashboard.page.svelte')).default),
       }),
     },
   ],

@@ -1,0 +1,76 @@
+import { msg } from '@lingui/core/macro';
+
+/**
+ * Every string the apps screens show.
+ *
+ * `lingui extract` does not read `.svelte`, so a message declared inside a
+ * component would vanish from the catalogs without failing a single gate. The
+ * ids below are byte-identical to the ones the React components carried —
+ * placeholder names included, since those are part of the msgid.
+ */
+export const appsMessages = {
+  // List page
+  service: msg`Service`,
+  app: msg`App`,
+  apps: msg`Apps`,
+  newApp: msg`New App`,
+  createDenied: msg`You don't have permission to create apps.`,
+  loadError: msg`Error loading apps`,
+  active: msg`active`,
+  inactive: msg`inactive`,
+  noAppsYet: msg`No apps yet`,
+  noAppsBody: msg`Apps are machine credentials. Create one to let an automation authenticate against the Scylla API.`,
+  createFirstApp: msg`Create your first app`,
+  getCredentials: msg`Get credentials to authenticate.`,
+  createAndReveal: msg`Create & reveal secret →`,
+
+  // Reveal dialog
+  credentialsOf: (name: string) => msg`${name} credentials`,
+  copySecretOnce: msg`Copy the secret below — it is shown only once.`,
+  useTheseCredentials: msg`Use these credentials (id + secret) to authenticate an automation against the Scylla API.`,
+
+  // Delete confirmation
+  deleteAppTitle: msg`Delete app?`,
+  deleteAppBody: msg`This revokes the app's credentials. Cannot be undone.`,
+  cancel: msg`Cancel`,
+  delete: msg`Delete`,
+
+  // Card
+  copyId: msg`Copy id`,
+  created: msg`created`,
+  /**
+   * New, and deliberately: the React card's dropdown trigger was an icon with
+   * no accessible name, so nothing could reach it but a CSS selector.
+   */
+  appActions: msg`App actions`,
+  deleteApp: msg`Delete app`,
+
+  // Details page
+  detailsLoadError: msg`Error loading app`,
+  notFound: msg`App not found`,
+  machineCredential: msg`Machine credential · no runtime presence`,
+  toggleActive: msg`Toggle app active`,
+  comingSoon: msg`Coming soon`,
+  rename: msg`Rename`,
+  appId: msg`App ID`,
+  name: msg`Name`,
+  status: msg`Status`,
+  createdOn: msg({ context: 'date-prefix', message: 'Created' }),
+  updatedOn: msg({ context: 'date-prefix', message: 'Updated' }),
+  notProcesses: msg`Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead.`,
+
+  // Secrets card
+  secrets: msg`Secrets`,
+  secretsBody: msg`Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret.`,
+  newSecret: msg`New secret`,
+  addCredential: msg`Add a credential for this app.`,
+  noSecrets: msg`No secrets. Create one so this app can authenticate.`,
+  disabled: msg`disabled`,
+  toggleSecretEnabled: msg`Toggle secret enabled`,
+  secretCredentialsOf: (appName: string, label: string) => msg`${appName} · ${label} credentials`,
+  secret: msg`Secret`,
+  revokeSecretTitle: msg`Revoke secret?`,
+  revokeSecretBody: msg`This permanently deletes the secret and immediately cuts any session using it. Cannot be undone.`,
+  revoke: msg`Revoke`,
+  revokeSecretAction: msg`Revoke secret`,
+};

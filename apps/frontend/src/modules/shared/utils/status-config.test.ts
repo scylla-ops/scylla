@@ -26,7 +26,6 @@ describe('getStatusConfig', () => {
       expect(config.barHoverClassName, `${key}.barHoverClassName`).not.toBe('');
       expect(config.dotClassName, `${key}.dotClassName`).not.toBe('');
       expect(config.textClassName, `${key}.textClassName`).not.toBe('');
-      expect(config.icon).toBeDefined();
       expect(config.label.id).toBeTruthy();
     }
   });

@@ -13,56 +13,51 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: app.name
-#. placeholder {1}: created.credential.label
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:145
-msgid "{0} · {1} credentials"
-msgstr "{0} · {1} credentials"
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:70
+msgid "{appName} · {label} credentials"
+msgstr "{appName} · {label} credentials"
 
-#. placeholder {0}: created.app.name
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:136
-msgid "{0} credentials"
-msgstr "{0} credentials"
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:28
+msgid "{name} credentials"
+msgstr "{name} credentials"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:62
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:78
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:114
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:66
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:93
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:19
 msgid "active"
 msgstr "active"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:134
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:66
 msgid "Add a credential for this app."
 msgstr "Add a credential for this app."
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:58
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:14
 msgid "App"
 msgstr "App"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:97
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:45
+msgid "App actions"
+msgstr "App actions"
+
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:55
 msgid "App ID"
 msgstr "App ID"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:44
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:50
 msgid "App not found"
 msgstr "App not found"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:59
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:15
 msgid "Apps"
 msgstr "Apps"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:133
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:60
 msgid "Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead."
 msgstr "Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead."
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:88
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:22
 msgid "Apps are machine credentials. Create one to let an automation authenticate against the Scylla API."
 msgstr "Apps are machine credentials. Create one to let an automation authenticate against the Scylla API."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:155
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:166
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:177
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:35
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -70,79 +65,68 @@ msgstr "Cancel"
 msgid "ci-runner"
 msgstr "ci-runner"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:80
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:53
 msgid "Coming soon"
 msgstr "Coming soon"
 
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:63
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:39
 msgid "Copy id"
 msgstr "Copy id"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:137
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:149
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:29
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copy the secret below — it is shown only once."
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:129
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:137
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:25
 msgid "Create & reveal secret →"
 msgstr "Create & reveal secret →"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:98
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:23
 msgid "Create your first app"
 msgstr "Create your first app"
 
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:86
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:102
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:40
 msgid "created"
 msgstr "created"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:120
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:58
 msgctxt "date-prefix"
 msgid "Created"
 msgstr "Created"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:57
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:64
 msgid "Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret."
 msgstr "Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:84
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:163
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:174
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:71
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:36
 msgid "Delete"
 msgstr "Delete"
 
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:102
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:46
 msgid "Delete app"
 msgstr "Delete app"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:147
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:158
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:33
 msgid "Delete app?"
 msgstr "Delete app?"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:97
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:68
 msgid "disabled"
 msgstr "disabled"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:49
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:49
 msgid "Error loading app"
 msgstr "Error loading app"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:48
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:18
 msgid "Error loading apps"
 msgstr "Error loading apps"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:126
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:24
 msgid "Get credentials to authenticate."
 msgstr "Get credentials to authenticate."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:62
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:78
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:114
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:67
-#: src/modules/features/apps/presentation/ui/components/AppCard.tsx:79
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:20
 msgid "inactive"
 msgstr "inactive"
 
@@ -150,7 +134,7 @@ msgstr "inactive"
 msgid "Label"
 msgstr "Label"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:66
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:51
 msgid "Machine credential · no runtime presence"
 msgstr "Machine credential · no runtime presence"
 
@@ -158,85 +142,84 @@ msgstr "Machine credential · no runtime presence"
 msgid "my-build-runner"
 msgstr "my-build-runner"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:104
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:56
 #: src/modules/features/apps/presentation/utils/create-app-form-items.ts:7
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:116
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:125
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:16
 msgid "New App"
 msgstr "New App"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:65
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:133
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:65
 msgid "New secret"
 msgstr "New secret"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:85
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:21
 msgid "No apps yet"
 msgstr "No apps yet"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:76
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:67
 msgid "No secrets. Create one so this app can authenticate."
 msgstr "No secrets. Create one so this app can authenticate."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:81
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:54
 msgid "Rename"
 msgstr "Rename"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:185
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:74
 msgid "Revoke"
 msgstr "Revoke"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:166
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:75
+msgid "Revoke secret"
+msgstr "Revoke secret"
+
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:72
 msgid "Revoke secret?"
 msgstr "Revoke secret?"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:151
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:71
 msgid "Secret"
 msgstr "Secret"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:54
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:63
 msgid "Secrets"
 msgstr "Secrets"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:54
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:13
 msgid "Service"
 msgstr "Service"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:110
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:57
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:169
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:73
 msgid "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
 msgstr "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:150
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:161
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:34
 msgid "This revokes the app's credentials. Cannot be undone."
 msgstr "This revokes the app's credentials. Cannot be undone."
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:76
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:52
 msgid "Toggle app active"
 msgstr "Toggle app active"
 
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:113
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:69
 msgid "Toggle secret enabled"
 msgstr "Toggle secret enabled"
 
-#: src/modules/features/apps/presentation/ui/AppDetails.page.tsx:126
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:59
 msgctxt "date-prefix"
 msgid "Updated"
 msgstr "Updated"
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:141
-#: src/modules/features/apps/presentation/ui/components/AppSecretsCard.tsx:153
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:30
 msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
 msgstr "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
 
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:62
-#: src/modules/features/apps/presentation/ui/Apps.page.tsx:96
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:17
 msgid "You don't have permission to create apps."
 msgstr "You don't have permission to create apps."

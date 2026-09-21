@@ -13,45 +13,44 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: scopeIds.length
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:168
+#. placeholder {0}: Number(count)
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:74
 msgid "{0} grants created"
 msgstr "{0} attributions créées"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:69
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:91
 msgid "{conferredCount} selected"
 msgstr "{conferredCount} sélectionnée(s)"
 
-#: src/modules/features/roles/presentation/ui/components/RoleListItem.tsx:78
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:28
 msgid "{memberCount} members"
 msgstr "{memberCount} membres"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:207
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:86
 msgid "Access"
 msgstr "Accès"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:198
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:51
 msgid "Add grant"
 msgstr "Attribuer"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:83
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:92
 msgid "Always"
 msgstr "Toujours"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:17
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:31
 msgid "Built-in"
 msgstr "Intégré"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:110
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:60
 msgid "can't see this organization's projects"
 msgstr "ne peut pas voir les projets de cette organisation"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:281
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:241
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:71
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:208
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:54
 msgid "Choose who receives this role and where it applies."
 msgstr "Choisissez qui reçoit ce rôle et où il s'applique."
 
@@ -59,7 +58,7 @@ msgstr "Choisissez qui reçoit ce rôle et où il s'applique."
 msgid "Create agents"
 msgstr "Créer des agents"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:284
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:72
 msgid "Create grant"
 msgstr "Créer l'attribution"
 
@@ -75,9 +74,7 @@ msgstr "Créer des pipelines"
 msgid "Create projects"
 msgstr "Créer des projets"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogHeader.tsx:16
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:244
-#: src/modules/features/roles/presentation/ui/RolesHeader.tsx:21
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:24
 msgid "Create role"
 msgstr "Créer le rôle"
 
@@ -89,11 +86,11 @@ msgstr "Créer des secrets"
 msgid "Create users"
 msgstr "Créer des utilisateurs"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:19
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:32
 msgid "Custom"
 msgstr "Personnalisé"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogHeader.tsx:19
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:79
 msgid "Define what this role is called and what it can do."
 msgstr "Définissez le nom de ce rôle et ce qu'il permet de faire."
 
@@ -133,15 +130,15 @@ msgstr "Supprimer le projet"
 msgid "Delete users"
 msgstr "Supprimer des utilisateurs"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:157
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:82
 msgid "Description"
 msgstr "Description"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:150
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:81
 msgid "e.g., project-viewer"
 msgstr "ex. : project-viewer"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:50
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:34
 msgid "Edit"
 msgstr "Modifier"
 
@@ -157,7 +154,7 @@ msgstr "Modifier tous les projets"
 msgid "Edit pipelines"
 msgstr "Modifier les pipelines"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogHeader.tsx:16
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:78
 msgid "Edit role"
 msgstr "Modifier le rôle"
 
@@ -169,17 +166,16 @@ msgstr "Modifier l'organisation"
 msgid "Edit the project"
 msgstr "Modifier le projet"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:171
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:75
 msgid "Failed to create grant"
 msgstr "Échec de la création de l'attribution"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:58
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:219
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:36
 msgid "Full control"
 msgstr "Contrôle total"
 
-#. placeholder {0}: role.name
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:205
+#. placeholder {0}: String(roleName)
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:53
 msgid "Grant “{0}”"
 msgstr "Attribuer « {0} »"
 
@@ -203,27 +199,31 @@ msgstr "Attribuer et révoquer des rôles sur tous les projets"
 msgid "Grant and revoke roles on the project"
 msgstr "Attribuer et révoquer des rôles sur le projet"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:168
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:73
 msgid "Grant created"
 msgstr "Attribution créée"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:500
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:69
 msgid "Granted"
 msgstr "Attribué"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:58
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:45
 msgid "Grants"
 msgstr "Attributions"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:20
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:40
 msgid "Grants full control over its scope."
 msgstr "Confère le contrôle total sur sa portée."
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:97
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:100
+msgid "Hide {label} sub-permissions"
+msgstr ""
+
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:101
 msgid "Holding a role in an organization is what belonging to it means, so every organization role carries it. An organization role applies to every project of the organization."
 msgstr "Détenir un rôle dans une organisation, c'est ce que signifie y appartenir : tout rôle d'organisation le porte donc. Un rôle d'organisation s'applique à tous les projets de l'organisation."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:475
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:68
 msgid "Loading…"
 msgstr "Chargement…"
 
@@ -243,40 +243,39 @@ msgstr "Membre de l'organisation"
 msgid "Member of the project"
 msgstr "Membre du projet"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:143
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:80
 msgid "Name"
 msgstr "Nom"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:38
-#: src/modules/features/roles/presentation/ui/components/RoleListItem.tsx:65
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:27
 msgid "No description"
 msgstr "Aucune description"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:65
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:46
 msgid "No one holds this role yet."
 msgstr "Personne ne détient encore ce rôle."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:354
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:64
 msgid "No organizations available."
 msgstr "Aucune organisation disponible."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:25
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:41
 msgid "No permissions."
 msgstr "Aucune permission."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:439
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:66
 msgid "No projects in this organization."
 msgstr "Aucun projet dans cette organisation."
 
-#: src/modules/features/roles/presentation/ui/Roles.page.tsx:74
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:25
 msgid "No roles yet. Create one to get started."
 msgstr "Aucun rôle pour l'instant. Créez-en un pour commencer."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:429
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:67
 msgid "Nobody can receive a project grant here yet. Admit someone to the organization first — from the organization switcher, under “Members” — and they will show up here."
 msgstr "Personne ne peut encore recevoir une attribution sur un projet ici. Admettez d'abord quelqu'un dans l'organisation — depuis le sélecteur d'organisation, via « Membres » — et il apparaîtra ici."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:106
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:59
 msgid "not a member of this organization"
 msgstr "n'est pas membre de cette organisation"
 
@@ -296,25 +295,24 @@ msgstr "Ouvrir n'importe quel pipeline"
 msgid "Open any project"
 msgstr "Ouvrir n'importe quel projet"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:404
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:61
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:346
 msgid "Organization"
 msgstr "Organisation"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:353
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:62
 msgid "Organizations"
 msgstr "Organisations"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:16
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:66
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:39
 msgid "Permissions"
 msgstr "Permissions"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:412
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:63
 msgid "Pick an organization"
 msgstr "Choisir une organisation"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:182
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:58
 msgid "Pick an organization first"
 msgstr "Choisissez d'abord une organisation"
 
@@ -322,7 +320,7 @@ msgstr "Choisissez d'abord une organisation"
 msgid "Project"
 msgstr "Projet"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:438
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:65
 msgid "Projects"
 msgstr "Projets"
 
@@ -330,19 +328,19 @@ msgstr "Projets"
 msgid "Read job logs"
 msgstr "Lire les logs des jobs"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:93
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:47
 msgid "Remove"
 msgstr "Retirer"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:222
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:87
 msgid "Restricted permissions"
 msgstr "Permissions restreintes"
 
-#: src/modules/features/roles/presentation/ui/RolesHeader.tsx:19
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:22
 msgid "Role"
 msgstr "Rôle"
 
-#: src/modules/features/roles/presentation/ui/RolesHeader.tsx:20
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:23
 #: src/modules/features/roles/roles.module.ts:25
 #: src/modules/features/roles/roles.module.ts:34
 msgid "Roles"
@@ -352,15 +350,15 @@ msgstr "Rôles"
 msgid "Run pipelines"
 msgstr "Lancer des pipelines"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:244
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:88
 msgid "Save changes"
 msgstr "Enregistrer"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:170
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:84
 msgid "Scope"
 msgstr "Portée"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:200
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:85
 msgid "Scope cannot be changed after creation."
 msgstr "La portée ne peut pas être modifiée après la création."
 
@@ -392,42 +390,46 @@ msgstr "Voir les intervenants de tous les projets"
 msgid "See who works on the project"
 msgstr "Voir les intervenants du projet"
 
-#: src/modules/features/roles/presentation/ui/components/RoleDetailPanel.tsx:21
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:26
 msgid "Select a role to see its permissions and members."
 msgstr "Sélectionnez un rôle pour voir ses permissions et ses membres."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:182
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:57
 msgid "Select a user"
 msgstr "Sélectionner un utilisateur"
 
-#. placeholder {0}: selected.size
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:251
+#. placeholder {0}: Number(count)
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:70
 msgid "Selected ({0})"
 msgstr "Sélectionnés ({0})"
+
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:99
+msgid "Show {label} sub-permissions"
+msgstr ""
 
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:345
 msgid "System"
 msgstr "Système"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleDialogPermissions.tsx:105
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:103
 msgid "This role also holds {preservedCount} permission(s) not managed here. They are kept unchanged."
 msgstr "Ce rôle détient aussi {preservedCount} permission(s) non gérée(s) ici. Elles sont conservées telles quelles."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:218
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:55
 msgid "This role grants access across the whole system."
 msgstr "Ce rôle donne accès à tout le système."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:21
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:33
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:348
 msgctxt "feminine"
 msgid "Unknown"
 msgstr "Inconnue"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailPermissions.tsx:38
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:42
 msgid "Unknown access."
 msgstr "Accès inconnu."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:311
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:56
 msgid "User"
 msgstr "Utilisateur"
 
@@ -463,18 +465,18 @@ msgstr "Voir les secrets de tous les projets"
 msgid "View users"
 msgstr "Voir les utilisateurs"
 
-#: src/modules/features/roles/presentation/ui/components/role-form/RoleFormDialog.tsx:163
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:83
 msgid "What is this role for?"
 msgstr "À quoi sert ce rôle ?"
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailHeader.tsx:47
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:35
 msgid "You don't have permission to edit roles."
 msgstr "Vous n'avez pas la permission de modifier les rôles."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/GrantCreator.tsx:195
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:52
 msgid "You don't have permission to grant this role."
 msgstr "Vous n'avez pas la permission d'attribuer ce rôle."
 
-#: src/modules/features/roles/presentation/ui/components/role-detail/RoleDetailGrantList.tsx:95
+#: src/modules/features/roles/presentation/ui/roles.messages.ts:48
 msgid "You don't have permission to revoke grants."
 msgstr "Vous n'avez pas la permission de révoquer des attributions."

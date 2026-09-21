@@ -16,7 +16,7 @@ import { lingui } from '@lingui/vite-plugin';
  *
  * An entry matches a package when it is the exact name (`react`), a scope
  * (`@radix-ui` matches `@radix-ui/react-dialog`), or a name prefix written with
- * a trailing dash (`d3-` matches `d3-scale`). Substring matching would be wrong
+ * a trailing dash (`d3-` would match `d3-scale`). Substring matching would be wrong
  * here — plain `react` would otherwise swallow `reactflow` and `lucide-react`.
  */
 const VENDOR_CHUNKS: Record<string, string[]> = {
@@ -48,7 +48,6 @@ const VENDOR_CHUNKS: Record<string, string[]> = {
   'vendor-i18n': ['@lingui', 'messageformat-parser', '@messageformat'],
   'vendor-flow': ['reactflow', '@reactflow'],
   'vendor-codemirror': ['@uiw', 'codemirror', '@codemirror', '@lezer'],
-  'vendor-charts': ['recharts', 'victory-vendor', 'd3-', 'internmap', 'decimal.js-light'],
   'vendor-grpc': ['@protobuf-ts'],
 };
 
@@ -149,10 +148,10 @@ export default defineConfig({
       // number can only go up. Raise them when a batch of tests lands; never
       // lower them to make a red run green.
       thresholds: {
-        statements: 69,
-        branches: 66,
-        functions: 65,
-        lines: 69,
+        statements: 74,
+        branches: 69,
+        functions: 71,
+        lines: 74,
       },
     },
   },

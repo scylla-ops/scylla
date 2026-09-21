@@ -16,6 +16,8 @@ import type { PipelineEntity } from '@/modules/features/pipeline/domain/entities
 import type { PipelineMetadata } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 import type * as AgentsModule from '@/modules/features/agents';
 import { installTestNavigator } from '@/test/navigator.ts';
+import { stubQuery } from '@/test/queries.ts';
+import { PermissionScope, usePermissionsStore } from '@platform/authz';
 
 type AgentEntity = AgentsModule.AgentEntity;
 
@@ -39,14 +41,37 @@ vi.mock('sonner', () => ({
 }));
 
 let agentsFixture: AgentEntity[] = [];
-let canListAgentsFixture = true;
+
+/**
+ * `agents` went Svelte in Phase 3, so what this used to stub — a hook returning
+ * `{ agents, canListAgents }` — no longer exists. The replacement is a factory,
+ * and `stubQuery` hands back options carrying `initialData`, which is what keeps
+ * these assertions synchronous rather than turning each into a `waitFor`.
+ *
+ * `canListAgents` is not stubbed at all any more: it comes from `useCan`, so the
+ * real permissions store drives it, which is how the rest of the suite works.
+ */
 vi.mock('@/modules/features/agents', async importOriginal => {
   const actual = await importOriginal<typeof AgentsModule>();
   return {
     ...actual,
-    useAgents: () => ({ agents: agentsFixture, canListAgents: canListAgentsFixture }),
+    agentQueries: {
+      ...actual.agentQueries,
+      byOrganization: (organizationId: string) =>
+        stubQuery(['agents', organizationId], agentsFixture),
+    },
   };
 });
+
+/** Drives the real store: `can(LIST_AGENTS)` is what the hook now reads. */
+const allowListingAgents = (allowed: boolean) =>
+  usePermissionsStore.setState({
+    permissions: {
+      scopes: allowed
+        ? [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }]
+        : [],
+    },
+  });
 
 const pipeline = (overrides: Partial<PipelineEntity> = {}): PipelineEntity => ({
   id: 'pipeline-1',
@@ -129,7 +154,7 @@ beforeEach(() => {
   toastSuccess.mockClear();
   toastWarning.mockClear();
   agentsFixture = [];
-  canListAgentsFixture = true;
+  allowListingAgents(true);
   useContextStore.setState({
     organization: { id: null, name: null },
     project: { id: null, name: null },
@@ -319,7 +344,7 @@ describe('useRunPipeline', () => {
   });
 
   it('without LIST_AGENTS, tells the caller to check for themselves rather than claim none is connected', async () => {
-    canListAgentsFixture = false;
+    allowListingAgents(false);
     const { repository } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);
     const { result } = renderHook(() => useRunPipeline(), { wrapper: Wrapper });
@@ -331,7 +356,7 @@ describe('useRunPipeline', () => {
   });
 
   it('warns (with a link to Agents) when permitted to look and no agent is connected', async () => {
-    canListAgentsFixture = true;
+    allowListingAgents(true);
     agentsFixture = [agent({ connected: false })];
     useContextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
     const { repository } = makeFakeRepository();
@@ -353,7 +378,7 @@ describe('useRunPipeline', () => {
   });
 
   it('reports a plain success once at least one agent is connected', async () => {
-    canListAgentsFixture = true;
+    allowListingAgents(true);
     agentsFixture = [agent({ connected: false }), agent({ id: 'agent-2', connected: true })];
     const { repository } = makeFakeRepository();
     const { Wrapper } = wrapperFor(repository);

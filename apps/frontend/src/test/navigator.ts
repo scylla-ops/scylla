@@ -18,13 +18,31 @@ import { setAppNavigator } from '@platform/context';
  *
  * Note the second argument: the navigator contract is `navigate(to, options?)`,
  * so a call made without options records an explicit `undefined`.
+ *
+ * **The query string follows a write; the pathname does not.** A page that keeps
+ * state in the query rewrites it and reads it straight back — the job details
+ * page and its log panels — so a spy that only recorded the call would make that
+ * round trip untestable. A *path* navigation is the opposite case: in the app it
+ * unmounts the component that made it, so a fixed pathname is the honest model,
+ * and moving it would make a test that clicks two links in one render build the
+ * second URL on top of the first.
  */
-export const installTestNavigator = (options: { pathname?: string } = {}) => {
-  const navigate = vi.fn();
-  const back = vi.fn();
+export const installTestNavigator = (options: { pathname?: string; search?: string } = {}) => {
   const pathname = options.pathname ?? '/';
+  let search = options.search ?? '';
 
-  setAppNavigator({ navigate, back, pathname: () => pathname });
+  const navigate = vi.fn((to: string) => {
+    const index = to.indexOf('?');
+    search = index === -1 ? '' : to.slice(index);
+  });
+  const back = vi.fn();
+
+  setAppNavigator({
+    navigate,
+    back,
+    pathname: () => pathname,
+    search: () => search,
+  });
 
   return {
     navigate,

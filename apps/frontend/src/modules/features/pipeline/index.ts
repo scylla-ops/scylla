@@ -17,3 +17,11 @@ export {
   PIPELINES_QUERY_ROOT,
 } from './presentation/hooks/pipelines.query-keys.ts';
 export { useOrganizationPipelines } from './presentation/hooks/use-organization-pipelines.ts';
+/**
+ * Framework-free declaration of the organization-wide read.
+ *
+ * `dashboard` is Svelte as of Phase 4 and cannot call the hook above; both are
+ * built on these, so the two halves share one cache entry. The hook goes in
+ * Phase 5, this stays.
+ */
+export { pipelineQueries, asPipelineFeed } from './presentation/pipeline.queries.ts';

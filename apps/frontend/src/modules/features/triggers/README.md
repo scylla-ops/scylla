@@ -39,10 +39,11 @@ The enable/disable distinction is the one to preserve in the UI. Disabling is a 
 a webhook invalidates a URL that external systems may be calling, and no amount of recreating
 brings the old one back.
 
-**Fire now** is the operation that crosses module boundaries: it creates a job. Its hook
-invalidates [jobs](../jobs/README.md)'s query keys as well as its own, which is possible because
-`jobs` exports its key factories publicly. Without that, the user would fire a trigger and see
-nothing change on the runs page.
+**Fire now** is the operation that crosses module boundaries: it creates a job, so
+`triggerMutations.fireNow` refreshes the pipeline's run list as well as its own. That key is
+spelled out locally rather than imported from [jobs](../jobs/README.md): one array is not worth a
+module edge, and the graph is cheaper kept acyclic. Without the second invalidation the user
+would fire a trigger and see nothing change on the runs page.
 
 ## Secrets
 

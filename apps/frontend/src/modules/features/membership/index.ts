@@ -9,6 +9,10 @@
  * Its two pages are deliberately *not* exported: `membership.module.ts` loads
  * them lazily, and a barrel that re-exported them would pull them into the
  * chunk of anything importing this module.
+ *
+ * The two hooks that used to be here are gone with the Phase 3 port: they were
+ * view models, not API, and nothing outside this feature ever called them. What
+ * remains is the pure domain — which is what another module would actually want.
  */
 export {
   type ScopeMember,
@@ -17,8 +21,3 @@ export {
   buildOrganizationMembers,
   buildProjectMembers,
 } from './domain/structs/scope-member.struct.ts';
-export { useScopeMembership } from './presentation/hooks/use-scope-membership.ts';
-export {
-  useAssignableRoles,
-  type AssignableRole,
-} from './presentation/hooks/use-assignable-roles.ts';

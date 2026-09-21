@@ -1,4 +1,4 @@
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { ShieldIcon } from 'lucide-react';
 import { Permission } from '@platform/authz';
@@ -24,7 +24,7 @@ export const RolesModule = {
       permission: Permission.MANAGE_ROLES,
       breadcrumb: () => ({ label: msg`Roles` }),
       lazy: async () => ({
-        Component: (await import('./presentation/ui/Roles.page.tsx')).RolesPage,
+        Component: sveltePage((await import('./presentation/ui/Roles.page.svelte')).default),
       }),
     },
   ],

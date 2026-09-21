@@ -13,6 +13,7 @@
  */
 export * from './controls';
 export * from './data-display';
+export * from './editor/code-mirror.actions.ts';
 export * from './feedback';
 export * from './forms';
 export * from './layout';

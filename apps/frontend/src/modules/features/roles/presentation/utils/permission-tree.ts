@@ -1,6 +1,6 @@
 import type { Permission } from '@platform/authz';
 import type { PermissionDefinition } from '@/modules/features/roles/presentation/utils/permission-mapping.ts';
-import type { CheckboxNode } from '@shared/presentation/ui/forms/CheckboxTree.tsx';
+import type { CheckboxNode } from '@/modules/features/roles/presentation/ui/components/role-form/checkbox-tree.ts';
 
 /**
  * Turns catalog entries into the tree the role editor renders, using each
@@ -15,12 +15,12 @@ import type { CheckboxNode } from '@shared/presentation/ui/forms/CheckboxTree.ts
 export const buildPermissionTree = (
   definitions: PermissionDefinition[],
   label: (permission: Permission) => string,
-): CheckboxNode<Permission>[] => {
-  const nodes = new Map<Permission, CheckboxNode<Permission>>(
+): CheckboxNode[] => {
+  const nodes = new Map<Permission, CheckboxNode>(
     definitions.map(definition => [definition.id, { id: definition.id, label: label(definition.id) }]),
   );
 
-  const roots: CheckboxNode<Permission>[] = [];
+  const roots: CheckboxNode[] = [];
 
   for (const definition of definitions) {
     const node = nodes.get(definition.id)!;

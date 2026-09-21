@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import TrashIcon from '@lucide/svelte/icons/trash';
-  import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@shadcn-svelte';
-  import { cn } from '@shared/presentation/utils';
+  import { Button } from '@shadcn-svelte';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
+  // Direct paths, not the group barrels: importing them from here would loop
+  // back through `layout`.
+  import GatedButton from '../controls/GatedButton.svelte';
   import ConfirmOperationAlertDialog from '../feedback/ConfirmOperationAlertDialog.svelte';
   import { featureHeaderMessages } from './feature-header.messages.ts';
 
@@ -95,60 +97,26 @@
     {/if}
 
     {#if selectedCount > 0 && onDeleteSelection}
-      <Tooltip>
-        <!--
-          A span between trigger and button, as in the React original: a disabled
-          button fires no pointer events, so the tooltip explaining *why* it is
-          disabled would never open if the trigger were the button itself.
-        -->
-        <TooltipTrigger>
-          {#snippet child({ props })}
-            <span {...props} class="inline-flex">
-              <Button
-                size="icon"
-                variant="destructive"
-                disabled={!canDelete}
-                onclick={() => (deleteDialogOpen = true)}
-                class={cn(
-                  'h-9 w-9 cursor-pointer transition-all hover:scale-110',
-                  !canDelete && 'pointer-events-none',
-                )}
-              >
-                <TrashIcon class="size-4" />
-                <span class="sr-only">{t(featureHeaderMessages.delete)}</span>
-              </Button>
-            </span>
-          {/snippet}
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>
-            {canDelete
-              ? t(featureHeaderMessages.delete)
-              : (deleteDeniedReason ?? t(featureHeaderMessages.notPermitted))}
-          </p>
-        </TooltipContent>
-      </Tooltip>
+      <GatedButton
+        allowed={canDelete}
+        deniedReason={deleteDeniedReason}
+        tooltip={t(featureHeaderMessages.delete)}
+        size="icon"
+        variant="destructive"
+        onclick={() => (deleteDialogOpen = true)}
+        class="h-9 w-9 cursor-pointer transition-all hover:scale-110"
+      >
+        <TrashIcon class="size-4" />
+        <span class="sr-only">{t(featureHeaderMessages.delete)}</span>
+      </GatedButton>
     {/if}
 
     {#if extraActions}{@render extraActions()}{/if}
 
     {#if onNew}
-      {#if canNew}
-        <Button onclick={onNew}>{newButtonLabel}</Button>
-      {:else}
-        <Tooltip>
-          <TooltipTrigger>
-            {#snippet child({ props })}
-              <span {...props} class="inline-flex">
-                <Button disabled class="pointer-events-none">{newButtonLabel}</Button>
-              </span>
-            {/snippet}
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{newDeniedReason ?? t(featureHeaderMessages.notPermitted)}</p>
-          </TooltipContent>
-        </Tooltip>
-      {/if}
+      <GatedButton allowed={canNew} deniedReason={newDeniedReason} onclick={onNew}>
+        {newButtonLabel}
+      </GatedButton>
     {/if}
   </div>
 

@@ -32,11 +32,36 @@ const walk = (dir: string): string[] =>
     return statSync(path).isDirectory() ? walk(path) : [path];
   });
 
-/** Source files only: a test file's mention of a permission proves nothing. */
+/**
+ * Source files only: a test file's mention of a permission proves nothing.
+ *
+ * `.svelte` is in the glob, and has to be: a migrated feature gates its buttons
+ * in components, so a `.tsx?`-only scan would quietly report every one of them
+ * as ungated — or, worse, find nothing to check at all. See `refacto_svelte.md`
+ * §4.6: no gate may go blind on the new code.
+ */
 const sourcesIn = (dir: string): string[] =>
-  existsSync(dir) ? walk(dir).filter(f => /\.tsx?$/.test(f) && !f.includes('.test.')) : [];
+  existsSync(dir)
+    ? walk(dir).filter(f => /\.(tsx?|svelte)$/.test(f) && !f.includes('.test.'))
+    : [];
 
 const read = (path: string): string => readFileSync(path, 'utf8');
+
+/**
+ * The same file with its comments stripped.
+ *
+ * Every probe below is a bare identifier — `can(`, `useCan`, `useMutation(` —
+ * and a doc comment explaining why a query needs no gate contains them exactly
+ * as readily as a call does. `roles.queries.ts` notes that "every `can()` in the
+ * app reads it" and was counted as self-gating on the strength of that sentence.
+ * Prose is not a gate, and the failure mode is the silent one: a rule that finds
+ * what it was looking for in a comment never fails.
+ */
+const code = (path: string): string =>
+  read(path)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 /** Module ids are the directory names under `features/`; this asserts it stays true. */
 const featureDirs = modules.map(module => {
@@ -70,17 +95,31 @@ describe('feature permission conformance', () => {
   };
 
   describe('a feature that mutates gates something in its UI', () => {
-    const mutating = featureDirs.filter(feature =>
-      sourcesIn(feature.hooks).some(file => read(file).includes('useMutation(')),
-    );
+    /**
+     * What a write looks like on either side of the migration.
+     *
+     * A React feature calls `useMutation(` in a hook under `presentation/hooks/`;
+     * a migrated one declares `mutationOptions(` in its `*.queries.ts`. Both
+     * shapes are collected, or the rule would empty itself out one feature at a
+     * time as they move to Svelte — silently, since nothing fails when a
+     * conformance test simply stops finding anything to check.
+     */
+    const writesIn = (feature: (typeof featureDirs)[number]) =>
+      sourcesIn(feature.hooks).some(file => code(file).includes('useMutation(')) ||
+      sourcesIn(join(feature.dir, 'presentation'))
+        .filter(file => file.endsWith('.queries.ts') || file.endsWith('.mutations.ts'))
+        .some(file => code(file).includes('mutationOptions('));
+
+    const mutating = featureDirs.filter(writesIn);
 
     it('finds the mutating features it is supposed to check', () => {
       expect(mutating.length).toBeGreaterThan(5);
     });
 
     it.each(mutating.map(feature => [feature.id, feature] as const))('%s', (id, feature) => {
+      // `can(` covers the Svelte half, where there is no hook to name.
       const gates = sourcesIn(feature.ui).some(file =>
-        /Permission\.[A-Z_]+|PermissionButton|useCan|useAuthorization/.test(read(file)),
+        /Permission\.[A-Z_]+|PermissionButton|useCan|useAuthorization|\bcan\(/.test(code(file)),
       );
 
       if (id in UNGATED_FEATURES) {
@@ -123,7 +162,7 @@ describe('feature permission conformance', () => {
       featureDirs.map(feature => {
         const barrel = join(feature.dir, 'index.ts');
         const names = existsSync(barrel)
-          ? [...read(barrel).matchAll(/\b(?:use[A-Z]\w*|\w+Queries)\b/g)].map(match => match[0])
+          ? [...code(barrel).matchAll(/\b(?:use[A-Z]\w*|\w+Queries)\b/g)].map(match => match[0])
           : [];
         return [feature.id, new Set(names)];
       }),
@@ -133,7 +172,7 @@ describe('feature permission conformance', () => {
     const consumersOf = new Map<string, Set<string>>();
     for (const feature of featureDirs) {
       for (const file of sourcesIn(feature.dir)) {
-        const imports = read(file).matchAll(
+        const imports = code(file).matchAll(
           /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*'@\/modules\/features\/([a-z-]+)'/g,
         );
         for (const [, names, owner] of imports) {
@@ -161,7 +200,7 @@ describe('feature permission conformance', () => {
       exportPattern: RegExp,
       gatePattern: RegExp,
     ): SharedHook[] => {
-      const source = read(file);
+      const source = code(file);
       const exported = barrelExports.get(featureId) ?? new Set<string>();
 
       return [...source.matchAll(exportPattern)]
@@ -184,7 +223,7 @@ describe('feature permission conformance', () => {
       // The React half: a `use*` hook under `presentation/hooks/`.
       ...sourcesIn(feature.hooks).flatMap(file =>
         // `useQueryClient` is not a query — match the call, not the prefix.
-        /\buseQuery\(|\buseQueries\(/.test(read(file))
+        /\buseQuery\(|\buseQueries\(/.test(code(file))
           ? sharedReadsIn(
               feature.id,
               file,
@@ -211,11 +250,17 @@ describe('feature permission conformance', () => {
      * needs a product decision — what should the consuming page show instead?
      */
     const UNCHECKED_SHARED_HOOKS: Readonly<Record<string, string>> = {
-      'jobs.useOrganizationJobs':
-        'Organization-scoped and filtered server-side. The per-project fan-out it replaced cost ' +
-        'one PERMISSION_DENIED toast per unreadable project — see use-org-overview.ts.',
-      'pipeline.useOrganizationPipelines':
-        'Same org-scoped, server-filtered read as useOrganizationJobs.',
+      'jobs.jobQueries':
+        'The entry `useOrganizationJobs` left behind. `byOrganization`, the read that crosses ' +
+        'the barrel, is organization-scoped and filtered server-side; the per-project fan-out it ' +
+        'replaced cost one PERMISSION_DENIED toast per unreadable project — see ' +
+        'use-org-overview.ts. The fan-out that *does* check lives in its own file precisely so ' +
+        'its `can(` does not vouch for this one.',
+      'pipeline.pipelineQueries':
+        'The entry `useOrganizationPipelines` left behind, for the same reason as jobQueries: ' +
+        '`byOrganization` is the one read that crosses the barrel, and ' +
+        '`ListOrganizationPipelines` is scoped server-side, so there is nothing to gate ' +
+        'client-side. The hook is now this factory\'s React binding and goes in Phase 5.',
       'organization.organizationQueries':
         'One entry where there were three hooks, and the same reasons. `members` is consumed by ' +
         'membership, whose route requires LIST_ORGANIZATION_MEMBERS — the permission the read ' +
@@ -225,9 +270,14 @@ describe('feature permission conformance', () => {
         'TRIAGE: consumed by pipeline\'s step dialog to offer secret names, on an editor route ' +
         'requiring UPDATE_PIPELINE rather than LIST_SECRETS. Newly listed rather than newly ' +
         'true — `useSecrets` crossed the same boundary before the factory replaced it.',
-      'roles.useGrantableRoles':
-        'TRIAGE: consumed by membership, whose route requires LIST_ORGANIZATION_MEMBERS rather ' +
-        'than the grant permissions this read needs.',
+      'roles.roleQueries':
+        'The entry `useGrantableRoles` left behind, and a decision rather than debt: every read ' +
+        'this factory exposes across the barrel takes the caller\'s gate as `enabled`, which is ' +
+        'the only place the answer is known. `grantable` needs no permission at all — the ' +
+        'backend serves a compile-time constant — while `catalog` and `scopedGrants` are asked ' +
+        'for only when the consumer already holds MANAGE_ROLES or MANAGE_*_GRANTS, which is ' +
+        'what membership passes (see assignable-roles.state.svelte.ts). Gating inside the ' +
+        'factory would mean naming one permission for three reads that need three.',
     };
 
     it('finds the shared hooks it is supposed to check', () => {

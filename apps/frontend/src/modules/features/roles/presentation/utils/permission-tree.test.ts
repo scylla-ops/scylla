@@ -68,7 +68,7 @@ describe('buildPermissionTree', () => {
       label,
     );
 
-    expect(tree[0].children?.map(c => c.id)).toEqual([
+    expect(tree[0].children?.map(child => child.id)).toEqual([
       Permission.DELETE_PROJECT,
       Permission.UPDATE_PROJECT,
     ]);
