@@ -14,4 +14,6 @@ export { default as PaginationSlot } from './PaginationSlot.svelte';
 export { generatePageNumbers, type PageItem } from './pagination.ts';
 export { default as StatusBar } from './StatusBar.svelte';
 export type { StatusBarItem } from './status-bar.ts';
+export { default as StatusIndicator } from './StatusIndicator.svelte';
+export type { StatusIndicatorSize, StatusState } from './status-indicator.ts';
 export { STATUS_ICONS, getStatusIcon } from './status-icons.ts';

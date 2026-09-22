@@ -5,6 +5,7 @@ import {
   stepsToFlow,
   flowToSteps,
   generateUniqueNodeId,
+  stepOf,
   START_NODE_ID,
 } from './blueprint-converter';
 import type { PipelineStep, ExecPipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
@@ -113,6 +114,19 @@ describe('stepsToFlow', () => {
     expect(nodes).toHaveLength(1);
     expect(nodes[0].id).toBe(START_NODE_ID);
     expect(edges).toHaveLength(0);
+  });
+});
+
+describe('stepOf', () => {
+  it('unwraps a step node, and answers nothing for the start node', () => {
+    // The one shape the Phase 5 port changed: a node's `data` must satisfy
+    // `Record<string, unknown>`, which a union of interfaces does not, so a
+    // step travels wrapped.
+    const { nodes } = stepsToFlow([execStep('a')], 'p');
+    const [start, step] = nodes;
+
+    expect(stepOf(start)).toBeUndefined();
+    expect(stepOf(step)).toMatchObject({ id: 'a', kind: 'exec' });
   });
 });
 

@@ -1,4 +1,7 @@
-import type { StatusState } from '@shared/presentation/ui/data-display/status-indicator';
+// From the Svelte port, not the React original: its only consumer is
+// `features/pipeline`, which is Svelte as of Phase 5, and `ui/` is deleted in
+// Phase 6 while `ui-svelte/` is renamed into its place.
+import type { StatusState } from '@shared/presentation/ui-svelte/data-display/status-indicator.ts';
 
 const JOB_STATUS_MAP: Record<string, StatusState> = {
   pending: 'idle',

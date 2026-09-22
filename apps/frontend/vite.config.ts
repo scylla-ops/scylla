@@ -46,8 +46,13 @@ const VENDOR_CHUNKS: Record<string, string[]> = {
   'vendor-ui-svelte': ['bits-ui', '@lucide/svelte', 'svelte-toolbelt', 'runed'],
   'vendor-query': ['@tanstack'],
   'vendor-i18n': ['@lingui', 'messageformat-parser', '@messageformat'],
-  'vendor-flow': ['reactflow', '@reactflow'],
-  'vendor-codemirror': ['@uiw', 'codemirror', '@codemirror', '@lezer'],
+  // `@xyflow/svelte` replaced `reactflow` in Phase 5; `@xyflow/system` is the
+  // shared core both ports were built on, so the chunk keeps its name and its
+  // role and only its contents changed.
+  'vendor-flow': ['@xyflow'],
+  // `@uiw` is gone with the React wrapper — CodeMirror itself is agnostic and
+  // survives the migration untouched.
+  'vendor-codemirror': ['codemirror', '@codemirror', '@lezer'],
   'vendor-grpc': ['@protobuf-ts'],
 };
 
@@ -85,7 +90,13 @@ export default defineConfig({
     tsconfigPaths({ loose: true }),
   ],
   optimizeDeps: {
-    exclude: ['@lucide/svelte', 'bits-ui', '@tanstack/svelte-query', '@tanstack/svelte-table'],
+    exclude: [
+      '@lucide/svelte',
+      'bits-ui',
+      '@tanstack/svelte-query',
+      '@tanstack/svelte-table',
+      '@xyflow/svelte',
+    ],
   },
   build: {
     rollupOptions: {

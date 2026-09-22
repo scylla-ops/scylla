@@ -1,11 +1,40 @@
-import type { Node, Edge, MarkerType } from 'reactflow';
-import type { PipelineStep } from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
+import type { Edge, Node } from '@xyflow/svelte';
+import type {
+  ExecPipelineStep,
+  PipelineStep,
+  ScriptPipelineStep,
+} from '@/modules/features/pipeline/domain/structs/pipeline.struct.ts';
 
-export type PipelineNodeData = PipelineStep;
+/**
+ * The single translation between the canvas graph and `PipelineStep[]`.
+ *
+ * Pure, and the safety net of the Phase 5 port: `reactflow` became
+ * `@xyflow/svelte`, and the only thing that changed here is which package the
+ * `Node` / `Edge` types come from — every rule below, and every test beside it,
+ * is the code that did not have to be rewritten.
+ *
+ * One shape did change. A node's `data` must satisfy `Record<string, unknown>`,
+ * and `PipelineStep` is a union of *interfaces*, which TypeScript gives no
+ * implicit index signature. So a step node carries `{ step }` rather than being
+ * the step, and `node.data.step` replaces the `node.data as PipelineNodeData`
+ * cast the React version needed at every use site — a cast fewer, not more.
+ */
 
-export interface StartNodeData {
-  name: string;
-}
+export type StepNodeData = { step: PipelineStep };
+export type StartNodeData = { name: string };
+
+/**
+ * A step as the node dialog builds it: everything but its identity and its
+ * wiring, both of which the canvas owns.
+ */
+export type NodeFormValue =
+  | Omit<ExecPipelineStep, 'id' | 'deps'>
+  | Omit<ScriptPipelineStep, 'id' | 'deps'>;
+
+export type BlueprintStepNode = Node<StepNodeData, 'pipelineStep'>;
+export type BlueprintStartNode = Node<StartNodeData, 'startNode'>;
+export type BlueprintNode = BlueprintStepNode | BlueprintStartNode;
+export type BlueprintEdge = Edge;
 
 export const START_NODE_ID = '__start__';
 export const EDGE_COLOR = 'var(--primary)';
@@ -16,12 +45,16 @@ const HORIZONTAL_GAP = 100;
 const VERTICAL_GAP = 60;
 const START_NODE_OFFSET = NODE_WIDTH + HORIZONTAL_GAP;
 
+/**
+ * `style` is a CSS string here, where reactflow took an object — the one
+ * cosmetic difference between the two libraries this file touches.
+ */
 export const DEFAULT_EDGE_STYLE = {
   animated: true,
-  type: 'deletable' as const,
-  markerEnd: { type: 'arrowclosed' as MarkerType, color: EDGE_COLOR },
-  style: { stroke: EDGE_COLOR, strokeWidth: 2 },
-};
+  type: 'deletable',
+  markerEnd: { type: 'arrowclosed', color: EDGE_COLOR },
+  style: `stroke: ${EDGE_COLOR}; stroke-width: 2;`,
+} satisfies Partial<BlueprintEdge>;
 
 /**
  * Compute the depth (column) of each node via BFS from roots.
@@ -92,7 +125,7 @@ export function sanitizeSteps(steps: PipelineStep[]): PipelineStep[] {
 export function stepsToFlow(
   rawSteps: PipelineStep[],
   pipelineName: string,
-): { nodes: Node[]; edges: Edge[]; sanitizedSteps: PipelineStep[] } {
+): { nodes: BlueprintNode[]; edges: BlueprintEdge[]; sanitizedSteps: PipelineStep[] } {
   const steps = sanitizeSteps(rawSteps);
   const depthMap = computeDepths(steps);
 
@@ -106,7 +139,7 @@ export function stepsToFlow(
   const maxGroupSize = Math.max(1, ...Array.from(depthGroups.values()).map(g => g.length));
   const totalHeight = maxGroupSize * (NODE_HEIGHT + VERTICAL_GAP) - VERTICAL_GAP;
 
-  const startNode: Node<StartNodeData> = {
+  const startNode: BlueprintStartNode = {
     id: START_NODE_ID,
     type: 'startNode',
     position: { x: 0, y: totalHeight / 2 - 30 },
@@ -114,7 +147,7 @@ export function stepsToFlow(
     deletable: false,
   };
 
-  const stepNodes: Node<PipelineNodeData>[] = steps.map(step => {
+  const stepNodes: BlueprintStepNode[] = steps.map(step => {
     const depth = depthMap.get(step.id) ?? 0;
     const group = depthGroups.get(depth) ?? [step];
     const indexInGroup = group.indexOf(step);
@@ -126,11 +159,11 @@ export function stepsToFlow(
         x: START_NODE_OFFSET + depth * (NODE_WIDTH + HORIZONTAL_GAP),
         y: indexInGroup * (NODE_HEIGHT + VERTICAL_GAP),
       },
-      data: step,
+      data: { step },
     };
   });
 
-  const stepEdges: Edge[] = steps.flatMap(step =>
+  const stepEdges: BlueprintEdge[] = steps.flatMap(step =>
     step.deps.map(dep => ({
       id: `${dep}->${step.id}`,
       source: dep,
@@ -140,7 +173,7 @@ export function stepsToFlow(
   );
 
   const roots = steps.filter(s => s.deps.length === 0);
-  const startEdges: Edge[] = roots.map(root => ({
+  const startEdges: BlueprintEdge[] = roots.map(root => ({
     id: `${START_NODE_ID}->${root.id}`,
     source: START_NODE_ID,
     target: root.id,
@@ -154,25 +187,27 @@ export function stepsToFlow(
   };
 }
 
-export function flowToSteps(nodes: Node[], edges: Edge[]): PipelineStep[] {
-  return nodes
-    .filter(node => node.id !== START_NODE_ID)
-    .map(node => {
-      const data = node.data as PipelineNodeData;
-      const incomingDeps = edges
-        .filter(e => e.target === node.id && e.source !== START_NODE_ID)
-        .map(e => e.source);
-      const base = {
-        id: data.id,
-        deps: incomingDeps,
-        workingDir: data.workingDir,
-        env: data.env,
-      };
-      if (data.kind === 'script') {
-        return { ...base, kind: 'script', script: data.script, shell: data.shell };
-      }
-      return { ...base, kind: 'exec', command: data.command, args: data.args };
-    });
+/** A step node's payload, or `undefined` for the start node. */
+export const stepOf = (node: BlueprintNode): PipelineStep | undefined =>
+  node.type === 'pipelineStep' ? node.data.step : undefined;
+
+export function flowToSteps(nodes: BlueprintNode[], edges: BlueprintEdge[]): PipelineStep[] {
+  return nodes.flatMap(node => {
+    const step = stepOf(node);
+    if (!step) return [];
+
+    const deps = edges
+      .filter(edge => edge.target === node.id && edge.source !== START_NODE_ID)
+      .map(edge => edge.source);
+
+    const base = { id: step.id, deps, workingDir: step.workingDir, env: step.env };
+
+    return [
+      step.kind === 'script'
+        ? { ...base, kind: 'script' as const, script: step.script, shell: step.shell }
+        : { ...base, kind: 'exec' as const, command: step.command, args: step.args },
+    ];
+  });
 }
 
 /**

@@ -18,9 +18,9 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 | **0 · Lot B** — dé-React-ification | ✅ **fait** | 253,5 kB | 619 kB | 43 |
 | **1** — `shared/` + design system | ✅ **fait** | 253,5 kB | 619 kB | 47 |
 | **2** — 6 features pilotes | ✅ **fait** | **292,3 kB** | **862 kB** | 47 |
-| **3** — apps, agents, membership, jobs, triggers | ✅ **fait** | **336,1 kB** | **779,5 kB** | 49 |
+| **3** — apps, agents, membership, jobs, triggers | ✅ **fait** | **336,1 kB** | **779,5 kB** | 47 |
 | **4** — roles + dashboard (`recharts` sort ici) | ✅ **fait** | **331,3 kB** | **676,8 kB** | **48** |
-| **5** — pipeline (`reactflow` sort ici) | ⬜ | | | |
+| **5** — pipeline (`reactflow` sort ici) | ✅ **fait** | | | |
 | **6** — shell + suppression de React | ⬜ | | | ~20 |
 
 Cible finale : ~170 kB initial, ~380 kB total, ~400 paquets transitifs.
@@ -1048,3 +1048,4 @@ Identique de la Phase 2 à la Phase 5. C'est le cœur réutilisable de ce docume
   point 7) n'est pas la même chose que désactiver un gate : la règle reste active, chaque exception
   porte sa raison à son site.
 - **Interdiction de mettre des calculs lourds dans les `.svelte`** : utilisez la séparation en `*.calculator.ts` ou dans un ViewModel via `$derived.by()`.
+

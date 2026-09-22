@@ -1,4 +1,4 @@
-import type { ScyllaModule } from '@platform/routing';
+import { sveltePage, type ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { Permission } from '@platform/authz';
 import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
@@ -23,8 +23,9 @@ export const PipelineModule = {
       index: true,
       permission: Permission.LIST_PIPELINES_BY_PROJECT,
       lazy: async () => ({
-        Component: (await import('./presentation/ui/dashboard/DashboardPipeline.page.tsx'))
-          .DashboardPipelinePage,
+        Component: sveltePage(
+          (await import('./presentation/ui/dashboard/DashboardPipeline.page.svelte')).default,
+        ),
       }),
     },
     {
@@ -33,8 +34,9 @@ export const PipelineModule = {
       permission: Permission.CREATE_PIPELINE,
       breadcrumb: () => ({ label: msg`Create` }),
       lazy: async () => ({
-        Component: (await import('./presentation/ui/editor/PipelineCreation.page.tsx'))
-          .PipelineCreationPage,
+        Component: sveltePage(
+          (await import('./presentation/ui/editor/PipelineCreation.page.svelte')).default,
+        ),
       }),
     },
     {
@@ -47,8 +49,9 @@ export const PipelineModule = {
         detail: msg`Edit`,
       }),
       lazy: async () => ({
-        Component: (await import('./presentation/ui/editor/PipelineUpdate.page.tsx'))
-          .PipelineUpdatePage,
+        Component: sveltePage(
+          (await import('./presentation/ui/editor/PipelineUpdate.page.svelte')).default,
+        ),
       }),
     },
     {
@@ -70,7 +73,9 @@ export const PipelineModule = {
           index: true,
           permission: Permission.LIST_JOBS_BY_PIPELINE,
           lazy: async () => ({
-            Component: (await import('./presentation/ui/PipelineJobsRoute.tsx')).PipelineJobsRoute,
+            Component: sveltePage(
+              (await import('./presentation/ui/PipelineJobsRoute.svelte')).default,
+            ),
           }),
         },
       ],
