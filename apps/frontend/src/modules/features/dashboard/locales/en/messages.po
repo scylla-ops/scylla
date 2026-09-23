@@ -46,7 +46,7 @@ msgid "Completed"
 msgstr "Completed"
 
 #: src/modules/features/dashboard/dashboard.module.ts:20
-#: src/modules/features/dashboard/dashboard.module.ts:29
+#: src/modules/features/dashboard/dashboard.module.ts:27
 #: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:36
 msgid "Dashboard"
 msgstr "Dashboard"

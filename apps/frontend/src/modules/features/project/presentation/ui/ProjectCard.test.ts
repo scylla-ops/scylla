@@ -11,7 +11,7 @@ import type { ProjectEntity } from '../../domain/entities/project.entity.ts';
 import type { ProjectRepository } from '../../domain/repository/project.repository.ts';
 import ProjectCard from './ProjectCard.svelte';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('svelte-sonner', () => ({ toast: { success: vi.fn() } }));
 
 const project = (overrides: Partial<ProjectEntity> = {}): ProjectEntity => ({
   id: 'project-1',

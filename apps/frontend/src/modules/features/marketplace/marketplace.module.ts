@@ -1,6 +1,6 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { ShoppingCartIcon } from 'lucide-react';
+import ShoppingCartIcon from '@lucide/svelte/icons/shopping-cart';
 import type MarketplaceRepository from '@/modules/features/marketplace/domain/repository/marketplace.repository.ts';
 import { DefaultMarketplaceRepository } from '@/modules/features/marketplace/infrastructure/repository/default-marketplace.repository.ts';
 
@@ -16,11 +16,7 @@ export const MarketplaceModule = {
     {
       mount: 'organization',
       path: 'marketplace',
-      lazy: async () => ({
-        Component: sveltePage(
-          (await import('./presentation/ui/Marketplace.page.svelte')).default,
-        ),
-      }),
+      lazy: () => import('./presentation/ui/Marketplace.page.svelte'),
     },
   ],
   nav: [

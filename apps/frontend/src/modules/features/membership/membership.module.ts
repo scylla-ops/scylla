@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
-import { UsersRound } from 'lucide-react';
+import UsersRound from '@lucide/svelte/icons/users-round';
 import { Permission } from '@platform/authz';
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 
 /**
  * Members of an organization or of a project. Both pages read other modules'
@@ -16,22 +16,14 @@ export const MembershipModule = {
       path: 'members',
       permission: Permission.LIST_ORGANIZATION_MEMBERS,
       breadcrumb: () => ({ label: msg`Members` }),
-      lazy: async () => ({
-        Component: sveltePage(
-          (await import('./presentation/ui/OrganizationMembers.page.svelte')).default,
-        ),
-      }),
+      lazy: () => import('./presentation/ui/OrganizationMembers.page.svelte'),
     },
     {
       mount: 'project',
       path: 'members',
       permission: Permission.LIST_PROJECT_MEMBERS,
       breadcrumb: () => ({ label: msg`Members` }),
-      lazy: async () => ({
-        Component: sveltePage(
-          (await import('./presentation/ui/ProjectMembers.page.svelte')).default,
-        ),
-      }),
+      lazy: () => import('./presentation/ui/ProjectMembers.page.svelte'),
     },
   ],
   nav: [

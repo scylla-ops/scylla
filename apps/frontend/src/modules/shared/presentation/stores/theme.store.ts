@@ -1,3 +1,5 @@
+import { createSubscriber } from 'svelte/reactivity';
+
 export type Theme = 'light' | 'dark';
 
 /** Shared with the inline script in `index.html` — the two must agree. */
@@ -23,7 +25,7 @@ const listeners = new Set<() => void>();
 
 export const getTheme = (): Theme => current;
 
-/** Svelte's store contract is this same shape, which is why it lives here and not in the hook. */
+/** Calls `listener` after each change of the theme. Returns the function that stops it. */
 export const subscribeToTheme = (listener: () => void): (() => void) => {
   listeners.add(listener);
   return () => {
@@ -63,4 +65,12 @@ export const setTheme = (theme: Theme): void => {
   }
 
   listeners.forEach(listener => listener());
+};
+
+const trackTheme = createSubscriber(update => subscribeToTheme(update));
+
+/** The current theme. Reactive: a Svelte component that reads it updates when the theme changes. */
+export const currentTheme = (): Theme => {
+  trackTheme();
+  return current;
 };

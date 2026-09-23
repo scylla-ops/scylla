@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { navEntriesFor, routesFor } from './compose-module-routes';
-import type { ScyllaModule, ModuleRoute, NavEntry } from './scylla-module.struct.ts';
+import type { ScyllaModule, ModuleRoute, NavEntry, PageLoader } from './scylla-module.struct.ts';
 import { Permission } from '@platform/authz';
 import { msg } from '@lingui/core/macro';
 
@@ -81,7 +81,7 @@ describe('routesFor', () => {
   });
 
   it('preserves index/lazy/path untouched', () => {
-    const lazy = () => Promise.resolve({ Component: () => null });
+    const lazy = (() => Promise.resolve({ default: {} })) as unknown as PageLoader;
     const routes: ModuleRoute[] = [{ mount: 'organization', index: true, lazy }];
     const [route] = routesFor([moduleWith({ routes })], 'organization');
     expect(route.index).toBe(true);

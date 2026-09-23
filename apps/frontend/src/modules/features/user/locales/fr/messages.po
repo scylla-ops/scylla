@@ -103,7 +103,7 @@ msgstr "Nom d'utilisateur"
 
 #: src/modules/features/user/presentation/ui/user.messages.ts:7
 #: src/modules/features/user/user.module.ts:22
-#: src/modules/features/user/user.module.ts:40
+#: src/modules/features/user/user.module.ts:36
 msgid "Users"
 msgstr "Utilisateurs"
 

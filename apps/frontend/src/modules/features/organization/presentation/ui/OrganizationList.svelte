@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Component, Snippet } from 'svelte';
   import Building2Icon from '@lucide/svelte/icons/building-2';
   import PencilIcon from '@lucide/svelte/icons/pencil';
   import TrashIcon from '@lucide/svelte/icons/trash';
@@ -18,16 +19,15 @@
   import { organizationMutations, organizationQueries } from '../organization.queries.ts';
   import { organizationMessages } from './organization.messages.ts';
   import EditOrganizationDialog from './EditOrganizationDialog.svelte';
+  import OrganizationRow from './OrganizationRow.svelte';
 
-  /**
-   * The organizations a user belongs to, as plain rows.
-   *
-   * The shell's switcher renders the same list as dropdown items and keeps its
-   * own React copy in `layout/` until Phase 6 — a Radix `DropdownMenuItem`
-   * cannot be handed to a Svelte component, and the roving focus it provides
-   * only reaches React children. This one is the panel on the user settings
-   * page; that one is shell furniture. They meet again when the sidebar moves.
-   */
+  type RowProps = {
+    class?: string;
+    onSelect?: () => void;
+    children?: Snippet;
+  };
+
+  let { row: Row = OrganizationRow }: { row?: Component<RowProps> } = $props();
 
   const organizationsQuery = createQuery(() => organizationQueries.mine());
   const organizations = $derived(organizationsQuery.data);
@@ -67,19 +67,18 @@
 
 {#if !organizations}
   {#each Array.from({ length: 3 }) as _, index (index)}
-    <div class="group">
+    <Row class="group">
       <div class="flex items-center gap-3 px-1 py-1">
         <Skeleton class="h-8 w-8 rounded-md" />
         <Skeleton class="h-4 w-24" />
       </div>
-    </div>
+    </Row>
   {/each}
 {:else}
   {#each organizations as organization (organization.id)}
-    <div
+    <Row
       class="group rounded-md transition-colors hover:bg-accent/70"
-      role="presentation"
-      onclick={() => selectOrganization(organization.id, organization.name)}
+      onSelect={() => selectOrganization(organization.id, organization.name)}
     >
       <div class="flex w-full items-center">
         <div class="min-w-0 flex-1">
@@ -136,7 +135,7 @@
           {/if}
         </div>
       </div>
-    </div>
+    </Row>
   {/each}
 {/if}
 

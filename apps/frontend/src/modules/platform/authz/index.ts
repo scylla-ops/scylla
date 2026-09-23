@@ -1,7 +1,7 @@
 /**
  * Authorization primitives.
  *
- * Everything here is read-only and dependency-free: `useCan` answers from a
+ * Everything here is read-only and dependency-free: `can` answers from a
  * store, it never calls the backend. That is what lets authz sit below the
  * features — any feature may gate its UI without depending on the feature that
  * administers roles and grants.
@@ -24,10 +24,8 @@ export {
   type EffectiveScopeEntity,
   type PermissionTarget,
 } from './domain/entities/effective-permissions.entity.ts';
-export { useAuthorization, useCan } from './presentation/hooks/use-authorization.ts';
 export { authorizationReady, can } from './presentation/authorization.ts';
 export { usePermissionsStore } from './presentation/stores/use-permissions.store.ts';
-export { Can } from './presentation/ui/Can.tsx';
-export { PermissionButton } from './presentation/ui/PermissionButton.tsx';
-export { PermissionDenied } from './presentation/ui/PermissionDenied.tsx';
-export { RequirePermission } from './presentation/ui/RequirePermission.tsx';
+export { default as Can } from './presentation/ui/Can.svelte';
+export { default as PermissionDenied } from './presentation/ui/PermissionDenied.svelte';
+export { default as RequirePermission } from './presentation/ui/RequirePermission.svelte';

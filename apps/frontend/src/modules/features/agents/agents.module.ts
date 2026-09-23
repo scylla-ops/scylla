@@ -1,6 +1,6 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { HardDriveIcon } from 'lucide-react';
+import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 import { Permission } from '@platform/authz';
 import { AgentsRemoteDataSourceImpl } from '@/modules/features/agents/infrastructure/data/agents-remote.data-source.ts';
 import { grpcTransport } from '@platform/grpc';
@@ -25,22 +25,14 @@ export const AgentsModule = {
           mount: 'organization',
           index: true,
           permission: Permission.LIST_AGENTS,
-          lazy: async () => ({
-            Component: sveltePage(
-              (await import('./presentation/ui/Agents.page.svelte')).default,
-            ),
-          }),
+          lazy: () => import('./presentation/ui/Agents.page.svelte'),
         },
         {
           mount: 'organization',
           path: ':agentId',
           permission: Permission.READ_APP,
           breadcrumb: () => ({ label: msg`Agent details` }),
-          lazy: async () => ({
-            Component: sveltePage(
-              (await import('./presentation/ui/AgentDetails.page.svelte')).default,
-            ),
-          }),
+          lazy: () => import('./presentation/ui/AgentDetails.page.svelte'),
         },
       ],
     },

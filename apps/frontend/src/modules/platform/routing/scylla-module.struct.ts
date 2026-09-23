@@ -1,8 +1,27 @@
-import type { RouteObject } from 'react-router-dom';
-import type { LucideIcon } from 'lucide-react';
+import type { Component } from 'svelte';
 import type { MessageDescriptor } from '@lingui/core';
 import type { Permission } from '@platform/authz';
+import type { LucideIcon } from '@shared/presentation/ui-svelte/icon.ts';
 import type { BreadcrumbParams, Crumb } from './route-handle.struct.ts';
+
+/**
+ * Route parameters, as the router gives them to a page: always strings.
+ *
+ * A page declares the parameters it reads as optional props.
+ */
+export type RouteParams = Record<string, string | undefined>;
+
+/**
+ * A page component. It takes no props, or it takes route parameters as optional
+ * string props.
+ */
+export type PageComponent = Component<RouteParams> | Component<Record<string, never>>;
+
+/**
+ * Loads the page of a route. Write it as `() => import('./X.page.svelte')`, so that
+ * the page stays in its own chunk.
+ */
+export type PageLoader = () => Promise<{ default: PageComponent }>;
 
 /**
  * Where in the app shell a module's routes are grafted.
@@ -33,14 +52,10 @@ export interface ModuleRoute {
   permission?: Permission;
   breadcrumb?: (params: BreadcrumbParams) => Crumb;
   /**
-   * react-router's lazy loader. Keeping page components behind it is what lets
-   * the registry stay eager (use-case classes only) while the UI is split per
-   * route.
-   *
-   * Omitted for a pure grouping route — one that exists only to own a path
-   * segment, its breadcrumb and its children (react-router renders an `Outlet`).
+   * Loads the page. Omit it for a grouping route that only owns a path segment,
+   * its breadcrumb and its children.
    */
-  lazy?: NonNullable<RouteObject['lazy']>;
+  lazy?: PageLoader;
   children?: ModuleRoute[];
 }
 
@@ -64,7 +79,7 @@ export interface NavEntry {
  * router and the sidebar be derived from one declaration instead of the three
  * hand-maintained lists that used to drift apart.
  *
- * Declared in `di/<feature>.module.ts` — deliberately *not* in the module's
+ * Declared in `<feature>.module.ts` — deliberately *not* in the module's
  * `index.ts` public API, because the registry imports every module eagerly and a
  * barrel that also re-exports UI would pull every page back into the initial
  * chunk.

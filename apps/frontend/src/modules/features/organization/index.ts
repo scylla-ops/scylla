@@ -21,15 +21,11 @@ export {
 } from './presentation/organization.queries.ts';
 export { createOrganizationItems } from './presentation/utils/create-organization-form-items.ts';
 /**
- * The two dialogs the shell opens, behind a dynamic import.
+ * The components that the shell shows, behind a dynamic import.
  *
- * Re-exporting the components directly would put the Svelte runtime and bits-ui
- * in the entry chunk — `layout` imports this barrel eagerly for the queries, and
- * Rollup cannot drop a component it re-exports. A loader is a plain function:
- * tree-shakeable, and the chunk arrives when the dialog is first opened.
- * `LazySvelteIsland` (`@shared`) is the consumer side.
+ * The shell imports this barrel eagerly for the queries. A loader is a plain
+ * function, so the component chunk loads only when the shell shows it.
  */
 export const loadAddOrganizationDialog = () =>
   import('./presentation/ui/AddOrganizationDialog.svelte');
-export const loadEditOrganizationDialog = () =>
-  import('./presentation/ui/EditOrganizationDialog.svelte');
+export const loadOrganizationList = () => import('./presentation/ui/OrganizationList.svelte');

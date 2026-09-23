@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
-import { LayoutDashboard } from 'lucide-react';
+import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import { Permission } from '@platform/authz';
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 
 /**
  * The organization overview. It owns no data of its own — it composes other
@@ -18,9 +18,7 @@ export const DashboardModule = {
       // organization, and it is where every org-level redirect lands.
       permission: Permission.READ_ORGANIZATION,
       breadcrumb: () => ({ label: msg`Dashboard` }),
-      lazy: async () => ({
-        Component: sveltePage((await import('./presentation/ui/Dashboard.page.svelte')).default),
-      }),
+      lazy: () => import('./presentation/ui/Dashboard.page.svelte'),
     },
   ],
   nav: [

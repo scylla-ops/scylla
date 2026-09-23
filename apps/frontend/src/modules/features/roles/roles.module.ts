@@ -1,6 +1,6 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { ShieldIcon } from 'lucide-react';
+import ShieldIcon from '@lucide/svelte/icons/shield';
 import { Permission } from '@platform/authz';
 import { grpcTransport } from '@platform/grpc';
 import { GrpcPermissionRemoteDataSource } from '@/modules/features/roles/infrastructure/data/grpc-permission-remote.data-source.ts';
@@ -23,9 +23,7 @@ export const RolesModule = {
       path: 'roles',
       permission: Permission.MANAGE_ROLES,
       breadcrumb: () => ({ label: msg`Roles` }),
-      lazy: async () => ({
-        Component: sveltePage((await import('./presentation/ui/Roles.page.svelte')).default),
-      }),
+      lazy: () => import('./presentation/ui/Roles.page.svelte'),
     },
   ],
   nav: [

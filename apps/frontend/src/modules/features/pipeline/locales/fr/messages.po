@@ -55,7 +55,7 @@ msgstr "Annuler"
 msgid "Command"
 msgstr "Commande"
 
-#: src/modules/features/pipeline/pipeline.module.ts:35
+#: src/modules/features/pipeline/pipeline.module.ts:31
 #: src/modules/features/pipeline/presentation/pipeline.messages.ts:63
 msgid "Create"
 msgstr "Créer"
@@ -112,7 +112,7 @@ msgstr "ex. : cargo build && cargo test"
 msgid "e.g., my-pipeline"
 msgstr "ex. : my-pipeline"
 
-#: src/modules/features/pipeline/pipeline.module.ts:49
+#: src/modules/features/pipeline/pipeline.module.ts:41
 #: src/modules/features/pipeline/presentation/pipeline.messages.ts:43
 msgid "Edit"
 msgstr "Modifier"
@@ -149,7 +149,7 @@ msgstr "Historique"
 msgid "Invalid JSON"
 msgstr "JSON invalide"
 
-#: src/modules/features/pipeline/pipeline.module.ts:66
+#: src/modules/features/pipeline/pipeline.module.ts:54
 msgid "Jobs"
 msgstr "Jobs"
 
@@ -167,7 +167,7 @@ msgstr "Littéral"
 
 #: src/modules/features/pipeline/presentation/pipeline.messages.ts:66
 msgid "Loading..."
-msgstr ""
+msgstr "Chargement…"
 
 #: src/modules/features/pipeline/presentation/pipeline.messages.ts:31
 msgid "Members"
@@ -197,8 +197,8 @@ msgstr "ID du nœud"
 msgid "Open the last run"
 msgstr "Ouvrir la dernière exécution"
 
-#: src/modules/features/pipeline/pipeline.module.ts:47
-#: src/modules/features/pipeline/pipeline.module.ts:64
+#: src/modules/features/pipeline/pipeline.module.ts:39
+#: src/modules/features/pipeline/pipeline.module.ts:52
 #: src/modules/features/pipeline/presentation/pipeline.messages.ts:26
 msgid "Pipeline"
 msgstr "Pipeline"

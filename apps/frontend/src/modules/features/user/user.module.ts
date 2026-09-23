@@ -1,6 +1,6 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { UsersIcon } from 'lucide-react';
+import UsersIcon from '@lucide/svelte/icons/users';
 import { Permission } from '@platform/authz';
 import { UserRemoteDataSourceImpl } from '@/modules/features/user/infrastructure/data/remote/user-remote.data-source.impl.ts';
 import { grpcTransport } from '@platform/grpc';
@@ -25,11 +25,7 @@ export const UserModule = {
           mount: 'organization',
           index: true,
           permission: Permission.LIST_USERS,
-          lazy: async () => ({
-            Component: sveltePage(
-              (await import('./presentation/ui/admin/UserAdmin.page.svelte')).default,
-            ),
-          }),
+          lazy: () => import('./presentation/ui/admin/UserAdmin.page.svelte'),
         },
       ],
     },

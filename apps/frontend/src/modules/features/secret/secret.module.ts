@@ -1,4 +1,4 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { Permission } from '@platform/authz';
 import type { SecretRemoteDataSource } from '@/modules/features/secret/infrastructure/repository/data-sources/secret-remote.data-source.ts';
@@ -23,9 +23,7 @@ export const SecretModule = {
       path: 'secrets',
       permission: Permission.LIST_SECRETS,
       breadcrumb: () => ({ label: msg`Secrets` }),
-      lazy: async () => ({
-        Component: sveltePage((await import('./presentation/ui/Secret.page.svelte')).default),
-      }),
+      lazy: () => import('./presentation/ui/Secret.page.svelte'),
     },
   ],
 } satisfies ScyllaModule;

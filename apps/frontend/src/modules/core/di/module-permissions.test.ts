@@ -1,8 +1,6 @@
-// @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import type { RouteObject } from 'react-router-dom';
 import { navEntriesFor, routesFor } from '@platform/routing';
-import type { RouteHandle, RouteMount } from '@platform/routing';
+import type { AppRoute, RouteMount } from '@platform/routing';
 import { Permission } from '@platform/authz';
 import { modules } from './registry.ts';
 
@@ -32,24 +30,24 @@ interface PageRoute extends Landing {
 }
 
 /** Mirrors `RouteGuard`: the deepest permission declared along the chain wins. */
-const effectivePermission = (route: RouteObject, inherited?: Permission): Permission | undefined =>
-  (route.handle as RouteHandle | undefined)?.permission ?? inherited;
+const effectivePermission = (route: AppRoute, inherited?: Permission): Permission | undefined =>
+  route.handle?.permission ?? inherited;
 
 /** Readable in a failure message, where a bare enum value is just a number. */
 const nameOf = (permission?: Permission): string =>
   permission === undefined ? 'no permission' : Permission[permission];
 
-const segmentOf = (route: RouteObject): string => route.path ?? (route.index ? '(index)' : '');
+const segmentOf = (route: AppRoute): string => route.path ?? (route.index ? '(index)' : '');
 
 /**
  * Every route that renders something, with the permission that guards it.
  *
- * A route without `lazy` renders an `Outlet`: it exists only to own a path
- * segment and its children carry the gate, so it is walked through rather than
+ * A route without `lazy` renders no page: it exists only to own a path segment
+ * and its children carry the gate, so it is walked through rather than
  * reported.
  */
 const collectPages = (
-  routes: readonly RouteObject[],
+  routes: readonly AppRoute[],
   prefix: string,
   inherited: Permission | undefined,
 ): PageRoute[] =>
@@ -96,12 +94,12 @@ const UNGATED_PAGES: Readonly<Record<string, string>> = {
  * The segments the shell owns under `/:organizationSlug`, and the mount whose
  * routes fill them. A nav `url` is appended to that prefix, so this is what
  * turns a sidebar link into the route it lands on. Adding a mount to
- * `Core.router.tsx` means adding it here.
+ * `core.router.ts` means adding it here.
  */
 const SHELL_SEGMENTS: Readonly<Record<string, RouteMount>> = { projects: 'projects' };
 
-/** What react-router renders for a URL: follow index children, deepest gate wins. */
-const descendToLanding = (route: RouteObject, inherited?: Permission): Landing | undefined => {
+/** What the router renders for a URL: follow index children, deepest gate wins. */
+const descendToLanding = (route: AppRoute, inherited?: Permission): Landing | undefined => {
   const permission = effectivePermission(route, inherited);
   const index = (route.children ?? []).find(child => child.index);
 

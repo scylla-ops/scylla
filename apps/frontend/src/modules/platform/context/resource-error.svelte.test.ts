@@ -5,7 +5,7 @@ import { installTestNavigator } from '@/test/navigator.ts';
 import { createResourceError } from './resource-error.svelte.ts';
 
 const toastError = vi.fn();
-vi.mock('sonner', () => ({ toast: { error: (message: string) => toastError(message) } }));
+vi.mock('svelte-sonner', () => ({ toast: { error: (message: string) => toastError(message) } }));
 
 let navigator: ReturnType<typeof installTestNavigator>;
 

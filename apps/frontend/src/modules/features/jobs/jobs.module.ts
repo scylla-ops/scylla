@@ -1,4 +1,4 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { Permission } from '@platform/authz';
 import { grpcTransport } from '@platform/grpc';
@@ -32,11 +32,7 @@ export const JobsModule = {
           path: ':jobId',
           permission: Permission.READ_JOB,
           breadcrumb: ({ jobId }) => ({ label: msg`Job`, highlight: jobId }),
-          lazy: async () => ({
-            Component: sveltePage(
-              (await import('./presentation/ui/JobDetails.page.svelte')).default,
-            ),
-          }),
+          lazy: () => import('./presentation/ui/JobDetails.page.svelte'),
         },
       ],
     },

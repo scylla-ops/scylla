@@ -5,7 +5,7 @@ import { findTooltip, render, textSnippet } from '@/test/render.svelte.ts';
 import FeatureHeader from './FeatureHeader.svelte';
 
 const toastSuccess = vi.fn();
-vi.mock('sonner', () => ({
+vi.mock('svelte-sonner', () => ({
   toast: { success: (...args: unknown[]) => toastSuccess(...args) },
 }));
 

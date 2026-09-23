@@ -114,6 +114,23 @@ export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 export { default as DropdownMenuContent } from './dropdown-menu-content.svelte';
 export { default as DropdownMenuItem } from './dropdown-menu-item.svelte';
+export { default as DropdownMenuLabel } from './dropdown-menu-label.svelte';
+export { default as DropdownMenuSeparator } from './dropdown-menu-separator.svelte';
+export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
+export { default as DropdownMenuRadioItem } from './dropdown-menu-radio-item.svelte';
+
+export { default as Sidebar } from './sidebar.svelte';
+export { default as SidebarContent } from './sidebar-content.svelte';
+export { default as SidebarFooter } from './sidebar-footer.svelte';
+export { default as SidebarGroup } from './sidebar-group.svelte';
+export { default as SidebarGroupLabel } from './sidebar-group-label.svelte';
+export { default as SidebarInset } from './sidebar-inset.svelte';
+export { default as SidebarMenu } from './sidebar-menu.svelte';
+export { default as SidebarMenuButton } from './sidebar-menu-button.svelte';
+export { default as SidebarMenuItem } from './sidebar-menu-item.svelte';
+export { default as SidebarProvider } from './sidebar-provider.svelte';
+export { default as SidebarRail } from './sidebar-rail.svelte';
+export { getSidebar, type SidebarState } from './sidebar-state.svelte.ts';
 
 export { default as Pagination } from './pagination.svelte';
 export { default as PaginationContent } from './pagination-content.svelte';
@@ -122,3 +139,4 @@ export { default as PaginationItem } from './pagination-item.svelte';
 export { default as PaginationLink } from './pagination-link.svelte';
 export { default as PaginationNext } from './pagination-next.svelte';
 export { default as PaginationPrevious } from './pagination-previous.svelte';
+export { default as Toaster } from './sonner.svelte';

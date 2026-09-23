@@ -25,7 +25,7 @@ export const SecretModule = {
     mount: 'project', path: 'secrets',
     permission: Permission.LIST_SECRETS,
     breadcrumb: () => ({ label: msg`Secrets` }),
-    lazy: async () => ({ Component: (await import('./presentation/ui/Secret.page.tsx')).SecretPage }),
+    lazy: () => import('./presentation/ui/Secret.page.svelte'),
   }],
 } satisfies ScyllaModule;
 ```
@@ -60,9 +60,9 @@ and never mentions it.
 ## Two behaviours worth knowing
 
 **Routes are lazy.** Every page is behind `routes.lazy`, which is what keeps them out of the
-initial chunk. But the route's `permission` and `breadcrumb` are stored in react-router's static
-`handle`, so the guard and the breadcrumbs can read them *without* loading the chunk. A page you
-cannot access is never downloaded, and its breadcrumb still renders correctly on the way past.
+initial chunk. The `permission` and the `breadcrumb` of a route are static metadata, so the guard
+and the breadcrumbs read them *without* loading the chunk. A page that you cannot open is never
+downloaded, and its breadcrumb still shows correctly.
 
 **Sibling routes on the same segment are merged.** `mergeSharedParents` folds routes that claim
 the same path into one. That is how [user](../../features/user/README.md) can own `users` (the
@@ -70,9 +70,23 @@ directory) while [organization](../../features/organization/README.md) owns `use
 settings page, because it renders the organizations panel) — each declares its own part, neither
 imports the other, and the shared ancestor's breadcrumb applies to both.
 
-`RouteGuard` completes the picture: a single pathless layout route per mount point, reading the
-deepest declared permission from the matched handles. It replaced fifteen near-identical
+The route guard completes the picture. It reads the deepest permission that the routes on the
+URL declare, and applies it once around the page. It replaced fifteen near-identical
 `RequirePermission` wrappers that had to be kept in step with the sidebar by hand.
+
+## The router library
+
+The router is [`sv-router`](https://github.com/colinlienard/sv-router), a small router for
+Svelte 5 applications without SvelteKit. The migration plan (`refacto_svelte.md` §4.2) first
+wanted a router written in the project. The team chose `sv-router` because a custom router was
+more work to write and to keep.
+
+Only this module knows `sv-router`. The module converts the route tree into the route object of
+`sv-router`, and gives the rest of the app plain functions: `createAppRouter`, `routeParams`,
+`routeTrail`, and the navigator of [platform/context](../context/README.md). A change of router
+library changes this module only.
+
+The pages keep their contract: each page gets its route parameters as props.
 
 ## Breadcrumbs: words and data
 

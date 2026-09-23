@@ -1,7 +1,10 @@
 import { msg } from '@lingui/core/macro';
 import type { MessageDescriptor } from '@lingui/core';
-import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Moon, ShieldIcon, UsersRound } from 'lucide-react';
+import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
+import Moon from '@lucide/svelte/icons/moon';
+import ShieldIcon from '@lucide/svelte/icons/shield';
+import UsersRound from '@lucide/svelte/icons/users-round';
+import type { LucideIcon } from '@shared/presentation/ui-svelte/icon.ts';
 
 /**
  * One thing worth telling the user about in a release.

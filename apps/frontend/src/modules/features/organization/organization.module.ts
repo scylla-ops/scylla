@@ -1,4 +1,4 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import DefaultOrganizationRepository from '@/modules/features/organization/infrastructure/repository/default-organization.repository.ts';
 import GrpcOrganizationRemoteDataSource from '@/modules/features/organization/infrastructure/data/grpc-organization-remote.data-source.ts';
@@ -32,11 +32,7 @@ export const OrganizationModule = {
             highlight: userId,
             detail: msg`Detail`,
           }),
-          lazy: async () => ({
-            Component: sveltePage(
-              (await import('./presentation/ui/UserSettingsRoute.svelte')).default,
-            ),
-          }),
+          lazy: () => import('./presentation/ui/UserSettingsRoute.svelte'),
         },
       ],
     },

@@ -6,7 +6,7 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { SecretRepository } from '../../domain/repository/secret.repository.ts';
 import CreateSecretDialog from './CreateSecretDialog.svelte';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('svelte-sonner', () => ({ toast: { success: vi.fn() } }));
 
 let teardown: Array<() => void> = [];
 let create: ReturnType<typeof vi.fn>;

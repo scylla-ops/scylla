@@ -8,7 +8,7 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { OrganizationRepository } from '../../domain/repository/organization.repository.ts';
 import AddOrganizationDialog from './AddOrganizationDialog.svelte';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('svelte-sonner', () => ({ toast: { success: vi.fn() } }));
 
 let teardown: Array<() => void> = [];
 let testNavigator: ReturnType<typeof installTestNavigator>;

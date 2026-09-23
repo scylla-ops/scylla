@@ -6,7 +6,7 @@ import AgentIdLinkInCard from './AgentIdLink.fixture.svelte';
 
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
-vi.mock('sonner', () => ({
+vi.mock('svelte-sonner', () => ({
   toast: {
     success: (...args: unknown[]) => toastSuccess(...args),
     error: (...args: unknown[]) => toastError(...args),

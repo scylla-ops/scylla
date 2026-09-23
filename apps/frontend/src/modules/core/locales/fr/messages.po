@@ -13,18 +13,14 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/core/presentation/ui/svelte/platform-singletons.messages.ts:12
-msgid "Island is mounted"
-msgstr ""
-
-#: src/modules/core/presentation/ui/router/Core.router.tsx:61
+#: src/modules/core/presentation/ui/router/core.messages.ts:5
 msgid "Project"
 msgstr "Projet"
 
-#: src/modules/core/presentation/ui/router/Core.router.tsx:51
+#: src/modules/core/presentation/ui/router/core.messages.ts:4
 msgid "Projects"
 msgstr "Projets"
 
-#: src/modules/core/presentation/ui/App.tsx:30
+#: src/modules/core/presentation/ui/router/core.messages.ts:6
 msgid "Toggle dark mode"
 msgstr "Basculer le mode sombre"

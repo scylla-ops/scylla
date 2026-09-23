@@ -6,7 +6,7 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { OrganizationRepository } from '../../domain/repository/organization.repository.ts';
 import EditOrganizationDialog from './EditOrganizationDialog.svelte';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('svelte-sonner', () => ({ toast: { success: vi.fn() } }));
 
 let teardown: Array<() => void> = [];
 let update: ReturnType<typeof vi.fn>;

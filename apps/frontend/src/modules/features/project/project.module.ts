@@ -1,6 +1,6 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { WorkflowIcon } from 'lucide-react';
+import WorkflowIcon from '@lucide/svelte/icons/workflow';
 import { Permission } from '@platform/authz';
 import { GrpcProjectRemoteDataSource } from '@/modules/features/project/infrastructure/data/grpc-project-remote.data-source.ts';
 import { DefaultProjectRepository } from '@/modules/features/project/infrastructure/repository/default-project.repository.ts';
@@ -21,9 +21,7 @@ export const ProjectModule = {
       index: true,
       // Reading the organization is the real gate.
       permission: Permission.READ_ORGANIZATION,
-      lazy: async () => ({
-        Component: sveltePage((await import('./presentation/ui/Project.page.svelte')).default),
-      }),
+      lazy: () => import('./presentation/ui/Project.page.svelte'),
     },
   ],
   nav: [

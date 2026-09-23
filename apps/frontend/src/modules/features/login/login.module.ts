@@ -1,4 +1,4 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import type { LoginRemoteDataSource } from '@/modules/features/login/infrastructure/repository/data-sources/login-remote.data-source.ts';
 import { GrpcLoginRemoteDataSource } from '@/modules/features/login/infrastructure/data/remote/grpc-login-remote.data-source.ts';
 import type { LoginRepository } from '@/modules/features/login/domain/repository/login.repository.ts';
@@ -20,9 +20,7 @@ export const LoginModule = {
     {
       mount: 'public',
       path: '/login',
-      lazy: async () => ({
-        Component: sveltePage((await import('./presentation/ui/Login.page.svelte')).default),
-      }),
+      lazy: () => import('./presentation/ui/Login.page.svelte'),
     },
   ],
 } satisfies ScyllaModule;

@@ -1,4 +1,4 @@
-import { sveltePage, type ScyllaModule } from '@platform/routing';
+import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
 import { Permission } from '@platform/authz';
 import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
@@ -22,22 +22,14 @@ export const PipelineModule = {
       mount: 'project',
       index: true,
       permission: Permission.LIST_PIPELINES_BY_PROJECT,
-      lazy: async () => ({
-        Component: sveltePage(
-          (await import('./presentation/ui/dashboard/DashboardPipeline.page.svelte')).default,
-        ),
-      }),
+      lazy: () => import('./presentation/ui/dashboard/DashboardPipeline.page.svelte'),
     },
     {
       mount: 'project',
       path: 'create',
       permission: Permission.CREATE_PIPELINE,
       breadcrumb: () => ({ label: msg`Create` }),
-      lazy: async () => ({
-        Component: sveltePage(
-          (await import('./presentation/ui/editor/PipelineCreation.page.svelte')).default,
-        ),
-      }),
+      lazy: () => import('./presentation/ui/editor/PipelineCreation.page.svelte'),
     },
     {
       mount: 'project',
@@ -48,11 +40,7 @@ export const PipelineModule = {
         highlight: pipelineName,
         detail: msg`Edit`,
       }),
-      lazy: async () => ({
-        Component: sveltePage(
-          (await import('./presentation/ui/editor/PipelineUpdate.page.svelte')).default,
-        ),
-      }),
+      lazy: () => import('./presentation/ui/editor/PipelineUpdate.page.svelte'),
     },
     {
       // A grouping route rather than a page: it owns the segment and its crumb,
@@ -72,11 +60,7 @@ export const PipelineModule = {
           mount: 'project',
           index: true,
           permission: Permission.LIST_JOBS_BY_PIPELINE,
-          lazy: async () => ({
-            Component: sveltePage(
-              (await import('./presentation/ui/PipelineJobsRoute.svelte')).default,
-            ),
-          }),
+          lazy: () => import('./presentation/ui/PipelineJobsRoute.svelte'),
         },
       ],
     },

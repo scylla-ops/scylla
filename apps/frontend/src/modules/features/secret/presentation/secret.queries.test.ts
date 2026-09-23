@@ -10,7 +10,7 @@ import type { SecretRepository } from '../domain/repository/secret.repository.ts
 import { SECRETS_QUERY_KEY, secretMutations, secretQueries } from './secret.queries.ts';
 
 const toastSuccess = vi.fn();
-vi.mock('sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
+vi.mock('svelte-sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
 
 const secret = (overrides: Partial<SecretEntity> = {}): SecretEntity => ({
   id: 'secret-1',

@@ -9,7 +9,7 @@ import type { AgentEntity } from '../../../domain/entities/agent.entity.ts';
 import AgentCard from './AgentCard.svelte';
 
 const toastSuccess = vi.fn();
-vi.mock('sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
+vi.mock('svelte-sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
 
 const agent = (overrides: Partial<AgentEntity> = {}): AgentEntity => ({
   id: 'agent-1',

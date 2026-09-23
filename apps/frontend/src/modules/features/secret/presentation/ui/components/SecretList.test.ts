@@ -16,7 +16,7 @@ import SecretList from './SecretList.svelte';
  */
 
 const toastSuccess = vi.fn();
-vi.mock('sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
+vi.mock('svelte-sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
 
 const secret = (overrides: Partial<SecretEntity> = {}): SecretEntity => ({
   id: 'secret-1',

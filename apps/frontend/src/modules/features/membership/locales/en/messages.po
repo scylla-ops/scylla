@@ -98,8 +98,8 @@ msgid "Member added with {count} role(s)"
 msgstr "Member added with {count} role(s)"
 
 #: src/modules/features/membership/membership.module.ts:18
-#: src/modules/features/membership/membership.module.ts:29
-#: src/modules/features/membership/membership.module.ts:42
+#: src/modules/features/membership/membership.module.ts:25
+#: src/modules/features/membership/membership.module.ts:34
 #: src/modules/features/membership/presentation/ui/membership.messages.ts:14
 msgid "Members"
 msgstr "Members"
