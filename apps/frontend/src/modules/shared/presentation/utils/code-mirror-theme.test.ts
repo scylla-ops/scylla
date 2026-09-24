@@ -1,6 +1,16 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
+import { EditorState } from '@codemirror/state';
+import { defaultHighlightStyle, highlightingFor } from '@codemirror/language';
 import { buildCodeMirrorTheme } from './code-mirror-theme';
+
+const highlightedTokens = [defaultHighlightStyle.specs[0].tag].flat();
+
+const tokenClass = (isDark: boolean) =>
+  highlightingFor(
+    EditorState.create({ extensions: buildCodeMirrorTheme({ isDark }) }),
+    highlightedTokens,
+  );
 
 describe('buildCodeMirrorTheme', () => {
   // CodeMirror's `Extension` is itself array-shaped internally (a Facet
@@ -12,6 +22,11 @@ describe('buildCodeMirrorTheme', () => {
     const light = buildCodeMirrorTheme({ isDark: false });
     const dark = buildCodeMirrorTheme({ isDark: true });
     expect(dark).not.toEqual(light);
+  });
+
+  it('colours the tokens in light mode, as it does in dark mode', () => {
+    expect(tokenClass(false)).not.toBeNull();
+    expect(tokenClass(true)).not.toBeNull();
   });
 
   it('hasError changes the built extension (destructive accent instead of primary)', () => {

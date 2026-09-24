@@ -1,7 +1,7 @@
 import { EditorView } from '@codemirror/view';
 import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark';
 import type { Extension } from '@codemirror/state';
-import { syntaxHighlighting } from '@codemirror/language';
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 
 export interface CodeMirrorThemeOptions {
   /** Current app color scheme — drives CodeMirror's own dark defaults + token colors. */
@@ -92,7 +92,5 @@ export const buildCodeMirrorTheme = ({
     { dark: isDark },
   );
 
-  // The library's default token palette is tuned for light backgrounds (dark
-  // red strings, purple keywords) and is unreadable on the dark surface.
-  return isDark ? [theme, syntaxHighlighting(oneDarkHighlightStyle)] : theme;
+  return [theme, syntaxHighlighting(isDark ? oneDarkHighlightStyle : defaultHighlightStyle)];
 };
