@@ -622,7 +622,7 @@ where
         services.job_log_stream_uc.clone(),
     );
     let app_handler = AppHandler::new(services.app_uc.clone());
-    let secret_handler = SecretHandler::new(services.secret_uc.clone());
+    let secret_handler = SecretHandler::new(services.actions.clone(), services.secret_uc.clone());
     let app_auth_handler = AppAuthHandler::new(services.app_token_uc.clone());
     let agent_handler = AgentHandler::new(
         services.agent_registry.clone(),

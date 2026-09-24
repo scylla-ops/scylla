@@ -419,8 +419,11 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization and user use cases are on the pipeline. The other
-  aggregates keep their hand-written sequence until they migrate.
+- The project, organization, user and secret use cases are on the pipeline. The
+  other aggregates keep their hand-written sequence until they migrate.
+- `SecretUseCases::delete` stays outside the pipeline. Its permission is
+  `DeleteSecret` on the secret's project, and only the loaded secret knows that
+  project; `Describe` sees the command alone.
 - The policy reload after a create or a delete sits inside the `commit`
   closure, so a failed reload still fails the call, as before. It is a
   `Listener<Persist<C>>` once a failed reload may only be logged.
