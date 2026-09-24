@@ -15,11 +15,11 @@ msgstr ""
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:61
 msgid "{count} {status} nodes"
-msgstr ""
+msgstr "{count} nœuds {status}"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:63
 msgid "{count} / {total} nodes ({percent}%)"
-msgstr ""
+msgstr "{count} / {total} nœuds ({percent} %)"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:39
 msgid "Actions"
@@ -31,7 +31,7 @@ msgstr "agent déconnecté en cours d'exécution"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:52
 msgid "Are you sure you want to delete job {jobId}? This action cannot be undone."
-msgstr ""
+msgstr "Voulez-vous vraiment supprimer le job {jobId} ? Cette action ne peut pas être annulée."
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:81
 msgid "Close the logs for {label}"
@@ -72,7 +72,7 @@ msgstr "Durée"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:60
 msgid "Duration: {duration}"
-msgstr ""
+msgstr "Durée : {duration}"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:87
 msgid "Error loading logs..."
@@ -89,7 +89,7 @@ msgstr "Terminé le"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:59
 msgid "Finished: {time}"
-msgstr ""
+msgstr "Terminé : {time}"
 
 #: src/modules/features/jobs/jobs.module.ts:34
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:25
@@ -98,7 +98,7 @@ msgstr "Job"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:46
 msgid "Job actions"
-msgstr ""
+msgstr "Actions du job"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:35
 msgid "Job ID"
@@ -171,11 +171,11 @@ msgstr "Démarré le"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:58
 msgid "Started: {time}"
-msgstr ""
+msgstr "Démarré : {time}"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:57
 msgid "State: {state}"
-msgstr ""
+msgstr "État : {state}"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:34
 msgid "Status"
@@ -191,7 +191,7 @@ msgstr "Chronologie"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:20
 msgid "Unable to load jobs"
-msgstr ""
+msgstr "Impossible de charger les jobs"
 
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:68
 msgid "Unable to load this job"

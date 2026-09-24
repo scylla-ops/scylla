@@ -217,7 +217,7 @@ msgstr "Confère le contrôle total sur sa portée."
 
 #: src/modules/features/roles/presentation/ui/roles.messages.ts:100
 msgid "Hide {label} sub-permissions"
-msgstr ""
+msgstr "Masquer les sous-permissions de {label}"
 
 #: src/modules/features/roles/presentation/ui/roles.messages.ts:101
 msgid "Holding a role in an organization is what belonging to it means, so every organization role carries it. An organization role applies to every project of the organization."
@@ -405,7 +405,7 @@ msgstr "Sélectionnés ({0})"
 
 #: src/modules/features/roles/presentation/ui/roles.messages.ts:99
 msgid "Show {label} sub-permissions"
-msgstr ""
+msgstr "Afficher les sous-permissions de {label}"
 
 #: src/modules/features/roles/presentation/utils/permission-mapping.ts:345
 msgid "System"
