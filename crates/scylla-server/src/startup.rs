@@ -73,14 +73,8 @@ pub(crate) type SharedOAuthUc = Arc<
 >;
 pub(crate) type SharedUserUc =
     Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker, PermissionChecker>>;
-pub(crate) type SharedOrgUc = Arc<
-    OrganizationUseCases<
-        PgOrganizationRepository,
-        PgUserRepository,
-        PermissionChecker,
-        PermissionChecker,
-    >,
->;
+pub(crate) type SharedOrgUc =
+    Arc<OrganizationUseCases<PgOrganizationRepository, PgUserRepository, PermissionChecker>>;
 pub(crate) type SharedProjectUc = Arc<
     ProjectUseCases<PgProjectRepository, PgUserRepository, PermissionChecker, PermissionChecker>,
 >;
@@ -247,7 +241,6 @@ pub(crate) async fn init_services(
     let org_uc = Arc::new(OrganizationUseCases::new(
         org_repo.clone(),
         user_repo.clone(),
-        permission_checker.clone(),
         permission_checker.clone(),
     ));
     let project_uc = Arc::new(ProjectUseCases::new(
@@ -610,7 +603,7 @@ where
 
     let auth_handler = AuthHandler::new(services.auth_uc.clone());
     let user_handler = UserHandler::new(services.user_uc.clone());
-    let org_handler = OrganizationHandler::new(services.org_uc.clone());
+    let org_handler = OrganizationHandler::new(services.actions.clone(), services.org_uc.clone());
     let project_handler =
         ProjectHandler::new(services.actions.clone(), services.project_uc.clone());
     let pipeline_handler =

@@ -419,8 +419,8 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project use case is the only one on the pipeline. The other aggregates
-  keep their hand-written sequence until they migrate.
+- The project and organization use cases are on the pipeline. The other
+  aggregates keep their hand-written sequence until they migrate.
 - The policy reload after a create or a delete sits inside the `commit`
   closure, so a failed reload still fails the call, as before. It is a
   `Listener<Persist<C>>` once a failed reload may only be logged.
