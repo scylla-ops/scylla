@@ -64,20 +64,20 @@ impl SecretCipher for StubCipher {
     }
 }
 
-struct Lab<PS: PermissionService> {
+struct Lab {
     actions: Actions,
-    uc: SecretUseCases<StubSecrets, PS>,
+    uc: SecretUseCases,
     secrets: Arc<StubSecrets>,
     cipher: Arc<StubCipher>,
 }
 
-impl<PS: PermissionService> Lab<PS> {
+impl Lab {
     async fn create(&self) -> DomainResult<Secret> {
         self.actions.run(&self.uc, &alice(), create()).await
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab<PS> {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let secrets = Arc::new(StubSecrets::default());
     let cipher = Arc::new(StubCipher::default());
     Lab {

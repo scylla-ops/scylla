@@ -148,7 +148,7 @@ impl PolicyControl for StubPolicy {
 
 struct Lab {
     actions: Actions,
-    uc: OrganizationUseCases<StubOrganizations, StubUsers, StubPolicy>,
+    uc: OrganizationUseCases,
     organizations: Arc<StubOrganizations>,
     policy: Arc<StubPolicy>,
 }
@@ -159,7 +159,7 @@ impl Lab {
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let organizations = Arc::new(StubOrganizations::default());
     let policy = Arc::new(StubPolicy::default());
     Lab {

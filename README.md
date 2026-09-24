@@ -42,7 +42,7 @@ scylla-domain <- scylla-auth      <- scylla-core
 scylla-domain <- scylla-extension <- scylla-core
 ```
 
-`scylla-core` is generic over the ports declared in `scylla-core` and `scylla-auth`; `scylla-db` implements them; `scylla-server` is the only crate that names the concrete implementations side by side. The binaries are a `main.rs` each: parse the command line, load the configuration, open the pool with `scylla_db::init_db`, then `Server::new(config, db)`, the edition's contributions as builder methods, `serve()`.
+`scylla-core` holds the ports declared in `scylla-core` and `scylla-auth` as trait objects (`Arc<dyn Port>`); `scylla-db` implements them; `scylla-server` is the only crate that names the concrete implementations side by side. The binaries are a `main.rs` each: parse the command line, load the configuration, open the pool with `scylla_db::init_db`, then `Server::new(config, db)`, the edition's contributions as builder methods, `serve()`.
 
 A WebAssembly plugin runtime is planned as `crates/scylla-wasm/`; it does not exist yet.
 

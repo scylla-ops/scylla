@@ -2,7 +2,6 @@
 //! permission, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::JobLogUseCases;
-use crate::application::{JobLogRepository, JobLogStreamPort};
 use crate::domain::errors::DomainResult;
 use crate::domain::job::JobLog;
 use crate::domain::permission::Permission;
@@ -28,11 +27,7 @@ impl Command for AppendJobLog {
 }
 
 #[async_trait]
-impl<L, S> Run<Prepare<AppendJobLog>> for JobLogUseCases<L, S>
-where
-    L: JobLogRepository + Send + Sync,
-    S: JobLogStreamPort,
-{
+impl Run<Prepare<AppendJobLog>> for JobLogUseCases {
     async fn run(&self, input: Authorized<AppendJobLog>) -> DomainResult<Prepared<AppendJobLog>> {
         let log = input.command().log.clone();
         Ok(input.prepared(Draft::new(log)))
@@ -40,11 +35,7 @@ where
 }
 
 #[async_trait]
-impl<L, S> Run<Persist<AppendJobLog>> for JobLogUseCases<L, S>
-where
-    L: JobLogRepository + Send + Sync,
-    S: JobLogStreamPort,
-{
+impl Run<Persist<AppendJobLog>> for JobLogUseCases {
     async fn run(&self, input: Prepared<AppendJobLog>) -> DomainResult<Committed<AppendJobLog>> {
         input
             .commit(async |draft| self.log_repo.create(&draft.into_inner()).await)

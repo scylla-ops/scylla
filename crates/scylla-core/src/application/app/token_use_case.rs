@@ -21,26 +21,14 @@ pub struct AppTokenOutcome {
 
 /// Unknown app, inactive app, disabled secret and wrong secret all return the same opaque error.
 #[derive(Constructor)]
-pub struct AppTokenUseCases<A, T, C, H>
-where
-    A: AppRepository,
-    T: AppTokenRepository,
-    C: AppCredentialRepository,
-    H: HashService,
-{
-    app_repo: Arc<A>,
-    token_repo: Arc<T>,
-    credential_repo: Arc<C>,
-    hash_service: Arc<H>,
+pub struct AppTokenUseCases {
+    app_repo: Arc<dyn AppRepository>,
+    token_repo: Arc<dyn AppTokenRepository>,
+    credential_repo: Arc<dyn AppCredentialRepository>,
+    hash_service: Arc<dyn HashService>,
 }
 
-impl<A, T, C, H> AppTokenUseCases<A, T, C, H>
-where
-    A: AppRepository,
-    T: AppTokenRepository,
-    C: AppCredentialRepository,
-    H: HashService,
-{
+impl AppTokenUseCases {
     #[instrument(skip_all, fields(app_id = %app_id))]
     pub async fn issue(&self, app_id: AppId, secret: AppSecret) -> DomainResult<AppTokenOutcome> {
         let invalid = || DomainError::unauthorized("Invalid app credentials");

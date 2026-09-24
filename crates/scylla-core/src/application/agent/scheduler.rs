@@ -1,39 +1,25 @@
 use crate::application::agent::dispatch::assemble_dispatch;
-use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::agent::dispatch_use_case::{DispatchOutcome, DispatchUseCases};
 use crate::application::job::repository::JobRepository;
 use crate::application::pipeline::repository::PipelineRepository;
 use crate::application::secret::SecretResolver;
-use scylla_auth::authz::PermissionService;
 use std::sync::Arc;
 use tracing::{info, instrument, warn};
 
 /// A job persisted while no eligible agent was connected stays `pending` with no agent; this places it later.
-pub struct PendingJobScheduler<J, P, W, PS>
-where
-    J: JobRepository,
-    P: PipelineRepository,
-    W: AgentDispatch,
-    PS: PermissionService,
-{
-    job_repo: Arc<J>,
-    pipeline_repo: Arc<P>,
-    dispatch_uc: Arc<DispatchUseCases<W, PS>>,
+pub struct PendingJobScheduler {
+    job_repo: Arc<dyn JobRepository>,
+    pipeline_repo: Arc<dyn PipelineRepository>,
+    dispatch_uc: Arc<DispatchUseCases>,
     secret_resolver: Arc<dyn SecretResolver>,
 }
 
-impl<J, P, W, PS> PendingJobScheduler<J, P, W, PS>
-where
-    J: JobRepository,
-    P: PipelineRepository,
-    W: AgentDispatch,
-    PS: PermissionService,
-{
+impl PendingJobScheduler {
     #[must_use]
     pub fn new(
-        job_repo: Arc<J>,
-        pipeline_repo: Arc<P>,
-        dispatch_uc: Arc<DispatchUseCases<W, PS>>,
+        job_repo: Arc<dyn JobRepository>,
+        pipeline_repo: Arc<dyn PipelineRepository>,
+        dispatch_uc: Arc<DispatchUseCases>,
         secret_resolver: Arc<dyn SecretResolver>,
     ) -> Self {
         Self {
@@ -101,6 +87,7 @@ where
 mod tests {
     use super::*;
     use crate::application::agent::dispatch::{DispatchNode, JobDispatch};
+    use crate::application::agent::dispatch_port::AgentDispatch;
     use crate::application::pagination::{PaginatedResult, PaginationParams};
     use crate::domain::caller::CallerContext;
     use crate::domain::errors::DomainResult;
@@ -112,6 +99,7 @@ mod tests {
     use crate::test_support::pipelines::pipeline;
     use crate::test_support::projects::project;
     use async_trait::async_trait;
+    use scylla_auth::authz::PermissionService;
     use std::sync::Mutex;
 
     struct StubJobs {

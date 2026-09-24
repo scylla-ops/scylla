@@ -2,15 +2,11 @@
 //! permission, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::TriggerUseCases;
-use crate::application::{
-    AppRepository, HashService, PipelineRepository, ProjectRepository, TriggerRepository,
-};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, PipelineId};
 use crate::domain::permission::Permission;
 use crate::domain::trigger::{Trigger, TriggerInput, TriggerName, TriggerSource};
 use async_trait::async_trait;
-use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_extension::{
     Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -45,16 +41,7 @@ impl Command for CreateTrigger {
 }
 
 #[async_trait]
-impl<T, P, PR, A, H, PC, PS> Run<Prepare<CreateTrigger>> for TriggerUseCases<T, P, PR, A, H, PC, PS>
-where
-    T: TriggerRepository + Send + Sync,
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    A: AppRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl Run<Prepare<CreateTrigger>> for TriggerUseCases {
     // Anti-escalation: managing triggers must not launder run rights. It refuses, so it runs
     // before anything is read.
     async fn run(&self, input: Authorized<CreateTrigger>) -> DomainResult<Prepared<CreateTrigger>> {
@@ -94,16 +81,7 @@ where
 }
 
 #[async_trait]
-impl<T, P, PR, A, H, PC, PS> Run<Persist<CreateTrigger>> for TriggerUseCases<T, P, PR, A, H, PC, PS>
-where
-    T: TriggerRepository + Send + Sync,
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    A: AppRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl Run<Persist<CreateTrigger>> for TriggerUseCases {
     async fn run(&self, input: Prepared<CreateTrigger>) -> DomainResult<Committed<CreateTrigger>> {
         input
             .commit(async |draft| {

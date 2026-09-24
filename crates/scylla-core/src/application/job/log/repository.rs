@@ -6,7 +6,7 @@ use crate::domain::pipeline::NodeId;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait JobLogRepository {
+pub trait JobLogRepository: Send + Sync {
     async fn create(&self, log: &JobLog) -> DomainResult<JobLog>;
 
     async fn find_by_id(&self, id: &JobLogId) -> DomainResult<JobLog>;

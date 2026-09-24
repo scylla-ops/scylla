@@ -189,25 +189,25 @@ impl Mailer for StubMailer {
     }
 }
 
-struct Lab<PS: PermissionService> {
+struct Lab {
     actions: Actions,
-    uc: InvitationUseCases<StubInvitations, StubOrganizations, PS>,
+    uc: InvitationUseCases,
     invitations: Arc<StubInvitations>,
     roles: Arc<StubRoles>,
     mailer: Arc<StubMailer>,
 }
 
-impl<PS: PermissionService> Lab<PS> {
+impl Lab {
     async fn create(&self, cmd: CreateInvitation) -> DomainResult<Invitation> {
         self.actions.run(&self.uc, &alice(), cmd).await
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab<PS> {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     lab_with(permissions, StubMailer::default())
 }
 
-fn lab_with<PS: PermissionService + 'static>(permissions: Arc<PS>, mailer: StubMailer) -> Lab<PS> {
+fn lab_with(permissions: Arc<dyn PermissionService>, mailer: StubMailer) -> Lab {
     let invitations = Arc::new(StubInvitations::default());
     let roles = Arc::new(StubRoles::default());
     let mailer = Arc::new(mailer);

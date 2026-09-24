@@ -9,8 +9,7 @@ use crate::domain::permission::{Permission, ResourceRef};
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{
-    FULL_CONTROL, Grant, GrantRepository, PermissionService, PolicyControl, Principal, Scope,
-    removal_orphans_scope, validate_role_in_db,
+    FULL_CONTROL, Grant, Principal, Scope, removal_orphans_scope, validate_role_in_db,
 };
 use scylla_extension::{
     Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
@@ -36,12 +35,7 @@ impl Command for CreateGrant {
 }
 
 #[async_trait]
-impl<G, PC, PS> Run<Prepare<CreateGrant>> for GrantUseCases<G, PC, PS>
-where
-    G: GrantRepository,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl Run<Prepare<CreateGrant>> for GrantUseCases {
     async fn run(&self, input: Authorized<CreateGrant>) -> DomainResult<Prepared<CreateGrant>> {
         let cmd = input.command();
         let grant = Grant::new(cmd.principal.clone(), cmd.role.clone(), cmd.scope.clone());
@@ -54,12 +48,7 @@ where
 }
 
 #[async_trait]
-impl<G, PC, PS> Run<Persist<CreateGrant>> for GrantUseCases<G, PC, PS>
-where
-    G: GrantRepository,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl Run<Persist<CreateGrant>> for GrantUseCases {
     async fn run(&self, input: Prepared<CreateGrant>) -> DomainResult<Committed<CreateGrant>> {
         input
             .commit(async |draft| {
@@ -77,7 +66,7 @@ enum Holding {
     Keys(BTreeSet<String>),
 }
 
-impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases<G, PC, PS> {
+impl GrantUseCases {
     /// The tenant boundary: without it a project admin could attach any account in the installation.
     /// Org and System grants are the admission itself; Apps are owned by their org by construction.
     async fn require_grantee_in_organization(&self, grant: &Grant) -> DomainResult<()> {
@@ -189,12 +178,7 @@ impl Command for RevokeAllAccess {
 }
 
 #[async_trait]
-impl<G, PC, PS> Run<Prepare<RevokeAllAccess>> for GrantUseCases<G, PC, PS>
-where
-    G: GrantRepository,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl Run<Prepare<RevokeAllAccess>> for GrantUseCases {
     async fn run(
         &self,
         input: Authorized<RevokeAllAccess>,
@@ -212,12 +196,7 @@ where
 }
 
 #[async_trait]
-impl<G, PC, PS> Run<Persist<RevokeAllAccess>> for GrantUseCases<G, PC, PS>
-where
-    G: GrantRepository,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl Run<Persist<RevokeAllAccess>> for GrantUseCases {
     async fn run(
         &self,
         input: Prepared<RevokeAllAccess>,

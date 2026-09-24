@@ -3,14 +3,13 @@
 
 use super::ProjectUseCases;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::application::{ProjectRepository, UserRepository};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::project::Project;
 use crate::domain::user::User;
 use async_trait::async_trait;
-use scylla_auth::authz::{PermissionService, PolicyControl, Visibility};
+use scylla_auth::authz::Visibility;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 use std::collections::HashMap;
 
@@ -30,13 +29,7 @@ impl Query for GetProject {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Fetch<GetProject>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetProject>> for ProjectUseCases {
     async fn run(&self, input: Authorized<GetProject>) -> DomainResult<Fetched<GetProject>> {
         let project = self.project_repo.find_by_id(&input.command().id).await?;
         Ok(input.fetched(project))
@@ -59,13 +52,7 @@ impl Query for ListProjects {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Fetch<ListProjects>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListProjects>> for ProjectUseCases {
     async fn run(&self, input: Authorized<ListProjects>) -> DomainResult<Fetched<ListProjects>> {
         let page = self
             .project_repo
@@ -94,13 +81,7 @@ impl Query for ListOrganizationProjects {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Fetch<ListOrganizationProjects>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListOrganizationProjects>> for ProjectUseCases {
     // The second check is a scoping decision, not a gate: it never refuses, it picks between
     // every project of the organization and the ones the caller's grants reach.
     async fn run(
@@ -151,13 +132,7 @@ impl Query for ListProjectMembers {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Fetch<ListProjectMembers>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListProjectMembers>> for ProjectUseCases {
     async fn run(
         &self,
         input: Authorized<ListProjectMembers>,
@@ -200,13 +175,7 @@ impl Query for ListUserProjects {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Fetch<ListUserProjects>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListUserProjects>> for ProjectUseCases {
     async fn run(
         &self,
         input: Authorized<ListUserProjects>,

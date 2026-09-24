@@ -4,7 +4,7 @@ use crate::domain::session::Session;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait SessionRepository {
+pub trait SessionRepository: Send + Sync {
     async fn create(&self, session: &Session) -> DomainResult<Session>;
 
     async fn find_by_token(&self, token: &str) -> DomainResult<Session>;

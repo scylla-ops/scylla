@@ -1,8 +1,7 @@
-use crate::application::{HashService, SessionRepository, SignupRepository, SignupUseCases};
+use crate::application::SignupUseCases;
 use crate::grpc::convert::{required, wrap};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use scylla_domain::domain::organization::OrganizationName;
 use scylla_domain::domain::user::{Email, Password, Username};
 use scylla_proto::registration::v1::{
@@ -12,24 +11,12 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct RegistrationHandler<SR, S, H, PC>
-where
-    SR: SignupRepository,
-    S: SessionRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
-    signup_uc: Arc<SignupUseCases<SR, S, H, PC>>,
+pub struct RegistrationHandler {
+    signup_uc: Arc<SignupUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    SR: SignupRepository + Send + Sync + 'static,
-    S: SessionRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> RegistrationService for RegistrationHandler<SR, S, H, PC>
-{
+impl RegistrationService for RegistrationHandler {
     async fn signup(
         &self,
         request: Request<SignupRequest>,

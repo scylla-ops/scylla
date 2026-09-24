@@ -2,13 +2,11 @@
 //! permission, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::UserUseCases;
-use crate::application::{HashService, UserRepository};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::UserId;
 use crate::domain::permission::Permission;
 use crate::domain::user::{Email, Password, User, Username};
 use async_trait::async_trait;
-use scylla_auth::authz::PolicyControl;
 use scylla_extension::{
     Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -32,12 +30,7 @@ impl Command for CreateUser {
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Prepare<CreateUser>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<CreateUser>> for UserUseCases {
     async fn run(&self, input: Authorized<CreateUser>) -> DomainResult<Prepared<CreateUser>> {
         let cmd = input.command();
         if self.user_repo.username_exists(&cmd.username).await? {
@@ -50,12 +43,7 @@ where
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Persist<CreateUser>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<CreateUser>> for UserUseCases {
     async fn run(&self, input: Prepared<CreateUser>) -> DomainResult<Committed<CreateUser>> {
         input
             .commit(async |draft| self.user_repo.create(&draft.into_inner()).await)
@@ -81,12 +69,7 @@ impl Command for UpdateUser {
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Prepare<UpdateUser>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<UpdateUser>> for UserUseCases {
     async fn run(&self, input: Authorized<UpdateUser>) -> DomainResult<Prepared<UpdateUser>> {
         let cmd = input.command();
         let mut user = self.user_repo.find_by_id(&cmd.id).await?;
@@ -101,12 +84,7 @@ where
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Persist<UpdateUser>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<UpdateUser>> for UserUseCases {
     async fn run(&self, input: Prepared<UpdateUser>) -> DomainResult<Committed<UpdateUser>> {
         input
             .commit(async |draft| self.user_repo.update(&draft.into_inner()).await)
@@ -131,12 +109,7 @@ impl Command for DeleteUser {
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Prepare<DeleteUser>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<DeleteUser>> for UserUseCases {
     async fn run(&self, input: Authorized<DeleteUser>) -> DomainResult<Prepared<DeleteUser>> {
         let user = self.user_repo.find_by_id(&input.command().id).await?;
         Ok(input.prepared(user))
@@ -144,12 +117,7 @@ where
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Persist<DeleteUser>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<DeleteUser>> for UserUseCases {
     // A DB trigger drops the user's grants with the row; the reload stops the live set carrying them.
     async fn run(&self, input: Prepared<DeleteUser>) -> DomainResult<Committed<DeleteUser>> {
         input

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
 #[async_trait]
-pub trait TriggerDeliveryRepository {
+pub trait TriggerDeliveryRepository: Send + Sync {
     async fn record_or_detect(
         &self,
         trigger_id: &TriggerId,

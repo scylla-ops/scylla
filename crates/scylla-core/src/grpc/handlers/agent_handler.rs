@@ -1,7 +1,5 @@
 use crate::application::job::{AppendJobLog, RecordJobStatus};
-use crate::application::{
-    AgentDispatch, AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
-};
+use crate::application::{AgentDispatch, AgentRepository, JobLogUseCases, JobUseCases};
 use crate::application::{JobDispatch, JobEvent};
 use crate::domain::caller::CallerContext;
 use crate::extract_auth_context;
@@ -29,24 +27,18 @@ use tonic::{Request, Response, Status, Streaming};
 use tracing::warn;
 
 #[derive(Constructor)]
-pub struct AgentHandler<J, L>
-where
-    J: JobRepository,
-    L: JobLogRepository,
-{
+pub struct AgentHandler {
     registry: Arc<InMemoryAgentRegistry>,
     log_stream: Arc<InMemoryJobLogStream>,
     actions: Arc<Actions>,
-    job_use_cases: Arc<JobUseCases<J>>,
-    log_use_cases: Arc<JobLogUseCases<L, InMemoryJobLogStream>>,
+    job_use_cases: Arc<JobUseCases>,
+    log_use_cases: Arc<JobLogUseCases>,
     agent_repo: Arc<dyn AgentRepository>,
     pending_signal: Arc<Notify>,
 }
 
 #[async_trait::async_trait]
-impl<J: JobRepository + Send + Sync + 'static, L: JobLogRepository + Send + Sync + 'static>
-    AgentService for AgentHandler<J, L>
-{
+impl AgentService for AgentHandler {
     type OpenStream = Pin<Box<dyn Stream<Item = Result<AgentDown, Status>> + Send + 'static>>;
 
     async fn open(
@@ -92,20 +84,17 @@ impl<J: JobRepository + Send + Sync + 'static, L: JobLogRepository + Send + Sync
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn read_reports<J, L>(
+async fn read_reports(
     mut inbound: Streaming<AgentUp>,
     app_id: AppId,
     actions: Arc<Actions>,
-    job_use_cases: Arc<JobUseCases<J>>,
-    log_use_cases: Arc<JobLogUseCases<L, InMemoryJobLogStream>>,
+    job_use_cases: Arc<JobUseCases>,
+    log_use_cases: Arc<JobLogUseCases>,
     log_stream: Arc<InMemoryJobLogStream>,
     registry: Arc<InMemoryAgentRegistry>,
     agent_repo: Arc<dyn AgentRepository>,
     conn_id: u64,
-) where
-    J: JobRepository + Send + Sync + 'static,
-    L: JobLogRepository + Send + Sync + 'static,
-{
+) {
     let caller = CallerContext::App(app_id.clone());
     touch_last_seen(&agent_repo, &app_id).await;
     while let Ok(Some(up)) = inbound.message().await {

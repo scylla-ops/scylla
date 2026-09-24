@@ -2,7 +2,6 @@
 //! its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::JobUseCases;
-use crate::application::JobRepository;
 use crate::application::job::JobEvent;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::JobId;
@@ -34,10 +33,7 @@ impl Command for RecordJobStatus {
 }
 
 #[async_trait]
-impl<J> Run<Prepare<RecordJobStatus>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Prepare<RecordJobStatus>> for JobUseCases {
     async fn run(
         &self,
         input: Authorized<RecordJobStatus>,
@@ -67,10 +63,7 @@ where
 }
 
 #[async_trait]
-impl<J> Run<Persist<RecordJobStatus>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Persist<RecordJobStatus>> for JobUseCases {
     async fn run(
         &self,
         input: Prepared<RecordJobStatus>,
@@ -98,10 +91,7 @@ impl Command for DeleteJob {
 }
 
 #[async_trait]
-impl<J> Run<Prepare<DeleteJob>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Prepare<DeleteJob>> for JobUseCases {
     async fn run(&self, input: Authorized<DeleteJob>) -> DomainResult<Prepared<DeleteJob>> {
         let job = self.job_repo.find_by_id(&input.command().id).await?;
         Ok(input.prepared(job))
@@ -109,10 +99,7 @@ where
 }
 
 #[async_trait]
-impl<J> Run<Persist<DeleteJob>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Persist<DeleteJob>> for JobUseCases {
     async fn run(&self, input: Prepared<DeleteJob>) -> DomainResult<Committed<DeleteJob>> {
         input
             .commit(async |job| {

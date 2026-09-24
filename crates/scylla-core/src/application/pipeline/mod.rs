@@ -22,22 +22,15 @@ use tracing::instrument;
 /// `queries.rs`. `run_with_inputs` and `assign_agent` stay outside the pipeline: a trigger fire
 /// calls them as its runner App, with an origin and inputs no RPC sends.
 #[derive(Constructor)]
-pub struct PipelineUseCases<
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    J: JobRepository,
-    PS: PermissionService,
-> {
-    pub(super) pipeline_repo: Arc<P>,
-    pub(super) project_repo: Arc<PR>,
-    pub(super) job_repo: Arc<J>,
-    pub(super) permission_service: Arc<PS>,
+pub struct PipelineUseCases {
+    pub(super) pipeline_repo: Arc<dyn PipelineRepository>,
+    pub(super) project_repo: Arc<dyn ProjectRepository>,
+    pub(super) job_repo: Arc<dyn JobRepository>,
+    pub(super) permission_service: Arc<dyn PermissionService>,
     pub(super) secret_resolver: Arc<dyn SecretResolver>,
 }
 
-impl<P: PipelineRepository, PR: ProjectRepository, J: JobRepository, PS: PermissionService>
-    PipelineUseCases<P, PR, J, PS>
-{
+impl PipelineUseCases {
     /// One `RunPipeline` check; the repo calls bypass Cedar so "run" does not also require "get".
     #[instrument(skip_all, fields(pipeline_id = %pipeline_id, inputs = inputs.len()))]
     pub async fn run_with_inputs(

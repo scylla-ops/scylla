@@ -2,7 +2,7 @@
 //! output type, what `Fetch` reads.
 
 use super::AgentUseCases;
-use crate::application::{AgentRepository, AgentStats, AppRepository, HashService};
+use crate::application::AgentStats;
 use crate::domain::agent::AgentHost;
 use crate::domain::app::App;
 use crate::domain::errors::DomainResult;
@@ -10,7 +10,6 @@ use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla_auth::authz::PolicyControl;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 use std::collections::HashSet;
 
@@ -38,13 +37,7 @@ impl Query for ListAgents {
 }
 
 #[async_trait]
-impl<A, W, H, PC> Run<Fetch<ListAgents>> for AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListAgents>> for AgentUseCases {
     async fn run(&self, input: Authorized<ListAgents>) -> DomainResult<Fetched<ListAgents>> {
         let agents = self
             .agent_repo
@@ -90,13 +83,7 @@ impl Query for GetAgent {
 }
 
 #[async_trait]
-impl<A, W, H, PC> Run<Fetch<GetAgent>> for AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetAgent>> for AgentUseCases {
     async fn run(&self, input: Authorized<GetAgent>) -> DomainResult<Fetched<GetAgent>> {
         let id = &input.command().id;
         let agent = self.agent_repo.find_by_app_id(id).await?;
@@ -133,13 +120,7 @@ impl Query for GetAgentStats {
 }
 
 #[async_trait]
-impl<A, W, H, PC> Run<Fetch<GetAgentStats>> for AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetAgentStats>> for AgentUseCases {
     async fn run(&self, input: Authorized<GetAgentStats>) -> DomainResult<Fetched<GetAgentStats>> {
         let stats = self.agent_repo.agent_stats(&input.command().id).await?;
         Ok(input.fetched(stats))

@@ -3,13 +3,11 @@
 
 use super::PipelineUseCases;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::application::{JobRepository, PipelineRepository, ProjectRepository};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, PipelineId, ProjectId};
 use crate::domain::permission::Permission;
 use crate::domain::pipeline::Pipeline;
 use async_trait::async_trait;
-use scylla_auth::authz::PermissionService;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
@@ -28,13 +26,7 @@ impl Query for GetPipeline {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Fetch<GetPipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Fetch<GetPipeline>> for PipelineUseCases {
     async fn run(&self, input: Authorized<GetPipeline>) -> DomainResult<Fetched<GetPipeline>> {
         let pipeline = self.pipeline_repo.find_by_id(&input.command().id).await?;
         Ok(input.fetched(pipeline))
@@ -57,13 +49,7 @@ impl Query for ListPipelines {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Fetch<ListPipelines>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Fetch<ListPipelines>> for PipelineUseCases {
     async fn run(&self, input: Authorized<ListPipelines>) -> DomainResult<Fetched<ListPipelines>> {
         let page = self
             .pipeline_repo
@@ -90,13 +76,7 @@ impl Query for ListProjectPipelines {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Fetch<ListProjectPipelines>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Fetch<ListProjectPipelines>> for PipelineUseCases {
     async fn run(
         &self,
         input: Authorized<ListProjectPipelines>,
@@ -127,13 +107,7 @@ impl Query for ListOrganizationPipelines {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Fetch<ListOrganizationPipelines>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Fetch<ListOrganizationPipelines>> for PipelineUseCases {
     async fn run(
         &self,
         input: Authorized<ListOrganizationPipelines>,

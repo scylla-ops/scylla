@@ -242,14 +242,14 @@ impl SecretResolver for StubResolver {
     }
 }
 
-struct Lab<PS: PermissionService> {
+struct Lab {
     actions: Actions,
-    uc: PipelineUseCases<StubPipelines, StubProjects, StubJobs, PS>,
+    uc: PipelineUseCases,
     pipelines: Arc<StubPipelines>,
     jobs: Arc<StubJobs>,
 }
 
-impl<PS: PermissionService> Lab<PS> {
+impl Lab {
     async fn create(&self) -> DomainResult<Pipeline> {
         self.actions.run(&self.uc, &alice(), create()).await
     }
@@ -265,7 +265,7 @@ impl<PS: PermissionService> Lab<PS> {
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab<PS> {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let pipelines = Arc::new(StubPipelines::default());
     let jobs = Arc::new(StubJobs::default());
     let project = ProjectBuilder::for_org_id(OrganizationId::new("acme"), "rocket")

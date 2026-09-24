@@ -1,10 +1,9 @@
-use crate::application::{InvitationRepository, InvitationUseCases, OrganizationRepository};
+use crate::application::InvitationUseCases;
 use crate::extract_auth_context;
 use crate::grpc::adapter::run;
 use crate::grpc::convert::id;
 use crate::grpc::mappers::{domain_error_to_status, invitation_to_proto};
 use derive_more::Constructor;
-use scylla_auth::authz::PermissionService;
 use scylla_domain::domain::ids::InvitationId;
 use scylla_extension::Actions;
 use scylla_proto::invitation::v1::{
@@ -16,23 +15,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct InvitationHandler<I, O, PS>
-where
-    I: InvitationRepository,
-    O: OrganizationRepository,
-    PS: PermissionService,
-{
+pub struct InvitationHandler {
     actions: Arc<Actions>,
-    invitations: Arc<InvitationUseCases<I, O, PS>>,
+    invitations: Arc<InvitationUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    I: InvitationRepository + 'static,
-    O: OrganizationRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-> InvitationService for InvitationHandler<I, O, PS>
-{
+impl InvitationService for InvitationHandler {
     async fn create_invitation(
         &self,
         request: Request<CreateInvitationRequest>,

@@ -3,13 +3,11 @@
 
 use super::UserUseCases;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::application::{HashService, UserRepository};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::UserId;
 use crate::domain::permission::Permission;
 use crate::domain::user::{User, Username};
 use async_trait::async_trait;
-use scylla_auth::authz::PolicyControl;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
@@ -28,12 +26,7 @@ impl Query for GetUser {
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Fetch<GetUser>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetUser>> for UserUseCases {
     async fn run(&self, input: Authorized<GetUser>) -> DomainResult<Fetched<GetUser>> {
         let user = self.user_repo.find_by_id(&input.command().id).await?;
         Ok(input.fetched(user))
@@ -57,12 +50,7 @@ impl Query for GetUserByUsername {
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Fetch<GetUserByUsername>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetUserByUsername>> for UserUseCases {
     async fn run(
         &self,
         input: Authorized<GetUserByUsername>,
@@ -91,12 +79,7 @@ impl Query for ListUsers {
 }
 
 #[async_trait]
-impl<U, H, PC> Run<Fetch<ListUsers>> for UserUseCases<U, H, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListUsers>> for UserUseCases {
     async fn run(&self, input: Authorized<ListUsers>) -> DomainResult<Fetched<ListUsers>> {
         let page = self
             .user_repo

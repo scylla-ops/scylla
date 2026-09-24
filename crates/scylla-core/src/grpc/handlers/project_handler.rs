@@ -1,11 +1,10 @@
 //! The adapter: each RPC is one `run` and its response. Parsing lives in the
 //! project mapper, behind `Parse`; no RPC checks a permission or touches a port.
 
-use crate::application::{ProjectRepository, ProjectUseCases, UserRepository};
+use crate::application::ProjectUseCases;
 use crate::grpc::adapter::run;
 use crate::grpc::mappers::project_to_proto;
 use derive_more::Constructor;
-use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_extension::Actions;
 use scylla_proto::project::v1::{
     CreateProjectRequest, CreateProjectResponse, DeleteProjectRequest, DeleteProjectResponse,
@@ -19,24 +18,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct ProjectHandler<
-    P: ProjectRepository,
-    U: UserRepository,
-    PS: PermissionService,
-    PC: PolicyControl,
-> {
+pub struct ProjectHandler {
     actions: Arc<Actions>,
-    projects: Arc<ProjectUseCases<P, U, PS, PC>>,
+    projects: Arc<ProjectUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    P: ProjectRepository + Send + Sync + 'static,
-    U: UserRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> ProjectService for ProjectHandler<P, U, PS, PC>
-{
+impl ProjectService for ProjectHandler {
     async fn create_project(
         &self,
         request: Request<CreateProjectRequest>,

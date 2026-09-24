@@ -2,10 +2,7 @@
 //! The other RPCs call the use case directly: their permission is on the loaded trigger's
 //! pipeline, which `Describe` cannot see.
 
-use crate::application::{
-    AgentDispatch, AppRepository, HashService, JobRepository, PipelineRepository,
-    ProjectRepository, TriggerFireUseCases, TriggerRepository, TriggerUseCases,
-};
+use crate::application::{TriggerFireUseCases, TriggerUseCases};
 use crate::extract_auth_context;
 use crate::grpc::adapter::run;
 use crate::grpc::convert::{id, valid, wrap};
@@ -14,7 +11,6 @@ use crate::grpc::mappers::trigger_mapper::{
     proto_inputs_to_domain, trigger_to_proto, update_source_to_domain,
 };
 use derive_more::Constructor;
-use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::TriggerId;
 use scylla_domain::domain::trigger::{Trigger, TriggerName};
 use scylla_extension::Actions;
@@ -29,54 +25,21 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct TriggerHandler<T, P, PR, A, H, PC, PS, J, W>
-where
-    T: TriggerRepository,
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    A: AppRepository,
-    H: HashService,
-    PC: PolicyControl,
-    PS: PermissionService,
-    J: JobRepository,
-    W: AgentDispatch,
-{
+pub struct TriggerHandler {
     actions: Arc<Actions>,
-    triggers: Arc<TriggerUseCases<T, P, PR, A, H, PC, PS>>,
-    fire_uc: Arc<TriggerFireUseCases<T, P, PR, A, J, PS, W>>,
+    triggers: Arc<TriggerUseCases>,
+    fire_uc: Arc<TriggerFireUseCases>,
     webhook_base_url: Option<String>,
 }
 
-impl<T, P, PR, A, H, PC, PS, J, W> TriggerHandler<T, P, PR, A, H, PC, PS, J, W>
-where
-    T: TriggerRepository,
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    A: AppRepository,
-    H: HashService,
-    PC: PolicyControl,
-    PS: PermissionService,
-    J: JobRepository,
-    W: AgentDispatch,
-{
+impl TriggerHandler {
     fn view(&self, trigger: &Trigger) -> ProtoTrigger {
         trigger_to_proto(trigger, self.webhook_base_url.as_deref())
     }
 }
 
 #[async_trait::async_trait]
-impl<T, P, PR, A, H, PC, PS, J, W> TriggerService for TriggerHandler<T, P, PR, A, H, PC, PS, J, W>
-where
-    T: TriggerRepository + Send + Sync + 'static,
-    P: PipelineRepository + Send + Sync + 'static,
-    PR: ProjectRepository + Send + Sync + 'static,
-    A: AppRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-    J: JobRepository + Send + Sync + 'static,
-    W: AgentDispatch + Send + Sync + 'static,
-{
+impl TriggerService for TriggerHandler {
     async fn create_trigger(
         &self,
         request: Request<CreateTriggerRequest>,

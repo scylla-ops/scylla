@@ -1,11 +1,7 @@
-use crate::application::{
-    AccountOutcome, HashService, OAuthIdentityRepository, OAuthOutcome, OAuthProvider,
-    OAuthUseCases, SessionRepository, SignupRepository, UserRepository,
-};
+use crate::application::{AccountOutcome, OAuthOutcome, OAuthUseCases};
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use scylla_proto::oauth::v1::{
     CallbackRequest, CallbackResponse, GetAuthUrlRequest, GetAuthUrlResponse, callback_response,
     callback_response::{ExistingAccount, NewAccount},
@@ -15,30 +11,12 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct OAuthHandler<P, IR, SR, U, S, H, PC>
-where
-    P: OAuthProvider,
-    IR: OAuthIdentityRepository,
-    SR: SignupRepository,
-    U: UserRepository,
-    S: SessionRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
-    use_cases: Arc<OAuthUseCases<P, IR, SR, U, S, H, PC>>,
+pub struct OAuthHandler {
+    use_cases: Arc<OAuthUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    P: OAuthProvider + Send + Sync + 'static,
-    IR: OAuthIdentityRepository + Send + Sync + 'static,
-    SR: SignupRepository + Send + Sync + 'static,
-    U: UserRepository + Send + Sync + 'static,
-    S: SessionRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> OauthService for OAuthHandler<P, IR, SR, U, S, H, PC>
-{
+impl OauthService for OAuthHandler {
     async fn get_auth_url(
         &self,
         request: Request<GetAuthUrlRequest>,

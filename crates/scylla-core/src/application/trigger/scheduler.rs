@@ -11,22 +11,16 @@ use tracing::{info, instrument, warn};
 const CRON_CLAIM_BATCH: i64 = 100;
 
 /// Missed occurrences during downtime are skipped, not backfilled.
-pub struct TriggerCronScheduler<T>
-where
-    T: TriggerRepository,
-{
-    trigger_repo: Arc<T>,
+pub struct TriggerCronScheduler {
+    trigger_repo: Arc<dyn TriggerRepository>,
     firing: Arc<dyn TriggerFiring>,
     schedule: Arc<dyn CronSchedule>,
 }
 
-impl<T> TriggerCronScheduler<T>
-where
-    T: TriggerRepository,
-{
+impl TriggerCronScheduler {
     #[must_use]
     pub fn new(
-        trigger_repo: Arc<T>,
+        trigger_repo: Arc<dyn TriggerRepository>,
         firing: Arc<dyn TriggerFiring>,
         schedule: Arc<dyn CronSchedule>,
     ) -> Self {

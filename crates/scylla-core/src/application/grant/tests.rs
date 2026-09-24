@@ -123,14 +123,14 @@ impl AgentDispatch for RecordingRegistry {
     fn release(&self, _app_id: &AppId) {}
 }
 
-struct Lab<PS: PermissionService> {
+struct Lab {
     actions: Actions,
-    uc: GrantUseCases<StubGrants, StubPolicy, PS>,
+    uc: GrantUseCases,
     grants: Arc<StubGrants>,
     registry: Arc<RecordingRegistry>,
 }
 
-impl<PS: PermissionService> Lab<PS> {
+impl Lab {
     async fn grant(&self, caller: &CallerContext, grant: &Grant) -> DomainResult<Grant> {
         let cmd = CreateGrant {
             principal: grant.principal.clone(),
@@ -160,15 +160,11 @@ impl<PS: PermissionService> Lab<PS> {
     }
 }
 
-fn lab(grants: Vec<Grant>) -> Lab<RecordingPermissionService> {
+fn lab(grants: Vec<Grant>) -> Lab {
     lab_with(grants, vec![], Arc::new(RecordingPermissionService::new()))
 }
 
-fn lab_with<PS: PermissionService + 'static>(
-    grants: Vec<Grant>,
-    roles: Vec<Role>,
-    permissions: Arc<PS>,
-) -> Lab<PS> {
+fn lab_with(grants: Vec<Grant>, roles: Vec<Role>, permissions: Arc<dyn PermissionService>) -> Lab {
     let grants = Arc::new(StubGrants {
         rows: grants,
         ..StubGrants::default()

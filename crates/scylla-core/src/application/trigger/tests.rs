@@ -316,18 +316,15 @@ impl PermissionService for NoRunPermissionService {
     }
 }
 
-type Uc<PS> =
-    TriggerUseCases<StubTriggers, StubPipelines, StubProjects, StubApps, StubHash, StubPolicy, PS>;
-
-struct Lab<PS: PermissionService> {
+struct Lab {
     actions: Actions,
-    uc: Uc<PS>,
+    uc: TriggerUseCases,
     triggers: Arc<StubTriggers>,
     apps: Arc<StubApps>,
     policy: Arc<StubPolicy>,
 }
 
-impl<PS: PermissionService> Lab<PS> {
+impl Lab {
     async fn create(&self, source: TriggerSource) -> DomainResult<(Trigger, Option<String>)> {
         self.actions.run(&self.uc, &alice(), create(source)).await
     }
@@ -349,7 +346,7 @@ impl<PS: PermissionService> Lab<PS> {
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab<PS> {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let project = ProjectBuilder::for_org_id(organization_id(), "rocket")
         .id(ProjectId::new("proj-1"))
         .build();

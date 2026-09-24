@@ -32,14 +32,7 @@ async fn seed_app(pool: &PgPool, secret: &AppSecret) -> App {
     app
 }
 
-fn use_cases(
-    pool: &PgPool,
-) -> AppTokenUseCases<
-    PgAppRepository,
-    PgAppTokenRepository,
-    PgAppCredentialRepository,
-    Argon2HashService,
-> {
+fn use_cases(pool: &PgPool) -> AppTokenUseCases {
     AppTokenUseCases::new(
         Arc::new(PgAppRepository::new(pool.clone())),
         Arc::new(PgAppTokenRepository::new(pool.clone())),

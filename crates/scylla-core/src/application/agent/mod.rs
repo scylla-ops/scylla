@@ -23,17 +23,11 @@ use std::sync::Arc;
 /// The agent's own stream and the dispatch run as the agent or the scheduler, outside the
 /// pipeline.
 #[derive(Constructor)]
-pub struct AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
-    pub(super) app_repo: Arc<A>,
-    pub(super) agent_repo: Arc<W>,
-    pub(super) hash_service: Arc<H>,
-    pub(super) policy_control: Arc<PC>,
+pub struct AgentUseCases {
+    pub(super) app_repo: Arc<dyn AppRepository>,
+    pub(super) agent_repo: Arc<dyn AgentRepository>,
+    pub(super) hash_service: Arc<dyn HashService>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
     pub(super) registry: Arc<dyn AgentDispatch>,
 }
 

@@ -29,19 +29,7 @@ impl OAuthProvider for StubProvider {
     }
 }
 
-#[allow(clippy::type_complexity)]
-async fn use_cases(
-    pool: &sqlx::PgPool,
-    info: OAuthUserInfo,
-) -> OAuthUseCases<
-    StubProvider,
-    PgOAuthIdentityRepository,
-    PgSignupRepository,
-    PgUserRepository,
-    PgSessionRepository,
-    Argon2HashService,
-    CedarPermissionService<PgAuthzEntityProvider>,
-> {
+async fn use_cases(pool: &sqlx::PgPool, info: OAuthUserInfo) -> OAuthUseCases {
     let permission = Arc::new(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),

@@ -6,9 +6,7 @@ use super::RoleUseCases;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_auth::authz::{
-    GrantRepository, PolicyControl, Role, RoleRepository, ScopeKind, validate_role_permissions,
-};
+use scylla_auth::authz::{Role, ScopeKind, validate_role_permissions};
 use scylla_extension::{
     Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -33,12 +31,7 @@ impl Command for CreateRole {
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Prepare<CreateRole>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Prepare<CreateRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<CreateRole>) -> DomainResult<Prepared<CreateRole>> {
         let cmd = input.command();
         validate_role_permissions(&cmd.permissions, cmd.scope)?;
@@ -53,12 +46,7 @@ where
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Persist<CreateRole>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Persist<CreateRole>> for RoleUseCases {
     async fn run(&self, input: Prepared<CreateRole>) -> DomainResult<Committed<CreateRole>> {
         input
             .commit(async |draft| {
@@ -91,12 +79,7 @@ impl Command for UpdateRole {
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Prepare<UpdateRole>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Prepare<UpdateRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<UpdateRole>) -> DomainResult<Prepared<UpdateRole>> {
         let cmd = input.command();
         let mut role = self
@@ -113,12 +96,7 @@ where
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Persist<UpdateRole>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Persist<UpdateRole>> for RoleUseCases {
     async fn run(&self, input: Prepared<UpdateRole>) -> DomainResult<Committed<UpdateRole>> {
         input
             .commit(async |draft| {
@@ -148,12 +126,7 @@ impl Command for DeleteRole {
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Prepare<DeleteRole>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Prepare<DeleteRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<DeleteRole>) -> DomainResult<Prepared<DeleteRole>> {
         let id = &input.command().id;
         let role = self
@@ -178,12 +151,7 @@ where
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Persist<DeleteRole>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Persist<DeleteRole>> for RoleUseCases {
     async fn run(&self, input: Prepared<DeleteRole>) -> DomainResult<Committed<DeleteRole>> {
         input
             .commit(async |role| {

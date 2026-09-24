@@ -3,7 +3,6 @@
 
 use super::InvitationUseCases;
 use crate::application::invitation::token::mint_invitation_token;
-use crate::application::{InvitationRepository, OrganizationRepository};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, UserId};
@@ -13,7 +12,7 @@ use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use crate::domain::user::Email;
 use async_trait::async_trait;
-use scylla_auth::authz::{PermissionService, Scope, validate_role_in_db};
+use scylla_auth::authz::{Scope, validate_role_in_db};
 use scylla_extension::{
     Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -44,12 +43,7 @@ impl Command for CreateInvitation {
 }
 
 #[async_trait]
-impl<I, O, PS> Run<Prepare<CreateInvitation>> for InvitationUseCases<I, O, PS>
-where
-    I: InvitationRepository,
-    O: OrganizationRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Prepare<CreateInvitation>> for InvitationUseCases {
     async fn run(
         &self,
         input: Authorized<CreateInvitation>,
@@ -83,12 +77,7 @@ where
 }
 
 #[async_trait]
-impl<I, O, PS> Run<Persist<CreateInvitation>> for InvitationUseCases<I, O, PS>
-where
-    I: InvitationRepository,
-    O: OrganizationRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Persist<CreateInvitation>> for InvitationUseCases {
     async fn run(
         &self,
         input: Prepared<CreateInvitation>,
@@ -97,8 +86,7 @@ where
             .commit(async |draft| {
                 let NewInvitation {
                     invitation,
-                    organization_name,
-                } = draft.into_inner();
+                    organization_name} = draft.into_inner();
                 self.invite_repo.create(&invitation).await?;
                 let body = format!(
                     "<p>You've been invited to join <b>{}</b> on Scylla.</p>\

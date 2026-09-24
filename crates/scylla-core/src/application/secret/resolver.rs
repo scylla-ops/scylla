@@ -18,20 +18,14 @@ pub trait SecretResolver: Send + Sync {
     ) -> DomainResult<Vec<DispatchNode>>;
 }
 
-pub struct DispatchSecretResolver<R>
-where
-    R: SecretRepository,
-{
-    secret_repo: Arc<R>,
+pub struct DispatchSecretResolver {
+    secret_repo: Arc<dyn SecretRepository>,
     cipher: Arc<dyn SecretCipher>,
 }
 
-impl<R> DispatchSecretResolver<R>
-where
-    R: SecretRepository,
-{
+impl DispatchSecretResolver {
     #[must_use]
-    pub fn new(secret_repo: Arc<R>, cipher: Arc<dyn SecretCipher>) -> Self {
+    pub fn new(secret_repo: Arc<dyn SecretRepository>, cipher: Arc<dyn SecretCipher>) -> Self {
         Self {
             secret_repo,
             cipher,
@@ -40,10 +34,7 @@ where
 }
 
 #[async_trait]
-impl<R> SecretResolver for DispatchSecretResolver<R>
-where
-    R: SecretRepository,
-{
+impl SecretResolver for DispatchSecretResolver {
     async fn resolve(
         &self,
         project_id: &ProjectId,

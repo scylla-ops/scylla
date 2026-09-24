@@ -1,6 +1,4 @@
-use crate::application::{
-    AppCredentialRepository, AppRepository, AppTokenRepository, AppTokenUseCases, HashService,
-};
+use crate::application::AppTokenUseCases;
 use crate::grpc::convert::{required, ts};
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
@@ -13,24 +11,12 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct AppAuthHandler<A, T, C, H>
-where
-    A: AppRepository,
-    T: AppTokenRepository,
-    C: AppCredentialRepository,
-    H: HashService,
-{
-    use_cases: Arc<AppTokenUseCases<A, T, C, H>>,
+pub struct AppAuthHandler {
+    use_cases: Arc<AppTokenUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    A: AppRepository + Send + Sync + 'static,
-    T: AppTokenRepository + Send + Sync + 'static,
-    C: AppCredentialRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-> AppAuthService for AppAuthHandler<A, T, C, H>
-{
+impl AppAuthService for AppAuthHandler {
     async fn issue_token(
         &self,
         request: Request<IssueTokenRequest>,

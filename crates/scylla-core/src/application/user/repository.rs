@@ -6,7 +6,7 @@ use crate::domain::user::{Email, Username};
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait UserRepository {
+pub trait UserRepository: Send + Sync {
     async fn create(&self, user: &User) -> DomainResult<User>;
 
     async fn find_by_id(&self, id: &UserId) -> DomainResult<User>;

@@ -14,10 +14,10 @@ use std::sync::Arc;
 /// The user aggregate's stage runners, one block per action in `commands.rs` and
 /// `queries.rs`. It has no method of its own; `Actions::run` drives it.
 #[derive(Constructor)]
-pub struct UserUseCases<U: UserRepository, H: HashService, PC: PolicyControl> {
-    pub(super) user_repo: Arc<U>,
-    pub(super) hash_service: Arc<H>,
-    pub(super) policy_control: Arc<PC>,
+pub struct UserUseCases {
+    pub(super) user_repo: Arc<dyn UserRepository>,
+    pub(super) hash_service: Arc<dyn HashService>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]

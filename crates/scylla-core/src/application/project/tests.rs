@@ -166,20 +166,20 @@ impl Policy for Veto {
     }
 }
 
-struct Lab<PS: PermissionService> {
+struct Lab {
     actions: Actions,
-    uc: ProjectUseCases<StubProjects, StubUsers, PS, StubPolicy>,
+    uc: ProjectUseCases,
     projects: Arc<StubProjects>,
     policy: Arc<StubPolicy>,
 }
 
-impl<PS: PermissionService> Lab<PS> {
+impl Lab {
     async fn create(&self, name: &str) -> DomainResult<Project> {
         self.actions.run(&self.uc, &alice(), create(name)).await
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>, hooks: Hooks) -> Lab<PS> {
+fn lab(permissions: Arc<dyn PermissionService>, hooks: Hooks) -> Lab {
     let projects = Arc::new(StubProjects::default());
     let policy = Arc::new(StubPolicy::default());
     Lab {

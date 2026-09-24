@@ -40,13 +40,16 @@ fn extract_bearer_token<T>(request: &Request<T>) -> Result<String, Status> {
 }
 
 #[derive(Clone)]
-pub struct AuthInterceptor<R, AT> {
-    session_repo: Arc<R>,
-    app_token_repo: Arc<AT>,
+pub struct AuthInterceptor {
+    session_repo: Arc<dyn SessionRepository>,
+    app_token_repo: Arc<dyn AppTokenRepository>,
 }
 
-impl<R, AT> AuthInterceptor<R, AT> {
-    pub fn new(session_repo: Arc<R>, app_token_repo: Arc<AT>) -> Self {
+impl AuthInterceptor {
+    pub fn new(
+        session_repo: Arc<dyn SessionRepository>,
+        app_token_repo: Arc<dyn AppTokenRepository>,
+    ) -> Self {
         Self {
             session_repo,
             app_token_repo,
@@ -54,11 +57,7 @@ impl<R, AT> AuthInterceptor<R, AT> {
     }
 }
 
-impl<R, AT> AsyncInterceptor for AuthInterceptor<R, AT>
-where
-    R: SessionRepository + Send + Sync + 'static,
-    AT: AppTokenRepository + Send + Sync + 'static,
-{
+impl AsyncInterceptor for AuthInterceptor {
     type Future = std::pin::Pin<Box<dyn Future<Output = Result<Request<()>, Status>> + Send>>;
     fn call(&mut self, mut request: Request<()>) -> Self::Future {
         let session_repo = self.session_repo.clone();

@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use scylla_auth::authz::Grant;
 
 #[async_trait]
-pub trait OrganizationRepository {
+pub trait OrganizationRepository: Send + Sync {
     async fn create(&self, organization: &Organization) -> DomainResult<Organization>;
 
     async fn provision_with_owner(

@@ -23,13 +23,13 @@ use tracing::instrument;
 /// `queries.rs`. `delete` stays outside the pipeline: its permission is on the secret's
 /// project, which only the loaded secret knows, and `Describe` sees the command alone.
 #[derive(Constructor)]
-pub struct SecretUseCases<R: SecretRepository, PS: PermissionService> {
-    pub(super) secret_repo: Arc<R>,
+pub struct SecretUseCases {
+    pub(super) secret_repo: Arc<dyn SecretRepository>,
     pub(super) cipher: Arc<dyn SecretCipher>,
-    pub(super) permission_service: Arc<PS>,
+    pub(super) permission_service: Arc<dyn PermissionService>,
 }
 
-impl<R: SecretRepository, PS: PermissionService> SecretUseCases<R, PS> {
+impl SecretUseCases {
     #[instrument(skip_all, fields(secret_id = %secret_id))]
     pub async fn delete(&self, caller: &CallerContext, secret_id: &SecretId) -> DomainResult<()> {
         let secret = self.secret_repo.find_by_id(secret_id).await?;

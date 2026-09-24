@@ -1,38 +1,24 @@
 use crate::application::GrantUseCases;
 use crate::application::grant::CreateGrant;
 use crate::application::user::{CreateUser, GetUserByUsername, UserUseCases};
-use crate::application::{HashService, UserRepository};
 use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, Username};
 use derive_more::Constructor;
-use scylla_auth::authz::{GrantRepository, PermissionService, PolicyControl, Principal, Scope};
+use scylla_auth::authz::{Principal, Scope};
 use scylla_extension::Actions;
 use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Constructor)]
-pub struct BootstrapUseCases<
-    U: UserRepository,
-    H: HashService,
-    PS: PermissionService,
-    G: GrantRepository,
-    PC: PolicyControl,
-> {
+pub struct BootstrapUseCases {
     actions: Arc<Actions>,
-    user_uc: Arc<UserUseCases<U, H, PC>>,
-    grant_uc: Arc<GrantUseCases<G, PC, PS>>,
+    user_uc: Arc<UserUseCases>,
+    grant_uc: Arc<GrantUseCases>,
 }
 
-impl<U, H, PS, G, PC> BootstrapUseCases<U, H, PS, G, PC>
-where
-    U: UserRepository + Send + Sync,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    G: GrantRepository,
-    PC: PolicyControl,
-{
+impl BootstrapUseCases {
     #[instrument(skip_all, fields(username = %username.as_str(), role = %role.as_str()))]
     pub async fn bootstrap_admin(
         &self,

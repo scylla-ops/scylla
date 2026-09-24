@@ -5,7 +5,6 @@ use crate::grpc::mappers::{
     authz_action_to_proto, domain_error_to_status, effective_scope_to_proto, role_to_proto,
 };
 use derive_more::Constructor;
-use scylla_auth::authz::{GrantRepository, PolicyControl, RoleRepository};
 use scylla_extension::Actions;
 use scylla_proto::authz::v1::{
     CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest, DeleteRoleResponse,
@@ -18,23 +17,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct RoleHandler<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+pub struct RoleHandler {
     actions: Arc<Actions>,
-    roles: Arc<RoleUseCases<RR, GR, PC>>,
+    roles: Arc<RoleUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    RR: RoleRepository + Send + Sync + 'static,
-    GR: GrantRepository + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> RoleService for RoleHandler<RR, GR, PC>
-{
+impl RoleService for RoleHandler {
     async fn create_role(
         &self,
         request: Request<CreateRoleRequest>,

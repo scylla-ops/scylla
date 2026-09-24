@@ -1,4 +1,4 @@
-use crate::application::{AuthUseCases, HashService, SessionRepository, UserRepository};
+use crate::application::AuthUseCases;
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
@@ -12,17 +12,12 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct AuthHandler<U: UserRepository, S: SessionRepository, H: HashService> {
-    use_cases: Arc<AuthUseCases<U, S, H>>,
+pub struct AuthHandler {
+    use_cases: Arc<AuthUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    U: UserRepository + Send + Sync + 'static,
-    S: SessionRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-> AuthService for AuthHandler<U, S, H>
-{
+impl AuthService for AuthHandler {
     async fn login(
         &self,
         request: Request<LoginRequest>,
@@ -86,7 +81,7 @@ impl<
     }
 }
 
-impl<U: UserRepository, S: SessionRepository, H: HashService> AuthHandler<U, S, H> {
+impl AuthHandler {
     pub async fn get_user_id_from_token(&self, token: &str) -> Result<UserId, Status> {
         if token.is_empty() {
             return Err(Status::unauthenticated("Token cannot be empty"));

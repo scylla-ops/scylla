@@ -1,8 +1,7 @@
 use super::TRIGGER_RUNNER_APP_NAME;
-use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::{
-    AppRepository, DispatchOutcome, DispatchUseCases, JobRepository, PipelineRepository,
-    PipelineUseCases, ProjectRepository, TriggerRepository,
+    AppRepository, DispatchOutcome, DispatchUseCases, PipelineRepository, PipelineUseCases,
+    ProjectRepository, TriggerRepository,
 };
 use crate::domain::caller::CallerContext;
 use crate::domain::clock;
@@ -29,44 +28,26 @@ pub trait TriggerFiring: Send + Sync {
 }
 
 /// Every fire runs as the org's trigger-runner App through `run_with_inputs`: one `RunPipeline` check, normal dispatch.
-pub struct TriggerFireUseCases<T, P, PR, A, J, PS, W>
-where
-    T: TriggerRepository,
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    A: AppRepository,
-    J: JobRepository,
-    PS: PermissionService,
-    W: AgentDispatch,
-{
-    trigger_repo: Arc<T>,
-    pipeline_repo: Arc<P>,
-    project_repo: Arc<PR>,
-    app_repo: Arc<A>,
-    pipeline_uc: Arc<PipelineUseCases<P, PR, J, PS>>,
-    dispatch_uc: Arc<DispatchUseCases<W, PS>>,
-    permission_service: Arc<PS>,
+pub struct TriggerFireUseCases {
+    trigger_repo: Arc<dyn TriggerRepository>,
+    pipeline_repo: Arc<dyn PipelineRepository>,
+    project_repo: Arc<dyn ProjectRepository>,
+    app_repo: Arc<dyn AppRepository>,
+    pipeline_uc: Arc<PipelineUseCases>,
+    dispatch_uc: Arc<DispatchUseCases>,
+    permission_service: Arc<dyn PermissionService>,
 }
 
-impl<T, P, PR, A, J, PS, W> TriggerFireUseCases<T, P, PR, A, J, PS, W>
-where
-    T: TriggerRepository,
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    A: AppRepository,
-    J: JobRepository,
-    PS: PermissionService,
-    W: AgentDispatch,
-{
+impl TriggerFireUseCases {
     #[must_use]
     pub fn new(
-        trigger_repo: Arc<T>,
-        pipeline_repo: Arc<P>,
-        project_repo: Arc<PR>,
-        app_repo: Arc<A>,
-        pipeline_uc: Arc<PipelineUseCases<P, PR, J, PS>>,
-        dispatch_uc: Arc<DispatchUseCases<W, PS>>,
-        permission_service: Arc<PS>,
+        trigger_repo: Arc<dyn TriggerRepository>,
+        pipeline_repo: Arc<dyn PipelineRepository>,
+        project_repo: Arc<dyn ProjectRepository>,
+        app_repo: Arc<dyn AppRepository>,
+        pipeline_uc: Arc<PipelineUseCases>,
+        dispatch_uc: Arc<DispatchUseCases>,
+        permission_service: Arc<dyn PermissionService>,
     ) -> Self {
         Self {
             trigger_repo,
@@ -172,16 +153,7 @@ where
 }
 
 #[async_trait]
-impl<T, P, PR, A, J, PS, W> TriggerFiring for TriggerFireUseCases<T, P, PR, A, J, PS, W>
-where
-    T: TriggerRepository + Send + Sync,
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    A: AppRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService + Send + Sync,
-    W: AgentDispatch + Send + Sync,
-{
+impl TriggerFiring for TriggerFireUseCases {
     async fn fire(
         &self,
         trigger_id: &TriggerId,

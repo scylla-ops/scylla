@@ -46,38 +46,20 @@ const RUNNER_SECRET_LABEL: &str = "default";
 /// sees the command alone.
 #[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
-pub struct TriggerUseCases<T, P, PR, A, H, PC, PS>
-where
-    T: TriggerRepository,
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    A: AppRepository,
-    H: HashService,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
-    pub(super) trigger_repo: Arc<T>,
-    pub(super) pipeline_repo: Arc<P>,
-    pub(super) project_repo: Arc<PR>,
-    pub(super) app_repo: Arc<A>,
-    pub(super) hash_service: Arc<H>,
-    pub(super) policy_control: Arc<PC>,
-    pub(super) permission_service: Arc<PS>,
+pub struct TriggerUseCases {
+    pub(super) trigger_repo: Arc<dyn TriggerRepository>,
+    pub(super) pipeline_repo: Arc<dyn PipelineRepository>,
+    pub(super) project_repo: Arc<dyn ProjectRepository>,
+    pub(super) app_repo: Arc<dyn AppRepository>,
+    pub(super) hash_service: Arc<dyn HashService>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
+    pub(super) permission_service: Arc<dyn PermissionService>,
     /// Reversible: HMAC verification needs the plaintext back.
     pub(super) cipher: Arc<dyn SecretCipher>,
     pub(super) schedule: Arc<dyn CronSchedule>,
 }
 
-impl<T, P, PR, A, H, PC, PS> TriggerUseCases<T, P, PR, A, H, PC, PS>
-where
-    T: TriggerRepository,
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    A: AppRepository,
-    H: HashService,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl TriggerUseCases {
     #[instrument(skip_all, fields(trigger_id = %trigger_id))]
     pub async fn get(
         &self,

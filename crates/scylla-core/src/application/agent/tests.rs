@@ -176,7 +176,7 @@ impl PolicyControl for StubPolicy {
 
 struct Lab {
     actions: Actions,
-    uc: AgentUseCases<StubApps, StubAgents, StubHash, StubPolicy>,
+    uc: AgentUseCases,
     apps: Arc<StubApps>,
     agents: Arc<StubAgents>,
     hash: Arc<StubHash>,
@@ -206,7 +206,7 @@ impl Lab {
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let agents = Arc::new(StubAgents::default());
     let apps = Arc::new(StubApps {
         agents: agents.clone(),

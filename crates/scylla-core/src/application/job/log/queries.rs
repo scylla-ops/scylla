@@ -2,8 +2,8 @@
 //! its output type, what `Fetch` reads.
 
 use super::JobLogUseCases;
+use crate::application::JobLogLiveStream;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::application::{JobLogLiveStream, JobLogRepository, JobLogStreamPort};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::JobId;
 use crate::domain::job::{JobLog, LogStream};
@@ -33,11 +33,7 @@ impl Query for ListJobLogs {
 }
 
 #[async_trait]
-impl<L, S> Run<Fetch<ListJobLogs>> for JobLogUseCases<L, S>
-where
-    L: JobLogRepository + Send + Sync,
-    S: JobLogStreamPort,
-{
+impl Run<Fetch<ListJobLogs>> for JobLogUseCases {
     async fn run(&self, input: Authorized<ListJobLogs>) -> DomainResult<Fetched<ListJobLogs>> {
         let query = input.command();
         let pagination = query.pagination.as_ref();
@@ -71,11 +67,7 @@ impl Query for TailJobLogs {
 }
 
 #[async_trait]
-impl<L, S> Run<Fetch<TailJobLogs>> for JobLogUseCases<L, S>
-where
-    L: JobLogRepository + Send + Sync,
-    S: JobLogStreamPort,
-{
+impl Run<Fetch<TailJobLogs>> for JobLogUseCases {
     async fn run(&self, input: Authorized<TailJobLogs>) -> DomainResult<Fetched<TailJobLogs>> {
         let query = input.command();
         let node_id = query.node_id.as_ref();

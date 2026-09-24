@@ -36,128 +36,35 @@ use tokio::sync::Notify;
 use tonic_async_interceptor::async_interceptor;
 use tower_http::cors::CorsLayer;
 
-pub(crate) type PermissionChecker = CedarPermissionService<PgAuthzEntityProvider>;
-pub(crate) type SharedPermissionChecker = Arc<PermissionChecker>;
-pub(crate) type SharedGrantUc =
-    Arc<GrantUseCases<PgGrantRepository, PermissionChecker, PermissionChecker>>;
-pub(crate) type SharedRoleUc =
-    Arc<RoleUseCases<PgRoleRepository, PgGrantRepository, PermissionChecker>>;
-
-pub(crate) type SharedAuthUc =
-    Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
-#[cfg(feature = "register")]
-pub(crate) type SharedSignupUc = Arc<
-    SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
->;
-pub(crate) type SharedInvitationUc =
-    Arc<InvitationUseCases<PgInvitationRepository, PgOrganizationRepository, PermissionChecker>>;
-pub(crate) type SharedInvitationAcceptUc = Arc<
-    InvitationAcceptUseCases<
-        PgInvitationRepository,
-        PgUserRepository,
-        Argon2HashService,
-        PgSessionRepository,
-        PermissionChecker,
-    >,
->;
-pub(crate) type SharedOAuthUc = Arc<
-    OAuthUseCases<
-        GitHubOAuthProvider,
-        PgOAuthIdentityRepository,
-        PgSignupRepository,
-        PgUserRepository,
-        PgSessionRepository,
-        Argon2HashService,
-        PermissionChecker,
-    >,
->;
-pub(crate) type SharedUserUc =
-    Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker>>;
-pub(crate) type SharedOrgUc =
-    Arc<OrganizationUseCases<PgOrganizationRepository, PgUserRepository, PermissionChecker>>;
-pub(crate) type SharedProjectUc = Arc<
-    ProjectUseCases<PgProjectRepository, PgUserRepository, PermissionChecker, PermissionChecker>,
->;
-pub(crate) type SharedPipelineUc = Arc<
-    PipelineUseCases<PgPipelineRepository, PgProjectRepository, PgJobRepository, PermissionChecker>,
->;
-pub(crate) type SharedJobUc = Arc<JobUseCases<PgJobRepository>>;
-pub(crate) type SharedSecretUc = Arc<SecretUseCases<PgSecretRepository, PermissionChecker>>;
-pub(crate) type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, InMemoryJobLogStream>>;
-pub(crate) type SharedAppUc = Arc<
-    AppUseCases<
-        PgAppRepository,
-        PgAppCredentialRepository,
-        Argon2HashService,
-        PermissionChecker,
-        PermissionChecker,
-    >,
->;
-pub(crate) type SharedAppTokenUc = Arc<
-    AppTokenUseCases<
-        PgAppRepository,
-        PgAppTokenRepository,
-        PgAppCredentialRepository,
-        Argon2HashService,
-    >,
->;
-pub(crate) type SharedDispatchUc = Arc<DispatchUseCases<InMemoryAgentRegistry, PermissionChecker>>;
-pub(crate) type SharedAgentUc =
-    Arc<AgentUseCases<PgAppRepository, PgAgentRepository, Argon2HashService, PermissionChecker>>;
-pub(crate) type SharedTriggerUc = Arc<
-    TriggerUseCases<
-        PgTriggerRepository,
-        PgPipelineRepository,
-        PgProjectRepository,
-        PgAppRepository,
-        Argon2HashService,
-        PermissionChecker,
-        PermissionChecker,
-    >,
->;
-pub(crate) type SharedTriggerFireUc = Arc<
-    TriggerFireUseCases<
-        PgTriggerRepository,
-        PgPipelineRepository,
-        PgProjectRepository,
-        PgAppRepository,
-        PgJobRepository,
-        PermissionChecker,
-        InMemoryAgentRegistry,
-    >,
->;
-pub(crate) type SharedWebhookIngressUc =
-    Arc<WebhookIngressUseCases<PgTriggerRepository, PgTriggerDeliveryRepository>>;
-
 pub(crate) struct Services {
-    pub auth_uc: SharedAuthUc,
+    pub auth_uc: Arc<AuthUseCases>,
     #[cfg(feature = "register")]
-    pub signup_uc: SharedSignupUc,
-    pub invitation_uc: SharedInvitationUc,
-    pub invitation_accept_uc: SharedInvitationAcceptUc,
-    pub oauth_uc: Option<SharedOAuthUc>,
-    pub user_uc: SharedUserUc,
-    pub org_uc: SharedOrgUc,
+    pub signup_uc: Arc<SignupUseCases>,
+    pub invitation_uc: Arc<InvitationUseCases>,
+    pub invitation_accept_uc: Arc<InvitationAcceptUseCases>,
+    pub oauth_uc: Option<Arc<OAuthUseCases>>,
+    pub user_uc: Arc<UserUseCases>,
+    pub org_uc: Arc<OrganizationUseCases>,
     pub actions: Arc<Actions>,
-    pub project_uc: SharedProjectUc,
-    pub pipeline_uc: SharedPipelineUc,
-    pub trigger_uc: SharedTriggerUc,
-    pub trigger_fire_uc: SharedTriggerFireUc,
-    pub webhook_ingress_uc: SharedWebhookIngressUc,
-    pub secret_uc: SharedSecretUc,
-    pub job_uc: SharedJobUc,
-    pub job_log_uc: SharedJobLogUc,
-    pub app_uc: SharedAppUc,
-    pub app_token_uc: SharedAppTokenUc,
-    pub agent_uc: SharedAgentUc,
+    pub project_uc: Arc<ProjectUseCases>,
+    pub pipeline_uc: Arc<PipelineUseCases>,
+    pub trigger_uc: Arc<TriggerUseCases>,
+    pub trigger_fire_uc: Arc<TriggerFireUseCases>,
+    pub webhook_ingress_uc: Arc<WebhookIngressUseCases>,
+    pub secret_uc: Arc<SecretUseCases>,
+    pub job_uc: Arc<JobUseCases>,
+    pub job_log_uc: Arc<JobLogUseCases>,
+    pub app_uc: Arc<AppUseCases>,
+    pub app_token_uc: Arc<AppTokenUseCases>,
+    pub agent_uc: Arc<AgentUseCases>,
     pub agent_repo: Arc<PgAgentRepository>,
-    pub dispatch_uc: SharedDispatchUc,
+    pub dispatch_uc: Arc<DispatchUseCases>,
     pub agent_registry: Arc<InMemoryAgentRegistry>,
     pub pending_signal: Arc<Notify>,
     pub job_log_stream: Arc<InMemoryJobLogStream>,
-    pub grant_uc: SharedGrantUc,
-    pub role_uc: SharedRoleUc,
-    pub permission_checker: SharedPermissionChecker,
+    pub grant_uc: Arc<GrantUseCases>,
+    pub role_uc: Arc<RoleUseCases>,
+    pub permission_checker: Arc<CedarPermissionService<PgAuthzEntityProvider>>,
     pub session_repo: Arc<PgSessionRepository>,
     pub app_token_repo: Arc<PgAppTokenRepository>,
 }

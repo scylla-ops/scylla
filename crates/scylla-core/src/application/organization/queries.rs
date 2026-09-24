@@ -3,14 +3,12 @@
 
 use super::OrganizationUseCases;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::application::{OrganizationRepository, UserRepository};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, UserId};
 use crate::domain::organization::Organization;
 use crate::domain::permission::Permission;
 use crate::domain::user::User;
 use async_trait::async_trait;
-use scylla_auth::authz::PolicyControl;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 use std::collections::HashMap;
 
@@ -30,12 +28,7 @@ impl Query for GetOrganization {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Fetch<GetOrganization>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetOrganization>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<GetOrganization>,
@@ -61,12 +54,7 @@ impl Query for ListOrganizations {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Fetch<ListOrganizations>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListOrganizations>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<ListOrganizations>,
@@ -96,12 +84,7 @@ impl Query for ListOrganizationMembers {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Fetch<ListOrganizationMembers>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListOrganizationMembers>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<ListOrganizationMembers>,
@@ -144,12 +127,7 @@ impl Query for ListUserOrganizations {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Fetch<ListUserOrganizations>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListUserOrganizations>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<ListUserOrganizations>,

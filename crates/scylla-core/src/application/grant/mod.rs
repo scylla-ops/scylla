@@ -20,11 +20,11 @@ use tracing::instrument;
 /// `revoke` stays outside the pipeline: its permission is on the grant's scope, which only the
 /// loaded grant knows, and `Describe` sees the command alone.
 #[derive(Constructor)]
-pub struct GrantUseCases<G: GrantRepository, PC: PolicyControl, PS: PermissionService> {
-    pub(super) grant_repo: Arc<G>,
+pub struct GrantUseCases {
+    pub(super) grant_repo: Arc<dyn GrantRepository>,
     pub(super) role_repo: Arc<dyn RoleRepository>,
-    pub(super) policy_control: Arc<PC>,
-    pub(super) permission_service: Arc<PS>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
+    pub(super) permission_service: Arc<dyn PermissionService>,
     pub(super) agent_registry: Arc<dyn AgentDispatch>,
     pub(super) entity_provider: Arc<dyn AuthzEntityProvider>,
 }
@@ -38,7 +38,7 @@ pub(super) fn manage_permission(scope: &Scope) -> Permission {
     }
 }
 
-impl<G: GrantRepository, PC: PolicyControl, PS: PermissionService> GrantUseCases<G, PC, PS> {
+impl GrantUseCases {
     #[instrument(skip(self, caller))]
     pub async fn revoke(&self, caller: &CallerContext, id: &str) -> DomainResult<()> {
         let grants = self.grant_repo.list_all().await?;

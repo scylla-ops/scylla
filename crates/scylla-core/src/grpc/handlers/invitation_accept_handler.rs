@@ -1,10 +1,7 @@
-use crate::application::{
-    HashService, InvitationAcceptUseCases, InvitationRepository, SessionRepository, UserRepository,
-};
+use crate::application::InvitationAcceptUseCases;
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::domain_error_to_status;
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use scylla_domain::domain::user::{Password, Username};
 use scylla_proto::invitation::v1::{
     AcceptInvitationRequest, AcceptInvitationResponse,
@@ -14,26 +11,12 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct InvitationAcceptHandler<I, U, H, S, PC>
-where
-    I: InvitationRepository,
-    U: UserRepository,
-    H: HashService,
-    S: SessionRepository,
-    PC: PolicyControl,
-{
-    use_cases: Arc<InvitationAcceptUseCases<I, U, H, S, PC>>,
+pub struct InvitationAcceptHandler {
+    use_cases: Arc<InvitationAcceptUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    I: InvitationRepository + 'static,
-    U: UserRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    S: SessionRepository + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> InvitationAcceptService for InvitationAcceptHandler<I, U, H, S, PC>
-{
+impl InvitationAcceptService for InvitationAcceptHandler {
     async fn accept_invitation(
         &self,
         request: Request<AcceptInvitationRequest>,

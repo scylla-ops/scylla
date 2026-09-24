@@ -17,17 +17,12 @@ use std::sync::Arc;
 /// `queries.rs`. It has no method of its own; `Actions::run` drives it. `permission_service` serves one scoping decision in `fetch.rs`,
 /// never a gate.
 #[derive(Constructor)]
-pub struct ProjectUseCases<
-    P: ProjectRepository,
-    U: UserRepository,
-    PS: PermissionService,
-    PC: PolicyControl,
-> {
-    pub(super) project_repo: Arc<P>,
-    pub(super) user_repo: Arc<U>,
-    pub(super) permission_service: Arc<PS>,
+pub struct ProjectUseCases {
+    pub(super) project_repo: Arc<dyn ProjectRepository>,
+    pub(super) user_repo: Arc<dyn UserRepository>,
+    pub(super) permission_service: Arc<dyn PermissionService>,
     pub(super) visibility: Arc<dyn VisibilityResolver>,
-    pub(super) policy_control: Arc<PC>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]

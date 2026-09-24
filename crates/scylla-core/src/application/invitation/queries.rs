@@ -2,13 +2,11 @@
 //! permission, its output type, what `Fetch` reads.
 
 use super::InvitationUseCases;
-use crate::application::{InvitationRepository, OrganizationRepository};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::OrganizationId;
 use crate::domain::invitation::Invitation;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_auth::authz::PermissionService;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
@@ -27,12 +25,7 @@ impl Query for ListInvitations {
 }
 
 #[async_trait]
-impl<I, O, PS> Run<Fetch<ListInvitations>> for InvitationUseCases<I, O, PS>
-where
-    I: InvitationRepository,
-    O: OrganizationRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Fetch<ListInvitations>> for InvitationUseCases {
     async fn run(
         &self,
         input: Authorized<ListInvitations>,

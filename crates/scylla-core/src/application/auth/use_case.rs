@@ -12,13 +12,13 @@ use uuid::Uuid;
 const DEFAULT_SESSION_DURATION_HOURS: i64 = 24;
 
 #[derive(Constructor)]
-pub struct AuthUseCases<U: UserRepository, S: SessionRepository, H: HashService> {
-    user_repo: Arc<U>,
-    session_repo: Arc<S>,
-    hash_service: Arc<H>,
+pub struct AuthUseCases {
+    user_repo: Arc<dyn UserRepository>,
+    session_repo: Arc<dyn SessionRepository>,
+    hash_service: Arc<dyn HashService>,
 }
 
-impl<U: UserRepository, S: SessionRepository, H: HashService> AuthUseCases<U, S, H> {
+impl AuthUseCases {
     /// Same opaque error for both paths so callers cannot probe which accounts exist.
     #[instrument(skip(self, password, identifier))]
     pub async fn login(

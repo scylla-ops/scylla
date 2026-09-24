@@ -23,29 +23,15 @@ pub struct AcceptOutcome {
 
 /// The token is the credential: the invitee has no account yet, so no permission is asked.
 #[derive(Constructor)]
-pub struct InvitationAcceptUseCases<I, U, H, S, PC>
-where
-    I: InvitationRepository,
-    U: UserRepository,
-    H: HashService,
-    S: SessionRepository,
-    PC: PolicyControl,
-{
-    invite_repo: Arc<I>,
-    user_repo: Arc<U>,
-    hash_service: Arc<H>,
-    session_repo: Arc<S>,
-    policy_control: Arc<PC>,
+pub struct InvitationAcceptUseCases {
+    invite_repo: Arc<dyn InvitationRepository>,
+    user_repo: Arc<dyn UserRepository>,
+    hash_service: Arc<dyn HashService>,
+    session_repo: Arc<dyn SessionRepository>,
+    policy_control: Arc<dyn PolicyControl>,
 }
 
-impl<I, U, H, S, PC> InvitationAcceptUseCases<I, U, H, S, PC>
-where
-    I: InvitationRepository,
-    U: UserRepository,
-    H: HashService,
-    S: SessionRepository,
-    PC: PolicyControl,
-{
+impl InvitationAcceptUseCases {
     #[instrument(skip_all, fields(username = %username))]
     pub async fn accept(
         &self,

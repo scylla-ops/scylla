@@ -4,13 +4,11 @@
 
 use super::AppUseCases;
 use super::mint_app_secret;
-use crate::application::{AppCredentialRepository, AppRepository, HashService};
 use crate::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretLabel};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_extension::{
     Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -47,14 +45,7 @@ impl Command for CreateApp {
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Prepare<CreateApp>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<CreateApp>> for AppUseCases {
     async fn run(&self, input: Authorized<CreateApp>) -> DomainResult<Prepared<CreateApp>> {
         let cmd = input.command();
         let secret = mint_app_secret();
@@ -74,14 +65,7 @@ where
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Persist<CreateApp>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<CreateApp>> for AppUseCases {
     async fn run(&self, input: Prepared<CreateApp>) -> DomainResult<Committed<CreateApp>> {
         input
             .commit(async |draft| {
@@ -115,14 +99,7 @@ impl Command for SetAppActive {
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Prepare<SetAppActive>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<SetAppActive>> for AppUseCases {
     async fn run(&self, input: Authorized<SetAppActive>) -> DomainResult<Prepared<SetAppActive>> {
         let id = input.command().id.clone();
         Ok(input.prepared(id))
@@ -130,14 +107,7 @@ where
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Persist<SetAppActive>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<SetAppActive>> for AppUseCases {
     async fn run(&self, input: Prepared<SetAppActive>) -> DomainResult<Committed<SetAppActive>> {
         let active = input.command().is_active;
         input
@@ -170,14 +140,7 @@ impl Command for DeleteApp {
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Prepare<DeleteApp>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<DeleteApp>> for AppUseCases {
     async fn run(&self, input: Authorized<DeleteApp>) -> DomainResult<Prepared<DeleteApp>> {
         let id = input.command().id.clone();
         Ok(input.prepared(id))
@@ -185,14 +148,7 @@ where
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Persist<DeleteApp>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<DeleteApp>> for AppUseCases {
     async fn run(&self, input: Prepared<DeleteApp>) -> DomainResult<Committed<DeleteApp>> {
         input
             .commit(async |id| {
@@ -234,14 +190,7 @@ impl Command for CreateAppSecret {
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Prepare<CreateAppSecret>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<CreateAppSecret>> for AppUseCases {
     async fn run(
         &self,
         input: Authorized<CreateAppSecret>,
@@ -256,14 +205,7 @@ where
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Persist<CreateAppSecret>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<CreateAppSecret>> for AppUseCases {
     async fn run(
         &self,
         input: Prepared<CreateAppSecret>,

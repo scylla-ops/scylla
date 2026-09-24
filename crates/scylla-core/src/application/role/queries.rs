@@ -5,9 +5,7 @@ use super::RoleUseCases;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::permission::{PERMISSION_CATALOG, Permission};
 use async_trait::async_trait;
-use scylla_auth::authz::{
-    EffectiveScope, GrantRepository, PolicyControl, Principal, Role, RoleRepository,
-};
+use scylla_auth::authz::{EffectiveScope, Principal, Role};
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
@@ -24,12 +22,7 @@ impl Query for ListRoles {
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Fetch<ListRoles>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListRoles>> for RoleUseCases {
     async fn run(&self, input: Authorized<ListRoles>) -> DomainResult<Fetched<ListRoles>> {
         let roles = self.role_repo.list_all().await?;
         Ok(input.fetched(roles))
@@ -52,12 +45,7 @@ impl Query for GetRole {
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Fetch<GetRole>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetRole>> for RoleUseCases {
     async fn run(&self, input: Authorized<GetRole>) -> DomainResult<Fetched<GetRole>> {
         let id = &input.command().id;
         let role = self
@@ -84,12 +72,7 @@ impl Query for ListAuthzVocabulary {
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Fetch<ListAuthzVocabulary>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListAuthzVocabulary>> for RoleUseCases {
     async fn run(
         &self,
         input: Authorized<ListAuthzVocabulary>,
@@ -116,12 +99,7 @@ impl Query for GetEffectivePermissions {
 }
 
 #[async_trait]
-impl<RR, GR, PC> Run<Fetch<GetEffectivePermissions>> for RoleUseCases<RR, GR, PC>
-where
-    RR: RoleRepository,
-    GR: GrantRepository,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetEffectivePermissions>> for RoleUseCases {
     async fn run(
         &self,
         input: Authorized<GetEffectivePermissions>,

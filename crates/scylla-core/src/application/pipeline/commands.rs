@@ -2,7 +2,7 @@
 //! permission, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::PipelineUseCases;
-use crate::application::{JobDispatch, JobRepository, PipelineRepository, ProjectRepository};
+use crate::application::JobDispatch;
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{PipelineId, ProjectId};
@@ -10,7 +10,6 @@ use crate::domain::job::{Job, JobOrigin};
 use crate::domain::permission::Permission;
 use crate::domain::pipeline::{Pipeline, PipelineName, PipelineNode};
 use async_trait::async_trait;
-use scylla_auth::authz::PermissionService;
 use scylla_extension::{
     Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -34,13 +33,7 @@ impl Command for CreatePipeline {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Prepare<CreatePipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Prepare<CreatePipeline>> for PipelineUseCases {
     async fn run(
         &self,
         input: Authorized<CreatePipeline>,
@@ -54,13 +47,7 @@ where
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Persist<CreatePipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Persist<CreatePipeline>> for PipelineUseCases {
     async fn run(
         &self,
         input: Prepared<CreatePipeline>,
@@ -90,13 +77,7 @@ impl Command for UpdatePipeline {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Prepare<UpdatePipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Prepare<UpdatePipeline>> for PipelineUseCases {
     async fn run(
         &self,
         input: Authorized<UpdatePipeline>,
@@ -114,13 +95,7 @@ where
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Persist<UpdatePipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Persist<UpdatePipeline>> for PipelineUseCases {
     async fn run(
         &self,
         input: Prepared<UpdatePipeline>,
@@ -148,13 +123,7 @@ impl Command for DeletePipeline {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Prepare<DeletePipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Prepare<DeletePipeline>> for PipelineUseCases {
     async fn run(
         &self,
         input: Authorized<DeletePipeline>,
@@ -165,13 +134,7 @@ where
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Persist<DeletePipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Persist<DeletePipeline>> for PipelineUseCases {
     async fn run(
         &self,
         input: Prepared<DeletePipeline>,
@@ -204,13 +167,7 @@ impl Command for RunPipeline {
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Prepare<RunPipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Prepare<RunPipeline>> for PipelineUseCases {
     async fn run(&self, input: Authorized<RunPipeline>) -> DomainResult<Prepared<RunPipeline>> {
         let origin = match input.caller() {
             CallerContext::User(user_id) => JobOrigin::Human {
@@ -232,13 +189,7 @@ where
 }
 
 #[async_trait]
-impl<P, PR, J, PS> Run<Persist<RunPipeline>> for PipelineUseCases<P, PR, J, PS>
-where
-    P: PipelineRepository + Send + Sync,
-    PR: ProjectRepository + Send + Sync,
-    J: JobRepository + Send + Sync,
-    PS: PermissionService,
-{
+impl Run<Persist<RunPipeline>> for PipelineUseCases {
     async fn run(&self, input: Prepared<RunPipeline>) -> DomainResult<Committed<RunPipeline>> {
         input
             .commit(async |draft| self.start(&draft.into_inner()).await)

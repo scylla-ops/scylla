@@ -2,13 +2,12 @@
 //! its response. Those two call the use case directly: their permission is on the loaded
 //! secret's app, which `Describe` cannot see.
 
-use crate::application::{AppCredentialRepository, AppRepository, AppUseCases, HashService};
+use crate::application::AppUseCases;
 use crate::extract_auth_context;
 use crate::grpc::adapter::run;
 use crate::grpc::convert::id;
 use crate::grpc::mappers::{app_credential_to_proto, app_to_proto, domain_error_to_status};
 use derive_more::Constructor;
-use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_domain::domain::ids::AppCredentialId;
 use scylla_extension::Actions;
 use scylla_proto::app::v1::{
@@ -22,27 +21,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct AppHandler<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+pub struct AppHandler {
     actions: Arc<Actions>,
-    apps: Arc<AppUseCases<A, C, H, PS, PC>>,
+    apps: Arc<AppUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    A: AppRepository + Send + Sync + 'static,
-    C: AppCredentialRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> AppService for AppHandler<A, C, H, PS, PC>
-{
+impl AppService for AppHandler {
     async fn create_app(
         &self,
         request: Request<CreateAppRequest>,

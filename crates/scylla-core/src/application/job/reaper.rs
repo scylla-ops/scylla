@@ -4,13 +4,13 @@ use std::sync::Arc;
 use tracing::{instrument, warn};
 
 /// Level-triggered: compares "running" against the connected set, so restarts and reconnect races need no special path.
-pub struct JobReaper<J: JobRepository> {
-    job_repo: Arc<J>,
+pub struct JobReaper {
+    job_repo: Arc<dyn JobRepository>,
 }
 
-impl<J: JobRepository> JobReaper<J> {
+impl JobReaper {
     #[must_use]
-    pub fn new(job_repo: Arc<J>) -> Self {
+    pub fn new(job_repo: Arc<dyn JobRepository>) -> Self {
         Self { job_repo }
     }
 

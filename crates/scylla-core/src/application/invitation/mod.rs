@@ -26,25 +26,15 @@ use tracing::instrument;
 /// organization, which only the loaded invitation knows, and `Describe` sees the command alone.
 /// Accepting runs before the invitee has an account, so it lives in `InvitationAcceptUseCases`.
 #[derive(Constructor)]
-pub struct InvitationUseCases<I, O, PS>
-where
-    I: InvitationRepository,
-    O: OrganizationRepository,
-    PS: PermissionService,
-{
-    pub(super) invite_repo: Arc<I>,
-    pub(super) org_repo: Arc<O>,
+pub struct InvitationUseCases {
+    pub(super) invite_repo: Arc<dyn InvitationRepository>,
+    pub(super) org_repo: Arc<dyn OrganizationRepository>,
     pub(super) role_repo: Arc<dyn RoleRepository>,
     pub(super) mailer: Arc<dyn Mailer>,
-    pub(super) permission_service: Arc<PS>,
+    pub(super) permission_service: Arc<dyn PermissionService>,
 }
 
-impl<I, O, PS> InvitationUseCases<I, O, PS>
-where
-    I: InvitationRepository,
-    O: OrganizationRepository,
-    PS: PermissionService,
-{
+impl InvitationUseCases {
     #[instrument(skip_all, fields(invite_id = %invite_id))]
     pub async fn revoke(
         &self,

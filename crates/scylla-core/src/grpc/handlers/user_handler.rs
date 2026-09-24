@@ -1,11 +1,10 @@
 //! The adapter: each RPC is one `run` and its response. Parsing lives in the
 //! user mapper, behind `Parse`; no RPC checks a permission or touches a port.
 
-use crate::application::{HashService, UserRepository, UserUseCases};
+use crate::application::UserUseCases;
 use crate::grpc::adapter::run;
 use crate::grpc::mappers::user_to_proto;
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use scylla_extension::Actions;
 use scylla_proto::user::v1::{
     CreateUserRequest, CreateUserResponse, DeleteUserRequest, DeleteUserResponse, GetUserRequest,
@@ -16,18 +15,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct UserHandler<U: UserRepository, H: HashService, PC: PolicyControl> {
+pub struct UserHandler {
     actions: Arc<Actions>,
-    users: Arc<UserUseCases<U, H, PC>>,
+    users: Arc<UserUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    U: UserRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> UserService for UserHandler<U, H, PC>
-{
+impl UserService for UserHandler {
     async fn create_user(
         &self,
         request: Request<CreateUserRequest>,

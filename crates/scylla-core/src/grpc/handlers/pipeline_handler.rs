@@ -2,15 +2,11 @@
 //! pipeline mapper, behind `Parse`; no RPC checks a permission or touches a port.
 //! `run_pipeline` then hands the new job to an agent, best-effort, as a trigger fire does.
 
-use crate::application::{
-    AgentDispatch, DispatchOutcome, DispatchUseCases, JobRepository, PipelineRepository,
-    PipelineUseCases, ProjectRepository,
-};
+use crate::application::{DispatchOutcome, DispatchUseCases, PipelineUseCases};
 use crate::grpc::adapter::run;
 use crate::grpc::convert::wrap;
 use crate::grpc::mappers::pipeline_to_proto;
 use derive_more::Constructor;
-use scylla_auth::authz::PermissionService;
 use scylla_extension::Actions;
 use scylla_proto::pipeline::v1::{
     CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse,
@@ -24,27 +20,14 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct PipelineHandler<
-    P: PipelineRepository,
-    PR: ProjectRepository,
-    J: JobRepository,
-    PS: PermissionService,
-    WD: AgentDispatch,
-> {
+pub struct PipelineHandler {
     actions: Arc<Actions>,
-    pipelines: Arc<PipelineUseCases<P, PR, J, PS>>,
-    dispatch_uc: Arc<DispatchUseCases<WD, PS>>,
+    pipelines: Arc<PipelineUseCases>,
+    dispatch_uc: Arc<DispatchUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    P: PipelineRepository + Send + Sync + 'static,
-    PR: ProjectRepository + Send + Sync + 'static,
-    J: JobRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-    WD: AgentDispatch + Send + Sync + 'static,
-> PipelineService for PipelineHandler<P, PR, J, PS, WD>
-{
+impl PipelineService for PipelineHandler {
     async fn create_pipeline(
         &self,
         request: Request<CreatePipelineRequest>,

@@ -19,10 +19,10 @@ use std::sync::Arc;
 /// The organization aggregate's stage runners, one block per action in `commands.rs` and
 /// `queries.rs`. It has no method of its own; `Actions::run` drives it.
 #[derive(Constructor)]
-pub struct OrganizationUseCases<O: OrganizationRepository, U: UserRepository, PC: PolicyControl> {
-    pub(super) org_repo: Arc<O>,
-    pub(super) user_repo: Arc<U>,
-    pub(super) policy_control: Arc<PC>,
+pub struct OrganizationUseCases {
+    pub(super) org_repo: Arc<dyn OrganizationRepository>,
+    pub(super) user_repo: Arc<dyn UserRepository>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
 #[cfg(test)]

@@ -2,7 +2,6 @@
 //! output type, what `Fetch` reads.
 
 use super::JobUseCases;
-use crate::application::JobRepository;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{JobId, OrganizationId, PipelineId, ProjectId};
@@ -27,10 +26,7 @@ impl Query for GetJob {
 }
 
 #[async_trait]
-impl<J> Run<Fetch<GetJob>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Fetch<GetJob>> for JobUseCases {
     async fn run(&self, input: Authorized<GetJob>) -> DomainResult<Fetched<GetJob>> {
         let job = self.job_repo.find_by_id(&input.command().id).await?;
         Ok(input.fetched(job))
@@ -53,10 +49,7 @@ impl Query for ListJobs {
 }
 
 #[async_trait]
-impl<J> Run<Fetch<ListJobs>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Fetch<ListJobs>> for JobUseCases {
     async fn run(&self, input: Authorized<ListJobs>) -> DomainResult<Fetched<ListJobs>> {
         let page = self
             .job_repo
@@ -83,10 +76,7 @@ impl Query for ListPipelineJobs {
 }
 
 #[async_trait]
-impl<J> Run<Fetch<ListPipelineJobs>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Fetch<ListPipelineJobs>> for JobUseCases {
     async fn run(
         &self,
         input: Authorized<ListPipelineJobs>,
@@ -117,10 +107,7 @@ impl Query for ListProjectJobs {
 }
 
 #[async_trait]
-impl<J> Run<Fetch<ListProjectJobs>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Fetch<ListProjectJobs>> for JobUseCases {
     async fn run(
         &self,
         input: Authorized<ListProjectJobs>,
@@ -151,10 +138,7 @@ impl Query for ListOrganizationJobs {
 }
 
 #[async_trait]
-impl<J> Run<Fetch<ListOrganizationJobs>> for JobUseCases<J>
-where
-    J: JobRepository + Send + Sync,
-{
+impl Run<Fetch<ListOrganizationJobs>> for JobUseCases {
     async fn run(
         &self,
         input: Authorized<ListOrganizationJobs>,

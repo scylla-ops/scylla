@@ -1,7 +1,4 @@
-use crate::application::{
-    IngestOutcome, TriggerDeliveryRepository, TriggerRepository, WebhookError,
-    WebhookIngressUseCases,
-};
+use crate::application::{IngestOutcome, WebhookError, WebhookIngressUseCases};
 use axum::{
     Router,
     body::Bytes,
@@ -15,26 +12,18 @@ use std::sync::Arc;
 const DELIVERY_HEADERS: [&str; 2] = ["X-Scylla-Delivery", "X-GitHub-Delivery"];
 const EVENT_HEADERS: [&str; 2] = ["X-Scylla-Event", "X-GitHub-Event"];
 
-pub fn router<T, D>(ingress: Arc<WebhookIngressUseCases<T, D>>) -> Router
-where
-    T: TriggerRepository + Send + Sync + 'static,
-    D: TriggerDeliveryRepository + Send + Sync + 'static,
-{
+pub fn router(ingress: Arc<WebhookIngressUseCases>) -> Router {
     Router::new()
-        .route("/webhooks/{trigger_id}", post(handle::<T, D>))
+        .route("/webhooks/{trigger_id}", post(handle))
         .with_state(ingress)
 }
 
-async fn handle<T, D>(
-    State(ingress): State<Arc<WebhookIngressUseCases<T, D>>>,
+async fn handle(
+    State(ingress): State<Arc<WebhookIngressUseCases>>,
     Path(trigger_id): Path<String>,
     headers: HeaderMap,
     body: Bytes,
-) -> (StatusCode, &'static str)
-where
-    T: TriggerRepository + Send + Sync + 'static,
-    D: TriggerDeliveryRepository + Send + Sync + 'static,
-{
+) -> (StatusCode, &'static str) {
     let trigger_id = TriggerId::new(&trigger_id);
 
     let get_header = |name: &str| {

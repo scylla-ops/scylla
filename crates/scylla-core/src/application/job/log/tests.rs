@@ -83,12 +83,12 @@ impl JobLogStreamPort for StubLive {
 
 struct Lab {
     actions: Actions,
-    uc: JobLogUseCases<StubLogs, StubLive>,
+    uc: JobLogUseCases,
     logs: Arc<StubLogs>,
     live: Arc<StubLive>,
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let logs = Arc::new(StubLogs::default());
     let live = Arc::new(StubLive::default());
     Lab {

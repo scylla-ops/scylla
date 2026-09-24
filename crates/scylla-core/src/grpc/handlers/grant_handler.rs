@@ -4,7 +4,7 @@ use crate::grpc::adapter::run;
 use crate::grpc::convert::{required, scope_kind_from_proto};
 use crate::grpc::mappers::{domain_error_to_status, grant_to_proto, grantable_role_to_proto};
 use derive_more::Constructor;
-use scylla_auth::authz::{GrantRepository, PermissionService, PolicyControl, grantable_roles};
+use scylla_auth::authz::grantable_roles;
 use scylla_extension::Actions;
 use scylla_proto::authz::v1::{
     CreateGrantRequest, CreateGrantResponse, ListGrantableRolesRequest, ListGrantableRolesResponse,
@@ -15,18 +15,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct GrantHandler<G: GrantRepository, PC: PolicyControl, PS: PermissionService> {
+pub struct GrantHandler {
     actions: Arc<Actions>,
-    grants: Arc<GrantUseCases<G, PC, PS>>,
+    grants: Arc<GrantUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    G: GrantRepository + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-> GrantService for GrantHandler<G, PC, PS>
-{
+impl GrantService for GrantHandler {
     async fn create_grant(
         &self,
         request: Request<CreateGrantRequest>,

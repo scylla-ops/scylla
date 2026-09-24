@@ -2,13 +2,11 @@
 //! permission, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::SecretUseCases;
-use crate::application::SecretRepository;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::ProjectId;
 use crate::domain::permission::Permission;
 use crate::domain::secret::{Secret, SecretName};
 use async_trait::async_trait;
-use scylla_auth::authz::PermissionService;
 use scylla_extension::{
     Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -33,11 +31,7 @@ impl Command for CreateSecret {
 }
 
 #[async_trait]
-impl<R, PS> Run<Prepare<CreateSecret>> for SecretUseCases<R, PS>
-where
-    R: SecretRepository,
-    PS: PermissionService,
-{
+impl Run<Prepare<CreateSecret>> for SecretUseCases {
     async fn run(&self, input: Authorized<CreateSecret>) -> DomainResult<Prepared<CreateSecret>> {
         let cmd = input.command();
         let encrypted = self.cipher.encrypt(&cmd.value)?;
@@ -52,11 +46,7 @@ where
 }
 
 #[async_trait]
-impl<R, PS> Run<Persist<CreateSecret>> for SecretUseCases<R, PS>
-where
-    R: SecretRepository,
-    PS: PermissionService,
-{
+impl Run<Persist<CreateSecret>> for SecretUseCases {
     async fn run(&self, input: Prepared<CreateSecret>) -> DomainResult<Committed<CreateSecret>> {
         input
             .commit(async |draft| {

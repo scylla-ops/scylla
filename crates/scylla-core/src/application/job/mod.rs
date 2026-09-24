@@ -22,8 +22,8 @@ use std::sync::Arc;
 /// stream sends `RecordJobStatus` through the engine; the reaper and the dispatch write through
 /// the port directly.
 #[derive(Constructor)]
-pub struct JobUseCases<J: JobRepository> {
-    pub(super) job_repo: Arc<J>,
+pub struct JobUseCases {
+    pub(super) job_repo: Arc<dyn JobRepository>,
 }
 
 #[cfg(test)]

@@ -14,15 +14,18 @@ pub enum DispatchOutcome {
     NoAgentAvailable,
 }
 
-pub struct DispatchUseCases<W: AgentDispatch, PS: PermissionService> {
-    registry: Arc<W>,
-    permission_service: Arc<PS>,
+pub struct DispatchUseCases {
+    registry: Arc<dyn AgentDispatch>,
+    permission_service: Arc<dyn PermissionService>,
     next: AtomicUsize,
 }
 
-impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
+impl DispatchUseCases {
     #[must_use]
-    pub fn new(registry: Arc<W>, permission_service: Arc<PS>) -> Self {
+    pub fn new(
+        registry: Arc<dyn AgentDispatch>,
+        permission_service: Arc<dyn PermissionService>,
+    ) -> Self {
         Self {
             registry,
             permission_service,

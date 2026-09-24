@@ -93,7 +93,7 @@ impl JobRepository for StubJobs {
 
 struct Lab {
     actions: Actions,
-    uc: JobUseCases<StubJobs>,
+    uc: JobUseCases,
     jobs: Arc<StubJobs>,
 }
 
@@ -110,7 +110,7 @@ impl Lab {
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let jobs = Arc::new(StubJobs::default());
     Lab {
         actions: Actions::new(

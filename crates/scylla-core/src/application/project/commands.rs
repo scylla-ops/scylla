@@ -4,7 +4,6 @@
 //! would be its next home once a failed reload no longer needs to fail the call.
 
 use super::ProjectUseCases;
-use crate::application::{ProjectRepository, UserRepository};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId};
@@ -12,9 +11,7 @@ use crate::domain::permission::Permission;
 use crate::domain::project::{Project, ProjectDescription, ProjectName};
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
-use scylla_auth::authz::{
-    Grant, PROJECT_ADMIN_ROLE, PermissionService, PolicyControl, Principal, Scope,
-};
+use scylla_auth::authz::{Grant, PROJECT_ADMIN_ROLE, Principal, Scope};
 use scylla_extension::{
     Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -46,13 +43,7 @@ impl Command for CreateProject {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Prepare<CreateProject>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<CreateProject>> for ProjectUseCases {
     async fn run(&self, input: Authorized<CreateProject>) -> DomainResult<Prepared<CreateProject>> {
         let cmd = input.command();
         let project = Project::create(
@@ -73,13 +64,7 @@ where
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Persist<CreateProject>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<CreateProject>> for ProjectUseCases {
     async fn run(&self, input: Prepared<CreateProject>) -> DomainResult<Committed<CreateProject>> {
         input
             .commit(async |draft| {
@@ -118,13 +103,7 @@ impl Command for UpdateProject {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Prepare<UpdateProject>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<UpdateProject>> for ProjectUseCases {
     async fn run(&self, input: Authorized<UpdateProject>) -> DomainResult<Prepared<UpdateProject>> {
         let cmd = input.command();
         let mut project = self.project_repo.find_by_id(&cmd.id).await?;
@@ -139,13 +118,7 @@ where
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Persist<UpdateProject>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<UpdateProject>> for ProjectUseCases {
     async fn run(&self, input: Prepared<UpdateProject>) -> DomainResult<Committed<UpdateProject>> {
         input
             .commit(async |draft| self.project_repo.update(&draft.into_inner()).await)
@@ -171,13 +144,7 @@ impl Command for SetProjectActive {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Prepare<SetProjectActive>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<SetProjectActive>> for ProjectUseCases {
     async fn run(
         &self,
         input: Authorized<SetProjectActive>,
@@ -190,13 +157,7 @@ where
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Persist<SetProjectActive>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<SetProjectActive>> for ProjectUseCases {
     async fn run(
         &self,
         input: Prepared<SetProjectActive>,
@@ -224,13 +185,7 @@ impl Command for DeleteProject {
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Prepare<DeleteProject>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Prepare<DeleteProject>> for ProjectUseCases {
     async fn run(&self, input: Authorized<DeleteProject>) -> DomainResult<Prepared<DeleteProject>> {
         let project = self.project_repo.find_by_id(&input.command().id).await?;
         Ok(input.prepared(project))
@@ -238,13 +193,7 @@ where
 }
 
 #[async_trait]
-impl<P, U, PS, PC> Run<Persist<DeleteProject>> for ProjectUseCases<P, U, PS, PC>
-where
-    P: ProjectRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Persist<DeleteProject>> for ProjectUseCases {
     async fn run(&self, input: Prepared<DeleteProject>) -> DomainResult<Committed<DeleteProject>> {
         input
             .commit(async |project| {

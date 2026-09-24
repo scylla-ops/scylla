@@ -4,7 +4,6 @@
 
 use super::AgentUseCases;
 use crate::application::app::mint_app_secret;
-use crate::application::{AgentRepository, AppRepository, HashService};
 use crate::domain::agent::Agent;
 use crate::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretLabel};
 use crate::domain::errors::DomainResult;
@@ -12,7 +11,7 @@ use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
-use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, PolicyControl, Principal, Scope};
+use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, Principal, Scope};
 use scylla_extension::{
     Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -51,13 +50,7 @@ impl Command for CreateAgent {
 }
 
 #[async_trait]
-impl<A, W, H, PC> Run<Prepare<CreateAgent>> for AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<CreateAgent>> for AgentUseCases {
     async fn run(&self, input: Authorized<CreateAgent>) -> DomainResult<Prepared<CreateAgent>> {
         let cmd = input.command();
         let secret = mint_app_secret();
@@ -85,13 +78,7 @@ where
 }
 
 #[async_trait]
-impl<A, W, H, PC> Run<Persist<CreateAgent>> for AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<CreateAgent>> for AgentUseCases {
     async fn run(&self, input: Prepared<CreateAgent>) -> DomainResult<Committed<CreateAgent>> {
         input
             .commit(async |draft| {
@@ -129,13 +116,7 @@ impl Command for DeleteAgent {
 }
 
 #[async_trait]
-impl<A, W, H, PC> Run<Prepare<DeleteAgent>> for AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<DeleteAgent>> for AgentUseCases {
     async fn run(&self, input: Authorized<DeleteAgent>) -> DomainResult<Prepared<DeleteAgent>> {
         let id = input.command().id.clone();
         Ok(input.prepared(id))
@@ -143,13 +124,7 @@ where
 }
 
 #[async_trait]
-impl<A, W, H, PC> Run<Persist<DeleteAgent>> for AgentUseCases<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<DeleteAgent>> for AgentUseCases {
     async fn run(&self, input: Prepared<DeleteAgent>) -> DomainResult<Committed<DeleteAgent>> {
         input
             .commit(async |id| {

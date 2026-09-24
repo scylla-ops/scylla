@@ -1,8 +1,7 @@
-use crate::application::{AgentRepository, AgentUseCases, AppRepository, HashService};
+use crate::application::AgentUseCases;
 use crate::grpc::adapter::run;
 use crate::grpc::mappers::{agent_stats_to_proto, agent_to_proto, agent_view_to_proto};
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use scylla_extension::Actions;
 use scylla_proto::agent::v1::{
     CreateAgentRequest, CreateAgentResponse, DeleteAgentRequest, DeleteAgentResponse,
@@ -13,25 +12,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct AgentAdminHandler<A, W, H, PC>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
+pub struct AgentAdminHandler {
     actions: Arc<Actions>,
-    agents: Arc<AgentUseCases<A, W, H, PC>>,
+    agents: Arc<AgentUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    A: AppRepository + Send + Sync + 'static,
-    W: AgentRepository + Send + Sync + 'static,
-    H: HashService + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> AgentAdminService for AgentAdminHandler<A, W, H, PC>
-{
+impl AgentAdminService for AgentAdminHandler {
     async fn create_agent(
         &self,
         request: Request<CreateAgentRequest>,

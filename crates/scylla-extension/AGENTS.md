@@ -156,9 +156,11 @@ so its signature is the proof that the check ran.
 ### The use case and the adapter
 
 A use case struct (`ProjectUseCases`) holds the ports and implements the `Run`
-traits. It has no method of its own, no `Actions` field, no permission code
-and no hook code. The adapter (a gRPC handler) holds `Arc<Actions>` and
-`Arc<ProjectUseCases>`, and each RPC is one call and its response:
+traits. Each port is an `Arc<dyn Port>`, thus the struct, its `Run` impls and
+its handler have no type parameters. It has no method of its own, no `Actions`
+field, no permission code and no hook code. The adapter (a gRPC handler) holds
+`Arc<Actions>` and `Arc<ProjectUseCases>`, and each RPC is one call and its
+response:
 
 ```rust
 async fn create_project(&self, request: Request<CreateProjectRequest>)

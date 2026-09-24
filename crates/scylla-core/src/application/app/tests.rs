@@ -203,9 +203,9 @@ impl PolicyControl for StubPolicy {
     }
 }
 
-struct Lab<PS: PermissionService> {
+struct Lab {
     actions: Actions,
-    uc: AppUseCases<StubApps, StubCredentials, StubHash, PS, StubPolicy>,
+    uc: AppUseCases,
     apps: Arc<StubApps>,
     credentials: Arc<StubCredentials>,
     hash: Arc<StubHash>,
@@ -213,7 +213,7 @@ struct Lab<PS: PermissionService> {
     policy: Arc<StubPolicy>,
 }
 
-impl<PS: PermissionService> Lab<PS> {
+impl Lab {
     async fn create(&self) -> DomainResult<CreatedApp> {
         self.actions.run(&self.uc, &alice(), create()).await
     }
@@ -232,7 +232,7 @@ impl<PS: PermissionService> Lab<PS> {
     }
 }
 
-fn lab<PS: PermissionService + 'static>(permissions: Arc<PS>) -> Lab<PS> {
+fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let apps = Arc::new(StubApps::default());
     let credentials = Arc::new(StubCredentials::default());
     let hash = Arc::new(StubHash::default());

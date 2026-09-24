@@ -81,16 +81,12 @@ impl PolicyControl for CountingPolicy {
 
 struct Lab {
     actions: Actions,
-    uc: RoleUseCases<StubRoles, StubGrants, CountingPolicy>,
+    uc: RoleUseCases,
     roles: Arc<StubRoles>,
     policy: Arc<CountingPolicy>,
 }
 
-fn lab<PS: PermissionService + 'static>(
-    permissions: Arc<PS>,
-    roles: Vec<Role>,
-    grants: Vec<Grant>,
-) -> Lab {
+fn lab(permissions: Arc<dyn PermissionService>, roles: Vec<Role>, grants: Vec<Grant>) -> Lab {
     let roles = Arc::new(StubRoles {
         rows: Mutex::new(roles),
     });

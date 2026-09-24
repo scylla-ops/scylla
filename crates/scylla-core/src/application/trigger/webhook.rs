@@ -31,26 +31,18 @@ pub enum WebhookError {
 }
 
 /// Signature verification happens before any write, so an unauthenticated caller cannot pollute the dedupe table.
-pub struct WebhookIngressUseCases<T, D>
-where
-    T: TriggerRepository,
-    D: TriggerDeliveryRepository,
-{
-    trigger_repo: Arc<T>,
-    delivery_repo: Arc<D>,
+pub struct WebhookIngressUseCases {
+    trigger_repo: Arc<dyn TriggerRepository>,
+    delivery_repo: Arc<dyn TriggerDeliveryRepository>,
     cipher: Arc<dyn SecretCipher>,
     firing: Arc<dyn TriggerFiring>,
 }
 
-impl<T, D> WebhookIngressUseCases<T, D>
-where
-    T: TriggerRepository,
-    D: TriggerDeliveryRepository,
-{
+impl WebhookIngressUseCases {
     #[must_use]
     pub fn new(
-        trigger_repo: Arc<T>,
-        delivery_repo: Arc<D>,
+        trigger_repo: Arc<dyn TriggerRepository>,
+        delivery_repo: Arc<dyn TriggerDeliveryRepository>,
         cipher: Arc<dyn SecretCipher>,
         firing: Arc<dyn TriggerFiring>,
     ) -> Self {
@@ -247,7 +239,7 @@ mod tests {
     }
 
     struct Harness {
-        ingress: WebhookIngressUseCases<StubRepo, StubDeliveries>,
+        ingress: WebhookIngressUseCases,
         deliveries: Arc<StubDeliveries>,
         firing: Arc<StubFiring>,
         trigger_id: TriggerId,

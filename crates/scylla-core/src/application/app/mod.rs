@@ -34,30 +34,16 @@ use tracing::instrument;
 /// the secret's app, which only the loaded credential knows, and `Describe` sees the command
 /// alone.
 #[derive(Constructor)]
-pub struct AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
-    pub(super) app_repo: Arc<A>,
-    pub(super) credential_repo: Arc<C>,
-    pub(super) hash_service: Arc<H>,
-    pub(super) permission_service: Arc<PS>,
+pub struct AppUseCases {
+    pub(super) app_repo: Arc<dyn AppRepository>,
+    pub(super) credential_repo: Arc<dyn AppCredentialRepository>,
+    pub(super) hash_service: Arc<dyn HashService>,
+    pub(super) permission_service: Arc<dyn PermissionService>,
     pub(super) registry: Arc<dyn AgentDispatch>,
-    pub(super) policy_control: Arc<PC>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
-impl<A, C, H, PS, PC> AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl AppUseCases {
     #[instrument(skip_all, fields(secret_id = %secret_id))]
     pub async fn revoke_secret(
         &self,

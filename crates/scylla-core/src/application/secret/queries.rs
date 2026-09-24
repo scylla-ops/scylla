@@ -2,13 +2,11 @@
 //! its output type, what `Fetch` reads.
 
 use super::SecretUseCases;
-use crate::application::SecretRepository;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::ProjectId;
 use crate::domain::permission::Permission;
 use crate::domain::secret::Secret;
 use async_trait::async_trait;
-use scylla_auth::authz::PermissionService;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
@@ -27,11 +25,7 @@ impl Query for ListSecrets {
 }
 
 #[async_trait]
-impl<R, PS> Run<Fetch<ListSecrets>> for SecretUseCases<R, PS>
-where
-    R: SecretRepository,
-    PS: PermissionService,
-{
+impl Run<Fetch<ListSecrets>> for SecretUseCases {
     async fn run(&self, input: Authorized<ListSecrets>) -> DomainResult<Fetched<ListSecrets>> {
         let secrets = self
             .secret_repo

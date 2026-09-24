@@ -2,13 +2,11 @@
 //! output type, what `Fetch` reads.
 
 use super::AppUseCases;
-use crate::application::{AppCredentialRepository, AppRepository, HashService};
 use crate::domain::app::{App, AppCredential};
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_auth::authz::{PermissionService, PolicyControl};
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 
 #[derive(Debug)]
@@ -27,14 +25,7 @@ impl Query for GetApp {
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Fetch<GetApp>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<GetApp>> for AppUseCases {
     async fn run(&self, input: Authorized<GetApp>) -> DomainResult<Fetched<GetApp>> {
         let app = self.app_repo.find_by_id(&input.command().id).await?;
         Ok(input.fetched(app))
@@ -57,14 +48,7 @@ impl Query for ListApps {
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Fetch<ListApps>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListApps>> for AppUseCases {
     async fn run(&self, input: Authorized<ListApps>) -> DomainResult<Fetched<ListApps>> {
         let apps = self
             .app_repo
@@ -90,14 +74,7 @@ impl Query for ListAppSecrets {
 }
 
 #[async_trait]
-impl<A, C, H, PS, PC> Run<Fetch<ListAppSecrets>> for AppUseCases<A, C, H, PS, PC>
-where
-    A: AppRepository,
-    C: AppCredentialRepository,
-    H: HashService + Send + Sync,
-    PS: PermissionService,
-    PC: PolicyControl,
-{
+impl Run<Fetch<ListAppSecrets>> for AppUseCases {
     async fn run(
         &self,
         input: Authorized<ListAppSecrets>,

@@ -17,18 +17,10 @@ use scylla_core::infrastructure::Argon2HashService;
 use scylla_extension::{Actions, Hooks};
 use std::sync::Arc;
 
-type Permission = CedarPermissionService<PgAuthzEntityProvider>;
-
 struct Lab {
     actions: Actions,
-    invitations: InvitationUseCases<PgInvitationRepository, PgOrganizationRepository, Permission>,
-    accept: InvitationAcceptUseCases<
-        PgInvitationRepository,
-        PgUserRepository,
-        Argon2HashService,
-        PgSessionRepository,
-        Permission,
-    >,
+    invitations: InvitationUseCases,
+    accept: InvitationAcceptUseCases,
 }
 
 async fn lab(pool: &sqlx::PgPool) -> Lab {

@@ -2,7 +2,6 @@
 //! permission, its payload types, what `Prepare` builds, what `Persist` writes.
 
 use super::OrganizationUseCases;
-use crate::application::{OrganizationRepository, UserRepository};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::OrganizationId;
@@ -10,7 +9,7 @@ use crate::domain::organization::{Organization, OrganizationDescription, Organiz
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
-use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, PolicyControl, Principal, Scope};
+use scylla_auth::authz::{Grant, ORGANIZATION_ADMIN_ROLE, Principal, Scope};
 use scylla_extension::{
     Authorized, Command, Committed, Deleted, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
@@ -41,12 +40,7 @@ impl Command for CreateOrganization {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Prepare<CreateOrganization>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<CreateOrganization>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<CreateOrganization>,
@@ -72,12 +66,7 @@ where
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Persist<CreateOrganization>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<CreateOrganization>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Prepared<CreateOrganization>,
@@ -124,12 +113,7 @@ impl Command for UpdateOrganization {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Prepare<UpdateOrganization>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<UpdateOrganization>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<UpdateOrganization>,
@@ -150,12 +134,7 @@ where
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Persist<UpdateOrganization>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<UpdateOrganization>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Prepared<UpdateOrganization>,
@@ -184,12 +163,7 @@ impl Command for SetOrganizationActive {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Prepare<SetOrganizationActive>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<SetOrganizationActive>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<SetOrganizationActive>,
@@ -202,12 +176,7 @@ where
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Persist<SetOrganizationActive>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<SetOrganizationActive>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Prepared<SetOrganizationActive>,
@@ -239,12 +208,7 @@ impl Command for DeleteOrganization {
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Prepare<DeleteOrganization>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Prepare<DeleteOrganization>> for OrganizationUseCases {
     async fn run(
         &self,
         input: Authorized<DeleteOrganization>,
@@ -255,12 +219,7 @@ where
 }
 
 #[async_trait]
-impl<O, U, PC> Run<Persist<DeleteOrganization>> for OrganizationUseCases<O, U, PC>
-where
-    O: OrganizationRepository + Send + Sync,
-    U: UserRepository + Send + Sync,
-    PC: PolicyControl,
-{
+impl Run<Persist<DeleteOrganization>> for OrganizationUseCases {
     // DB triggers drop the grants bound to the subtree; the reload stops the live set carrying them.
     async fn run(
         &self,

@@ -32,35 +32,17 @@ pub enum AccountOutcome {
 
 #[allow(clippy::too_many_arguments)]
 #[derive(Constructor)]
-pub struct OAuthUseCases<P, IR, SR, U, S, H, PC>
-where
-    P: OAuthProvider,
-    IR: OAuthIdentityRepository,
-    SR: SignupRepository,
-    U: UserRepository,
-    S: SessionRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
-    provider: Arc<P>,
-    identity_repo: Arc<IR>,
-    signup_repo: Arc<SR>,
-    user_repo: Arc<U>,
-    session_repo: Arc<S>,
-    hash_service: Arc<H>,
-    policy_control: Arc<PC>,
+pub struct OAuthUseCases {
+    provider: Arc<dyn OAuthProvider>,
+    identity_repo: Arc<dyn OAuthIdentityRepository>,
+    signup_repo: Arc<dyn SignupRepository>,
+    user_repo: Arc<dyn UserRepository>,
+    session_repo: Arc<dyn SessionRepository>,
+    hash_service: Arc<dyn HashService>,
+    policy_control: Arc<dyn PolicyControl>,
 }
 
-impl<P, IR, SR, U, S, H, PC> OAuthUseCases<P, IR, SR, U, S, H, PC>
-where
-    P: OAuthProvider,
-    IR: OAuthIdentityRepository,
-    SR: SignupRepository,
-    U: UserRepository,
-    S: SessionRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
+impl OAuthUseCases {
     pub fn authorize_url(&self, state: &str) -> DomainResult<String> {
         self.provider.authorize_url(state)
     }

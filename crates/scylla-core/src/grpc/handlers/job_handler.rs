@@ -1,6 +1,5 @@
 use crate::application::job::GetJob;
 use crate::application::pagination::PaginatedResult;
-use crate::application::{JobLogRepository, JobLogStreamPort, JobRepository};
 use crate::application::{JobLogUseCases, JobUseCases};
 use crate::extract_auth_context;
 use crate::grpc::adapter::run;
@@ -21,19 +20,14 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct JobHandler<J: JobRepository, L: JobLogRepository, S: JobLogStreamPort> {
+pub struct JobHandler {
     actions: Arc<Actions>,
-    jobs: Arc<JobUseCases<J>>,
-    logs: Arc<JobLogUseCases<L, S>>,
+    jobs: Arc<JobUseCases>,
+    logs: Arc<JobLogUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    J: JobRepository + Send + Sync + 'static,
-    L: JobLogRepository + Send + Sync + 'static,
-    S: JobLogStreamPort + 'static,
-> JobService for JobHandler<J, L, S>
-{
+impl JobService for JobHandler {
     async fn get_job(
         &self,
         request: Request<GetJobRequest>,

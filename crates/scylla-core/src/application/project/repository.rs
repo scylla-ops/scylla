@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use scylla_auth::authz::{Grant, Visibility};
 
 #[async_trait]
-pub trait ProjectRepository {
+pub trait ProjectRepository: Send + Sync {
     async fn create(&self, project: &Project) -> DomainResult<Project>;
 
     async fn provision_with_owner(&self, project: &Project, grant: &Grant) -> DomainResult<()>;

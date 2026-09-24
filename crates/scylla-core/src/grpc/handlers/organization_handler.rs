@@ -1,11 +1,10 @@
 //! The adapter: each RPC is one `run` and its response. Parsing lives in the
 //! organization mapper, behind `Parse`; no RPC checks a permission or touches a port.
 
-use crate::application::{OrganizationRepository, OrganizationUseCases, UserRepository};
+use crate::application::OrganizationUseCases;
 use crate::grpc::adapter::run;
 use crate::grpc::mappers::organization_to_proto;
 use derive_more::Constructor;
-use scylla_auth::authz::PolicyControl;
 use scylla_extension::Actions;
 use scylla_proto::organization::v1::{
     CreateOrganizationRequest, CreateOrganizationResponse, DeleteOrganizationRequest,
@@ -19,18 +18,13 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct OrganizationHandler<O: OrganizationRepository, U: UserRepository, PC: PolicyControl> {
+pub struct OrganizationHandler {
     actions: Arc<Actions>,
-    organizations: Arc<OrganizationUseCases<O, U, PC>>,
+    organizations: Arc<OrganizationUseCases>,
 }
 
 #[async_trait::async_trait]
-impl<
-    O: OrganizationRepository + Send + Sync + 'static,
-    U: UserRepository + Send + Sync + 'static,
-    PC: PolicyControl + Send + Sync + 'static,
-> OrganizationService for OrganizationHandler<O, U, PC>
-{
+impl OrganizationService for OrganizationHandler {
     async fn create_organization(
         &self,
         request: Request<CreateOrganizationRequest>,

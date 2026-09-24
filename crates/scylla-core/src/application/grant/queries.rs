@@ -5,7 +5,7 @@ use super::{GrantUseCases, manage_permission};
 use crate::domain::errors::DomainResult;
 use crate::domain::permission::Permission;
 use async_trait::async_trait;
-use scylla_auth::authz::{Grant, GrantRepository, PermissionService, PolicyControl, Scope};
+use scylla_auth::authz::{Grant, Scope};
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
 
 /// Without a scope, every grant of the installation; with one, the grants bound at that scope.
@@ -27,12 +27,7 @@ impl Query for ListGrants {
 }
 
 #[async_trait]
-impl<G, PC, PS> Run<Fetch<ListGrants>> for GrantUseCases<G, PC, PS>
-where
-    G: GrantRepository,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
+impl Run<Fetch<ListGrants>> for GrantUseCases {
     async fn run(&self, input: Authorized<ListGrants>) -> DomainResult<Fetched<ListGrants>> {
         let grants = self.grant_repo.list_all().await?;
         let grants = match &input.command().scope {

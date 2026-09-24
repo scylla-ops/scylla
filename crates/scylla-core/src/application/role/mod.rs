@@ -18,13 +18,13 @@ use tracing::instrument;
 /// `my_permissions` stays outside the pipeline: a caller reads its own grants and no permission
 /// is asked.
 #[derive(Constructor)]
-pub struct RoleUseCases<RR: RoleRepository, GR: GrantRepository, PC: PolicyControl> {
-    pub(super) role_repo: Arc<RR>,
-    pub(super) grant_repo: Arc<GR>,
-    pub(super) policy_control: Arc<PC>,
+pub struct RoleUseCases {
+    pub(super) role_repo: Arc<dyn RoleRepository>,
+    pub(super) grant_repo: Arc<dyn GrantRepository>,
+    pub(super) policy_control: Arc<dyn PolicyControl>,
 }
 
-impl<RR: RoleRepository, GR: GrantRepository, PC: PolicyControl> RoleUseCases<RR, GR, PC> {
+impl RoleUseCases {
     /// Service and Anonymous are refused: an empty list would read as "no permissions".
     #[instrument(skip(self, caller))]
     pub async fn my_permissions(

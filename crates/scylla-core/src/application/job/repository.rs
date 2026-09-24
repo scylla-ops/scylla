@@ -5,7 +5,7 @@ use crate::domain::job::Job;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait JobRepository {
+pub trait JobRepository: Send + Sync {
     async fn create(&self, job: &Job) -> DomainResult<Job>;
 
     async fn find_by_id(&self, id: &JobId) -> DomainResult<Job>;

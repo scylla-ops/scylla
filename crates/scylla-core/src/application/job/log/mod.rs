@@ -14,9 +14,9 @@ use std::sync::Arc;
 /// The job log's stage runners, one block per action in `commands.rs` and `queries.rs`. The
 /// agent stream sends `AppendJobLog` through the engine; the live fan-out stays in the stream.
 #[derive(Constructor)]
-pub struct JobLogUseCases<L: JobLogRepository, S: JobLogStreamPort> {
-    pub(super) log_repo: Arc<L>,
-    pub(super) stream_port: Arc<S>,
+pub struct JobLogUseCases {
+    pub(super) log_repo: Arc<dyn JobLogRepository>,
+    pub(super) stream_port: Arc<dyn JobLogStreamPort>,
 }
 
 #[cfg(test)]

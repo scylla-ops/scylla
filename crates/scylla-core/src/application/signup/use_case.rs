@@ -25,26 +25,14 @@ pub struct SignupOutcome {
 
 /// No `CallerContext`: the one public entry point, so the Cedar-gated use cases are bypassed on purpose.
 #[derive(Constructor)]
-pub struct SignupUseCases<SR, S, H, PC>
-where
-    SR: SignupRepository,
-    S: SessionRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
-    signup_repo: Arc<SR>,
-    session_repo: Arc<S>,
-    hash_service: Arc<H>,
-    policy_control: Arc<PC>,
+pub struct SignupUseCases {
+    signup_repo: Arc<dyn SignupRepository>,
+    session_repo: Arc<dyn SessionRepository>,
+    hash_service: Arc<dyn HashService>,
+    policy_control: Arc<dyn PolicyControl>,
 }
 
-impl<SR, S, H, PC> SignupUseCases<SR, S, H, PC>
-where
-    SR: SignupRepository,
-    S: SessionRepository,
-    H: HashService,
-    PC: PolicyControl,
-{
+impl SignupUseCases {
     #[instrument(skip_all, fields(username = %username, org = %organization_name))]
     pub async fn signup(
         &self,
