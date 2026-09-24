@@ -419,11 +419,16 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization, user and secret use cases are on the pipeline. The
-  other aggregates keep their hand-written sequence until they migrate.
+- The project, organization, user, secret and pipeline use cases are on the
+  pipeline. The other aggregates keep their hand-written sequence until they
+  migrate.
 - `SecretUseCases::delete` stays outside the pipeline. Its permission is
   `DeleteSecret` on the secret's project, and only the loaded secret knows that
   project; `Describe` sees the command alone.
+- `PipelineUseCases::run_with_inputs` and `assign_agent` stay outside the
+  pipeline. A trigger fire calls them as the trigger-runner App, with an origin
+  and inputs that no RPC sends. `RunPipeline` is the RPC path; the handler then
+  gives the job to an agent, as before.
 - The policy reload after a create or a delete sits inside the `commit`
   closure, so a failed reload still fails the call, as before. It is a
   `Listener<Persist<C>>` once a failed reload may only be logged.

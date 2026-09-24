@@ -606,8 +606,11 @@ where
     let org_handler = OrganizationHandler::new(services.actions.clone(), services.org_uc.clone());
     let project_handler =
         ProjectHandler::new(services.actions.clone(), services.project_uc.clone());
-    let pipeline_handler =
-        PipelineHandler::new(services.pipeline_uc.clone(), services.dispatch_uc.clone());
+    let pipeline_handler = PipelineHandler::new(
+        services.actions.clone(),
+        services.pipeline_uc.clone(),
+        services.dispatch_uc.clone(),
+    );
     let trigger_handler = TriggerHandler::new(
         services.trigger_uc.clone(),
         services.trigger_fire_uc.clone(),
