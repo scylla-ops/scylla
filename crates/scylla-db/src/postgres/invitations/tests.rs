@@ -9,23 +9,29 @@ use crate::test_support::prelude::*;
 use scylla_auth::audit::NoopAuditLog;
 use scylla_auth::authz::{Grant, GrantRepository, Principal, Scope};
 use scylla_auth::cedar::CedarPermissionService;
-use scylla_core::application::invitation::InvitationUseCases;
-use scylla_core::application::{Mailer, NoopMailer};
+use scylla_core::application::invitation::{
+    CreateInvitation, InvitationAcceptUseCases, InvitationUseCases,
+};
+use scylla_core::application::{Mailer, NoopMailer, PermissionAuthorizer};
 use scylla_core::infrastructure::Argon2HashService;
+use scylla_extension::{Actions, Hooks};
 use std::sync::Arc;
 
-#[allow(clippy::type_complexity)]
-async fn use_cases(
-    pool: &sqlx::PgPool,
-) -> InvitationUseCases<
-    PgInvitationRepository,
-    CedarPermissionService<PgAuthzEntityProvider>,
-    PgOrganizationRepository,
-    PgUserRepository,
-    Argon2HashService,
-    PgSessionRepository,
-    CedarPermissionService<PgAuthzEntityProvider>,
-> {
+type Permission = CedarPermissionService<PgAuthzEntityProvider>;
+
+struct Lab {
+    actions: Actions,
+    invitations: InvitationUseCases<PgInvitationRepository, PgOrganizationRepository, Permission>,
+    accept: InvitationAcceptUseCases<
+        PgInvitationRepository,
+        PgUserRepository,
+        Argon2HashService,
+        PgSessionRepository,
+        Permission,
+    >,
+}
+
+async fn lab(pool: &sqlx::PgPool) -> Lab {
     let permission = Arc::new(
         CedarPermissionService::new(
             Arc::new(PgAuthzEntityProvider::new(pool.clone())),
@@ -37,17 +43,27 @@ async fn use_cases(
         .expect("cedar"),
     );
     let mailer: Arc<dyn Mailer> = Arc::new(NoopMailer);
-    InvitationUseCases::new(
-        Arc::new(PgInvitationRepository::new(pool.clone())),
-        permission.clone(),
-        mailer,
-        Arc::new(PgOrganizationRepository::new(pool.clone())),
-        Arc::new(PgUserRepository::new(pool.clone())),
-        Arc::new(Argon2HashService::new()),
-        Arc::new(PgSessionRepository::new(pool.clone())),
-        permission,
-        Arc::new(PgRoleRepository::new(pool.clone())),
-    )
+    let invite_repo = Arc::new(PgInvitationRepository::new(pool.clone()));
+    Lab {
+        actions: Actions::new(
+            Arc::new(PermissionAuthorizer::new(permission.clone())),
+            Arc::new(Hooks::new()),
+        ),
+        invitations: InvitationUseCases::new(
+            invite_repo.clone(),
+            Arc::new(PgOrganizationRepository::new(pool.clone())),
+            Arc::new(PgRoleRepository::new(pool.clone())),
+            mailer,
+            permission.clone(),
+        ),
+        accept: InvitationAcceptUseCases::new(
+            invite_repo,
+            Arc::new(PgUserRepository::new(pool.clone())),
+            Arc::new(Argon2HashService::new()),
+            Arc::new(PgSessionRepository::new(pool.clone())),
+            permission,
+        ),
+    }
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -63,20 +79,25 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
         .await
         .expect("grant system-admin");
 
-    let uc = use_cases(&pool).await;
+    let lab = lab(&pool).await;
     let caller = CallerContext::User(inviter.id().clone());
 
-    let invite = uc
-        .create_invite(
+    let invite = lab
+        .actions
+        .run(
+            &lab.invitations,
             &caller,
-            org.id().clone(),
-            Email::new("newbie@example.com").unwrap(),
-            Some(RoleName::new("organization-admin").unwrap()),
+            CreateInvitation {
+                organization_id: org.id().clone(),
+                email: Email::new("newbie@example.com").unwrap(),
+                role: Some(RoleName::new("organization-admin").unwrap()),
+            },
         )
         .await
         .expect("create invite");
 
-    let outcome = uc
+    let outcome = lab
+        .accept
         .accept(
             invite.token(),
             Username::new("newbie").unwrap(),
@@ -98,8 +119,9 @@ async fn invite_then_accept_joins_org_with_grant(pool: sqlx::PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 async fn accept_with_unknown_token_fails(pool: sqlx::PgPool) {
-    let uc = use_cases(&pool).await;
-    let res = uc
+    let lab = lab(&pool).await;
+    let res = lab
+        .accept
         .accept(
             "no-such-token",
             Username::new("ghost").unwrap(),

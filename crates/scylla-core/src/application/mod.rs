@@ -29,7 +29,9 @@ pub use app::{
 pub use auth::{AuthUseCases, HashService, SessionRepository};
 pub use bootstrap::BootstrapUseCases;
 pub use grant::GrantUseCases;
-pub use invitation::{AcceptOutcome, InvitationRepository, InvitationUseCases};
+pub use invitation::{
+    AcceptOutcome, InvitationAcceptUseCases, InvitationRepository, InvitationUseCases,
+};
 pub use job::{
     JobEvent, JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogUseCases, JobReaper,
     JobRepository, JobUseCases,

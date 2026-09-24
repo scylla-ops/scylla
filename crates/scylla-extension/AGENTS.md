@@ -419,9 +419,9 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization, user, secret, pipeline, trigger, app, agent, job
-  and job log use cases are on the pipeline. The other aggregates keep their
-  hand-written sequence until they migrate.
+- The project, organization, user, secret, pipeline, trigger, app, agent, job,
+  job log and invitation use cases are on the pipeline. The other aggregates
+  keep their hand-written sequence until they migrate.
 - The agent stream sends `RecordJobStatus` and `AppendJobLog` through
   `Actions` for each report, as the agent's own token, so the `WriteJobStatus`
   and `AppendJobLog` checks are the authorize stage. The live fan-out
@@ -444,6 +444,13 @@ the row is still in the state the gate saw.
   loaded credential knows that app. `DeleteApp` and `SetAppActive` stage the id
   alone: the row is not read before the write, so a missing app behaves as
   before.
+- `InvitationUseCases::revoke` stays outside the pipeline. Its permission is
+  `ManageInvitations` on the invitation's organization, and only the loaded
+  invitation knows that organization.
+- `InvitationAcceptUseCases::accept` stays outside the pipeline. The invitee
+  has no account yet: the token is the credential, and no permission is asked.
+  The invite mail is sent in the `commit` closure of `CreateInvitation`, after
+  the write; a failed send is logged and does not fail the call, as before.
 - `SecretUseCases::delete` stays outside the pipeline. Its permission is
   `DeleteSecret` on the secret's project, and only the loaded secret knows that
   project; `Describe` sees the command alone.

@@ -7,11 +7,12 @@ use scylla_auth::cedar::CedarPermissionService;
 use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases,
-    CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
-    JobLogUseCases, JobReaper, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
-    OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer, PipelineUseCases,
-    ProjectUseCases, SecretCipher, SecretResolver, SecretUseCases, TriggerCronScheduler,
-    TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases, WebhookIngressUseCases,
+    CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
+    InvitationAcceptUseCases, InvitationUseCases, JobLogUseCases, JobReaper, JobUseCases, Mailer,
+    NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer,
+    PipelineUseCases, ProjectUseCases, SecretCipher, SecretResolver, SecretUseCases,
+    TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
+    WebhookIngressUseCases,
 };
 use scylla_core::config::ControlPlaneConfig;
 use scylla_core::error::StartupError;
@@ -49,11 +50,11 @@ pub(crate) type SharedAuthUc =
 pub(crate) type SharedSignupUc = Arc<
     SignupUseCases<PgSignupRepository, PgSessionRepository, Argon2HashService, PermissionChecker>,
 >;
-pub(crate) type SharedInvitationUc = Arc<
-    InvitationUseCases<
+pub(crate) type SharedInvitationUc =
+    Arc<InvitationUseCases<PgInvitationRepository, PgOrganizationRepository, PermissionChecker>>;
+pub(crate) type SharedInvitationAcceptUc = Arc<
+    InvitationAcceptUseCases<
         PgInvitationRepository,
-        PermissionChecker,
-        PgOrganizationRepository,
         PgUserRepository,
         Argon2HashService,
         PgSessionRepository,
@@ -134,6 +135,7 @@ pub(crate) struct Services {
     #[cfg(feature = "register")]
     pub signup_uc: SharedSignupUc,
     pub invitation_uc: SharedInvitationUc,
+    pub invitation_accept_uc: SharedInvitationAcceptUc,
     pub oauth_uc: Option<SharedOAuthUc>,
     pub user_uc: SharedUserUc,
     pub org_uc: SharedOrgUc,
@@ -311,14 +313,17 @@ pub(crate) async fn init_services(
 
     let invitation_uc = Arc::new(InvitationUseCases::new(
         invite_repo.clone(),
-        permission_checker.clone(),
-        mailer.clone(),
         org_repo.clone(),
+        role_repo.clone(),
+        mailer.clone(),
+        permission_checker.clone(),
+    ));
+    let invitation_accept_uc = Arc::new(InvitationAcceptUseCases::new(
+        invite_repo.clone(),
         user_repo.clone(),
         hash_service.clone(),
         session_repo.clone(),
         permission_checker.clone(),
-        role_repo.clone(),
     ));
 
     let oauth_uc = match &config.oauth.github {
@@ -439,6 +444,7 @@ pub(crate) async fn init_services(
         #[cfg(feature = "register")]
         signup_uc,
         invitation_uc,
+        invitation_accept_uc,
         oauth_uc,
         user_uc,
         org_uc,
@@ -549,8 +555,8 @@ where
     use scylla_core::grpc::RegistrationHandler;
     use scylla_core::grpc::{
         AgentAdminHandler, AgentHandler, AppAuthHandler, AppHandler, AuthHandler, GrantHandler,
-        InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler, PipelineHandler,
-        ProjectHandler, RoleHandler, SecretHandler, TriggerHandler, UserHandler,
+        InvitationAcceptHandler, InvitationHandler, JobHandler, OAuthHandler, OrganizationHandler,
+        PipelineHandler, ProjectHandler, RoleHandler, SecretHandler, TriggerHandler, UserHandler,
     };
     use scylla_proto::invitation::v1::{
         invitation_accept_service_server::InvitationAcceptServiceServer,
@@ -621,7 +627,8 @@ where
         AgentAdminHandler::new(services.actions.clone(), services.agent_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
-    let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());
+    let invitation_handler =
+        InvitationHandler::new(services.actions.clone(), services.invitation_uc.clone());
 
     let auth_interceptor = async_interceptor(AuthInterceptor::new(
         services.session_repo.clone(),
@@ -651,7 +658,9 @@ where
     let registration_service =
         RegistrationServiceServer::new(RegistrationHandler::new(services.signup_uc.clone()));
 
-    let invitation_accept_service = InvitationAcceptServiceServer::new(invitation_handler.clone());
+    let invitation_accept_service = InvitationAcceptServiceServer::new(
+        InvitationAcceptHandler::new(services.invitation_accept_uc.clone()),
+    );
 
     let oauth_service = services
         .oauth_uc
