@@ -182,9 +182,12 @@ interceptor, turns the request into its command or query through
 The request types implement `Parse` in the aggregate's mapper
 (`grpc/mappers/project_mapper.rs`), built from the small converters in
 `grpc::convert`: `id` for a required id wrapper, `valid` for a domain value
-built from a wire string, `proto_to_domain_pagination` for a page. The same
-mapper turns a page into its response with `From`. A handler never reads a
-request field itself.
+built from a wire string, `proto_to_domain_pagination` for a page. When each
+field is a required id, the page or a field copied as it is, the mapper uses
+`parse!` (`grpc/mappers/macros.rs`) and does not write the impl. The same
+mapper turns a page into its response with `From`: `page_response!` when the
+response is only the mapped items and the page metadata. An impl with other
+logic stays written by hand. A handler never reads a request field itself.
 
 ### Adding a command or a query
 

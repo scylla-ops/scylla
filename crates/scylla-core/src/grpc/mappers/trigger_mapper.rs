@@ -29,15 +29,7 @@ impl Parse for CreateTriggerRequest {
     }
 }
 
-impl Parse for ListPipelineTriggersRequest {
-    type Into = ListPipelineTriggers;
-
-    fn parse(self) -> Result<ListPipelineTriggers, Status> {
-        Ok(ListPipelineTriggers {
-            pipeline_id: id(self.pipeline_id, "pipeline_id")?,
-        })
-    }
-}
+parse!(ListPipelineTriggersRequest => ListPipelineTriggers { pipeline_id: id(pipeline_id) });
 
 fn create_source_to_domain(
     source: Option<create_trigger_request::Source>,

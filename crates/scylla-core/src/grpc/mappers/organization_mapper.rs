@@ -4,7 +4,7 @@ use crate::application::organization::{
 };
 use crate::application::pagination::PaginatedResult;
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
-use crate::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
+use crate::grpc::mappers::domain_to_proto_metadata;
 use scylla_domain::domain::organization::{
     Organization, OrganizationDescription, OrganizationName,
 };
@@ -46,15 +46,7 @@ impl Parse for CreateOrganizationRequest {
     }
 }
 
-impl Parse for GetOrganizationRequest {
-    type Into = GetOrganization;
-
-    fn parse(self) -> Result<GetOrganization, Status> {
-        Ok(GetOrganization {
-            id: id(self.organization_id, "organization_id")?,
-        })
-    }
-}
+parse!(GetOrganizationRequest => GetOrganization { id: id(organization_id) });
 
 impl Parse for UpdateOrganizationRequest {
     type Into = UpdateOrganization;
@@ -75,78 +67,29 @@ impl Parse for UpdateOrganizationRequest {
     }
 }
 
-impl Parse for SetOrganizationActiveRequest {
-    type Into = SetOrganizationActive;
+parse!(SetOrganizationActiveRequest => SetOrganizationActive {
+    id: id(organization_id),
+    is_active: copy,
+});
 
-    fn parse(self) -> Result<SetOrganizationActive, Status> {
-        Ok(SetOrganizationActive {
-            id: id(self.organization_id, "organization_id")?,
-            is_active: self.is_active,
-        })
-    }
-}
+parse!(DeleteOrganizationRequest => DeleteOrganization { id: id(organization_id) });
+parse!(ListOrganizationsRequest => ListOrganizations { pagination: page });
 
-impl Parse for DeleteOrganizationRequest {
-    type Into = DeleteOrganization;
+parse!(ListOrganizationMembersRequest => ListOrganizationMembers {
+    organization_id: id(organization_id),
+    pagination: page,
+});
 
-    fn parse(self) -> Result<DeleteOrganization, Status> {
-        Ok(DeleteOrganization {
-            id: id(self.organization_id, "organization_id")?,
-        })
-    }
-}
+parse!(ListUserOrganizationsRequest => ListUserOrganizations {
+    user_id: id(user_id),
+    pagination: page,
+});
 
-impl Parse for ListOrganizationsRequest {
-    type Into = ListOrganizations;
-
-    fn parse(self) -> Result<ListOrganizations, Status> {
-        Ok(ListOrganizations {
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl Parse for ListOrganizationMembersRequest {
-    type Into = ListOrganizationMembers;
-
-    fn parse(self) -> Result<ListOrganizationMembers, Status> {
-        Ok(ListOrganizationMembers {
-            organization_id: id(self.organization_id, "organization_id")?,
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl Parse for ListUserOrganizationsRequest {
-    type Into = ListUserOrganizations;
-
-    fn parse(self) -> Result<ListUserOrganizations, Status> {
-        Ok(ListUserOrganizations {
-            user_id: id(self.user_id, "user_id")?,
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl From<PaginatedResult<Organization>> for ListOrganizationsResponse {
-    fn from(page: PaginatedResult<Organization>) -> Self {
-        let (organizations, metadata) = page.into_parts();
-        Self {
-            organizations: organizations.iter().map(organization_to_proto).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
-
-impl From<PaginatedResult<Organization>> for ListUserOrganizationsResponse {
-    fn from(page: PaginatedResult<Organization>) -> Self {
-        let (organizations, metadata) = page.into_parts();
-        Self {
-            organizations: organizations.iter().map(organization_to_proto).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
+page_response!(
+    Organization => organizations: organization_to_proto;
+    ListOrganizationsResponse,
+    ListUserOrganizationsResponse,
+);
 
 impl From<PaginatedResult<User>> for ListOrganizationMembersResponse {
     fn from(page: PaginatedResult<User>) -> Self {

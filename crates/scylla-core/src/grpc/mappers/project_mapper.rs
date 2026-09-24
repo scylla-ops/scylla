@@ -6,7 +6,7 @@ use crate::application::project::{
     ListProjects, ListUserProjects, SetProjectActive, UpdateProject,
 };
 use crate::grpc::convert::{Parse, id, ts, valid, wrap};
-use crate::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
+use crate::grpc::mappers::domain_to_proto_metadata;
 use scylla_domain::domain::project::{Project, ProjectDescription, ProjectName};
 use scylla_domain::domain::user::User;
 use scylla_proto::project::v1::{
@@ -47,15 +47,7 @@ impl Parse for CreateProjectRequest {
     }
 }
 
-impl Parse for GetProjectRequest {
-    type Into = GetProject;
-
-    fn parse(self) -> Result<GetProject, Status> {
-        Ok(GetProject {
-            id: id(self.project_id, "project_id")?,
-        })
-    }
-}
+parse!(GetProjectRequest => GetProject { id: id(project_id) });
 
 impl Parse for UpdateProjectRequest {
     type Into = UpdateProject;
@@ -73,99 +65,35 @@ impl Parse for UpdateProjectRequest {
     }
 }
 
-impl Parse for SetProjectActiveRequest {
-    type Into = SetProjectActive;
+parse!(SetProjectActiveRequest => SetProjectActive {
+    id: id(project_id),
+    is_active: copy,
+});
 
-    fn parse(self) -> Result<SetProjectActive, Status> {
-        Ok(SetProjectActive {
-            id: id(self.project_id, "project_id")?,
-            is_active: self.is_active,
-        })
-    }
-}
+parse!(DeleteProjectRequest => DeleteProject { id: id(project_id) });
+parse!(ListProjectsRequest => ListProjects { pagination: page });
 
-impl Parse for DeleteProjectRequest {
-    type Into = DeleteProject;
+parse!(ListOrganizationProjectsRequest => ListOrganizationProjects {
+    organization_id: id(organization_id),
+    pagination: page,
+});
 
-    fn parse(self) -> Result<DeleteProject, Status> {
-        Ok(DeleteProject {
-            id: id(self.project_id, "project_id")?,
-        })
-    }
-}
+parse!(ListProjectMembersRequest => ListProjectMembers {
+    project_id: id(project_id),
+    pagination: page,
+});
 
-impl Parse for ListProjectsRequest {
-    type Into = ListProjects;
+parse!(ListUserProjectsRequest => ListUserProjects {
+    user_id: id(user_id),
+    pagination: page,
+});
 
-    fn parse(self) -> Result<ListProjects, Status> {
-        Ok(ListProjects {
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl Parse for ListOrganizationProjectsRequest {
-    type Into = ListOrganizationProjects;
-
-    fn parse(self) -> Result<ListOrganizationProjects, Status> {
-        Ok(ListOrganizationProjects {
-            organization_id: id(self.organization_id, "organization_id")?,
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl Parse for ListProjectMembersRequest {
-    type Into = ListProjectMembers;
-
-    fn parse(self) -> Result<ListProjectMembers, Status> {
-        Ok(ListProjectMembers {
-            project_id: id(self.project_id, "project_id")?,
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl Parse for ListUserProjectsRequest {
-    type Into = ListUserProjects;
-
-    fn parse(self) -> Result<ListUserProjects, Status> {
-        Ok(ListUserProjects {
-            user_id: id(self.user_id, "user_id")?,
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl From<PaginatedResult<Project>> for ListProjectsResponse {
-    fn from(page: PaginatedResult<Project>) -> Self {
-        let (projects, metadata) = page.into_parts();
-        Self {
-            projects: projects.iter().map(project_to_proto).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
-
-impl From<PaginatedResult<Project>> for ListOrganizationProjectsResponse {
-    fn from(page: PaginatedResult<Project>) -> Self {
-        let (projects, metadata) = page.into_parts();
-        Self {
-            projects: projects.iter().map(project_to_proto).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
-
-impl From<PaginatedResult<Project>> for ListUserProjectsResponse {
-    fn from(page: PaginatedResult<Project>) -> Self {
-        let (projects, metadata) = page.into_parts();
-        Self {
-            projects: projects.iter().map(project_to_proto).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
+page_response!(
+    Project => projects: project_to_proto;
+    ListProjectsResponse,
+    ListOrganizationProjectsResponse,
+    ListUserProjectsResponse,
+);
 
 impl From<PaginatedResult<User>> for ListProjectMembersResponse {
     fn from(page: PaginatedResult<User>) -> Self {

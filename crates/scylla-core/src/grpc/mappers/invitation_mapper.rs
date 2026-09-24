@@ -45,15 +45,7 @@ impl Parse for CreateInvitationRequest {
     }
 }
 
-impl Parse for ListInvitationsRequest {
-    type Into = ListInvitations;
-
-    fn parse(self) -> Result<ListInvitations, Status> {
-        Ok(ListInvitations {
-            organization_id: id(self.organization_id, "organization_id")?,
-        })
-    }
-}
+parse!(ListInvitationsRequest => ListInvitations { organization_id: id(organization_id) });
 
 #[cfg(test)]
 mod tests {

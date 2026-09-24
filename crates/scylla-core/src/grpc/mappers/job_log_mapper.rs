@@ -1,9 +1,8 @@
 //! Wire to query, query outcome to wire. The handler holds none of it.
 
 use crate::application::job::{ListJobLogs, TailJobLogs};
-use crate::application::pagination::PaginatedResult;
 use crate::grpc::convert::{Parse, id, optional, ts, wrap};
-use crate::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
+use crate::grpc::mappers::proto_to_domain_pagination;
 use scylla_domain::domain::job::JobLog;
 use scylla_domain::domain::pipeline::NodeId;
 use scylla_proto::common::v1 as common;
@@ -54,15 +53,7 @@ impl Parse for TailJobLogsRequest {
     }
 }
 
-impl From<PaginatedResult<JobLog>> for ListJobLogsResponse {
-    fn from(page: PaginatedResult<JobLog>) -> Self {
-        let (logs, metadata) = page.into_parts();
-        Self {
-            logs: logs.iter().map(job_log_to_proto).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
+page_response!(JobLog => logs: job_log_to_proto; ListJobLogsResponse);
 
 #[cfg(test)]
 mod tests {

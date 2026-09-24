@@ -1,14 +1,11 @@
 //! Wire to command, command outcome to wire. The handler holds none of it.
 
-use crate::application::pagination::PaginatedResult;
 use crate::application::pipeline::{
     CreatePipeline, DeletePipeline, GetPipeline, ListOrganizationPipelines, ListPipelines,
     ListProjectPipelines, RunPipeline, UpdatePipeline,
 };
 use crate::grpc::convert::{Parse, id, required, ts, valid, wrap};
-use crate::grpc::mappers::{
-    domain_error_to_status, domain_to_proto_metadata, proto_to_domain_pagination,
-};
+use crate::grpc::mappers::domain_error_to_status;
 use scylla_domain::domain::pipeline::{
     EnvKey, EnvSource, EnvVar as DomainEnvVar, NodeId, PipelineName, Step, WorkingDir,
 };
@@ -164,15 +161,7 @@ impl Parse for CreatePipelineRequest {
     }
 }
 
-impl Parse for GetPipelineRequest {
-    type Into = GetPipeline;
-
-    fn parse(self) -> Result<GetPipeline, Status> {
-        Ok(GetPipeline {
-            id: id(self.pipeline_id, "pipeline_id")?,
-        })
-    }
-}
+parse!(GetPipelineRequest => GetPipeline { id: id(pipeline_id) });
 
 impl Parse for UpdatePipelineRequest {
     type Into = UpdatePipeline;
@@ -191,87 +180,26 @@ impl Parse for UpdatePipelineRequest {
     }
 }
 
-impl Parse for DeletePipelineRequest {
-    type Into = DeletePipeline;
+parse!(DeletePipelineRequest => DeletePipeline { id: id(pipeline_id) });
+parse!(RunPipelineRequest => RunPipeline { id: id(pipeline_id) });
+parse!(ListPipelinesRequest => ListPipelines { pagination: page });
 
-    fn parse(self) -> Result<DeletePipeline, Status> {
-        Ok(DeletePipeline {
-            id: id(self.pipeline_id, "pipeline_id")?,
-        })
-    }
-}
+parse!(ListProjectPipelinesRequest => ListProjectPipelines {
+    project_id: id(project_id),
+    pagination: page,
+});
 
-impl Parse for RunPipelineRequest {
-    type Into = RunPipeline;
+parse!(ListOrganizationPipelinesRequest => ListOrganizationPipelines {
+    organization_id: id(organization_id),
+    pagination: page,
+});
 
-    fn parse(self) -> Result<RunPipeline, Status> {
-        Ok(RunPipeline {
-            id: id(self.pipeline_id, "pipeline_id")?,
-        })
-    }
-}
-
-impl Parse for ListPipelinesRequest {
-    type Into = ListPipelines;
-
-    fn parse(self) -> Result<ListPipelines, Status> {
-        Ok(ListPipelines {
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl Parse for ListProjectPipelinesRequest {
-    type Into = ListProjectPipelines;
-
-    fn parse(self) -> Result<ListProjectPipelines, Status> {
-        Ok(ListProjectPipelines {
-            project_id: id(self.project_id, "project_id")?,
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl Parse for ListOrganizationPipelinesRequest {
-    type Into = ListOrganizationPipelines;
-
-    fn parse(self) -> Result<ListOrganizationPipelines, Status> {
-        Ok(ListOrganizationPipelines {
-            organization_id: id(self.organization_id, "organization_id")?,
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl From<PaginatedResult<Pipeline>> for ListPipelinesResponse {
-    fn from(page: PaginatedResult<Pipeline>) -> Self {
-        let (pipelines, metadata) = page.into_parts();
-        Self {
-            pipelines: pipelines.iter().map(pipeline_to_proto_summary).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
-
-impl From<PaginatedResult<Pipeline>> for ListProjectPipelinesResponse {
-    fn from(page: PaginatedResult<Pipeline>) -> Self {
-        let (pipelines, metadata) = page.into_parts();
-        Self {
-            pipelines: pipelines.iter().map(pipeline_to_proto_summary).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
-
-impl From<PaginatedResult<Pipeline>> for ListOrganizationPipelinesResponse {
-    fn from(page: PaginatedResult<Pipeline>) -> Self {
-        let (pipelines, metadata) = page.into_parts();
-        Self {
-            pipelines: pipelines.iter().map(pipeline_to_proto_summary).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
+page_response!(
+    Pipeline => pipelines: pipeline_to_proto_summary;
+    ListPipelinesResponse,
+    ListProjectPipelinesResponse,
+    ListOrganizationPipelinesResponse,
+);
 
 #[cfg(test)]
 mod tests {

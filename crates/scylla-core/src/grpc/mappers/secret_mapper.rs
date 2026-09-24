@@ -30,15 +30,7 @@ impl Parse for CreateSecretRequest {
     }
 }
 
-impl Parse for ListSecretsRequest {
-    type Into = ListSecrets;
-
-    fn parse(self) -> Result<ListSecrets, Status> {
-        Ok(ListSecrets {
-            project_id: id(self.project_id, "project_id")?,
-        })
-    }
-}
+parse!(ListSecretsRequest => ListSecrets { project_id: id(project_id) });
 
 #[cfg(test)]
 mod tests {

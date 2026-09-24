@@ -1,7 +1,5 @@
-use crate::application::pagination::PaginatedResult;
 use crate::application::user::{CreateUser, DeleteUser, GetUser, ListUsers, UpdateUser};
 use crate::grpc::convert::{Parse, id, optional, ts, valid, wrap};
-use crate::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 use scylla_domain::domain::user::{Email, Password, User, Username};
 use scylla_proto::common::v1 as common;
 use scylla_proto::user::v1::{
@@ -37,15 +35,7 @@ impl Parse for CreateUserRequest {
     }
 }
 
-impl Parse for GetUserRequest {
-    type Into = GetUser;
-
-    fn parse(self) -> Result<GetUser, Status> {
-        Ok(GetUser {
-            id: id(self.user_id, "user_id")?,
-        })
-    }
-}
+parse!(GetUserRequest => GetUser { id: id(user_id) });
 
 impl Parse for UpdateUserRequest {
     type Into = UpdateUser;
@@ -58,35 +48,9 @@ impl Parse for UpdateUserRequest {
     }
 }
 
-impl Parse for DeleteUserRequest {
-    type Into = DeleteUser;
-
-    fn parse(self) -> Result<DeleteUser, Status> {
-        Ok(DeleteUser {
-            id: id(self.user_id, "user_id")?,
-        })
-    }
-}
-
-impl Parse for ListUsersRequest {
-    type Into = ListUsers;
-
-    fn parse(self) -> Result<ListUsers, Status> {
-        Ok(ListUsers {
-            pagination: proto_to_domain_pagination(self.pagination),
-        })
-    }
-}
-
-impl From<PaginatedResult<User>> for ListUsersResponse {
-    fn from(page: PaginatedResult<User>) -> Self {
-        let (users, metadata) = page.into_parts();
-        Self {
-            users: users.iter().map(user_to_proto).collect(),
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }
-    }
-}
+parse!(DeleteUserRequest => DeleteUser { id: id(user_id) });
+parse!(ListUsersRequest => ListUsers { pagination: page });
+page_response!(User => users: user_to_proto; ListUsersResponse);
 
 #[cfg(test)]
 mod tests {

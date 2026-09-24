@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 pub mod agent_mapper;
 pub mod app_mapper;
 pub mod error_mapper;

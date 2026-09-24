@@ -111,33 +111,9 @@ impl Parse for UpdateRoleRequest {
     }
 }
 
-impl Parse for DeleteRoleRequest {
-    type Into = DeleteRole;
-
-    fn parse(self) -> Result<DeleteRole, Status> {
-        Ok(DeleteRole {
-            id: required(self.role_id, "role_id")?,
-        })
-    }
-}
-
-impl Parse for ListRolesRequest {
-    type Into = ListRoles;
-
-    fn parse(self) -> Result<ListRoles, Status> {
-        Ok(ListRoles)
-    }
-}
-
-impl Parse for GetRoleRequest {
-    type Into = GetRole;
-
-    fn parse(self) -> Result<GetRole, Status> {
-        Ok(GetRole {
-            id: required(self.role_id, "role_id")?,
-        })
-    }
-}
+parse!(DeleteRoleRequest => DeleteRole { id: id(role_id) });
+parse!(ListRolesRequest => ListRoles);
+parse!(GetRoleRequest => GetRole { id: id(role_id) });
 
 impl Parse for GetEffectivePermissionsRequest {
     type Into = GetEffectivePermissions;
@@ -149,13 +125,7 @@ impl Parse for GetEffectivePermissionsRequest {
     }
 }
 
-impl Parse for ListAuthzVocabularyRequest {
-    type Into = ListAuthzVocabulary;
-
-    fn parse(self) -> Result<ListAuthzVocabulary, Status> {
-        Ok(ListAuthzVocabulary)
-    }
-}
+parse!(ListAuthzVocabularyRequest => ListAuthzVocabulary);
 
 #[cfg(test)]
 mod tests {

@@ -88,45 +88,10 @@ impl Parse for CreateAgentRequest {
     }
 }
 
-impl Parse for ListAgentsRequest {
-    type Into = ListAgents;
-
-    fn parse(self) -> Result<ListAgents, Status> {
-        Ok(ListAgents {
-            organization_id: id(self.organization_id, "organization_id")?,
-        })
-    }
-}
-
-impl Parse for GetAgentRequest {
-    type Into = GetAgent;
-
-    fn parse(self) -> Result<GetAgent, Status> {
-        Ok(GetAgent {
-            id: id(self.agent_id, "agent_id")?,
-        })
-    }
-}
-
-impl Parse for GetAgentStatsRequest {
-    type Into = GetAgentStats;
-
-    fn parse(self) -> Result<GetAgentStats, Status> {
-        Ok(GetAgentStats {
-            id: id(self.agent_id, "agent_id")?,
-        })
-    }
-}
-
-impl Parse for DeleteAgentRequest {
-    type Into = DeleteAgent;
-
-    fn parse(self) -> Result<DeleteAgent, Status> {
-        Ok(DeleteAgent {
-            id: id(self.agent_id, "agent_id")?,
-        })
-    }
-}
+parse!(ListAgentsRequest => ListAgents { organization_id: id(organization_id) });
+parse!(GetAgentRequest => GetAgent { id: id(agent_id) });
+parse!(GetAgentStatsRequest => GetAgentStats { id: id(agent_id) });
+parse!(DeleteAgentRequest => DeleteAgent { id: id(agent_id) });
 
 #[cfg(test)]
 mod tests {

@@ -44,46 +44,14 @@ impl Parse for CreateAppRequest {
     }
 }
 
-impl Parse for GetAppRequest {
-    type Into = GetApp;
+parse!(GetAppRequest => GetApp { id: id(app_id) });
+parse!(ListAppsRequest => ListApps { organization_id: id(organization_id) });
+parse!(DeleteAppRequest => DeleteApp { id: id(app_id) });
 
-    fn parse(self) -> Result<GetApp, Status> {
-        Ok(GetApp {
-            id: id(self.app_id, "app_id")?,
-        })
-    }
-}
-
-impl Parse for ListAppsRequest {
-    type Into = ListApps;
-
-    fn parse(self) -> Result<ListApps, Status> {
-        Ok(ListApps {
-            organization_id: id(self.organization_id, "organization_id")?,
-        })
-    }
-}
-
-impl Parse for DeleteAppRequest {
-    type Into = DeleteApp;
-
-    fn parse(self) -> Result<DeleteApp, Status> {
-        Ok(DeleteApp {
-            id: id(self.app_id, "app_id")?,
-        })
-    }
-}
-
-impl Parse for SetAppActiveRequest {
-    type Into = SetAppActive;
-
-    fn parse(self) -> Result<SetAppActive, Status> {
-        Ok(SetAppActive {
-            id: id(self.app_id, "app_id")?,
-            is_active: self.is_active,
-        })
-    }
-}
+parse!(SetAppActiveRequest => SetAppActive {
+    id: id(app_id),
+    is_active: copy,
+});
 
 impl Parse for CreateAppSecretRequest {
     type Into = CreateAppSecret;
@@ -96,15 +64,7 @@ impl Parse for CreateAppSecretRequest {
     }
 }
 
-impl Parse for ListAppSecretsRequest {
-    type Into = ListAppSecrets;
-
-    fn parse(self) -> Result<ListAppSecrets, Status> {
-        Ok(ListAppSecrets {
-            app_id: id(self.app_id, "app_id")?,
-        })
-    }
-}
+parse!(ListAppSecretsRequest => ListAppSecrets { app_id: id(app_id) });
 
 #[cfg(test)]
 mod tests {
