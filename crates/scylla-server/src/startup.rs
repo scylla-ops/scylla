@@ -72,7 +72,7 @@ pub(crate) type SharedOAuthUc = Arc<
     >,
 >;
 pub(crate) type SharedUserUc =
-    Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker, PermissionChecker>>;
+    Arc<UserUseCases<PgUserRepository, Argon2HashService, PermissionChecker>>;
 pub(crate) type SharedOrgUc =
     Arc<OrganizationUseCases<PgOrganizationRepository, PgUserRepository, PermissionChecker>>;
 pub(crate) type SharedProjectUc = Arc<
@@ -236,7 +236,6 @@ pub(crate) async fn init_services(
         user_repo.clone(),
         hash_service.clone(),
         permission_checker.clone(),
-        permission_checker.clone(),
     ));
     let org_uc = Arc::new(OrganizationUseCases::new(
         org_repo.clone(),
@@ -309,7 +308,8 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
     ));
     if let Some(cfg) = &config.bootstrap {
-        let bootstrap_uc = BootstrapUseCases::new(user_uc.clone(), grant_uc.clone());
+        let bootstrap_uc =
+            BootstrapUseCases::new(actions.clone(), user_uc.clone(), grant_uc.clone());
         scylla_core::bootstrap::bootstrap_admin(&bootstrap_uc, cfg).await?;
     }
 
@@ -602,7 +602,7 @@ where
     use tower_http::trace::TraceLayer;
 
     let auth_handler = AuthHandler::new(services.auth_uc.clone());
-    let user_handler = UserHandler::new(services.user_uc.clone());
+    let user_handler = UserHandler::new(services.actions.clone(), services.user_uc.clone());
     let org_handler = OrganizationHandler::new(services.actions.clone(), services.org_uc.clone());
     let project_handler =
         ProjectHandler::new(services.actions.clone(), services.project_uc.clone());

@@ -1,5 +1,5 @@
 use crate::application::GrantUseCases;
-use crate::application::user::UserUseCases;
+use crate::application::user::{CreateUser, GetUserByUsername, UserUseCases};
 use crate::application::{HashService, UserRepository};
 use crate::domain::caller::{CallerContext, ServiceIdentity};
 use crate::domain::errors::{DomainError, DomainResult};
@@ -9,6 +9,7 @@ use derive_more::Constructor;
 use scylla_auth::authz::{
     Grant, GrantRepository, PermissionService, PolicyControl, Principal, Scope,
 };
+use scylla_extension::Actions;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -20,14 +21,15 @@ pub struct BootstrapUseCases<
     G: GrantRepository,
     PC: PolicyControl,
 > {
-    user_uc: Arc<UserUseCases<U, H, PS, PC>>,
+    actions: Arc<Actions>,
+    user_uc: Arc<UserUseCases<U, H, PC>>,
     grant_uc: Arc<GrantUseCases<G, PC, PS>>,
 }
 
 impl<U, H, PS, G, PC> BootstrapUseCases<U, H, PS, G, PC>
 where
-    U: UserRepository,
-    H: HashService,
+    U: UserRepository + Send + Sync,
+    H: HashService + Send + Sync,
     PS: PermissionService,
     G: GrantRepository,
     PC: PolicyControl,
@@ -42,11 +44,12 @@ where
     ) -> DomainResult<()> {
         let caller = CallerContext::Service(ServiceIdentity::bootstrap());
 
-        let user = match self
-            .user_uc
-            .create(&caller, username.clone(), email, password)
-            .await
-        {
+        let create = CreateUser {
+            username: username.clone(),
+            email,
+            password,
+        };
+        let user = match self.actions.run(&*self.user_uc, &caller, create).await {
             Ok(user) => {
                 tracing::info!(
                     user_id = %user.id(),
@@ -57,7 +60,10 @@ where
             }
             Err(DomainError::Conflict(_)) => {
                 tracing::debug!(username = %username, "bootstrap user already exists");
-                self.user_uc.get_by_username(&caller, &username).await?
+                let get = GetUserByUsername {
+                    username: username.clone(),
+                };
+                self.actions.run(&*self.user_uc, &caller, get).await?
             }
             Err(e) => return Err(e),
         };

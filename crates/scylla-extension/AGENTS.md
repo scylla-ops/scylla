@@ -419,7 +419,7 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project and organization use cases are on the pipeline. The other
+- The project, organization and user use cases are on the pipeline. The other
   aggregates keep their hand-written sequence until they migrate.
 - The policy reload after a create or a delete sits inside the `commit`
   closure, so a failed reload still fails the call, as before. It is a

@@ -11,8 +11,8 @@ pub async fn bootstrap_admin<U, H, PS, G, PC>(
     cfg: &BootstrapConfig,
 ) -> Result<(), BootstrapError>
 where
-    U: UserRepository,
-    H: HashService,
+    U: UserRepository + Send + Sync,
+    H: HashService + Send + Sync,
     PS: PermissionService,
     G: GrantRepository,
     PC: PolicyControl,
