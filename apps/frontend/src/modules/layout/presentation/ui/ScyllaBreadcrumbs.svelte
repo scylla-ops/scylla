@@ -10,14 +10,15 @@
 
   const crumbs = $derived.by(() => {
     const { organization, project, pipeline } = context();
-    const { userId, jobId } = routeParams();
+    const { userId, jobId, pipelineId } = routeParams();
+    const pipelineName = pipeline.id === pipelineId ? pipeline.name : null;
 
     return breadcrumbsFor(
       routeTrail(),
       {
         organizationName: organization.name || undefined,
         projectName: project.name || undefined,
-        pipelineName: pipeline.name || undefined,
+        pipelineName: pipelineName || pipelineId || undefined,
         userId: userId || undefined,
         jobId: jobId || undefined,
       },
