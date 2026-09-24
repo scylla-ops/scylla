@@ -86,7 +86,8 @@ impl Run<Persist<CreateInvitation>> for InvitationUseCases {
             .commit(async |draft| {
                 let NewInvitation {
                     invitation,
-                    organization_name} = draft.into_inner();
+                    organization_name,
+                } = draft.into_inner();
                 self.invite_repo.create(&invitation).await?;
                 let body = format!(
                     "<p>You've been invited to join <b>{}</b> on Scylla.</p>\
