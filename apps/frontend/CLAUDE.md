@@ -517,7 +517,7 @@ turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/
 - Backend comms: gRPC-Web via protobuf-ts through `CoreGrpcTransport`.
 - Comments: **few, short, and only where the code cannot speak for itself.**
   - Write one when the logic is hard to follow, or when the role of a function, component or
-    prop is not clear from its name. One or two lines is the norm.
+    prop is not clear from its name. One or two lines is the norm, but longer block comments are fully acceptable only when documenting really complex algorithms or multi-step execution flows.
   - Do not write one that repeats the name (`/** The user id. */ userId`), narrates the code,
     or tells history: no mention of React, of the migration, of a "phase" or of what the code
     used to be. Git keeps the history.
