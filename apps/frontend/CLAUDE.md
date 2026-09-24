@@ -246,6 +246,8 @@ In query and mutation options, call `.unwrap()` inside `mutationFn`/`queryFn` so
 - **Selection**: `createSelection(key)` over the single `selectionStore`, keyed by feature. Used by
   `DataTable` + `FeatureHeader`. No per-feature selection store.
 - **List headers**: `FeatureHeader` (count, clear/delete selection, new button).
+- **Modals**: `ScyllaDialog` for every modal, never `Dialog` + `DialogContent` directly — a
+  `{#key}` around `DialogContent` leaves the modal impossible to close.
 - **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog;
   `createFormState(() => items)` manages values/changes/reset/validation. Both are generic over
   the item ids — type the items `readonly FormItem<'a' | 'b'>[]` and `onSubmit` hands back a typed
@@ -300,7 +302,7 @@ subscription, a CodeMirror or `@xyflow` instance). For everything else there is 
 | Value derived from props/state | `$effect` + assignment | `$derived` / `$derived.by` |
 | Server data | `$effect` + gRPC call | `createQuery` on a `*.queries.ts` factory |
 | Respond to a user action | effect watching state | The event handler |
-| Reset a form when a dialog opens | effect on `open` | `{#key open}` around a child component |
+| Reset a form when a dialog opens | effect on `open` | `ScyllaDialog`: it rebuilds its content at each opening |
 | Refetch after a mutation | effect | `invalidateQueries` in `onSuccess` |
 | Touch the DOM | `bind:this` + effect | a Svelte action (`use:action`) — the only sanctioned way |
 

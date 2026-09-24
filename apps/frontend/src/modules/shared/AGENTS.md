@@ -29,7 +29,7 @@ presentation/
   ui/data-display/                   DataTable, Pagination, PaginationSlot, StatusBar,
                                      StatusIndicator, CopyableText, TruncatedText,
                                      AgentRunInstructions
-  ui/feedback/                       ErrorState, ConfirmOperationAlertDialog, SecretRevealDialog
+  ui/feedback/                       ScyllaDialog, ErrorState, ConfirmOperationAlertDialog, SecretRevealDialog
   ui/forms/                          ScyllaForm, FormDialog, createFormState, FormItem types
   ui/layout/                         FeatureHeader, ContextItem, PageTransition,
                                      ScyllaLoadingScreen
@@ -81,6 +81,7 @@ const data = result.unwrap();          // throws — do this inside queryFn/muta
 | How much room the layout left a component | `createMeasuredHeight()` → `{ height, measure }`, and `use:measure` on a container sized by the layout, never by its content |
 | A table | `DataTable` (+ `createPagination`) — row keys are business ids, never indices |
 | An action the user may not use | `GatedButton` with `allowed={can(…)}` |
+| A modal | `ScyllaDialog` (`open`, `onOpenChange`, `title`, `dismissible`). Never `Dialog` + `DialogContent` directly: `ScyllaDialog` rebuilds its content at each opening without recreating `DialogContent`, which is what keeps it closable |
 | Confirm a destructive action | `ConfirmOperationAlertDialog` |
 | Show a one-time secret | `SecretRevealDialog` |
 | Error state | `ErrorState`; `createResourceError` (`@platform/context`) on a detail page |

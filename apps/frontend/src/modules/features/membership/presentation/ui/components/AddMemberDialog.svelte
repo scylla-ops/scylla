@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Dialog, DialogContent } from '@shadcn';
+  import { ScyllaDialog } from '@shared/presentation/ui';
   import type { AssignableRole } from '../../assignable-roles.state.svelte.ts';
   import AddMemberForm from './AddMemberForm.svelte';
   import type { MemberCandidate } from './member-candidate.ts';
@@ -32,31 +32,6 @@
   };
 </script>
 
-<!--
-  Admits someone to a scope with the roles they should hold there.
-
-  One form rather than two steps because admitting and granting are the same act:
-  membership is derived from grants, so a member with no role is not a member at
-  all. Multi-select on the roles for the same reason a member's access is the sum
-  of their roles — granting "developer" and "secrets reader" together is the
-  normal case, not two decisions.
-
-  A dialog rather than a panel on the page: adding a member is occasional, and
-  the page's job is showing who is already there.
-
-  `{#key open}` is what resets the form: the state lives in `AddMemberForm`, so
-  recreating it clears the selection with no effect watching `open` — the same
-  rule `CLAUDE.md` gives React, spelled the same way here.
--->
-<Dialog {open} {onOpenChange}>
-  {#key open}
-    <DialogContent class="flex max-h-[85vh] flex-col sm:max-w-lg">
-      <AddMemberForm
-        {...form}
-        {rolesLoading}
-        onSubmit={submit}
-        onCancel={() => onOpenChange(false)}
-      />
-    </DialogContent>
-  {/key}
-</Dialog>
+<ScyllaDialog {open} {onOpenChange} class="flex max-h-[85vh] flex-col sm:max-w-lg">
+  <AddMemberForm {...form} {rolesLoading} onSubmit={submit} onCancel={() => onOpenChange(false)} />
+</ScyllaDialog>

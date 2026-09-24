@@ -1,13 +1,6 @@
 <script lang="ts" generics="TId extends string">
-  import {
-    Button,
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-  } from '@shadcn';
+  import { Button, DialogFooter } from '@shadcn';
+  import ScyllaDialog from '../feedback/ScyllaDialog.svelte';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import ScyllaForm from './ScyllaForm.svelte';
   import { formDialogMessages } from './form-dialog.messages.ts';
@@ -40,36 +33,26 @@
   }: Props = $props();
 </script>
 
-<Dialog {open} {onOpenChange}>
-  <!-- `hideCancel` also hides the content's own close button, so the dialog has
-       exactly one way out: submitting it. -->
-  <DialogContent class={hideCancel ? '[&>button]:hidden' : ''}>
-    <DialogHeader>
-      <DialogTitle>{title}</DialogTitle>
-      {#if description}
-        <DialogDescription>{description}</DialogDescription>
-      {/if}
-    </DialogHeader>
-    <ScyllaForm {items} {isPending} {onSubmit}>
-      {#snippet footer({ isValid, isPending: pending })}
-        <DialogFooter>
-          {#if !hideCancel}
-            <Button
-              type="button"
-              variant="outline"
-              onclick={() => onOpenChange(false)}
-              disabled={pending}
-            >
-              {t(formDialogMessages.cancel)}
-            </Button>
-          {/if}
-          <Button type="submit" disabled={!isValid || pending}>
-            {pending
-              ? (pendingLabel ?? t(formDialogMessages.creating))
-              : (submitLabel ?? t(formDialogMessages.create))}
+<ScyllaDialog {open} {onOpenChange} {title} {description} dismissible={!hideCancel}>
+  <ScyllaForm {items} {isPending} {onSubmit}>
+    {#snippet footer({ isValid, isPending: pending })}
+      <DialogFooter>
+        {#if !hideCancel}
+          <Button
+            type="button"
+            variant="outline"
+            onclick={() => onOpenChange(false)}
+            disabled={pending}
+          >
+            {t(formDialogMessages.cancel)}
           </Button>
-        </DialogFooter>
-      {/snippet}
-    </ScyllaForm>
-  </DialogContent>
-</Dialog>
+        {/if}
+        <Button type="submit" disabled={!isValid || pending}>
+          {pending
+            ? (pendingLabel ?? t(formDialogMessages.creating))
+            : (submitLabel ?? t(formDialogMessages.create))}
+        </Button>
+      </DialogFooter>
+    {/snippet}
+  </ScyllaForm>
+</ScyllaDialog>

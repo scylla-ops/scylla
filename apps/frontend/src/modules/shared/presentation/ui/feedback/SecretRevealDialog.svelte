@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Dialog, DialogContent } from '@shadcn';
+  import ScyllaDialog from './ScyllaDialog.svelte';
   import SecretRevealChecklist from './SecretRevealChecklist.svelte';
 
   interface Props {
@@ -30,29 +30,17 @@
   }
 
   let { open, ...checklist }: Props = $props();
-
-  const block = (event: Event) => event.preventDefault();
 </script>
 
 <!--
-  The one-time secret-reveal moment, as a quiet two-step checklist: copy the
-  secret, then start the worker. One accent colour (primary), no warning
-  banners — the "shown once" stake is carried by the copy, not by paint. The
-  dialog cannot be dismissed until the secret has been revealed at least once.
-
-  `{#key open}` is what replaces React's effect resetting the revealed flag: the
-  checklist owns that state, so recreating it on every open resets it with
-  nothing to keep in sync. The same rule `CLAUDE.md` states for React — reset
-  state with a key, not an effect — reads identically here.
+  The one-time secret reveal: copy the secret, then start the worker. It cannot
+  be dismissed; the checklist closes it once the secret was revealed.
 -->
-<Dialog {open}>
-  {#key open}
-    <DialogContent
-      class="[&>button]:hidden w-[calc(100vw-2rem)] sm:max-w-lg gap-0 p-0"
-      onEscapeKeydown={block}
-      onInteractOutside={block}
-    >
-      <SecretRevealChecklist {...checklist} />
-    </DialogContent>
-  {/key}
-</Dialog>
+<ScyllaDialog
+  {open}
+  onOpenChange={() => {}}
+  dismissible={false}
+  class="w-[calc(100vw-2rem)] gap-0 p-0 sm:max-w-lg"
+>
+  <SecretRevealChecklist {...checklist} />
+</ScyllaDialog>
