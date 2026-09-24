@@ -419,9 +419,14 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization, user, secret, pipeline and trigger use cases are
-  on the pipeline. The other aggregates keep their hand-written sequence until
-  they migrate.
+- The project, organization, user, secret, pipeline, trigger and app use cases
+  are on the pipeline. The other aggregates keep their hand-written sequence
+  until they migrate.
+- `AppUseCases::revoke_secret` and `set_secret_enabled` stay outside the
+  pipeline. Their permission is `DeleteApp` on the secret's app, and only the
+  loaded credential knows that app. `DeleteApp` and `SetAppActive` stage the id
+  alone: the row is not read before the write, so a missing app behaves as
+  before.
 - `SecretUseCases::delete` stays outside the pipeline. Its permission is
   `DeleteSecret` on the secret's project, and only the loaded secret knows that
   project; `Describe` sees the command alone.
