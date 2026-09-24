@@ -1,7 +1,9 @@
+use crate::application::job::GetJob;
 use crate::application::pagination::PaginationMetadata;
 use crate::application::{JobLogRepository, JobLogStreamPort, JobRepository};
 use crate::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
 use crate::extract_auth_context;
+use crate::grpc::adapter::run;
 use crate::grpc::convert::{optional, required};
 use crate::grpc::mappers::{
     domain_error_to_status, domain_to_proto_metadata, job_log_to_proto, job_to_proto,
@@ -10,10 +12,11 @@ use crate::grpc::mappers::{
 use crate::grpc::streaming::spawn_log_forwarder;
 use derive_more::Constructor;
 use scylla_auth::authz::PermissionService;
-use scylla_domain::domain::ids::{JobId, OrganizationId, PipelineId, ProjectId};
+use scylla_domain::domain::ids::JobId;
 use scylla_domain::domain::pipeline::NodeId;
+use scylla_extension::Actions;
 use scylla_proto::job::v1::{
-    DeleteJobRequest, DeleteJobResponse, GetJobRequest, GetJobResponse, Job, ListJobLogsRequest,
+    DeleteJobRequest, DeleteJobResponse, GetJobRequest, GetJobResponse, ListJobLogsRequest,
     ListJobLogsResponse, ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest,
     ListOrganizationJobsResponse, ListPipelineJobsRequest, ListPipelineJobsResponse,
     ListProjectJobsRequest, ListProjectJobsResponse, TailJobLogsRequest, TailJobLogsResponse,
@@ -30,7 +33,8 @@ pub struct JobHandler<
     S: JobLogStreamPort,
     PS: PermissionService,
 > {
-    use_cases: Arc<JobUseCases<J, PS>>,
+    actions: Arc<Actions>,
+    jobs: Arc<JobUseCases<J>>,
     log_use_cases: Arc<JobLogUseCases<L, PS>>,
     log_stream_use_case: Arc<JobLogStreamUseCase<L, S, PS>>,
 }
@@ -47,16 +51,7 @@ impl<
         &self,
         request: Request<GetJobRequest>,
     ) -> Result<Response<GetJobResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let id = JobId::new(&required(req.job_id, "job_id")?);
-
-        let job = self
-            .use_cases
-            .get(&caller, &id)
-            .await
-            .map_err(domain_error_to_status)?;
-
+        let job = run(&self.actions, &*self.jobs, request).await?;
         Ok(Response::new(GetJobResponse {
             job: Some(job_to_proto(&job)),
         }))
@@ -66,15 +61,7 @@ impl<
         &self,
         request: Request<DeleteJobRequest>,
     ) -> Result<Response<DeleteJobResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let id = JobId::new(&required(req.job_id, "job_id")?);
-
-        self.use_cases
-            .delete(&caller, &id)
-            .await
-            .map_err(domain_error_to_status)?;
-
+        run(&self.actions, &*self.jobs, request).await?;
         Ok(Response::new(DeleteJobResponse {}))
     }
 
@@ -82,96 +69,32 @@ impl<
         &self,
         request: Request<ListJobsRequest>,
     ) -> Result<Response<ListJobsResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let pagination = proto_to_domain_pagination(req.pagination);
-
-        let result = self
-            .use_cases
-            .list(&caller, pagination.as_ref())
-            .await
-            .map_err(domain_error_to_status)?;
-
-        let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
-
-        Ok(Response::new(ListJobsResponse {
-            jobs,
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }))
+        let page = run(&self.actions, &*self.jobs, request).await?;
+        Ok(Response::new(page.into()))
     }
 
     async fn list_pipeline_jobs(
         &self,
         request: Request<ListPipelineJobsRequest>,
     ) -> Result<Response<ListPipelineJobsResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let pipeline_id = PipelineId::new(&required(req.pipeline_id, "pipeline_id")?);
-        let pagination = proto_to_domain_pagination(req.pagination);
-
-        let result = self
-            .use_cases
-            .list_by_pipeline(&caller, &pipeline_id, pagination.as_ref())
-            .await
-            .map_err(domain_error_to_status)?;
-
-        let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
-
-        Ok(Response::new(ListPipelineJobsResponse {
-            jobs,
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }))
+        let page = run(&self.actions, &*self.jobs, request).await?;
+        Ok(Response::new(page.into()))
     }
 
     async fn list_project_jobs(
         &self,
         request: Request<ListProjectJobsRequest>,
     ) -> Result<Response<ListProjectJobsResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let project_id = ProjectId::new(&required(req.project_id, "project_id")?);
-        let pagination = proto_to_domain_pagination(req.pagination);
-
-        let result = self
-            .use_cases
-            .list_by_project(&caller, &project_id, pagination.as_ref())
-            .await
-            .map_err(domain_error_to_status)?;
-
-        let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
-
-        Ok(Response::new(ListProjectJobsResponse {
-            jobs,
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }))
+        let page = run(&self.actions, &*self.jobs, request).await?;
+        Ok(Response::new(page.into()))
     }
 
     async fn list_organization_jobs(
         &self,
         request: Request<ListOrganizationJobsRequest>,
     ) -> Result<Response<ListOrganizationJobsResponse>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let organization_id =
-            OrganizationId::new(&required(req.organization_id, "organization_id")?);
-        let pagination = proto_to_domain_pagination(req.pagination);
-
-        let result = self
-            .use_cases
-            .list_by_organization(&caller, &organization_id, pagination.as_ref())
-            .await
-            .map_err(domain_error_to_status)?;
-
-        let (jobs, metadata) = result.into_parts();
-        let jobs: Vec<Job> = jobs.iter().map(job_to_proto).collect();
-
-        Ok(Response::new(ListOrganizationJobsResponse {
-            jobs,
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }))
+        let page = run(&self.actions, &*self.jobs, request).await?;
+        Ok(Response::new(page.into()))
     }
 
     async fn list_job_logs(
@@ -190,8 +113,8 @@ impl<
 
             // Log rows can be persisted before the matching status update; the domain rule gates them.
             let job = self
-                .use_cases
-                .get(&caller, &job_id)
+                .actions
+                .run(&*self.jobs, &caller, GetJob { id: job_id.clone() })
                 .await
                 .map_err(domain_error_to_status)?;
             if !job.logs_readable_for(&node_id) {

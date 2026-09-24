@@ -1,12 +1,22 @@
-use crate::grpc::convert::{ts, wrap};
+//! Wire to command, command outcome to wire. The handler holds none of it.
+
+use crate::application::job::{
+    DeleteJob, GetJob, ListJobs, ListOrganizationJobs, ListPipelineJobs, ListProjectJobs,
+};
+use crate::application::pagination::PaginatedResult;
+use crate::grpc::convert::{Parse, id, ts, wrap};
+use crate::grpc::mappers::{domain_to_proto_metadata, proto_to_domain_pagination};
 use scylla_domain::domain::job::JobOrigin;
 use scylla_domain::domain::job::{
     Job, JobNode, JobState, NodeExecution, NodeOutcome, TerminalOutcome,
 };
 use scylla_proto::job::v1::{
-    Job as ProtoJob, JobNode as ProtoJobNode, JobOutcome, NodeOutcome as ProtoNodeOutcome, job,
-    job_node,
+    DeleteJobRequest, GetJobRequest, Job as ProtoJob, JobNode as ProtoJobNode, JobOutcome,
+    ListJobsRequest, ListJobsResponse, ListOrganizationJobsRequest, ListOrganizationJobsResponse,
+    ListPipelineJobsRequest, ListPipelineJobsResponse, ListProjectJobsRequest,
+    ListProjectJobsResponse, NodeOutcome as ProtoNodeOutcome, job, job_node,
 };
+use tonic::Status;
 
 pub fn job_to_proto(job: &Job) -> ProtoJob {
     ProtoJob {
@@ -103,5 +113,151 @@ fn node_outcome_to_proto(outcome: NodeOutcome) -> ProtoNodeOutcome {
         NodeOutcome::Failed => ProtoNodeOutcome::Failed,
         NodeOutcome::Cancelled => ProtoNodeOutcome::Cancelled,
         NodeOutcome::Skipped => ProtoNodeOutcome::Skipped,
+    }
+}
+
+impl Parse for GetJobRequest {
+    type Into = GetJob;
+
+    fn parse(self) -> Result<GetJob, Status> {
+        Ok(GetJob {
+            id: id(self.job_id, "job_id")?,
+        })
+    }
+}
+
+impl Parse for DeleteJobRequest {
+    type Into = DeleteJob;
+
+    fn parse(self) -> Result<DeleteJob, Status> {
+        Ok(DeleteJob {
+            id: id(self.job_id, "job_id")?,
+        })
+    }
+}
+
+impl Parse for ListJobsRequest {
+    type Into = ListJobs;
+
+    fn parse(self) -> Result<ListJobs, Status> {
+        Ok(ListJobs {
+            pagination: proto_to_domain_pagination(self.pagination),
+        })
+    }
+}
+
+impl Parse for ListPipelineJobsRequest {
+    type Into = ListPipelineJobs;
+
+    fn parse(self) -> Result<ListPipelineJobs, Status> {
+        Ok(ListPipelineJobs {
+            pipeline_id: id(self.pipeline_id, "pipeline_id")?,
+            pagination: proto_to_domain_pagination(self.pagination),
+        })
+    }
+}
+
+impl Parse for ListProjectJobsRequest {
+    type Into = ListProjectJobs;
+
+    fn parse(self) -> Result<ListProjectJobs, Status> {
+        Ok(ListProjectJobs {
+            project_id: id(self.project_id, "project_id")?,
+            pagination: proto_to_domain_pagination(self.pagination),
+        })
+    }
+}
+
+impl Parse for ListOrganizationJobsRequest {
+    type Into = ListOrganizationJobs;
+
+    fn parse(self) -> Result<ListOrganizationJobs, Status> {
+        Ok(ListOrganizationJobs {
+            organization_id: id(self.organization_id, "organization_id")?,
+            pagination: proto_to_domain_pagination(self.pagination),
+        })
+    }
+}
+
+impl From<PaginatedResult<Job>> for ListJobsResponse {
+    fn from(page: PaginatedResult<Job>) -> Self {
+        let (jobs, metadata) = page.into_parts();
+        Self {
+            jobs: jobs.iter().map(job_to_proto).collect(),
+            pagination: Some(domain_to_proto_metadata(&metadata)),
+        }
+    }
+}
+
+impl From<PaginatedResult<Job>> for ListPipelineJobsResponse {
+    fn from(page: PaginatedResult<Job>) -> Self {
+        let (jobs, metadata) = page.into_parts();
+        Self {
+            jobs: jobs.iter().map(job_to_proto).collect(),
+            pagination: Some(domain_to_proto_metadata(&metadata)),
+        }
+    }
+}
+
+impl From<PaginatedResult<Job>> for ListProjectJobsResponse {
+    fn from(page: PaginatedResult<Job>) -> Self {
+        let (jobs, metadata) = page.into_parts();
+        Self {
+            jobs: jobs.iter().map(job_to_proto).collect(),
+            pagination: Some(domain_to_proto_metadata(&metadata)),
+        }
+    }
+}
+
+impl From<PaginatedResult<Job>> for ListOrganizationJobsResponse {
+    fn from(page: PaginatedResult<Job>) -> Self {
+        let (jobs, metadata) = page.into_parts();
+        Self {
+            jobs: jobs.iter().map(job_to_proto).collect(),
+            pagination: Some(domain_to_proto_metadata(&metadata)),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use scylla_proto::common::v1 as common;
+    use tonic::Code;
+
+    #[test]
+    fn a_get_request_becomes_a_query_on_the_job() {
+        let query = GetJobRequest {
+            job_id: wrap("job-1"),
+        }
+        .parse()
+        .unwrap();
+
+        assert_eq!(query.id.as_str(), "job-1");
+    }
+
+    #[test]
+    fn a_missing_id_is_an_invalid_argument() {
+        let err = DeleteJobRequest {
+            job_id: None::<common::JobId>,
+        }
+        .parse()
+        .unwrap_err();
+
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "missing job_id");
+    }
+
+    #[test]
+    fn a_pipeline_list_request_carries_its_pipeline_and_page() {
+        let query = ListPipelineJobsRequest {
+            pipeline_id: wrap("pipe-1"),
+            pagination: None,
+        }
+        .parse()
+        .unwrap();
+
+        assert_eq!(query.pipeline_id.as_str(), "pipe-1");
+        assert!(query.pagination.is_none());
     }
 }

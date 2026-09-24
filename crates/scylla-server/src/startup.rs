@@ -81,7 +81,7 @@ pub(crate) type SharedProjectUc = Arc<
 pub(crate) type SharedPipelineUc = Arc<
     PipelineUseCases<PgPipelineRepository, PgProjectRepository, PgJobRepository, PermissionChecker>,
 >;
-pub(crate) type SharedJobUc = Arc<JobUseCases<PgJobRepository, PermissionChecker>>;
+pub(crate) type SharedJobUc = Arc<JobUseCases<PgJobRepository>>;
 pub(crate) type SharedSecretUc = Arc<SecretUseCases<PgSecretRepository, PermissionChecker>>;
 pub(crate) type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
 pub(crate) type SharedJobLogStreamUc =
@@ -254,10 +254,7 @@ pub(crate) async fn init_services(
         permission_checker.clone(),
         secret_resolver.clone(),
     ));
-    let job_uc = Arc::new(JobUseCases::new(
-        job_repo.clone(),
-        permission_checker.clone(),
-    ));
+    let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
     let job_log_uc = Arc::new(JobLogUseCases::new(
         job_log_repo.clone(),
         permission_checker.clone(),
@@ -613,6 +610,7 @@ where
             .and_then(|w| w.public_base_url.clone()),
     );
     let job_handler = JobHandler::new(
+        services.actions.clone(),
         services.job_uc.clone(),
         services.job_log_uc.clone(),
         services.job_log_stream_uc.clone(),
@@ -623,6 +621,7 @@ where
     let agent_handler = AgentHandler::new(
         services.agent_registry.clone(),
         services.job_log_stream.clone(),
+        services.actions.clone(),
         services.job_uc.clone(),
         services.job_log_uc.clone(),
         services.agent_repo.clone(),

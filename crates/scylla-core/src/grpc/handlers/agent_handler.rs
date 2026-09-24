@@ -1,3 +1,4 @@
+use crate::application::job::RecordJobStatus;
 use crate::application::{
     AgentDispatch, AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
 };
@@ -12,6 +13,7 @@ use scylla_domain::domain::agent::AgentHost;
 use scylla_domain::domain::ids::{AppId, JobId};
 use scylla_domain::domain::job::JobLog;
 use scylla_domain::domain::pipeline::{NodeId, Step};
+use scylla_extension::Actions;
 use scylla_proto::agent::v1::{
     AgentDown, AgentNode, AgentUp, JobDispatch as ProtoJobDispatch, ResolvedEnv, agent_down,
     agent_node, agent_service_server::AgentService, agent_up,
@@ -36,7 +38,8 @@ where
 {
     registry: Arc<InMemoryAgentRegistry>,
     log_stream: Arc<InMemoryJobLogStream>,
-    job_use_cases: Arc<JobUseCases<J, PS>>,
+    actions: Arc<Actions>,
+    job_use_cases: Arc<JobUseCases<J>>,
     log_use_cases: Arc<JobLogUseCases<L, PS>>,
     agent_repo: Arc<dyn AgentRepository>,
     pending_signal: Arc<Notify>,
@@ -70,6 +73,7 @@ impl<
         tokio::spawn(read_reports(
             inbound,
             app_id.clone(),
+            self.actions.clone(),
             self.job_use_cases.clone(),
             self.log_use_cases.clone(),
             self.log_stream.clone(),
@@ -96,7 +100,8 @@ impl<
 async fn read_reports<J, L, PS>(
     mut inbound: Streaming<AgentUp>,
     app_id: AppId,
-    job_use_cases: Arc<JobUseCases<J, PS>>,
+    actions: Arc<Actions>,
+    job_use_cases: Arc<JobUseCases<J>>,
     log_use_cases: Arc<JobLogUseCases<L, PS>>,
     log_stream: Arc<InMemoryJobLogStream>,
     registry: Arc<InMemoryAgentRegistry>,
@@ -114,7 +119,11 @@ async fn read_reports<J, L, PS>(
             Some(agent_up::Payload::Status(status)) => {
                 let job_id = JobId::new(status.job_id.clone().unwrap_or_default().value);
                 if let Some(event) = scylla_proto::convert::status_to_job_event(&status) {
-                    if let Err(e) = job_use_cases.record_status(&caller, &job_id, &event).await {
+                    let record = RecordJobStatus {
+                        job_id: job_id.clone(),
+                        event: event.clone(),
+                    };
+                    if let Err(e) = actions.run(&*job_use_cases, &caller, record).await {
                         warn!(app_id = %app_id, job_id = %job_id, error = %e, "failed to record job status");
                     }
                     // Open at start so a reader tailing before the first line joins; subscribe never creates a channel.

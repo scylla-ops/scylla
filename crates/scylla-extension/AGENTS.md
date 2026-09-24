@@ -419,9 +419,14 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization, user, secret, pipeline, trigger, app and agent
-  use cases are on the pipeline. The other aggregates keep their hand-written
-  sequence until they migrate.
+- The project, organization, user, secret, pipeline, trigger, app, agent and
+  job use cases are on the pipeline. The other aggregates keep their
+  hand-written sequence until they migrate.
+- The agent stream sends `RecordJobStatus` through `Actions` for each status
+  report, as the agent's own token, so the `WriteJobStatus` check is the
+  authorize stage. The rest of the stream stays outside the pipeline.
+  `JobReaper` writes through the port directly: it runs as the server, not for
+  a caller.
 - `DispatchUseCases`, `PendingJobScheduler` and the agent stream
   (`AgentHandler`) stay outside the pipeline. They run as the scheduler or as
   the agent's own token, not for a caller that asks for a permission;
