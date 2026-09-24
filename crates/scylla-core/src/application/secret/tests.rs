@@ -1,13 +1,13 @@
 //! The secret's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::domain::errors::DomainError;
-use crate::domain::ids::{ProjectId, UserId};
+use crate::domain::ids::ProjectId;
 use crate::domain::secret::{Secret, SecretName};
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
+use crate::test_support::stubs::alice;
 use async_trait::async_trait;
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -81,18 +81,11 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let secrets = Arc::new(StubSecrets::default());
     let cipher = Arc::new(StubCipher::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions.clone()),
         uc: SecretUseCases::new(secrets.clone(), cipher.clone(), permissions),
         secrets,
         cipher,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn project() -> ProjectId {

@@ -200,6 +200,14 @@ Inside `queries.rs`, one block per query: the struct, `impl Describe`,
 `input.fetched(output)`). A new action is one block in the right file, and
 the outline of the file is the list of actions.
 
+A `tests.rs` gets its engine from `test_support::authz::actions(permissions)`:
+the `PermissionAuthorizer` and no hooks. Use `actions_with(permissions, hooks)`
+when the test registers hooks. The stubs that more than one use case needs are
+in `test_support::stubs` (compiled for tests only): `CountingPolicy`,
+`StubHash`, `StubRegistry`, `StubRoles`, `StubGrants`, `NoUsers`, `OneProject`,
+`OnePipeline`, `EchoResolver`, `empty_page` and `alice`. Keep a stub in the
+`tests.rs` of the use case when its behavior is specific to that use case.
+
 A permission check that never refuses is not a gate. `ListOrganizationProjects`
 asks a second time for `ListProjectsByOrganization` only to choose between
 every project of the organization and the ones the caller's grants reach; that

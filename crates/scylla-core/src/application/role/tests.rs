@@ -1,83 +1,14 @@
 //! The role's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::domain::caller::ServiceIdentity;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::role::RoleName;
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
-use async_trait::async_trait;
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
+use crate::test_support::stubs::{CountingPolicy, StubGrants, StubRoles, alice};
 use scylla_auth::authz::{Grant, PermissionService, Role, ScopeKind};
-use scylla_extension::{Actions, Hooks};
-use std::sync::Mutex;
-
-#[derive(Default)]
-struct StubRoles {
-    rows: Mutex<Vec<Role>>,
-}
-
-#[async_trait]
-impl RoleRepository for StubRoles {
-    async fn list_all(&self) -> DomainResult<Vec<Role>> {
-        Ok(self.rows.lock().unwrap().clone())
-    }
-    async fn get(&self, id: &str) -> DomainResult<Option<Role>> {
-        Ok(self
-            .rows
-            .lock()
-            .unwrap()
-            .iter()
-            .find(|r| r.id == id)
-            .cloned())
-    }
-    async fn create(&self, role: &Role) -> DomainResult<()> {
-        self.rows.lock().unwrap().push(role.clone());
-        Ok(())
-    }
-    async fn update(&self, role: &Role) -> DomainResult<()> {
-        let mut rows = self.rows.lock().unwrap();
-        if let Some(row) = rows.iter_mut().find(|r| r.id == role.id) {
-            *row = role.clone();
-        }
-        Ok(())
-    }
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        self.rows.lock().unwrap().retain(|r| r.id != id);
-        Ok(())
-    }
-}
-
-struct StubGrants(Vec<Grant>);
-
-#[async_trait]
-impl GrantRepository for StubGrants {
-    async fn list_all(&self) -> DomainResult<Vec<Grant>> {
-        Ok(self.0.clone())
-    }
-    async fn create(&self, _: &Grant) -> DomainResult<()> {
-        Ok(())
-    }
-    async fn delete(&self, _: &str) -> DomainResult<()> {
-        Ok(())
-    }
-    async fn revoke_all(&self, _: &Principal, _: &Scope) -> DomainResult<u64> {
-        Ok(0)
-    }
-}
-
-#[derive(Default)]
-struct CountingPolicy {
-    reloads: Mutex<usize>,
-}
-
-#[async_trait]
-impl PolicyControl for CountingPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        *self.reloads.lock().unwrap() += 1;
-        Ok(())
-    }
-}
+use scylla_extension::Actions;
 
 struct Lab {
     actions: Actions,
@@ -87,23 +18,18 @@ struct Lab {
 }
 
 fn lab(permissions: Arc<dyn PermissionService>, roles: Vec<Role>, grants: Vec<Grant>) -> Lab {
-    let roles = Arc::new(StubRoles {
-        rows: Mutex::new(roles),
-    });
+    let roles = Arc::new(StubRoles::new(roles));
     let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions)),
-            Arc::new(Hooks::new()),
+        actions: actions(permissions),
+        uc: RoleUseCases::new(
+            roles.clone(),
+            Arc::new(StubGrants::new(grants)),
+            policy.clone(),
         ),
-        uc: RoleUseCases::new(roles.clone(), Arc::new(StubGrants(grants)), policy.clone()),
         roles,
         policy,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn role(id: &str, scope: ScopeKind, builtin: bool, permissions: &[&str]) -> Role {
@@ -141,8 +67,8 @@ async fn a_create_checks_manage_roles_then_stores_and_reloads() {
 
     assert_eq!(permissions.permissions(), vec![Permission::ManageRoles]);
     assert!(!created.builtin);
-    assert_eq!(lab.roles.rows.lock().unwrap().as_slice(), [created]);
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 1);
+    assert_eq!(lab.roles.rows().as_slice(), [created]);
+    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]
@@ -156,8 +82,8 @@ async fn a_denied_create_never_stores() {
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.roles.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 0);
+    assert!(lab.roles.rows().is_empty());
+    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -171,7 +97,7 @@ async fn a_permission_out_of_the_role_scope_is_refused_before_anything_is_stored
         .unwrap_err();
 
     assert!(matches!(err, DomainError::Validation(_)));
-    assert!(lab.roles.rows.lock().unwrap().is_empty());
+    assert!(lab.roles.rows().is_empty());
 }
 
 #[tokio::test]
@@ -202,7 +128,7 @@ async fn an_update_validates_against_the_stored_scope_and_rewrites_the_role() {
         .unwrap();
     assert_eq!(updated.name, "CI");
     assert_eq!(updated.permissions, vec!["runPipeline".to_string()]);
-    assert_eq!(lab.roles.rows.lock().unwrap().as_slice(), [updated]);
+    assert_eq!(lab.roles.rows().as_slice(), [updated]);
 }
 
 #[tokio::test]
@@ -257,8 +183,8 @@ async fn a_builtin_or_granted_role_cannot_be_deleted() {
         .await
         .unwrap();
     assert_eq!(deleted.last_state().id, "unused");
-    assert_eq!(lab.roles.rows.lock().unwrap().len(), 2);
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 1);
+    assert_eq!(lab.roles.rows().len(), 2);
+    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]

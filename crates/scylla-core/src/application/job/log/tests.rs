@@ -1,7 +1,6 @@
 //! The job log's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -9,13 +8,13 @@ use crate::domain::ids::{AppId, JobId, JobLogId};
 use crate::domain::job::JobLog;
 use crate::domain::permission::Permission;
 use crate::domain::pipeline::NodeId;
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::job_logs::{JobLogBuilder, job_log};
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 use futures_util::{StreamExt, stream};
 use scylla_auth::authz::PermissionService;
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::sync::Mutex;
 
 #[derive(Default)]
@@ -92,10 +91,7 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let logs = Arc::new(StubLogs::default());
     let live = Arc::new(StubLive::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions)),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions),
         uc: JobLogUseCases::new(logs.clone(), live.clone()),
         logs,
         live,

@@ -87,6 +87,7 @@ impl DispatchUseCases {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::authz::RecordingPermissionService;
     use async_trait::async_trait;
     use std::collections::HashMap;
     use std::sync::Mutex;
@@ -163,15 +164,6 @@ mod tests {
         }
     }
 
-    struct StubPermsAll;
-
-    #[async_trait]
-    impl PermissionService for StubPermsAll {
-        async fn check(&self, _caller: &CallerContext, _perm: Permission) -> DomainResult<()> {
-            Ok(())
-        }
-    }
-
     fn dispatch() -> JobDispatch {
         JobDispatch {
             job_id: "j1".to_string(),
@@ -203,7 +195,10 @@ mod tests {
             AppId::new("app-a"),
             AppId::new("app-b"),
         ]));
-        let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPermsAll));
+        let uc = DispatchUseCases::new(
+            registry.clone(),
+            Arc::new(RecordingPermissionService::new()),
+        );
 
         for _ in 0..4 {
             uc.dispatch_job(&PipelineId::new("pl1"), &dispatch())
@@ -233,7 +228,10 @@ mod tests {
             vec![AppId::new("app-busy"), AppId::new("app-idle")],
             loads,
         ));
-        let uc = DispatchUseCases::new(registry.clone(), Arc::new(StubPermsAll));
+        let uc = DispatchUseCases::new(
+            registry.clone(),
+            Arc::new(RecordingPermissionService::new()),
+        );
 
         uc.dispatch_job(&PipelineId::new("pl1"), &dispatch())
             .await

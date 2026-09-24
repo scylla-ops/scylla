@@ -1,7 +1,6 @@
 //! The project's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::application::project::{CreateProject, DeleteProject, GetProject, UpdateProject};
 use crate::domain::caller::CallerContext;
@@ -9,8 +8,10 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
 use crate::domain::project::{Project, ProjectName};
-use crate::domain::user::{Email, User, Username};
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{
+    DenyingPermissionService, RecordingPermissionService, actions_with,
+};
+use crate::test_support::stubs::{CountingPolicy, NoUsers, alice, empty_page};
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, Visibility};
 use scylla_extension::{Action, Actions, Hooks, Policy, StageKind};
@@ -21,14 +22,6 @@ use std::sync::Mutex;
 struct StubProjects {
     rows: Mutex<HashMap<ProjectId, Project>>,
     grants: Mutex<Vec<Grant>>,
-}
-
-fn empty<T>() -> DomainResult<PaginatedResult<T>> {
-    Ok(PaginatedResult::new(
-        Vec::new(),
-        &PaginationParams::default(),
-        0,
-    ))
 }
 
 #[async_trait]
@@ -50,14 +43,14 @@ impl ProjectRepository for StubProjects {
         _: &ProjectId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<UserId>> {
-        empty()
+        empty_page()
     }
     async fn list_for_user(
         &self,
         _: &UserId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
+        empty_page()
     }
     async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> {
         self.rows
@@ -81,13 +74,13 @@ impl ProjectRepository for StubProjects {
         &self,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
+        empty_page()
     }
     async fn list_active(
         &self,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
+        empty_page()
     }
     async fn list_by_organization(
         &self,
@@ -95,53 +88,7 @@ impl ProjectRepository for StubProjects {
         _: Option<&PaginationParams>,
         _: &Visibility,
     ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-}
-
-struct StubUsers;
-
-#[async_trait]
-impl UserRepository for StubUsers {
-    async fn create(&self, _: &User) -> DomainResult<User> {
-        unreachable!("no user write in a project action")
-    }
-    async fn find_by_id(&self, id: &UserId) -> DomainResult<User> {
-        Err(DomainError::not_found("User", id.to_string()))
-    }
-    async fn find_by_ids(&self, _: &[UserId]) -> DomainResult<Vec<User>> {
-        Ok(Vec::new())
-    }
-    async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
-        Err(DomainError::not_found("User", username.to_string()))
-    }
-    async fn find_by_email(&self, email: &Email) -> DomainResult<User> {
-        Err(DomainError::not_found("User", email.to_string()))
-    }
-    async fn update(&self, _: &User) -> DomainResult<User> {
-        unreachable!("no user write in a project action")
-    }
-    async fn delete(&self, _: &UserId) -> DomainResult<()> {
-        unreachable!("no user write in a project action")
-    }
-    async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<User>> {
-        empty()
-    }
-    async fn username_exists(&self, _: &Username) -> DomainResult<bool> {
-        Ok(false)
-    }
-}
-
-#[derive(Default)]
-struct StubPolicy {
-    reloads: Mutex<usize>,
-}
-
-#[async_trait]
-impl PolicyControl for StubPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        *self.reloads.lock().unwrap() += 1;
-        Ok(())
+        empty_page()
     }
 }
 
@@ -170,7 +117,7 @@ struct Lab {
     actions: Actions,
     uc: ProjectUseCases,
     projects: Arc<StubProjects>,
-    policy: Arc<StubPolicy>,
+    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -181,15 +128,12 @@ impl Lab {
 
 fn lab(permissions: Arc<dyn PermissionService>, hooks: Hooks) -> Lab {
     let projects = Arc::new(StubProjects::default());
-    let policy = Arc::new(StubPolicy::default());
+    let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(hooks),
-        ),
+        actions: actions_with(permissions.clone(), hooks),
         uc: ProjectUseCases::new(
             projects.clone(),
-            Arc::new(StubUsers),
+            Arc::new(NoUsers),
             permissions,
             Arc::new(StubVisibility),
             policy.clone(),
@@ -197,10 +141,6 @@ fn lab(permissions: Arc<dyn PermissionService>, hooks: Hooks) -> Lab {
         projects,
         policy,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn create(name: &str) -> CreateProject {
@@ -224,7 +164,7 @@ async fn a_create_by_a_user_checks_the_permission_then_writes_the_owner_grant() 
     );
     assert!(lab.projects.rows.lock().unwrap().contains_key(project.id()));
     assert_eq!(lab.projects.grants.lock().unwrap().len(), 1);
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 1);
+    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]
@@ -235,7 +175,7 @@ async fn a_denied_caller_writes_nothing() {
 
     assert!(matches!(err, DomainError::Forbidden(_)));
     assert!(lab.projects.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 0);
+    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -304,7 +244,7 @@ async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
 
     assert_eq!(deleted.last_state().id(), created.id());
     assert!(lab.projects.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 2);
+    assert_eq!(lab.policy.reloads(), 2);
 }
 
 #[tokio::test]

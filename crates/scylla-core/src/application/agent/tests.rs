@@ -1,19 +1,17 @@
 //! The agent's admin actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::domain::agent::{Agent, AgentHost};
-use crate::domain::app::{App, AppCredential, AppName, AppSecret, AppSecretHash};
-use crate::domain::caller::CallerContext;
+use crate::domain::app::{App, AppCredential, AppName};
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{AppId, OrganizationId, UserId};
+use crate::domain::ids::{AppId, OrganizationId};
 use crate::domain::permission::Permission;
-use crate::domain::user::{Password, PasswordHash};
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
+use crate::test_support::stubs::{CountingPolicy, StubHash, StubRegistry, alice};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use scylla_auth::authz::{Grant, ORGANIZATION_AGENT_ROLE, PermissionService, Principal, Scope};
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -116,64 +114,6 @@ impl AgentRepository for StubAgents {
     }
 }
 
-#[derive(Default)]
-struct StubHash {
-    hashed: Mutex<usize>,
-}
-
-#[async_trait]
-impl HashService for StubHash {
-    async fn hash(&self, _: &Password) -> DomainResult<PasswordHash> {
-        unreachable!("no password in an agent action")
-    }
-    async fn verify(&self, _: &Password, _: &PasswordHash) -> DomainResult<bool> {
-        unreachable!("no password in an agent action")
-    }
-    async fn hash_secret(&self, _: &AppSecret) -> DomainResult<AppSecretHash> {
-        *self.hashed.lock().unwrap() += 1;
-        AppSecretHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def")
-    }
-    async fn verify_secret(&self, _: &AppSecret, _: &AppSecretHash) -> DomainResult<bool> {
-        unreachable!("no secret check in an agent action")
-    }
-}
-
-#[derive(Default)]
-struct StubRegistry {
-    connected: Mutex<Vec<AppId>>,
-    disconnected: Mutex<Vec<AppId>>,
-}
-
-#[async_trait]
-impl AgentDispatch for StubRegistry {
-    fn connected(&self) -> Vec<AppId> {
-        self.connected.lock().unwrap().clone()
-    }
-    async fn dispatch(&self, _: &AppId, _: &JobDispatch) -> DomainResult<()> {
-        unreachable!("no dispatch in an agent admin action")
-    }
-    fn disconnect(&self, app_id: &AppId) {
-        self.disconnected.lock().unwrap().push(app_id.clone());
-    }
-    fn in_flight(&self, app_id: &AppId) -> usize {
-        usize::from(self.connected.lock().unwrap().contains(app_id))
-    }
-    fn release(&self, _: &AppId) {}
-}
-
-#[derive(Default)]
-struct StubPolicy {
-    reloads: Mutex<usize>,
-}
-
-#[async_trait]
-impl PolicyControl for StubPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        *self.reloads.lock().unwrap() += 1;
-        Ok(())
-    }
-}
-
 struct Lab {
     actions: Actions,
     uc: AgentUseCases,
@@ -181,7 +121,7 @@ struct Lab {
     agents: Arc<StubAgents>,
     hash: Arc<StubHash>,
     registry: Arc<StubRegistry>,
-    policy: Arc<StubPolicy>,
+    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -212,14 +152,11 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         agents: agents.clone(),
         ..StubApps::default()
     });
-    let hash = Arc::new(StubHash::default());
+    let hash = Arc::new(StubHash::secrets());
     let registry = Arc::new(StubRegistry::default());
-    let policy = Arc::new(StubPolicy::default());
+    let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions)),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions),
         uc: AgentUseCases::new(
             apps.clone(),
             agents.clone(),
@@ -233,10 +170,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         registry,
         policy,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn org() -> OrganizationId {
@@ -265,7 +198,7 @@ async fn a_create_provisions_the_app_its_secret_its_agent_row_and_its_grant_then
     assert_eq!(grants[0].principal, Principal::App(id));
     assert_eq!(grants[0].role.as_str(), ORGANIZATION_AGENT_ROLE);
     assert_eq!(grants[0].scope, Scope::Organization(org()));
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 1);
+    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]
@@ -275,9 +208,9 @@ async fn a_denied_create_never_hashes_or_persists() {
     let err = lab.create().await.err().unwrap();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert_eq!(*lab.hash.hashed.lock().unwrap(), 0);
+    assert_eq!(lab.hash.hashed(), 0);
     assert!(lab.apps.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 0);
+    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -285,7 +218,7 @@ async fn reads_check_their_permission_and_join_the_live_registry() {
     let permissions = Arc::new(RecordingPermissionService::new());
     let lab = lab(permissions.clone());
     let id = lab.create().await.unwrap().app.id().clone();
-    lab.registry.connected.lock().unwrap().push(id.clone());
+    lab.registry.connect(&id);
 
     let views = lab
         .actions
@@ -358,10 +291,10 @@ async fn a_delete_disconnects_the_agent_removes_the_app_and_reloads_the_policies
         .unwrap();
 
     assert_eq!(deleted.last_state(), &id);
-    assert_eq!(*lab.registry.disconnected.lock().unwrap(), vec![id.clone()]);
+    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
     assert!(lab.apps.rows.lock().unwrap().is_empty());
     assert!(lab.agents.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 2);
+    assert_eq!(lab.policy.reloads(), 2);
     assert_eq!(permissions.permissions()[1], Permission::DeleteApp(id));
 }
 
@@ -378,6 +311,6 @@ async fn a_denied_delete_keeps_the_stream_and_the_row() {
         .unwrap();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.registry.disconnected.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 0);
+    assert!(lab.registry.disconnected().is_empty());
+    assert_eq!(lab.policy.reloads(), 0);
 }

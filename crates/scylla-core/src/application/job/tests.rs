@@ -1,19 +1,19 @@
 //! The job's actions through the engine, on a stub port.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
 use crate::domain::job::{Job, JobStatus};
 use crate::domain::permission::Permission;
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::jobs::job;
 use crate::test_support::pipelines::PipelineBuilder;
+use crate::test_support::stubs::empty_page;
 use async_trait::async_trait;
 use scylla_auth::authz::PermissionService;
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -21,14 +21,6 @@ use std::sync::Mutex;
 struct StubJobs {
     rows: Mutex<HashMap<JobId, Job>>,
     deletes: Mutex<usize>,
-}
-
-fn empty<T>() -> DomainResult<PaginatedResult<T>> {
-    Ok(PaginatedResult::new(
-        Vec::new(),
-        &PaginationParams::default(),
-        0,
-    ))
 }
 
 #[async_trait]
@@ -66,28 +58,28 @@ impl JobRepository for StubJobs {
         Ok(())
     }
     async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
-        empty()
+        empty_page()
     }
     async fn list_by_pipeline(
         &self,
         _: &PipelineId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        empty()
+        empty_page()
     }
     async fn list_by_project(
         &self,
         _: &ProjectId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        empty()
+        empty_page()
     }
     async fn list_by_organization(
         &self,
         _: &OrganizationId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        empty()
+        empty_page()
     }
 }
 
@@ -113,10 +105,7 @@ impl Lab {
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let jobs = Arc::new(StubJobs::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions)),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions),
         uc: JobUseCases::new(jobs.clone()),
         jobs,
     }

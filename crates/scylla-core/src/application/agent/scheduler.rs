@@ -86,20 +86,19 @@ impl PendingJobScheduler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::agent::dispatch::{DispatchNode, JobDispatch};
+    use crate::application::agent::dispatch::JobDispatch;
     use crate::application::agent::dispatch_port::AgentDispatch;
     use crate::application::pagination::{PaginatedResult, PaginationParams};
-    use crate::domain::caller::CallerContext;
     use crate::domain::errors::DomainResult;
     use crate::domain::ids::{AppId, JobId, OrganizationId, PipelineId, ProjectId};
     use crate::domain::job::Job;
-    use crate::domain::permission::Permission;
-    use crate::domain::pipeline::{Pipeline, PipelineNode};
+    use crate::domain::pipeline::Pipeline;
+    use crate::test_support::authz::RecordingPermissionService;
     use crate::test_support::organizations::org;
     use crate::test_support::pipelines::pipeline;
     use crate::test_support::projects::project;
+    use crate::test_support::stubs::{EchoResolver, OnePipeline};
     use async_trait::async_trait;
-    use scylla_auth::authz::PermissionService;
     use std::sync::Mutex;
 
     struct StubJobs {
@@ -163,46 +162,6 @@ mod tests {
         }
     }
 
-    struct StubPipelines {
-        pipeline: Pipeline,
-    }
-
-    #[async_trait]
-    impl PipelineRepository for StubPipelines {
-        async fn find_by_id(&self, _: &PipelineId) -> DomainResult<Pipeline> {
-            Ok(self.pipeline.clone())
-        }
-        async fn create(&self, _: &Pipeline) -> DomainResult<Pipeline> {
-            unimplemented!()
-        }
-        async fn update(&self, _: &Pipeline) -> DomainResult<Pipeline> {
-            unimplemented!()
-        }
-        async fn delete(&self, _: &PipelineId) -> DomainResult<()> {
-            unimplemented!()
-        }
-        async fn list_all(
-            &self,
-            _: Option<&PaginationParams>,
-        ) -> DomainResult<PaginatedResult<Pipeline>> {
-            unimplemented!()
-        }
-        async fn list_by_project(
-            &self,
-            _: &ProjectId,
-            _: Option<&PaginationParams>,
-        ) -> DomainResult<PaginatedResult<Pipeline>> {
-            unimplemented!()
-        }
-        async fn list_by_organization(
-            &self,
-            _: &OrganizationId,
-            _: Option<&PaginationParams>,
-        ) -> DomainResult<PaginatedResult<Pipeline>> {
-            unimplemented!()
-        }
-    }
-
     struct StubRegistry {
         dispatched: Mutex<Vec<String>>,
     }
@@ -226,37 +185,6 @@ mod tests {
         fn release(&self, _: &AppId) {}
     }
 
-    struct AllowAll;
-
-    #[async_trait]
-    impl PermissionService for AllowAll {
-        async fn check(&self, _: &CallerContext, _: Permission) -> DomainResult<()> {
-            Ok(())
-        }
-    }
-
-    struct StubResolver;
-
-    #[async_trait]
-    impl SecretResolver for StubResolver {
-        async fn resolve(
-            &self,
-            _project_id: &ProjectId,
-            nodes: &[PipelineNode],
-        ) -> DomainResult<Vec<DispatchNode>> {
-            Ok(nodes
-                .iter()
-                .map(|n| DispatchNode {
-                    id: n.id().to_string(),
-                    deps: n.deps().iter().map(ToString::to_string).collect(),
-                    working_dir: n.working_dir().map(|w| w.as_str().to_string()),
-                    step: n.step().clone(),
-                    env: vec![],
-                })
-                .collect())
-        }
-    }
-
     fn a_pipeline() -> Pipeline {
         pipeline(&project(&org("o"), "p"))
     }
@@ -274,12 +202,15 @@ mod tests {
         let registry = Arc::new(StubRegistry {
             dispatched: Mutex::new(vec![]),
         });
-        let dispatch_uc = Arc::new(DispatchUseCases::new(registry.clone(), Arc::new(AllowAll)));
+        let dispatch_uc = Arc::new(DispatchUseCases::new(
+            registry.clone(),
+            Arc::new(RecordingPermissionService::new()),
+        ));
         let scheduler = PendingJobScheduler::new(
             jobs.clone(),
-            Arc::new(StubPipelines { pipeline: pl }),
+            Arc::new(OnePipeline(pl)),
             dispatch_uc,
-            Arc::new(StubResolver),
+            Arc::new(EchoResolver),
         );
 
         assert_eq!(
@@ -297,17 +228,18 @@ mod tests {
         let registry = Arc::new(StubRegistry {
             dispatched: Mutex::new(vec![]),
         });
-        let dispatch_uc = Arc::new(DispatchUseCases::new(registry.clone(), Arc::new(AllowAll)));
+        let dispatch_uc = Arc::new(DispatchUseCases::new(
+            registry.clone(),
+            Arc::new(RecordingPermissionService::new()),
+        ));
         let scheduler = PendingJobScheduler::new(
             Arc::new(StubJobs {
                 pending: vec![],
                 assigned: Mutex::new(vec![]),
             }),
-            Arc::new(StubPipelines {
-                pipeline: a_pipeline(),
-            }),
+            Arc::new(OnePipeline(a_pipeline())),
             dispatch_uc,
-            Arc::new(StubResolver),
+            Arc::new(EchoResolver),
         );
 
         assert_eq!(scheduler.drain().await, 0);

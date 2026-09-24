@@ -1,7 +1,6 @@
 //! The invitation's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::errors::DomainError;
 use crate::domain::ids::{OrganizationId, UserId};
@@ -9,11 +8,12 @@ use crate::domain::invitation::Invitation;
 use crate::domain::organization::{Organization, OrganizationName};
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, User};
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::organizations::OrgBuilder;
+use crate::test_support::stubs::{alice, empty_page};
 use async_trait::async_trait;
 use scylla_auth::authz::{Grant, Role, ScopeKind};
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -69,14 +69,6 @@ impl InvitationRepository for StubInvitations {
 
 struct StubOrganizations(Organization);
 
-fn empty<T>() -> DomainResult<PaginatedResult<T>> {
-    Ok(PaginatedResult::new(
-        Vec::new(),
-        &PaginationParams::default(),
-        0,
-    ))
-}
-
 #[async_trait]
 impl OrganizationRepository for StubOrganizations {
     async fn create(&self, organization: &Organization) -> DomainResult<Organization> {
@@ -90,14 +82,14 @@ impl OrganizationRepository for StubOrganizations {
         _: &OrganizationId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<UserId>> {
-        empty()
+        empty_page()
     }
     async fn list_for_user(
         &self,
         _: &UserId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Organization>> {
-        empty()
+        empty_page()
     }
     async fn find_by_id(&self, id: &OrganizationId) -> DomainResult<Organization> {
         if id == self.0.id() {
@@ -122,13 +114,13 @@ impl OrganizationRepository for StubOrganizations {
         &self,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Organization>> {
-        empty()
+        empty_page()
     }
     async fn list_active(
         &self,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Organization>> {
-        empty()
+        empty_page()
     }
     async fn name_exists(&self, _: &OrganizationName) -> DomainResult<bool> {
         Ok(false)
@@ -212,10 +204,7 @@ fn lab_with(permissions: Arc<dyn PermissionService>, mailer: StubMailer) -> Lab 
     let roles = Arc::new(StubRoles::default());
     let mailer = Arc::new(mailer);
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions.clone()),
         uc: InvitationUseCases::new(
             invitations.clone(),
             Arc::new(StubOrganizations(
@@ -229,10 +218,6 @@ fn lab_with(permissions: Arc<dyn PermissionService>, mailer: StubMailer) -> Lab 
         roles,
         mailer,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn organization() -> OrganizationId {

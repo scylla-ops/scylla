@@ -1,18 +1,16 @@
 //! The user's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
-use crate::domain::app::{AppSecret, AppSecretHash};
-use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::UserId;
 use crate::domain::permission::Permission;
-use crate::domain::user::{Email, Password, PasswordHash, User, Username};
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::domain::user::{Email, Password, User, Username};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
+use crate::test_support::stubs::{CountingPolicy, StubHash, alice};
 use async_trait::async_trait;
 use scylla_auth::authz::PermissionService;
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -77,42 +75,11 @@ impl UserRepository for StubUsers {
     }
 }
 
-struct StubHash;
-
-#[async_trait]
-impl HashService for StubHash {
-    async fn hash(&self, _: &Password) -> DomainResult<PasswordHash> {
-        PasswordHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def")
-    }
-    async fn verify(&self, _: &Password, _: &PasswordHash) -> DomainResult<bool> {
-        unreachable!("no verify in a user action")
-    }
-    async fn hash_secret(&self, _: &AppSecret) -> DomainResult<AppSecretHash> {
-        unreachable!("no secret in a user action")
-    }
-    async fn verify_secret(&self, _: &AppSecret, _: &AppSecretHash) -> DomainResult<bool> {
-        unreachable!("no secret in a user action")
-    }
-}
-
-#[derive(Default)]
-struct StubPolicy {
-    reloads: Mutex<usize>,
-}
-
-#[async_trait]
-impl PolicyControl for StubPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        *self.reloads.lock().unwrap() += 1;
-        Ok(())
-    }
-}
-
 struct Lab {
     actions: Actions,
     uc: UserUseCases,
     users: Arc<StubUsers>,
-    policy: Arc<StubPolicy>,
+    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -123,20 +90,17 @@ impl Lab {
 
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let users = Arc::new(StubUsers::default());
-    let policy = Arc::new(StubPolicy::default());
+    let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions)),
-            Arc::new(Hooks::new()),
+        actions: actions(permissions),
+        uc: UserUseCases::new(
+            users.clone(),
+            Arc::new(StubHash::passwords()),
+            policy.clone(),
         ),
-        uc: UserUseCases::new(users.clone(), Arc::new(StubHash), policy.clone()),
         users,
         policy,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn create(username: &str) -> CreateUser {
@@ -156,7 +120,7 @@ async fn a_create_checks_the_permission_then_stores_the_hashed_user() {
 
     assert_eq!(permissions.permissions(), vec![Permission::CreateUser]);
     assert!(lab.users.rows.lock().unwrap().contains_key(user.id()));
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 0);
+    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]
@@ -272,7 +236,7 @@ async fn a_delete_returns_the_tombstone_and_reloads_the_policies() {
 
     assert_eq!(deleted.last_state().id(), created.id());
     assert!(lab.users.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 1);
+    assert_eq!(lab.policy.reloads(), 1);
     assert_eq!(
         permissions.permissions()[1],
         Permission::DeleteUser(created.id().clone())
@@ -296,7 +260,7 @@ async fn a_delete_of_a_missing_user_is_not_found_and_does_not_reload() {
         .unwrap_err();
 
     assert!(matches!(err, DomainError::NotFound { .. }));
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 0);
+    assert_eq!(lab.policy.reloads(), 0);
 }
 
 #[tokio::test]

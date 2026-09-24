@@ -1,69 +1,16 @@
 //! The grant's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
-use crate::application::agent::dispatch::JobDispatch;
 use crate::domain::caller::ServiceIdentity;
 use crate::domain::ids::{AppId, OrganizationId, ProjectId, UserId};
 use crate::domain::permission::ResourceRef;
 use crate::domain::role::RoleName;
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
+use crate::test_support::stubs::{CountingPolicy, StubGrants, StubRegistry, StubRoles};
 use async_trait::async_trait;
 use scylla_auth::authz::*;
 use scylla_auth::authz::{ResourceAncestors, Role};
-use scylla_extension::{Actions, Hooks};
-use std::sync::Mutex;
-
-#[derive(Default)]
-struct StubGrants {
-    rows: Vec<Grant>,
-    created: Mutex<Vec<Grant>>,
-}
-
-#[async_trait]
-impl GrantRepository for StubGrants {
-    async fn list_all(&self) -> DomainResult<Vec<Grant>> {
-        Ok(self.rows.clone())
-    }
-    async fn create(&self, g: &Grant) -> DomainResult<()> {
-        self.created.lock().unwrap().push(g.clone());
-        Ok(())
-    }
-    async fn delete(&self, _id: &str) -> DomainResult<()> {
-        Ok(())
-    }
-    async fn revoke_all(&self, _p: &Principal, _s: &Scope) -> DomainResult<u64> {
-        Ok(0)
-    }
-}
-
-struct StubPolicy;
-#[async_trait]
-impl PolicyControl for StubPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        Ok(())
-    }
-}
-
-struct StubRoles(Vec<Role>);
-#[async_trait]
-impl RoleRepository for StubRoles {
-    async fn list_all(&self) -> DomainResult<Vec<Role>> {
-        Ok(self.0.clone())
-    }
-    async fn get(&self, id: &str) -> DomainResult<Option<Role>> {
-        Ok(self.0.iter().find(|r| r.id == id).cloned())
-    }
-    async fn create(&self, _r: &Role) -> DomainResult<()> {
-        Ok(())
-    }
-    async fn update(&self, _r: &Role) -> DomainResult<()> {
-        Ok(())
-    }
-    async fn delete(&self, _id: &str) -> DomainResult<()> {
-        Ok(())
-    }
-}
+use scylla_extension::Actions;
 
 struct StubAncestry;
 #[async_trait]
@@ -92,42 +39,11 @@ fn test_role(id: &str, scope: ScopeKind, permissions: &[&str]) -> Role {
     }
 }
 
-#[derive(Default)]
-struct RecordingRegistry {
-    disconnected: Mutex<Vec<String>>,
-}
-
-impl RecordingRegistry {
-    fn disconnected(&self) -> Vec<String> {
-        self.disconnected.lock().unwrap().clone()
-    }
-}
-
-#[async_trait]
-impl AgentDispatch for RecordingRegistry {
-    fn connected(&self) -> Vec<AppId> {
-        vec![]
-    }
-    async fn dispatch(&self, _app_id: &AppId, _d: &JobDispatch) -> DomainResult<()> {
-        Ok(())
-    }
-    fn disconnect(&self, app_id: &AppId) {
-        self.disconnected
-            .lock()
-            .unwrap()
-            .push(app_id.as_str().to_string());
-    }
-    fn in_flight(&self, _app_id: &AppId) -> usize {
-        0
-    }
-    fn release(&self, _app_id: &AppId) {}
-}
-
 struct Lab {
     actions: Actions,
     uc: GrantUseCases,
     grants: Arc<StubGrants>,
-    registry: Arc<RecordingRegistry>,
+    registry: Arc<StubRegistry>,
 }
 
 impl Lab {
@@ -165,20 +81,14 @@ fn lab(grants: Vec<Grant>) -> Lab {
 }
 
 fn lab_with(grants: Vec<Grant>, roles: Vec<Role>, permissions: Arc<dyn PermissionService>) -> Lab {
-    let grants = Arc::new(StubGrants {
-        rows: grants,
-        ..StubGrants::default()
-    });
-    let registry = Arc::new(RecordingRegistry::default());
+    let grants = Arc::new(StubGrants::new(grants));
+    let registry = Arc::new(StubRegistry::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions.clone()),
         uc: GrantUseCases::new(
             grants.clone(),
-            Arc::new(StubRoles(roles)),
-            Arc::new(StubPolicy),
+            Arc::new(StubRoles::new(roles)),
+            Arc::new(CountingPolicy::default()),
             permissions,
             registry.clone(),
             Arc::new(StubAncestry),
@@ -255,7 +165,7 @@ async fn a_create_checks_the_permission_of_its_scope_then_stores_the_grant() {
     );
     assert_eq!(stored.principal, grant.principal);
     assert_eq!(stored.scope, grant.scope);
-    assert_eq!(lab.grants.created.lock().unwrap().as_slice(), [stored]);
+    assert_eq!(lab.grants.created().as_slice(), [stored]);
 }
 
 #[tokio::test]
@@ -274,7 +184,7 @@ async fn a_denied_create_never_stores() {
     let err = lab.grant(&service(), &grant).await.unwrap_err();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert!(lab.grants.created.lock().unwrap().is_empty());
+    assert!(lab.grants.created().is_empty());
 }
 
 #[tokio::test]
@@ -535,7 +445,7 @@ async fn revoking_app_grant_disconnects_the_agent() {
 
     lab.uc.revoke(&admin(), &grant.id).await.unwrap();
 
-    assert_eq!(lab.registry.disconnected(), vec!["agent-1".to_string()]);
+    assert_eq!(lab.registry.disconnected(), vec![AppId::new("agent-1")]);
 }
 
 #[tokio::test]
@@ -681,5 +591,5 @@ async fn revoke_all_access_checks_the_scope_permission_and_disconnects_a_machine
         permissions.permissions(),
         vec![Permission::ManageProjectGrants(ProjectId::new("p1"))]
     );
-    assert_eq!(lab.registry.disconnected(), vec!["agent-1".to_string()]);
+    assert_eq!(lab.registry.disconnected(), vec![AppId::new("agent-1")]);
 }

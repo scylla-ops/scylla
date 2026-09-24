@@ -59,9 +59,9 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
     };
     use scylla_auth::audit::NoopAuditLog;
     use scylla_auth::cedar::CedarPermissionService;
+    use scylla_core::application::ProjectUseCases;
     use scylla_core::application::project::CreateProject;
-    use scylla_core::application::{PermissionAuthorizer, ProjectUseCases};
-    use scylla_extension::{Actions, Hooks, StageKind};
+    use scylla_extension::{Hooks, StageKind};
     use std::sync::Arc;
 
     let org = seed_org(&pool, "limited").await;
@@ -83,10 +83,7 @@ async fn a_policy_in_the_hooks_vetoes_the_create_over_the_quota(pool: PgPool) {
             seen: std::sync::Mutex::default(),
         }),
     );
-    let actions = Actions::new(
-        Arc::new(PermissionAuthorizer::new(permission.clone())),
-        Arc::new(hooks),
-    );
+    let actions = actions_with(permission.clone(), hooks);
     let uc = ProjectUseCases::new(
         Arc::new(PgProjectRepository::new(pool.clone())),
         Arc::new(PgUserRepository::new(pool.clone())),

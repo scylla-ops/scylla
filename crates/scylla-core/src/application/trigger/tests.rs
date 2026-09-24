@@ -1,32 +1,18 @@
 //! The trigger's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
-use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::agent::Agent;
-use crate::domain::app::{AppSecret, AppSecretHash};
-use crate::domain::ids::{AppId, PipelineId, ProjectId, UserId};
-use crate::domain::pipeline::Pipeline;
-use crate::domain::project::Project;
+use crate::domain::ids::{AppId, PipelineId, ProjectId};
 use crate::domain::trigger::{CronSpec, WebhookSpec};
-use crate::domain::user::{Password, PasswordHash};
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::pipelines::PipelineBuilder;
 use crate::test_support::projects::ProjectBuilder;
+use crate::test_support::stubs::{CountingPolicy, OnePipeline, OneProject, StubHash, alice};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use scylla_auth::authz::Visibility;
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
-
-fn empty<T>() -> DomainResult<PaginatedResult<T>> {
-    Ok(PaginatedResult::new(
-        Vec::new(),
-        &PaginationParams::default(),
-        0,
-    ))
-}
 
 #[derive(Default)]
 struct StubTriggers {
@@ -91,114 +77,6 @@ impl TriggerRepository for StubTriggers {
     }
 }
 
-struct StubPipelines {
-    pipeline: Pipeline,
-}
-
-#[async_trait]
-impl PipelineRepository for StubPipelines {
-    async fn create(&self, _: &Pipeline) -> DomainResult<Pipeline> {
-        unreachable!("no pipeline write in a trigger action")
-    }
-    async fn find_by_id(&self, id: &PipelineId) -> DomainResult<Pipeline> {
-        if id == self.pipeline.id() {
-            Ok(self.pipeline.clone())
-        } else {
-            Err(DomainError::not_found("Pipeline", id.to_string()))
-        }
-    }
-    async fn update(&self, _: &Pipeline) -> DomainResult<Pipeline> {
-        unreachable!("no pipeline write in a trigger action")
-    }
-    async fn delete(&self, _: &PipelineId) -> DomainResult<()> {
-        unreachable!("no pipeline write in a trigger action")
-    }
-    async fn list_all(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Pipeline>> {
-        empty()
-    }
-    async fn list_by_project(
-        &self,
-        _: &ProjectId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Pipeline>> {
-        empty()
-    }
-    async fn list_by_organization(
-        &self,
-        _: &OrganizationId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Pipeline>> {
-        empty()
-    }
-}
-
-struct StubProjects {
-    project: Project,
-}
-
-#[async_trait]
-impl ProjectRepository for StubProjects {
-    async fn create(&self, _: &Project) -> DomainResult<Project> {
-        unreachable!("no project write in a trigger action")
-    }
-    async fn provision_with_owner(&self, _: &Project, _: &Grant) -> DomainResult<()> {
-        unreachable!("no project write in a trigger action")
-    }
-    async fn list_principals(
-        &self,
-        _: &ProjectId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<UserId>> {
-        empty()
-    }
-    async fn list_for_user(
-        &self,
-        _: &UserId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-    async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> {
-        if id == self.project.id() {
-            Ok(self.project.clone())
-        } else {
-            Err(DomainError::not_found("Project", id.to_string()))
-        }
-    }
-    async fn find_by_ids(&self, _: &[ProjectId]) -> DomainResult<Vec<Project>> {
-        Ok(Vec::new())
-    }
-    async fn update(&self, _: &Project) -> DomainResult<Project> {
-        unreachable!("no project write in a trigger action")
-    }
-    async fn delete(&self, _: &Project) -> DomainResult<()> {
-        unreachable!("no project write in a trigger action")
-    }
-    async fn list_all(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-    async fn list_active(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-    async fn list_by_organization(
-        &self,
-        _: &OrganizationId,
-        _: Option<&PaginationParams>,
-        _: &Visibility,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-}
-
 #[derive(Default)]
 struct StubApps {
     apps: Mutex<Vec<App>>,
@@ -248,37 +126,6 @@ impl AppRepository for StubApps {
     }
 }
 
-struct StubHash;
-
-#[async_trait]
-impl HashService for StubHash {
-    async fn hash(&self, _: &Password) -> DomainResult<PasswordHash> {
-        unreachable!("no password in a trigger action")
-    }
-    async fn verify(&self, _: &Password, _: &PasswordHash) -> DomainResult<bool> {
-        unreachable!("no password in a trigger action")
-    }
-    async fn hash_secret(&self, _: &AppSecret) -> DomainResult<AppSecretHash> {
-        AppSecretHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def")
-    }
-    async fn verify_secret(&self, _: &AppSecret, _: &AppSecretHash) -> DomainResult<bool> {
-        unreachable!("no secret check in a trigger action")
-    }
-}
-
-#[derive(Default)]
-struct StubPolicy {
-    reloads: Mutex<usize>,
-}
-
-#[async_trait]
-impl PolicyControl for StubPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        *self.reloads.lock().unwrap() += 1;
-        Ok(())
-    }
-}
-
 struct StubCipher;
 
 impl SecretCipher for StubCipher {
@@ -321,7 +168,7 @@ struct Lab {
     uc: TriggerUseCases,
     triggers: Arc<StubTriggers>,
     apps: Arc<StubApps>,
-    policy: Arc<StubPolicy>,
+    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -355,18 +202,15 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         .build();
     let triggers = Arc::new(StubTriggers::default());
     let apps = Arc::new(StubApps::default());
-    let policy = Arc::new(StubPolicy::default());
+    let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions.clone()),
         uc: TriggerUseCases::new(
             triggers.clone(),
-            Arc::new(StubPipelines { pipeline }),
-            Arc::new(StubProjects { project }),
+            Arc::new(OnePipeline(pipeline)),
+            Arc::new(OneProject(project)),
             apps.clone(),
-            Arc::new(StubHash),
+            Arc::new(StubHash::secrets()),
             policy.clone(),
             permissions,
             Arc::new(StubCipher),
@@ -376,10 +220,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         apps,
         policy,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn organization_id() -> OrganizationId {
@@ -431,7 +271,7 @@ async fn a_create_checks_manage_then_run_and_provisions_the_runner_app_once() {
     assert_eq!(apps.len(), 1);
     assert_eq!(apps[0].name().to_string(), TRIGGER_RUNNER_APP_NAME);
     assert_eq!(apps[0].organization_id(), &organization_id());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 1);
+    assert_eq!(lab.policy.reloads(), 1);
 }
 
 #[tokio::test]

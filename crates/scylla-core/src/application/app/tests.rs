@@ -1,17 +1,15 @@
 //! The app's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
-use crate::application::agent::JobDispatch;
 use crate::domain::agent::Agent;
-use crate::domain::app::{App, AppName, AppSecret, AppSecretHash, AppSecretLabel};
+use crate::domain::app::{App, AppName, AppSecretLabel};
 use crate::domain::errors::DomainError;
-use crate::domain::ids::{AppId, OrganizationId, UserId};
-use crate::domain::user::{Password, PasswordHash};
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::domain::ids::{AppId, OrganizationId};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
+use crate::test_support::stubs::{CountingPolicy, StubHash, StubRegistry, alice};
 use async_trait::async_trait;
 use scylla_auth::authz::Grant;
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -146,63 +144,6 @@ impl AppCredentialRepository for StubCredentials {
     }
 }
 
-#[derive(Default)]
-struct StubHash {
-    hashed: Mutex<usize>,
-}
-
-#[async_trait]
-impl HashService for StubHash {
-    async fn hash(&self, _: &Password) -> DomainResult<PasswordHash> {
-        unreachable!("no password in an app action")
-    }
-    async fn verify(&self, _: &Password, _: &PasswordHash) -> DomainResult<bool> {
-        unreachable!("no password in an app action")
-    }
-    async fn hash_secret(&self, _: &AppSecret) -> DomainResult<AppSecretHash> {
-        *self.hashed.lock().unwrap() += 1;
-        AppSecretHash::new("$argon2id$v=19$m=19456,t=2,p=1$abc$def")
-    }
-    async fn verify_secret(&self, _: &AppSecret, _: &AppSecretHash) -> DomainResult<bool> {
-        unreachable!("no secret check in an app action")
-    }
-}
-
-#[derive(Default)]
-struct StubRegistry {
-    disconnected: Mutex<Vec<AppId>>,
-}
-
-#[async_trait]
-impl AgentDispatch for StubRegistry {
-    fn connected(&self) -> Vec<AppId> {
-        Vec::new()
-    }
-    async fn dispatch(&self, _: &AppId, _: &JobDispatch) -> DomainResult<()> {
-        unreachable!("no dispatch in an app action")
-    }
-    fn disconnect(&self, app_id: &AppId) {
-        self.disconnected.lock().unwrap().push(app_id.clone());
-    }
-    fn in_flight(&self, _: &AppId) -> usize {
-        0
-    }
-    fn release(&self, _: &AppId) {}
-}
-
-#[derive(Default)]
-struct StubPolicy {
-    reloads: Mutex<usize>,
-}
-
-#[async_trait]
-impl PolicyControl for StubPolicy {
-    async fn reload(&self) -> DomainResult<()> {
-        *self.reloads.lock().unwrap() += 1;
-        Ok(())
-    }
-}
-
 struct Lab {
     actions: Actions,
     uc: AppUseCases,
@@ -210,7 +151,7 @@ struct Lab {
     credentials: Arc<StubCredentials>,
     hash: Arc<StubHash>,
     registry: Arc<StubRegistry>,
-    policy: Arc<StubPolicy>,
+    policy: Arc<CountingPolicy>,
 }
 
 impl Lab {
@@ -235,14 +176,11 @@ impl Lab {
 fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
     let apps = Arc::new(StubApps::default());
     let credentials = Arc::new(StubCredentials::default());
-    let hash = Arc::new(StubHash::default());
+    let hash = Arc::new(StubHash::secrets());
     let registry = Arc::new(StubRegistry::default());
-    let policy = Arc::new(StubPolicy::default());
+    let policy = Arc::new(CountingPolicy::default());
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions.clone()),
         uc: AppUseCases::new(
             apps.clone(),
             credentials.clone(),
@@ -257,10 +195,6 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         registry,
         policy,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn org() -> OrganizationId {
@@ -300,7 +234,7 @@ async fn a_denied_create_never_hashes_or_persists() {
     let err = lab.create().await.err().unwrap();
 
     assert!(matches!(err, DomainError::Forbidden(_)));
-    assert_eq!(*lab.hash.hashed.lock().unwrap(), 0);
+    assert_eq!(lab.hash.hashed(), 0);
     assert!(lab.apps.rows.lock().unwrap().is_empty());
 }
 
@@ -367,7 +301,7 @@ async fn a_deactivation_disconnects_the_app_and_returns_the_fresh_row() {
         .unwrap();
 
     assert!(!app.is_active());
-    assert_eq!(*lab.registry.disconnected.lock().unwrap(), vec![id.clone()]);
+    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
     assert_eq!(permissions.permissions()[1], Permission::DeleteApp(id));
 }
 
@@ -388,7 +322,7 @@ async fn an_activation_keeps_the_stream() {
         .await
         .unwrap();
 
-    assert!(lab.registry.disconnected.lock().unwrap().is_empty());
+    assert!(lab.registry.disconnected().is_empty());
 }
 
 #[tokio::test]
@@ -406,7 +340,7 @@ async fn a_delete_removes_the_app_and_reloads_the_policies() {
 
     assert_eq!(deleted.last_state(), &id);
     assert!(lab.apps.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.policy.reloads.lock().unwrap(), 1);
+    assert_eq!(lab.policy.reloads(), 1);
     assert_eq!(permissions.permissions()[1], Permission::DeleteApp(id));
 }
 
@@ -438,7 +372,7 @@ async fn a_secret_for_a_missing_app_is_not_found_and_never_hashed() {
     let err = lab.create_secret(&AppId::new("ghost")).await.err().unwrap();
 
     assert!(matches!(err, DomainError::NotFound { .. }));
-    assert_eq!(*lab.hash.hashed.lock().unwrap(), 0);
+    assert_eq!(lab.hash.hashed(), 0);
     assert!(lab.credentials.rows.lock().unwrap().is_empty());
 }
 
@@ -456,7 +390,7 @@ async fn a_revoke_checks_the_permission_on_the_loaded_secret_app_and_disconnects
         .unwrap();
 
     assert!(lab.credentials.rows.lock().unwrap().is_empty());
-    assert_eq!(*lab.registry.disconnected.lock().unwrap(), vec![id.clone()]);
+    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
     assert_eq!(permissions.permissions()[2], Permission::DeleteApp(id));
 }
 
@@ -475,6 +409,6 @@ async fn disabling_a_secret_disconnects_its_app_and_returns_the_fresh_row() {
         .unwrap();
 
     assert!(!credential.is_enabled());
-    assert_eq!(*lab.registry.disconnected.lock().unwrap(), vec![id.clone()]);
+    assert_eq!(lab.registry.disconnected(), vec![id.clone()]);
     assert_eq!(permissions.permissions()[2], Permission::DeleteApp(id));
 }

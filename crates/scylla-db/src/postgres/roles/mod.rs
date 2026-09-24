@@ -220,21 +220,12 @@ mod tests {
         use crate::domain::caller::{CallerContext, ServiceIdentity};
         use crate::domain::errors::DomainResult;
         use crate::domain::ids::UserId;
-        use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
-        use scylla_auth::authz::{PermissionService, PolicyControl, Principal, Scope};
-        use scylla_core::application::PermissionAuthorizer;
+        use scylla_auth::authz::{PolicyControl, Principal, Scope};
         use scylla_core::application::role::{GetEffectivePermissions, RoleUseCases};
-        use scylla_extension::{Actions, Hooks};
+        use scylla_core::test_support::authz::{RecordingPermissionService, actions};
         use std::sync::Arc;
 
-        struct AllowAll;
-        #[async_trait::async_trait]
-        impl PermissionService for AllowAll {
-            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
-                Ok(())
-            }
-        }
         struct NoopPolicy;
         #[async_trait::async_trait]
         impl PolicyControl for NoopPolicy {
@@ -285,10 +276,7 @@ mod tests {
             Arc::new(PgGrantRepository::new(pool)),
             Arc::new(NoopPolicy),
         );
-        let actions = Actions::new(
-            Arc::new(PermissionAuthorizer::new(Arc::new(AllowAll))),
-            Arc::new(Hooks::new()),
-        );
+        let actions = actions(Arc::new(RecordingPermissionService::new()));
         let caller = CallerContext::Service(ServiceIdentity::recorder());
         let scopes = actions
             .run(
@@ -319,23 +307,14 @@ mod tests {
     #[sqlx::test(migrations = "../../migrations")]
     async fn my_permissions_needs_no_permission_unlike_the_admin_view(pool: PgPool) {
         use crate::domain::caller::{CallerContext, ServiceIdentity};
-        use crate::domain::errors::{DomainError, DomainResult};
+        use crate::domain::errors::DomainResult;
         use crate::domain::ids::UserId;
-        use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
-        use scylla_auth::authz::{PermissionService, PolicyControl, Principal, Scope};
-        use scylla_core::application::PermissionAuthorizer;
+        use scylla_auth::authz::{PolicyControl, Principal, Scope};
         use scylla_core::application::role::{GetEffectivePermissions, RoleUseCases};
-        use scylla_extension::{Actions, Hooks};
+        use scylla_core::test_support::authz::{DenyingPermissionService, actions};
         use std::sync::Arc;
 
-        struct DenyAll;
-        #[async_trait::async_trait]
-        impl PermissionService for DenyAll {
-            async fn check(&self, _c: &CallerContext, _p: Permission) -> DomainResult<()> {
-                Err(DomainError::Forbidden("denied".to_string()))
-            }
-        }
         struct NoopPolicy;
         #[async_trait::async_trait]
         impl PolicyControl for NoopPolicy {
@@ -357,10 +336,7 @@ mod tests {
             Arc::new(PgGrantRepository::new(pool)),
             Arc::new(NoopPolicy),
         );
-        let actions = Actions::new(
-            Arc::new(PermissionAuthorizer::new(Arc::new(DenyAll))),
-            Arc::new(Hooks::new()),
-        );
+        let actions = actions(Arc::new(DenyingPermissionService::new()));
 
         let alice = CallerContext::User(UserId::new("alice"));
         let scopes = uc.my_permissions(&alice).await.expect("own permissions");

@@ -1,30 +1,19 @@
 //! The pipeline's actions through the engine, on stub ports.
 
 use super::*;
-use crate::application::PermissionAuthorizer;
-use crate::application::agent::DispatchNode;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
 use crate::domain::caller::ServiceIdentity;
 use crate::domain::errors::DomainError;
 use crate::domain::ids::{OrganizationId, ProjectId, TriggerId, UserId};
-use crate::domain::pipeline::{Pipeline, PipelineName, PipelineNode};
-use crate::domain::project::Project;
-use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService};
+use crate::domain::pipeline::{Pipeline, PipelineName};
+use crate::test_support::authz::{DenyingPermissionService, RecordingPermissionService, actions};
 use crate::test_support::pipelines::{PipelineBuilder, node};
 use crate::test_support::projects::ProjectBuilder;
+use crate::test_support::stubs::{EchoResolver, OneProject, alice, empty_page};
 use async_trait::async_trait;
-use scylla_auth::authz::{Grant, Visibility};
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::collections::HashMap;
 use std::sync::Mutex;
-
-fn empty<T>() -> DomainResult<PaginatedResult<T>> {
-    Ok(PaginatedResult::new(
-        Vec::new(),
-        &PaginationParams::default(),
-        0,
-    ))
-}
 
 #[derive(Default)]
 struct StubPipelines {
@@ -92,71 +81,7 @@ impl PipelineRepository for StubPipelines {
         _: &OrganizationId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Pipeline>> {
-        empty()
-    }
-}
-
-struct StubProjects {
-    project: Project,
-}
-
-#[async_trait]
-impl ProjectRepository for StubProjects {
-    async fn create(&self, _: &Project) -> DomainResult<Project> {
-        unreachable!("no project write in a pipeline action")
-    }
-    async fn provision_with_owner(&self, _: &Project, _: &Grant) -> DomainResult<()> {
-        unreachable!("no project write in a pipeline action")
-    }
-    async fn list_principals(
-        &self,
-        _: &ProjectId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<UserId>> {
-        empty()
-    }
-    async fn list_for_user(
-        &self,
-        _: &UserId,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-    async fn find_by_id(&self, id: &ProjectId) -> DomainResult<Project> {
-        if id == self.project.id() {
-            Ok(self.project.clone())
-        } else {
-            Err(DomainError::not_found("Project", id.to_string()))
-        }
-    }
-    async fn find_by_ids(&self, _: &[ProjectId]) -> DomainResult<Vec<Project>> {
-        Ok(Vec::new())
-    }
-    async fn update(&self, _: &Project) -> DomainResult<Project> {
-        unreachable!("no project write in a pipeline action")
-    }
-    async fn delete(&self, _: &Project) -> DomainResult<()> {
-        unreachable!("no project write in a pipeline action")
-    }
-    async fn list_all(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-    async fn list_active(
-        &self,
-        _: Option<&PaginationParams>,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
-    }
-    async fn list_by_organization(
-        &self,
-        _: &OrganizationId,
-        _: Option<&PaginationParams>,
-        _: &Visibility,
-    ) -> DomainResult<PaginatedResult<Project>> {
-        empty()
+        empty_page()
     }
 }
 
@@ -195,50 +120,28 @@ impl JobRepository for StubJobs {
         unreachable!("no job delete in a pipeline action")
     }
     async fn list_all(&self, _: Option<&PaginationParams>) -> DomainResult<PaginatedResult<Job>> {
-        empty()
+        empty_page()
     }
     async fn list_by_pipeline(
         &self,
         _: &PipelineId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        empty()
+        empty_page()
     }
     async fn list_by_project(
         &self,
         _: &ProjectId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        empty()
+        empty_page()
     }
     async fn list_by_organization(
         &self,
         _: &OrganizationId,
         _: Option<&PaginationParams>,
     ) -> DomainResult<PaginatedResult<Job>> {
-        empty()
-    }
-}
-
-struct StubResolver;
-
-#[async_trait]
-impl SecretResolver for StubResolver {
-    async fn resolve(
-        &self,
-        _: &ProjectId,
-        nodes: &[PipelineNode],
-    ) -> DomainResult<Vec<DispatchNode>> {
-        Ok(nodes
-            .iter()
-            .map(|n| DispatchNode {
-                id: n.id().to_string(),
-                deps: Vec::new(),
-                working_dir: None,
-                step: n.step().clone(),
-                env: Vec::new(),
-            })
-            .collect())
+        empty_page()
     }
 }
 
@@ -272,24 +175,17 @@ fn lab(permissions: Arc<dyn PermissionService>) -> Lab {
         .id(project_id())
         .build();
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permissions.clone())),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permissions.clone()),
         uc: PipelineUseCases::new(
             pipelines.clone(),
-            Arc::new(StubProjects { project }),
+            Arc::new(OneProject(project)),
             jobs.clone(),
             permissions,
-            Arc::new(StubResolver),
+            Arc::new(EchoResolver),
         ),
         pipelines,
         jobs,
     }
-}
-
-fn alice() -> CallerContext {
-    CallerContext::User(UserId::new("alice"))
 }
 
 fn project_id() -> ProjectId {

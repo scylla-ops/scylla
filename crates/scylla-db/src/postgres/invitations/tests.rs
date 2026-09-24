@@ -12,9 +12,9 @@ use scylla_auth::cedar::CedarPermissionService;
 use scylla_core::application::invitation::{
     CreateInvitation, InvitationAcceptUseCases, InvitationUseCases,
 };
-use scylla_core::application::{Mailer, NoopMailer, PermissionAuthorizer};
+use scylla_core::application::{Mailer, NoopMailer};
 use scylla_core::infrastructure::Argon2HashService;
-use scylla_extension::{Actions, Hooks};
+use scylla_extension::Actions;
 use std::sync::Arc;
 
 struct Lab {
@@ -37,10 +37,7 @@ async fn lab(pool: &sqlx::PgPool) -> Lab {
     let mailer: Arc<dyn Mailer> = Arc::new(NoopMailer);
     let invite_repo = Arc::new(PgInvitationRepository::new(pool.clone()));
     Lab {
-        actions: Actions::new(
-            Arc::new(PermissionAuthorizer::new(permission.clone())),
-            Arc::new(Hooks::new()),
-        ),
+        actions: actions(permission.clone()),
         invitations: InvitationUseCases::new(
             invite_repo.clone(),
             Arc::new(PgOrganizationRepository::new(pool.clone())),

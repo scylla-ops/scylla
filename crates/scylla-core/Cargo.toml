@@ -16,9 +16,9 @@ repository.workspace = true
 # edition binaries.
 register = []
 
-# Exposes the `test_support` builders and the PermissionService doubles to
-# downstream test code (the persistence crate's tests seed through the
-# builders).
+# Exposes the `test_support` builders, the PermissionService doubles and the
+# `actions` engine builder to downstream test code (the persistence crate's
+# tests seed through the builders).
 test-utils = []
 
 [dependencies]
