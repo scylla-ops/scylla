@@ -12,20 +12,18 @@ export const MarketplaceModule = {
     /** Repository interface — the module's data surface. */
     marketplaceRepository: marketPlaceRepository,
   },
-  routes: [
-    {
-      mount: 'organization',
-      path: 'marketplace',
-      lazy: () => import('./presentation/ui/Marketplace.page.svelte'),
-    },
-  ],
-  nav: [
-    {
-      section: 'organization',
-      title: msg`Marketplace`,
-      url: 'marketplace',
-      icon: ShoppingCartIcon,
-      order: 50,
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        path: 'marketplace',
+        page: () => import('./presentation/ui/Marketplace.page.svelte'),
+        nav: {
+          section: 'organization',
+          title: msg`Marketplace`,
+          icon: ShoppingCartIcon,
+          order: 50,
+        },
+      },
+    ],
+  },
 } satisfies ScyllaModule;

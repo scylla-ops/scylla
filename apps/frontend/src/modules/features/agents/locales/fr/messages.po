@@ -37,7 +37,7 @@ msgstr "Agent"
 msgid "Agent actions"
 msgstr "Actions de l'agent"
 
-#: src/modules/features/agents/agents.module.ts:34
+#: src/modules/features/agents/agents.module.ts:30
 msgid "Agent details"
 msgstr "Détails de l'agent"
 
@@ -49,8 +49,8 @@ msgstr "ID de l'agent"
 msgid "Agent not found"
 msgstr "Agent introuvable"
 
-#: src/modules/features/agents/agents.module.ts:22
-#: src/modules/features/agents/agents.module.ts:43
+#: src/modules/features/agents/agents.module.ts:23
+#: src/modules/features/agents/agents.module.ts:25
 #: src/modules/features/agents/presentation/ui/agents.messages.ts:14
 msgid "Agents"
 msgstr "Agents"

@@ -17,23 +17,15 @@ export const RolesModule = {
     permissionRepository: repository,
     updateRole: new UpdateRoleUseCase(repository),
   },
-  routes: [
-    {
-      mount: 'organization',
-      path: 'roles',
-      permission: Permission.MANAGE_ROLES,
-      breadcrumb: () => ({ label: msg`Roles` }),
-      lazy: () => import('./presentation/ui/Roles.page.svelte'),
-    },
-  ],
-  nav: [
-    {
-      section: 'system',
-      title: msg`Roles`,
-      url: 'roles',
-      icon: ShieldIcon,
-      permission: Permission.MANAGE_ROLES,
-      order: 20,
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        path: 'roles',
+        permission: Permission.MANAGE_ROLES,
+        breadcrumb: () => ({ label: msg`Roles` }),
+        page: () => import('./presentation/ui/Roles.page.svelte'),
+        nav: { section: 'system', title: msg`Roles`, icon: ShieldIcon, order: 20 },
+      },
+    ],
+  },
 } satisfies ScyllaModule;

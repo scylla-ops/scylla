@@ -15,36 +15,23 @@ export const AgentsModule = {
     /** Repository interface — the module's data surface. */
     agentsRepository: repository,
   },
-  routes: [
-    {
-      mount: 'organization',
-      path: 'agents',
-      breadcrumb: () => ({ label: msg`Agents` }),
-      children: [
-        {
-          mount: 'organization',
-          index: true,
-          permission: Permission.LIST_AGENTS,
-          lazy: () => import('./presentation/ui/Agents.page.svelte'),
-        },
-        {
-          mount: 'organization',
-          path: ':agentId',
-          permission: Permission.READ_APP,
-          breadcrumb: () => ({ label: msg`Agent details` }),
-          lazy: () => import('./presentation/ui/AgentDetails.page.svelte'),
-        },
-      ],
-    },
-  ],
-  nav: [
-    {
-      section: 'organization',
-      title: msg`Agents`,
-      url: 'agents',
-      icon: HardDriveIcon,
-      permission: Permission.LIST_AGENTS,
-      order: 40,
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        path: 'agents',
+        permission: Permission.LIST_AGENTS,
+        breadcrumb: () => ({ label: msg`Agents` }),
+        page: () => import('./presentation/ui/Agents.page.svelte'),
+        nav: { section: 'organization', title: msg`Agents`, icon: HardDriveIcon, order: 40 },
+        children: [
+          {
+            path: ':agentId',
+            permission: Permission.READ_APP,
+            breadcrumb: () => ({ label: msg`Agent details` }),
+            page: () => import('./presentation/ui/AgentDetails.page.svelte'),
+          },
+        ],
+      },
+    ],
+  },
 } satisfies ScyllaModule;

@@ -1,30 +1,22 @@
 <script lang="ts">
   import { untrack, type Component } from 'svelte';
   import { RequirePermission } from '@platform/authz';
+  import type { RouteParams } from '../declaration/scylla-module.struct.ts';
+  import { currentMatch } from '../runtime/route-state.svelte.ts';
   import Redirect from './Redirect.svelte';
-  import type { RouteParams } from './scylla-module.struct.ts';
-  import {
-    requiredPermission,
-    routePage,
-    routeParams,
-    routeRedirect,
-    routeWrappers,
-  } from './route-state.ts';
 
-  const { page, redirect, params, permission, wrappers } = untrack(() => ({
-    page: routePage(),
-    redirect: routeRedirect(),
-    params: { ...routeParams() },
-    permission: requiredPermission(),
-    wrappers: routeWrappers(),
-  }));
+  const { route, params } = untrack(() => {
+    const match = currentMatch();
+    return { route: match?.route, params: { ...match?.params } };
+  });
+  const wrappers = route?.wrappers ?? [];
 </script>
 
 {#snippet content()}
-  {#if redirect !== undefined}
-    <Redirect to={redirect} />
-  {:else if page}
-    {#await page() then module}
+  {#if route?.redirect !== undefined}
+    <Redirect to={route.redirect} />
+  {:else if route?.page}
+    {#await route.page() then module}
       {@const Page = module.default as Component<RouteParams>}
       <Page {...params} />
     {/await}
@@ -32,10 +24,10 @@
 {/snippet}
 
 {#snippet guarded()}
-  {#if permission === undefined}
+  {#if route?.permission === undefined}
     {@render content()}
   {:else}
-    <RequirePermission {permission}>
+    <RequirePermission permission={route.permission}>
       {@render content()}
     </RequirePermission>
   {/if}

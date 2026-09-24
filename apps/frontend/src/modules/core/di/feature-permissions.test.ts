@@ -41,9 +41,7 @@ const walk = (dir: string): string[] =>
  * §4.6: no gate may go blind on the new code.
  */
 const sourcesIn = (dir: string): string[] =>
-  existsSync(dir)
-    ? walk(dir).filter(f => /\.(tsx?|svelte)$/.test(f) && !f.includes('.test.'))
-    : [];
+  existsSync(dir) ? walk(dir).filter(f => /\.(tsx?|svelte)$/.test(f) && !f.includes('.test.')) : [];
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -260,19 +258,19 @@ describe('feature permission conformance', () => {
         'The entry `useOrganizationPipelines` left behind, for the same reason as jobQueries: ' +
         '`byOrganization` is the one read that crosses the barrel, and ' +
         '`ListOrganizationPipelines` is scoped server-side, so there is nothing to gate ' +
-        'client-side. The hook is now this factory\'s React binding and goes in Phase 5.',
+        "client-side. The hook is now this factory's React binding and goes in Phase 5.",
       'organization.organizationQueries':
         'One entry where there were three hooks, and the same reasons. `members` is consumed by ' +
         'membership, whose route requires LIST_ORGANIZATION_MEMBERS — the permission the read ' +
         'needs, so the route guard covers it. TRIAGE for `mine`: roles consumes it on a route ' +
         'requiring MANAGE_ROLES, and listing organizations is a different permission.',
       'secret.secretQueries':
-        'TRIAGE: consumed by pipeline\'s step dialog to offer secret names, on an editor route ' +
+        "TRIAGE: consumed by pipeline's step dialog to offer secret names, on an editor route " +
         'requiring UPDATE_PIPELINE rather than LIST_SECRETS. Newly listed rather than newly ' +
         'true — `useSecrets` crossed the same boundary before the factory replaced it.',
       'roles.roleQueries':
         'The entry `useGrantableRoles` left behind, and a decision rather than debt: every read ' +
-        'this factory exposes across the barrel takes the caller\'s gate as `enabled`, which is ' +
+        "this factory exposes across the barrel takes the caller's gate as `enabled`, which is " +
         'the only place the answer is known. `grantable` needs no permission at all — the ' +
         'backend serves a compile-time constant — while `catalog` and `scopedGrants` are asked ' +
         'for only when the consumer already holds MANAGE_ROLES or MANAGE_*_GRANTS, which is ' +

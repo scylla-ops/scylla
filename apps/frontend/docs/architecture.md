@@ -75,7 +75,7 @@ Global infrastructure and app-level concerns:
 | `infrastructure/grpc/` | `CoreGrpcTransport` — shared gRPC-Web transport |
 | `presentation/ui/router/` | `CoreRouter` (route definitions), `AuthGuard`, `ContextCleanerWrapper` |
 | `presentation/providers/` | `DependenciesProvider` (React context for DI) |
-| `presentation/structs/` | `RouteHandle`, `ScyllaForm` shape types |
+| `presentation/structs/` | `ScyllaForm` shape types |
 
 ### 2.2 Feature Modules
 

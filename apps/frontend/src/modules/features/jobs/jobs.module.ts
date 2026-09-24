@@ -6,9 +6,7 @@ import type { JobsRemoteDataSource } from '@/modules/features/jobs/infrastructur
 import { GrpcJobsRemoteDataSource } from '@/modules/features/jobs/infrastructure/data/remote/grpc-jobs-remote.data-source.ts';
 import { DefaultJobsRepository } from '@/modules/features/jobs/infrastructure/repository/default-jobs.repository.ts';
 
-const jobsRemoteDataSource: JobsRemoteDataSource = new GrpcJobsRemoteDataSource(
-  grpcTransport,
-);
+const jobsRemoteDataSource: JobsRemoteDataSource = new GrpcJobsRemoteDataSource(grpcTransport);
 const jobsRepository = new DefaultJobsRepository(jobsRemoteDataSource);
 
 export const JobsModule = {
@@ -17,24 +15,15 @@ export const JobsModule = {
     /** Repository interface — the module's data surface. */
     jobsRepository: jobsRepository,
   },
-  routes: [
-    {
-      // Declared as a child of the jobs path `pipeline` owns — the list needs a
-      // Run action, one job does not — so the trail keeps "Jobs" as a crumb of
-      // its own. `mergeSharedParents` folds the two declarations of this segment
-      // into one route; repeating the path literally is what pairs them, and
-      // neither module imports the other.
-      mount: 'project',
-      path: 'pipelines/:pipelineId/jobs',
-      children: [
-        {
-          mount: 'project',
-          path: ':jobId',
-          permission: Permission.READ_JOB,
-          breadcrumb: ({ jobId }) => ({ label: msg`Job`, highlight: jobId }),
-          lazy: () => import('./presentation/ui/JobDetails.page.svelte'),
-        },
-      ],
-    },
-  ],
+  routes: {
+    project: [
+      {
+        // Under the jobs list that `pipeline` owns, whose crumb shows before this one.
+        path: 'pipelines/:pipelineId/jobs/:jobId',
+        permission: Permission.READ_JOB,
+        breadcrumb: ({ jobId }) => ({ label: msg`Job`, highlight: jobId }),
+        page: () => import('./presentation/ui/JobDetails.page.svelte'),
+      },
+    ],
+  },
 } satisfies ScyllaModule;

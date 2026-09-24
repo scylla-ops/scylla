@@ -1,43 +1,56 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
+import userEvent from '@testing-library/user-event';
 import { msg } from '@lingui/core/macro';
 import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
 import { currentPathname, navigateTo, setAppNavigator } from '@platform/context';
-import { createAppRouter } from './app-router.ts';
-import type { AppRouterConfig } from './app-route.struct.ts';
-import { routePathname, routeTrail } from './route-state.ts';
-import type { PageLoader } from './scylla-module.struct.ts';
-import TestFallback from './TestFallback.fixture.svelte';
-import TestOtherPage from './TestOtherPage.fixture.svelte';
-import TestPage from './TestPage.fixture.svelte';
-import TestShell from './TestShell.fixture.svelte';
-import TestWrapper from './TestWrapper.fixture.svelte';
-import { Router } from 'sv-router';
+import type { AppRouterConfig } from '../declaration/app-router-config.struct.ts';
+import type { PageLoader } from '../declaration/scylla-module.struct.ts';
+import { createAppRouter } from '../runtime/app-router.ts';
+import { routePathname, routeTrail } from '../runtime/route-state.svelte.ts';
+import TestFallback from './fixtures/TestFallback.fixture.svelte';
+import TestOtherPage from './fixtures/TestOtherPage.fixture.svelte';
+import TestPage from './fixtures/TestPage.fixture.svelte';
+import TestShell from './fixtures/TestShell.fixture.svelte';
+import TestWrapper from './fixtures/TestWrapper.fixture.svelte';
+import RouterView from './RouterView.svelte';
 
 const page: PageLoader = () => Promise.resolve({ default: TestPage });
 const otherPage: PageLoader = () => Promise.resolve({ default: TestOtherPage });
 
 const config: AppRouterConfig = {
-  publicRoutes: [{ path: '/login', lazy: otherPage }],
-  shell: TestShell,
+  mounts: {
+    public: {},
+    app: { layout: TestShell },
+    organization: { parent: 'app', path: ':slug', wrapper: TestWrapper },
+    project: { parent: 'organization', path: 'projects/:projectId' },
+  },
   fallback: TestFallback,
-  routes: [
+  modules: [
     {
-      path: ':slug',
-      wrapper: TestWrapper,
-      children: [
-        { index: true, redirect: 'secrets' },
-        {
-          path: 'secrets',
-          handle: { permission: Permission.LIST_SECRETS, breadcrumb: () => ({ label: msg`Secrets` }) },
-          children: [
-            { index: true, lazy: page },
-            { path: 'new', handle: { permission: Permission.CREATE_SECRET }, lazy: page },
-            { path: ':secretId', lazy: page },
-          ],
-        },
-        { path: 'open', handle: { breadcrumb: () => ({ label: msg`Open` }) }, lazy: otherPage },
-      ],
+      id: 'test',
+      routes: {
+        public: [{ path: 'login', page: otherPage }],
+        organization: [
+          { redirect: 'secrets' },
+          {
+            path: 'secrets',
+            permission: Permission.LIST_SECRETS,
+            breadcrumb: () => ({ label: msg`Secrets` }),
+            page,
+            children: [
+              {
+                path: 'new',
+                permission: Permission.CREATE_SECRET,
+                breadcrumb: () => ({ label: msg`New` }),
+                page,
+              },
+              { path: ':secretId', page },
+            ],
+          },
+          { path: 'open', breadcrumb: () => ({ label: msg`Open` }), page: otherPage },
+        ],
+      },
     },
   ],
 };
@@ -56,7 +69,7 @@ const renderAt = async (pathname: string) => {
   setAppNavigator(navigator);
   navigator.navigate(pathname, { replace: true });
   await expect.poll(() => routePathname()).toBe(pathname);
-  return render(Router);
+  return render(RouterView);
 };
 
 beforeEach(() => {
@@ -167,14 +180,14 @@ describe('the route guard', () => {
     expect(screen.queryByTestId('page')).not.toBeInTheDocument();
   });
 
-  it('applies the permission of the parent to a child that declares none', async () => {
+  it('guards a page with its own permission only, never with the one of its parent', async () => {
     grantOnly(Permission.READ_PROJECT);
     await renderAt('/acme/secrets/secret-1');
 
-    expect(await screen.findByText(/don't have the permission/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('page')).toHaveTextContent('secretId=secret-1');
   });
 
-  it('does not treat a handle with only a breadcrumb as a permission', async () => {
+  it('does not treat a route with only a breadcrumb as a permission', async () => {
     await renderAt('/acme/open');
 
     expect(await screen.findByTestId('other-page')).toBeInTheDocument();
@@ -183,11 +196,61 @@ describe('the route guard', () => {
 });
 
 describe('the route trail', () => {
-  it('lists the handles on the URL with the pathname of their route', async () => {
+  it('lists the crumbs on the URL with the pathname of their route', async () => {
     grantOnly(Permission.LIST_SECRETS, Permission.CREATE_SECRET);
     await renderAt('/acme/secrets/new');
     await screen.findByTestId('page');
 
-    expect(routeTrail().map(crumb => crumb.pathname)).toEqual(['/acme/secrets', '/acme/secrets/new']);
+    expect(routeTrail().map(crumb => crumb.pathname)).toEqual([
+      '/acme/secrets',
+      '/acme/secrets/new',
+    ]);
+  });
+});
+
+describe('the links of the app', () => {
+  it('opens a link of the app without a page load', async () => {
+    await renderAt('/acme/secrets/secret-1');
+    const link = document.createElement('a');
+    link.href = '/acme/open';
+    link.textContent = 'open';
+    document.body.append(link);
+
+    await userEvent.click(link);
+
+    expect(await screen.findByTestId('other-page')).toBeInTheDocument();
+    expect(currentPathname()).toBe('/acme/open');
+    link.remove();
+  });
+
+  it('leaves a link that opens a new tab to the browser', async () => {
+    await renderAt('/acme/open');
+    const link = document.createElement('a');
+    link.href = '/acme/secrets';
+    link.target = '_blank';
+    document.body.append(link);
+    let prevented: boolean | undefined;
+    const record = (event: MouseEvent) => {
+      prevented = event.defaultPrevented;
+      event.preventDefault();
+    };
+    window.addEventListener('click', record);
+
+    await userEvent.click(link);
+
+    expect(prevented).toBe(false);
+    expect(currentPathname()).toBe('/acme/open');
+    window.removeEventListener('click', record);
+    link.remove();
+  });
+
+  it('follows the browser back to the previous page', async () => {
+    await renderAt('/acme/open');
+    navigateTo('/acme/secrets/secret-3');
+    await screen.findByTestId('page');
+
+    history.back();
+
+    expect(await screen.findByTestId('other-page')).toBeInTheDocument();
   });
 });

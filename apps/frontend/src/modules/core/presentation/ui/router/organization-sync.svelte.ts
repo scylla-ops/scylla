@@ -19,7 +19,9 @@ export const syncOrganization = (organizationSlug: string | undefined): void => 
 
     untrack(() => {
       const store = contextStore.getState();
-      const match = list.find(organization => slugifyOrgName(organization.name) === organizationSlug);
+      const match = list.find(
+        organization => slugifyOrgName(organization.name) === organizationSlug,
+      );
 
       if (match) {
         if (match.id !== store.organization.id) store.setOrganization(match.id, match.name);

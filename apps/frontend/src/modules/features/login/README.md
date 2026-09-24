@@ -35,7 +35,7 @@ and a session, so it happens inside the authenticated shell rather than at sign-
 
 A one-method feature could arguably live in `core/`. It stays a module because the composition
 root should not know how authentication works — it should only know that *some* module claims
-the `/login` route. `LoginModule` declares `mount: 'public'`, which grafts it outside the auth
+the `/login` route. `LoginModule` declares it under the `public` mount, which grafts it outside the auth
 guard, and the router is derived from that. If sign-in ever grows an SSO flow, a password reset
 or a second factor, it grows here without touching the shell.
 

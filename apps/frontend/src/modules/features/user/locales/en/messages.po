@@ -102,8 +102,8 @@ msgid "Username"
 msgstr "Username"
 
 #: src/modules/features/user/presentation/ui/user.messages.ts:7
-#: src/modules/features/user/user.module.ts:22
-#: src/modules/features/user/user.module.ts:36
+#: src/modules/features/user/user.module.ts:23
+#: src/modules/features/user/user.module.ts:25
 msgid "Users"
 msgstr "Users"
 

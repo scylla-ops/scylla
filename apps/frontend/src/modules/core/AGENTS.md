@@ -19,7 +19,7 @@ The composition root: the one place that knows every module.
 
 That is the only sanctioned door. The barrels re-export UI, and importing one here would pull
 every page into the initial chunk and undo the lazy routes. `module-declaration-is-private`
-enforces that no *other* module does the same.
+enforces that no _other_ module does the same.
 
 ## Layout
 
@@ -61,20 +61,16 @@ Adding a feature = add its `*.module.ts` here. There is no second list.
 ## `di/module-permissions.test.ts` — the gate that reads that list
 
 Because everything is derived from `modules`, one test can hold the whole app to a rule instead
-of thirteen. It enumerates the *composed* route trees (`routesFor`) and asserts:
+of thirteen. It enumerates the _compiled_ routes (`compileRoutes(appRoutes)`) and asserts:
 
-1. **Every page behind `AuthGuard` declares a `permission`** — on itself or on an ancestor,
-   matching the deepest-match rule of the route guard. A route with no `lazy` is a grouping
-   node and is walked through, not reported.
-2. **A sidebar link and the page it opens require the same permission.** `permission` is written
-   twice — once in `routes`, once in `nav` — and nothing but this test stops the two drifting.
-   It also fails on a nav `url` that no route renders.
+**Every page behind `AuthGuard` declares a `permission`** — on the page itself. There is no
+inheritance from a parent route. A route with no `page` only gives a crumb and is not reported.
 
-`UNGATED_PAGES` is a **ratchet** — entries may be removed, never added without a real reason,
-and a stale entry fails the suite too. `mount: 'public'` is exempt structurally.
+`UNGATED_PAGES` is keyed by the full path (`/:organizationSlug/marketplace`). It is a
+**ratchet** — entries may be removed, never added without a real reason, and a stale entry fails
+the suite too. `public` routes are exempt structurally.
 
-A new mount in `core.router.ts` means adding it to `GUARDED_MOUNTS` (and `SHELL_SEGMENTS`, if
-the shell owns the segment a nav entry addresses — `projects` is the one such case today).
+A sidebar link needs no check: `nav` is part of its route and takes the route's permission.
 
 ## `di/feature-permissions.test.ts` — the same idea, one level down
 
@@ -87,27 +83,25 @@ It reads source, enumerated from `modules`:
 Both are **completeness, never correctness**. `UNGATED_FEATURES` and `UNCHECKED_SHARED_HOOKS`
 are ratchets. Entries marked `SEEDED DEBT` or `TRIAGE` are open questions, not decisions.
 
-## `core.router.ts` — the skeleton, and only the skeleton
+## `core.router.ts` — the mounts, and only the mounts
 
 ```
-publicRoutes: routesFor(modules, 'public')        ← outside the shell layout
-shell: AppShell (AuthGuard + Layout)
-├── index → OrganizationRedirectWrapper
-└── :organizationSlug   wrapper OrganizationSyncWrapper
-    ├── index → redirect 'dashboard'
-    ├── routesFor(modules, 'organization')
-    └── projects   (breadcrumb "Projects")
-        ├── routesFor(modules, 'projects')
-        └── :projectId   wrapper ContextCleanerWrapper (breadcrumb "Project")
-            └── routesFor(modules, 'project')
+mounts
+  public         /                                        no layout, no guard
+  app            /                                        layout AppShell (AuthGuard + Layout)
+  organization   /:organizationSlug                       wrapper OrganizationSyncWrapper
+  project        /:organizationSlug/projects/:projectId   wrapper ContextCleanerWrapper, crumb "Project"
+modules: [shellRoutes, ...modules]
+  shellRoutes    app: /                   -> OrganizationRedirectWrapper
+                 organization: (its root) -> redirect 'dashboard'
 fallback: LoginRedirect
 ```
 
 **Never add a page here.** Adding a page is a change to one module's `*.module.ts`; this file
-does not move. It changes only when a *mount point* is added or the shell's structure changes.
+does not move. It changes only when a _mount_ is added or the shell's structure changes.
 
-The route guard is not in this tree. Every page goes through `RoutePage` in
-`@platform/routing`, which applies the deepest `permission` on the URL.
+The route guard is not here. Every page goes through `RouteEntry` in `@platform/routing`, which
+applies the `permission` of the page.
 
 `startRouter()` creates the router and installs it with `setAppNavigator`. `main.ts` calls it
 once, before it mounts `App`.

@@ -342,7 +342,7 @@ msgstr "Rôle"
 
 #: src/modules/features/roles/presentation/ui/roles.messages.ts:23
 #: src/modules/features/roles/roles.module.ts:25
-#: src/modules/features/roles/roles.module.ts:32
+#: src/modules/features/roles/roles.module.ts:27
 msgid "Roles"
 msgstr "Rôles"
 

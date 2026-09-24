@@ -34,7 +34,7 @@ msgstr "Supprimer"
 msgid "Description"
 msgstr "Description"
 
-#: src/modules/features/organization/organization.module.ts:33
+#: src/modules/features/organization/organization.module.ts:23
 msgid "Detail"
 msgstr "Détail"
 
@@ -79,6 +79,6 @@ msgstr "Enregistrement..."
 msgid "Update the organization name and description."
 msgstr "Mettez à jour le nom et la description de l'organisation."
 
-#: src/modules/features/organization/organization.module.ts:31
+#: src/modules/features/organization/organization.module.ts:23
 msgid "User"
 msgstr "Utilisateur"

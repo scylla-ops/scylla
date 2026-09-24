@@ -10,7 +10,7 @@ import { lingui } from '@lingui/vite-plugin';
 /**
  * Third-party code pinned to stable, separately cacheable chunks.
  *
- * Route-level `lazy` already keeps each page out of the entry chunk, but a
+ * The lazy `page` of each route already keeps it out of the entry chunk, but a
  * library shared by two lazy routes would otherwise be duplicated or hoisted
  * back into the entry. Splitting by library also means a dependency bump only
  * invalidates its own chunk instead of the whole bundle.
@@ -20,7 +20,7 @@ import { lingui } from '@lingui/vite-plugin';
  * trailing dash (`d3-` would match `d3-scale`).
  */
 const VENDOR_CHUNKS: Record<string, string[]> = {
-  'vendor-svelte': ['svelte', 'sv-router', 'esm-env', 'clsx'],
+  'vendor-svelte': ['svelte', 'esm-env', 'clsx'],
   'vendor-ui': [
     'bits-ui',
     '@lucide/svelte',
@@ -102,7 +102,6 @@ export default defineConfig({
       '@tanstack/svelte-query',
       '@tanstack/svelte-table',
       '@xyflow/svelte',
-      'sv-router',
       'svelte-sonner',
     ],
   },

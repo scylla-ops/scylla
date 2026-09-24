@@ -19,7 +19,7 @@ export const dependencies = Object.fromEntries(modules.map(m => [m.id, m.domain]
 
 From that one array come **all three** of the app's cross-cutting structures:
 
-- the **router**, via `routesFor(modules, mount)`
+- the **router**, via `createAppRouter` (which compiles the routes of every module)
 - the **sidebar**, via `navEntriesFor(modules)`
 - the **DI container**, via the `dependencies` map
 
@@ -36,27 +36,23 @@ one else does it.
 ## The router owns the skeleton, not the pages
 
 `presentation/ui/router/core.router.ts` describes the shape of the application and nothing about
-its content:
+its content. It declares the **mounts** — the places where module routes graft — and what each
+one brings:
 
 ```
-public routes (outside the shell)          ← /login
-AppShell = AuthGuard + Layout              ← token or redirect; sidebar, top bar, breadcrumbs
-├── /                                      → redirect to the user's organization
-└── /:organizationSlug                     → sync the org into context
-    ├── (index)                            → redirect to the dashboard
-    ├── organization-scoped module routes
-    └── projects                           → project-list module routes
-        └── :projectId                     → clean stale context
-            └── project-scoped module routes
+public         /                                  ← /login, outside the shell
+app            /  AppShell = AuthGuard + Layout   ← token or redirect; sidebar, top bar, breadcrumbs
+organization   /:organizationSlug                 → sync the org into context
+project        /:organizationSlug/projects/:id    → clean stale context, "Project" crumb
 ```
 
-Every leaf is `routesFor(modules, mount)`. Adding a page means editing one module's declaration;
-this file does not move. It changes only when a new mount point is introduced or the shell's own
-structure does.
+The shell owns two pages of its own: `/` sends you to your organization, and
+`/:organizationSlug` redirects to its dashboard. Everything else is a module's page. Adding a
+page means editing one module's declaration; this file does not move. It changes only when a new
+mount is introduced or the shell's own structure does.
 
-The router itself is `sv-router`, behind [platform/routing](../platform/routing/README.md). The
-route guard is in that module too: each page gets the deepest `permission` that the routes on
-its URL declare.
+The router itself is in [platform/routing](../platform/routing/README.md), with no router
+library. The route guard is in that module too: each page gets the `permission` it declares.
 
 ## Context follows the URL
 
@@ -89,7 +85,7 @@ Together they cover every query and every mutation in the app:
 
 **The practical consequence for feature code: do not add your own `onError` toast to a
 mutation.** The root handler already shows one, and a second is a duplicate on screen. If a
-mutation needs bespoke handling, it needs bespoke *behaviour* — not another toast.
+mutation needs bespoke handling, it needs bespoke _behaviour_ — not another toast.
 
 Two acknowledged `//todo`s sit alongside that setup: console noise should probably be narrowed
 in production, and domain errors would ideally be toasted by the module that owns them. Both are
@@ -106,6 +102,6 @@ the toaster.
 ## Related modules
 
 - [layout](../layout/README.md) — the shell UI this router renders into.
-- [platform/routing](../platform/routing/README.md) — `routesFor`, `navEntriesFor`, the router.
+- [platform/routing](../platform/routing/README.md) — `compileRoutes`, `navEntriesFor`, the router.
 - [platform/di](../platform/di/README.md) — the registry this wires up.
 - [platform/context](../platform/context/README.md) — the store the wrappers write to.

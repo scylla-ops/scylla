@@ -157,7 +157,7 @@ module.exports = {
       to: {
         path: [
           '^src/generated/',
-          '^node_modules/(svelte|sv-router|bits-ui|@tanstack|@lingui|@protobuf-ts|@lucide)',
+          '^node_modules/(svelte|bits-ui|@tanstack|@lingui|@protobuf-ts|@lucide)',
         ],
       },
     },

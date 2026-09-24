@@ -12,5 +12,4 @@ export const AppsModule = {
     /** Repository interface — the module's data surface. */
     appsRepository: repository,
   },
-
 } satisfies ScyllaModule;

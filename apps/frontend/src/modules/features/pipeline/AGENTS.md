@@ -79,7 +79,7 @@ presentation/
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `project` | index | `LIST_PIPELINES_BY_PROJECT` | `DashboardPipelinePage` |
+| `project` | (the mount's own path) | `LIST_PIPELINES_BY_PROJECT` | `DashboardPipelinePage` |
 | `project` | `create` | `CREATE_PIPELINE` | `PipelineCreationPage` |
 | `project` | `edit/:pipelineId` | `UPDATE_PIPELINE` | `PipelineUpdatePage` |
 | `project` | `pipelines/:pipelineId/jobs` | `LIST_JOBS_BY_PIPELINE` | `PipelineJobsRoute` |

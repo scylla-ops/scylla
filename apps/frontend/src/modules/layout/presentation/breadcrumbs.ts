@@ -9,7 +9,7 @@ export interface BreadcrumbItem {
 }
 
 /**
- * The breadcrumbs of the current URL, from the routes that declare one.
+ * The breadcrumbs of the current URL.
  *
  * `label` and `detail` are translated. `highlight` is business data and stays as
  * it is.
@@ -19,16 +19,13 @@ export const breadcrumbsFor = (
   params: BreadcrumbParams,
   translate: (message: MessageDescriptor) => string,
 ): BreadcrumbItem[] =>
-  trail.flatMap(({ handle, pathname }) => {
-    if (!handle.breadcrumb) return [];
-    const crumb = handle.breadcrumb(params);
+  trail.map(({ breadcrumb, pathname }) => {
+    const crumb = breadcrumb(params);
 
-    return [
-      {
-        label: translate(crumb.label),
-        highlight: crumb.highlight,
-        detail: crumb.detail && translate(crumb.detail),
-        pathname,
-      },
-    ];
+    return {
+      label: translate(crumb.label),
+      highlight: crumb.highlight,
+      detail: crumb.detail && translate(crumb.detail),
+      pathname,
+    };
   });

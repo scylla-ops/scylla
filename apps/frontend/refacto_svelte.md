@@ -388,7 +388,20 @@ export const autoScroll: Action<HTMLElement, boolean enabled: { }> = (node, opti
 };
 ```
 
-### 4.2 Le routeur — ~~décidé : maison (~300 LOC)~~ → **`sv-router`** (Phase 6)
+### 4.2 Le routeur — maison, après un passage par `sv-router`
+
+> **Retour au routeur maison, après la Phase 6.** `sv-router` ne servait qu'au matching, à
+> l'historique et aux clics sur `<a>` : ses layouts, son `lazy` et ses `meta` étaient contournés
+> (voir « Ce que la phase a appris » en Phase 6), et l'adaptateur était plus gros que la partie
+> utilisée. Le contrat `ScyllaModule` a été simplifié en même temps : routes groupées par mount
+> (`routes: { project: [...] }`), `page` au lieu de `lazy`, `nav` portée par la route, permission
+> sans héritage, et plus de fusion d'arbres (`mergeSharedParents`). `compileRoutes` aplatit les
+> déclarations en une table triée ; le runtime (matching, History API, clics) tient dans
+> `platform/routing/runtime/`. L'API Navigation n'est pas utilisée : Firefox ESR et jsdom ne l'ont
+> pas. Détail dans `src/modules/platform/routing/AGENTS.md`.
+
+Historique :
+
 
 > **Écart au plan, décidé en Phase 6.** Le routeur maison n'a pas été écrit : l'équipe a choisi
 > [`sv-router`](https://github.com/colinlienard/sv-router) (Svelte 5, sans SvelteKit, ~5 kB gzip,

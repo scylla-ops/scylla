@@ -70,7 +70,8 @@ msgid "Project name"
 msgstr "Nom du projet"
 
 #: src/modules/features/project/presentation/ui/project.messages.ts:12
-#: src/modules/features/project/project.module.ts:30
+#: src/modules/features/project/project.module.ts:24
+#: src/modules/features/project/project.module.ts:26
 msgid "Projects"
 msgstr "Projets"
 

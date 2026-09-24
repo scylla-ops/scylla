@@ -78,10 +78,11 @@ presentation/
 
 Sidebar: section **`system`** (not `organization`), order `10`, icon `UsersIcon`.
 
-**The `users` parent is shared with `organization`**, which declares the `:userId` leaf
-(`UserSettingsRoute`) because the settings screen shows an organizations panel. The route
-composer merges both halves onto one parent — that is why two modules declare the same segment
-without conflicting. If you add a route under `users`, check the other module first.
+**The `users` path is shared with `organization`**, which declares `users/:userId`
+(`UserSettingsRoute`) because the settings screen shows an organizations panel. The "Users"
+crumb declared here shows on that page too, because its path starts with `users`. If you add a
+route under `users`, check the other module first: the compilation fails when two modules set
+the same field on one path.
 
 ## Rules that bite here
 

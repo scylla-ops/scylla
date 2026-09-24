@@ -72,8 +72,9 @@ presentation/
 them and no sidebar entry points at them — the feature is complete below the UI and not yet
 surfaced.
 
-If you are asked to expose it: add `routes` + `nav` to `apps.module.ts` (mount `organization`,
-gate on an apps permission such as `LIST_APPS_BY_ORGANIZATION`, `lazy`-import the pages). Do
+If you are asked to expose it: add `routes` to `apps.module.ts` (under `organization`, gate on
+an apps permission such as `LIST_APPS_BY_ORGANIZATION`, `page`-import the pages lazily, and a
+`nav` on the route for the sidebar). Do
 **not** register a route anywhere else — the module declaration is the only door.
 
 ## Rules that bite here

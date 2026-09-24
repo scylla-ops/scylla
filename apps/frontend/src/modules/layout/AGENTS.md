@@ -48,13 +48,13 @@ locales/                               the shell's own catalog
 ## The shell renders, it does not decide
 
 `core` passes `navEntriesFor(modules)` into `Layout`. **The sidebar never hardcodes a link.**
-Every entry comes from a module's `nav` declaration, carrying its own `permission` — the same
-one its route declares, so a link cannot be visible for a page that will deny you.
+Every entry comes from the `nav` of a module's route, and takes that route's URL and
+`permission` — so a link cannot be visible for a page that will deny you.
 
 Two sections exist: `organization` and `system`. Adding a third means changing `NavSection`
 handling here **and** widening `NavEntry['section']` in `@platform/routing`.
 
-`ScyllaBreadcrumbs` reads `handle.breadcrumb` off the route trail (`routeTrail()` from
+`ScyllaBreadcrumbs` reads the `breadcrumb` of each crumb of the route trail (`routeTrail()` from
 `@platform/routing`). `Crumb.label` / `detail`
 are translated, `highlight` is business data shown verbatim. Nothing here builds a crumb from a
 pathname.

@@ -95,10 +95,9 @@ export default tseslint.config([
   // `createQuery` from `@tanstack/svelte-query` reads its client from Svelte
   // context. The re-export in `@platform/query` binds the app's client; the two
   // are indistinguishable at the call site, so the wrong import fails at runtime.
-  // ── The router is sv-router, and only @platform/routing may import it ──────────
   {
     files: ['src/modules/**/*.{ts,svelte}'],
-    ignores: ['src/modules/platform/query/**', 'src/modules/platform/routing/**'],
+    ignores: ['src/modules/platform/query/**'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -109,10 +108,6 @@ export default tseslint.config([
               message:
                 'Import createQuery / createMutation from @platform/query — they carry the ' +
                 "app's QueryClient.",
-            },
-            {
-              name: 'sv-router',
-              message: 'Import the router API from @platform/routing, the only module that knows the router.',
             },
           ],
         },

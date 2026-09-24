@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { RouteParams } from './scylla-module.struct.ts';
+  import type { RouteParams } from '../../declaration/scylla-module.struct.ts';
 
   let { params, children }: { params: RouteParams; children: Snippet } = $props();
 </script>

@@ -21,7 +21,7 @@ msgstr "Télécharger"
 msgid "Learn more"
 msgstr "En savoir plus"
 
-#: src/modules/features/marketplace/marketplace.module.ts:25
+#: src/modules/features/marketplace/marketplace.module.ts:22
 msgid "Marketplace"
 msgstr "Marketplace"
 

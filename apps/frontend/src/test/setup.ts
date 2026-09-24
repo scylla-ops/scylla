@@ -34,13 +34,6 @@ class ResizeObserverStub {
   disconnect = vi.fn();
 }
 
-class IntersectionObserverStub {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-  takeRecords = vi.fn(() => []);
-}
-
 /**
  * jsdom implements no Web Animations API, and a Svelte `transition:` runs on
  * `element.animate()` — without this, every component with one throws
@@ -88,7 +81,6 @@ beforeEach(() => {
   document.body.style.pointerEvents = '';
 
   vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-  vi.stubGlobal('IntersectionObserver', IntersectionObserverStub);
   Element.prototype.animate = vi.fn(() => new AnimationStub() as unknown as Animation);
   Element.prototype.hasPointerCapture = vi.fn().mockReturnValue(false);
   Element.prototype.setPointerCapture = vi.fn();

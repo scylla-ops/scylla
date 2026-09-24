@@ -75,12 +75,13 @@ presentation/
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `projects` | index | `READ_ORGANIZATION` | `ProjectPage` |
+| `organization` | `projects` | `READ_ORGANIZATION` | `ProjectPage` |
 
-Sidebar: section `organization`, order `20`, icon `WorkflowIcon`, same permission.
+Sidebar: section `organization`, order `20`, icon `WorkflowIcon`. The route also declares the
+"Projects" crumb, which shows on every project page.
 
 `READ_ORGANIZATION` is the real gate — listing projects *is* reading the organization. Deeper
-project routes (`mount: 'project'`) are declared by the modules that own them
+project routes (the `project` mount) are declared by the modules that own them
 ([pipeline](../pipeline/AGENTS.md), [secret](../secret/AGENTS.md),
 [membership](../membership/AGENTS.md)), not here.
 

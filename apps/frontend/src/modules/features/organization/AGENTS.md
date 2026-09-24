@@ -80,10 +80,9 @@ presentation/
 | `organization` | `users/:userId` | none declared | `UserSettingsRoute` |
 
 **No nav entry**, and the route looks misplaced on purpose. The user directory belongs to
-[`user`](../user/AGENTS.md), which owns `users` and its index; this module contributes the
-`:userId` leaf because the settings page renders an organizations panel. The route composer
-merges both halves onto one `users` parent — that is why two modules may declare the same path
-segment here without conflicting.
+[`user`](../user/AGENTS.md), which owns the `users` page and crumb; this module declares
+`users/:userId` because the settings page renders an organizations panel. The router joins the
+two by path: this page shows the "Users" crumb of `user`, and neither module imports the other.
 
 ## Rules that bite here
 

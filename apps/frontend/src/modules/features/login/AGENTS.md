@@ -58,9 +58,9 @@ No entities, no structs, no mappers — there is nothing to model.
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `public` | `/login` | none | `Login.page.svelte` |
+| `public` | `login` | none | `Login.page.svelte` |
 
-`mount: 'public'` puts it **outside** `AuthGuard`. It must stay there: mounting it anywhere else
+The `public` mount puts it **outside** `AuthGuard`. It must stay there: mounting it anywhere else
 makes signing in require being signed in.
 
 No nav entry — the sidebar only renders inside the authenticated shell.

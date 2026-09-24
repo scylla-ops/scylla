@@ -1,13 +1,14 @@
 <script lang="ts">
   import { PageTransition } from '@shared/presentation/ui';
-  import { routeInShell, routePathname } from './route-state.ts';
+  import { location } from '../runtime/location.svelte.ts';
   import RouteEntry from './RouteEntry.svelte';
 
-  const pathname = $derived(routePathname());
-  const inShell = $derived(routeInShell());
+  let { animate = false }: { animate?: boolean } = $props();
+
+  const pathname = $derived(location.pathname);
 </script>
 
-{#if inShell}
+{#if animate}
   <PageTransition key={pathname}>
     <RouteEntry />
   </PageTransition>

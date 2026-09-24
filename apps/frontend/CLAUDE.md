@@ -129,7 +129,7 @@ Inside a feature, dependencies point **inward**: `presentation → domain ← in
 
 ```
 feature/
-├── feature.module.ts    → THE module declaration: { id, domain, routes?, nav? }
+├── feature.module.ts    → THE module declaration: { id, domain, routes? }
 │                          private: only core/di/registry.ts imports it
 ├── index.ts             → public API — the ONLY thing other modules may import (enforced)
 ├── domain/              → PURE business logic, ZERO external deps (no Svelte, no gRPC, no proto)
@@ -187,8 +187,8 @@ injected, still substitutable in a test. Only the redundant indirection is gone.
   `App.svelte`, auth guard.
 - `platform/` — below the features, may never import one: `authz` (Permission, `can`, `Can`,
   `RequirePermission`), `context` (current org/project/pipeline + navigation), `di`, `grpc`,
-  `query` (the query client and the Svelte bindings), `routing` (`ScyllaModule`, route composer,
-  the router — the only module that knows `sv-router`).
+  `query` (the query client and the Svelte bindings), `routing` (`ScyllaModule`, the route
+  compilation, the router — written in the project, no router library).
 - `features/` — `agents`, `apps`, `dashboard`, `jobs`, `login`, `marketplace`, `membership`,
   `organization`, `pipeline`, `project`, `roles`, `secret`, `triggers`, `user`.
 - `layout/` — App shell (Layout, AppSidebar, ScyllaBreadcrumbs, context-selector).
@@ -203,19 +203,23 @@ container are all *derived* from that one declaration — there is no second lis
 export const SecretModule = {
   id: 'secret',
   domain: { secretRepository },              // the DI surface
-  routes: [{                                  // grafted by the shell at its mount point
-    mount: 'project', path: 'secrets',
-    permission: Permission.LIST_SECRETS,      // read by RouteGuard *and* the sidebar
-    breadcrumb: () => ({ label: msg`Secrets` }),
-    lazy: () => import('./presentation/ui/Secret.page.svelte'),
-  }],
-  nav: [/* sidebar entries */],
+  routes: {
+    project: [{                               // the mount: the shell grafts the route there
+      path: 'secrets',
+      permission: Permission.LIST_SECRETS,    // read by the route guard *and* the sidebar
+      breadcrumb: () => ({ label: msg`Secrets` }),
+      page: () => import('./presentation/ui/Secret.page.svelte'),
+      // nav: { section, title, icon, order } — a sidebar link, organization routes only
+      // children: [...]                       — routes below this path
+    }],
+  },
 } satisfies ScyllaModule;
 ```
 
 Rules that matter:
-- `routes.lazy` is what keeps pages out of the initial chunk. Keep it.
-- `permission` is declared **once** and drives both the route guard and the sidebar link.
+- `page` is a dynamic import: that is what keeps pages out of the initial chunk. Keep it.
+- `permission` is declared **once** and drives both the route guard and the sidebar link. It
+  guards that page only: a child route declares its own.
 - Breadcrumb/nav labels are `` msg`…` `` descriptors, so the module file stays a `.ts`.
 - Route parameters arrive as props of the page: `let { projectId }: { projectId?: string } = $props();`.
 - `core/di/registry.ts` imports `<feature>.module.ts` — **never** `<feature>/index.ts`, whose
@@ -396,7 +400,7 @@ The harness is five files in `src/test/`, and it is the only shared test code:
 
 | | |
 |---|---|
-| `src/test/setup.ts` | Runs before every file. Activates an empty `en` catalog, and stubs the browser APIs jsdom lacks (`ResizeObserver`, `IntersectionObserver`, `Element.animate`, pointer capture, `scrollIntoView`, `scrollTo`, `matchMedia`). **Never re-stub these per file.** |
+| `src/test/setup.ts` | Runs before every file. Activates an empty `en` catalog, and stubs the browser APIs jsdom lacks (`ResizeObserver`, `Element.animate`, pointer capture, `scrollIntoView`, `scrollTo`, `matchMedia`). **Never re-stub these per file.** |
 | `src/test/render.svelte.ts` | `render`, `withRegistry` (stub DI registry), `withQueryClient` (fresh cache, `retry: false`), `focusSettled`, `textSnippet`, `findFloating` / `findTooltip`. |
 | `src/test/navigator.ts` | `installTestNavigator` — a fake navigator, for a test that navigates. |
 | `src/test/queries.ts` | `runQueryFn`, `runMutationFn`, `runOnSuccess`, `stubQuery`. |
@@ -427,13 +431,13 @@ The harness is five files in `src/test/`, and it is the only shared test code:
 
 ### Permission conformance — the one test that enumerates
 
-`src/modules/core/di/module-permissions.test.ts` holds the whole app to two rules, derived from
-`core/di/registry.ts` rather than from a hand-written list:
+`src/modules/core/di/module-permissions.test.ts` holds the whole app to one rule, derived from
+the compiled routes (`compileRoutes(appRoutes)`) rather than from a hand-written list:
 
-1. every page behind `AuthGuard` declares a `permission` (its own or an ancestor's, matching
-   `RouteGuard`'s deepest-match rule);
-2. a sidebar entry and the page it opens require the **same** permission — `permission` is
-   written twice, in `routes` and in `nav`, and nothing else stops the two drifting.
+1. every page behind `AuthGuard` declares its own `permission` — there is no inheritance from a
+   parent route.
+
+A sidebar entry needs no rule: `nav` is part of its route and takes the route's permission.
 
 **A new page is checked the day its module joins the registry**, with no test to remember to
 write. That is the point: a per-component test pins a gate that exists, this one fails for a
@@ -443,13 +447,13 @@ reason** — a ratchet, like the coverage thresholds, and a stale entry fails th
 `feature-permissions.test.ts` applies the same idea one level down, by reading source because
 the gating of a *button* is declared nowhere a type can see it:
 
-3. a feature that declares a mutation must mention a `Permission` somewhere under its
+2. a feature that declares a mutation must mention a `Permission` somewhere under its
    `presentation/ui/`;
-4. a query another feature imports through the barrel must check for itself — crossing a
+3. a query another feature imports through the barrel must check for itself — crossing a
    barrel means running outside the owner's route guard, on the *consumer's* permission.
    `jobsByPipelinesQueries` is the model: `enabled: ready && can(...)`.
 
-All four rules answer **completeness, not correctness**: they cannot tell you the permission on
+All three rules answer **completeness, not correctness**: they cannot tell you the permission on
 a button is the wrong one. That stays the job of the per-component tests. `UNGATED_FEATURES` and
 `UNCHECKED_SHARED_HOOKS` are ratchets seeded with today's state; `SEEDED DEBT` and `TRIAGE`
 entries are open questions, not decisions.
@@ -496,17 +500,17 @@ turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/
 
 - Path alias `@/` → `src/` (e.g. `@/modules/features/user/...`).
 - Prettier: semicolons, single quotes (incl. JSX), 2-space tabs, trailing commas (all), printWidth 100, `arrowParens: avoid`. Match this style; don't reformat unrelated code.
-- Routing: `sv-router`, behind `@platform/routing` (the only module that imports it). The shell
-  skeleton is `core/presentation/ui/router/core.router.ts`; protected routes are wrapped by
-  `AuthGuard` + `Layout` (`AppShell.svelte`).
+- Routing: written in the project, in `@platform/routing` (no router library). The mounts are
+  in `core/presentation/ui/router/core.router.ts`; the routes of the `app` mount and below are
+  wrapped by `AuthGuard` + `Layout` (`AppShell.svelte`).
 - Backend comms: gRPC-Web via protobuf-ts through `CoreGrpcTransport`.
 - Comments: **none in the code, except on public/exported items.** When the reason behind the
   code needs more room, write it in the module's `AGENTS.md`, not inline. Team-visible text
   (PR bodies, issues, `AGENTS.md`, comments on public items) is written in ASD-STE100.
-- Lint rules worth knowing (see `eslint.config.js`): `no-floating-promises` and `no-misused-promises` are errors — never fire-and-forget a promise; unused bindings must be prefixed `_` to be tolerated. The `no-unsafe-*` rules are off only because of the generated proto layer — that is not a licence to spread `any`. `no-restricted-imports` forbids `@tanstack/svelte-query` (use `@platform/query`) and `sv-router` (use `@platform/routing`).
+- Lint rules worth knowing (see `eslint.config.js`): `no-floating-promises` and `no-misused-promises` are errors — never fire-and-forget a promise; unused bindings must be prefixed `_` to be tolerated. The `no-unsafe-*` rules are off only because of the generated proto layer — that is not a licence to spread `any`. `no-restricted-imports` forbids `@tanstack/svelte-query` (use `@platform/query`).
 
 ### Stack
-Svelte 5 (runes) · TypeScript 5.8 · TanStack Query 5 (`@tanstack/svelte-query`) · TanStack Table 9 · sv-router · Lingui 5 · gRPC-Web (protobuf-ts) · shadcn-svelte + bits-ui · lucide (`@lucide/svelte`) · svelte-sonner · `@xyflow/svelte` · CodeMirror 6 · Tailwind CSS 4 · Vite 7 · Vitest + Testing Library.
+Svelte 5 (runes) · TypeScript 5.8 · TanStack Query 5 (`@tanstack/svelte-query`) · TanStack Table 9 · Lingui 5 · gRPC-Web (protobuf-ts) · shadcn-svelte + bits-ui · lucide (`@lucide/svelte`) · svelte-sonner · `@xyflow/svelte` · CodeMirror 6 · Tailwind CSS 4 · Vite 7 · Vitest + Testing Library.
 
 ---
 
@@ -516,9 +520,9 @@ Svelte 5 (runes) · TypeScript 5.8 · TanStack Query 5 (`@tanstack/svelte-query`
 2. Domain: repository interface (+ its input types), `entities/*.entity.ts` and `structs/*.struct.ts`.
    **Add a use case only if it orchestrates** — see "Use cases are optional".
 3. Infrastructure: data source (iface + `.impl`), `default-<feature>.repository.ts`, `grpc-<feature>.mapper.ts`.
-4. `<feature>.module.ts` at the module root: `{ id, domain, routes?, nav? } satisfies ScyllaModule`,
+4. `<feature>.module.ts` at the module root: `{ id, domain, routes? } satisfies ScyllaModule`,
    using `grpcTransport` from `@platform/grpc`. Each route loads its page with
-   `lazy: () => import('./presentation/ui/X.page.svelte')`. Register the module in
+   `page: () => import('./presentation/ui/X.page.svelte')`. Register the module in
    `core/di/registry.ts`.
 5. `presentation/<feature>.queries.ts`: query-key factories, `queryOptions` / `mutationOptions`
    factories. The repository comes from

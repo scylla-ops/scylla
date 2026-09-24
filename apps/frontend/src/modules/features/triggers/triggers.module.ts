@@ -17,17 +17,18 @@ export const TriggersModule = {
     /** Repository interface — the module's data surface. */
     triggersRepository: triggersRepository,
   },
-  routes: [
-    {
-      mount: 'project',
-      path: 'pipelines/:pipelineId/triggers',
-      permission: Permission.MANAGE_TRIGGERS,
-      breadcrumb: ({ pipelineName }) => ({
-        label: msg`Pipeline`,
-        highlight: pipelineName,
-        detail: msg`Triggers`,
-      }),
-      lazy: () => import('./presentation/ui/Triggers.page.svelte'),
-    },
-  ],
+  routes: {
+    project: [
+      {
+        path: 'pipelines/:pipelineId/triggers',
+        permission: Permission.MANAGE_TRIGGERS,
+        breadcrumb: ({ pipelineName }) => ({
+          label: msg`Pipeline`,
+          highlight: pipelineName,
+          detail: msg`Triggers`,
+        }),
+        page: () => import('./presentation/ui/Triggers.page.svelte'),
+      },
+    ],
+  },
 } satisfies ScyllaModule;

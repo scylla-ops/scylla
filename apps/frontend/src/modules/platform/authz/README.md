@@ -68,7 +68,7 @@ exists cannot ask an administrator for it; a disabled button with a reason can.
 ## Routes gate themselves
 
 You rarely write `<RequirePermission>` around a page by hand. A module declares
-`permission` on its route, the composer copies it into the route's `handle`, and the route guard
+`permission` on its route, and the route guard
 of [platform/routing](../routing/README.md) applies it — while the sidebar reads the *same*
 declaration to decide whether to show the link.
 

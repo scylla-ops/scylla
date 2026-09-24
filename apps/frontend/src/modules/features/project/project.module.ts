@@ -15,23 +15,16 @@ export const ProjectModule = {
     /** Repository interface — the module's data surface. */
     projectRepository: projectRepository,
   },
-  routes: [
-    {
-      mount: 'projects',
-      index: true,
-      // Reading the organization is the real gate.
-      permission: Permission.READ_ORGANIZATION,
-      lazy: () => import('./presentation/ui/Project.page.svelte'),
-    },
-  ],
-  nav: [
-    {
-      section: 'organization',
-      title: msg`Projects`,
-      url: 'projects',
-      icon: WorkflowIcon,
-      permission: Permission.READ_ORGANIZATION,
-      order: 20,
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        path: 'projects',
+        // Reading the organization is the real gate.
+        permission: Permission.READ_ORGANIZATION,
+        breadcrumb: () => ({ label: msg`Projects` }),
+        page: () => import('./presentation/ui/Project.page.svelte'),
+        nav: { section: 'organization', title: msg`Projects`, icon: WorkflowIcon, order: 20 },
+      },
+    ],
+  },
 } satisfies ScyllaModule;

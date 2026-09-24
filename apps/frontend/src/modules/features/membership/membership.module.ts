@@ -10,32 +10,25 @@ import type { ScyllaModule } from '@platform/routing';
 export const MembershipModule = {
   id: 'membership',
   domain: {},
-  routes: [
-    {
-      mount: 'organization',
-      path: 'members',
-      permission: Permission.LIST_ORGANIZATION_MEMBERS,
-      breadcrumb: () => ({ label: msg`Members` }),
-      lazy: () => import('./presentation/ui/OrganizationMembers.page.svelte'),
-    },
-    {
-      mount: 'project',
-      path: 'members',
-      permission: Permission.LIST_PROJECT_MEMBERS,
-      breadcrumb: () => ({ label: msg`Members` }),
-      lazy: () => import('./presentation/ui/ProjectMembers.page.svelte'),
-    },
-  ],
-  nav: [
-    {
-      // Who belongs to the *current* organization — org-scoped, unlike the
-      // system-wide directory under "System".
-      section: 'organization',
-      title: msg`Members`,
-      url: 'members',
-      icon: UsersRound,
-      permission: Permission.LIST_ORGANIZATION_MEMBERS,
-      order: 30,
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        path: 'members',
+        permission: Permission.LIST_ORGANIZATION_MEMBERS,
+        breadcrumb: () => ({ label: msg`Members` }),
+        page: () => import('./presentation/ui/OrganizationMembers.page.svelte'),
+        // Who belongs to the *current* organization — org-scoped, unlike the
+        // system-wide directory under "System".
+        nav: { section: 'organization', title: msg`Members`, icon: UsersRound, order: 30 },
+      },
+    ],
+    project: [
+      {
+        path: 'members',
+        permission: Permission.LIST_PROJECT_MEMBERS,
+        breadcrumb: () => ({ label: msg`Members` }),
+        page: () => import('./presentation/ui/ProjectMembers.page.svelte'),
+      },
+    ],
+  },
 } satisfies ScyllaModule;

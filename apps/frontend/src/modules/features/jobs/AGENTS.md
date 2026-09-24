@@ -102,9 +102,8 @@ No nav entry. The jobs **list** is not declared here: it is mounted by
 `LIST_JOBS_BY_PIPELINE`, via `PipelineJobsRoute`, because that page needs a Run action. If you
 change `JobsPage`'s props, that is the call site to update.
 
-One job needs nothing from `pipeline`, so its route lives here — a flat sibling of the list route
-rather than a child of it, since two modules cannot share one path segment when the parent
-already renders a page of its own.
+One job needs nothing from `pipeline`, so its route lives here, with its full path. Its page
+shows the "Pipeline · Jobs" crumb of the list, because its path starts with the list's path.
 
 ## Rules that bite here
 

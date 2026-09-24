@@ -15,29 +15,15 @@ export const UserModule = {
     /** Repository interface — the module's data surface. */
     userRepository: repository,
   },
-  routes: [
-    {
-      mount: 'organization',
-      path: 'users',
-      breadcrumb: () => ({ label: msg`Users` }),
-      children: [
-        {
-          mount: 'organization',
-          index: true,
-          permission: Permission.LIST_USERS,
-          lazy: () => import('./presentation/ui/admin/UserAdmin.page.svelte'),
-        },
-      ],
-    },
-  ],
-  nav: [
-    {
-      section: 'system',
-      title: msg`Users`,
-      url: 'users',
-      icon: UsersIcon,
-      permission: Permission.LIST_USERS,
-      order: 10,
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        path: 'users',
+        permission: Permission.LIST_USERS,
+        breadcrumb: () => ({ label: msg`Users` }),
+        page: () => import('./presentation/ui/admin/UserAdmin.page.svelte'),
+        nav: { section: 'system', title: msg`Users`, icon: UsersIcon, order: 10 },
+      },
+    ],
+  },
 } satisfies ScyllaModule;

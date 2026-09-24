@@ -91,7 +91,7 @@ msgstr "Terminé le"
 msgid "Finished: {time}"
 msgstr ""
 
-#: src/modules/features/jobs/jobs.module.ts:34
+#: src/modules/features/jobs/jobs.module.ts:24
 #: src/modules/features/jobs/presentation/ui/jobs.messages.ts:25
 msgid "Job"
 msgstr "Job"

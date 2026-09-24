@@ -42,7 +42,6 @@
     "bits-ui": "^2.19.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "sv-router": "^0.19.0",
     "svelte": "^5.57.0",
     "svelte-sonner": "^1.2.1",
     "tailwind-merge": "^3.3.1",

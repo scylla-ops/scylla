@@ -82,9 +82,9 @@ action exists cannot ask for access to it.
 
 ## Rules that bite here
 
-- **Route permissions are declared on the module, not here.** A `ModuleRoute.permission` flows
-  into `RouteHandle`, and the route guard of [`platform/routing`](../routing/AGENTS.md) renders
-  `RequirePermission` for you. Do not wrap a page by hand as well.
+- **Route permissions are declared on the module, not here.** For a `ModuleRoute.permission`,
+  the route guard of [`platform/routing`](../routing/AGENTS.md) renders `RequirePermission` for
+  you. Do not wrap a page by hand as well.
 - `Permission` is the enum every module gates on — adding one means adding it here, and the
   role editor picks it up from the backend vocabulary without further changes.
 - `canAccess` in `effective-permissions.entity.ts` is **pure**. Authorization logic goes there,
