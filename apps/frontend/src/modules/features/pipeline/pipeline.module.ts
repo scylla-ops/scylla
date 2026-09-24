@@ -21,7 +21,7 @@ export const PipelineModule = {
     project: [
       {
         permission: Permission.LIST_PIPELINES_BY_PROJECT,
-        page: () => import('./presentation/ui/dashboard/DashboardPipeline.page.svelte'),
+        page: () => import('./presentation/ui/dashboard/DashboardPipeline/DashboardPipeline.page.svelte'),
       },
       {
         path: 'create',

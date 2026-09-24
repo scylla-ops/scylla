@@ -15,7 +15,7 @@
   import { getStatusConfig } from '@shared/utils/status-config.ts';
   import type { JobEntity } from '../../../domain/entities/job.entity.ts';
   import { nodeIdOf } from '../jobs-table/job-timeline.calculator.ts';
-  import JobLogDisplay from '../jobs-log/JobLogDisplay.svelte';
+  import JobLogDisplay from '../jobs-log/JobLogDisplay/JobLogDisplay.svelte';
   import { jobsMessages } from '../jobs.messages.ts';
 
   /** The whole job's `h-9` header, the only one whose height the column must allow for. */

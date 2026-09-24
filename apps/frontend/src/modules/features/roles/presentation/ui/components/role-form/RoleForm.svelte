@@ -16,7 +16,7 @@
   import { createRoleForm, type AccessKind } from '../../../role-form.state.svelte.ts';
   import { ALL_SCOPES, scopeLabelOf } from '../../../utils/permission-mapping.ts';
   import { rolesMessages } from '../../roles.messages.ts';
-  import RoleDialogPermissions from './RoleDialogPermissions.svelte';
+  import RoleDialogPermissions from './RoleDialogPermissions/RoleDialogPermissions.svelte';
 
   interface Props {
     /** The role being edited, or `null` when creating one. */

@@ -15,7 +15,7 @@
   } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { AssignableRole } from '../../assignable-roles.state.svelte.ts';
-  import RoleChecklist from './RoleChecklist.svelte';
+  import RoleChecklist from './RoleChecklist/RoleChecklist.svelte';
   import type { MemberCandidate } from './member-candidate.ts';
   import { membershipMessages } from '../membership.messages.ts';
 

@@ -15,6 +15,6 @@ export const LoginModule = {
     loginRepository: loginRepository,
   },
   routes: {
-    public: [{ path: 'login', page: () => import('./presentation/ui/Login.page.svelte') }],
+    public: [{ path: 'login', page: () => import('./presentation/ui/Login/Login.page.svelte') }],
   },
 } satisfies ScyllaModule;

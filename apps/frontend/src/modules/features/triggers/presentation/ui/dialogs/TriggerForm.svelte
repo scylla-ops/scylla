@@ -29,8 +29,8 @@
     triggerToDraftInputs,
     type DraftInput,
   } from '../../utils/trigger-form.utils.ts';
-  import CronScheduleBuilder from './CronScheduleBuilder.svelte';
-  import TriggerInputsEditor from './TriggerInputsEditor.svelte';
+  import CronScheduleBuilder from './CronScheduleBuilder/CronScheduleBuilder.svelte';
+  import TriggerInputsEditor from './TriggerInputsEditor/TriggerInputsEditor.svelte';
   import { triggersMessages } from '../triggers.messages.ts';
 
   interface Props {

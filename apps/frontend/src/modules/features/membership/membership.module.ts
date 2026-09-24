@@ -16,7 +16,7 @@ export const MembershipModule = {
         path: 'members',
         permission: Permission.LIST_ORGANIZATION_MEMBERS,
         breadcrumb: () => ({ label: msg`Members` }),
-        page: () => import('./presentation/ui/OrganizationMembers.page.svelte'),
+        page: () => import('./presentation/ui/OrganizationMembers/OrganizationMembers.page.svelte'),
         // Who belongs to the *current* organization — org-scoped, unlike the
         // system-wide directory under "System".
         nav: { section: 'organization', title: msg`Members`, icon: UsersRound, order: 30 },
@@ -27,7 +27,7 @@ export const MembershipModule = {
         path: 'members',
         permission: Permission.LIST_PROJECT_MEMBERS,
         breadcrumb: () => ({ label: msg`Members` }),
-        page: () => import('./presentation/ui/ProjectMembers.page.svelte'),
+        page: () => import('./presentation/ui/ProjectMembers/ProjectMembers.page.svelte'),
       },
     ],
   },

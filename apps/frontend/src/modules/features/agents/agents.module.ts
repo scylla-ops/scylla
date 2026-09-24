@@ -21,14 +21,14 @@ export const AgentsModule = {
         path: 'agents',
         permission: Permission.LIST_AGENTS,
         breadcrumb: () => ({ label: msg`Agents` }),
-        page: () => import('./presentation/ui/Agents.page.svelte'),
+        page: () => import('./presentation/ui/Agents/Agents.page.svelte'),
         nav: { section: 'organization', title: msg`Agents`, icon: HardDriveIcon, order: 40 },
         children: [
           {
             path: ':agentId',
             permission: Permission.READ_APP,
             breadcrumb: () => ({ label: msg`Agent details` }),
-            page: () => import('./presentation/ui/AgentDetails.page.svelte'),
+            page: () => import('./presentation/ui/AgentDetails/AgentDetails.page.svelte'),
           },
         ],
       },

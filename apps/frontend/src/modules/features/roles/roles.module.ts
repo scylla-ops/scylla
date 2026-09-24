@@ -23,7 +23,7 @@ export const RolesModule = {
         path: 'roles',
         permission: Permission.MANAGE_ROLES,
         breadcrumb: () => ({ label: msg`Roles` }),
-        page: () => import('./presentation/ui/Roles.page.svelte'),
+        page: () => import('./presentation/ui/Roles/Roles.page.svelte'),
         nav: { section: 'system', title: msg`Roles`, icon: ShieldIcon, order: 20 },
       },
     ],

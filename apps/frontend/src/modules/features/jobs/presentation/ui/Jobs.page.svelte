@@ -6,7 +6,7 @@
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { ScyllaError } from '@shared/utils/scylla-result.ts';
   import { jobQueries } from '../jobs.queries.ts';
-  import JobsHeader from './JobsHeader.svelte';
+  import JobsHeader from './JobsHeader/JobsHeader.svelte';
   import JobsTable from './jobs-table/JobsTable.svelte';
   import { jobsMessages } from './jobs.messages.ts';
 

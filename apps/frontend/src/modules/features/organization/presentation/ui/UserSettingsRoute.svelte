@@ -1,6 +1,6 @@
 <script lang="ts">
   import { loadUserSettingsPage } from '@/modules/features/user';
-  import OrganizationList from './OrganizationList.svelte';
+  import OrganizationList from './OrganizationList/OrganizationList.svelte';
 
   interface Props {
     /** From the route: `/:organizationSlug/users/:userId`. */

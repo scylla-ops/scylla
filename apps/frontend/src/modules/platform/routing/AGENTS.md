@@ -51,15 +51,16 @@ runtime/                               the router in the browser
   resolve-target.ts                    relative navigation targets (`..`, `members`)
   app-router.ts                        createAppRouter
 view/                                  the components
-  RouterView.svelte                    layout of the mount, or the fallback
+  RouterView/                          layout of the mount, or the fallback
+    RouterView.svelte
+    RouterView.test.ts + fixtures/     the router, end to end
   RoutePage.svelte                     page transition, one RouteEntry per pathname
   RouteEntry.svelte                    wrappers, permission guard, page loader, params as props
   Redirect.svelte
-  RouterView.test.ts + fixtures/       the router, end to end
 ```
 
-Each test is beside the file it covers. The `compilation/` and `match-route` tests run in the
-`node` environment.
+The tests of `compilation/` and `runtime/` are in their `__test__/` folder, and run in the
+`node` environment except the ones that need the DOM.
 
 ## Declaring routes
 

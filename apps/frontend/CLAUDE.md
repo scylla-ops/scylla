@@ -394,9 +394,18 @@ Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `
 
 ## Testing (Vitest)
 
-Tests live **next to the code they cover** — `grant-creator.state.svelte.ts` →
-`grant-creator.state.svelte.test.ts`, `GrantCreator.svelte` → `GrantCreator.test.ts`. There is no
-`__tests__/` mirror tree.
+Where a test goes:
+
+- **A tested Svelte component has its own folder**, with its test and its fixtures:
+  `LoginForm/LoginForm.svelte`, `LoginForm/LoginForm.test.ts`, `LoginForm/LoginForm.fixture.svelte`.
+  A page drops `.page` from the folder name: `Login/Login.page.svelte`. This keeps a component
+  and what describes it in one place (Storybook stories will go there too).
+- **Every other test goes in the `__test__/` folder of the directory it covers**:
+  `presentation/grant-creator.state.svelte.ts` → `presentation/__test__/grant-creator.state.svelte.test.ts`.
+  Fixtures used by several components' tests go there too.
+- A component without a test stays a plain file. When you add its first test, move it into
+  its folder and update its importers.
+- `shadcn/` is vendored: its tests go in `shadcn/__test__/`, its components stay flat.
 
 The harness is five files in `src/test/`, and it is the only shared test code:
 
@@ -543,7 +552,7 @@ Svelte 5 (runes) · TypeScript 5.8 · TanStack Query 5 (`@tanstack/svelte-query`
     table. Follow the shape of a neighbouring module's pair: `AGENTS.md` = public API, data
     contract, file map, routes/nav, the rules that bite there; `README.md` = what it is for and
     why it is built that way.
-11. Tests next to the code they cover (`*.test.ts`) — see "Testing" above. Run `pnpm coverage`:
+11. Tests in the component's folder or in `__test__/` (`*.test.ts`) — see "Testing" above. Run `pnpm coverage`:
     the thresholds are the gate that sees a module arrive without tests.
 12. `pnpm typecheck && pnpm test && pnpm lint && pnpm depcruise && pnpm depcruise:cycles &&
     pnpm i18n:collisions` all clean.

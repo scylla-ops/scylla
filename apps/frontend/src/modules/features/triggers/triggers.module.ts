@@ -27,7 +27,7 @@ export const TriggersModule = {
           highlight: pipelineName,
           detail: msg`Triggers`,
         }),
-        page: () => import('./presentation/ui/Triggers.page.svelte'),
+        page: () => import('./presentation/ui/Triggers/Triggers.page.svelte'),
       },
     ],
   },

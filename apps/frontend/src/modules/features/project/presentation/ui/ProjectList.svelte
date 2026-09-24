@@ -4,7 +4,7 @@
   import { createPagination } from '@shared/presentation/state/pagination.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { projectQueries } from '../project.queries.ts';
-  import ProjectCard from './ProjectCard.svelte';
+  import ProjectCard from './ProjectCard/ProjectCard.svelte';
   import ProjectHeader from './ProjectHeader.svelte';
   import { projectMessages } from './project.messages.ts';
 

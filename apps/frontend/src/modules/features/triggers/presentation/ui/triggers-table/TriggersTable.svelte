@@ -16,10 +16,10 @@
   import type { TriggerEntity } from '../../../domain/entities/trigger.entity.ts';
   import { TriggerKind } from '../../../domain/structs/trigger-source.struct.ts';
   import { triggerMutations } from '../../triggers.queries.ts';
-  import TriggerActions from './TriggerActions.svelte';
-  import TriggerSourceCell from './TriggerSourceCell.svelte';
-  import TriggerStatusCell from './TriggerStatusCell.svelte';
-  import TriggerFormDialog from '../dialogs/TriggerFormDialog.svelte';
+  import TriggerActions from './TriggerActions/TriggerActions.svelte';
+  import TriggerSourceCell from './TriggerSourceCell/TriggerSourceCell.svelte';
+  import TriggerStatusCell from './TriggerStatusCell/TriggerStatusCell.svelte';
+  import TriggerFormDialog from '../dialogs/TriggerFormDialog/TriggerFormDialog.svelte';
   import { triggerColumns } from './trigger-columns.ts';
   import { triggersMessages } from '../triggers.messages.ts';
 

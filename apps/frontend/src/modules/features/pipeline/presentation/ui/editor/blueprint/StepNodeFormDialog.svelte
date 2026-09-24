@@ -3,7 +3,7 @@
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { PipelineStep } from '../../../../domain/structs/pipeline.struct.ts';
   import type { NodeFormValue } from '../../../utils/blueprint-converter.ts';
-  import StepNodeForm from './StepNodeForm.svelte';
+  import StepNodeForm from './StepNodeForm/StepNodeForm.svelte';
   import { pipelineMessages } from '../../../pipeline.messages.ts';
 
   interface Props {

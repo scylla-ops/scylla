@@ -22,7 +22,7 @@ export const JobsModule = {
         path: 'pipelines/:pipelineId/jobs/:jobId',
         permission: Permission.READ_JOB,
         breadcrumb: ({ jobId }) => ({ label: msg`Job`, highlight: jobId }),
-        page: () => import('./presentation/ui/JobDetails.page.svelte'),
+        page: () => import('./presentation/ui/JobDetails/JobDetails.page.svelte'),
       },
     ],
   },

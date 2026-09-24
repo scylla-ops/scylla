@@ -7,7 +7,7 @@
   import type { PipelineStep } from '../../../domain/structs/pipeline.struct.ts';
   import { createPipelineScript } from '../../pipeline-script.state.svelte.ts';
   import PipelineBlueprint from './blueprint/PipelineBlueprint.svelte';
-  import PipelineEditorHeader from './PipelineEditorHeader.svelte';
+  import PipelineEditorHeader from './PipelineEditorHeader/PipelineEditorHeader.svelte';
   import { createScriptEditor } from './script-editor.svelte.ts';
   import { pipelineMessages } from '../../pipeline.messages.ts';
 

@@ -37,4 +37,4 @@ export {
   type TrailCrumb,
 } from './runtime/route-state.svelte.ts';
 export { default as Redirect } from './view/Redirect.svelte';
-export { default as RouterView } from './view/RouterView.svelte';
+export { default as RouterView } from './view/RouterView/RouterView.svelte';

@@ -10,8 +10,8 @@
   } from '@shared/utils/date-utils.ts';
   import type { JobEntity } from '../../../domain/entities/job.entity.ts';
   import { isActiveStatus } from '../../../domain/structs/jobs-summary.struct.ts';
-  import JobStatus from '../jobs-table/JobStatus.svelte';
-  import JobTimeline from '../jobs-table/JobTimeline.svelte';
+  import JobStatus from '../jobs-table/JobStatus/JobStatus.svelte';
+  import JobTimeline from '../jobs-table/JobTimeline/JobTimeline.svelte';
   import { jobsMessages } from '../jobs.messages.ts';
 
   interface Props {

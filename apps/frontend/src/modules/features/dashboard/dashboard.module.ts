@@ -18,7 +18,7 @@ export const DashboardModule = {
         // organization, and it is where every org-level redirect lands.
         permission: Permission.READ_ORGANIZATION,
         breadcrumb: () => ({ label: msg`Dashboard` }),
-        page: () => import('./presentation/ui/Dashboard.page.svelte'),
+        page: () => import('./presentation/ui/Dashboard/Dashboard.page.svelte'),
         nav: { section: 'organization', title: msg`Dashboard`, icon: LayoutDashboard, order: 10 },
       },
     ],

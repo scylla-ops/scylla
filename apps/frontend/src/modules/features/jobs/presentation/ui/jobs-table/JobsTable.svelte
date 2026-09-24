@@ -17,9 +17,9 @@
   import type { JobEntity } from '../../../domain/entities/job.entity.ts';
   import { isActiveStatus } from '../../../domain/structs/jobs-summary.struct.ts';
   import { jobMutations } from '../../jobs.queries.ts';
-  import JobActions from './JobActions.svelte';
-  import JobStatus from './JobStatus.svelte';
-  import JobTimeline from './JobTimeline.svelte';
+  import JobActions from './JobActions/JobActions.svelte';
+  import JobStatus from './JobStatus/JobStatus.svelte';
+  import JobTimeline from './JobTimeline/JobTimeline.svelte';
   import { jobColumns } from './job-columns.ts';
   import { jobsMessages } from '../jobs.messages.ts';
 

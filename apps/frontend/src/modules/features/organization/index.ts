@@ -27,5 +27,5 @@ export { createOrganizationItems } from './presentation/utils/create-organizatio
  * function, so the component chunk loads only when the shell shows it.
  */
 export const loadAddOrganizationDialog = () =>
-  import('./presentation/ui/AddOrganizationDialog.svelte');
-export const loadOrganizationList = () => import('./presentation/ui/OrganizationList.svelte');
+  import('./presentation/ui/AddOrganizationDialog/AddOrganizationDialog.svelte');
+export const loadOrganizationList = () => import('./presentation/ui/OrganizationList/OrganizationList.svelte');

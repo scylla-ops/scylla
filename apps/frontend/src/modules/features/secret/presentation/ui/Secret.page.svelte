@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createQuery } from '@platform/query';
   import { secretQueries } from '../secret.queries.ts';
-  import CreateSecretDialog from './CreateSecretDialog.svelte';
+  import CreateSecretDialog from './CreateSecretDialog/CreateSecretDialog.svelte';
   import SecretHeader from './components/SecretHeader.svelte';
-  import SecretList from './components/SecretList.svelte';
+  import SecretList from './components/SecretList/SecretList.svelte';
 
   interface Props {
     /** From the route: `/:organizationSlug/projects/:projectId/secrets`. */
