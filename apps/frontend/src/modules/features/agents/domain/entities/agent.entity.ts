@@ -1,30 +1,25 @@
-/**
- * Domain entity for an Agent (a specialized App that runs jobs).
- */
 export interface AgentEntity {
   id: string;
   organizationId: string;
   name: string;
   isActive: boolean;
-  /** Live agent stream presence — true while an agent is connected. */
   connected: boolean;
-  /** Last activity timestamp; empty if the agent has never connected. */
+  /** Empty if it never connected. */
   lastSeen: string;
-  /** Jobs currently running on this agent; 0 while disconnected. */
+  /** 0 while disconnected. */
   inFlight: number;
-  /** Last reported machine; `null` until an agent has said hello. */
+  /** `null` until the agent said hello. */
   host: AgentHost | null;
   createdAt: string;
   updatedAt: string;
 }
 
-/** The machine an agent runs on, as the agent described it. */
 export interface AgentHost {
   version: string;
   os: string;
   arch: string;
   hostname: string;
-  /** `null` when the agent could not read it, not "a machine with no CPU". */
+  /** `null` when the agent could not read it. */
   cpuCount: number | null;
   totalMemoryMb: number | null;
   reportedAt: string;

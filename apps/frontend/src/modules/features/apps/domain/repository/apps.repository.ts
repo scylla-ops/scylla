@@ -8,9 +8,6 @@ import type {
   CreatedAppSecret,
 } from '@/modules/features/apps/domain/structs/app.struct.ts';
 
-/**
- * Repository interface for Apps. Apps are organization-scoped.
- */
 export interface AppsRepository {
   listApps(organizationId: string): Promise<ScyllaResult<AppEntity[]>>;
   getApp(appId: string): Promise<ScyllaResult<AppEntity>>;

@@ -1,14 +1,3 @@
-import {
-  Ban,
-  CheckCircle2,
-  CircleHelp,
-  DiamondMinusIcon,
-  Loader2,
-  SkipForward,
-  Unplug,
-  XCircle,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { msg } from '@lingui/core/macro';
 import type { MessageDescriptor } from '@lingui/core';
 
@@ -22,16 +11,12 @@ export type StatusKey =
   | 'orphaned'
   | 'unknown';
 
+/** The icon is in `status-icons.ts`: `utils/` imports no UI. */
 export interface StatusConfig {
-  /** Lazy message: this table is built at import time, outside any i18n context. */
+  /** A descriptor: this table is built at import time. */
   label: MessageDescriptor;
-  /**
-   * Classes for a `<Badge variant='outline'>`. The four shadcn variants can't tell
-   * six statuses apart — running and completed both landed on `default` (primary),
-   * so a running job read as a passed one. Tinted status tokens instead.
-   */
+  /** Classes for a `<Badge variant='outline'>`: the shadcn variants cannot tell the statuses apart. */
   badgeClassName: string;
-  icon: LucideIcon;
   iconClassName: string;
   barClassName: string;
   barHoverClassName: string;
@@ -39,22 +24,10 @@ export interface StatusConfig {
   textClassName: string;
 }
 
-/**
- * Every colour here maps to dedicated semantic status tokens:
- *
- *   pending (queued)     → `status-queued`
- *   running              → `status-running`
- *   completed (passed)   → `status-passed`
- *   failed               → `status-failed`
- *   skipped              → `status-skipped`
- *   cancelled / orphaned → `status-canceled`
- *   unknown              → `muted-foreground`
- */
 export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   running: {
     label: msg`Running`,
     badgeClassName: 'bg-status-running/15 border-status-running/30 text-status-running',
-    icon: Loader2,
     iconClassName: 'text-status-running animate-spin',
     barClassName: 'bg-status-running/80 animate-[smooth-pulse_2s_infinite]',
     barHoverClassName: 'ring-4 ring-status-running/30 ring-inset hover:scale-y-110',
@@ -65,7 +38,6 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   pending: {
     label: msg`Pending`,
     badgeClassName: 'bg-status-queued/15 border-status-queued/30 text-status-queued',
-    icon: DiamondMinusIcon,
     iconClassName: 'text-status-queued',
     barClassName: 'bg-status-queued/40',
     barHoverClassName: 'hover:bg-status-queued/70 hover:scale-y-110',
@@ -75,7 +47,6 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   completed: {
     label: msg`Success`,
     badgeClassName: 'bg-status-passed/15 border-status-passed/30 text-status-passed',
-    icon: CheckCircle2,
     iconClassName: 'text-status-passed',
     barClassName: 'bg-status-passed',
     barHoverClassName: 'hover:bg-status-passed/80 hover:scale-y-110',
@@ -85,7 +56,6 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   failed: {
     label: msg`Failed`,
     badgeClassName: 'bg-status-failed/15 border-status-failed/30 text-status-failed',
-    icon: XCircle,
     iconClassName: 'text-status-failed',
     barClassName: 'bg-status-failed/80',
     barHoverClassName: 'hover:bg-status-failed hover:scale-y-110',
@@ -95,7 +65,6 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   skipped: {
     label: msg`Skipped`,
     badgeClassName: 'bg-status-skipped/15 border-status-skipped/30 text-status-skipped',
-    icon: SkipForward,
     iconClassName: 'text-status-skipped',
     barClassName: 'bg-status-skipped/35',
     barHoverClassName: 'hover:bg-status-skipped/60 hover:scale-y-110',
@@ -105,7 +74,6 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   orphaned: {
     label: msg`Orphaned`,
     badgeClassName: 'bg-status-canceled/15 border-status-canceled/30 text-status-canceled',
-    icon: Unplug,
     iconClassName: 'text-status-canceled',
     barClassName: 'bg-status-canceled/80',
     barHoverClassName: 'hover:bg-status-canceled hover:scale-y-110',
@@ -115,19 +83,16 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   cancelled: {
     label: msg`Cancelled`,
     badgeClassName: 'bg-status-canceled/15 border-status-canceled/30 text-status-canceled',
-    icon: Ban,
     iconClassName: 'text-status-canceled',
     barClassName: 'bg-status-canceled/60',
     barHoverClassName: 'hover:bg-status-canceled/90 hover:scale-y-110',
     dotClassName: 'bg-status-canceled',
     textClassName: 'text-status-canceled',
   },
-  // The server reported a state this build doesn't know about (a newer oneof
-  // arm or enum value). Shown as-is rather than guessed at.
+  // A state this build does not know: shown as it is.
   unknown: {
     label: msg`Unknown`,
     badgeClassName: 'bg-muted-foreground/15 border-muted-foreground/30 text-muted-foreground',
-    icon: CircleHelp,
     iconClassName: 'text-muted-foreground/60',
     barClassName: 'bg-muted-foreground/15',
     barHoverClassName: 'hover:bg-muted-foreground/40 hover:scale-y-110',
@@ -136,8 +101,6 @@ export const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
   },
 };
 
-/**
- * Resolve a status string to its config, falling back to 'pending'.
- */
+/** Falls back to `pending`. */
 export const getStatusConfig = (status: string): StatusConfig =>
   STATUS_CONFIG[status as StatusKey] ?? STATUS_CONFIG.pending;

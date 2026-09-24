@@ -4,39 +4,23 @@ import DefaultOrganizationRepository from '@/modules/features/organization/infra
 import GrpcOrganizationRemoteDataSource from '@/modules/features/organization/infrastructure/data/grpc-organization-remote.data-source.ts';
 import { grpcTransport } from '@platform/grpc';
 
-const organizationRemoteDataSource = new GrpcOrganizationRemoteDataSource(
-  grpcTransport,
-);
+const organizationRemoteDataSource = new GrpcOrganizationRemoteDataSource(grpcTransport);
 
 const organizationRepository = new DefaultOrganizationRepository(organizationRemoteDataSource);
 
 export const OrganizationModule = {
   id: 'organization',
   domain: {
-    /** Repository interface — the module's data surface. */
     organizationRepository: organizationRepository,
   },
-  routes: [
-    {
-      // The user directory belongs to `user`; this leaf is here because the
-      // settings page renders the organizations panel. Both halves are merged
-      // onto one `users` parent by the route composer.
-      mount: 'organization',
-      path: 'users',
-      children: [
-        {
-          mount: 'organization',
-          path: ':userId',
-          breadcrumb: ({ userId }) => ({
-            label: msg`User`,
-            highlight: userId,
-            detail: msg`Detail`,
-          }),
-          lazy: async () => ({
-            Component: (await import('./presentation/ui/UserSettingsRoute.tsx')).UserSettingsRoute,
-          }),
-        },
-      ],
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        // Under the directory of `user`: here because the page shows the organizations panel.
+        path: 'users/:userId',
+        breadcrumb: ({ userId }) => ({ label: msg`User`, highlight: userId, detail: msg`Detail` }),
+        page: () => import('./presentation/ui/UserSettingsRoute.svelte'),
+      },
+    ],
+  },
 } satisfies ScyllaModule;

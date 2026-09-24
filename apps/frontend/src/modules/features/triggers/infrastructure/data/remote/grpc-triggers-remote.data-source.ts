@@ -10,7 +10,6 @@ import type {
 } from '@/generated/scylla/trigger/v1/trigger.ts';
 import type { TriggersRemoteDataSource } from '@/modules/features/triggers/infrastructure/repository/data-sources/triggers-remote.data-source.ts';
 
-/** The trigger-carrying responses all use the same field, so one guard covers them. */
 function requireTrigger(trigger: Trigger | undefined, rpc: string): Trigger {
   if (!trigger) {
     throw new ScyllaError(`${rpc} returned no trigger`);
@@ -72,7 +71,7 @@ export class GrpcTriggersRemoteDataSource implements TriggersRemoteDataSource {
   }
 
   public async fireNow(triggerId: string): Promise<ScyllaResult<string>> {
-    // FireTriggerNow no longer returns the job, only the id it minted.
+    // Returns only the id of the job it created.
     return ScyllaResult.tryAsync<string>(
       async () =>
         idValue(

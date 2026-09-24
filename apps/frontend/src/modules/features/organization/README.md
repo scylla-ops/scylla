@@ -45,9 +45,8 @@ declared here, where the organization data lives. `UserSettingsRoute` is a thin 
 renders `UserSettingsPage`, imported from `user`'s public API — one of only two pages in the
 codebase exported from a feature barrel.
 
-The two halves do not collide because the route composer merges module routes sharing a mount
-and a path segment onto a single parent. Two modules can each contribute part of `users/` and
-the router ends up with one tree.
+The two halves do not collide: each declares a different path, and the router joins them by
+path. The page of `users/:userId` shows the "Users" crumb that `user` declares on `users`.
 
 ## Structure
 

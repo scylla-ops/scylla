@@ -13,182 +13,170 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: created.agent.name
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:143
-msgid "{0} is ready"
-msgstr "{0} est prêt"
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:55
+msgid "{day}: {completed} completed, {failed} failed, {cancelled} cancelled"
+msgstr "{day} : {completed} terminés, {failed} échoués, {cancelled} annulés"
 
-#. placeholder {0}: b.day
-#. placeholder {1}: b.completed
-#. placeholder {2}: b.failed
-#. placeholder {3}: b.cancelled
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:133
-msgid "{0}: {1} completed, {2} failed, {3} cancelled"
-msgstr "{0} : {1} terminés, {2} échoués, {3} annulés"
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:17
+msgid "{name} is ready"
+msgstr "{name} est prêt"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:122
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:40
 msgid "active"
 msgstr "actif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:119
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:39
 msgid "Active"
 msgstr "Actif"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:59
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:4
 msgid "Agent"
 msgstr "Agent"
 
-#: src/modules/features/agents/agents.module.ts:36
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:31
+msgid "Agent actions"
+msgstr "Actions de l'agent"
+
+#: src/modules/features/agents/agents.module.ts:29
 msgid "Agent details"
 msgstr "Détails de l'agent"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:112
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:38
 msgid "Agent ID"
 msgstr "ID de l'agent"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:52
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:37
 msgid "Agent not found"
 msgstr "Agent introuvable"
 
 #: src/modules/features/agents/agents.module.ts:22
-#: src/modules/features/agents/agents.module.ts:47
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:60
+#: src/modules/features/agents/agents.module.ts:24
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:5
 msgid "Agents"
 msgstr "Agents"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:99
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:12
 msgid "An agent runs jobs. Create one to get credentials, then start the agent — it'll pull jobs and report back."
 msgstr "Un agent exécute des jobs. Créez-en un pour obtenir des identifiants, puis démarrez l'agent — il récupérera les jobs et fera ses retours."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:204
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:171
-msgid "Cancel"
-msgstr "Annuler"
-
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:222
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:62
 msgid "cancelled"
 msgstr "annulés"
 
-#. placeholder {0}: b.cancelled
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:177
-msgid "cancelled {0}"
-msgstr "annulés {0}"
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:59
+msgid "cancelled {cancelled}"
+msgstr "annulés {cancelled}"
 
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:43
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:46
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:73
 msgid "Coming soon"
 msgstr "Bientôt disponible"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:214
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:60
 msgid "completed"
 msgstr "terminés"
 
-#. placeholder {0}: b.completed
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:165
-msgid "completed {0}"
-msgstr "terminés {0}"
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:57
+msgid "completed {completed}"
+msgstr "terminés {completed}"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:184
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:48
 msgid "connects as this agent's app id"
 msgstr "se connecte avec l'app id de cet agent"
 
-#: src/modules/features/agents/presentation/ui/components/AgentIdLink.tsx:42
-#: src/modules/features/agents/presentation/ui/components/AgentIdLink.tsx:43
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:34
 msgid "Copy agent id"
 msgstr "Copier l'identifiant de l'agent"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:84
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:26
 msgid "Copy id"
 msgstr "Copier l'id"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:136
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:15
 msgid "Create & reveal secret →"
 msgstr "Créer & révéler le secret →"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:106
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:13
 msgid "Create your first agent"
 msgstr "Créez votre premier agent"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:129
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:27
 msgid "created"
 msgstr "créé le"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:128
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:42
 msgctxt "date-prefix"
 msgid "Created"
 msgstr "Créé le"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:103
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:216
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:179
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:89
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:24
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:196
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:163
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:32
+msgid "Delete agent"
+msgstr "Supprimer l'agent"
+
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:22
 msgid "Delete agent?"
 msgstr "Supprimer l'agent ?"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:94
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:117
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:29
 msgid "down"
 msgstr "hors ligne"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:59
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:36
 msgid "Error loading agent"
 msgstr "Erreur lors du chargement de l'agent"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:53
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:8
 msgid "Error loading agents"
 msgstr "Erreur lors du chargement des agents"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:218
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:61
 msgid "failed"
 msgstr "échoués"
 
-#. placeholder {0}: b.failed
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:171
-msgid "failed {0}"
-msgstr "échoués {0}"
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:58
+msgid "failed {failed}"
+msgstr "échoués {failed}"
 
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:44
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:74
 msgid "filter"
 msgstr "filtre"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:225
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:63
 msgid "finished"
 msgstr "terminés"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:133
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:14
 msgid "Get credentials to connect an agent."
 msgstr "Obtenez des identifiants pour connecter un agent."
 
-#: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:113
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:79
 msgid "idle — no jobs"
 msgstr "inactif — aucun job"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:122
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:41
 msgid "inactive"
 msgstr "inactif"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:145
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:44
 msgid "Job stats"
 msgstr "Stats des jobs"
 
-#: src/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx:41
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:65
 msgid "Jobs are queued — check that your agents are connected."
 msgstr "Des jobs sont en file d'attente — vérifiez que vos agents sont bien connectés."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:153
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:46
 msgid "last run"
 msgstr "dernière exécution"
 
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:59
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:76
 msgid "lines"
 msgstr "lignes"
 
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:33
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:70
 msgid "Logs"
 msgstr "Journaux"
 
@@ -200,118 +188,111 @@ msgstr "my-build-runner"
 msgid "Name"
 msgstr "Nom"
 
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:121
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:30
 msgid "never connected"
 msgstr "jamais connecté"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:123
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:132
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:6
 msgid "New Agent"
 msgstr "Nouvel agent"
 
-#: src/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx:52
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:66
 msgid "No agent connected — queued jobs are waiting for one."
 msgstr "Aucun agent connecté — les travaux en file d'attente attendent un agent."
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:96
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:11
 msgid "No agents connected"
 msgstr "Aucun agent connecté"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:100
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:51
 msgid "No finished jobs in this window."
 msgstr "Aucun job terminé sur cette période."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:90
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:74
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:106
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:10
 msgid "offline"
 msgstr "hors ligne"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:90
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:70
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:101
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:9
 msgid "online"
 msgstr "en ligne"
 
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:47
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:75
 msgid "open full logs"
 msgstr "ouvrir les logs complets"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:76
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:50
 msgid "outcomes · last"
 msgstr "résultats · derniers"
 
-#: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:122
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:78
 msgid "pending"
 msgstr "en attente"
 
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:36
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:71
 msgid "preview · agent log stream not wired yet"
 msgstr "aperçu · flux de logs agent pas encore branché"
 
-#: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:145
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:80
 msgid "queue empty"
 msgstr "file vide"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:103
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:52
 msgid "Run a pipeline on this agent and the chart fills up."
 msgstr "Lancez une pipeline sur cet agent et le graphe se remplira."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:181
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:47
 msgid "Run this agent"
 msgstr "Lancer cet agent"
 
-#: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:91
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:77
 msgid "running"
 msgstr "en cours"
 
-#: src/modules/features/agents/presentation/ui/components/OutcomesChart.tsx:160
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:56
 msgid "runs"
 msgstr "exécutions"
 
-#: src/modules/features/agents/presentation/ui/components/AgentLogs.tsx:41
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:72
 msgid "sample"
 msgstr "exemple"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:146
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:19
 msgid "Secret for the agent"
 msgstr "Secret pour l'agent"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:94
-#: src/modules/features/agents/presentation/ui/components/AgentCard.tsx:113
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:28
 msgid "seen"
 msgstr "vu"
 
-#: src/modules/features/agents/presentation/ui/components/NoAgentsBanner.tsx:59
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:67
 msgid "Set up an agent"
 msgstr "Configurer un agent"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:149
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:45
 msgid "since"
 msgstr "depuis"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:148
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:20
 msgid "Start your agent"
 msgstr "Démarrez votre agent"
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:199
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:166
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:23
 msgid "This revokes the agent's grants and disconnects it. Cannot be undone."
 msgstr "Cela révoque les autorisations de l'agent et le déconnecte. Irréversible."
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:144
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:18
 msgid "Two steps and it picks up jobs."
 msgstr "Deux étapes et il récupère les travaux."
 
-#: src/modules/features/agents/presentation/ui/AgentDetails.page.tsx:135
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:43
 msgctxt "date-prefix"
 msgid "Updated"
 msgstr "Mis à jour le"
 
-#: src/modules/features/agents/presentation/ui/components/LiveNowCard.tsx:136
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:81
 msgid "waiting"
 msgstr "en attente"
 
-#: src/modules/features/agents/presentation/ui/Agents.page.tsx:63
+#: src/modules/features/agents/presentation/ui/agents.messages.ts:7
 msgid "You don't have permission to create agents."
 msgstr "Vous n'avez pas la permission de créer des agents."

@@ -33,8 +33,8 @@ default export, unlike its siblings; that is a leftover from an earlier conventi
 statement.
 
 **Presentation** splits into the page, a top bar carrying search and filters, a list and a card.
-Filter state lives in `use-filter.store.ts`, a Zustand store — and this is a textbook correct
-use of one: it holds the user's *criteria*, not the data. The items themselves stay in TanStack
+Filter state lives in `marketplace-filter.state.svelte.ts`, a ViewModel — and it holds the
+user's *criteria*, not the data. The items themselves stay in TanStack
 Query, and the visible list is derived during render by applying the criteria to the query
 result. Nothing is mirrored, nothing is synced by an effect.
 

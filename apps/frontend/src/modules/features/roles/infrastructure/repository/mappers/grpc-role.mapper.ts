@@ -11,11 +11,7 @@ import type {
 import { GrpcPermissionMapper } from '@/modules/features/roles/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 
 export class GrpcRoleMapper {
-  /**
-   * `origin` is a oneof: a builtin role carries its stable key, a custom one
-   * the organization that owns it. An arm this build does not know surfaces as
-   * `unknown` rather than being read as "custom".
-   */
+  /** An unknown arm becomes `unknown`, never "custom". */
   private static originToDomain(grpcRole: Role): RoleOrigin {
     switch (grpcRole.origin.oneofKind) {
       case 'builtin':

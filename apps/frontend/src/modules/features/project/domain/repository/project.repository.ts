@@ -9,7 +9,6 @@ export interface ProjectRepository {
     organizationId: string,
     pagination?: PaginationParams,
   ) => Promise<ScyllaResult<ProjectList>>;
-  /** Holders of a grant scoped to the project — see {@link ProjectMember}. */
   listMembers: (projectId: string) => Promise<ScyllaResult<ProjectMember[]>>;
   create: (
     name: string,

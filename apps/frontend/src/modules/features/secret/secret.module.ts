@@ -14,18 +14,16 @@ const secretRepository = new DefaultSecretRepository(secretRemoteDataSource);
 export const SecretModule = {
   id: 'secret',
   domain: {
-    /** Repository interface — the module's data surface. */
     secretRepository: secretRepository,
   },
-  routes: [
-    {
-      mount: 'project',
-      path: 'secrets',
-      permission: Permission.LIST_SECRETS,
-      breadcrumb: () => ({ label: msg`Secrets` }),
-      lazy: async () => ({
-        Component: (await import('./presentation/ui/Secret.page.tsx')).SecretPage,
-      }),
-    },
-  ],
+  routes: {
+    project: [
+      {
+        path: 'secrets',
+        permission: Permission.LIST_SECRETS,
+        breadcrumb: () => ({ label: msg`Secrets` }),
+        page: () => import('./presentation/ui/Secret.page.svelte'),
+      },
+    ],
+  },
 } satisfies ScyllaModule;

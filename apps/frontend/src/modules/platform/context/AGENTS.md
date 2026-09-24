@@ -14,15 +14,17 @@ from it.
 ## Public API — `index.ts`
 
 ```typescript
-useContextStore
-useScyllaNavigate
+contextStore
+scyllaNavigate, type ScyllaNavigate       context-aware navigation
+navigateTo, navigateBack                  plain navigation
+currentPathname, currentSearch            the current URL
+setAppNavigator, type AppNavigator, type NavigateOptions
+createResourceError                       NOT_FOUND on a detail page → toast + redirect
 ```
-
-Two exports. That is the whole capability.
 
 ## The identifier-only rule
 
-`useContextStore` holds **ids and display names, nothing else**:
+`contextStore` holds **ids and display names, nothing else**:
 
 ```typescript
 organization: { id, name }
@@ -42,8 +44,9 @@ it below the features that own those entities.
 break the layer. If a component needs more than an id and a name, it reads the id from here and
 calls that feature's hook.
 
-Persistence: Zustand `persist` to `localStorage` under key `scylla-context`, so a reload keeps
-the user where they were.
+Persistence: `createStore` (`@shared/presentation/stores/create-store.ts`) keeps it in
+`localStorage` under key `scylla-context`, so a reload keeps the user where they were. The stored
+format is the format that Zustand used before Phase 6, so a stored context stays valid.
 
 ## Cascade on organization change
 
@@ -51,31 +54,40 @@ the user where they were.
 meaningless and would produce a broken URL or a cross-tenant query. Preserve that behaviour if
 you touch the store.
 
-`reset()` exists for sign-out; the shell also uses `ContextCleaner.wrapper.tsx` to drop context
-when leaving a scope.
+`reset()` exists for sign-out; the shell also uses `ContextCleaner.wrapper.svelte` to drop
+context when leaving a scope.
 
 ## Layout
 
 ```
 index.ts                             public API
-use-context.store.ts                 the Zustand store (persisted)
-use-scylla-navigate.ts               context-aware navigation
+context.store.ts                     the store (persisted)
+navigator.ts                         setAppNavigator, navigateTo, currentPathname, currentSearch
+scylla-navigate.ts                   context-aware navigation
+resource-error.svelte.ts             createResourceError
 ```
 
-No layer folders. Correct — this capability is two files, and inventing
-`domain/presentation/` around them would be structure for its own sake.
+## The navigator
+
+`navigator.ts` holds the one navigator of the app. The shell installs it at start-up
+(`core.router.ts` calls `setAppNavigator(createAppRouter(…))`), and a test installs a fake one
+with `installTestNavigator` from `src/test/navigator.ts`. Nothing else knows the router.
+
+- `navigateTo` accepts a relative target: `'..'` is the parent page, `'members'` is a child
+  page.
+- `currentPathname()` and `currentSearch()` are reactive while the router is installed.
 
 ## Rules that bite here
 
-- **`useScyllaNavigate()` is the only sanctioned way to navigate between scoped screens.** It
-  builds URLs from the current context so callers do not hand-assemble
-  `/${orgSlug}/projects/${projectId}/…`. Reaching for raw `useNavigate` with a template string
-  is how a route change becomes fourteen broken links.
+- **`scyllaNavigate` is the only sanctioned way to navigate between scoped screens.** It builds
+  URLs from the current context so callers do not hand-assemble
+  `/${orgSlug}/projects/${projectId}/…`. A template string passed to `navigateTo` is how a route
+  change becomes fourteen broken links.
 - **The URL is the source of truth, the store is the mirror.** The shell's
-  `OrganizationSync.wrapper.tsx` syncs the store *from* route params. Do not add a second sync
+  `OrganizationSync.wrapper.svelte` syncs the store *from* route params. Do not add a second sync
   in the other direction — that is the effect cascade this design exists to avoid.
 - Server state never goes in here. Only TanStack Query holds fetched data.
-- `useContextStore` and `useSelectionStore` (`@shared`) are the app's **only** two global
+- `contextStore` and `selectionStore` (`@shared`) are the app's **only** two global
   stores. Adding a third needs a real justification.
 
 ## Before done

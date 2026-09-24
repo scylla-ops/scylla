@@ -1,5 +1,9 @@
 # Architecture
 
+> **Out of date.** This document describes the frontend before the migration to Svelte
+> (`refacto_svelte.md`). `CLAUDE.md` and the `AGENTS.md` of each module are the current contract.
+> Where this document disagrees with them, they are correct.
+
 This document describes the structure and architectural decisions of the Scylla frontend, a React application built on **Clean Architecture** principles with **TanStack Query** for async data management.
 
 ---
@@ -71,7 +75,7 @@ Global infrastructure and app-level concerns:
 | `infrastructure/grpc/` | `CoreGrpcTransport` — shared gRPC-Web transport |
 | `presentation/ui/router/` | `CoreRouter` (route definitions), `AuthGuard`, `ContextCleanerWrapper` |
 | `presentation/providers/` | `DependenciesProvider` (React context for DI) |
-| `presentation/structs/` | `RouteHandle`, `ScyllaForm` shape types |
+| `presentation/structs/` | `ScyllaForm` shape types |
 
 ### 2.2 Feature Modules
 

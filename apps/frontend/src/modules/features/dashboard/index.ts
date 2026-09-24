@@ -1,7 +1,2 @@
-/**
- * The organization landing page: projects and pipelines at a glance.
- *
- * A composite view — it owns no data of its own and reads `project`, `pipeline`
- * and `agents` through their public APIs.
- */
-export { useOrgOverview, type ProjectAccess } from './presentation/hooks/use-org-overview.ts';
+/** Composes `project`, `pipeline`, `jobs` and `agents`. The page is not exported. */
+export { createOrgOverview, type OrgOverview, type ProjectAccess, type PipelineWithProject } from './presentation/org-overview.state.svelte.ts';

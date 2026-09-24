@@ -34,20 +34,31 @@ source interface and its implementation live in one file — `AgentsRemoteDataSo
 alias of the repository interface, because there is exactly one transport and no coordination to
 do. `GrpcAgentMapper` converts proto messages into the domain types.
 
-**Presentation** exposes three query hooks (`useAgents`, `useAgent`, `useAgentStats`) built on
-TanStack Query, and the pages that consume them. The UI is split into small cards — `AgentCard`,
-`LiveNowCard`, `OutcomesChart`, `AgentLogs` — so the pages stay layout-only.
+**Presentation** is Svelte, as of Phase 3 of the migration. The three query hooks became
+`agents.queries.ts`: `queryOptions` and `mutationOptions` objects, which is plain data with no
+framework in it. `pipeline` and `dashboard` read agents through this module's barrel with the
+same objects, and share one cache entry with the pages here.
+
+The agents query decides its own `enabled` from `can(…)`. A caller builds the options inside
+the `createQuery` callback, so the query starts when the permissions arrive.
+
+The UI is split into small cards — `AgentCard`, `LiveNowCard`, `OutcomesChart`, `AgentLogs` — so
+the pages stay layout-only, and the outcomes chart's bucket arithmetic sits in
+`outcomes-chart.calculator.ts` where it can be tested without a DOM.
 
 ## Known gap: mocked panels
 
-Part of the details page is **not** wired to the backend yet. `agent-mock-data.ts` supplies the
-live-jobs panel (`LiveNowCard`), the log stream (`AgentLogs`) and the summary tiles on the list
-page, because no endpoint exists for them today. The agent list, agent lookup and statistics are
-real.
+Part of this module is **not** wired to the backend yet. `agent-mock-data.ts` supplies the
+live-jobs panel (`LiveNowCard`) and the log stream (`AgentLogs`), because no endpoint exists for
+them today. The agent list, agent lookup and statistics are real.
+
+Neither of those two components is mounted anywhere. The Phase 3 port carried them across as they
+were rather than deleting them — deciding a component's fate is not a migration's call — so the
+question is still open and now costs a rewrite to keep open.
 
 If you are adding to this module, treat the mock as scaffolding to remove rather than an
 abstraction to extend: the moment the backend exposes live jobs or agent logs, those components
-should switch to repository-backed hooks and the file should disappear.
+should switch to real query factories and the file should disappear.
 
 ## Related modules
 

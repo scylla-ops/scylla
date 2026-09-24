@@ -20,15 +20,20 @@ Permission, PermissionScope, PrincipalKind, RoleKind
 type AccessEntity, AccessSpec, PrincipalEntity
 canAccess
 type EffectivePermissionsEntity, EffectiveScopeEntity, PermissionTarget
-useAuthorization, useCan
-usePermissionsStore
-Can, PermissionButton, PermissionDenied, RequirePermission
+can, authorizationReady                            // reactive in a Svelte component
+permissionsStore
+Can, RequirePermission, PermissionDenied           // Svelte components
 ```
 
 ## The split you must not break
 
-**Everything here is read-only and dependency-free.** `useCan` answers from a store,
+**Everything here is read-only and dependency-free.** `can()` answers from a store,
 synchronously. It never calls the backend.
+
+`can()` reads the stores through `toRune`, so `$derived(can(…))` in a component updates when the
+permissions arrive or the active project changes. Outside a reactive context it is a plain
+synchronous function. It **denies while the permissions are unknown**; read
+`authorizationReady()` for a loading state.
 
 That is precisely what lets authz sit below the features: any feature may gate its UI without
 depending on the feature that administers roles.
@@ -36,14 +41,14 @@ depending on the feature that administers roles.
 | Concern | Where |
 |---|---|
 | Asking "may I?" | **here** — no I/O |
-| Loading the answer | [`features/roles`](../../features/roles/AGENTS.md) — `usePermissionSync` |
+| Loading the answer | [`features/roles`](../../features/roles/AGENTS.md) — `syncMyPermissions`, called by the shell |
 | Administering roles/grants | `features/roles` |
 
-**Never add a repository, a data source or a query hook to this module.** The moment authz
-fetches, it needs a transport and a feature's contract, and the layer inverts.
+**Never add a repository, a data source or a query to this module.** The moment authz fetches,
+it needs a transport and a feature's contract, and the layer inverts.
 
-`usePermissionsStore` has exactly **one writer**: `usePermissionSync`, mounted once by the
-shell. If you find yourself writing to it from anywhere else, the fix is upstream.
+`permissionsStore` has exactly **one writer**: `syncMyPermissions`, called by the shell state in
+`layout/`. If you find yourself writing to it from anywhere else, the fix is upstream.
 
 ## Layout
 
@@ -54,12 +59,12 @@ domain/
                                      AccessSpec, AccessEntity, PrincipalEntity
   entities/effective-permissions.entity.ts   EffectivePermissionsEntity + canAccess (pure)
 presentation/
-  hooks/use-authorization.ts         useAuthorization, useCan
-  stores/use-permissions.store.ts    the store (single writer: features/roles)
-  ui/Can.tsx                         conditional render
-  ui/RequirePermission.tsx           route/section gate — used by platform/routing's RouteGuard
-  ui/PermissionButton.tsx            button that disables itself
-  ui/PermissionDenied.tsx            the denial state
+  authorization.ts                   can, authorizationReady
+  stores/permissions.store.ts        the store (single writer: features/roles)
+  ui/Can.svelte                      conditional render (`children`, optional `fallback` snippet)
+  ui/RequirePermission.svelte        route/section gate — used by the route guard of platform/routing
+  ui/PermissionDenied.svelte         the denial state
+  ui/permission-denied.messages.ts
 locales/                             this capability has its own catalog
 ```
 
@@ -67,28 +72,26 @@ locales/                             this capability has its own catalog
 
 | Situation | Use |
 |---|---|
-| Show/hide a fragment | `<Can permission={…}>` |
+| Show/hide a fragment | `<Can permission={…}>` or `{#if can(…)}` |
 | Guard a whole route or section | `<RequirePermission>` |
-| An action the user can see but not perform | `<PermissionButton>` (visible, disabled) |
-| Imperative check in a hook | `useCan(Permission.X)` |
-| Several checks / scoped check | `useAuthorization()` |
+| An action the user can see but not perform | `GatedButton` from `@shared/presentation/ui`, with `allowed={can(…)}` |
+| Check in a ViewModel or a query | `can(Permission.X)` |
 
-Prefer `PermissionButton` over hiding an action outright: a user who cannot tell an action
-exists cannot ask for access to it.
+Prefer a disabled `GatedButton` over hiding an action outright: a user who cannot tell an
+action exists cannot ask for access to it.
 
 ## Rules that bite here
 
-- **Route permissions are declared on the module, not here.** A `ModuleRoute.permission` flows
-  into `RouteHandle` and `RouteGuard` (in [`platform/routing`](../routing/AGENTS.md)) renders
-  `RequirePermission` for you. Do not wrap a page by hand as well.
+- **Route permissions are declared on the module, not here.** For a `ModuleRoute.permission`,
+  the route guard of [`platform/routing`](../routing/AGENTS.md) renders `RequirePermission` for
+  you. Do not wrap a page by hand as well.
 - `Permission` is the enum every module gates on — adding one means adding it here, and the
   role editor picks it up from the backend vocabulary without further changes.
 - `canAccess` in `effective-permissions.entity.ts` is **pure**. Authorization logic goes there,
   not into a component.
 - Scope matters: a permission held at the organization applies to its projects; one held on a
-  project does not apply upward. `useAuthorization` handles this — do not compare permission
-  arrays by hand.
-- Client-side gating is UX, not security. The backend enforces. Never treat a passing `useCan`
+  project does not apply upward. `can` handles this — do not compare permission arrays by hand.
+- Client-side gating is UX, not security. The backend enforces. Never treat a passing `can`
   as proof.
 
 ## Before done

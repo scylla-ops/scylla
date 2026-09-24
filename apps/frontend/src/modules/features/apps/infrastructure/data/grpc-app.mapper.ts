@@ -8,7 +8,6 @@ import type {
 } from '@/modules/features/apps/domain/entities/app.entity.ts';
 import { idValue, timestampToIso } from '@shared/infrastructure/grpc/wrappers.ts';
 
-/** Maps gRPC App messages to the domain App model. */
 export class GrpcAppMapper {
   static toDomain(a: ProtoApp): AppEntity {
     return {

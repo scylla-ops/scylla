@@ -1,12 +1,4 @@
-/**
- * Mock runtime data for the Agent detail page.
- *
- * The control plane does not yet expose live-jobs, per-day outcomes, or an
- * agent log stream. Until those endpoints exist, this module fabricates
- * deterministic data keyed off the agent id so a given agent always renders
- * the same shape. Everything here is throwaway — replace with real fetches
- * once the backend lands.
- */
+/** Mock data for the agent page, stable per agent id, until the backend exposes it. */
 
 export type LogLevel = 'info' | 'ok' | 'warn' | 'error';
 
@@ -47,7 +39,6 @@ export const OUTCOME_RANGES: OutcomeRange[] = ['24h', '7d', '14d', '30d'];
 
 const RANGE_DAYS: Record<OutcomeRange, number> = { '24h': 1, '7d': 7, '14d': 14, '30d': 30 };
 
-/** Tiny deterministic string hash → 32-bit seed. */
 const seedFrom = (s: string): number => {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
@@ -57,7 +48,6 @@ const seedFrom = (s: string): number => {
   return h >>> 0;
 };
 
-/** mulberry32 PRNG — deterministic given a seed. */
 const rng = (seed: number) => {
   let a = seed;
   return () => {
@@ -79,7 +69,6 @@ const PIPELINES = [
 ];
 const STEPS = ['checkout', 'install deps', 'compile', 'run tests', 'package', 'upload artifact'];
 
-/** Crude ULID-ish id for mock job rows. */
 const mockId = (next: () => number): string => {
   const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
   let out = '01';
@@ -89,10 +78,7 @@ const mockId = (next: () => number): string => {
 
 const pick = <T>(next: () => number, arr: T[]): T => arr[Math.floor(next() * arr.length)];
 
-/**
- * Live jobs (running + pending). `runningHint` lets the page bias the counts
- * toward the agent's real connection/stats so the mock stays plausible.
- */
+/** `runningHint` biases the counts toward the agent's real state. */
 export const mockLiveJobs = (agentId: string, runningHint = -1, online = true): AgentLiveJobs => {
   const next = rng(seedFrom(agentId + ':live'));
   if (!online) return { running: [], pending: [] };
@@ -116,7 +102,6 @@ export const mockLiveJobs = (agentId: string, runningHint = -1, online = true): 
   return { running, pending };
 };
 
-/** Per-day stacked-bar history for the requested range. */
 export const mockOutcomes = (agentId: string, range: OutcomeRange): OutcomeBucket[] => {
   const days = RANGE_DAYS[range];
   const next = rng(seedFrom(agentId + ':outcomes:' + range));
@@ -137,7 +122,6 @@ export const mockOutcomes = (agentId: string, range: OutcomeRange): OutcomeBucke
   });
 };
 
-/** Compact per-card stats for the Agents list strip. */
 export const mockCardStats = (
   agentId: string,
   online = true,
@@ -167,7 +151,6 @@ const LOG_TEMPLATES: Array<{ level: LogLevel; msg: (next: () => number) => strin
 const fmtTime = (d: Date): string =>
   [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
 
-/** Seed an initial buffer of log lines ending "just now". */
 export const mockInitialLogs = (agentId: string, count = 14): LogLine[] => {
   const next = rng(seedFrom(agentId + ':logs'));
   const now = Date.now();

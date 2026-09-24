@@ -10,14 +10,22 @@ Project-scoped secrets, injected into pipeline runs.
 - Must never import: `core/`, `layout/`, another feature's internals.
 - Outside code reaches this module **only** through `index.ts`.
 
+**Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
+unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
+options objects in `presentation/*.queries.ts`, which a component or another feature runs with
+`createQuery`.
+
 ## Public API — `index.ts`
 
 ```typescript
-type SecretEntity, CreateSecretInput
-useSecrets, useCreateSecret, useDeleteSecret
+type SecretEntity, CreateSecretInput, CreateSecretValues
+secretQueries, secretMutations, SECRETS_QUERY_KEY
 ```
 
-Never add: `secret.module.ts`, `use-secret-domain.ts`, pages.
+`pipeline`'s step dialog consumes `secretQueries.byProject` to offer secret names; it runs it
+with `createQuery`, on the same cache entry this module's pages use.
+
+Never add: `secret.module.ts`, pages.
 
 ## Data contract
 
@@ -29,8 +37,8 @@ Never add: `secret.module.ts`, `use-secret-domain.ts`, pages.
 | `create(CreateSecretInput)` | `SecretEntity` |
 | `deleteById(secretId)` | `void` |
 
-`CreateSecretInput` lives beside the interface, in domain. Reach the repository with
-`useSecretDomain()` **inside a hook only**.
+`CreateSecretInput` lives beside the interface, in domain. The repository is reached from
+`presentation/secret.queries.ts` and nowhere else — never from a component.
 
 There is **no `update`**: a secret is replaced by delete + create, and no method returns a
 stored value. Both are backend constraints — do not add hooks pretending otherwise.
@@ -49,11 +57,11 @@ infrastructure/
   repository/mappers/grpc-secret.mapper.ts
   repository/default-secret.repository.ts
 presentation/
-  hooks/use-secret-domain.ts         DI accessor (private)
-  hooks/use-secrets.ts               all three hooks in one file
-  ui/Secret.page.tsx, CreateSecretDialog.tsx
+  secret.queries.ts                  the read and both writes, as options objects
+  ui/Secret.page.svelte, CreateSecretDialog.svelte
+  ui/secret.messages.ts              every string the screen shows
   ui/components/                     SecretHeader, SecretList, SecretHealthOverview,
-                                     SecretPagination, secret-columns.tsx
+                                     SecretPagination, secret-columns.ts
   ui/components/index.ts             local barrel — internal, not the module's public API
   utils/createSecretItems.ts         ⚠ camelCase filename
 ```
@@ -81,6 +89,12 @@ presentation/
   `node scripts/restore-translations.mjs`. New files use kebab-case.
 - Deletion is destructive and will break running pipelines that depend on the secret. Confirm
   through `ConfirmOperationAlertDialog` (`@shared`).
+- **`SecretHealthOverview` and `SecretPagination` are not mounted by any page** — the page
+  renders the header and the list only. They were ported as they stood; the figures in the
+  first are placeholders, and the second lost the bold on its three numbers, because `<Trans>`
+  could wrap them in elements and a `t()` string cannot.
+- A column's `cell` is a Svelte snippet, so it lives in `SecretList.svelte`; `secret-columns.ts`
+  keeps the part that is data — `accessorKey`, `header`, `size`, `meta.align`.
 
 ## Before done
 

@@ -14,22 +14,20 @@ const triggersRepository = new DefaultTriggersRepository(triggersRemoteDataSourc
 export const TriggersModule = {
   id: 'triggers',
   domain: {
-    /** Repository interface — the module's data surface. */
     triggersRepository: triggersRepository,
   },
-  routes: [
-    {
-      mount: 'project',
-      path: 'pipelines/:pipelineId/triggers',
-      permission: Permission.MANAGE_TRIGGERS,
-      breadcrumb: ({ pipelineName }) => ({
-        label: msg`Pipeline`,
-        highlight: pipelineName,
-        detail: msg`Triggers`,
-      }),
-      lazy: async () => ({
-        Component: (await import('./presentation/ui/Triggers.page.tsx')).TriggersPage,
-      }),
-    },
-  ],
+  routes: {
+    project: [
+      {
+        path: 'pipelines/:pipelineId/triggers',
+        permission: Permission.MANAGE_TRIGGERS,
+        breadcrumb: ({ pipelineName }) => ({
+          label: msg`Pipeline`,
+          highlight: pipelineName,
+          detail: msg`Triggers`,
+        }),
+        page: () => import('./presentation/ui/Triggers/Triggers.page.svelte'),
+      },
+    ],
+  },
 } satisfies ScyllaModule;

@@ -25,7 +25,7 @@ const dataSource = new GrpcXRemoteDataSource(grpcTransport);
 const repository = new DefaultXRepository(dataSource);
 ```
 
-Never import it in a hook, a component, a repository or a domain file. A data source takes the
+Never import it in a query, a component, a repository or a domain file. A data source takes the
 transport as a **type** only, so importing it for the type alone costs nothing at runtime.
 
 It lives in `platform/` rather than the composition root precisely so a feature can declare its
@@ -51,7 +51,7 @@ That `token` key is a three-way contract:
 |---|---|
 | `features/login`'s gRPC data source | **writes** `token` and `userId` |
 | **this module** | **reads** `token` for the header |
-| `core/.../Auth.guard.tsx` | **reads** `token` to allow or redirect |
+| `core/.../Auth.guard.svelte` | **reads** `token` to allow or redirect |
 
 Changing the key or the storage mechanism means changing all three in one commit.
 

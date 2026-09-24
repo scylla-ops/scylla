@@ -14,11 +14,7 @@ import {
 import type { ProjectRemoteDataSource } from '@/modules/features/project/infrastructure/repository/data-sources/project-remote.data-source.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
-/**
- * Every project RPC now answers with a `XxxResponse` wrapper holding the entity
- * in field 1. The unwrapping lives here so mappers and the domain keep seeing
- * plain `Project` entities.
- */
+/** The wrapped entity is optional on the wire: fail here rather than pass `undefined` on. */
 function requireProject(project: Project | undefined): Project {
   if (!project) throw new Error('Server returned no project.');
   return project;
@@ -44,11 +40,7 @@ export class GrpcProjectRemoteDataSource implements ProjectRemoteDataSource {
     }, 'Failed to fetch projects.');
   }
 
-  /**
-   * The project's own members: the backend lists the holders of a grant scoped
-   * to the project and nobody else, so someone reaching it through an
-   * organization role is absent here by design.
-   */
+  /** Project-scoped grants only: someone reaching it through an organization role is absent. */
   public listMembers(projectId: string): Promise<ScyllaResult<ProjectMember[]>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._projectClient.listProjectMembers({

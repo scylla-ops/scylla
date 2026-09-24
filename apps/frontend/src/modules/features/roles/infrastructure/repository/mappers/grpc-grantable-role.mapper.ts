@@ -3,11 +3,7 @@ import type { GrantableRoleEntity } from '@/modules/features/roles/domain/entiti
 import { RoleKind } from '@platform/authz';
 import { GrpcPermissionMapper } from '@/modules/features/roles/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 
-/**
- * Wire `RoleKind` → domain `RoleKind`, arm by arm. The two enums happen to share
- * their numeric values today, but they are declared independently: a `switch`
- * turns a future divergence into a compile error instead of a silent mismap.
- */
+/** A `switch`, so a divergence of the two enums fails to compile. */
 function roleKindToDomain(kind: GrpcRoleKind): RoleKind {
   switch (kind) {
     case GrpcRoleKind.ADMIN:

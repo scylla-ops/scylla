@@ -1,8 +1,8 @@
 import js from '@eslint/js'
 import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import svelte from 'eslint-plugin-svelte'
+import svelteParser from 'svelte-eslint-parser'
 import { globalIgnores } from 'eslint/config'
 
 export default tseslint.config([
@@ -18,14 +18,12 @@ export default tseslint.config([
   ]),
 
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.ts'],
     extends: [
       js.configs.recommended,
       // Type-aware rules: catches floating promises, misused promises, etc.
       // Requires parserOptions.projectService below.
       tseslint.configs.recommendedTypeChecked,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
     ],
     languageOptions: {
       ecmaVersion: 2020,
@@ -80,25 +78,77 @@ export default tseslint.config([
       // Static mapper methods (GrpcXxxMapper.toDomain etc.) are pure functions that
       // never access `this` — treating them as unbound is a false positive.
       '@typescript-eslint/unbound-method': ['error', { ignoreStatic: true }],
-
-      // ── React Fast Refresh ────────────────────────────────────────────────────
-      // shadcn components export CVA configs alongside components — this is the
-      // expected shadcn pattern and does not break Fast Refresh in practice.
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
 
-  // ── shadcn UI library files ───────────────────────────────────────────────────
-  // These are auto-generated / copy-pasted from shadcn and follow their own
-  // conventions. We relax a few rules that would otherwise fire on every update.
+  // ── Tests ──────────────────────────────────────────────────────────────────────
+  // `expect(repository.method)` reads a mock off an object and never calls it
+  // unbound. `unbound-method` flags every such assertion, with no true positive.
   {
-    files: ['src/modules/shared/presentation/ui/shadcn/**'],
+    files: ['**/*.test.ts'],
     rules: {
-      '@typescript-eslint/restrict-template-expressions': 'off',
-      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
-      'react-refresh/only-export-components': 'off',
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
+
+  // ── The Svelte query bindings come from @platform/query ───────────────────────
+  // `createQuery` from `@tanstack/svelte-query` reads its client from Svelte
+  // context. The re-export in `@platform/query` binds the app's client; the two
+  // are indistinguishable at the call site, so the wrong import fails at runtime.
+  {
+    files: ['src/modules/**/*.{ts,svelte}'],
+    ignores: ['src/modules/platform/query/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@tanstack/svelte-query',
+              message:
+                'Import createQuery / createMutation from @platform/query — they carry the ' +
+                "app's QueryClient.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // ── Svelte ────────────────────────────────────────────────────────────────────
+  // `.svelte` files are invisible to `tsc -b`; `pnpm typecheck` runs svelte-check
+  // after it for exactly that reason. Here we only need the parser and the
+  // plugin's own rules.
+  ...svelte.configs.recommended,
+  // `.svelte` and `.svelte.ts` (rune) files skip type-aware linting on
+  // purpose: svelte-eslint-parser's bridge to the TypeScript program is known
+  // to scale badly on large projects (sveltejs/eslint-plugin-svelte#1084 —
+  // minutes per run, sometimes far worse, versus seconds for plain `.ts`).
+  // `svelte-check` (run separately in `typecheck`) already covers full type
+  // correctness for both file kinds, so the only real loss here is
+  // `no-floating-promises` on their script content.
+  {
+    // `.svelte.ts` (rune files, no template) still need this parser: runes
+    // syntax (`$state`, `$derived`...) is not valid plain TypeScript.
+    files: ['**/*.svelte', '**/*.svelte.ts'],
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    languageOptions: {
+      parser: svelteParser,
+      globals: globals.browser,
+      parserOptions: {
+        parser: tseslint.parser,
+        tsconfigRootDir: import.meta.dirname,
+        extraFileExtensions: ['.svelte'],
+      },
+    },
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
+    },
+  },
+
 ])
 
 

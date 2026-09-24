@@ -22,21 +22,12 @@ import type {
 
 import type { PermissionDataSource } from '@/modules/features/roles/infrastructure/repository/data-sources/permission.data-source.ts';
 
-/**
- * Reads the single entity a response wrapper is supposed to carry. The field is
- * `optional` on the wire but the backend always fills it on success, so an
- * absent one is a protocol error, not an empty result.
- */
+/** The backend always fills the wrapped entity on success: a missing one is a protocol error. */
 const required = <T>(value: T | undefined, what: string): T => {
   if (value === undefined) throw new Error(`The server response carried no ${what}.`);
   return value;
 };
 
-/**
- * gRPC-backed implementation of {@link PermissionDataSource}.
- * Unwraps the `XxxResponse` wrappers so the repository above only ever sees
- * `scylla.authz.v1` entities.
- */
 export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
   private readonly _roles: RoleServiceClient;
   private readonly _grants: GrantServiceClient;
@@ -115,11 +106,7 @@ export class GrpcPermissionRemoteDataSource implements PermissionDataSource {
     }, 'Failed to revoke grant.');
   }
 
-  /**
-   * The count comes back as `uint64`, so protobuf-ts hands it over as a
-   * `bigint`. It counts grants, never more than a handful, so narrowing to
-   * `number` at the boundary is safe and spares every caller above the cast.
-   */
+  /** A `uint64` count of grants: narrowing to `number` is safe. */
   public revokeAllAccess(principal: PrincipalRef, scope: ScopeRef): Promise<ScyllaResult<number>> {
     return ScyllaResult.tryAsync(async () => {
       const { response } = await this._grants.revokeAllAccess({ principal, scope });

@@ -1,5 +1,9 @@
 # Naming Conventions
 
+> **Out of date.** This document describes the frontend before the migration to Svelte
+> (`refacto_svelte.md`). `CLAUDE.md` and the `AGENTS.md` of each module are the current contract.
+> Where this document disagrees with them, they are correct.
+
 This document defines the naming rules applied across the Scylla frontend codebase.
 
 ---
@@ -31,7 +35,7 @@ Files are suffixed by their role to make intent clear at a glance:
 | **Mapper** | `.mapper.ts` | `grpc-user.mapper.ts` |
 | **Domain entity** | `.entity.ts` | `secret.entity.ts`, `role.entity.ts`, `user.entity.ts` |
 | **Domain struct (value object / enum / DTO / wrapper)** | `.struct.ts` | `permission.struct.ts`, `pagination.struct.ts` |
-| **Presentation struct** | `.struct.ts` | `scylla-form.struct.ts`, `route-handle.struct.ts` |
+| **Presentation struct** | `.struct.ts` | `scylla-form.struct.ts`, `crumb.struct.ts` |
 | **Hook** | `use-{name}.ts` | `use-create-user.ts`, `use-selection.ts` |
 | **Zustand store** | `use-{name}.store.ts` | `use-context.store.ts`, `use-selection.store.ts` |
 | **DI module** | `.module.ts` | `user.module.ts`, `pipeline.module.ts` |

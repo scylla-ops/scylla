@@ -5,24 +5,15 @@ import type { LoginRepository } from '@/modules/features/login/domain/repository
 import { DefaultLoginRepository } from '@/modules/features/login/infrastructure/repository/default-login.repository.ts';
 import { grpcTransport } from '@platform/grpc';
 
-const loginRemoteDataSource: LoginRemoteDataSource = new GrpcLoginRemoteDataSource(
-  grpcTransport,
-);
+const loginRemoteDataSource: LoginRemoteDataSource = new GrpcLoginRemoteDataSource(grpcTransport);
 const loginRepository: LoginRepository = new DefaultLoginRepository(loginRemoteDataSource);
 
 export const LoginModule = {
   id: 'login',
   domain: {
-    /** Repository interface — the module's data surface. */
     loginRepository: loginRepository,
   },
-  routes: [
-    {
-      mount: 'public',
-      path: '/login',
-      lazy: async () => ({
-        Component: (await import('./presentation/ui/Login.page.tsx')).LoginPage,
-      }),
-    },
-  ],
+  routes: {
+    public: [{ path: 'login', page: () => import('./presentation/ui/Login/Login.page.svelte') }],
+  },
 } satisfies ScyllaModule;

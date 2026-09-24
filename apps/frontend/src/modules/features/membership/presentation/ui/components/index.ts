@@ -1,11 +1,10 @@
-// The member-view kit, shared by the organization and project member pages:
-// both show the same thing about a different scope.
-export { AddMemberDialog, type MemberCandidate } from './AddMemberDialog.tsx';
-export { AddRoleSelect } from './AddRoleSelect.tsx';
-export { MemberCard, type MemberCardMetadata } from './MemberCard.tsx';
-export { MemberIdentity } from './MemberIdentity.tsx';
-export { MemberRoleBadges } from './MemberRoleBadges.tsx';
-export { MemberRowAction } from './MemberRowAction.tsx';
-export { MembersHint } from './MembersHint.tsx';
-export { MembersList } from './MembersList.tsx';
-export { RoleChecklist } from './RoleChecklist.tsx';
+export { default as AddMemberDialog } from './AddMemberDialog/AddMemberDialog.svelte';
+export { default as AddRoleSelect } from './AddRoleSelect/AddRoleSelect.svelte';
+export { default as MemberCard } from './MemberCard/MemberCard.svelte';
+export { default as MemberIdentity } from './MemberIdentity/MemberIdentity.svelte';
+export { default as MemberRoleBadges } from './MemberRoleBadges/MemberRoleBadges.svelte';
+export { default as MemberRowAction } from './MemberRowAction/MemberRowAction.svelte';
+export { default as MembersHint } from './MembersHint/MembersHint.svelte';
+export { default as MembersList } from './MembersList/MembersList.svelte';
+export { default as RoleChecklist } from './RoleChecklist/RoleChecklist.svelte';
+export type { MemberCandidate } from './member-candidate.ts';

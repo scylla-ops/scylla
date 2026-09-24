@@ -15,11 +15,17 @@ Machine identities ("apps") and the secrets they authenticate with.
 ```typescript
 type AppEntity, AppSecretEntity
 type CreatedApp, CreatedAppSecret
-useApps, useApp, useAppSecrets
+appQueries, appMutations
+APPS_QUERY_KEY, APP_QUERY_KEY, APP_SECRETS_QUERY_KEY
 ```
 
 Nothing consumes this barrel yet — the types are exposed because they are the stable part and
-cost nothing at runtime. Never add: `apps.module.ts`, `use-apps-domain.ts`, pages.
+cost nothing at runtime. Never add: `apps.module.ts`, pages.
+
+**This module is Svelte** (Phase 3). There is no `use-apps-domain.ts` and no hooks: the
+factories in `presentation/apps.queries.ts` resolve the repository through
+`getModuleDomain('apps')` per call, and a component runs them with `createQuery` /
+`createMutation` from `@platform/query`.
 
 ## Data contract
 
@@ -37,7 +43,7 @@ cost nothing at runtime. Never add: `apps.module.ts`, `use-apps-domain.ts`, page
 | `revokeAppSecret(secretId)` | `void` |
 | `setAppSecretEnabled(secretId, enabled)` | `AppSecretEntity` |
 
-All wrapped in `ScyllaResult`. Reach it with `useAppsDomain()` **inside a hook only**.
+All wrapped in `ScyllaResult`. Reach it from `apps.queries.ts` only — never from a component.
 
 ## Layout
 
@@ -53,10 +59,10 @@ infrastructure/
   data/grpc-app.mapper.ts            GrpcAppMapper
   repository/default-apps.repository.ts
 presentation/
-  hooks/use-apps-domain.ts           DI accessor (private)
-  hooks/use-apps.ts                  useApps / useApp / useAppSecrets
-  ui/Apps.page.tsx, AppDetails.page.tsx
-  ui/components/AppCard.tsx, AppSecretsCard.tsx
+  apps.queries.ts                    every read and write, as query/mutation options
+  ui/Apps.page.svelte, AppDetails.page.svelte
+  ui/apps.messages.ts                every string — `lingui extract` cannot read `.svelte`
+  ui/components/AppCard.svelte, AppSecretsCard.svelte
   utils/create-app-form-items.ts, create-app-secret-form-items.ts
 ```
 
@@ -66,8 +72,9 @@ presentation/
 them and no sidebar entry points at them — the feature is complete below the UI and not yet
 surfaced.
 
-If you are asked to expose it: add `routes` + `nav` to `apps.module.ts` (mount `organization`,
-gate on an apps permission such as `LIST_APPS_BY_ORGANIZATION`, `lazy`-import the pages). Do
+If you are asked to expose it: add `routes` to `apps.module.ts` (under `organization`, gate on
+an apps permission such as `LIST_APPS_BY_ORGANIZATION`, `page`-import the pages lazily, and a
+`nav` on the route for the sidebar). Do
 **not** register a route anywhere else — the module declaration is the only door.
 
 ## Rules that bite here
@@ -78,7 +85,16 @@ gate on an apps permission such as `LIST_APPS_BY_ORGANIZATION`, `lazy`-import th
 - Enable/disable is `setAppActive` / `setAppSecretEnabled`, distinct from delete/revoke. Keep
   them distinct in the UI too — disabling is reversible, revoking is not.
 - Invalidate the secrets query after any secret mutation; the app query and the secrets query
-  are separate cache entries.
+  are separate cache entries. `appMutations` already does it — do not re-invalidate at the call
+  site.
+- **New strings go in `ui/apps.messages.ts`, never inside a `.svelte`.** Extraction does not read
+  components, so a message declared there vanishes from the catalogs without failing a gate.
+- Both icon-only controls on `AppCard` carry an `sr-only` label (`App actions`, `Delete app`).
+  The React original had none, so the only way to reach them in a test was a CSS selector. Keep
+  the labels.
+- **A bits-ui menu lives in a floating layer**, which floating-ui leaves `visibility: hidden`
+  under jsdom: `getByRole('menuitem')` finds nothing. Use `findFloating` from
+  `src/test/render.svelte.ts`.
 
 ## Before done
 

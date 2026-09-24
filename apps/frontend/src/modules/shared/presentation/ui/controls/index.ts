@@ -1,3 +1,2 @@
-// Interactive controls / buttons.
-export * from './IconButton.tsx';
-export * from './BackButton.tsx';
+export { default as GatedButton } from './GatedButton/GatedButton.svelte';
+export { default as IconButton } from './IconButton/IconButton.svelte';

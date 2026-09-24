@@ -3,13 +3,8 @@ import { RpcError } from '@protobuf-ts/runtime-rpc';
 import type { RpcInterceptor, RpcOptions } from '@protobuf-ts/runtime-rpc';
 
 /**
- * The gRPC spec requires servers to percent-encode the `grpc-message` trailer
- * (tonic turns spaces into %20) and leaves decoding to the client — but
- * @protobuf-ts/grpcweb-transport (2.11.1) never decodes it, so RpcError.message
- * arrives percent-encoded. Decode each error exactly once, at the transport,
- * so every consumer sees a readable message. decodeURIComponent throws on
- * input that is not valid percent-encoding (e.g. a literal '%'), in which case
- * the raw message wins.
+ * The server percent-encodes the `grpc-message` trailer and
+ * `@protobuf-ts/grpcweb-transport` does not decode it: decode each error once, here.
  */
 const decodedErrors = new WeakSet<RpcError>();
 
@@ -19,14 +14,12 @@ function decodeRpcErrorMessage(error: unknown): void {
     try {
       error.message = decodeURIComponent(error.message);
     } catch {
-      // Not valid percent-encoding — keep the raw message.
+      // Not valid percent-encoding: keep the raw message.
     }
   }
 }
 
-// Handlers registered here run before any attached later by callers, and the
-// same RpcError instance flows through response/status/trailers, so mutating
-// its message once is visible everywhere.
+// The same RpcError goes through response, status and trailers: decoding it once is enough.
 const errorDecodeInterceptor: RpcInterceptor = {
   interceptUnary(next, method, input, options) {
     const call = next(method, input, options);

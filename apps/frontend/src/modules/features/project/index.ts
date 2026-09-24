@@ -1,20 +1,15 @@
-/**
- * Projects: the unit that owns pipelines, secrets and its own member list.
- *
- * The public API of the module. The three ways an organization's projects get
- * read — the paginated list, the dashboard overview and the grant-label lookup
- * — all go through here and therefore share one cache entry.
- */
+/** The list, the overview and the lookup share one cache entry through `projectQueries`. */
 export type { ProjectEntity } from './domain/entities/project.entity.ts';
 export type { ProjectMember } from './domain/structs/project-member.struct.ts';
-export { PROJECTS_QUERY_KEY } from './presentation/hooks/projects.query-keys.ts';
-export { useProjects } from './presentation/hooks/useProjects.ts';
-export { useOrganizationProjects } from './presentation/hooks/use-organization-projects.ts';
 export {
-  useProjectsByOrganizations,
+  canListProjects,
+  invalidateProjectMembers,
+  projectLookupQueries,
+  projectMutations,
+  projectQueries,
   type ProjectLookupEntry,
-} from './presentation/hooks/use-projects-by-organizations.ts';
-export {
-  useProjectMembers,
+  PROJECTS_LOOKUP_PAGE,
+  PROJECTS_QUERY_KEY,
+  PROJECTS_QUERY_ROOT,
   PROJECT_MEMBERS_QUERY_KEY,
-} from './presentation/hooks/use-project-members.ts';
+} from './presentation/project.queries.ts';

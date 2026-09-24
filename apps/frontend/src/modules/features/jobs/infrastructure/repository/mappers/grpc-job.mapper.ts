@@ -17,7 +17,6 @@ import type { PaginationInfo } from '@shared/domain/structs/pagination.struct.ts
 import type { PaginatedList } from '@shared/domain/types/paginated-list.type.ts';
 import type { JobLogsTailHandleRepo } from '@/modules/features/jobs/infrastructure/repository/data-sources/jobs-remote.data-source.ts';
 
-/** What every scoped job listing returns, whatever the scope. */
 type JobListResponse = Pick<ListPipelineJobsResponse, 'jobs' | 'pagination'>;
 import {
   idValue,
@@ -25,10 +24,7 @@ import {
   timestampToIsoOpt,
 } from '@shared/infrastructure/grpc/wrappers.ts';
 
-/** Flatten the `Job.state` oneof back to the flat status string the UI consumes
- * (`pending` | `running` | `completed` | `failed` | `cancelled` | `orphaned`).
- * `oneofKind: undefined` means the server sent a state arm newer than this
- * build — surface it as `unknown` rather than guessing a default. */
+/** An arm newer than this build becomes `unknown`. */
 function jobStatusFromState(state: Job['state']): string {
   switch (state.oneofKind) {
     case 'pending':
@@ -52,15 +48,13 @@ function jobOutcomeToStatus(outcome: JobOutcome): string {
       return 'cancelled';
     case JobOutcome.ORPHANED:
       return 'orphaned';
-    // UNSPECIFIED, or an outcome newer than this build. Never call it a success.
+    // UNSPECIFIED or a newer outcome: never a success.
     default:
       return 'unknown';
   }
 }
 
-/** Flatten the `JobNode.execution` oneof to the flat state string the UI
- * consumes (`pending` | `running` | `completed` | `failed` | `cancelled` |
- * `skipped`), or `unknown` for an arm newer than this build. */
+/** An arm newer than this build becomes `unknown`. */
 function nodeStateFromExecution(execution: JobNode['execution']): string {
   switch (execution.oneofKind) {
     case 'pending':
@@ -84,14 +78,13 @@ function nodeOutcomeToState(outcome: NodeOutcome): string {
       return 'cancelled';
     case NodeOutcome.SKIPPED:
       return 'skipped';
-    // UNSPECIFIED, or an outcome newer than this build. Never call it a success.
+    // UNSPECIFIED or a newer outcome: never a success.
     default:
       return 'unknown';
   }
 }
 
-/** The `LogStream` enum back to the `stdout`/`stderr` string the domain keeps.
- * `UNSPECIFIED` (or a future stream) yields `''`, same as an absent field. */
+/** `UNSPECIFIED` or an unknown stream gives `''`. */
 function logStreamToString(stream: LogStream): string {
   switch (stream) {
     case LogStream.STDOUT:
@@ -103,7 +96,6 @@ function logStreamToString(stream: LogStream): string {
   }
 }
 
-/** When execution actually began, projected from whichever state carries a start. */
 function jobStartedAt(state: Job['state']): string | undefined {
   if (state.oneofKind === 'running') return timestampToIsoOpt(state.running.startedAt);
   if (state.oneofKind === 'terminal') return timestampToIsoOpt(state.terminal.startedAt);
@@ -141,11 +133,7 @@ export class GrpcJobMapper {
     };
   }
 
-  /**
-   * Takes the shape rather than one named response: `ListPipelineJobsResponse`,
-   * `ListProjectJobsResponse` and `ListOrganizationJobsResponse` are the same
-   * `{ jobs, pagination }` pair, so one mapper serves all three scopes.
-   */
+  /** The pipeline, project and organization listings share this shape. */
   static toDomainList(response: JobListResponse): PaginatedList<JobEntity> {
     return {
       items: response.jobs.map(GrpcJobMapper.toDomain),

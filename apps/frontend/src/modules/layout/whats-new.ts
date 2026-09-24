@@ -1,41 +1,28 @@
 import { msg } from '@lingui/core/macro';
 import type { MessageDescriptor } from '@lingui/core';
-import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Moon, ShieldIcon, UsersRound } from 'lucide-react';
+import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
+import Moon from '@lucide/svelte/icons/moon';
+import ShieldIcon from '@lucide/svelte/icons/shield';
+import UsersRound from '@lucide/svelte/icons/users-round';
+import type { LucideIcon } from '@shared/presentation/ui/icon.ts';
 
-/**
- * One thing worth telling the user about in a release.
- *
- * Declared as `msg` descriptors and Lucide components rather than JSON: the
- * copy has to go through Lingui like every other string, and an icon is a
- * component — a JSON file would need a translation table and a name→icon map
- * beside it to say the same thing.
- */
 export interface ReleaseHighlight {
-  /** Stable id — also the key of its "seen" flag in `localStorage`. */
+  /** Also the key of its "seen" flag in `localStorage`. */
   id: string;
   title: MessageDescriptor;
   description: MessageDescriptor;
   icon: LucideIcon;
-  /**
-   * The `NavEntry.url` this highlight leads to (no organization prefix). When
-   * set, that sidebar entry carries a "New" badge until the user opens it.
-   * Omit for anything that isn't a page.
-   */
+  /** The sidebar entry that shows a "New" badge until the user opens it. */
   navUrl?: string;
 }
 
 export interface Release {
-  /** Bump it to re-arm every announcement: the seen flags are keyed by it. */
+  /** Bump it to show every announcement again. */
   version: string;
   highlights: readonly ReleaseHighlight[];
 }
 
-/**
- * THE release announcement. Editing this file is the whole job of announcing a
- * feature — the dialog on first launch and the sidebar badges are derived from
- * it, and both disappear on their own once the entries are gone.
- */
+/** The release announcement: the first-launch dialog and the sidebar badges come from it. */
 export const WHATS_NEW = {
   version: '0.4.0',
   highlights: [

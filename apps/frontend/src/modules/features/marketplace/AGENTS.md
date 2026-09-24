@@ -10,14 +10,19 @@ Ready-made pipeline templates a project can start from.
 - Must never import: `core/`, `layout/`, another feature's internals.
 - Outside code reaches this module **only** through `index.ts`.
 
+**Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
+unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
+options objects in `presentation/*.queries.ts`, which a component or another feature runs with
+`createQuery`.
+
 ## Public API — `index.ts`
 
 ```typescript
 type MarketItem
-useMarketplace
+marketplaceQueries, MARKETPLACE_QUERY_KEY
 ```
 
-Never add: `marketplace.module.ts`, `use-marketplace-domain.ts`, pages.
+Never add: `marketplace.module.ts`, pages.
 
 ## Data contract
 
@@ -43,7 +48,8 @@ When wiring the real backend:
    `marketplace.module.ts`.
 5. Delete the `TODO` and the inline fixtures.
 
-The domain contract and `useMarketplace` do **not** change — that is the point of the interface.
+The domain contract and `marketplaceQueries` do **not** change — that is the point of the
+interface.
 
 ## Layout
 
@@ -55,11 +61,11 @@ domain/
   repository/marketplace.repository.ts
 infrastructure/repository/default-marketplace.repository.ts   ← stubbed
 presentation/
-  hooks/use-marketplace-domain.ts    DI accessor (private)
-  hooks/use-marketplace.ts
-  stores/use-filter.store.ts         UI filter state (Zustand — correct use)
-  ui/Marketplace.page.tsx, MarketplaceTopBar.tsx,
-  ui/MarketItemList.tsx, MarketItemCard.tsx
+  marketplace.queries.ts                    the catalog read
+  marketplace-filter.state.svelte.ts        search box state + `matchesFilter`
+  ui/Marketplace.page.svelte, MarketplaceTopBar.svelte,
+  ui/MarketItemList.svelte, MarketItemCard.svelte
+  ui/marketplace.messages.ts
 ```
 
 `MarketItem` is a **struct**, not an entity: a catalog listing with no identity the app owns.
@@ -77,8 +83,12 @@ when the real catalog lands.
 
 ## Rules that bite here
 
-- `use-filter.store.ts` is a legitimate Zustand store: it holds **search/filter UI state only**.
-  Never put the fetched items in it — the list belongs to TanStack Query.
+- `marketplace-filter.state.svelte.ts` is module-level `$state` — the rune equivalent of the
+  Zustand store it replaced, and still **search/filter UI state only**. Never put the fetched
+  items in it; the list belongs to TanStack Query.
+- **`MarketplaceTopBar`, `MarketItemList` and `MarketItemCard` are not mounted by any page.**
+  `Marketplace.page.svelte` is still the "available soon" placeholder. They were ported rather
+  than dropped because they are the screen this page becomes once the repository is real.
 - Filtering happens during render from the query data plus the store's criteria. No mirror
   state, no effect syncing one into the other.
 

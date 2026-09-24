@@ -4,12 +4,6 @@ import type { CreateGrantInput } from '@/modules/features/roles/domain/repositor
 import { GrpcPermissionMapper } from '@/modules/features/roles/infrastructure/repository/mappers/grpc-permission.mapper.ts';
 
 export class GrpcGrantMapper {
-  /**
-   * Maps a gRPC {@link Grant} to a domain {@link GrantEntity}.
-   * The id wrappers are unwrapped to plain strings, and the `PrincipalRef`
-   * oneof is flattened to a (kind, id) pair — a grant may target a user or an
-   * app.
-   */
   public static toDomain(grpcGrant: Grant): GrantEntity {
     const { scope, scopeId } = GrpcPermissionMapper.scopeRefToDomain(grpcGrant.scope);
 
@@ -22,11 +16,7 @@ export class GrpcGrantMapper {
     };
   }
 
-  /**
-   * Maps a domain {@link CreateGrantInput} to the gRPC
-   * {@link CreateGrantRequest}. Throws when the principal or the scope was left
-   * unspecified — the backend rejects those anyway.
-   */
+  /** Throws when the principal or the scope is unspecified. */
   public static toGrpcCreateRequest(input: CreateGrantInput): CreateGrantRequest {
     return {
       principal: GrpcPermissionMapper.principalRefToGrpc(input.principal),

@@ -6,13 +6,9 @@ import { idValue } from '@shared/infrastructure/grpc/wrappers.ts';
 import { t } from '@lingui/core/macro';
 
 /**
- * gRPC answers `UNAUTHENTICATED` both for an expired session and for wrong
- * credentials. Only this call can mean the second one, and the global mutation
- * handler in `core`'s `App.tsx` reads the first: it clears the token and does a
- * full page load to `/login` — which, from the login page, silently reloads it
- * and swallows the error. Re-code it here so the ambiguity never leaves the
- * transport boundary. The original cause is dropped on purpose: the backend
- * message can hint at whether the account exists.
+ * UNAUTHENTICATED here means wrong credentials, not an expired session: re-code it,
+ * or the global handler signs out and reloads the login page. The backend message
+ * is dropped: it could tell whether the account exists.
  */
 const invalidCredentials = () =>
   new ScyllaError(t`Incorrect username or password`, {
@@ -30,7 +26,7 @@ export class GrpcLoginRemoteDataSource implements LoginRemoteDataSource {
     const result = await ScyllaResult.tryAsync<void>(async () => {
       const { response } = await this._authClient.login({ identifier, password });
 
-      //TODO: http cokkies instead of that
+      // TODO: HTTP cookies instead.
       localStorage.setItem('token', response.token);
       localStorage.setItem('userId', idValue(response.userId));
     }, 'Failed to login.');

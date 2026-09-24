@@ -9,8 +9,6 @@ const repository = new DefaultAppsRepository(dataSource);
 export const AppsModule = {
   id: 'apps',
   domain: {
-    /** Repository interface — the module's data surface. */
     appsRepository: repository,
   },
-
 } satisfies ScyllaModule;

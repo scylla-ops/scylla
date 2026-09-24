@@ -3,8 +3,8 @@
 > [Scylla frontend](../../../README.md) › `shared/` ·
 > [agent guide](./AGENTS.md) · [architecture](../../../docs/architecture.md)
 
-The bottom layer: generic components, hooks and utilities with **no business meaning**. Tables,
-forms, dialogs, pagination, the Result type, the shadcn/ui primitives.
+The bottom layer: generic components, state helpers and utilities with **no business meaning**.
+Tables, forms, dialogs, pagination, the Result type, the shadcn-svelte primitives.
 
 Everything may import `shared`. `shared` imports nobody — not features, not the shell, not even
 `platform/`. It is the only module in the codebase with that property, and dependency-cruiser
@@ -41,11 +41,11 @@ Data sources wrap their calls in `tryAsync`, so a gRPC failure becomes a `Scylla
 the extracted status code and a user-facing message, travelling up as a value that cannot be
 forgotten in the way a `catch` can.
 
-At the presentation boundary the convention flips: query and mutation hooks call `.unwrap()`
+At the presentation boundary the convention flips: query and mutation options call `.unwrap()`
 *inside* `queryFn` / `mutationFn`, which throws — deliberately — so TanStack Query owns loading,
-error and retry state from there on. And because [core](../core/README.md) installs a global
-error handler on both the query and mutation caches, a feature hook should **not** add its own
-error toast. The root already shows one.
+error and retry state from there on. And because [platform/query](../platform/query/README.md)
+installs a global error handler on both the query and mutation caches, a feature should **not**
+add its own error toast. The root already shows one.
 
 For chaining without unwrapping, `map` and `flatMapAsync` compose results — that is how
 `UpdateRoleUseCase` reads a role, transforms it and saves it in one expression.
@@ -55,28 +55,29 @@ For chaining without unwrapping, `map` and `flatMapAsync` compose results — th
 Most screens in Scylla are a list, a header and a form, and the shared layer is why they look
 and behave alike:
 
-- **`DataTable`** with **`usePagination()`** — local page state merged with the server's
+- **`DataTable`** with **`createPagination()`** — local page state merged with the server's
   `totalCount` and `totalPages`. Row keys are business ids, never array indices.
-- **`useSelection(key)`** over a single `useSelectionStore`. Selection is keyed by feature, so
-  `useSelection('jobs')` and `useSelection('users')` are independent — which is why there is no
-  per-feature selection store anywhere in the codebase.
+- **`createSelection(key)`** over a single `selectionStore`. Selection is keyed by feature, so
+  `createSelection('jobs')` and `createSelection('users')` are independent — which is why there is
+  no per-feature selection store anywhere in the codebase.
 - **`FeatureHeader`** — the list header: item count, clear/delete selection, new-item button.
 - **`ScyllaForm`** — forms are declared as `FormItem[]` rather than assembled by hand.
-  `FormDialog` wraps one in a dialog, `useFormState` owns values, dirty-checking and validation.
+  `FormDialog` wraps one in a dialog, `createFormState` owns values, dirty-checking and validation.
   Both are generic over the item ids, so a form declared with literal ids submits a typed
   `FormValues` record (`{ name: string; description: string }`) instead of a bag of pairs the
   caller has to search through.
-- **`ConfirmOperationAlertDialog`** for destructive actions, **`SecretRevealDialog`** for values
+- **`ScyllaDialog`** for every modal: it closes the same way everywhere and resets its content
+  at each opening. **`ConfirmOperationAlertDialog`** for destructive actions, **`SecretRevealDialog`** for values
   shown exactly once.
-- **`CheckboxTree`** — used by the role editor's permission tree.
 
 ## Two global stores, and only two
 
-`useSelectionStore` lives here; `useContextStore` lives in
+`selectionStore` lives here; `contextStore` lives in
 [platform/context](../platform/context/README.md). Those are the *only* application-wide stores.
 
-Everything else is either server state — which belongs in TanStack Query, never in Zustand — or
-local component state. A feature may add a store for genuinely ephemeral UI state (the pipeline
+Everything else is either server state — which belongs in TanStack Query, never in a store — or
+local component state (`$state`). A store is made with `createStore` (`presentation/stores/`),
+and rune code reads it with `toRune`. A feature may add a store for genuinely ephemeral UI state (the pipeline
 editor's draft script, the marketplace's filter criteria), but it stays inside that feature and
 never holds fetched data.
 
@@ -86,11 +87,15 @@ never holds fetched data.
   types.
 - `infrastructure/grpc/` — small generic proto helpers.
 - `utils/` — `ScyllaResult`, dates, slugs, status presentation, toast messages.
-- `presentation/ui/` — components in five groups (`data-display`, `feedback`, `forms`,
-  `controls`, `layout`), each with a barrel, plus `shadcn/` for the vendored primitives.
+- `presentation/ui/` — Svelte components in groups (`data-display`, `feedback`, `forms`,
+  `controls`, `layout`, `motion`, `editor`), each with a barrel, plus `shadcn/` for the vendored
+  shadcn-svelte primitives (alias `@shadcn`).
+- `presentation/state/` — rune helpers: selection, pagination, measured height, clock.
+- `presentation/stores/` — `createStore`, `toRune`, the theme store, the selection store.
+- `presentation/utils/` — `cn`, `toast` (`svelte-sonner`), i18n, the CodeMirror theme.
 
-There is no root `index.ts`; import from a group barrel or by path. `shadcn/` is generated
-vendor code — compose around it rather than editing it, so upstream updates stay applicable.
+There is no root `index.ts`; import from `@shared/presentation/ui`, a group barrel, or by path.
+`shadcn/` is ported vendor code — compose around it rather than editing it.
 
 One borderline case, called out honestly: `status-config.ts` and `job-status.utils.ts` encode
 how a status is *presented* — its colour, icon and label. That is generic. What a status

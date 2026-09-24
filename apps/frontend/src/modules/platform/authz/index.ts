@@ -1,13 +1,6 @@
 /**
- * Authorization primitives.
- *
- * Everything here is read-only and dependency-free: `useCan` answers from a
- * store, it never calls the backend. That is what lets authz sit below the
- * features — any feature may gate its UI without depending on the feature that
- * administers roles and grants.
- *
- * Loading the store is the other side of the coin and stays in
- * `features/roles` (`usePermissionSync`), because it needs a repository call.
+ * Read-only authorization: `can` reads a store and never calls the backend.
+ * `features/roles` loads the store (`syncMyPermissions`).
  */
 export {
   Permission,
@@ -24,9 +17,8 @@ export {
   type EffectiveScopeEntity,
   type PermissionTarget,
 } from './domain/entities/effective-permissions.entity.ts';
-export { useAuthorization, useCan } from './presentation/hooks/use-authorization.ts';
-export { usePermissionsStore } from './presentation/stores/use-permissions.store.ts';
-export { Can } from './presentation/ui/Can.tsx';
-export { PermissionButton } from './presentation/ui/PermissionButton.tsx';
-export { PermissionDenied } from './presentation/ui/PermissionDenied.tsx';
-export { RequirePermission } from './presentation/ui/RequirePermission.tsx';
+export { authorizationReady, can } from './presentation/authorization.ts';
+export { permissionsStore } from './presentation/stores/permissions.store.ts';
+export { default as Can } from './presentation/ui/Can/Can.svelte';
+export { default as PermissionDenied } from './presentation/ui/PermissionDenied/PermissionDenied.svelte';
+export { default as RequirePermission } from './presentation/ui/RequirePermission/RequirePermission.svelte';

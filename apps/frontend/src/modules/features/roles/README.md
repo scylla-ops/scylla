@@ -21,30 +21,35 @@ keeps them apart deliberately.
 
 ## Why the primitives live elsewhere
 
-`Permission`, `useCan`, `Can` and `RequirePermission` are **not** in this module. They are in
+`Permission`, `can`, `Can` and `RequirePermission` are **not** in this module. They are in
 [platform/authz](../../platform/authz/README.md), one layer below the features.
 
 The reason is dependency direction. Every feature needs to gate a button on a permission. If the
 primitives lived here, every feature would depend on the module that administers roles — and
 `roles`, which needs to gate its own UI, would depend on itself. Pushing the read side down to
-`platform/` breaks that: `useCan` answers from a store, synchronously, with no I/O, so anything
+`platform/` breaks that: `can()` answers from a store, synchronously, with no I/O, so anything
 may depend on it.
 
 What stays here is the half that needs a backend call:
 
 ```
-usePermissionSync  (this module)  ──fills──▶  usePermissionsStore  (platform/authz)
+syncMyPermissions  (this module)  ──fills──▶  permissionsStore  (platform/authz)
                                                        │
-                                                  useCan reads it
+                                                   can() reads it
                                                        │
                                         ◀── every feature gates on it
 ```
 
-The shell mounts `usePermissionSync` once, after sign-in. That is the only writer.
+`syncMyPermissions` is a plain function with the "has anything actually changed?" guard inside
+it — user, organization, project. That guard used to be a React ref inside an effect, which is
+why the shell had to be careful about how often it re-rendered; now the shell can call it as
+often as it likes and the backend is hit only when the answer could differ. The shell still owns
+*when*, and it is the only caller.
 
 The corollary matters when you change grants: if a mutation could affect the *current* user's
-own access, the store has to be refreshed, or `useCan` keeps answering from stale data and the
-UI shows buttons the server will refuse. `useRefreshMyPermissions` exists for exactly that.
+own access, the store has to be refreshed, or `can()` keeps answering from stale data and the UI
+shows buttons the server will refuse. Every grant mutation in `roles.queries.ts` already does it,
+unprompted — that is not something a call site should have to remember.
 
 ## The one surviving use case
 
@@ -65,14 +70,23 @@ before adding another one anywhere in the codebase.
 ## The permission tree is data, not code
 
 The role editor shows every permission grouped into a tree of resources and actions. That tree
-is **not** hardcoded — it comes from `listPermissionVocabulary()`, is shaped by
-`permission-tree.ts` and `permission-mapping.ts`, and is rendered with `CheckboxTree` from
-[shared](../../shared/README.md).
+is **not** hardcoded — it is shaped by `permission-mapping.ts` and `permission-tree.ts`, and
+rendered by `CheckboxTree` in this module. It used to live in `shared/`, on the strength of being
+"generic"; it never had a second consumer, and the rules it enforces are the permission model's,
+so the port brought it home.
 
 The payoff: when the backend adds a permission, it appears in the editor with no frontend
 change. The cost: labels have to be resolved rather than written inline, which is what
-`usePermissionLabels` and `humanizeRoleId` are for. Never interpolate a raw permission or role
-id into the UI.
+`permissionLabelOf` and `humanizeRoleId` are for. Never interpolate a raw permission or role id
+into the UI.
+
+Some of the tree is deliberately *not* shown. An organization role always confers
+`READ_ORGANIZATION` — there is no membership table on the backend, so belonging to an
+organization **is** holding a grant at its scope, and offering it as a checkbox would only let
+someone build a role that admits a person to a place they cannot see. Others ride on a stand-in:
+ticking "list the projects of the organization" writes `READ_PROJECT` too, because the backend
+splits across two RPCs what is one capability to a human. The editor writes all of it and shows
+a single honest count; `withImplicitPermissions` is the one place that knows the difference.
 
 ## Structure
 
@@ -83,9 +97,24 @@ includes a permission, `updateRole` applies changes immutably.
 
 **Infrastructure** carries six mappers, one per proto shape.
 
-**Presentation** is a master–detail layout: `RoleListItem` on the left, `RoleDetailPanel` on the
+**Presentation** is Svelte since Phase 4, and the shape of it is the part worth knowing. The
+thirteen React hooks collapsed into two kinds of file: `roles.queries.ts`, which declares every
+read and write as a plain options object with no framework in it, and four
+`*.state.svelte.ts` ViewModels, one per view rather than one per module. The queries file is what
+lets `membership` and the shell read the same role catalog out of the same cache
+entry; the ViewModels are where filters, selection and mutations are orchestrated, so the
+components stay about rendering.
+
+Two pieces stayed pure TypeScript on purpose, because they are rules rather than UI:
+`grant-eligibility.calculator.ts` (why a user may not receive a project grant) and
+`checkbox-tree.ts` (a child counts only when its whole parent chain is checked). Both are tested
+without a DOM, and both would survive another change of framework.
+
+The screen itself is a master–detail layout: `RoleListItem` on the left, `RoleDetailPanel` on the
 right, split into a header, a permissions view and a grant list with `GrantCreator`. The
-create/edit dialog lives under `role-form/`.
+create/edit dialog lives under `role-form/`, and its reset is `{#key open}` — reopening the
+dialog builds a new form seeded from the role at hand, where React needed an effect on
+`[open, role]` and a frame showing the previous role's values.
 
 ## Related modules
 

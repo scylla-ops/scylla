@@ -2,7 +2,8 @@
 
 Access-control administration: the role catalog, grants, and the permission vocabulary.
 
-**Layer** `features/` · **id** `roles` · **DI keys** `permissionRepository`, `updateRole`
+**Layer** `features/` · **id** `roles` · **DI keys** `permissionRepository`, `updateRole` ·
+**Svelte** (Phase 4)
 
 ## Import rules
 
@@ -15,19 +16,23 @@ Access-control administration: the role catalog, grants, and the permission voca
 ```typescript
 type RoleEntity, RoleCreationData, GrantEntity
 roleConfers
-useRoles
-useGrants, useScopedGrants, GRANTS_QUERY_KEY
-useGrantableRoles
-usePermissionLabels
-usePermissionSync                     ← mounted once by the shell
-humanizeRoleId
+humanizeRoleId, scopeLabelOf
+roleQueries, roleMutations, grantMutations
+refreshMyPermissions, syncMyPermissions, resetPermissionSync
+ROLES_QUERY_KEY, GRANTS_QUERY_KEY, GRANTABLE_ROLES_QUERY_KEY
 ```
 
-Never add: `roles.module.ts`, `use-roles-domain.ts`, pages.
+Every export is **framework-free** — options factories, pure functions, types. That is load
+bearing, not incidental: `membership` and `layout` both read from here, on the same cache
+entries as this module's pages.
+
+Never add: `roles.module.ts`, a domain accessor, a page, **or any `.svelte` component** — a
+component re-exported from a barrel cannot be dropped by Rollup and drags bits-ui into the chunk
+of whoever imported the barrel for a type. Export a `load*()` function instead.
 
 ## ⚠ The authz split — read this first
 
-`Permission`, `useCan`, `Can`, `RequirePermission` are **not** here. They live in
+`Permission`, `can`, `Can`, `RequirePermission` are **not** here. They live in
 [`@platform/authz`](../../platform/authz/AGENTS.md), *below* the features, so that gating a
 button never means depending on the module that administers roles.
 
@@ -36,12 +41,17 @@ The division:
 | Concern | Where | Why |
 |---|---|---|
 | Asking "may I?" | `@platform/authz` — reads a store, no I/O | any feature may depend on it |
-| Loading the answer | **here** — `usePermissionSync` | needs a repository call |
+| Loading the answer | **here** — `syncMyPermissions` | needs a repository call |
 | Administering roles/grants | **here** | it is a feature |
 
-`usePermissionSync` fetches `getMyPermissions()` and fills `usePermissionsStore`. The shell
-mounts it **once**. Never call it from a feature, and never import `@platform/authz`'s store to
-write to it from elsewhere.
+`syncMyPermissions(organizationId, projectId)` fetches `getMyPermissions()` and fills
+`permissionsStore`, **only when the sync key — user + organization + project — changed**. The
+guard is in this function, not in its caller, so it survives whichever framework mounts it. The
+shell owns *when*: an effect in `layout/presentation/shell.state.svelte.ts` calls it when the
+active organization or project changes. Call it from **one place**,
+never from a feature, and never write the authz store from anywhere else.
+
+`resetPermissionSync()` forgets the key — for sign-out and for tests.
 
 ## Data contract
 
@@ -55,16 +65,17 @@ write to it from elsewhere.
 | Vocabulary | `listGrantableRoles(scope?)`, `listPermissionVocabulary()` |
 
 Input types (`CreateGrantInput`, `RevokeAllAccessInput`) live beside the interface, in domain.
-Reach it with `useRolesDomain()` **inside a hook only**.
+Reach it with `getModuleDomain<typeof RolesModule.domain>('roles')` — **inside `roles.queries.ts`
+only**, and resolved per call, never at module load, so a test can swap the registry.
 
 ## `UpdateRoleUseCase` — the codebase's only use case
 
 `domain/use-cases/update-role.use-case.ts`, injected as `domain.updateRole`. It survives because
 it orchestrates: **read** `getRole` → **apply** the pure `updateRole(role, changes)` entity
-function → **save** `updateRole`. A repository method cannot do that.
+function → **save** `updateRole`. A repository method cannot do that. `roleMutations.update`
+routes through it; `create` and `remove` call the repository, because that is all they are.
 
-That is the bar. Anything that would just forward to a repository method is not a use case —
-call the repository.
+That is the bar. Anything that would just forward to a repository method is not a use case.
 
 ## Layout
 
@@ -87,25 +98,31 @@ infrastructure/
                                      grpc-effective-permissions
   repository/default-permission.repository.ts
 presentation/
-  hooks/use-roles-domain.ts          DI accessor (private)
-  hooks/use-roles.ts, use-grants.ts, use-grantable-roles.ts,
-  hooks/use-permission-vocabulary.ts, use-permission-labels.ts,
-  hooks/use-effective-permissions.ts, use-permission-sync.ts,
-  hooks/use-refresh-my-permissions.ts, use-role-assignees.ts,
-  hooks/use-grant-target-labels.ts, use-project-grant-eligibility.ts
-  ui/Roles.page.tsx, RolesHeader.tsx
-  ui/components/RoleListItem.tsx, RoleDetailPanel.tsx
+  roles.queries.ts                   every read and write, as plain options objects
+  roles-page.state.svelte.ts         the master–detail ViewModel
+  role-form.state.svelte.ts          creating/editing one role
+  grant-creator.state.svelte.ts      granting one role to one user
+  role-assignees.state.svelte.ts     who holds a role, and the revoke
+  grant-target-labels.svelte.ts      scope id → human name (fans out for projects)
+  grant-eligibility.calculator.ts    pure: who may receive a project grant, and why not
+  ui/Roles.page.svelte               the page
+  ui/roles.messages.ts               every string the screens show
+  ui/components/RoleListItem.svelte, RoleDetailPanel.svelte
   ui/components/role-detail/         RoleDetailHeader, RoleDetailPermissions,
-                                     RoleDetailGrantList, GrantCreator
-  ui/components/role-form/           RoleFormDialog, RoleDialogHeader, RoleDialogPermissions
+                                     RoleDetailGrantList, GrantCreator, TargetChecklist
+  ui/components/role-form/           RoleFormDialog, RoleForm, RoleDialogPermissions,
+                                     CheckboxTree, CheckboxTreeNode, checkbox-tree.ts
   utils/permission-mapping.ts, permission-tree.ts, role-label.ts
 ```
+
+There is no `presentation/hooks/`, no `use-roles-domain.ts` and no store of its own — the thirteen
+hooks became `roles.queries.ts` plus the four ViewModels above.
 
 ## Routes & nav
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `organization` | `roles` | `MANAGE_ROLES` | `RolesPage` |
+| `organization` | `roles` | `MANAGE_ROLES` | `Roles.page.svelte` |
 
 Sidebar: section **`system`** (not `organization`), order `20`, icon `ShieldIcon`.
 
@@ -114,21 +131,42 @@ Sidebar: section **`system`** (not `organization`), order `20`, icon `ShieldIcon
 - **Role ≠ grant.** A `RoleEntity` is a named bundle of permissions; a `GrantEntity` binds a
   principal to a role at a scope. Deleting a role and revoking a grant are different operations
   with different blast radii — keep them visually and textually distinct.
-- **After any grant mutation, refresh the current user's permissions** if they might be the
-  subject (`useRefreshMyPermissions`). Otherwise `useCan` answers from a stale store and the UI
-  lies about what the user may do.
+- **Every grant mutation already refreshes the caller's own permissions.** `afterGrantChange` in
+  `roles.queries.ts` invalidates the whole grant prefix *and* calls `refreshMyPermissions()`.
+  Don't do it again at the call site, and don't skip it in a new grant mutation: `can()` would
+  keep answering from a stale store and the UI would lie about what the user may do.
+- **One grant mutation invalidates every grant list.** A grant created from the project view
+  changes the organization's list too, and neither view knows the other exists — hence the shared
+  `permission-grants` prefix rather than an exact key.
 - `roleConfers` and `updateRole` are **pure entity functions**. Role logic goes in
   `role.entity.ts`, not in a component.
-- The permission tree UI is built from the backend's `listPermissionVocabulary()`, not from a
-  hardcoded list — `permission-tree.ts` / `permission-mapping.ts` shape it, `CheckboxTree` from
-  `@shared` renders it. A new backend permission must appear without a frontend change.
-- `humanizeRoleId` and `usePermissionLabels` are the only sanctioned way to render a role or
+- **The permission tree is data.** It is built from `permission-mapping.ts`'s catalog, shaped by
+  `permission-tree.ts`, and rendered by `CheckboxTree`. `checkbox-tree.ts` holds the pure rules —
+  a child counts only when its whole parent chain is checked, unchecking a parent clears its
+  descendants. Those rules are the permission model's, not a widget's, which is why the tree
+  lives here rather than in `shared/`.
+- **Implicit permissions are written, never shown.** `IMPLICIT_PERMISSIONS_BY_SCOPE` says what a
+  scope confers by construction (`READ_ORGANIZATION` on an organization role) and what rides on a
+  stand-in. `withImplicitPermissions` is the only thing allowed to compute the difference —
+  `conferredCount` is what the editor displays, and it is the honest number.
+- **A permission outside this build's catalog is carried, not deleted.** `preservedCount` in
+  `role-form.state.svelte.ts` counts them; they are re-attached on save. An older build silently
+  stripping a newer permission is the failure this prevents.
+- **A bits-ui checkbox is a `<button>`, and `<Label for>` does not name it.** Every checkbox in
+  this module carries an explicit `aria-label` — without it the control announces itself as a
+  bare "checkbox" and no test can find it by name.
+- `humanizeRoleId` and `permissionLabelOf` are the only sanctioned way to render a role or
   permission id to a human. Never interpolate a raw id.
-- `useGrantableRoles` is scope-aware: what you may grant on a project differs from an
-  organization.
+- `roleQueries.grantable` is scope-aware: what you may grant on a project differs from an
+  organization. It needs no permission — it is a compile-time constant on the backend — which
+  makes it the only role list a tenant administrator can read.
+- **A project grant follows the backend's tenant boundary.** `grant-eligibility.calculator.ts`
+  answers *why* a user cannot receive one (`not-admitted` / `cannot-see-projects`) as a value;
+  which sentence explains it is the component's business.
 
 ## Before done
 
-`pnpm typecheck && pnpm lint && pnpm depcruise && pnpm depcruise:cycles && pnpm i18n:collisions`
-— all clean.
-New strings: `pnpm extract && pnpm compile`.
+`pnpm typecheck && pnpm test && pnpm lint && pnpm depcruise && pnpm depcruise:cycles &&
+pnpm i18n:collisions` — all clean.
+New strings: add them to `presentation/ui/roles.messages.ts` (never inside a `.svelte` —
+`lingui extract` does not read one), then `pnpm extract && pnpm compile`.

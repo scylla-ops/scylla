@@ -53,7 +53,6 @@ export class GrpcJobsRemoteDataSource implements JobsRemoteDataSource {
 
   public async getById(jobId: string): Promise<ScyllaResult<Job>> {
     return Result.tryAsync<Job>(async () => {
-      // `GetJobResponse` wraps the entity; unwrap here so mappers keep seeing a `Job`.
       const { job } = (await this._jobClient.getJob({ jobId: wrapId(jobId) })).response;
       if (!job) throw new ScyllaError('Job missing from GetJobResponse');
       return job;

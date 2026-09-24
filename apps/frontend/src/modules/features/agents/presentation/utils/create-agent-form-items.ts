@@ -1,4 +1,4 @@
-import { type FormItem, FormItemType } from '@shared/presentation/structs/scylla-form.struct.ts';
+import { type FormItem, FormItemType } from '@shared/presentation/ui';
 import { t } from '@lingui/core/macro';
 
 export const createAgentItems = (): readonly FormItem<'name'>[] => [

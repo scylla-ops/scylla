@@ -36,21 +36,21 @@ wire and none. If you are adding a column to a list, add it to the metadata; rea
 `PipelineEditor` presents a pipeline as both a **visual graph** and a **script**, and the two
 stay in sync.
 
-The graph is [ReactFlow](https://reactflow.dev): `BlueprintCanvas` with custom nodes
+The graph is [@xyflow/svelte](https://xyflow.dev): `BlueprintCanvas` with custom nodes
 (`StartNode`, `PipelineStepNode`), custom edges (`DeletableEdge`), and dialogs for editing a
-node's configuration. `use-blueprint-state.ts` owns the nodes and edges, and
-`blueprint-converter.ts` is the single place that translates between a ReactFlow graph and the
-domain's `PipelineStep[]` — both directions, so the round-trip can't drift.
+node's configuration. `blueprint.state.svelte.ts` is the ViewModel (Svelte Runes-based) that owns
+the nodes and edges, keeping them in sync with the document. `blueprint-converter.ts` is the
+single place that translates between the graph and the domain's `PipelineStep[]` — both directions,
+so the round-trip can't drift. It's written in pure TypeScript and thoroughly tested.
 
-The script side is CodeMirror, themed from [shared](../../shared/README.md)'s
-`use-code-mirror-theme`. `use-script.store.ts` is a small Zustand store holding `script` and
-`initialScript`: the draft text and the baseline it is compared against, which is how the editor
-knows whether there are unsaved changes. That is UI state, and it is the right use of a store —
-the *saved* pipeline stays in TanStack Query.
+The script side is CodeMirror 6, accessed via a Svelte `action` (see `code-mirror.actions.ts` in
+`shared/`). `pipeline-script.state.svelte.ts` holds `script` and `initialScript`: the draft text
+and the baseline for the dirty check. That is UI state hosted in a ViewModel, and it stays there
+— the *saved* pipeline stays in TanStack Query.
 
-ReactFlow and CodeMirror are also the codebase's clearest legitimate use of `useEffect`. Both
-are systems outside React that have to be synchronized with imperatively. That licence stops at
-the editor's edge: the rest of the module derives during render like everywhere else.
+CodeMirror is the clearest legitimate use of Svelte `$effect` in this module: it's a system
+outside the framework that has to be synchronized imperatively. That licence stops at the
+editor's edge: the rest of the module derives during render with Runes.
 
 ## Owning the jobs route
 

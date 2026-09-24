@@ -1,4 +1,4 @@
-import type { DomainRegistry } from '@platform/di';
+import { setDependencyRegistry, type DomainRegistry } from '@platform/di';
 import type { ScyllaModule } from '@platform/routing';
 import { LoginModule } from '@/modules/features/login/login.module.ts';
 import { MarketplaceModule } from '@/modules/features/marketplace/marketplace.module.ts';
@@ -16,14 +16,8 @@ import { DashboardModule } from '@/modules/features/dashboard/dashboard.module.t
 import { MembershipModule } from '@/modules/features/membership/membership.module.ts';
 
 /**
- * The composition root: the one place that knows every module.
- *
- * Registration order decides sidebar and route order within a section, so the
- * list reads roughly top-to-bottom as the app does.
- *
- * These are the modules' `<name>.module.ts` declarations, never their `index.ts`
- * public API — the barrels re-export UI, and importing one here would pull every
- * page into the initial chunk and undo the lazy routes.
+ * Every module, in the order of the sidebar. Import the `<name>.module.ts`, never
+ * the module's `index.ts`: its UI would end up in the entry chunk.
  */
 export const modules = [
   LoginModule,
@@ -42,7 +36,8 @@ export const modules = [
   MarketplaceModule,
 ] as const satisfies readonly ScyllaModule[];
 
-/** Module id -> its use cases, for `useModuleDomain`. */
 export const dependencies: DomainRegistry = Object.fromEntries(
   modules.map(module => [module.id, module.domain]),
 );
+
+setDependencyRegistry(dependencies);

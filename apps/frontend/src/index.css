@@ -265,6 +265,20 @@
   }
 }
 
+/* The loading logo: most of the turn is spent on the first three quarters, so
+   the spin reads as one deliberate sweep rather than a uniform rotation. */
+@keyframes scylla-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(270deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .secret-blur {
   filter: blur(5px);
   user-select: none;
@@ -277,8 +291,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* `animate-in` covers the tw-animate-css enter animations (route changes,
+     dialogs, tooltips); the attribute selector covers the arbitrary-value form
+     `animate-[name_duration_…]` the named keyframes above are used through. */
   .animate-ping,
-  .animate-pulse {
+  .animate-pulse,
+  .animate-in,
+  [class*='animate-['] {
     animation: none !important;
   }
   .secret-blur,

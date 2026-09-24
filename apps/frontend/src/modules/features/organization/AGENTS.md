@@ -10,19 +10,32 @@ Organizations: the top-level tenant, its members, and the switcher in the shell.
 - Must never import: `core/`, `layout/`, another feature's internals.
 - Outside code reaches this module **only** through `index.ts`.
 
+**Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
+unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
+options objects in `presentation/organization.queries.ts`, which a component or another
+feature runs with `createQuery`.
+
+**`OrganizationList` is the one list of organizations, for two places.** The user settings panel
+shows it with plain rows (`OrganizationRow.svelte`). The organization selector of the shell shows
+it inside a dropdown menu, and gives it `DropdownMenuItem` as the `row` prop, so each row gets
+the keyboard focus of the menu. A row component takes `class`, `onSelect` and `children`.
+
 ## Public API — `index.ts`
 
 ```typescript
 type OrganizationEntity
-useOrganizations, useCreateOrganization
-useOrganizationMembers, ORGANIZATION_MEMBERS_QUERY_KEY
+organizationQueries        mine · members
+organizationMutations      create · update · remove
+invalidateOrganizationMembers
+ORGANIZATIONS_QUERY_KEY, MY_ORGANIZATIONS_QUERY_KEY, ORGANIZATION_MEMBERS_QUERY_KEY
 createOrganizationItems
-OrganizationList, AddOrganizationDialog     ← consumed by layout's context selector
+loadOrganizationList         () => import(OrganizationList.svelte)       ← the shell's selector
+loadAddOrganizationDialog    () => import(AddOrganizationDialog.svelte)  ← the shell's selector
 ```
 
-`OrganizationList` and `AddOrganizationDialog` are part of the contract because the shell builds
-the organization switcher from them. Never add: `organization.module.ts`,
-`use-organization-domain.ts`, `UserSettingsRoute`.
+The shell imports this barrel eagerly for the queries, so the components are exported as
+**loaders**: a re-exported component would put its UI library in the entry chunk. Never add:
+`organization.module.ts`, `UserSettingsRoute`, a component.
 
 ## Data contract
 
@@ -35,7 +48,7 @@ the organization switcher from them. Never add: `organization.module.ts`,
 | `listMembers(organizationId)` | `UserEntity[]` |
 
 `getAll` vs `getMine` is a real distinction — the switcher must use `getMine`. Reach the
-repository with `useOrganizationDomain()` **inside a hook only**.
+repository with `getModuleDomain` **inside `organization.queries.ts` only**.
 
 ## Layout
 
@@ -52,13 +65,11 @@ infrastructure/
   repository/mappers/grpc-organization-member.mapper.ts
   repository/default-organization.repository.ts
 presentation/
-  hooks/use-organization-domain.ts   DI accessor (private)
-  hooks/useOrganizations.ts          ⚠ camelCase filename — see below
-  hooks/useCreateOrganization.ts     ⚠ camelCase filename
-  hooks/use-update-organization.ts, use-delete-organization.ts,
-  hooks/use-organization-members.ts
-  ui/OrganizationList.tsx, AddOrganizationDialog.tsx, EditOrganizationDialog.tsx
-  ui/UserSettingsRoute.tsx           composes user's UserSettingsPage
+  organization.queries.ts            every read and write, plus the key factories
+  ui/OrganizationList.svelte         plain rows, for the settings panel
+  ui/AddOrganizationDialog.svelte, EditOrganizationDialog.svelte
+  ui/UserSettingsRoute.svelte        composes user's UserSettingsPage
+  ui/organization.messages.ts
   utils/create-organization-form-items.ts
 ```
 
@@ -69,24 +80,19 @@ presentation/
 | `organization` | `users/:userId` | none declared | `UserSettingsRoute` |
 
 **No nav entry**, and the route looks misplaced on purpose. The user directory belongs to
-[`user`](../user/AGENTS.md), which owns `users` and its index; this module contributes the
-`:userId` leaf because the settings page renders an organizations panel. The route composer
-merges both halves onto one `users` parent — that is why two modules may declare the same path
-segment here without conflicting.
+[`user`](../user/AGENTS.md), which owns the `users` page and crumb; this module declares
+`users/:userId` because the settings page renders an organizations panel. The router joins the
+two by path: this page shows the "Users" crumb of `user`, and neither module imports the other.
 
 ## Rules that bite here
 
 - **`UserSettingsRoute` is a composition seam.** It renders `UserSettingsPage`, imported from
   `features/user`'s public API — one of the two sanctioned page exports in the codebase. Keep
   the wrapper thin; do not copy user logic into it.
-- **The camelCase hook filenames (`useOrganizations.ts`, `useCreateOrganization.ts`) violate the
-  kebab-case convention.** They predate it. Do not rename them opportunistically — renaming
-  moves Lingui message ownership and requires `node scripts/restore-translations.mjs`. New files
-  here use `use-{name}.ts`.
 - `ORGANIZATION_MEMBERS_QUERY_KEY` is exported so `membership` invalidates the same entry this
   module reads. Never hand-write the key.
 - The shell depends on `OrganizationList` / `AddOrganizationDialog`. Changing their props is a
-  breaking change for `layout/` — update `ContextSelector` in the same commit.
+  breaking change for `layout/` — update `OrganizationSelector` in the same commit.
 
 ## Before done
 

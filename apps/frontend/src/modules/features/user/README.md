@@ -29,9 +29,9 @@ mounted by [organization](../organization/README.md) at `users/:userId`, because
 organizations panel is organization data. It is one of only two pages in the codebase exported
 from a feature barrel, and the export is safe because its single consumer is lazily loaded.
 
-That means the `users/` route tree is contributed by two modules — the index here, the `:userId`
-leaf there — and the route composer merges them onto one parent. Worth remembering before
-adding a third route under the same segment.
+That means the `users/` paths are declared by two modules — `users` here, `users/:userId` there.
+The router joins them by path, and the crumb "Users" declared here shows on both pages. Each
+field of a path is declared once: check the other module before adding a route under `users`.
 
 ## Passwords are write-only
 

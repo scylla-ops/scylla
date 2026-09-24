@@ -20,45 +20,65 @@ add one.
 ## Layout
 
 ```
-whats-new.ts                  THE release announcement (see below)
-presentation/structs/nav-section.struct.ts   NavItem, NavSection
-presentation/hooks/use-whats-new.ts          seen flags, `highlightIdForNav`
-presentation/ui/
-  Layout.tsx                  the shell — takes `navEntries` from core
-  AppSidebar.tsx              sidebar shell
-  NavMain.tsx                 renders NavSection[] (collapsible sub-menus)
-  NavUser.tsx                 current user + sign-out
-  TopBar.tsx                  breadcrumbs + controls
-  ScyllaBreadcrumbs.tsx       reads route handles
-  ScyllaSidebarTrigger.tsx    collapse toggle
-  LanguageSelector.tsx        locale switch
-  WhatsNewDialog.tsx          first-launch release announcement
-  NewBadge.tsx                "New" pill on a sidebar entry
-  context-selector/           ContextSelector, CurrentContextDisplay
-locales/                      the shell's own catalog
+whats-new.ts                           THE release announcement (see below)
+presentation/
+  structs/nav-section.struct.ts        NavItem, NavSection
+  whats-new.svelte.ts                  seen flags (reactive), `highlightIdForNav`
+  nav-sections.ts                      entries → sidebar sections (pure, tested)
+  breadcrumbs.ts                       route trail → breadcrumb items (pure, tested)
+  shell.state.svelte.ts                organizations query, permission sync, first organization
+  sign-out.ts
+  ui/
+    Layout.svelte                      the shell — takes `navEntries` and `children` from core
+    AppSidebar.svelte                  sidebar shell
+    NavMain.svelte                     renders NavSection[]
+    NavUser.svelte                     current user + sign-out
+    TopBar.svelte                      breadcrumbs + controls
+    ScyllaBreadcrumbs.svelte           reads the route trail
+    ScyllaSidebarTrigger.svelte        collapse toggle
+    LanguageSelector.svelte            locale switch
+    WhatsNewDialog.svelte              first-launch release announcement
+    NewBadge.svelte                    "New" pill on a sidebar entry
+    FirstOrganization.svelte           welcome screen when the user has no organization
+    layout.messages.ts                 every message of this module (lingui does not read .svelte)
+    context-selector/                  OrganizationSelector, CurrentContextDisplay
+locales/                               the shell's own catalog
 ```
 
 ## The shell renders, it does not decide
 
 `core` passes `navEntriesFor(modules)` into `Layout`. **The sidebar never hardcodes a link.**
-Every entry comes from a module's `nav` declaration, carrying its own `permission` — the same
-one its route declares, so a link cannot be visible for a page that will deny you.
+Every entry comes from the `nav` of a module's route, and takes that route's URL and
+`permission` — so a link cannot be visible for a page that will deny you.
 
 Two sections exist: `organization` and `system`. Adding a third means changing `NavSection`
 handling here **and** widening `NavEntry['section']` in `@platform/routing`.
 
-`ScyllaBreadcrumbs` reads `handle.breadcrumb` off the matched routes. `Crumb.label` / `detail`
+`ScyllaBreadcrumbs` reads the `breadcrumb` of each crumb of the route trail (`routeTrail()` from
+`@platform/routing`). `Crumb.label` / `detail`
 are translated, `highlight` is business data shown verbatim. Nothing here builds a crumb from a
 pathname.
 
+The `pipelineName` it passes is the name of the active pipeline only when that pipeline is the
+one in the URL. In all other cases it is the `pipelineId` route parameter. The pipeline crumb
+therefore always identifies its pipeline, also after a reload or a direct link.
+
 ## The context selector
 
-`ContextSelector` composes `OrganizationList` and `AddOrganizationDialog`, imported from
-[`features/organization`](../features/organization/AGENTS.md)'s **public API** — that is why
-those two components are exported from a feature barrel. It writes the choice into
-`useContextStore` (`@platform/context`).
+`OrganizationSelector` is a dropdown menu. It shows `OrganizationList` from
+[`features/organization`](../features/organization/AGENTS.md), and it gives the list
+`DropdownMenuItem` as the row component, so each row gets the keyboard focus of the menu. It
+opens `AddOrganizationDialog` from the same module. Both come through the **loaders** of the
+barrel (`loadOrganizationList`, `loadAddOrganizationDialog`): a barrel that the shell imports
+never exports a component.
 
 Direction matters: `layout` → `organization`, never the reverse.
+
+## The shell state
+
+`createShellState()` (`shell.state.svelte.ts`) is created once, in `Layout`. It loads the
+organizations of the user, and an effect calls `syncMyPermissions` (`features/roles`) when the
+active organization or project changes. It is the only writer of the permissions store.
 
 ## Rules that bite here
 
@@ -72,6 +92,8 @@ Direction matters: `layout` → `organization`, never the reverse.
   domain rules in `layout/`, they belong in a feature.
 - A component here used by a feature must move to `shared/presentation/ui/` — a feature may not
   import the shell.
+- Page transitions are not here. `RoutePage` in `@platform/routing` animates the page, and
+  `Layout` renders `children` directly.
 - After moving a component in or out of `layout/`, run `node scripts/restore-translations.mjs`
   (Lingui catalogs are per-module; `extract` silently drops the moved strings' French).
 

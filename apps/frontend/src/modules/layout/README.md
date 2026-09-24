@@ -15,10 +15,9 @@ graph. `core` decides *what* is composed; `layout` decides how it *looks*.
 There is no list of links in this module.
 
 `core` calls `navEntriesFor(modules)` and passes the result into `Layout`. Every entry comes
-from a module's own `nav` declaration — its title, its icon, its order and, crucially, its
-`permission`. That permission is the same one the module's route declares, so the link and the
-page it points at cannot disagree: a link is never shown for a page that will refuse you, and
-never hidden for one that would let you in.
+from the `nav` of a module's route — its title, its icon, its order — and takes the URL and the
+`permission` of that route. The link and the page it points at cannot disagree: a link is never
+shown for a page that will refuse you, and never hidden for one that would let you in.
 
 The practical consequence is that adding a page to the sidebar is a change to that module's
 `<feature>.module.ts`. Nothing in `layout/` moves.
@@ -27,27 +26,26 @@ Entries are grouped into two sections — **organization** (dashboard, projects,
 marketplace) and **system** (users, roles) — which reflects the real distinction between
 "inside the organization you are viewing" and "across the whole installation".
 
-## Breadcrumbs come from route handles
+## Breadcrumbs come from the routes
 
-`ScyllaBreadcrumbs` does not parse the pathname. It reads the `breadcrumb` function each matched
-route stored in its `handle`, and renders the resulting crumbs.
+`ScyllaBreadcrumbs` does not parse the pathname. It reads `routeTrail()`: the `breadcrumb` of
+each route whose path leads to the current page, with the pathname to link to, and renders the
+resulting crumbs.
 
 A crumb keeps translatable words apart from data: `label` and `detail` are Lingui message
 descriptors, `highlight` is the resource's name shown verbatim in every locale. So
 `Pipeline · my-deploy · Jobs` translates its first and last parts and leaves the middle alone.
 
-Because handles are static metadata, this works alongside lazily loaded pages — the trail
+Because breadcrumbs are static route data, this works alongside lazily loaded pages — the trail
 renders without waiting for the page's chunk.
 
 ## The context selector
 
 The organization switcher at the top of the sidebar is where `layout` reaches into a feature.
-`ContextSelector` composes `OrganizationList` and `AddOrganizationDialog`, imported from
-[organization](../features/organization/README.md)'s public API, and writes the chosen
-organization into the [context store](../platform/context/README.md).
-
-That is the reason those two components are exported from a feature barrel at all — they are
-part of that module's contract precisely because the shell renders them.
+`OrganizationSelector` shows `OrganizationList` from
+[organization](../features/organization/README.md) inside a dropdown menu, and gives it the menu
+item as the row component. The settings page of the user shows the same list with plain rows.
+There is one list, not two.
 
 The dependency runs one way only: the shell may import a feature, a feature may never import the
 shell. Dependency-cruiser enforces both halves. If a feature ever appears to need something from

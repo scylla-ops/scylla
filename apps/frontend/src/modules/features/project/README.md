@@ -52,7 +52,7 @@ This module declares exactly **one** route — the projects index. Everything un
 - [membership](../membership/README.md) — `members`.
 - [triggers](../triggers/README.md) — `pipelines/:pipelineId/triggers`.
 
-They do it by declaring `mount: 'project'`, and the shell grafts them under the project shell —
+They do it by declaring their routes under the `project` mount, and the shell grafts them there —
 which is why this module does not need to know they exist, and why adding a project-scoped
 screen never means editing a router file.
 

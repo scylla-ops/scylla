@@ -4,8 +4,8 @@
 > [agent guide](./AGENTS.md) · [architecture](../../../docs/architecture.md)
 
 The composition root. This is the only part of the application that knows every module exists,
-and it is where the pieces are assembled into a running app: the provider stack, the router
-skeleton, authentication, and the wrappers that keep the active organization and project in
+and it is where the pieces are assembled into a running app: the router skeleton,
+authentication, and the wrappers that keep the active organization and project in
 sync with the URL.
 
 ## One list, three derivations
@@ -19,7 +19,7 @@ export const dependencies = Object.fromEntries(modules.map(m => [m.id, m.domain]
 
 From that one array come **all three** of the app's cross-cutting structures:
 
-- the **router**, via `routesFor(modules, mount)`
+- the **router**, via `createAppRouter` (which compiles the routes of every module)
 - the **sidebar**, via `navEntriesFor(modules)`
 - the **DI container**, via the `dependencies` map
 
@@ -35,28 +35,24 @@ one else does it.
 
 ## The router owns the skeleton, not the pages
 
-`Core.router.tsx` describes the shape of the application and nothing about its content:
+`presentation/ui/router/core.router.ts` describes the shape of the application and nothing about
+its content. It declares the **mounts** — the places where module routes graft — and what each
+one brings:
 
 ```
-public routes (outside the guard)          ← /login
-└── AuthGuard                              ← token or redirect
-    └── Layout                             ← sidebar, top bar, breadcrumbs
-        ├── /                              → redirect to the user's organization
-        └── /:organizationSlug             → sync the org into context
-            └── RouteGuard                 → organization-scoped module routes
-                └── projects               → project-list module routes
-                    └── :projectId         → clean stale context
-                        └── RouteGuard     → project-scoped module routes
+public         /                                  ← /login, outside the shell
+app            /  AppShell = AuthGuard + Layout   ← token or redirect; sidebar, top bar, breadcrumbs
+organization   /:organizationSlug                 → sync the org into context
+project        /:organizationSlug/projects/:id    → clean stale context, "Project" crumb
 ```
 
-Every leaf is `routesFor(modules, mount)`. Adding a page means editing one module's declaration;
-this file does not move. It changes only when a new mount point is introduced or the shell's own
-structure does.
+The shell owns two pages of its own: `/` sends you to your organization, and
+`/:organizationSlug` redirects to its dashboard. Everything else is a module's page. Adding a
+page means editing one module's declaration; this file does not move. It changes only when a new
+mount is introduced or the shell's own structure does.
 
-`RouteGuard` appears twice — one pathless layout route per scope. It reads the `permission` each
-route declared and applies it once, replacing what used to be fifteen hand-written
-`RequirePermission` wrappers kept in step with the sidebar by hand. See
-[platform/routing](../platform/routing/README.md).
+The router itself is in [platform/routing](../platform/routing/README.md), with no router
+library. The route guard is in that module too: each page gets the `permission` it declares.
 
 ## Context follows the URL
 
@@ -72,12 +68,15 @@ Three small wrappers keep the [context store](../platform/context/README.md) hon
 
 They all sync in one direction: **URL → store**. The URL is the source of truth and the store is
 its mirror. That is what makes a pasted link work, and it is why there is no wrapper syncing the
-other way — two-way sync would need effects on both sides watching each other, which is exactly
-the cascade the codebase's React rules exist to prevent.
+other way — two-way sync would need effects on both sides watching each other.
+
+Each wrapper keeps its logic in a `*.svelte.ts` file beside it, and the tests (in `__test__/`) run that file
+without a component.
 
 ## Errors are handled once, at the root
 
-`App.tsx` configures the `QueryClient` with a `QueryCache` and a `MutationCache` error handler.
+`@platform/query` configures the `QueryClient` with a `QueryCache` and a `MutationCache` error
+handler.
 Together they cover every query and every mutation in the app:
 
 - an `UNAUTHENTICATED` response, or a network failure, clears the token and sends the user to
@@ -86,26 +85,23 @@ Together they cover every query and every mutation in the app:
 
 **The practical consequence for feature code: do not add your own `onError` toast to a
 mutation.** The root handler already shows one, and a second is a duplicate on screen. If a
-mutation needs bespoke handling, it needs bespoke *behaviour* — not another toast.
+mutation needs bespoke handling, it needs bespoke _behaviour_ — not another toast.
 
 Two acknowledged `//todo`s sit alongside that setup: console noise should probably be narrowed
 in production, and domain errors would ideally be toasted by the module that owns them. Both are
 deliberate beta-stage trade-offs — verbose global reporting makes user-reported problems easier
 to trace.
 
-## The provider stack
+## No provider stack
 
-```
-StrictMode → ThemeProvider → I18nProvider → QueryClientProvider → DependenciesProvider → Router
-```
-
-The order matters. `DependenciesProvider` must wrap the router, or every `useModuleDomain` call
-throws. `StrictMode` is on, so effects run twice in development — that is a bug detector, not a
-nuisance to switch off.
+There are no providers. The query client, the DI registry, the i18n instance and the stores are
+module singletons, so any component reads them with an import. `main.ts` loads the locale,
+starts the router and mounts `App.svelte`, which renders the theme toggle, the router view and
+the toaster.
 
 ## Related modules
 
 - [layout](../layout/README.md) — the shell UI this router renders into.
-- [platform/routing](../platform/routing/README.md) — `routesFor`, `navEntriesFor`, `RouteGuard`.
-- [platform/di](../platform/di/README.md) — the provider and accessor this wires up.
+- [platform/routing](../platform/routing/README.md) — `compileRoutes`, `navEntriesFor`, the router.
+- [platform/di](../platform/di/README.md) — the registry this wires up.
 - [platform/context](../platform/context/README.md) — the store the wrappers write to.

@@ -9,12 +9,7 @@ import { UserServiceClient } from '@/generated/scylla/user/v1/user.client.ts';
 import type { UserRemoteDataSource } from '@/modules/features/user/infrastructure/repository/data-sources/user-remote.data-source.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
-/**
- * Every user RPC now answers with a `XxxResponse` wrapper holding the entity in
- * field 1. The entity is `optional` on the wire, so a response without it means
- * the server broke its own contract: fail loudly here rather than let an empty
- * user reach the mappers.
- */
+/** The wrapped entity is optional on the wire: fail here rather than pass an empty user on. */
 function requireUser(user: User | undefined): User {
   if (!user) throw new Error('Server returned a response without a user.');
   return user;

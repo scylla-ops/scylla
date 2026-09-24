@@ -1,2 +1,1 @@
-/** Sign-in. Owns the credentials exchange and nothing else. */
-export { useLogin } from './presentation/hooks/use-login.ts';
+export { LoginState, type Credentials } from './presentation/login.state.svelte.ts';

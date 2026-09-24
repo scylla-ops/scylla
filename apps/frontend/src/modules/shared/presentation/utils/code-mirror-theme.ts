@@ -1,23 +1,15 @@
-import { EditorView, oneDarkHighlightStyle } from '@uiw/react-codemirror';
-import type { Extension } from '@uiw/react-codemirror';
-import { syntaxHighlighting } from '@codemirror/language';
+import { EditorView } from '@codemirror/view';
+import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark';
+import type { Extension } from '@codemirror/state';
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 
 export interface CodeMirrorThemeOptions {
-  /** Current app color scheme — drives CodeMirror's own dark defaults + token colors. */
   isDark: boolean;
-  /** Error mode turns the accent (resting border + focus bar) destructive. */
+  /** Turns the accent (border, focus bar) destructive. */
   hasError?: boolean;
 }
 
-/**
- * Builds the editor theme from the app's CSS variables so it follows light/dark
- * automatically. Passed to `<ReactCodeMirror theme={...} />` (not `extensions`)
- * so it replaces the library's hardcoded white default instead of fighting it.
- *
- * In error mode the accent (left bar on focus + the resting border) turns
- * destructive so it reads as a single coherent state instead of an outer red
- * ring fighting the inner focus shadow.
- */
+/** The editor theme, from the app's CSS variables, so it follows light/dark. */
 export const buildCodeMirrorTheme = ({
   isDark,
   hasError = false,
@@ -38,10 +30,7 @@ export const buildCodeMirrorTheme = ({
       '.cm-scroller': { overflow: 'auto', backgroundColor: 'var(--code-editor-bg)' },
       '.cm-content': { padding: '0.5rem', caretColor: 'var(--foreground)' },
       '.cm-placeholder': { color: 'var(--muted-foreground)' },
-      // `--code-editor-line-bg` must stay translucent: CodeMirror draws the
-      // selection in a layer pinned under `.cm-content` (inline `z-index: -1`,
-      // so a theme rule cannot lift it), and an opaque line background would
-      // swallow the selection on the line holding the caret.
+      // Must stay translucent: the selection layer is drawn under the lines.
       '.cm-activeLine': { backgroundColor: 'var(--code-editor-line-bg)' },
       '.cm-activeLineGutter': {
         backgroundColor: 'var(--code-editor-line-bg)',
@@ -59,11 +48,7 @@ export const buildCodeMirrorTheme = ({
         border: 'none',
       },
       '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--foreground)' },
-      // The focused selector must spell out the whole `.cm-scroller > .cm-selectionLayer`
-      // path: the base theme ships `&dark.cm-focused > .cm-scroller > .cm-selectionLayer
-      // .cm-selectionBackground { background: #233 }`, and anything shorter loses on
-      // specificity — leaving the selection near-invisible on the dark surface exactly
-      // while the editor is focused, i.e. whenever the user is selecting.
+      // The full path is needed to beat the base theme's `.cm-selectionBackground` on specificity.
       '.cm-selectionBackground, .cm-content ::selection, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground':
         {
           backgroundColor: 'var(--code-editor-selection-bg)',
@@ -91,7 +76,5 @@ export const buildCodeMirrorTheme = ({
     { dark: isDark },
   );
 
-  // The library's default token palette is tuned for light backgrounds (dark
-  // red strings, purple keywords) and is unreadable on the dark surface.
-  return isDark ? [theme, syntaxHighlighting(oneDarkHighlightStyle)] : theme;
+  return [theme, syntaxHighlighting(isDark ? oneDarkHighlightStyle : defaultHighlightStyle)];
 };

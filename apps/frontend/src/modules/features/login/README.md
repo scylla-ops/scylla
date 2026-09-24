@@ -4,14 +4,15 @@
 > [agent guide](./AGENTS.md) · [architecture](../../../../docs/architecture.md)
 
 The sign-in screen, and nothing else. This is the smallest feature in the codebase: one route,
-one repository method, one hook, two components.
+one repository method, one view model, two components — and the first one migrated to Svelte,
+which is why `refacto_svelte.md` uses it as the yardstick for the recipe.
 
 ## The session, end to end
 
 Signing in touches three modules, and it helps to see the whole path at once:
 
-1. `LoginForm` collects a username and password and calls `useLogin`.
-2. `useLogin` runs the mutation against `LoginRepository.login()`.
+1. `LoginForm` collects a username and password and calls `LoginState.submit`.
+2. `LoginState` runs the mutation against `LoginRepository.login()`.
 3. The gRPC data source calls the backend and, on success, writes `token` and `userId` into
    `localStorage`.
 4. Every later request picks the token up: the transport in
@@ -27,14 +28,14 @@ cost is that the `localStorage` key is a contract shared by three modules, so ch
 changing all three together.
 
 Permissions are **not** loaded here. A freshly signed-in user has an empty permission store
-until [roles](../roles/README.md)'s `usePermissionSync` fills it — that call needs a repository
+until [roles](../roles/README.md)'s `syncMyPermissions` fills it — that call needs a repository
 and a session, so it happens inside the authenticated shell rather than at sign-in.
 
 ## Why it is a module at all
 
 A one-method feature could arguably live in `core/`. It stays a module because the composition
 root should not know how authentication works — it should only know that *some* module claims
-the `/login` route. `LoginModule` declares `mount: 'public'`, which grafts it outside the auth
+the `/login` route. `LoginModule` declares it under the `public` mount, which grafts it outside the auth
 guard, and the router is derived from that. If sign-in ever grows an SSO flow, a password reset
 or a second factor, it grows here without touching the shell.
 

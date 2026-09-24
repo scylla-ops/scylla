@@ -1,51 +1,29 @@
 import type { GrantEntity } from '@/modules/features/roles';
 import { PermissionScope, PrincipalKind, } from '@platform/authz';
 
-/**
- * One role a member holds over a scope, and where it comes from.
- *
- * `DIRECT` is a grant bound to the scope being looked at. `INHERITED` is a
- * grant bound to an enclosing scope that reaches into it — an organization role
- * covering every project of the organization. The distinction is not cosmetic:
- * an inherited role cannot be edited from the narrower view, because the grant
- * it comes from does not live there.
- */
+/** `INHERITED`: from an enclosing scope (an organization role reaching a project). It cannot be edited from the narrower view. */
 export enum MemberRoleOrigin {
   DIRECT = 'direct',
   INHERITED = 'inherited',
 }
 
 export interface MemberRole {
-  /** The grant conferring it — what a revoke acts on. */
   grantId: string;
   roleId: string;
   origin: MemberRoleOrigin;
-  /** The scope the grant is bound to, which is what the scope badge shows. */
   scope: PermissionScope;
 }
 
-/**
- * A user seen once, with every role they hold over the scope — a value object
- * assembled from grants, not a stored record. Membership has no storage of its
- * own on the backend: holding a grant *is* belonging.
- */
+/** Built from grants: on the backend, holding a grant is belonging. */
 export interface ScopeMember {
   userId: string;
   roles: MemberRole[];
 }
 
-/** Sole holder of the "which grants are users" rule, applied before anything else. */
 const userGrants = (grants: GrantEntity[]): GrantEntity[] =>
   grants.filter(grant => grant.principal.kind === PrincipalKind.USER);
 
-/**
- * The members of an organization: everyone holding a grant bound to it.
- *
- * Users known to belong but holding no organization-scoped role (they were
- * reached through a project, or the caller cannot read the grants) are still
- * listed, with an empty role list — the member list answers "who is here", and
- * an empty row says so more usefully than an omission.
- */
+/** Users known to belong but without an organization role are still listed, with no roles. */
 export const buildOrganizationMembers = (
   organizationGrants: GrantEntity[],
   knownUserIds: string[] = [],
@@ -74,22 +52,9 @@ export const buildOrganizationMembers = (
 };
 
 /**
- * The members of a project, each listed once, carrying the roles they hold on
- * it directly *and* the organization roles that reach into it.
- *
- * `organizationRoleReachesProjects` decides which organization grants count.
- * Every organization role technically covers the projects beneath it — the
- * backend's scope hierarchy sees to that — but a role conferring nothing there
- * (the `organization-member` floor: "belongs here, sees it exists") would
- * appear as project access that does not exist. The caller supplies the test
- * because answering it needs the role catalog, which not every caller may read;
- * an unreadable role is treated as reaching, so access is never hidden.
- *
- * `knownUserIds` seeds the list the same way the organization builder does, and
- * for the same reason: reading the grants needs `MANAGE_PROJECT_GRANTS`, which
- * someone merely allowed to *see* the members does not hold. Without the seed
- * the project would look deserted to them; with it they get the people, and an
- * empty role list saying the roles are none of their business.
+ * Each member once, with the project's own roles and the organization roles that
+ * reach it. `organizationRoleReachesProjects` leaves out the roles that confer
+ * nothing on a project. `knownUserIds` lists people whose grants the caller may not read.
  */
 export const buildProjectMembers = (
   projectGrants: GrantEntity[],

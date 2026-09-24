@@ -49,7 +49,7 @@ The app will be available at `http://localhost:5173`.
 ## Documentation
 
 - [Architecture](docs/architecture.md) — Module structure, data flow, shared patterns, tech stack
-- [Naming Conventions](docs/naming-conventions.md) — File, folder, TypeScript & React naming rules
+- [Naming Conventions](docs/naming-conventions.md) — File, folder, TypeScript & Svelte naming rules
 - [CLAUDE.md](CLAUDE.md) — The working contract for this codebase (rules, checklists, conventions)
 
 ## Module documentation
@@ -98,11 +98,11 @@ shared/                generic UI + utils, no business meaning — imports nobod
 
 | Module | What it owns |
 |--------|--------------|
-| [authz](src/modules/platform/authz/README.md) | `Permission`, `useCan`, `Can`, `RequirePermission` — the read side of authorization |
+| [authz](src/modules/platform/authz/README.md) | `Permission`, `can`, `Can`, `RequirePermission` — the read side of authorization |
 | [context](src/modules/platform/context/README.md) | The active organization / project / pipeline, and navigation derived from it |
 | [di](src/modules/platform/di/README.md) | Dependency injection mechanism (the wiring lives in `core`) |
 | [grpc](src/modules/platform/grpc/README.md) | The single gRPC-Web transport, with auth attached |
-| [routing](src/modules/platform/routing/README.md) | The `ScyllaModule` contract and the route/nav composer |
+| [routing](src/modules/platform/routing/README.md) | The `ScyllaModule` contract, the route compilation and the router (no router library) |
 
 ### `shared/`
 

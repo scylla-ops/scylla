@@ -12,13 +12,7 @@ export interface PipelineRepository {
     projectId: string,
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<PaginatedList<PipelineMetadata>>>;
-  /**
-   * Pipeline metadata across a whole organization, in one call.
-   *
-   * The organization-wide views used to fan out one `getMetadataByProjectId`
-   * per project — N requests, N cache entries, and one error toast per project
-   * the caller could not read.
-   */
+  /** One call for the whole organization, instead of one per project. */
   getMetadataByOrganizationId(
     organizationId: string,
     pagination?: PaginationParams,

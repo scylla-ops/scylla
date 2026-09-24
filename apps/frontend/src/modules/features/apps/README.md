@@ -19,8 +19,8 @@ work, apps are API clients — CI systems, scripts, integrations — that call S
 ## Not routed yet
 
 `apps.module.ts` declares its `domain` and nothing else: no `routes`, no `nav`. The repository,
-the hooks and both pages are written and working, but nothing mounts them, so the feature is
-currently invisible in the running app.
+the query factories and both pages are written and working, but nothing mounts them, so the
+feature is currently invisible in the running app.
 
 This is deliberate — the module was built ahead of the decision about where apps belong in the
 navigation. Surfacing it is a small change confined to `apps.module.ts`: add a route mounted on
@@ -37,9 +37,15 @@ secret the backend returns exactly once.
 **Infrastructure** implements `AppsRepository` over gRPC-Web, with the data source interface and
 its implementation colocated in a single file and `GrpcAppMapper` doing proto → domain.
 
-**Presentation** offers `useApps`, `useApp` and `useAppSecrets`, and two pages composed from
-`AppCard` and `AppSecretsCard`. Both creation dialogs are declarative `ScyllaForm`s built from
-the `create-app-form-items` helpers.
+**Presentation** is Svelte, as of Phase 3 of the migration. `apps.queries.ts` declares every
+read and write as `queryOptions` / `mutationOptions` — plain data with no framework in it, which
+is what replaced the three hooks — and the two pages run them with `createQuery` /
+`createMutation`. The pages are composed from `AppCard` and `AppSecretsCard`, and both creation
+dialogs are declarative `ScyllaForm`s built from the `create-app-form-items` helpers.
+
+Every string the screens show is declared in `ui/apps.messages.ts` rather than inside a
+component: `lingui extract` does not read `.svelte`, so a message written in one would disappear
+from the catalogs with no gate noticing. See `refacto_svelte.md` §4.5.
 
 ## The one-time secret rule
 

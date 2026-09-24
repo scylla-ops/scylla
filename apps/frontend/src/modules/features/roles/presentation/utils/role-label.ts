@@ -1,12 +1,4 @@
-/**
- * A readable name for a role known only by its id.
- *
- * Builtin role ids are stable kebab-case keys (`organization-admin`), so the
- * id is already the name with the punctuation in the wrong place. Custom roles
- * carry an opaque id and a real name in the catalog — this is the fallback for
- * a caller that may not read the catalog, and it is honest: showing the raw id
- * beats showing "Unknown role".
- */
+/** Builtin ids are kebab-case keys (`organization-admin`): the fallback when the catalog is not readable. */
 export const humanizeRoleId = (roleId: string): string => {
   const words = roleId.replace(/[-_]/g, ' ').trim();
   if (words === '') return roleId;

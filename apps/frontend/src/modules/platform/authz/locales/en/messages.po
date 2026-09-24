@@ -12,14 +12,10 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/platform/authz/presentation/ui/PermissionDenied.tsx:24
+#: src/modules/platform/authz/presentation/ui/permission-denied.messages.ts:5
 msgid "Ask an administrator to grant you access if you think you should have it."
 msgstr "Ask an administrator to grant you access if you think you should have it."
 
-#: src/modules/platform/authz/presentation/ui/PermissionButton.tsx:55
-msgid "You don't have permission to do this."
-msgstr "You don't have permission to do this."
-
-#: src/modules/platform/authz/presentation/ui/PermissionDenied.tsx:20
+#: src/modules/platform/authz/presentation/ui/permission-denied.messages.ts:4
 msgid "You don't have the permission"
 msgstr "You don't have the permission"

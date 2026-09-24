@@ -1,6 +1,6 @@
 import type { ScyllaModule } from '@platform/routing';
 import { msg } from '@lingui/core/macro';
-import { HardDriveIcon } from 'lucide-react';
+import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 import { Permission } from '@platform/authz';
 import { AgentsRemoteDataSourceImpl } from '@/modules/features/agents/infrastructure/data/agents-remote.data-source.ts';
 import { grpcTransport } from '@platform/grpc';
@@ -12,43 +12,25 @@ const repository = new DefaultAgentsRepository(dataSource);
 export const AgentsModule = {
   id: 'agents',
   domain: {
-    /** Repository interface — the module's data surface. */
     agentsRepository: repository,
   },
-  routes: [
-    {
-      mount: 'organization',
-      path: 'agents',
-      breadcrumb: () => ({ label: msg`Agents` }),
-      children: [
-        {
-          mount: 'organization',
-          index: true,
-          permission: Permission.LIST_AGENTS,
-          lazy: async () => ({
-            Component: (await import('./presentation/ui/Agents.page.tsx')).AgentsPage,
-          }),
-        },
-        {
-          mount: 'organization',
-          path: ':agentId',
-          permission: Permission.READ_APP,
-          breadcrumb: () => ({ label: msg`Agent details` }),
-          lazy: async () => ({
-            Component: (await import('./presentation/ui/AgentDetails.page.tsx')).AgentDetailsPage,
-          }),
-        },
-      ],
-    },
-  ],
-  nav: [
-    {
-      section: 'organization',
-      title: msg`Agents`,
-      url: 'agents',
-      icon: HardDriveIcon,
-      permission: Permission.LIST_AGENTS,
-      order: 40,
-    },
-  ],
+  routes: {
+    organization: [
+      {
+        path: 'agents',
+        permission: Permission.LIST_AGENTS,
+        breadcrumb: () => ({ label: msg`Agents` }),
+        page: () => import('./presentation/ui/Agents/Agents.page.svelte'),
+        nav: { section: 'organization', title: msg`Agents`, icon: HardDriveIcon, order: 40 },
+        children: [
+          {
+            path: ':agentId',
+            permission: Permission.READ_APP,
+            breadcrumb: () => ({ label: msg`Agent details` }),
+            page: () => import('./presentation/ui/AgentDetails/AgentDetails.page.svelte'),
+          },
+        ],
+      },
+    ],
+  },
 } satisfies ScyllaModule;
