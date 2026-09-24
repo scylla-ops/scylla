@@ -7,7 +7,6 @@ import type {
 } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 
-/** AgentsRepository backed by the remote (gRPC) data source. */
 export class DefaultAgentsRepository implements AgentsRepository {
   constructor(private remoteDataSource: AgentsRemoteDataSource) {}
 

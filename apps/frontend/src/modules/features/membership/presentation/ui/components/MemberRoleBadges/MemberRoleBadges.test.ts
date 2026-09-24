@@ -80,7 +80,6 @@ describe('MemberRoleBadges', () => {
       }),
     );
 
-    // Hidden would make the project look like it grants less access than it does.
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
@@ -117,7 +116,6 @@ describe('MemberRoleBadges', () => {
 
     expect(screen.getByText('direct-role')).toBeInTheDocument();
     expect(screen.getByText('inherited-role')).toBeInTheDocument();
-    // Only the direct one can be revoked from here.
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 });

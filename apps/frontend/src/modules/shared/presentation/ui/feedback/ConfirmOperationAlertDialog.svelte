@@ -18,19 +18,13 @@
     onContinue: () => void;
     title?: string;
     description?: string;
-    /** Disables both buttons while the operation is in flight. */
     isLoading?: boolean;
   }
 
   let { open, onOpenChange, onContinue, title, description, isLoading = false }: Props = $props();
 </script>
 
-<!--
-  Controlled, not bound: the parent owns `open` because it also owns the mutation
-  behind Continue, and the dialog has to stay up and disabled until that settles.
-  That is also why the action and cancel buttons are plain buttons — see
-  `shadcn/alert-dialog-action.svelte`.
--->
+<!-- The parent owns `open`: it keeps the dialog open and disabled until the mutation settles. -->
 <AlertDialog {open} {onOpenChange}>
   <AlertDialogContent>
     <AlertDialogHeader>

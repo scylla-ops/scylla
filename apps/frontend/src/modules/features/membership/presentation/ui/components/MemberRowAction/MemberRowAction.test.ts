@@ -16,8 +16,6 @@ describe('MemberRowAction', () => {
   it('marks your own row and offers no way to remove yourself', () => {
     render(MemberRowAction, props({ isCurrentUser: true }));
 
-    // Self-removal would revoke the caller's own access mid-session, so the
-    // control is absent rather than present-and-refused.
     expect(screen.getByText('You')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });

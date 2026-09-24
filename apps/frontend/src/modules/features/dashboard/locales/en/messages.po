@@ -13,143 +13,143 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:40
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:24
 msgid "{inFlight} in progress"
 msgstr "{inFlight} in progress"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:52
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:35
 msgid "Agent Outcomes"
 msgstr "Agent Outcomes"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:53
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:36
 msgid "all"
 msgstr "all"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:30
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:15
 msgid "All Pipelines"
 msgstr "All Pipelines"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:56
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:39
 msgid "cancelled"
 msgstr "cancelled"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:44
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:28
 msgid "Cancelled"
 msgstr "Cancelled"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:54
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:37
 msgid "completed"
 msgstr "completed"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:42
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:26
 msgid "Completed"
 msgstr "Completed"
 
-#: src/modules/features/dashboard/dashboard.module.ts:20
-#: src/modules/features/dashboard/dashboard.module.ts:22
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:36
+#: src/modules/features/dashboard/dashboard.module.ts:15
+#: src/modules/features/dashboard/dashboard.module.ts:17
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:21
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:55
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:38
 msgid "failed"
 msgstr "failed"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:43
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:27
 msgid "Failed"
 msgstr "Failed"
 
 #. placeholder {0}: String(relative)
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:46
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:30
 msgid "Last run {0}"
 msgstr "Last run {0}"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:32
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:17
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:58
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:41
 msgid "No agents found. Connect an agent to see execution history."
 msgstr "No agents found. Connect an agent to see execution history."
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:28
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:13
 msgid "No description"
 msgstr "No description"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:57
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:40
 msgid "No finished jobs in this window."
 msgstr "No finished jobs in this window."
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:41
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:25
 msgid "No pipeline has run yet."
 msgstr "No pipeline has run yet."
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:31
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:16
 msgid "No pipelines yet."
 msgstr "No pipelines yet."
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:27
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:12
 msgid "No projects yet."
 msgstr "No projects yet."
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:34
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:19
 msgid "Nodes"
 msgstr "Nodes"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:45
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:29
 msgid "Orphaned"
 msgstr "Orphaned"
 
 #. placeholder {0}: Number(total)
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:49
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:33
 msgid "over all {0} runs"
 msgstr "over all {0} runs"
 
 #. placeholder {0}: Number(windowTotal)
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:48
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:32
 msgid "over the last {0} of {totalRuns} runs"
 msgstr "over the last {0} of {totalRuns} runs"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:22
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:7
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:33
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:18
 msgid "Project"
 msgstr "Project"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:21
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:6
 msgid "Projects"
 msgstr "Projects"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:39
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:23
 msgid "Run activity"
 msgstr "Run activity"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:23
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:8
 msgid "Runs"
 msgstr "Runs"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:26
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:11
 msgid "See all"
 msgstr "See all"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:24
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:9
 msgid "Success rate"
 msgstr "Success rate"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:25
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:10
 msgid "Success rate (recent)"
 msgstr "Success rate (recent)"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:20
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:5
 msgid "Unable to load dashboard"
 msgstr "Unable to load dashboard"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:35
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:20
 msgid "Updated"
 msgstr "Updated"
 
-#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:29
+#: src/modules/features/dashboard/presentation/ui/dashboard.messages.ts:14
 msgid "You don't have access to this project's pipelines"
 msgstr "You don't have access to this project's pipelines"

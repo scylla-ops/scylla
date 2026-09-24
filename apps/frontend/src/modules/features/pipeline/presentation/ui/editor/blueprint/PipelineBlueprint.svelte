@@ -22,12 +22,10 @@
   const blueprint = createBlueprintState({
     steps: () => steps,
     pipelineName: () => pipelineName,
-    // Wrapped rather than passed: the prop is read at call time, so a parent
-    // that swaps the callback is still the one that hears about the change.
+    // Read at call time, so a swapped callback is the one called.
     onStepsChange: next => onStepsChange(next),
   });
 
-  /** The step the node dialog is on; `undefined` while it is defining a new one. */
   let editingStep = $state<PipelineStep | undefined>(undefined);
   let stepDialogOpen = $state(false);
   let nameDialogOpen = $state(false);
@@ -57,8 +55,7 @@
     }}
   />
 
-  <!-- One dialog for both jobs, where React mounted two: `editingStep` is what
-       tells them apart, and `{#key open}` inside is what resets the form. -->
+  <!-- One dialog for adding and editing: `editingStep` tells them apart. -->
   <StepNodeFormDialog
     open={stepDialogOpen}
     onOpenChange={open => (stepDialogOpen = open)}

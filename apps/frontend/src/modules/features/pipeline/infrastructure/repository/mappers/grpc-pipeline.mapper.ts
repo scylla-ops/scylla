@@ -24,19 +24,13 @@ function shellToProto(s: 'sh' | 'bash'): Shell {
   return s === 'bash' ? Shell.BASH : Shell.SH;
 }
 
-/**
- * Thrown when the server sends a oneof arm this build does not know. Reading the
- * pipeline as-is would silently drop what the newer arm carried, and saving the
- * editor back would then overwrite it on the server — so refuse the whole
- * pipeline instead. `ScyllaResult.map` turns this into an error result.
- */
+/** A oneof arm this build does not know: refuse the pipeline, or saving it would erase the arm on the server. */
 class UnknownArmError extends Error {
   constructor(what: string) {
     super(`${what} uses a variant this client doesn't understand — update Scylla`);
   }
 }
 
-/** proto EnvVar -> domain EnvEntry (a secret ref or an inline literal). */
 function envVarToDomain(e: EnvVar): EnvEntry {
   switch (e.source.oneofKind) {
     case 'secretRef':
@@ -48,7 +42,6 @@ function envVarToDomain(e: EnvVar): EnvEntry {
   }
 }
 
-/** domain EnvEntry -> proto EnvVar. */
 function envVarFromDomain(entry: EnvEntry): EnvVar {
   if (entry.kind === 'secret') {
     return { key: entry.key, source: { oneofKind: 'secretRef', secretRef: entry.secretRef } };
@@ -56,7 +49,6 @@ function envVarFromDomain(entry: EnvEntry): EnvVar {
   return { key: entry.key, source: { oneofKind: 'value', value: entry.value } };
 }
 
-/** What every scoped pipeline listing returns, whatever the scope. */
 type PipelineListResponse = Pick<ListProjectPipelinesResponse, 'pipelines' | 'pagination'>;
 
 export class GrpcPipelineMapper {
@@ -127,10 +119,7 @@ export class GrpcPipelineMapper {
     };
   }
 
-  /**
-   * Takes the shape rather than one named response: the project- and
-   * organization-scoped listings are the same `{ pipelines, pagination }` pair.
-   */
+  /** The project and organization listings share this shape. */
   static toDomainInfoList(
     pipelines: PipelineListResponse,
   ): PaginatedList<PipelineMetadata> {

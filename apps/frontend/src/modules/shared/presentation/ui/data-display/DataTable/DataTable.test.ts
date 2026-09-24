@@ -4,13 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { createRawSnippet } from 'svelte';
 import type { Row } from '@tanstack/table-core';
 import { render } from '@/test/render.svelte.ts';
-// The fixture, not the component: it is what pins the generic row type. See
-// the comment at the top of `DataTable.fixture.svelte`.
+// The fixture pins the generic row type.
 import DataTable from './DataTable.fixture.svelte';
 import { columns, data, type Datum } from './data-table.fixture.ts';
 import type { DataTableColumn, DataTableFeatures } from '../data-table.ts';
 
-/** The header row and the body rows share one grid template — read it off a row. */
 const gridTemplateOf = (row: HTMLElement) => row.style.gridTemplateColumns;
 
 const logsSnippet = createRawSnippet<[Row<DataTableFeatures, Datum>]>(row => ({
@@ -33,7 +31,6 @@ describe('DataTable', () => {
     render(DataTable, { columns, data: [] });
 
     expect(screen.getByText('No results.')).toBeInTheDocument();
-    // The header row is still there; the body contributes exactly one.
     expect(screen.getAllByRole('row')).toHaveLength(2);
   });
 

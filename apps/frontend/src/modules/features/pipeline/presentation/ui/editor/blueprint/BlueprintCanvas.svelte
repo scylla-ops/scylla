@@ -27,11 +27,7 @@
   const edgeTypes: EdgeTypes = { deletable: DeletableEdge };
 </script>
 
-<!--
-  The pipeline as a graph. `nodes` and `edges` are bound, so dragging, selecting
-  and deleting are the library's to do and land straight in the state; the two
-  callbacks below are how the state learns the document changed.
--->
+<!-- `nodes` and `edges` are bound: the library drags, selects and deletes; the callbacks report the changes. -->
 <SvelteFlow
   bind:nodes={blueprint.nodes}
   bind:edges={blueprint.edges}
@@ -47,8 +43,7 @@
   onconnect={() => blueprint.sync()}
   ondelete={() => blueprint.sync()}
   onnodeclick={({ node, event }) => {
-    // The library has no double-click event of its own, so the node's own
-    // click carries the detail count — which is what `ondblclick` reads.
+    // No double-click event: the click's `detail` counts.
     if ((event as MouseEvent).detail < 2) return;
     if (node.id === START_NODE_ID) {
       onStartNodeDoubleClick();

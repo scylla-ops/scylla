@@ -74,8 +74,6 @@ describe('ProjectCard', () => {
     expect(screen.getByText('No description')).toBeInTheDocument();
   });
 
-  // IconButton renders its tooltip text visually-hidden inside the button, so
-  // the Edit affordance carries a real accessible name.
   const findEditButton = () => screen.queryByRole('button', { name: 'Edit' });
 
   it('the Edit button is hidden without UPDATE_PROJECT on this project', () => {

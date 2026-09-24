@@ -33,11 +33,7 @@
   const color = $derived(selected ? SELECTED_COLOR : EDGE_COLOR);
 </script>
 
-<!--
-  A dependency between two steps, with a delete button that appears once it is
-  selected. `style` is a CSS string here where reactflow took an object — the
-  one difference the port made to this component.
--->
+<!-- A dependency, with a delete button once selected. -->
 <BaseEdge
   {id}
   path={path[0]}

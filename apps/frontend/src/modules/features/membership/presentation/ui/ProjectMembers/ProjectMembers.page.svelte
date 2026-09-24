@@ -23,7 +23,6 @@
   import { membershipMessages } from '../membership.messages.ts';
 
   interface Props {
-    /** From the route: `/:organizationSlug/projects/:projectId/members`. */
     projectId?: string;
   }
 
@@ -31,17 +30,14 @@
 
   const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id);
-  // Every check is about *this* project, not whichever one the context store
-  // happens to hold — a direct URL hit may land here before the two agree.
+  // About this project, not the context's: a direct URL can land here before the two agree.
   const target = $derived({
     projectId: projectId ?? undefined,
     organizationId: organizationId ?? undefined,
   });
 
   const canManage = $derived(can(Permission.MANAGE_PROJECT_GRANTS, target));
-  // Inherited roles live in the organization's grant list, which only an
-  // organization administrator may read. Without it the project half is still
-  // complete — the page says what it cannot show instead of implying emptiness.
+  // Inherited roles need the organization's grants (organization admins only).
   const canReadOrganizationGrants = $derived(can(Permission.MANAGE_ORG_GRANTS, target));
   const canListOrganizationMembers = $derived(
     can(Permission.LIST_ORGANIZATION_MEMBERS, target),
@@ -71,14 +67,11 @@
     scope: PermissionScope.PROJECT,
     scopeId: () => projectId ?? null,
     canManage: () => canManage,
-    // Members are derived from grants on the backend, so a grant mutation
-    // changes the list, and the grant mutations cannot reach this key without
-    // coupling the two features.
+    // The backend derives members from grants; the grant mutations cannot reach this key.
     onMembershipChanged: () => void invalidateProjectMembers(projectId ?? null),
   });
 
   let addOpen = $state(false);
-  /** Who is being removed — the id to act on, the name to name in the prompt. */
   let pendingRemoval = $state<{ userId: string; username: string } | null>(null);
 
   const usernameById = $derived.by(() => {
@@ -91,15 +84,9 @@
     return names;
   });
 
-  /** The id is the honest fallback: better a raw id than an empty cell. */
   const nameFor = (memberId: string) => usernameById.get(memberId) ?? memberId;
 
-  /**
-   * An organization role reaches this project when it confers reading a project
-   * at all: at organization scope that covers every project beneath it. The
-   * floor role (`organization-member`) confers nothing here and is left out —
-   * listing it would read as project access nobody actually has.
-   */
+  /** An organization role reaches the project when it confers reading one. `organization-member` does not. */
   const reachesProjects = $derived((roleId: string) =>
     roleConfers(roles.roleById.get(roleId), Permission.READ_PROJECT),
   );
@@ -115,14 +102,13 @@
 
   const memberIds = $derived(new Set(members.map(member => member.userId)));
 
-  /** People the organization has admitted who hold nothing on this project yet. */
   const candidates = $derived(
     organizationMembers.filter(member => !memberIds.has(member.userId)),
   );
 
   const currentUserId = localStorage.getItem('userId') ?? '';
 
-  /** The project-scoped roles a member holds, which are the editable ones. */
+  /** The project's own roles: the editable ones. */
   const directRoleIds = (member: ScopeMember): Set<string> =>
     new Set(
       member.roles
@@ -144,24 +130,9 @@
 </script>
 
 <!--
-  Who works on a project, with which roles, and where each role comes from.
-
-  The list is assembled here rather than read from one call, because no single
-  call answers it: `ListProjectMembers` returns the holders of a project-scoped
-  grant and stops there, while an organization role covering every project of the
-  organization reaches this project just as effectively. Showing only the first
-  would make the project look emptier — and more locked down — than it is. So
-  each user appears once, carrying both kinds of role, each badged with the scope
-  it is bound to.
-
-  Only the project-scoped ones are editable here. An inherited role lives on a
-  grant bound to the organization; revoking it from this page would silently
-  change someone's access to *every* project, which is why it is shown locked
-  with the reason rather than hidden or offered.
-
-  Adding someone is bounded by the backend's tenant rule: a project grant may
-  only go to a person the organization has already admitted, so the candidate
-  list is the organization's members, never the whole directory.
+  The project's own members plus the organization roles that reach it, each badged
+  with its scope. Inherited roles are locked: revoking them changes every project.
+  Candidates are the organization's members (a project grant needs one).
 -->
 {#snippet blurb()}
   <p class="max-w-3xl text-sm text-muted-foreground">{t(membershipMessages.projectBlurb)}</p>
@@ -191,9 +162,7 @@
       disabled={membership.isPending}
       onRevokeRole={role => void membership.revokeRole(role)}
       addableRolesFor={member => {
-        // Only project-scoped roles count as held here: someone who inherits
-        // "developer" from the organization may still be given it on this
-        // project, and that grant is what survives losing the organization role.
+        // Only project roles count as held: an inherited role can still be granted here.
         const held = directRoleIds(member);
         return roles.assignableRoles.filter(role => !held.has(role.roleId));
       }}

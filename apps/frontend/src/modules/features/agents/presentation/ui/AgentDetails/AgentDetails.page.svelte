@@ -20,7 +20,6 @@
   import { agentsMessages } from '../agents.messages.ts';
 
   interface Props {
-    /** From the route: `/:organizationSlug/agents/:agentId`. */
     agentId?: string;
   }
 
@@ -30,8 +29,7 @@
   const organizationId = $derived(context().organization.id ?? '');
 
   const agentQuery = createQuery(() => agentQueries.byId(agentId ?? ''));
-  // Gated on READ_APP_STATS inside the factory; asked again here because the
-  // whole section is hidden rather than shown empty.
+  // Checked again: without it the whole section is hidden.
   const canReadStats = $derived(can(Permission.READ_APP_STATS));
   const statsQuery = createQuery(() => agentQueries.statsOf(agentId ?? ''));
   const deleteAgent = createMutation(() => agentMutations.remove(organizationId));
@@ -43,7 +41,6 @@
 
   const canDelete = $derived(can(Permission.DELETE_APP));
 
-  // NOT_FOUND (deleted / bad id) → toast + back to the agents list.
   const resourceError = createResourceError({
     error: () => agentQuery.error,
     redirectTo: '..',
@@ -66,14 +63,13 @@
 {/snippet}
 
 {#if resourceError.redirecting}
-  <!-- Nothing: the redirect is already under way. -->
+  <!-- The redirect is in flight. -->
 {:else if agentQuery.isLoading}
   <Skeleton class="m-4 h-72 rounded-xl" />
 {:else if agentQuery.isError || !agent}
   <ErrorState message={t(agentsMessages.detailsLoadError)} />
 {:else}
   <div class="w-full min-h-full flex flex-col gap-6 pb-8">
-    <!-- Header -->
     <div class="flex items-center justify-between w-full gap-4">
       <div class="flex items-center gap-3">
         <span
@@ -117,7 +113,6 @@
       {/if}
     </div>
 
-    <!-- Identity strip -->
     <div
       class="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-border bg-card px-3.5 py-2 w-full"
     >
@@ -178,7 +173,6 @@
       </div>
     {/if}
 
-    <!-- How to start a worker for this agent -->
     <div class="w-full">
       <div class="mb-2 flex items-baseline gap-2">
         <h2 class="text-lg font-semibold text-foreground">{t(agentsMessages.runThisAgent)}</h2>

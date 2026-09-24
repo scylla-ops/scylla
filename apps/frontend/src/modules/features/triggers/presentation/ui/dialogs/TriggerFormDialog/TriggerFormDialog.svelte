@@ -7,9 +7,8 @@
     open: boolean;
     onOpenChange: (open: boolean) => void;
     pipelineId: string;
-    /** Present => edit mode (kind is locked). Absent => create mode. */
     trigger?: TriggerEntity;
-    /** Called after a successful create, so the caller can reveal a webhook secret. */
+    /** After a create, so the caller can reveal a webhook secret. */
     onCreated?: (created: CreatedTrigger) => void;
   }
 

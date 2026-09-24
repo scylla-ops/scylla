@@ -12,14 +12,12 @@
   import { pipelineMessages } from '../../pipeline.messages.ts';
 
   interface Props {
-    /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
+    /** `edit` tracks the unsaved changes; `create` does not. */
     mode: 'create' | 'edit';
     submitLabel: string;
-    /** Called with the parsed pipeline when the user submits a valid script. */
     onSubmit: (values: { name: string; steps: PipelineStep[] }) => void;
-    /** The document to load once available — a default draft, or a fetched one. */
+    /** A default draft, or a fetched pipeline. */
     initialScript?: string;
-    /** Used as a fallback when serializing blueprint edits into a fresh document. */
     projectId?: string;
     isSubmitPending?: boolean;
   }
@@ -51,14 +49,8 @@
 </script>
 
 <!--
-  One pipeline, two ways of looking at it. The script is the document; the
-  blueprint reads its steps and writes them back, so the tabs cannot disagree
-  about what the pipeline is — and an invalid script disables the blueprint tab
-  rather than letting a graph built from nothing overwrite it.
-
-  Both tab panels stay mounted (`data-[state=inactive]:hidden` in the wrapper),
-  which is what keeps the CodeMirror view — and its scroll and selection —
-  alive across a tab switch.
+  The script is the document; the blueprint reads and writes its steps. An invalid
+  script disables the blueprint. Both panels stay mounted, so CodeMirror keeps its scroll.
 -->
 <Tabs value="blueprint" class="flex h-full flex-col gap-4">
   <div class="flex w-full items-center justify-between gap-4">
@@ -75,7 +67,6 @@
 
   <TabsContent value="scripting" class="h-full overflow-hidden">
     <div class="flex h-full flex-col gap-2">
-      <!-- The editor theme draws its own frame, so no Card wrapper here. -->
       <div class="min-h-0 flex-1 overflow-auto p-2">
         <div
           class="h-full"

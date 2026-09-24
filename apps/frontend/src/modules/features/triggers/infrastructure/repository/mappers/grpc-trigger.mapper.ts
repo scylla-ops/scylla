@@ -25,23 +25,19 @@ import {
 } from '@shared/infrastructure/grpc/wrappers.ts';
 import { ScyllaError } from '@shared/utils/scylla-result.ts';
 
-/** Maps gRPC trigger messages ↔ the domain trigger entity. */
 export class GrpcTriggerMapper {
-  // ── proto → domain ─────────────────────────────────────────────────────────
-
   private static sourceToDomain(source: ProtoTrigger['source']): TriggerSource {
     switch (source.oneofKind) {
       case 'cron':
         return { kind: TriggerKind.Cron, expression: source.cron.expression };
       case 'webhook':
-        // The public URL is derived by the server and lives inside the webhook arm.
         return {
           kind: TriggerKind.Webhook,
           signatureHeader: source.webhook.signatureHeader,
           webhookUrl: source.webhook.url,
         };
       default:
-        // A source arm newer than this build: surface it as unknown, don't guess.
+        // A source arm newer than this build: unknown.
         return { kind: TriggerKind.Unknown };
     }
   }
@@ -54,7 +50,7 @@ export class GrpcTriggerMapper {
       case 'failed':
         return { kind: 'failed', error: observation.result.failed.error };
       default:
-        // An outcome arm newer than this build — neither a success nor a failure.
+        // An outcome arm newer than this build: neither success nor failure.
         return { kind: 'unknown' };
     }
   }
@@ -71,8 +67,7 @@ export class GrpcTriggerMapper {
   }
 
   static toDomain(trigger: ProtoTrigger): TriggerEntity {
-    // Flatten the `activation` oneof back to the flat entity: a disabled trigger
-    // structurally carries no due time, so `nextFireAt` only exists when enabled.
+    // A disabled trigger has no due time.
     const nextFireAt =
       trigger.activation.oneofKind === 'enabled'
         ? timestampToIsoOpt(trigger.activation.enabled.nextFireAt)
@@ -85,7 +80,6 @@ export class GrpcTriggerMapper {
       inputs: trigger.inputs.map(GrpcTriggerMapper.inputToDomain),
       enabled: trigger.activation.oneofKind === 'enabled',
       nextFireAt,
-      // `last_observation` keeps the fired-at and its outcome together, or absent.
       lastFiredAt: timestampToIsoOpt(trigger.lastObservation?.firedAt),
       lastResult: GrpcTriggerMapper.observationToDomain(trigger.lastObservation),
       createdAt: timestampToIso(trigger.createdAt),
@@ -106,8 +100,6 @@ export class GrpcTriggerMapper {
       webhookSecret: response.webhookSecret,
     };
   }
-
-  // ── domain → proto ─────────────────────────────────────────────────────────
 
   private static inputToProto(input: TriggerInput): ProtoTriggerInput {
     return {

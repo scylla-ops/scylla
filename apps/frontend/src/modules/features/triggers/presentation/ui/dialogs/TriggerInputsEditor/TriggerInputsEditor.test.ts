@@ -50,8 +50,7 @@ describe('TriggerInputsEditor', () => {
     const [firstKeyField] = screen.getAllByPlaceholderText('KEY');
     await userEvent.type(firstKeyField, 'X');
 
-    // One keystroke on a controlled field: the patch carries the whole list
-    // back, with only the first row changed.
+    // One keystroke: the whole list comes back with only the first row changed.
     expect(onChange).toHaveBeenLastCalledWith([literal({ key: 'AX' }), literal({ key: 'B' })]);
   });
 

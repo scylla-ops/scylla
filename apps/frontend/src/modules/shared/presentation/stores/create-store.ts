@@ -4,7 +4,6 @@ export type SetState<TState> = (
   partial: Partial<TState> | ((state: TState) => Partial<TState>),
 ) => void;
 
-/** A store that holds one state object. Any code can read it, write it and subscribe to it. */
 export interface Store<TState> {
   getState: () => TState;
   setState: SetState<TState>;
@@ -12,7 +11,7 @@ export interface Store<TState> {
 }
 
 export interface StoreOptions {
-  /** Keeps the data fields in `localStorage` under this key, and restores them at start. */
+  /** Keeps the data fields in `localStorage` under this key. */
   persistAs?: string;
 }
 
@@ -33,12 +32,7 @@ const restore = <TState extends object>(key: string): Partial<TState> => {
   }
 };
 
-/**
- * Creates a store without a framework.
- *
- * `setState` merges the partial state into the current state and calls every
- * listener. Read a store from rune code with `toRune`.
- */
+/** `setState` merges the partial state and calls every listener. Read it from runes with `toRune`. */
 export const createStore = <TState extends object>(
   initializer: (set: SetState<TState>, get: () => TState) => TState,
   { persistAs }: StoreOptions = {},

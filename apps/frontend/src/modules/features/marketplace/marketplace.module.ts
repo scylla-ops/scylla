@@ -9,7 +9,6 @@ const marketPlaceRepository: MarketplaceRepository = new DefaultMarketplaceRepos
 export const MarketplaceModule = {
   id: 'marketplace',
   domain: {
-    /** Repository interface — the module's data surface. */
     marketplaceRepository: marketPlaceRepository,
   },
   routes: {

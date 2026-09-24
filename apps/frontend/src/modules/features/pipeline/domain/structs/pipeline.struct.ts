@@ -12,11 +12,7 @@ export interface PipelineMetadata extends PipelineIdentity {
 
 export type Shell = 'sh' | 'bash';
 
-/**
- * A single environment variable on a pipeline step. Its value is either an
- * inline literal or a reference (by name) to a project-scoped secret resolved at
- * dispatch — the secret value is never carried in the client.
- */
+/** An inline value, or the name of a project secret resolved at dispatch: the client never holds a secret value. */
 export type EnvEntry =
   | { key: string; kind: 'literal'; value: string }
   | { key: string; kind: 'secret'; secretRef: string };

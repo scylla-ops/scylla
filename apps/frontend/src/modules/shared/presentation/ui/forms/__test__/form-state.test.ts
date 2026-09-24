@@ -104,11 +104,7 @@ describe('createFormState', () => {
   });
 });
 
-/**
- * The generic is the whole point of the declarative form, and it is the thing a
- * port loses silently: widen `TId` to `string` and every test above still
- * passes, while consumers go back to indexing values by a stringly-typed id.
- */
+/** Widening `TId` to `string` would pass every test above: pin the generic. */
 describe('the id generic', () => {
   it('turns literal item ids into a typed values record', () => {
     const form = createFormState(() => items);

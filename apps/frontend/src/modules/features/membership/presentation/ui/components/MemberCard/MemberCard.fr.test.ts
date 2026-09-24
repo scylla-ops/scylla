@@ -10,15 +10,7 @@ import {
 } from '../../../../domain/structs/scope-member.struct.ts';
 import MemberCard from './MemberCard.svelte';
 
-/**
- * The exact-zero arm is not a CLDR category — it has to survive extraction and
- * compilation intact, and French wording it differently from the `one` arm
- * ("Aucun rôle" vs "1 rôle") is precisely where it would break.
- *
- * It is also what pins the port: the React `<Plural _0=…>` became
- * `plural(value, { 0: … })`, and if those two did *not* compile to the same
- * msgid the French would silently fall back to English here.
- */
+/** The exact-zero arm ("Aucun rôle") must survive extraction. */
 withLocale('fr', messages);
 
 const role = (overrides: Partial<MemberRole> = {}): MemberRole => ({

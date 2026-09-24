@@ -23,8 +23,7 @@ describe('TriggerSourceCell', () => {
       trigger: trigger({ source: { kind: TriggerKind.Cron, expression: '0 0 * * *' } }),
     });
 
-    // The exact text depends on the host's local offset, so this only pins
-    // that a real 5-field expression rendered rather than the em-dash fallback.
+    // The text depends on the host's offset: only check a 5-field expression.
     expect(screen.getByText(/^\S+ \S+ \S+ \S+ \S+$/)).toBeInTheDocument();
     expect(screen.queryByText('—')).not.toBeInTheDocument();
   });
@@ -47,8 +46,7 @@ describe('TriggerSourceCell', () => {
       }),
     });
 
-    // No fixed truncate(): the column's width decides via CSS ellipsis, so the
-    // full string is what is actually in the DOM.
+    // No fixed truncation: CSS cuts it, the full string is in the DOM.
     expect(screen.getByText('https://x/webhooks/1')).toBeInTheDocument();
   });
 

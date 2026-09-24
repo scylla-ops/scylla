@@ -12,8 +12,7 @@
 
   let { open, onOpenChange, currentName, onSave }: Props = $props();
 
-  // `pattern` rejects whitespace outright: a pipeline name travels into a URL
-  // and into the breadcrumb, so a name with a space is not merely untidy.
+  // No whitespace: the name goes into a URL and the breadcrumb.
   const items = $derived<readonly FormItem<'name'>[]>([
     {
       id: 'name',
@@ -33,7 +32,6 @@
   };
 </script>
 
-<!-- Renaming the pipeline, from the start node that carries its name. -->
 <FormDialog
   {open}
   {onOpenChange}

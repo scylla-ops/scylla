@@ -40,21 +40,14 @@
     onClose,
   }: Props = $props();
 
-  /**
-   * Local to this component, and that is the whole reason it exists: the
-   * parent recreates it on every open (`{#key}`), so "revealed" resets without
-   * the effect the React version needed to watch `open`.
-   */
+  /** Resets at each opening: the dialog rebuilds its content. */
   let revealed = $state(false);
 
   let confirmButton = $state<HTMLElement | null>(null);
 
   const reveal = () => {
     revealed = true;
-    // Focus follows the only remaining action, as it did in React — except
-    // there it took an effect on `revealed`, and here the click that caused it
-    // is right there. `tick()` is not needed: the button exists already, it was
-    // merely disabled.
+    // Focus the only action left. The button already exists, it was only disabled.
     confirmButton?.focus();
   };
 </script>
@@ -65,7 +58,6 @@
 </DialogHeader>
 
 <div class="space-y-1 px-5 pb-4">
-  <!-- Step 1 — the secret -->
   <div class="flex gap-3">
     <div class="flex flex-col items-center">
       {@render stepBullet(1, true)}
@@ -91,7 +83,6 @@
     </div>
   </div>
 
-  <!-- Step 2 — an optional follow-up (e.g. run instructions); otherwise a quiet note -->
   {#if secondStep}
     <div class="flex gap-3">
       <div class="flex flex-col items-center">
@@ -133,7 +124,6 @@
   </Button>
 {/snippet}
 
-<!-- Numbered step bullet: filled with the accent once the step is reachable. -->
 {#snippet stepBullet(n: number, active: boolean)}
   <span
     class={cn(

@@ -298,7 +298,6 @@ describe('RolesPage — when the backend refuses', () => {
     listRoles.mockResolvedValue(ScyllaResult.error(error));
     render(RolesPage);
 
-    // The page still renders; the catalog is simply empty and says so.
     expect(
       await screen.findByText('No roles yet. Create one to get started.'),
     ).toBeInTheDocument();

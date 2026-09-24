@@ -8,11 +8,7 @@ import { createTailJobLogs } from '../tail-job-logs.svelte.ts';
 
 const JOB_ID = 'job-1';
 
-/**
- * A `JobLogStream` backed by a queue this test drives: `push`/`pushError` add
- * entries and wake the consumer, `end` completes the async iterable. Mirrors
- * what a real gRPC-Web server-stream reader looks like from this side.
- */
+/** A log stream this test drives: `push`, `pushError`, `end`. */
 const createControllableStream = () => {
   const queue: ScyllaResult<JobLog>[] = [];
   let wake: (() => void) | null = null;
@@ -66,7 +62,6 @@ const createControllableStream = () => {
   };
 };
 
-/** Lets the stream reader run, then the flush timer fire. */
 const settle = async (ms = 200) => {
   await Promise.resolve();
   await new Promise(resolve => setTimeout(resolve, ms));
@@ -78,13 +73,7 @@ let tailLogs: ReturnType<typeof vi.fn<JobsRepository['tailLogs']>>;
 const install = (repository: Partial<JobsRepository>) =>
   setDependencyRegistry({ jobs: { jobsRepository: repository as JobsRepository } });
 
-/**
- * Runs the subscription in an effect root and hands back a reader.
- *
- * The state is read through a getter rather than returned from the root:
- * `$effect.root` gives back its own teardown, not the callback's value, and the
- * assertions have to happen after the stream has had time to run.
- */
+/** Reads through a getter: `$effect.root` returns its teardown, not the callback's value. */
 const start = (nodeId?: () => string | undefined) => {
   let tail: ReturnType<typeof createTailJobLogs> | undefined;
 
@@ -169,8 +158,7 @@ describe('createTailJobLogs', () => {
 
     controller.push('only line');
     controller.end();
-    // Well short of the 150 ms flush interval: the end of the stream is what
-    // publishes this, not the timer.
+    // Shorter than the flush interval: the end of the stream publishes this.
     await settle(10);
 
     expect(tail().text).toBe('only line');
@@ -229,8 +217,7 @@ describe('createTailJobLogs', () => {
 
       expect(first.cancel).toHaveBeenCalled();
       expect(tailLogs).toHaveBeenLastCalledWith('job-2', undefined);
-      // Cleared rather than appended to: the previous job's output must not
-      // lead the new one's.
+      // Cleared: the previous job's output must not lead the new one's.
       expect(tail.text).toBe('');
     });
     cleanup();

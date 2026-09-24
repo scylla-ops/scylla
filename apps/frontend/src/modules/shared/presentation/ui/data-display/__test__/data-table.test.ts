@@ -2,14 +2,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildGridTemplate, minTableWidthOf } from '../data-table.ts';
 
-/**
- * The grid maths, tested without a DOM.
- *
- * The React twin asserts these through a rendered table and reads
- * `style.gridTemplateColumns` back off a row. Same rules, but jsdom is not
- * needed to decide what `minmax()` a column gets — `DataTable.test.ts` only has
- * to prove the string reaches the element.
- */
 describe('buildGridTemplate', () => {
   it('lets a column with no size absorb the leftover space, floored at its minSize', () => {
     expect(buildGridTemplate([{ minSize: 120 }])).toBe('minmax(120px, 1fr)');

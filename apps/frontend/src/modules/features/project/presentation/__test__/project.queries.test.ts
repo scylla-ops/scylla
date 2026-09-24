@@ -202,8 +202,7 @@ describe('projectLookupQueries', () => {
     const { combine } = projectLookupQueries(['org-1', 'org-2']);
     const map = combine([{ data: page([project({ id: 'p-2' })]) }]);
 
-    // The single result is org-2's, not org-1's — the indexes follow the
-    // *readable* ids, not the ones asked for.
+    // The indexes follow the readable ids, not the requested ones.
     expect(map.get('p-2')?.organizationId).toBe('org-2');
   });
 });

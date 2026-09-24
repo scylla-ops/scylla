@@ -66,7 +66,6 @@ describe('organizationQueries.mine', () => {
     const organizations = await runQueryFn(organizationQueries.mine());
 
     expect(repository.getMine).toHaveBeenCalled();
-    // A non-admin is denied the global list, so the switcher must not use it.
     expect(repository.getAll).not.toHaveBeenCalled();
     expect(organizations).toHaveLength(1);
   });

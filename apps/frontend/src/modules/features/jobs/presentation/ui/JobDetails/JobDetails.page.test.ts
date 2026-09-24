@@ -10,20 +10,12 @@ import type { JobEntity } from '../../../domain/entities/job.entity.ts';
 import type { JobsRepository } from '../../../domain/repository/jobs.repository.ts';
 import JobDetailsPage from './JobDetails.page.svelte';
 
-/**
- * The real viewer opens a CodeMirror instance per panel and a live gRPC stream
- * behind it. What this page is responsible for is *which* panels exist and how
- * tall they may grow, so the viewer is stubbed down to those two facts.
- */
+/** The viewer (CodeMirror, live stream) reduced to what this page decides: which panels, and how tall. */
 vi.mock('../jobs-log/JobLogDisplay/JobLogDisplay.svelte', async () => ({
   default: (await import('../jobs-log/JobLogDisplay.stub.svelte')).default,
 }));
 
-/**
- * The log column measures itself to decide how tall the whole job's log may
- * grow, and jsdom lays nothing out — so the suite-wide inert stub is replaced
- * here by one a test can report a real height through.
- */
+/** jsdom lays nothing out: an observer a test can report a height through. */
 class ResizeObserverMock {
   static instances: ResizeObserverMock[] = [];
   callback: (entries: Array<{ contentRect: { height: number } }>) => void;

@@ -32,11 +32,7 @@ describe('sanitizeSteps', () => {
   });
 
   it('remaps a dependency on a duplicated id to the LAST occurrence, not the first', () => {
-    // Two steps both start out as "build": the first keeps id "build", the
-    // second is renamed to "build_1". The id->id rename map is keyed by the
-    // ORIGINAL id, so the second occurrence's entry overwrites the first's —
-    // a downstream dep on "build" ends up pointing at "build_1". Documented
-    // here as the actual (if surprising) tie-break, not a first-wins one.
+    // The rename map is keyed by the original id: the last duplicate wins for a downstream dep.
     const steps: PipelineStep[] = [execStep('build'), execStep('build'), execStep('test', ['build'])];
     const result = sanitizeSteps(steps);
     const ids = result.map(s => s.id);
@@ -80,7 +76,6 @@ describe('stepsToFlow', () => {
     const steps: PipelineStep[] = [execStep('a'), execStep('b', ['a'])];
     const { edges } = stepsToFlow(steps, 'p');
     expect(edges).toContainEqual(expect.objectContaining({ source: 'a', target: 'b' }));
-    // "b" has a real dependency, so it must NOT also get a start-node edge
     expect(edges.some(e => e.source === START_NODE_ID && e.target === 'b')).toBe(false);
   });
 
@@ -100,12 +95,12 @@ describe('stepsToFlow', () => {
   });
 
   it('runs sanitizeSteps first, so a bad incoming graph still produces a coherent flow', () => {
-    // duplicate id "a" and a dangling dep — must not throw, must still connect
+    // Duplicate id and dangling dep: no throw, still connected.
     const steps: PipelineStep[] = [execStep('a'), execStep('a'), execStep('c', ['ghost'])];
     const { nodes, edges, sanitizedSteps } = stepsToFlow(steps, 'p');
     expect(nodes).toHaveLength(4); // start + 3 sanitized steps
     expect(sanitizedSteps.map(s => s.id)).toEqual(['a', 'a_1', 'c']);
-    // "c"'s dangling dep was dropped, so it's a root and gets a start-node edge
+    // The dangling dep was dropped: "c" is a root.
     expect(edges).toContainEqual(expect.objectContaining({ source: START_NODE_ID, target: 'c' }));
   });
 
@@ -119,9 +114,6 @@ describe('stepsToFlow', () => {
 
 describe('stepOf', () => {
   it('unwraps a step node, and answers nothing for the start node', () => {
-    // The one shape the Phase 5 port changed: a node's `data` must satisfy
-    // `Record<string, unknown>`, which a union of interfaces does not, so a
-    // step travels wrapped.
     const { nodes } = stepsToFlow([execStep('a')], 'p');
     const [start, step] = nodes;
 

@@ -18,8 +18,7 @@ describe('PageTransition', () => {
 
     await rerender({ key: '/jobs', children: textSnippet('Jobs page') });
 
-    // The outgoing node is still there, mid `out:` transition — that is the
-    // leave animation the Lot A cleanup had to give up.
+    // The departing page is still there during its `out:` transition.
     expect(screen.getAllByRole('main')).toHaveLength(2);
   });
 

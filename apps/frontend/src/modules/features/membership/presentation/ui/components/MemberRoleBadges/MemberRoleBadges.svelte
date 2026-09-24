@@ -10,13 +10,11 @@
 
   interface Props {
     roles: MemberRole[];
-    /** Display name for a role id — see `createAssignableRoles().labelFor`. */
     labelFor: (roleId: string) => string;
-    /** Absent, or false, makes every chip read-only (no revoke affordance). */
+    /** Without it, the chips are read-only. */
     canManage?: boolean;
     disabled?: boolean;
     onRevoke?: (role: MemberRole) => void;
-    /** Shown when the member holds no role at all. */
     empty?: string;
   }
 
@@ -29,41 +27,22 @@
     empty,
   }: Props = $props();
 
-  /**
-   * The chip is hand-rolled rather than built on `Badge`: `Badge` is a
-   * fixed-height, `overflow-hidden` pill meant to hold a word, and the two
-   * things these chips must carry inside them — a scope pastille and a revoke
-   * control — get clipped by it. Same visual language, one row height, nothing
-   * spilling.
-   */
+  /** Not `Badge`: its fixed height clips the scope dot and the revoke button. */
   const CHIP =
     'inline-flex h-6 max-w-full items-center gap-1.5 rounded-full border py-0.5 pl-2.5 text-xs leading-none';
 
-  /** Held here, and editable here. */
   const DIRECT_CHIP = 'border-transparent bg-secondary font-medium text-secondary-foreground';
 
-  /** Comes from above and is administered there: quieter, dashed, locked. */
+  /** From an enclosing scope, administered there: dashed and locked. */
   const INHERITED_CHIP = 'border-dashed border-border bg-muted/40 text-muted-foreground';
 
   const isInherited = (role: MemberRole) => role.origin === MemberRoleOrigin.INHERITED;
-  /** A chip with nothing trailing keeps its symmetric padding. */
   const hasTrailing = (role: MemberRole) => isInherited(role) || canManage;
 </script>
 
 <!--
-  A member's roles, one chip each.
-
-  The distinction the component exists for is direct vs inherited: from a
-  project, a role granted on the project and a role inherited from the
-  organization look identical in their effect and are completely different to
-  administer. Only the first can be revoked here — the second is shown locked,
-  with the reason, rather than hidden, because hiding it would make the project
-  look like it grants less access than it does.
-
-  The scope pastille rides along on the inherited chips **only**, where it is the
-  answer to "then where do I change it?". On a direct chip it would repeat the
-  scope of the page on every chip of every card — noise that made the chips twice
-  as wide and pushed the rest of the roles out of sight.
+  Direct roles can be revoked here; inherited ones are shown locked, not hidden.
+  Only inherited chips show their scope: it says where to change them.
 -->
 {#snippet chip(role: MemberRole)}
   <span

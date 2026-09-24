@@ -1,26 +1,12 @@
 import { t } from '@lingui/core/macro';
 import type { GrpcStatusCode } from '@protobuf-ts/grpcweb-transport';
 
-/**
- * Every code a `ScyllaError` can carry.
- *
- * `RpcError.code` is typed `string` upstream because the same class serves
- * several transports, but the gRPC-Web one always fills it with a
- * `GrpcStatusCode` member name — so the names are the vocabulary. `import type`
- * keeps the enum out of the bundle: it is only ever read as a type here.
- *
- * The last entries are ours, minted by a data source when a gRPC code is too
- * coarse for the call it answers (see `login`'s `INVALID_CREDENTIALS`). They
- * live next to the `userMessage()` switch that consumes them.
- */
+/** The gRPC status names, plus our own codes (e.g. `INVALID_CREDENTIALS` from `login`). */
 export type ScyllaErrorCode =
   | keyof typeof GrpcStatusCode
   | 'UNKNOWN_ERROR'
   | 'INVALID_CREDENTIALS';
 
-/** Class to represent errors in the application.
- * @extends Error
- * **/
 export class ScyllaError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -33,10 +19,7 @@ export class ScyllaError extends Error {
     return !!cause && typeof cause === 'object' && 'code' in cause;
   }
 
-  /**
-   * The cast is a boundary assumption, not a guarantee: the value comes from
-   * the wire. An unknown string simply matches no branch below.
-   */
+  /** A cast: the value comes from the wire. An unknown code matches no branch. */
   public getCode(): ScyllaErrorCode {
     return this.hasCode(this.cause) ? (this.cause.code as ScyllaErrorCode) : 'UNKNOWN_ERROR';
   }
@@ -47,32 +30,23 @@ export class ScyllaError extends Error {
     return this.cause instanceof Error && this.cause.message.includes('fetch');
   }
 
-  /** The requested resource doesn't exist (gRPC NOT_FOUND). */
   public isNotFound(): boolean {
     return this.getCode() === 'NOT_FOUND';
   }
 
-  /** The caller isn't allowed to see this resource (gRPC PERMISSION_DENIED). */
   public isForbidden(): boolean {
     return this.getCode() === 'PERMISSION_DENIED';
   }
 
-  /** A unique constraint was hit, e.g. a name already taken (gRPC ALREADY_EXISTS). */
   public isAlreadyExists(): boolean {
     return this.getCode() === 'ALREADY_EXISTS';
   }
 
-  /** Message carried by the underlying cause (the gRPC status message), if any. */
   private causeMessage(): string | undefined {
     return this.cause instanceof Error && this.cause.message ? this.cause.message : undefined;
   }
 
-  /**
-   * The single message meant for end users. The backend message is surfaced
-   * only for codes where it is actionable by the user (validation, conflicts,
-   * quotas...); other codes fall back to this error's own wrapper message so
-   * internal details never reach a toast.
-   */
+  /** The backend message only for codes the user can act on; otherwise this error's own message. */
   public userMessage(): string {
     if (this.isNetworkError()) {
       return t`Server unreachable`;
@@ -99,9 +73,6 @@ export class ScyllaError extends Error {
   }
 }
 
-/** Class to represent the result of an operation.
- * @template T - The type of the result.
- * **/
 export class ScyllaResult<T> {
   constructor(private readonly _value: T | ScyllaError) {}
 
@@ -153,13 +124,7 @@ export class ScyllaResult<T> {
     }
   }
 
-  /**
-   * Rewrites the error of a failed result; a success passes through untouched.
-   *
-   * Meant for transport boundaries where a generic status code means something
-   * more precise for one specific call, so the ambiguity is resolved once,
-   * where the call's meaning is known, instead of at every consumer.
-   */
+  /** For a call where a generic code means something more precise. A success passes through. */
   public mapError(fn: (error: ScyllaError) => ScyllaError): ScyllaResult<T> {
     return this._value instanceof ScyllaError ? new ScyllaResult<T>(fn(this._value)) : this;
   }

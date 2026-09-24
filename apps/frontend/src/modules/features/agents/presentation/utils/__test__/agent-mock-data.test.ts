@@ -82,10 +82,7 @@ describe('mockCardStats', () => {
   });
 
   it('hasRuns false implies a zero completed and running count', () => {
-    // Sweep enough distinct ids that at least one lands on the ~15% "no runs
-    // yet" branch, and check the invariant holds wherever it does - rather
-    // than assert it on a hand-picked id and risk it silently passing
-    // vacuously if the seed ever changes.
+    // Sweep many ids so the "no runs yet" branch is surely hit.
     const ids = Array.from({ length: 100 }, (_, i) => `sweep-${i}`);
     const noRunsCases = ids.map(id => mockCardStats(id)).filter(stats => !stats.hasRuns);
 
@@ -116,11 +113,7 @@ describe('mockInitialLogs', () => {
   });
 
   it('draws its own random step per line, so the buffer is only roughly - not strictly - ordered', () => {
-    // Each line's offset from "now" is (count - i) * a freshly-drawn 1-5s step,
-    // so a later line can legitimately land earlier than an outlier-heavy
-    // earlier one. Assert the property that actually holds instead: the whole
-    // buffer sits before "now" and within a bounded lookback window, not a
-    // strict ordering the generator never promised.
+    // The generator promises no ordering: check the window instead.
     const before = Date.now();
     const lines = mockInitialLogs('agent-1', 14);
     const after = Date.now();
@@ -130,8 +123,6 @@ describe('mockInitialLogs', () => {
 
     for (const line of lines) {
       const ms = toMillisSinceMidnight(line.t);
-      // Same-day comparison only - acceptable, the odds of this suite running
-      // exactly across a midnight rollover are negligible.
       const nowMs = toMillisSinceMidnight(new Date(after).toTimeString().slice(0, 8));
       expect(ms).toBeLessThanOrEqual(nowMs);
     }

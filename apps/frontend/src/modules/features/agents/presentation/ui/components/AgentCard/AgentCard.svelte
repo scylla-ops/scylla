@@ -55,7 +55,6 @@
           )}
         >
           <CpuIcon class={cn('h-4 w-4', agent.connected ? 'text-success' : 'text-destructive')} />
-          <!-- live status dot -->
           <span class="absolute -bottom-1 -right-1 flex h-3 w-3">
             {#if agent.connected}
               <span
@@ -76,7 +75,7 @@
         </div>
       </div>
       <DropdownMenu>
-        <!-- The trigger *is* the button — see `AppCard` for why. -->
+        <!-- The trigger is the button (see `AppCard`). -->
         <DropdownMenuTrigger
           class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7 shrink-0')}
           onclick={(event: MouseEvent) => event.stopPropagation()}
@@ -99,7 +98,6 @@
       </DropdownMenu>
     </div>
 
-    <!-- status row -->
     <div class="mt-3 flex items-center justify-between gap-2">
       {#if agent.connected}
         <Badge class="gap-1 bg-success/15 text-success hover:bg-success/15">
@@ -143,7 +141,6 @@
           }}
         >
           <TrashIcon class="h-4 w-4" />
-          <!-- Icon-only: the React original had no accessible name here. -->
           <span class="sr-only">{t(agentsMessages.deleteAgent)}</span>
         </Button>
       </div>

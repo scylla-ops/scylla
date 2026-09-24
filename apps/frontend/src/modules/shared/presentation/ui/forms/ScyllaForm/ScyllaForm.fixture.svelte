@@ -1,8 +1,4 @@
-<!--
-  A real footer snippet. `createRawSnippet` renders its string once and never
-  re-runs, so it cannot show that the footer tracks `isValid` — which is the
-  only thing worth asserting about the footer.
--->
+<!-- A real footer snippet: `createRawSnippet` renders once and cannot follow `isValid`. -->
 <script lang="ts">
   import ScyllaForm from './ScyllaForm.svelte';
   import { FormItemType, type FormItem, type FormValues } from '../scylla-form.struct.ts';

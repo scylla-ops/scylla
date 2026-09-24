@@ -74,7 +74,6 @@ describe('CopyableText', () => {
   it('does not wrap the text in a tooltip trigger unless asked to', () => {
     render(CopyableText, { value: 'token' });
 
-    // Just the copy button — the label is a plain span.
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 

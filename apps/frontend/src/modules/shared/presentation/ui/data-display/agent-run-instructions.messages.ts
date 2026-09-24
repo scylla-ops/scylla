@@ -1,15 +1,6 @@
 import { msg } from '@lingui/core/macro';
 
-/**
- * `lingui extract` does not read `.svelte` — see `refacto_svelte.md` §4.5.
- *
- * One message of the React original could not be carried across as one id.
- * `<Trans>Requires the Rust toolchain, from a clone of <0>the scylla repo</0>…`
- * encoded the anchor as an element slot, and a `t()` call returns a string,
- * which cannot carry one. It is split into the three pieces below — three new
- * ids, whose French forms are carried over by hand in the catalogs. The rest of
- * the file keeps the original ids, placeholder names included.
- */
+/** Keep the placeholder names: they are part of the msgid. */
 export const agentRunInstructionsMessages = {
   fromSource: msg`From source`,
   runFromCheckout: msg`Run from a repo checkout`,

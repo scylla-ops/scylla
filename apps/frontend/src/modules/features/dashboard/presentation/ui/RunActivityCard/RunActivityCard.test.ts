@@ -18,13 +18,7 @@ const summary = (overrides: Partial<JobsSummary> = {}): JobsSummary =>
     ...overrides,
   }) as JobsSummary;
 
-/**
- * The figure shown under one outcome label.
- *
- * Read from the label rather than from the number: two outcomes routinely share
- * a count, and a bare `getByText('1')` cannot tell which tile it found — which
- * is exactly the mix-up that would make a swapped pair of labels pass.
- */
+/** Read from the label: two outcomes often share a count. */
 const tileValue = (label: string): string | undefined =>
   screen.getByText(label).parentElement?.firstElementChild?.textContent ?? undefined;
 

@@ -35,9 +35,7 @@
 
   let jobToDelete = $state<string | null>(null);
 
-  // One ticking clock for the whole table rather than one per row, and it stops
-  // by itself once nothing is running. The React version mounted a `useNow` in
-  // every duration cell.
+  // One clock for the table, stopped when nothing runs.
   const now = createNow(() => jobs.some(job => isActiveStatus(job.status)));
 
   const durationOf = (job: JobEntity) => {

@@ -33,8 +33,6 @@ describe('MarketItemList', () => {
   });
 
   it('renders nothing rather than empty nodes when no item matches', () => {
-    // The React version returned an empty fragment per non-match, so a filtered
-    // row still held one node per hidden item.
     render(MarketItemList, { items: [item()], filter: 'nothing like this' });
 
     expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();

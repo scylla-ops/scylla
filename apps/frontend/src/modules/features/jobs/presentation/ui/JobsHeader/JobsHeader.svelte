@@ -14,11 +14,7 @@
     jobIds: string[];
     pipelineId: string;
     onRefresh: () => void;
-    /**
-     * Runs the pipeline these jobs belong to. Injected by whoever owns the
-     * route, because running is a pipeline operation — jobs would otherwise
-     * have to import the pipeline module that already reads jobs.
-     */
+    /** Given by the route's owner: running is a pipeline operation. */
     onRun?: () => Promise<void>;
   }
 
@@ -26,8 +22,7 @@
 
   const deleteJob = createMutation(() => jobMutations.remove(pipelineId));
 
-  // A getter, not the array: the ids are server data that arrives late, and
-  // capturing them once would freeze "select all" on the first, empty render.
+  // A getter: the ids arrive later.
   const selection = createFeatureSelection('jobs', () => jobIds, {
     deleteItem: id => deleteJob.mutateAsync(id),
   });
@@ -59,8 +54,7 @@
           class="h-9 w-9 cursor-pointer transition-all hover:scale-110"
         >
           <RefreshCwIcon class="size-4" />
-          <!-- The tooltip is only `aria-describedby`: without this the button
-               has no accessible name while it is closed. -->
+          <!-- A closed tooltip gives the button no name. -->
           <span class="sr-only">{t(jobsMessages.refresh)}</span>
         </Button>
       {/snippet}

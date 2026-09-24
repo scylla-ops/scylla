@@ -41,8 +41,7 @@ describe('JobStatus', () => {
   });
 
   it('falls back to the pending config for an unrecognized status, without its hint', () => {
-    // The fallback is about *colour and label*, not about the job being queued
-    // — a status this build does not know is not a promise that it is waiting.
+    // A status this build does not know is not "queued".
     render(JobStatus, { job: job('teleported') });
 
     expect(screen.getByText('Pending')).toBeInTheDocument();

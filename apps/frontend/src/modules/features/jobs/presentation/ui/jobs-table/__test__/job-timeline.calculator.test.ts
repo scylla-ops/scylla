@@ -62,9 +62,7 @@ describe('nodeIdOf', () => {
   });
 
   it('falls back to the position for a node the backend left unnamed', () => {
-    // A node that never started carries no id, and the position is the only
-    // thing left to tell two of them apart — the URL and the log panels use the
-    // same fallback, so a link built from one matches the other.
+    // A node that never started has no id: its position stands in, as in the URL.
     expect(nodeIdOf(node('', 'pending'), 2)).toBe('2');
   });
 });

@@ -44,8 +44,6 @@ describe('SecretRevealDialog', () => {
   });
 
   it('resets to the hidden phase when closed and reopened, rather than staying revealed', async () => {
-    // The rule the `{#key open}` exists for: the React version needed an effect
-    // watching `open` to do this, and recreating the checklist does it instead.
     const { rerender } = render(SecretRevealDialog, { ...props, onClose: vi.fn() });
 
     await userEvent.click(revealButton());

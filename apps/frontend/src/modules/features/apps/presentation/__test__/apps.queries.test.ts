@@ -14,10 +14,6 @@ import {
   appQueries,
 } from '../apps.queries.ts';
 
-/**
- * No jsdom and no component: the factories are plain data, so exercising them
- * is a function call. That is the whole reason the hooks became these.
- */
 const app = {
   id: 'app-1',
   organizationId: 'org-1',
@@ -48,8 +44,6 @@ beforeEach(() => {
 
   queryClient = new QueryClient();
   invalidate = vi.fn();
-  // The cast is the price of spying on one method of a concrete class; the
-  // alternative is asserting on the cache's internals instead of the call.
   queryClient.invalidateQueries = invalidate as unknown as QueryClient['invalidateQueries'];
   setQueryClient(queryClient);
 });
@@ -75,8 +69,7 @@ describe('appQueries', () => {
   });
 
   it('keeps an app and its secrets in separate cache entries', () => {
-    // Two queries, one resource: a secret mutation must invalidate the secrets
-    // key and leave the detail alone, which only works if they differ.
+    // Different keys: a secret mutation invalidates the secrets, not the detail.
     expect(APP_QUERY_KEY('app-1')).not.toEqual(APP_SECRETS_QUERY_KEY('app-1'));
   });
 
@@ -128,8 +121,7 @@ describe('appMutations', () => {
       enabled: false,
     });
 
-    // Disabling is reversible, revoking is not — they must not collapse into
-    // one call at any layer.
+    // Disabling is reversible, revoking is not: two distinct calls.
     expect(repository.setAppSecretEnabled).toHaveBeenCalledWith('secret-9', false);
     expect(repository.revokeAppSecret).not.toHaveBeenCalled();
   });

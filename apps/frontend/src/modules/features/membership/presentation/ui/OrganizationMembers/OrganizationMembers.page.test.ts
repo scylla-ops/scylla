@@ -133,8 +133,6 @@ describe('OrganizationMembersPage', () => {
     render(OrganizationMembersPage);
 
     await screen.findByText('alice');
-    // Roles can still be moved among people already here — the directory just
-    // stays out of reach.
     expect(getAll).not.toHaveBeenCalled();
   });
 
@@ -161,8 +159,7 @@ describe('OrganizationMembersPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Continue' }));
 
-    // RevokeAllAccess, not a series of revokeGrant: a narrower grant left
-    // behind would keep them listed.
+    // RevokeAllAccess: a grant left behind would keep them listed.
     await vi.waitFor(() =>
       expect(revokeAllAccess).toHaveBeenCalledWith({
         principal: { kind: PrincipalKind.USER, id: 'user-1' },

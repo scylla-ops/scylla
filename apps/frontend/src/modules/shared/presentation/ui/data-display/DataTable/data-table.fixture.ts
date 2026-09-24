@@ -1,6 +1,5 @@
 import type { DataTableColumn } from '../data-table.ts';
 
-/** The row type `DataTable.fixture.svelte` pins the component to. */
 export interface Datum extends Record<string, unknown> {
   id: string;
   name: string;

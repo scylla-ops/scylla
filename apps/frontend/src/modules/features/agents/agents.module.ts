@@ -12,7 +12,6 @@ const repository = new DefaultAgentsRepository(dataSource);
 export const AgentsModule = {
   id: 'agents',
   domain: {
-    /** Repository interface — the module's data surface. */
     agentsRepository: repository,
   },
   routes: {

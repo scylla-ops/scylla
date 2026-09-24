@@ -15,11 +15,7 @@ import {
 import type { PipelineRemoteDataSource } from '@/modules/features/pipeline/infrastructure/repository/data-sources/pipeline-remote.data-source.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 
-/**
- * Every RPC now answers with a wrapper message holding the entity in field 1.
- * The field is optional on the wire, so an old or broken server could omit it —
- * fail loudly here rather than let `undefined` reach a mapper.
- */
+/** The wrapped entity is optional on the wire: fail here rather than pass `undefined` to a mapper. */
 function requirePipeline(pipeline: Pipeline | undefined): Pipeline {
   if (!pipeline) throw new Error('Server response carried no pipeline');
   return pipeline;
@@ -44,7 +40,6 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
     }, 'Failed to create pipeline.');
   }
 
-  /** Return list of summary of pipelines **/
   public async getByProjectId(
     projectId: string,
     pagination?: PaginationParams,
@@ -61,7 +56,6 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
     );
   }
 
-  /** Every pipeline of the organization, in one call instead of one per project. */
   public async getByOrganizationId(
     organizationId: string,
     pagination?: PaginationParams,
@@ -85,11 +79,7 @@ export class GrpcPipelineRemoteDataSource implements PipelineRemoteDataSource {
     }, 'Error getting pipeline');
   }
 
-  /**
-   * Enqueue a run. The server answers with the id of the job it minted; nothing
-   * downstream needs it today (the caller refetches the pipeline's job list),
-   * so it is dropped here.
-   */
+  /** The returned job id is not needed: callers refetch the job list. */
   public async run(id: string): Promise<ScyllaResult<void>> {
     return ScyllaResult.tryAsync<void>(async () => {
       await this._pipelineClient.runPipeline({ pipelineId: wrapId(id) });

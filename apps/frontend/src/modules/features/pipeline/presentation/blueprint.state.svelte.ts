@@ -12,40 +12,23 @@ import {
 } from './utils/blueprint-converter.ts';
 
 export interface BlueprintStateParams {
-  /** Getters: the steps and the name are the editor's document, and it changes. */
+  /** Getters: the editor's document changes. */
   steps: () => PipelineStep[];
   pipelineName: () => string;
   onStepsChange: (steps: PipelineStep[]) => void;
 }
 
 /**
- * The canvas graph: nodes and edges, kept in step with the script document.
- *
- * Two sources of truth face each other and neither derives from the other. The
- * script owns the steps; the canvas owns their *positions*, which no script
- * records — so the graph cannot be a `$derived` of the steps, or every node
- * would snap back to its computed column the moment anything changed.
- *
- * Hence the guard, carried over verbatim from `use-blueprint-state.ts`:
- * `lastEmitted` records the document this state itself just produced, so the
- * echo coming back down as a new `steps` prop is recognised and ignored. Take
- * it out and a single edit loops — steps → flow → steps → flow.
- *
- * **What the port removed is most of the handlers.** `@xyflow/svelte` takes
- * `nodes` and `edges` as bindable props and writes an added or deleted element
- * into them *before* firing `onconnect` / `ondelete`, so the five reducers the
- * React hook maintained — each juggling two nested `setState` callbacks to read
- * the other array — collapse into {@link sync}. Only the two operations the
- * library knows nothing about, adding and editing a step through the dialog,
- * are still written here.
+ * The canvas graph, in step with the script. The script owns the steps, the
+ * canvas owns the positions, so the graph cannot be derived from the steps.
+ * `lastEmitted` recognises the echo of our own edits, or one edit would loop.
+ * `@xyflow/svelte` writes added and deleted elements itself: `sync` publishes them.
  */
 export const createBlueprintState = (params: BlueprintStateParams) => {
-  // `$state.raw`: these arrays are replaced wholesale, never mutated in place,
-  // and a deep proxy over every node would cost for nothing.
+  // `$state.raw`: replaced whole, never mutated.
   let nodes = $state.raw<BlueprintNode[]>([]);
   let edges = $state.raw<BlueprintEdge[]>([]);
 
-  /** The document this state last handed upwards, so its echo is recognised. */
   let lastEmitted = '';
 
   const keyOf = (steps: PipelineStep[], name: string) => JSON.stringify({ steps, name });
@@ -59,9 +42,7 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
     params.onStepsChange(steps);
   };
 
-  // Synchronising with the document, which lives outside this state — the one
-  // thing `$effect` is for. It reads `steps` and `pipelineName` and writes only
-  // `nodes` / `edges`, so it never re-triggers on its own output.
+  // Writes only `nodes` and `edges`, so it never re-triggers itself.
   $effect(() => {
     const steps = params.steps();
     const name = params.pipelineName();
@@ -72,8 +53,7 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
     edges = flow.edges;
 
     lastEmitted = keyOf(flow.sanitizedSteps, name);
-    // Sanitising is a change the document has not seen — a duplicate id was
-    // renamed, a dangling dependency dropped — so it has to travel back up.
+    // Sanitising (renamed duplicate id, dropped dangling dependency) must go back up.
     if (JSON.stringify(flow.sanitizedSteps) !== JSON.stringify(steps)) {
       params.onStepsChange(flow.sanitizedSteps);
     }
@@ -83,7 +63,6 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
     get nodes() {
       return nodes;
     },
-    /** Written by `bind:nodes` — dragging, selection and deletion happen there. */
     set nodes(next: BlueprintNode[]) {
       nodes = next;
     },
@@ -94,20 +73,11 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
       edges = next;
     },
 
-    /**
-     * Whether a hand-drawn edge may exist at all.
-     *
-     * Nothing may depend on the start node, which stands for the pipeline
-     * itself: an edge into it would mean a step the pipeline waits for before
-     * it begins. Answered *before* the edge is created, so a refused connection
-     * never reaches the document.
-     */
+    /** Nothing may depend on the start node: it is the pipeline itself. */
     canConnect: (connection: Connection) => connection.target !== START_NODE_ID,
 
-    /** The canvas changed the graph itself — publish what it now says. */
     sync: emit,
 
-    /** Adds a step, disambiguating its id against the ones already on the canvas. */
     addNode(nodeId: string, value: NodeFormValue) {
       // eslint-disable-next-line svelte/prefer-svelte-reactivity -- a lookup table local to this call, never state
       const id = generateUniqueNodeId(nodeId, new Set(nodes.map(node => node.id)));
@@ -115,8 +85,7 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
       const node: BlueprintStepNode = {
         id,
         type: 'pipelineStep',
-        // Offset at random so a second node added without touching the canvas
-        // does not land exactly on top of the first.
+        // Random offset, so two added nodes do not stack.
         position: { x: 400 + Math.random() * 200, y: Math.random() * 300 },
         data: { step: { id, deps: [], ...value } },
       };
@@ -125,20 +94,13 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
       emit();
     },
 
-    /**
-     * Rewrites a step, id included.
-     *
-     * A rename has to be followed everywhere the old id is written down — the
-     * `deps` of every other step, and both ends of every edge — or the step
-     * silently loses its wiring on the next round trip through the document.
-     */
+    /** A rename is followed in the `deps` of the other steps and in the edges. */
     editNode(originalId: string, newNodeId: string, value: NodeFormValue) {
       // eslint-disable-next-line svelte/prefer-svelte-reactivity -- a lookup table local to this call, never state
       const id = generateUniqueNodeId(newNodeId, new Set(nodes.map(node => node.id)), originalId);
 
       nodes = nodes.map((node): BlueprintNode => {
-        // The start node is neither renameable nor a dependant — it is the
-        // pipeline, not a step — so it is out of this entirely.
+        // The start node is the pipeline, not a step.
         if (node.type !== 'pipelineStep') return node;
 
         if (node.id === originalId) {

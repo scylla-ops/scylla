@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/layout/whats-new.ts:55
+#: src/modules/layout/whats-new.ts:39
 msgid "Build your own roles and grant them fine-grained permissions on an organization or a project."
 msgstr "Créez vos propres rôles et accordez-leur des permissions fines sur une organisation ou un projet."
 
@@ -21,13 +21,13 @@ msgstr "Créez vos propres rôles et accordez-leur des permissions fines sur une
 msgid "Create"
 msgstr "Créer"
 
-#: src/modules/layout/whats-new.ts:68
+#: src/modules/layout/whats-new.ts:52
 msgid "Dark mode"
 msgstr "Mode sombre"
 
 #: src/modules/layout/presentation/__test__/nav-sections.test.ts:48
 #: src/modules/layout/presentation/ui/AppSidebar/AppSidebar.test.ts:83
-#: src/modules/layout/whats-new.ts:47
+#: src/modules/layout/whats-new.ts:31
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
@@ -39,7 +39,7 @@ msgstr "C'est noté"
 msgid "Here is what landed in this version."
 msgstr "Voici ce qui arrive dans cette version."
 
-#: src/modules/layout/whats-new.ts:62
+#: src/modules/layout/whats-new.ts:46
 msgid "Invite people to your organization and your projects, and manage what each of them can do."
 msgstr "Invitez des personnes dans votre organisation et vos projets, et gérez ce que chacune peut faire."
 
@@ -47,7 +47,7 @@ msgstr "Invitez des personnes dans votre organisation et vos projets, et gérez 
 msgid "Language"
 msgstr "Langue"
 
-#: src/modules/layout/whats-new.ts:48
+#: src/modules/layout/whats-new.ts:32
 msgid "Live metrics for your agents, pipelines and recent runs, all in one place."
 msgstr "Les métriques en direct de vos agents, pipelines et exécutions récentes, au même endroit."
 
@@ -59,7 +59,7 @@ msgstr "Chargement…"
 msgid "Log out"
 msgstr "Se déconnecter"
 
-#: src/modules/layout/whats-new.ts:61
+#: src/modules/layout/whats-new.ts:45
 msgid "Members"
 msgstr "Membres"
 
@@ -75,11 +75,11 @@ msgstr "Organisation"
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/layout/whats-new.ts:54
+#: src/modules/layout/whats-new.ts:38
 msgid "Roles"
 msgstr "Rôles"
 
-#: src/modules/layout/whats-new.ts:69
+#: src/modules/layout/whats-new.ts:53
 msgid "Scylla now comes in light and dark — switch with the button in the top-right corner."
 msgstr "Scylla existe désormais en clair et en sombre — basculez avec le bouton en haut à droite."
 

@@ -37,8 +37,7 @@
     },
   ]);
 
-  // Both fields are optional on the wire: an empty one means "leave it alone",
-  // which is why they are placeholders rather than default values.
+  // Empty means "leave it alone": placeholders, not default values.
   const handleSubmit = ({ name, description }: FormValues<'name' | 'description'>) => {
     updateOrganization.mutate(
       {

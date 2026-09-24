@@ -35,9 +35,8 @@
   const canCreate = $derived(can(Permission.CREATE_AGENT));
 
   let createOpen = $state(false);
-  /** The one-time plaintext, held only as long as the dialog shows it. */
+  /** Held only while the dialog shows it. */
   let created = $state<CreatedAgent | null>(null);
-  /** The agent awaiting confirmation. `null` closes the dialog. */
   let pendingDeletion = $state<string | null>(null);
 
   const items = $derived((activeLocale(), createAgentItems()));
@@ -45,8 +44,7 @@
   const handleCreate = ({ name }: FormValues<'name'>) => {
     if (!name.trim()) return;
 
-    // On error the dialog stays open so the name can be fixed in place; the
-    // toast comes from the global MutationCache onError handler.
+    // On error the dialog stays open; the global handler toasts.
     createAgent.mutate(name.trim(), {
       onSuccess: data => {
         createOpen = false;

@@ -22,14 +22,12 @@ const role = (overrides: Partial<RoleEntity> = {}): RoleEntity => ({
   ...overrides,
 });
 
-/** The builtin that admits someone to an organization — it confers the read. */
 const memberRole = role({
   id: 'role-member',
   name: 'organization-member',
   access: { kind: 'restricted', permissions: [Permission.READ_ORGANIZATION] },
 });
 
-/** Admitted, but holding nothing that opens the organization. */
 const blindRole = role({
   id: 'role-blind',
   name: 'blind',
@@ -83,8 +81,7 @@ beforeEach(() => {
         listRoles,
         listGrants,
         createGrant,
-        // A grant change may alter what the caller may see, so every success
-        // reloads their own permissions — the mutation does it unprompted.
+        // Every grant change reloads the caller's own permissions.
         getMyPermissions: vi.fn().mockResolvedValue(ScyllaResult.success({ scopes: [] })),
       },
       updateRole: { execute: vi.fn() },
@@ -107,7 +104,6 @@ afterEach(() => {
   permissionsStore.setState({ permissions: null });
 });
 
-/** Builds the ViewModel inside a reactive root — it is made of runes. */
 const withCreator = async (
   forRole: RoleEntity,
   body: (creator: ReturnType<typeof createGrantCreator>) => Promise<void> | void,

@@ -47,7 +47,6 @@ let navigate: ReturnType<typeof vi.fn<(to: string, options?: unknown) => void>>;
 let cache: ReturnType<typeof withQueryClient>;
 let restoreRegistry: () => void;
 
-/** A system-wide grant of exactly these permissions. */
 const grant = (permissions: Permission[]) =>
   permissionsStore.setState({
     permissions: {
@@ -91,15 +90,7 @@ afterEach(() => {
   permissionsStore.setState({ permissions: null });
 });
 
-/**
- * The card a piece of text sits in.
- *
- * Two things on this page legitimately carry the same string — a project's card
- * title and the badge naming that project in the pipeline row — and one figure
- * only means something next to its own label. `data-slot` is ours, not a
- * library's, so it is a fair anchor; the table rows are not cards, which is what
- * makes this unambiguous.
- */
+/** The card holding a text: the same string can appear twice on the page. */
 const cardContaining = async (text: string): Promise<HTMLElement> => {
   const matches = await screen.findAllByText(text);
   const card = matches.map(node => node.closest('[data-slot="card"]')).find(Boolean);
@@ -112,7 +103,6 @@ describe('DashboardPage', () => {
     render(DashboardPage);
 
     expect(await screen.findByText('ci')).toBeInTheDocument();
-    // One project, one pipeline, one run — each figure inside its own tile.
     for (const label of ['Projects', 'Pipelines', 'Runs']) {
       expect(within(await cardContaining(label)).getByText('1')).toBeInTheDocument();
     }

@@ -9,7 +9,7 @@
 
   interface Props {
     open: boolean;
-    /** The role being edited, or `null` when creating a new one. */
+    /** `null` when creating. */
     role: RoleEntity | null;
     onClose: () => void;
   }

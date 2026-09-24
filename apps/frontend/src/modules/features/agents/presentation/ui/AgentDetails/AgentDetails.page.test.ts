@@ -144,7 +144,7 @@ describe('AgentDetailsPage', () => {
     );
     render(AgentDetailsPage, { agentId: 'agent-1' });
 
-    // A deleted agent is not an error to sit on — it redirects to the list.
+    // A deleted agent redirects to the list.
     await vi.waitFor(() => expect(nav.navigate).toHaveBeenCalledWith('..', expect.anything()));
   });
 
@@ -167,7 +167,6 @@ describe('AgentDetailsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     await vi.waitFor(() => expect(deleteAgent).toHaveBeenCalledWith('agent-1'));
-    // `navigate(to)` with no options records an explicit `undefined`.
     await vi.waitFor(() => expect(nav.navigate).toHaveBeenCalledWith('..', undefined));
   });
 

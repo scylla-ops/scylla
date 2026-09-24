@@ -5,7 +5,6 @@ import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
 import type { SecretEntity } from '../../../domain/entities/secret.entity.ts';
 import { secretMessages } from '../secret.messages.ts';
 
-/** One snippet per column, each taking the row it renders. */
 export interface SecretCells {
   name: Snippet<[SecretEntity]>;
   description: Snippet<[SecretEntity]>;
@@ -13,18 +12,6 @@ export interface SecretCells {
   actions: Snippet<[SecretEntity]>;
 }
 
-/**
- * The secrets table, as a column definition.
- *
- * Most of it survived the port untouched — `accessorKey`, `header`, `size`,
- * `minSize` are the same numbers the React version declared, which is the whole
- * dividend of TanStack Table being framework-agnostic data. Two things changed:
- *
- * - a `cell` used to return a React element and now returns a Svelte snippet,
- *   so the markup stays in `SecretList.svelte` and this file stays a `.ts`;
- * - centring moved from a wrapper `<div>` inside each cell to `meta.align`,
- *   which `DataTable` already reads for both the header and the cell.
- */
 export const secretColumns = (cells: SecretCells): DataTableColumn<SecretEntity>[] => [
   {
     accessorKey: 'name',

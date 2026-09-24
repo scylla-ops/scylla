@@ -13,7 +13,6 @@ const repository = new DefaultPermissionRepository(dataSource);
 export const RolesModule = {
   id: 'roles',
   domain: {
-    /** Repository interface — the module's data surface. */
     permissionRepository: repository,
     updateRole: new UpdateRoleUseCase(repository),
   },

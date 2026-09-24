@@ -25,7 +25,7 @@
 </script>
 
 {#if projectsQuery.isLoading}
-  <!-- todo: handle properly -->
+  <!-- Nothing while loading: the grid would only flash. -->
 {:else if projectsQuery.isError || !projects}
   <ErrorState message={t(projectMessages.loadError)} />
 {:else}
@@ -34,8 +34,7 @@
       numberOfProjects={paginationInfo?.totalCount ?? projects.length}
       projectIds={projects.map(project => project.id)}
     />
-    <!-- Breakpoints are viewport-wide; the sidebar eats ~16rem, hence the late
-         3rd/4th column. -->
+    <!-- Breakpoints are viewport-wide and the sidebar takes ~16rem: late 3rd and 4th columns. -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
       {#each projects as project (project.id)}
         <ProjectCard {project} />

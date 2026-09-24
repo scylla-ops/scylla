@@ -43,13 +43,7 @@ const grant: GrantEntity = {
 
 type Fn = ReturnType<typeof vi.fn>;
 
-/**
- * The repository's methods as free handles.
- *
- * Asserting on `repository.listRoles` would pass an unbound method, which the
- * type-aware lint rejects — and rightly, since a mock read off the object is one
- * `this` away from a different function.
- */
+/** Free handles: asserting on `repository.listRoles` passes an unbound method. */
 let listRoles: Fn;
 let getRole: Fn;
 let createRole: Fn;
@@ -225,7 +219,6 @@ describe('roleMutations', () => {
 });
 
 describe('grantMutations', () => {
-  /** Every grant list, whatever its scope — one prefix, one invalidation. */
   const GRANT_PREFIX = [GRANTS_QUERY_KEY()[0]];
 
   it('creates a grant and invalidates every grant list, not just the one in view', async () => {
@@ -247,7 +240,6 @@ describe('grantMutations', () => {
   it("reloads the caller's own permissions after a grant change", () => {
     grantMutations.create().onSuccess?.(grant, {} as never, undefined, undefined as never);
 
-    // The store is written asynchronously; what matters is that the call went out.
     expect(getMyPermissions).toHaveBeenCalled();
   });
 
@@ -296,7 +288,6 @@ describe('refreshMyPermissions', () => {
 });
 
 describe('syncMyPermissions', () => {
-  /** The call is fired without being awaited; let the microtasks drain. */
   const settle = () => new Promise(resolve => setTimeout(resolve, 0));
 
   it('loads once for a session key and never again on a re-render', async () => {

@@ -17,7 +17,6 @@
   import { jobsMessages } from '../../jobs.messages.ts';
 
   interface Props {
-    /** Opens the job details page — info and per-node logs both live there. */
     onView: (event: Event) => void;
     onDelete: (event: Event) => void;
   }
@@ -26,13 +25,10 @@
 
   const canDelete = $derived(can(Permission.DELETE_JOB));
 
-  // An action, not a ref + effect: this element lives in a table row and is
-  // created and destroyed with it.
   const container = createCompactContainer();
 </script>
 
-<!-- Row actions: view details and delete. Falls back to a dropdown when the
-     column is too narrow to lay the buttons out inline. -->
+<!-- Falls back to a menu when the column is too narrow. -->
 <div use:container.measure class="flex w-full items-center justify-center gap-2 shrink-0">
   {#if container.isCompact}
     <DropdownMenu>
@@ -44,7 +40,6 @@
         onclick={(event: MouseEvent) => event.stopPropagation()}
       >
         <MoreHorizontalIcon class="w-4 h-4" />
-        <!-- Icon-only: the React trigger carried no accessible name. -->
         <span class="sr-only">{t(jobsMessages.jobActions)}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" class="w-40">

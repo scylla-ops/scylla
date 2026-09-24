@@ -6,17 +6,7 @@ import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import type { SecretEntity } from '../domain/entities/secret.entity.ts';
 import type { SecretModule } from '../secret.module.ts';
 
-/**
- * Every read and write this module performs, declared as plain data.
- *
- * This is what `use-secrets.ts` was — three hooks — with the framework taken
- * out: `queryOptions` and `mutationOptions` describe the call, `createQuery` /
- * `createMutation` run it inside a component, and a test can exercise the
- * `queryFn` on its own.
- *
- * The repository is resolved per call, never at module load: the registry is
- * installed by the composition root and swapped by tests.
- */
+// Resolved per call: tests swap the registry.
 const repository = () =>
   getModuleDomain<typeof SecretModule.domain>('secret').secretRepository;
 
@@ -29,7 +19,7 @@ export interface CreateSecretValues {
 }
 
 export const secretQueries = {
-  /** A project's secrets — **metadata only**, the backend never returns a value. */
+  /** Metadata only. */
   byProject: (projectId: string) =>
     queryOptions<SecretEntity[]>({
       queryKey: SECRETS_QUERY_KEY(projectId),
@@ -43,7 +33,7 @@ const invalidateProject = (projectId: string) =>
   getQueryClient().invalidateQueries({ queryKey: SECRETS_QUERY_KEY(projectId) });
 
 export const secretMutations = {
-  /** The plaintext passes through here once, on its way out. Never stored. */
+  /** The value passes through once and is never stored. */
   create: (projectId: string) =>
     mutationOptions({
       mutationFn: async ({ name, value, description }: CreateSecretValues) =>
@@ -54,13 +44,7 @@ export const secretMutations = {
       },
     }),
 
-  /**
-   * Deleting breaks any running pipeline that depends on the secret — every
-   * caller confirms first through `ConfirmOperationAlertDialog`.
-   *
-   * No success toast here: the two call sites differ. The row action reports
-   * one deletion, the header's bulk delete reports the count.
-   */
+  /** Breaks the pipelines that use it: confirm first. No success toast: each caller words its own. */
   remove: (projectId: string) =>
     mutationOptions({
       mutationFn: async (secretId: string) =>

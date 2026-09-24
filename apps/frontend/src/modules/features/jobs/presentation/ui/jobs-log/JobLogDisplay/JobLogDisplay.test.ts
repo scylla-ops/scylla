@@ -15,7 +15,6 @@ const logLine = (line: string): JobLog => ({
   timestamp: '2026-01-01T00:00:00.000Z',
 });
 
-/** A stream that replays some lines and ends, like a finished job's history. */
 const streamOf = (lines: string[]) => ({
   // eslint-disable-next-line @typescript-eslint/require-await
   logs: (async function* () {
@@ -30,7 +29,6 @@ const install = (tailLogs: JobsRepository['tailLogs']) => {
   restore = withRegistry({ jobs: { jobsRepository: { tailLogs } as unknown as JobsRepository } });
 };
 
-/** The editor's own scroller — what the caller's `maxHeight` ends up capping. */
 const editor = () => document.querySelector<HTMLElement>('.cm-editor');
 
 beforeEach(() => {
@@ -46,8 +44,6 @@ describe('JobLogDisplay', () => {
 
     render(JobLogDisplay, { jobId: '' });
 
-    // The only state in which "loading" outlives a frame: the subscription
-    // never starts, so there is nothing to show and nothing to be wrong about.
     expect(screen.getByText('Loading...')).toBeInTheDocument();
     expect(tailLogs).not.toHaveBeenCalled();
     expect(editor()).toBeNull();
@@ -66,7 +62,7 @@ describe('JobLogDisplay', () => {
 
     render(JobLogDisplay, { jobId: 'job-1' });
 
-    // One flush interval is 150 ms; the end of the stream flushes immediately.
+    // The end of the stream flushes at once.
     await waitFor(() => expect(editor()?.textContent).toContain('first line'));
     expect(editor()?.textContent).toContain('second line');
   });

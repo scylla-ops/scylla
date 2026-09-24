@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { flushSync } from 'svelte';
 import { createCompactContainer } from '../compact-container.svelte.ts';
 
-/** Drives the observer the action installs, which `setup.ts` stubs out. */
 let notify: ((entries: Array<{ contentRect: { width: number } }>) => void) | null = null;
 const disconnect = vi.fn();
 

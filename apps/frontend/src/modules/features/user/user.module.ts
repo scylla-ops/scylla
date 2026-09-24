@@ -12,7 +12,6 @@ const repository = new DefaultUserRepository(dataSource);
 export const UserModule = {
   id: 'user',
   domain: {
-    /** Repository interface — the module's data surface. */
     userRepository: repository,
   },
   routes: {

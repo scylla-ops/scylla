@@ -21,7 +21,6 @@ const agent = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-/** `daysAgo` in ISO, so a fixture always lands inside the window under test. */
 const isoDaysAgo = (daysAgo: number): string => {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
@@ -53,7 +52,6 @@ let getAgentStats: ReturnType<typeof vi.fn>;
 let cache: ReturnType<typeof withQueryClient>;
 let restoreRegistry: () => void;
 
-/** Series strokes, in draw order — how many curves the chart is showing. */
 const drawnSeries = (container: HTMLElement): string[] =>
   [...container.querySelectorAll('path[stroke]')].map(path => path.getAttribute('stroke') ?? '');
 
@@ -148,7 +146,7 @@ describe('AgentOutcomesChart', () => {
 
   it('narrows the window to the range picked, which can empty it', async () => {
     const user = userEvent.setup();
-    // Outside 7 days, inside 14: the range button is what decides.
+    // Only the range button decides.
     getAgentStats.mockResolvedValue(ScyllaResult.success(stats([day(9, { completed: 2 })])));
     render(AgentOutcomesChart);
 
@@ -163,8 +161,7 @@ describe('AgentOutcomesChart', () => {
     render(AgentOutcomesChart);
 
     await screen.findByRole('img', { name: 'Agent Outcomes' });
-    // Peak is 3 completed on one day, so the axis runs 0..3 in steps of one —
-    // never "1.5 runs", which is what `allowDecimals={false}` used to buy.
+    // Whole runs only: the axis never shows "1.5 runs".
     for (const tick of ['0', '1', '2', '3']) {
       expect(screen.getByText(tick)).toBeInTheDocument();
     }

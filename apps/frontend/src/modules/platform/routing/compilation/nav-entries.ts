@@ -2,9 +2,8 @@ import type { Permission } from '@platform/authz';
 import type { NavLink, RouteSource } from '../declaration/scylla-module.struct.ts';
 import { flattenModuleRoutes } from './flatten-routes.ts';
 
-/** A sidebar entry, as the layout renders it. */
 export interface NavEntry extends NavLink {
-  /** The path of the page, appended to the current organization prefix. */
+  /** Relative to the organization, e.g. `agents`. */
   url: string;
   /** The permission of the page. The link hides when the page would deny the user. */
   permission?: Permission;

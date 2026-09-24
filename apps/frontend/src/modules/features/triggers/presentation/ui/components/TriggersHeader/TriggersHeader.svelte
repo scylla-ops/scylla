@@ -18,13 +18,12 @@
 
   const deleteTrigger = createMutation(() => triggerMutations.remove(pipelineId));
 
-  // A getter, not the array: the ids are server data that arrives late, and
-  // capturing them once would freeze "select all" on the first, empty render.
+  // A getter: the ids arrive later.
   const selection = createFeatureSelection('triggers', () => triggerIds, {
     deleteItem: id => deleteTrigger.mutateAsync(id),
   });
 
-  // Triggers are all-or-nothing in V1: one permission covers create and delete.
+  // One permission covers every write.
   const canManage = $derived(can(Permission.MANAGE_TRIGGERS));
 </script>
 

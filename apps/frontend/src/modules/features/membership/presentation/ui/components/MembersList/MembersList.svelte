@@ -11,24 +11,19 @@
 
   interface Props {
     members: ScopeMember[];
-    /** Resolves a user id to a display name — falls back to the id upstream. */
     nameFor: (userId: string) => string;
-    /** The signed-in user, whose own card is marked instead of removable. */
     currentUserId: string;
     isLoading?: boolean;
-    /** Shown in place of the grid when nobody is listed. */
     emptyMessage?: string;
 
     labelFor: (roleId: string) => string;
     canManage: boolean;
     disabled: boolean;
     onRevokeRole: (role: MemberRole) => void;
-    /** Roles this member could still receive at the view's own scope. */
+    /** At the view's own scope. */
     addableRolesFor: (member: ScopeMember) => AssignableRole[];
     onAddRole: (userId: string, roleId: string) => void;
-    /** Shown in the roles box when the member holds none. */
     emptyRoles?: string;
-    /** False when this member has nothing removable at this scope. */
     canRemove: (member: ScopeMember) => boolean;
     removeTooltip: string;
     onRemove: (member: ScopeMember) => void;
@@ -52,27 +47,15 @@
     onRemove,
   }: Props = $props();
 
-  /** Same footprint as the grid, so the page doesn't jump between states. */
+  /** The grid's footprint, so the page does not jump between states. */
   const PANEL = 'flex flex-1 items-center justify-center rounded-xl border border-dashed p-10';
 
-  /**
-   * Sorted here rather than by the caller: the order a member list comes back
-   * in is grant insertion order, which means nothing to a reader scanning for a
-   * person, and both member views want the same answer.
-   */
+  /** Sorted here: the backend order is grant insertion. */
   const sorted = $derived(
     [...members].sort((left, right) => nameFor(left.userId).localeCompare(nameFor(right.userId))),
   );
 </script>
 
-<!--
-  The member list, as a grid of cards, with the two states that come with it.
-
-  Cards rather than table rows because a member is a small profile — a name and
-  a set of role chips — not a row of comparable values: the chips wrap, and in a
-  table they either stretch the row or force every column to fight for width.
-  Each card owns its own scroll instead (see `MemberCard`).
--->
 {#if isLoading}
   <div class="{PANEL} border-border">
     <Loader2Icon role="status" class="size-5 animate-spin text-muted-foreground" />
@@ -85,9 +68,7 @@
   </div>
 {:else}
   <div class="min-h-0 flex-1 overflow-y-auto pr-1">
-    <!-- Two columns until the screen is genuinely wide: a card's width is what
-         decides how many role chips fit on a row, so a third column bought at
-         1280px would cost every card the space the roles need. -->
+    <!-- Two columns until the screen is wide: a card's width decides how many roles fit per row. -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
       {#each sorted as member (member.userId)}
         <MemberCard

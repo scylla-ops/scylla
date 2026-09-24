@@ -4,8 +4,7 @@
   import { Button } from '@shadcn';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
-  // Direct paths, not the group barrels: importing them from here would loop
-  // back through `layout`.
+  // Not the group barrels: they would import this file back.
   import GatedButton from '../../controls/GatedButton/GatedButton.svelte';
   import ConfirmOperationAlertDialog from '../../feedback/ConfirmOperationAlertDialog.svelte';
   import { featureHeaderMessages } from '../feature-header.messages.ts';
@@ -16,17 +15,17 @@
     underLabel?: Snippet;
     pluralLabel?: string;
     selectedCount?: number;
-    /** True when every selectable row is already selected — hides "Select all". */
+    /** Hides "Select all". */
     allSelected?: boolean;
     onSelectAll?: () => void;
     onClearSelection?: () => void;
     onDeleteSelection?: () => Promise<void> | void;
     onNew?: () => void;
     newLabel?: string;
-    /** When false, the "New" button is shown disabled with {@link newDeniedReason}. */
+    /** False disables "New" and shows `newDeniedReason`. */
     canNew?: boolean;
     newDeniedReason?: string;
-    /** When false, the bulk-delete button is shown disabled with {@link deleteDeniedReason}. */
+    /** False disables the bulk delete and shows `deleteDeniedReason`. */
     canDelete?: boolean;
     deleteDeniedReason?: string;
     extraActions?: Snippet;
@@ -62,7 +61,7 @@
       await onDeleteSelection?.();
       toast.success(t(featureHeaderMessages.itemsDeleted(selectedCount)));
     } catch {
-      // Toast shown by the global MutationCache onError handler.
+      // The error toast comes from the global mutation handler.
       deleteDialogOpen = false;
     }
   };
@@ -86,7 +85,6 @@
     {#if underLabel}{@render underLabel()}{/if}
   </div>
 
-  <!-- Wraps under the title rather than pushing the actions out of the page. -->
   <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
     {#if onSelectAll && !allSelected && !!count}
       <Button variant="outline" onclick={onSelectAll}>{t(featureHeaderMessages.selectAll)}</Button>

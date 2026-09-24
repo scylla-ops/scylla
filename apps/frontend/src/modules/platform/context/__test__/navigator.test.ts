@@ -43,8 +43,6 @@ describe('the app navigator', () => {
   });
 
   it('falls back to the document location when nothing is installed', () => {
-    // A component test that only *reads* the path must not have to install a
-    // router, which is what makes this fallback worth having.
     expect(currentPathname()).toBe(window.location.pathname);
     expect(currentSearch()).toBe(window.location.search);
   });

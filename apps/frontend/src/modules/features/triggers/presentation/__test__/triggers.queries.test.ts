@@ -33,7 +33,6 @@ const draft: TriggerDraft = {
   inputs: [],
 };
 
-/** Stands in for the query TanStack hands `refetchInterval`. */
 const queryWithData = (data: TriggerEntity[]) => ({ state: { data } });
 
 const pollFor = (triggers: TriggerEntity[]) => {
@@ -180,8 +179,7 @@ describe('triggerMutations.setEnabled', () => {
     seedCache(true);
     const options = triggerMutations.setEnabled(PIPELINE_ID);
 
-    // onMutate alone — the repository is never called here, which is the point:
-    // the switch has to move under the pointer, not a round trip later.
+    // `onMutate` alone: the switch moves before any round trip.
     await options.onMutate?.({ triggerId: 'trigger-1', enabled: false }, undefined as never);
 
     expect(cached()[0].enabled).toBe(false);

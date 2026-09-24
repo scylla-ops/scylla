@@ -4,11 +4,7 @@ import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { organizationQueries } from '@/modules/features/organization';
 
-/**
- * Sends the user to the dashboard of the active organization, or of the first
- * organization. With no organization, it stays: the layout shows the welcome
- * screen.
- */
+/** With no organization, stays: the layout shows the welcome screen. */
 export const redirectToOrganization = (): void => {
   const organizations = createQuery(() => organizationQueries.mine());
   const context = toRune(contextStore);

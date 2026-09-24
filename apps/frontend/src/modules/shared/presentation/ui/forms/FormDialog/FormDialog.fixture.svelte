@@ -1,4 +1,4 @@
-<!-- Pins `FormDialog`'s id generic — see `DataTable.fixture.svelte` for why. -->
+<!-- Pins the id generic of `FormDialog`. -->
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
   import FormDialog from './FormDialog.svelte';

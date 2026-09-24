@@ -54,9 +54,7 @@ describe('AddProjectDialog', () => {
     render(AddProjectDialog, { open: true, setOpen: vi.fn() });
     await focusSettled();
 
-    // Description isn't marked optional either, so both fields are needed just
-    // to enable Create — the organization check only runs once the form itself
-    // considers the input valid.
+    // Both fields are required: the organization check runs only on a valid form.
     await userEvent.type(screen.getByLabelText('Project name'), 'web');
     await userEvent.type(screen.getByLabelText('Description'), 'the web app');
     await userEvent.click(screen.getByRole('button', { name: 'Create Project' }));

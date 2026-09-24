@@ -20,8 +20,6 @@ describe('catalog lookups', () => {
   });
 
   it('getPermissionDefinition returns undefined for a permission outside the V1 catalog', () => {
-    // READ_PIPELINE's own dependency graph is catalogued, but a raw wire
-    // permission the UI never gates on (e.g. an invitation permission) is not.
     expect(getPermissionDefinition(Permission.UNSPECIFIED)).toBeUndefined();
   });
 
@@ -159,15 +157,13 @@ describe('getEditablePermissionDefinitionsForScope — what the editor actually 
   it('re-parents a child of a hidden node onto its stand-in, so the tree does not point at a node that is not rendered', () => {
     const definitions = getEditablePermissionDefinitionsForScope(PermissionScope.ORGANIZATION);
     const updateProject = definitions.find(d => d.id === Permission.UPDATE_PROJECT);
-    // UPDATE_PROJECT's cataloged parent is READ_PROJECT, which is hidden at
-    // ORGANIZATION scope and stands in for LIST_PROJECTS_BY_ORGANIZATION.
+    // At ORGANIZATION scope, READ_PROJECT is hidden and LIST_PROJECTS_BY_ORGANIZATION stands in for it.
     expect(updateProject?.dependsOn).toBe(Permission.LIST_PROJECTS_BY_ORGANIZATION);
   });
 
   it('leaves dependsOn untouched when the parent is not hidden at this scope', () => {
     const definitions = getEditablePermissionDefinitionsForScope(PermissionScope.PROJECT);
     const updateProject = definitions.find(d => d.id === Permission.UPDATE_PROJECT);
-    // At PROJECT scope, READ_PROJECT itself is the visible root — not hidden.
     expect(updateProject?.dependsOn).toBe(Permission.READ_PROJECT);
   });
 

@@ -13,9 +13,9 @@
 
   interface Props {
     summary: JobsSummary;
-    /** Runs the organization has in total, which may exceed the summarized window. */
+    /** Can exceed the summarized window. */
     totalRuns: number;
-    /** True when `summary` covers only the most recent page of runs. */
+    /** The summary covers only the latest page of runs. */
     truncated: boolean;
     loading: boolean;
   }
@@ -32,14 +32,7 @@
   ]);
 </script>
 
-<!--
-  Organization-wide run activity, from `ListOrganizationJobs`.
-
-  The backend exposes no organization-level aggregate — only a paginated job
-  listing — so every figure here is computed over the most recent window. When
-  that window does not cover the whole history the card says so rather than
-  presenting a partial success rate as if it were the all-time one.
--->
+<!-- Computed over the latest window (no backend aggregate): the card says when it is partial. -->
 <Card class="py-5">
   <CardHeader class="px-5 pb-0">
     <CardTitle class="flex items-center justify-between text-base font-semibold">

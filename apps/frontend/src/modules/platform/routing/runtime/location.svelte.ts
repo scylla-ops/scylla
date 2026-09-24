@@ -1,16 +1,15 @@
 import { on } from 'svelte/events';
 
-/** The URL of the page, reactive. The router writes it; nothing else does. */
+/** Written only by the router. */
 export const location = $state({ pathname: '/', search: '', hash: '' });
 
-/** Copies the URL of the document into `location`. */
 export const syncLocation = (): void => {
   location.pathname = window.location.pathname;
   location.search = window.location.search;
   location.hash = window.location.hash;
 };
 
-/** Changes the URL without a page load, then updates `location`. */
+/** Changes the URL without a page load. */
 export const changeLocation = (url: string, options: { replace?: boolean } = {}): void => {
   if (options.replace) history.replaceState(history.state, '', url);
   else history.pushState(null, '', url);
@@ -39,11 +38,7 @@ const followLink = (event: MouseEvent): void => {
   if (!samePage) window.scrollTo(0, 0);
 };
 
-/**
- * Keeps `location` in step with the browser: back and forward, and a click on a
- * link of the app, which it follows without a page load. Returns the function
- * that stops it.
- */
+/** Follows back/forward and the clicks on the app's links. Returns the function that stops it. */
 export const listenToLocation = (): (() => void) => {
   syncLocation();
   const stops = [on(window, 'popstate', syncLocation), on(window, 'click', followLink)];

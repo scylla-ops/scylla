@@ -11,26 +11,17 @@
  * would be absurd.
  */
 
-/**
- * What one day of the backend's series has to carry for this chart.
- *
- * Structural, not `DailyOutcome` from `agents`: the geometry has no business
- * knowing what else a day of agent statistics holds, and a test here should not
- * have to build fields the curve never reads.
- */
+/** Only what the curve reads of a day. */
 export interface DailyCounts {
-  /** An ISO date-time string, which is what the stats endpoint returns. */
   day: string;
   completed: number;
   failed: number;
   cancelled: number;
 }
 
-/** One day's worth of outcomes, with the gaps filled in. */
 export interface OutcomeBucket {
-  /** `YYYY-MM-DD`, local time — the tooltip's label and the bucket's identity. */
+  /** `YYYY-MM-DD`, local time. */
   day: string;
-  /** The day of the month, which is all the x axis has room for. */
   label: string;
   completed: number;
   failed: number;
@@ -42,7 +33,6 @@ export interface Point {
   y: number;
 }
 
-/** The box the curve is drawn into, in SVG user units. */
 export interface ChartGeometry {
   width: number;
   height: number;
@@ -51,22 +41,13 @@ export interface ChartGeometry {
 
 export type OutcomeSeries = 'completed' | 'failed' | 'cancelled';
 
-/** `YYYY-MM-DD` in **local** time — the user's day, not UTC's. */
+/** The user's day, not UTC's. */
 export const localDay = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate(),
   ).padStart(2, '0')}`;
 
-/**
- * One bucket per day over the window, zero-filled.
- *
- * A missing day is a real zero, not a gap: the backend only sends days that had
- * runs, and drawing a line straight across the hole would claim activity that
- * never happened.
- *
- * `today` is a parameter so the result is a function of its inputs — otherwise
- * every test of this would be a test of the system clock.
- */
+/** Zero-filled: the backend sends only days with runs. `today` is a parameter, for the tests. */
 export const fillBuckets = (
   daily: readonly DailyCounts[],
   days: number,
@@ -90,22 +71,14 @@ export const fillBuckets = (
   });
 };
 
-/** True once anything at all happened in the window. */
 export const hasActivity = (buckets: OutcomeBucket[]): boolean =>
   buckets.some(bucket => bucket.completed + bucket.failed + bucket.cancelled > 0);
 
-/** The tallest stack any single day reaches, across the series being drawn. */
+/** The tallest day, across the drawn series. */
 export const peakOf = (buckets: OutcomeBucket[], series: readonly OutcomeSeries[]): number =>
   buckets.reduce((peak, bucket) => Math.max(peak, ...series.map(name => bucket[name])), 0);
 
-/**
- * Axis ticks that are always whole runs.
- *
- * Jobs are counted, not measured, so "2.5 runs" is not a quantity — this is the
- * `allowDecimals={false}` the recharts axis carried, done once and testably.
- * Always spans 0 to a rounded top, and always has at least two entries so the
- * axis is never a single line.
- */
+/** Whole runs, from 0 to a rounded top, at least two ticks. */
 export const niceTicks = (peak: number, desired = 4): number[] => {
   if (!Number.isFinite(peak) || peak <= 0) return [0, 1];
 
@@ -121,7 +94,6 @@ export const niceTicks = (peak: number, desired = 4): number[] => {
   return ticks;
 };
 
-/** Maps bucket index and run count onto the drawing box. */
 export const projectPoints = (
   values: number[],
   max: number,
@@ -135,20 +107,12 @@ export const projectPoints = (
 
   return values.map((value, index) => ({
     x: padding.left + (innerWidth * index) / lastIndex,
-    // SVG y grows downward, so a bigger count sits closer to `padding.top`.
+    // SVG y grows downward.
     y: padding.top + innerHeight * (1 - value / safeMax),
   }));
 };
 
-/**
- * Tangents for a monotone cubic (Fritsch–Carlson).
- *
- * This is what `type='monotone'` bought from recharts, and it is worth keeping:
- * a plain cubic spline through run counts **overshoots**, so a day with two runs
- * sitting between two days with none dips the curve below zero and draws
- * negative jobs. Fritsch–Carlson clamps the tangents so the curve never leaves
- * the interval its endpoints define.
- */
+/** Fritsch–Carlson monotone tangents: a plain spline overshoots and draws negative runs. */
 const monotoneTangents = (points: Point[]): number[] => {
   const count = points.length;
   if (count < 2) return new Array<number>(count).fill(0);
@@ -167,8 +131,7 @@ const monotoneTangents = (points: Point[]): number[] => {
 
   for (let i = 1; i < count - 1; i += 1) {
     if (slope[i - 1] * slope[i] <= 0) {
-      // A local extremum: a flat tangent is what keeps the curve from
-      // overshooting past the peak it is turning at.
+      // A local extremum: a flat tangent stops the overshoot.
       tangents[i] = 0;
       continue;
     }
@@ -176,8 +139,7 @@ const monotoneTangents = (points: Point[]): number[] => {
     tangents[i] = (3 * weight) / ((weight + h[i]) / slope[i - 1] + (weight + h[i - 1]) / slope[i]);
   }
 
-  // Final clamp: keep each segment inside the Fritsch–Carlson monotonicity
-  // region, which is what actually forbids the overshoot.
+  // Keeps each segment in the monotonicity region.
   for (let i = 0; i < count - 1; i += 1) {
     if (slope[i] === 0) {
       tangents[i] = 0;
@@ -199,7 +161,6 @@ const monotoneTangents = (points: Point[]): number[] => {
 
 const round = (value: number): number => Math.round(value * 100) / 100;
 
-/** The `d` of the curve itself. Empty for no points — never a malformed path. */
 export const monotoneLinePath = (points: Point[]): string => {
   if (points.length === 0) return '';
   if (points.length === 1) return `M${round(points[0].x)},${round(points[0].y)}`;
@@ -219,7 +180,7 @@ export const monotoneLinePath = (points: Point[]): string => {
   return path;
 };
 
-/** The same curve, closed down to the baseline, for the tinted fill. */
+/** Closed to the baseline, for the fill. */
 export const monotoneAreaPath = (points: Point[], baselineY: number): string => {
   const line = monotoneLinePath(points);
   if (line === '') return '';
@@ -229,13 +190,7 @@ export const monotoneAreaPath = (points: Point[], baselineY: number): string => 
   return `${line}L${round(last.x)},${round(baselineY)}L${round(first.x)},${round(baselineY)}Z`;
 };
 
-/**
- * Which x labels to draw.
- *
- * Thirty day-numbers in the width of a card overlap into a grey smear, so this
- * keeps the ends — which is the window the reader is actually being told about —
- * and thins the middle. `interval='preserveStartEnd'`, made explicit.
- */
+/** Keeps the first and last labels and thins the middle. */
 export const labelVisibility = (count: number, maxLabels = 8): boolean[] => {
   if (count <= maxLabels) return new Array<boolean>(count).fill(true);
 

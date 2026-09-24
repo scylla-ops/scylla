@@ -32,7 +32,6 @@ const agent = {
 let repository: AgentsRepository;
 let invalidate: ReturnType<typeof vi.fn>;
 
-/** Drives the real permissions store — never a mocked `can`. */
 const grantEverything = () =>
   permissionsStore.setState({
     permissions: {
@@ -79,9 +78,7 @@ describe('agentQueries', () => {
   });
 
   it('refuses to ask for a list the caller may not see', () => {
-    // `ListAgents` is enforced server-side, so asking without LIST_AGENTS is a
-    // guaranteed PERMISSION_DENIED — and the global error handler would toast
-    // it on every page that merely peeks at agents.
+    // Without LIST_AGENTS the call is denied and the global handler would toast it.
     permissionsStore.setState({ permissions: { scopes: [] } });
 
     expect(agentQueries.byOrganization('org-1').enabled).toBe(false);

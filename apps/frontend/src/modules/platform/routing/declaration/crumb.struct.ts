@@ -9,21 +9,14 @@ export interface BreadcrumbParams {
 }
 
 /**
- * A crumb keeps its translatable words apart from the business identifier it
- * points at: `label` and `detail` are rendered through Lingui, `highlight` is
- * data and stays verbatim in every locale.
- *
- * They are `msg` descriptors rather than markup so that routes — and therefore
- * the breadcrumbs — can be declared in a module's plain `.ts` file. They are
- * still translated at render time, so a locale switch updates them.
+ * `label` and `detail` are translated; `highlight` is data, shown as it is.
+ * Descriptors, so that routes can be declared in a plain `.ts` file.
  */
 export interface Crumb {
   label: MessageDescriptor;
-  /** Name or id of the resource, shown in the accent colour. */
   highlight?: string;
-  /** Qualifier for a sub-page, e.g. "Edit" or "Jobs". */
+  /** E.g. "Edit" or "Jobs". */
   detail?: MessageDescriptor;
 }
 
-/** Builds the crumb of a route from what the app currently knows. */
 export type BreadcrumbFn = (params: BreadcrumbParams) => Crumb;

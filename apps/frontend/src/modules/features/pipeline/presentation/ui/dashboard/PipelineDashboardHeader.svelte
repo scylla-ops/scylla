@@ -20,8 +20,7 @@
 
   const deletePipeline = createMutation(() => pipelineMutations.remove());
 
-  // A getter, not the array: the ids are server data that arrives late, and
-  // capturing them once would freeze "select all" on the first, empty render.
+  // A getter: the ids arrive later.
   const selection = createFeatureSelection('pipelines', () => pipelineIds, {
     deleteItem: id => deletePipeline.mutateAsync(id),
   });
@@ -32,11 +31,6 @@
   const canListSecrets = $derived(can(Permission.LIST_SECRETS));
 </script>
 
-<!--
-  The project dashboard is where someone stands when they think about who works
-  on the project, so its member page opens from here rather than from a separate
-  administration screen.
--->
 {#snippet projectShortcuts()}
   {#if canListMembers}
     <Button variant="outline" onclick={() => scyllaNavigate.goToSubRoute('members')}>

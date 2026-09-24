@@ -9,9 +9,8 @@
     roles: AssignableRole[];
     isLoading?: boolean;
     disabled?: boolean;
-    /** Role ids currently ticked. */
     selected: Set<string>;
-    /** Role ids the member already holds — ticked, locked, labelled as such. */
+    /** Ticked, locked, labelled. */
     alreadyHeld?: Set<string>;
     onToggle: (roleId: string) => void;
   }
@@ -27,18 +26,7 @@
   }: Props = $props();
 </script>
 
-<!--
-  Pick any number of roles at once.
-
-  Multi-select rather than a single picker because a member's access is the sum
-  of their roles, not one of them: granting "developer" and "secrets reader"
-  together is the normal case, and forcing it through one grant at a time turned
-  a single decision into a sequence of them.
-
-  The list scrolls in a plain overflow container rather than the shared
-  `ScrollArea`: that component's root is only `relative`, so a `max-h-*` on it
-  clips nothing and a long role list spills over whatever follows.
--->
+<!-- Not `ScrollArea`: its root does not clip under a `max-h`. -->
 <div class="flex min-w-0 flex-col gap-1.5">
   <Label>{label}</Label>
   {#if isLoading}

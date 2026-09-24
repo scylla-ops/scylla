@@ -4,11 +4,7 @@
   import { pageIn, pageOut } from '../../motion/page-transition.ts';
 
   interface Props {
-    /**
-     * Changing this replays the transition. The router's pathname, in practice
-     * — passed in rather than read here, because the Svelte router does not
-     * exist until Phase 6 and this must be usable, and testable, before then.
-     */
+    /** A change replays the transition. */
     key: string;
     children: Snippet;
     class?: string;
@@ -18,10 +14,8 @@
 </script>
 
 <!--
-  Svelte keeps the outgoing node alive for its `out:` transition, so both panes
-  exist at once. They are absolutely stacked, or the departing page would push
-  the arriving one down. The arriving page stays transparent until the departing
-  one is gone (see `page-transition.ts`), so the text of the two never overlaps.
+  The departing and the arriving page exist at once: they are stacked, and the
+  arriving one stays transparent until the other is gone (see `page-transition.ts`).
 -->
 <div class="relative h-full w-full">
   {#key key}

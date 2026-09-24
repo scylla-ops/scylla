@@ -6,23 +6,13 @@ import {
 import { getQueryClient } from './active-query-client.ts';
 
 /**
- * TanStack's Svelte bindings, already holding the app's client.
- *
- * `createQuery(options)` on its own reads the client from the Svelte context,
- * and no component puts one there. So the client is bound once, here.
- * **Import `createQuery` from `@platform/query`, never from
- * `@tanstack/svelte-query`** — `no-restricted-imports` enforces that, because
- * the two are indistinguishable at the call site.
- *
- * The client is read per call rather than captured, so a test that installs its
- * own with `setQueryClient` is seen by components created afterwards.
+ * TanStack's Svelte bindings, bound to the app's client (no component provides
+ * one through the context). Always import them from `@platform/query`.
  */
 
 const client = () => getQueryClient();
 
-// The casts keep TanStack's overloads — which carry the `initialData` and
-// `select` narrowing — instead of collapsing them into one loose signature.
-// Only the default client is added; an explicit one still wins.
+// The casts keep TanStack's overloads (`initialData`, `select` narrowing).
 
 export const createQuery = ((options: never, queryClient?: never) =>
   createSvelteQuery(options, queryClient ?? client)) as typeof createSvelteQuery;

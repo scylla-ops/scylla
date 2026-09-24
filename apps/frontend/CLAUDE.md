@@ -515,9 +515,14 @@ turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/
   in `core/presentation/ui/router/core.router.ts`; the routes of the `app` mount and below are
   wrapped by `AuthGuard` + `Layout` (`AppShell.svelte`).
 - Backend comms: gRPC-Web via protobuf-ts through `CoreGrpcTransport`.
-- Comments: **none in the code, except on public/exported items.** When the reason behind the
-  code needs more room, write it in the module's `AGENTS.md`, not inline. Team-visible text
-  (PR bodies, issues, `AGENTS.md`, comments on public items) is written in ASD-STE100.
+- Comments: **few, short, and only where the code cannot speak for itself.**
+  - Write one when the logic is hard to follow, or when the role of a function, component or
+    prop is not clear from its name. One or two lines is the norm.
+  - Do not write one that repeats the name (`/** The user id. */ userId`), narrates the code,
+    or tells history: no mention of React, of the migration, of a "phase" or of what the code
+    used to be. Git keeps the history.
+  - A reason that needs more room goes in the module's `AGENTS.md`, not inline.
+  - Team-visible text (PR bodies, issues, `AGENTS.md`, comments) is written in ASD-STE100.
 - Lint rules worth knowing (see `eslint.config.js`): `no-floating-promises` and `no-misused-promises` are errors — never fire-and-forget a promise; unused bindings must be prefixed `_` to be tolerated. The `no-unsafe-*` rules are off only because of the generated proto layer — that is not a licence to spread `any`. `no-restricted-imports` forbids `@tanstack/svelte-query` (use `@platform/query`).
 
 ### Stack

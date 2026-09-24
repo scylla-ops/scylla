@@ -5,12 +5,6 @@ import { Permission, PermissionScope } from '@platform/authz';
 import { render } from '@/test/render.svelte.ts';
 import RoleDialogPermissions from './RoleDialogPermissions.svelte';
 
-/**
- * The permission picker — the densest piece of UI logic in the project.
- *
- * It needs no DI and no query client: the tree is built from the local
- * catalog, and the component's whole job is to emit a permission list.
- */
 interface PickerProps {
   scope: PermissionScope;
   permissions: Permission[];
@@ -33,7 +27,6 @@ const mount = (props: Partial<PickerProps> = {}) => {
   return { onPermissionsChange };
 };
 
-/** The last list the picker emitted. */
 const emitted = (onPermissionsChange: ReturnType<typeof vi.fn>): Permission[] =>
   onPermissionsChange.mock.calls.at(-1)?.[0] as Permission[];
 
@@ -90,8 +83,7 @@ describe('RoleDialogPermissions', () => {
   });
 
   it('ignores a seeded child whose parent chain is broken', () => {
-    // LIST_SECRETS without READ_PROJECT confers nothing, so it must not read
-    // as checked — showing it ticked would promise access the backend refuses.
+    // Without its parent READ_PROJECT it confers nothing: not checked.
     mount({ scope: PermissionScope.PROJECT, permissions: [Permission.LIST_SECRETS] });
 
     expect(screen.getByRole('checkbox', { name: 'View project secrets' })).not.toBeChecked();
@@ -114,7 +106,6 @@ describe('RoleDialogPermissions', () => {
   it('never offers a permission the scope cannot confer', () => {
     mount();
 
-    // A system capability — meaningless on an organization role.
     expect(screen.queryByRole('checkbox', { name: 'View users' })).not.toBeInTheDocument();
   });
 
@@ -127,7 +118,6 @@ describe('RoleDialogPermissions', () => {
   it('hides the permission a node stands in for, rather than showing it twice', () => {
     mount({ scope: PermissionScope.SYSTEM });
 
-    // MANAGE_SYSTEM_GRANTS rides on MANAGE_ROLES at this scope.
     expect(
       screen.queryByRole('checkbox', { name: 'Grant and revoke roles anywhere' }),
     ).not.toBeInTheDocument();

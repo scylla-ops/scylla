@@ -25,11 +25,7 @@
     <p class="text-sm">{t(rolesMessages.selectARole)}</p>
   </div>
 {:else}
-  <!--
-    Keyed on the role: the grant list and its target labels are ViewModels built
-    at construction from the role they describe, so switching roles builds new
-    ones rather than leaving the previous role's assignees on screen for a frame.
-  -->
+  <!-- Keyed on the role: its ViewModels are built from it. -->
   {#key role.id}
     <div class="flex h-full flex-col gap-6 overflow-y-auto p-4">
       <RoleDetailHeader {role} {onEdit} />

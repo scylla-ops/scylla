@@ -59,8 +59,7 @@ beforeEach(() => {
     ]),
   );
 
-  // Scope decides which list answers: the project's own grants, or the
-  // organization's (which only an org admin may read).
+  // The scope decides which grant list answers.
   listGrants = vi.fn().mockImplementation((scope?: PermissionScope) =>
     Promise.resolve(
       ScyllaResult.success(
@@ -129,8 +128,6 @@ describe('ProjectMembersPage', () => {
   });
 
   it('also lists someone who only reaches the project through an organization role', async () => {
-    // ListProjectMembers alone would make the project look emptier — and more
-    // locked down — than it is.
     render(ProjectMembersPage, { projectId: 'project-1' });
 
     expect(await screen.findByText('bob')).toBeInTheDocument();
@@ -140,8 +137,7 @@ describe('ProjectMembersPage', () => {
     render(ProjectMembersPage, { projectId: 'project-1' });
 
     await screen.findByText('alice');
-    // carol holds no grant at all — listing her would read as access she does
-    // not have.
+    // carol holds no grant: listing her would show access she does not have.
     expect(screen.queryByText('carol')).not.toBeInTheDocument();
   });
 
@@ -187,8 +183,7 @@ describe('ProjectMembersPage', () => {
     render(ProjectMembersPage, { projectId: 'project-1' });
     await screen.findByText('bob');
 
-    // alice holds a direct grant; bob's role is inherited, so there is nothing
-    // to remove from *this* project — exactly one control exists.
+    // bob's role is inherited: only alice can be removed from this project.
     const removals = screen.getAllByRole('button', { name: 'Remove from the project' });
     expect(removals).toHaveLength(1);
 

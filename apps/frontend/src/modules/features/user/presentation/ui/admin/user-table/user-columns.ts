@@ -11,13 +11,6 @@ export interface UserCells {
   actions: Snippet<[UserEntity]>;
 }
 
-/**
- * The directory table.
- *
- * Sizes and ids are the React version's; the centring that its headers did with
- * a wrapper `<div>` is now `meta.align`, which `DataTable` applies to the header
- * and the cell alike.
- */
 export const userColumns = (cells: UserCells): DataTableColumn<UserEntity>[] => [
   {
     id: 'username',
@@ -39,7 +32,7 @@ export const userColumns = (cells: UserCells): DataTableColumn<UserEntity>[] => 
     id: 'actions',
     header: t(userMessages.actions),
     cell: ({ row }) => renderSnippet(cells.actions, row.original),
-    // No minSize: the first column to give its width back on a narrow viewport.
+    // No minSize: the first column to shrink on a narrow screen.
     size: 100,
     meta: { align: 'center' },
   },

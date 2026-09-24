@@ -101,9 +101,6 @@ describe('TriggersHeader', () => {
   });
 
   it('selects the ids that arrived late, not the empty list of the first render', async () => {
-    // `createFeatureSelection` takes a getter precisely so that server data
-    // arriving after mount is still selectable — capturing the array once
-    // froze "select all" on the first, empty render.
     const { rerender } = render(TriggersHeader, props({ count: 0, triggerIds: [] }));
 
     await rerender(props({ count: 1, triggerIds: ['trigger-9'] }));

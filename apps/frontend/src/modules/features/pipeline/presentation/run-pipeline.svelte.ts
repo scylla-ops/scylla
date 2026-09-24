@@ -10,18 +10,8 @@ import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import { pipelineMutations } from './pipeline.queries.ts';
 
 /**
- * Starting a run, and saying what is likely to happen next.
- *
- * The run itself always succeeds — the job is created and queued — so the
- * interesting part is the follow-up: with no connected agent the job will sit
- * there, and saying so up front beats letting the user watch a spinner. That
- * needs the agent list, which is why this is a ViewModel and not part of
- * `pipelineMutations`: the advice is only honest if something is subscribed to
- * the agents.
- *
- * Without `LIST_AGENTS` the list is never fetched — asking would only be denied
- * — so connectivity is genuinely unknown. The message then points at agents as
- * something to check, rather than claiming none is connected.
+ * Runs a pipeline and warns when no agent is connected (the job would wait).
+ * Without `LIST_AGENTS`, connectivity is unknown: the message says to check the agents.
  */
 export const createRunPipeline = () => {
   const context = toRune(contextStore);
@@ -31,7 +21,6 @@ export const createRunPipeline = () => {
   const agentsQuery = createQuery(() => agentQueries.byOrganization(organizationId));
   const runPipeline = createMutation(() => pipelineMutations.run());
 
-  /** Reactive because the table spins one button per row while it is in flight. */
   const inFlight = new SvelteSet<string>();
 
   const announce = () => {
@@ -59,7 +48,7 @@ export const createRunPipeline = () => {
         await runPipeline.mutateAsync(pipelineId);
         announce();
       } catch {
-        // Toast shown by the global MutationCache onError handler.
+        // The global mutation handler toasts the error.
       } finally {
         inFlight.delete(pipelineId);
       }

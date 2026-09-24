@@ -30,7 +30,6 @@ const listOf = (items: JobEntity[]) => ({
   },
 });
 
-/** Drives the real permissions store — never a mocked `can`. */
 const grantEverything = () =>
   permissionsStore.setState({
     permissions: {
@@ -65,8 +64,7 @@ describe('jobsByPipelinesQueries', () => {
     const { canListJobs, queries } = jobsByPipelinesQueries(['pipeline-1', 'pipeline-2']);
 
     expect(canListJobs).toBe(false);
-    // Still one entry per pipeline — the caller needs the shape — but none of
-    // them will ask, which is what stops a denial toast per row.
+    // One entry per pipeline, none of which asks: no denial toast per row.
     expect(queries).toHaveLength(2);
     expect(queries.every(query => query.enabled === false)).toBe(true);
   });
@@ -120,8 +118,6 @@ describe('jobsByPipelinesQueries', () => {
   });
 
   it('resolves against the project the page is already scoped to, with no target passed', () => {
-    // The ambient target is the context store's project — which is the whole
-    // reason `can()` is called without one here.
     contextStore.setState({
       organization: { id: 'org-1', name: 'Acme' },
       project: { id: 'project-1', name: 'Acme project' },

@@ -4,16 +4,7 @@ import { createFeatureSelection } from '@shared/presentation/state/feature-selec
 import type { RoleEntity } from '../domain/entities/role.entity.ts';
 import { roleMutations, roleQueries } from './roles.queries.ts';
 
-/**
- * The roles screen: the catalog on the left, one role's detail on the right.
- *
- * Both halves read the same two lists — the roles and *every* grant — so they
- * are fetched once here and handed down, rather than each panel asking for
- * itself and drawing two cache entries for one resource.
- *
- * Grants are also what answers "how many people hold this role", with no extra
- * request: the count is a fold over the list the detail panel needs anyway.
- */
+/** Roles and every grant, fetched once for the list and the detail. The holder count comes from the grants. */
 export const createRolesPage = () => {
   const rolesQuery = createQuery(() => roleQueries.catalog());
   const grantsQuery = createQuery(() => roleQueries.allGrants());
@@ -22,16 +13,10 @@ export const createRolesPage = () => {
   const roles = $derived(rolesQuery.data ?? []);
   const grants = $derived(grantsQuery.data ?? []);
 
-  /**
-   * Editing the catalog is a system capability — and the one that carries grant
-   * management with it, so holding it is what opens this whole page.
-   */
+  /** Also carries grant management: holding it opens this page. */
   const canManageRoles = $derived(can(Permission.MANAGE_ROLES));
 
-  /**
-   * Builtin roles are compiled into the backend and cannot be deleted, so they
-   * stay out of the selection entirely rather than failing on submit.
-   */
+  /** Builtin roles cannot be deleted: they stay out of the selection. */
   const deletableRoleIds = $derived(
     roles.filter(role => role.origin.kind === 'custom').map(role => role.id),
   );
@@ -52,7 +37,7 @@ export const createRolesPage = () => {
   });
 
   let activeRoleId = $state<string | null>(null);
-  /** The role the form is editing; `null` means it is creating one. */
+  /** `null` when creating. */
   let editingRole = $state<RoleEntity | null>(null);
   let formOpen = $state(false);
 
@@ -82,7 +67,6 @@ export const createRolesPage = () => {
     },
     selection,
     memberCountOf: (roleId: string) => memberCounts.get(roleId) ?? 0,
-    /** A builtin role is never selectable — see `deletableRoleIds`. */
     isSelectable: (role: RoleEntity) => canManageRoles && role.origin.kind === 'custom',
     open: (roleId: string) => {
       activeRoleId = roleId;

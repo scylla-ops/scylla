@@ -6,11 +6,7 @@ import { findFloating, render } from '@/test/render.svelte.ts';
 import { PermissionScope, permissionsStore } from '@platform/authz';
 import JobActions from './JobActions.svelte';
 
-/**
- * jsdom has no layout engine, so `ResizeObserver` never fires on its own. This
- * double captures the callback the action registers and lets each test drive it
- * with a fabricated width.
- */
+/** Captures the observer's callback so a test can report a width. */
 class ResizeObserverMock {
   static instances: ResizeObserverMock[] = [];
   callback: (entries: Array<{ contentRect: { width: number } }>) => void;
@@ -56,7 +52,6 @@ describe('JobActions', () => {
     permissionsStore.setState({ permissions: { scopes: [] } });
     render(JobActions, { onView: vi.fn(), onDelete: vi.fn() });
 
-    // Only the always-available View button remains.
     expect(screen.getAllByRole('button')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
   });
@@ -68,7 +63,6 @@ describe('JobActions', () => {
 
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(1);
-    // The React trigger was icon-only and unnameable; this one says what it is.
     expect(screen.getByRole('button', { name: 'Job actions' })).toBeInTheDocument();
   });
 

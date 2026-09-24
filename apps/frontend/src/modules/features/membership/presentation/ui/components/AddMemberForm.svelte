@@ -47,16 +47,7 @@
     onCancel,
   }: Props = $props();
 
-  /**
-   * The form's state lives here, and that is the whole reason this component is
-   * separate from the dialog: the parent recreates it on every open, so the two
-   * initializers below *are* the reset. React needed an effect watching `open`
-   * to do the same thing, with a frame where the previous member was still
-   * selected.
-   *
-   * The floor role comes pre-ticked when the scope has one: it is what belonging
-   * means, and the rest of the list is what you add on top of it.
-   */
+  // The floor role is pre-ticked when the scope has one.
   let userId = $state('');
   // svelte-ignore state_referenced_locally
   let selectedRoles = $state(new Set(defaultRoleId ? [defaultRoleId] : []));

@@ -20,7 +20,6 @@
     class?: string;
     onSubmit: (values: FormValues<TId>) => void;
     isPending?: boolean;
-    /** Replaces the default submit row; receives validity and pending state. */
     footer?: Snippet<[{ isValid: boolean; isPending: boolean }]>;
     buttonLabel?: string;
   }
@@ -54,11 +53,7 @@
             oninput={event => form.handleChange(item.id, event.currentTarget.value)}
           />
         {:else}
-          <!--
-            `value` + `onValueChange` rather than `bind:value`: the values live
-            in the form state, which owns reset and validity, and binding would
-            put a second writer on the same field.
-          -->
+          <!-- Not `bind:value`: the form state owns the value, reset and validity. -->
           <Select
             type="single"
             value={form.values[item.id]}

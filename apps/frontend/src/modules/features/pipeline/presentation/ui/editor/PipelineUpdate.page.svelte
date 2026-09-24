@@ -7,7 +7,6 @@
   import { pipelineMessages } from '../../pipeline.messages.ts';
 
   interface Props {
-    /** From the route: `edit/:pipelineId`. */
     pipelineId?: string;
   }
 
@@ -18,12 +17,7 @@
 
   const pipeline = $derived(pipelineQuery.data);
 
-  /**
-   * The fetched pipeline, as the editor's document.
-   *
-   * Only the three fields the editor owns — an id and timestamps would show up
-   * in the text area and travel back into `edit()` on the next save.
-   */
+  /** Only the fields the editor owns: an id or timestamps would travel back on save. */
   const initialScript = $derived(
     pipeline
       ? JSON.stringify(

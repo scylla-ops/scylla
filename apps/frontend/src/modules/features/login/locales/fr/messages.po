@@ -13,34 +13,34 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/login/presentation/ui/login.messages.ts:18
+#: src/modules/features/login/presentation/ui/login.messages.ts:9
 msgid "••••••••"
 msgstr "••••••••"
 
-#: src/modules/features/login/presentation/ui/login.messages.ts:14
+#: src/modules/features/login/presentation/ui/login.messages.ts:5
 msgid "Enter your username below to login to your account"
 msgstr "Entrez votre nom d'utilisateur ci-dessous pour vous connecter à votre compte"
 
-#: src/modules/features/login/infrastructure/data/remote/grpc-login-remote.data-source.ts:18
+#: src/modules/features/login/infrastructure/data/remote/grpc-login-remote.data-source.ts:14
 msgid "Incorrect username or password"
 msgstr "Nom d'utilisateur ou mot de passe incorrect"
 
-#: src/modules/features/login/presentation/ui/login.messages.ts:19
+#: src/modules/features/login/presentation/ui/login.messages.ts:10
 msgid "Login"
 msgstr "Connexion"
 
-#: src/modules/features/login/presentation/ui/login.messages.ts:13
+#: src/modules/features/login/presentation/ui/login.messages.ts:4
 msgid "Login to your account"
 msgstr "Connectez-vous à votre compte"
 
-#: src/modules/features/login/presentation/ui/login.messages.ts:17
+#: src/modules/features/login/presentation/ui/login.messages.ts:8
 msgid "Password"
 msgstr "Mot de passe"
 
-#: src/modules/features/login/presentation/ui/login.messages.ts:16
+#: src/modules/features/login/presentation/ui/login.messages.ts:7
 msgid "username"
 msgstr "nom d'utilisateur"
 
-#: src/modules/features/login/presentation/ui/login.messages.ts:15
+#: src/modules/features/login/presentation/ui/login.messages.ts:6
 msgid "Username"
 msgstr "Nom d'utilisateur"

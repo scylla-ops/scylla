@@ -27,7 +27,7 @@
   interface Props {
     app: AppEntity;
     onRequestDelete: (id: string) => void;
-    /** False disables both delete affordances — the backend checks `DeleteApp`. */
+    /** False disables both delete controls. */
     canDelete?: boolean;
   }
 
@@ -57,20 +57,13 @@
         </div>
       </div>
       <DropdownMenu>
-        <!--
-          The trigger *is* the button, rather than wrapping one through the
-          `child` snippet — the same choice `IconButton` makes. bits-ui already
-          renders a `<button>` and merges what it is given, so dressing it with
-          `buttonVariants` yields the one element React's `asChild` produced,
-          and `mergeProps` chains our `onclick` with the menu's instead of one
-          silently replacing the other.
-        -->
+        <!-- The trigger is the button: `mergeProps` chains our `onclick` with the menu's. -->
         <DropdownMenuTrigger
           class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7 shrink-0')}
           onclick={(event: MouseEvent) => event.stopPropagation()}
         >
           <MoreHorizontalIcon class="h-4 w-4" />
-          <!-- Icon-only: without this the trigger has no accessible name. -->
+          <!-- An icon-only button: this is its name. -->
           <span class="sr-only">{t(appsMessages.appActions)}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onclick={(event: MouseEvent) => event.stopPropagation()}>
@@ -111,8 +104,7 @@
       }}
     >
       <TrashIcon class="h-4 w-4" />
-      <!-- Icon-only: without this the control has no accessible name, and no
-           test can reach it except through its CSS classes. -->
+      <!-- An icon-only button: this is its name. -->
       <span class="sr-only">{t(appsMessages.deleteApp)}</span>
     </Button>
   </div>

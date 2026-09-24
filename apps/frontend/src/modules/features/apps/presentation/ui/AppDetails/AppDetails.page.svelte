@@ -15,7 +15,6 @@
   import { appsMessages } from '../apps.messages.ts';
 
   interface Props {
-    /** From the route. */
     appId?: string;
   }
 
@@ -30,7 +29,6 @@
 
   const app = $derived(appQuery.data);
 
-  // NOT_FOUND (deleted / bad id) → toast + back to the apps list.
   const resourceError = createResourceError({
     error: () => appQuery.error,
     redirectTo: '..',
@@ -59,7 +57,7 @@
 {/snippet}
 
 {#if resourceError.redirecting}
-  <!-- Nothing: the redirect is already under way. -->
+  <!-- The redirect is in flight. -->
 {:else if appQuery.isLoading}
   <Skeleton class="m-4 h-64 rounded-xl" />
 {:else if appQuery.isError || !app}

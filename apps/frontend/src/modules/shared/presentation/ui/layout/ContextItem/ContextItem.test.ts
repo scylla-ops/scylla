@@ -20,7 +20,6 @@ describe('ContextItem', () => {
   it('omits the description entirely when not given', () => {
     const { container } = render(ContextItem, { name: 'Acme Corp', icon: Building2 });
 
-    // Only one text span (the name) — no second span for a missing description.
     expect(container.querySelectorAll('span.block')).toHaveLength(1);
   });
 });

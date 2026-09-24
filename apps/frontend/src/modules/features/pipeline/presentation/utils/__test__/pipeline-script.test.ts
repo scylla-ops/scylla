@@ -116,8 +116,7 @@ describe('withSteps', () => {
       { id: 's', deps: [], env: [], kind: 'script', script: 'echo hi', shell: 'bash' },
     ];
 
-    // Serializing always writes a workingDir, unlike a hand-authored script
-    // that omits the field entirely and parses back to `undefined`.
+    // Serializing always writes a workingDir.
     expect(stepsOf(parseScript(withSteps(null, steps, 'p')).document)).toEqual([
       { id: 's', deps: [], workingDir: '', env: [], kind: 'script', script: 'echo hi', shell: 'bash' },
     ]);

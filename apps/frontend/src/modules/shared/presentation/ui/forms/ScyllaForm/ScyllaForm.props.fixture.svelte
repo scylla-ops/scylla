@@ -1,4 +1,4 @@
-<!-- Pins `ScyllaForm`'s id generic — see `DataTable.fixture.svelte` for why. -->
+<!-- Pins the id generic of `ScyllaForm`. -->
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
   import ScyllaForm from './ScyllaForm.svelte';

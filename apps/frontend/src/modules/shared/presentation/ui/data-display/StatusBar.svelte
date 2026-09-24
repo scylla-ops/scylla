@@ -9,22 +9,16 @@
 
   interface Props {
     items: TItem[];
-    /**
-     * Rendered in every segment's tooltip, with the item it belongs to. One
-     * snippet for the whole bar rather than one per item: a snippet cannot be
-     * partially applied, so the only way to give it per-segment data is to hand
-     * it the segment. Omit it and the bar has no tooltips at all.
-     */
+    /** The tooltip of every segment, with its item. Without it, no tooltips. */
     tooltip?: Snippet<[TItem]>;
     emptyLabel?: string;
     class?: string;
-    /** A Tailwind height class — the caller decides how tall the bar reads. */
+    /** A Tailwind height class. */
     height?: string;
   }
 
   let { items, tooltip, emptyLabel, class: className, height = 'h-6' }: Props = $props();
 
-  /** Anything bits-ui's trigger hands down, when the segment is inside one. */
   type TriggerProps = Record<string, unknown> & { onclick?: (event: MouseEvent) => void };
 
   const segmentClass = (item: TItem) => {
@@ -38,17 +32,7 @@
   };
 </script>
 
-<!--
-  A bar of coloured segments, one per status: pipeline job history and job node
-  timelines. Ported class for class from `ui/data-display/StatusBar.tsx`.
-
-  Two things changed shape. React could hold a whole element in a variable, so
-  the segment was built once and then either returned bare or wrapped in a
-  tooltip; here that variable is a snippet, rendered in both arms. And `asChild`
-  became the `child` snippet, which is why `trigger` is spread onto *our*
-  element — the tooltip must describe the bar itself, not a wrapper around it,
-  or the hover target and the coloured segment stop being the same node.
--->
+<!-- A bar of colored segments, one per status (job history, node timelines). -->
 {#snippet segment(item: TItem, trigger: TriggerProps = {})}
   {#if item.onSelect}
     <button
@@ -56,9 +40,7 @@
       aria-label={item.label}
       {...trigger}
       onclick={event => {
-        // Chained, not replaced: the trigger's own handler is what closes the
-        // tooltip on click, and spreading `trigger` before this would otherwise
-        // leave it on screen over the page the click navigates to.
+        // Call the trigger's handler too: it closes the tooltip on click.
         trigger.onclick?.(event);
         event.stopPropagation();
         item.onSelect?.();

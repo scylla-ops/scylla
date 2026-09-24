@@ -87,7 +87,6 @@ describe('TriggersPage', () => {
     render(TriggersPage, props);
 
     expect(await screen.findByText('No triggers yet')).toBeInTheDocument();
-    // No overview either: there is nothing to summarise.
     expect(screen.queryByText('0/0')).not.toBeInTheDocument();
   });
 
@@ -119,7 +118,6 @@ describe('TriggersPage', () => {
     await userEvent.type(await screen.findByLabelText('Name'), 'gh-push');
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));
 
-    // Returned once by the backend — the dialog is the only place it is shown.
     expect(await screen.findByText('whsec-once')).toBeInTheDocument();
   });
 

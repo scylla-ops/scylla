@@ -9,17 +9,15 @@
     onOpenChange: (open: boolean) => void;
     title: string;
     description: string;
-    /** People who may be admitted — never anyone already listed. */
     candidates: MemberCandidate[];
-    /** Placeholder standing in for the picker when there is nobody to pick. */
     emptyCandidatesLabel: string;
     roles: AssignableRole[];
     rolesLabel: string;
     rolesLoading?: boolean;
     isPending: boolean;
-    /** Pre-ticked on open: the role that admitting someone here means. */
+    /** Pre-ticked: the role that admitting someone here means. */
     defaultRoleId?: string;
-    /** Resolves to `true` once the member is in, which is what closes the dialog. */
+    /** Resolves `true` once the member is in, which closes the dialog. */
     onSubmit: (userId: string, roleIds: string[]) => Promise<boolean>;
   }
 

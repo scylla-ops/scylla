@@ -13,7 +13,6 @@
   let { trigger }: Props = $props();
 </script>
 
-<!-- Cron triggers show their expression; webhook triggers show their (copyable) URL. -->
 {#if trigger.source.kind === TriggerKind.Cron}
   <div class="flex items-center justify-center gap-2">
     <code class="font-mono text-xs text-muted-foreground">
@@ -28,7 +27,6 @@
     class="w-full justify-center"
   />
 {:else}
-  <!-- A source arm this build doesn't know: nothing meaningful to render. -->
   <div class="flex items-center justify-center">
     <code class="font-mono text-xs text-muted-foreground">—</code>
   </div>

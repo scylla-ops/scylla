@@ -17,8 +17,7 @@
 
   const createSecret = createMutation(() => secretMutations.create(projectId));
 
-  // `createSecretsItems` resolves its labels with the Lingui macro at call
-  // time, so reading the active locale here is what rebuilds them on a switch.
+  // Reading the locale rebuilds the labels on a switch.
   const items = $derived((activeLocale(), createSecretsItems()));
 
   const handleSubmit = ({
@@ -26,8 +25,7 @@
     description,
     value,
   }: FormValues<'name' | 'description' | 'value'>) => {
-    // The form already blocks an empty required field; this is the guard
-    // against whitespace-only input reaching the backend.
+    // Rejects whitespace-only input.
     if (!name.trim() || !value.trim()) return;
 
     createSecret.mutate({ name, description: description.trim(), value });

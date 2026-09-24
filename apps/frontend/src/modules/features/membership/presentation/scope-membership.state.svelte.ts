@@ -8,38 +8,16 @@ import { membershipMessages } from './ui/membership.messages.ts';
 
 export interface ScopeMembershipOptions {
   scope: PermissionScope;
-  /** The org/project the grants are bound to; `null` while it is still resolving. */
   scopeId: () => string | null;
-  /** Whether the caller may read and write this scope's grants. */
   canManage: () => boolean;
-  /**
-   * Refreshes the backend's own member list. Membership is derived from grants
-   * server-side, but that list lives under another feature's query key, so the
-   * grant mutations cannot invalidate it themselves.
-   */
+  /** Refreshes the backend's member list, which another feature's query key holds. */
   onMembershipChanged?: () => void;
 }
 
 /**
- * The write half of a member view: the grants bound to one scope, plus the three
- * operations that change who holds what.
- *
- * Membership has no storage of its own — the backend derives it from the grants
- * table — so there is no "add member" or "remove member" RPC to call. Admitting
- * someone *is* granting them a role at the scope; removing them is clearing
- * every grant they hold at that scope and beneath it, which is why the removal
- * goes through `RevokeAllAccess` rather than a series of `RevokeGrant`: revoking
- * only the scope's own grants would leave narrower ones behind, inert but still
- * enough to keep the person listed.
- *
- * Both the organization and the project view need exactly this, with only the
- * scope differing, so it lives here rather than twice in the two pages.
- *
- * `scopeId` and `canManage` are **getters**, not values. The scope id arrives
- * from the route or the context store and the permission from a store that
- * loads after the first paint; capturing either once would freeze the view on
- * whatever the first render happened to hold. The React hook re-ran on every
- * render and got this for free.
+ * The grants of one scope, and the operations that change who holds what. There is
+ * no member RPC: admitting is granting a role; removing is `RevokeAllAccess` at the
+ * scope and beneath it. `scopeId` and `canManage` are getters: they load after the first render.
  */
 export const createScopeMembership = ({
   scope,
@@ -55,11 +33,7 @@ export const createScopeMembership = ({
   const revokeGrant = createMutation(() => grantMutations.revoke());
   const revokeAllAccess = createMutation(() => grantMutations.revokeAllAccess());
 
-  /**
-   * One grant per role: a grant carries exactly one role, by design. Answers
-   * whether the whole batch landed, so the caller can keep its form open on
-   * failure — the error itself is already toasted by the mutation cache.
-   */
+  /** One grant per role. Returns whether all were created, so the form stays open on failure. */
   const grantRoles = async (userId: string, roleIds: string[]): Promise<boolean> => {
     const currentScopeId = scopeId();
     if (!currentScopeId || roleIds.length === 0) return false;
@@ -78,12 +52,10 @@ export const createScopeMembership = ({
       onMembershipChanged?.();
       return true;
     } catch {
-      // The mutation cache already toasted the failure.
       return false;
     }
   };
 
-  /** Hands one more role to someone already listed. */
   const addRole = async (userId: string, roleId: string) => {
     if (await grantRoles(userId, [roleId])) {
       toast.success(i18n._(membershipMessages.roleGranted));
@@ -96,11 +68,10 @@ export const createScopeMembership = ({
       onMembershipChanged?.();
       toast.success(i18n._(membershipMessages.roleRevoked));
     } catch {
-      // Already toasted globally — the last-owner guard lands here too.
+      // The global mutation handler toasts the error.
     }
   };
 
-  /** Clears every grant the user holds at this scope and beneath it. */
   const removeMember = async (userId: string, username: string) => {
     const currentScopeId = scopeId();
     if (!currentScopeId) return;
@@ -114,7 +85,7 @@ export const createScopeMembership = ({
       onMembershipChanged?.();
       toast.success(i18n._(membershipMessages.memberRemoved(username, revoked)));
     } catch {
-      // Already toasted globally — the last-owner guard lands here too.
+      // The global mutation handler toasts the error.
     }
   };
 
@@ -125,7 +96,6 @@ export const createScopeMembership = ({
     get isLoading() {
       return grantsQuery.isLoading;
     },
-    /** Any write in flight — what disables the whole view's controls. */
     get isPending() {
       return createGrant.isPending || revokeGrant.isPending || revokeAllAccess.isPending;
     },

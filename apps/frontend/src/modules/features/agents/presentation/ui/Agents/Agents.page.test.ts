@@ -138,8 +138,7 @@ describe('AgentsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create & reveal secret →' }));
 
     await vi.waitFor(() => expect(createAgent).toHaveBeenCalledWith('org-1', 'runner-9'));
-    // The plaintext is returned once and never again — the dialog is the only
-    // place it is ever shown.
+    // Returned once: the dialog is the only place it shows.
     expect(await screen.findByText('sk-once')).toBeInTheDocument();
   });
 

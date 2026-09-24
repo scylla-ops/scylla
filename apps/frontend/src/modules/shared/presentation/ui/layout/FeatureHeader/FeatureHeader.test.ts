@@ -11,11 +11,6 @@ vi.mock('svelte-sonner', () => ({
 
 beforeEach(() => toastSuccess.mockClear());
 
-/**
- * Unlike the React original, the delete button carries an `sr-only` label, so it
- * is reachable by role and name like everything else — no `querySelector` on a
- * `data-variant`.
- */
 const deleteButton = () => screen.getByRole('button', { name: 'Delete' });
 
 describe('FeatureHeader', () => {
@@ -140,7 +135,6 @@ describe('FeatureHeader', () => {
     await userEvent.click(deleteButton());
     await userEvent.click(await screen.findByRole('button', { name: 'Continue' }));
 
-    // The error toast is the global MutationCache handler's job, not this one's.
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(toastSuccess).not.toHaveBeenCalled();
   });

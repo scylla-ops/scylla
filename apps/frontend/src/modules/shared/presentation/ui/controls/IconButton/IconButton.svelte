@@ -10,11 +10,7 @@
     class?: string;
     iconClass?: string;
     disabled?: boolean;
-    /**
-     * The action is running. Marks the control `aria-busy` and disables it, so
-     * "busy" is one prop rather than a `disabled` and a spinning icon that can
-     * drift apart.
-     */
+    /** Disables the button and marks it `aria-busy`. */
     busy?: boolean;
   }
 
@@ -30,16 +26,8 @@
 </script>
 
 <!--
-  The trigger *is* the button, rather than a trigger wrapping one through the
-  `child` snippet: bits-ui's trigger already renders a `<button>` and merges what
-  it is given, so dressing it with `buttonVariants` yields the same single
-  element the React `asChild` produced — and `mergeProps` chains our `onclick`
-  with the tooltip's instead of one silently replacing the other.
-
-  The tooltip text is also rendered visually-hidden inside the button: a tooltip
-  is only wired up as `aria-describedby`, and while it is closed that leaves the
-  button with no accessible name at all — unusable by a screen reader, and
-  unfindable by name in a test.
+  The tooltip text is also in the button, visually hidden: a closed tooltip gives
+  the button no accessible name.
 -->
 <Tooltip>
   <TooltipTrigger

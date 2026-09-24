@@ -13,16 +13,8 @@
 </script>
 
 <!--
-  Grants one more role to someone already listed, in one click.
-
-  A select rather than a dialog because adding a role to an existing member is a
-  correction, not a decision worth a modal — and it stays on the row it is about.
-  Renders nothing once there is nothing left to add.
-
-  The height override carries the `data-[size=sm]` prefix on purpose: the
-  trigger's own `data-[size=sm]:h-8` outranks a plain `h-6` on specificity, so an
-  unprefixed override silently loses and the control stands a row taller than the
-  chips beside it.
+  Adds one role to a listed member. Renders nothing when no role is left.
+  The height override keeps the `data-[size=sm]` prefix to win on specificity.
 -->
 {#if roles.length > 0}
   <Select

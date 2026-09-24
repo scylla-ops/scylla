@@ -11,7 +11,6 @@ const loginRepository: LoginRepository = new DefaultLoginRepository(loginRemoteD
 export const LoginModule = {
   id: 'login',
   domain: {
-    /** Repository interface — the module's data surface. */
     loginRepository: loginRepository,
   },
   routes: {

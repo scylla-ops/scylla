@@ -30,7 +30,6 @@
   );
 </script>
 
-<!-- A calm at-a-glance summary row, modelled on the secrets health overview. -->
 <div class="grid gap-4 md:grid-cols-3">
   <Card class="rounded-2xl border-primary/20 bg-primary/5 py-3">
     <CardContent class="flex items-center gap-3">

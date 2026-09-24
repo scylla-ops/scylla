@@ -3,10 +3,8 @@ import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
 
 /**
- * Signing out on an error the session cannot recover from. A network failure is
- * treated the same way for queries: the control plane serves the UI from its own
- * origin, so "unreachable" and "no longer authenticated" are indistinguishable
- * from here, and the safe reading is the second one.
+ * A network failure also signs out: the UI is served by the control plane, so
+ * "unreachable" and "no longer authenticated" look the same from here.
  */
 const signOut = (): void => {
   localStorage.removeItem('token');
@@ -37,19 +35,14 @@ const reportError = (error: unknown, label: string, signOutOnNetworkError: boole
 /**
  * The app's one query cache.
  *
- * Built from `@tanstack/query-core` and held at module scope, so any module
- * reaches it without a provider.
- *
- * `@tanstack/svelte-query` pins `query-core` to an exact version. The direct
- * dependency on `@tanstack/query-core` must name the same version: two copies
- * would fork the cache silently.
+ * `@tanstack/query-core` must stay at the exact version that `@tanstack/svelte-query`
+ * pins: two copies would silently split the cache.
  */
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: error => reportError(error, 'Query Error', true),
   }),
-  // Global mutation error handler — individual hooks must NOT add their own
-  // `onError` toast, or every failure is reported twice.
+  // The only error toast for mutations: never add an `onError` toast in a mutation.
   mutationCache: new MutationCache({
     onError: error => reportError(error, 'Mutation Error', false),
   }),

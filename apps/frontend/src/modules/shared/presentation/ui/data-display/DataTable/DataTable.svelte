@@ -45,8 +45,7 @@
     alignRowsCenter = false,
   }: Props = $props();
 
-  // Getters, not values: the adapter re-reads them in an `$effect.pre`, which is
-  // what keeps `getRowModel()` current instead of one frame behind the data.
+  // Getters: the adapter re-reads them, which keeps `getRowModel()` in step with the data.
   const table = createTable<DataTableFeatures, TData>({
     features: DATA_TABLE_FEATURES,
     get columns() {
@@ -70,10 +69,8 @@
 <div
   class="h-full w-full overflow-auto rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_oklch(0_0_0/0.04),0_12px_32px_-16px_oklch(0_0_0/0.18)]"
 >
-  <!-- Rows are CSS grids, not table rows — see buildGridTemplate. The table,
-       thead and tbody stay plain blocks so the sticky header keeps the whole
-       table as its containing block (a grid item is trapped in its own area).
-       `display` other than `table-*` drops the implicit ARIA roles: restate them. -->
+  <!-- Rows are CSS grids (see `buildGridTemplate`); table, thead and tbody stay blocks so
+    the header can stick. They lose their implicit ARIA roles: restate them. -->
   <!-- svelte-ignore a11y_no_redundant_roles -->
   <table
     role="table"
@@ -117,8 +114,7 @@
             'grid transition-colors duration-150',
             onRowClick && 'cursor-pointer',
             onRowClick && !selected && 'hover:bg-muted/40',
-            // Inset shadow rather than a left border: the accent bar appears
-            // without shifting the first column by its width.
+            // An inset shadow, not a border: the accent bar does not shift the first column.
             selected &&
               '[&>td]:bg-primary/[0.07] [&>td:first-child]:shadow-[inset_3px_0_0_0_var(--primary)] hover:[&>td]:bg-primary/[0.1]',
           )}

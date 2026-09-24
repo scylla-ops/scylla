@@ -8,13 +8,6 @@ import type { SecretEntity } from '../../../../domain/entities/secret.entity.ts'
 import type { SecretRepository } from '../../../../domain/repository/secret.repository.ts';
 import SecretList from './SecretList.svelte';
 
-/**
- * What `secret-columns.test.tsx` covered, now through the table that renders
- * them: a cell is a snippet and a snippet has no existence outside its
- * component, so there is nothing left to call in isolation. The assertions are
- * the same ones.
- */
-
 const toastSuccess = vi.fn();
 vi.mock('svelte-sonner', () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
 
@@ -68,8 +61,6 @@ describe('SecretList', () => {
   it('formats the creation day', () => {
     setUp([secret({ createdAt: '2026-03-15T00:00:00.000Z' })]);
 
-    // The exact wording is `formatDay`'s business; that the third column is not
-    // blank is this test's.
     expect(screen.getAllByRole('cell')[2]).toHaveTextContent(/\S/);
   });
 
@@ -88,7 +79,6 @@ describe('SecretList', () => {
 
     expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
     expect(deleteById).not.toHaveBeenCalled();
-    // The click must not bubble to the row underneath.
     expect(selectionStore.getState().selectedIds.secrets ?? []).toEqual([]);
   });
 

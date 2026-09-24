@@ -1,4 +1,3 @@
-<!-- A one-select form, for the branch `form.fixture.ts`'s text-only items cannot reach. -->
 <script lang="ts">
   import ScyllaForm from './ScyllaForm.svelte';
   import { FormItemType, type FormItem, type FormValues } from '../scylla-form.struct.ts';

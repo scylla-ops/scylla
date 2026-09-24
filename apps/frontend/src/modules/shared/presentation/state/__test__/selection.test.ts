@@ -3,11 +3,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { createSelection } from '../selection.svelte.ts';
 
-/**
- * No DOM: `createSelection` is a view over a store, and `toRune` falls through
- * to a plain read outside a reactive context. The rules it pins are the same
- * six `use-selection.test.ts` holds the React one to.
- */
 beforeEach(() => selectionStore.setState({ selectedIds: {} }));
 
 describe('createSelection', () => {

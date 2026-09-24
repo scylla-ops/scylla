@@ -1,7 +1,4 @@
-/**
- * Domain model for a project-scoped secret. Metadata only — the plaintext value
- * is write-only and is never returned by the API, so it never lives here.
- */
+/** Metadata only: the value is write-only and never returned. */
 export interface SecretEntity {
   id: string;
   projectId: string;
@@ -11,7 +8,7 @@ export interface SecretEntity {
   updatedAt: string;
 }
 
-/** Fields needed to create a secret. `value` is write-only (sent once, never stored). */
+/** `value` is sent once and never stored. */
 export interface CreateSecretInput {
   projectId: string;
   name: string;

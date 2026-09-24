@@ -17,8 +17,6 @@
   const Icon = $derived(getStatusIcon(job.status));
 </script>
 
-<!-- A job's status badge: icon, label, and the one hint that explains a status
-     the label alone leaves ambiguous. -->
 <div class="w-full flex items-center gap-2">
   <Icon class={cn('w-5 h-5', config.iconClassName)} />
   <div class="flex min-w-0 flex-col">

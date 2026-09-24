@@ -77,8 +77,7 @@ describe('CreateSecretDialog', () => {
         value: 'postgres://...',
       }),
     );
-    // Unlike the other create dialogs, this one closes right away rather than
-    // waiting on the mutation's own onSuccess — it never passes one.
+    // Closes at once: it passes no `onSuccess`.
     expect(setOpen).toHaveBeenCalledWith(false);
   });
 });

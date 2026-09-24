@@ -3,10 +3,6 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import type { DailyOutcome } from '../../../../domain/structs/agent.struct.ts';
 import { bucketTotal, bucketsMax, fillBuckets } from '../outcomes-chart.calculator.ts';
 
-/**
- * No DOM: the whole point of pulling this out of the component is that the
- * arithmetic can be pinned without one.
- */
 const outcome = (day: string, overrides: Partial<DailyOutcome> = {}): DailyOutcome => ({
   day,
   completed: 0,
@@ -39,8 +35,7 @@ describe('fillBuckets', () => {
   });
 
   it('zero-fills the days the backend left out', () => {
-    // The series is sparse — a day with no finished job is absent, not zero —
-    // and a gap must render as an empty column, never shift the others along.
+    // A missing day is an empty column, never a shift of the others.
     const buckets = fillBuckets([outcome('2026-03-10T08:00:00', { completed: 3 })], '7d');
 
     expect(buckets.filter(bucket => bucketTotal(bucket) === 0)).toHaveLength(6);
@@ -48,8 +43,7 @@ describe('fillBuckets', () => {
   });
 
   it('lands an outcome on its local calendar day, not its UTC one', () => {
-    // 2026-03-10T23:30 local is the 11th in UTC. Bucketing on the UTC date
-    // would drop it out of the window entirely.
+    // Late local time is the next UTC day: bucket on the local date.
     const buckets = fillBuckets([outcome('2026-03-10T23:30:00', { failed: 2 })], '7d');
 
     expect(buckets[6]).toMatchObject({ day: '2026-03-10', failed: 2 });
@@ -76,7 +70,6 @@ describe('bucketsMax', () => {
   });
 
   it('never goes below 1, so an empty window still lays out', () => {
-    // A zero max would divide every bar height by zero.
     expect(bucketsMax(fillBuckets([], '7d'))).toBe(1);
   });
 });

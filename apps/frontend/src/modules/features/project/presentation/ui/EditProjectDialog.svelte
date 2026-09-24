@@ -21,8 +21,7 @@
 
   const updateProject = createMutation(() => projectMutations.update());
 
-  // Prefilled, unlike the organization dialog: a project's current values are
-  // the starting point here, so Save is enabled on an untouched form.
+  // Prefilled: Save is enabled on an untouched form.
   const items: readonly FormItem<'name' | 'description'>[] = $derived([
     {
       id: 'name',

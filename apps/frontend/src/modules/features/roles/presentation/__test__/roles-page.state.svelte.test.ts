@@ -77,7 +77,6 @@ afterEach(() => {
   permissionsStore.setState({ permissions: null });
 });
 
-/** Builds the ViewModel inside a reactive root — it is made of runes. */
 const withPage = async (
   body: (page: ReturnType<typeof createRolesPage>) => Promise<void> | void,
 ) => {

@@ -1,15 +1,7 @@
 import { msg } from '@lingui/core/macro';
 
-/**
- * Every string the apps screens show.
- *
- * `lingui extract` does not read `.svelte`, so a message declared inside a
- * component would vanish from the catalogs without failing a single gate. The
- * ids below are byte-identical to the ones the React components carried —
- * placeholder names included, since those are part of the msgid.
- */
+/** Keep the msgids (placeholder names included) or the French is lost. */
 export const appsMessages = {
-  // List page
   service: msg`Service`,
   app: msg`App`,
   apps: msg`Apps`,
@@ -24,28 +16,20 @@ export const appsMessages = {
   getCredentials: msg`Get credentials to authenticate.`,
   createAndReveal: msg`Create & reveal secret →`,
 
-  // Reveal dialog
   credentialsOf: (name: string) => msg`${name} credentials`,
   copySecretOnce: msg`Copy the secret below — it is shown only once.`,
   useTheseCredentials: msg`Use these credentials (id + secret) to authenticate an automation against the Scylla API.`,
 
-  // Delete confirmation
   deleteAppTitle: msg`Delete app?`,
   deleteAppBody: msg`This revokes the app's credentials. Cannot be undone.`,
   cancel: msg`Cancel`,
   delete: msg`Delete`,
 
-  // Card
   copyId: msg`Copy id`,
   created: msg`created`,
-  /**
-   * New, and deliberately: the React card's dropdown trigger was an icon with
-   * no accessible name, so nothing could reach it but a CSS selector.
-   */
   appActions: msg`App actions`,
   deleteApp: msg`Delete app`,
 
-  // Details page
   detailsLoadError: msg`Error loading app`,
   notFound: msg`App not found`,
   machineCredential: msg`Machine credential · no runtime presence`,
@@ -59,7 +43,6 @@ export const appsMessages = {
   updatedOn: msg({ context: 'date-prefix', message: 'Updated' }),
   notProcesses: msg`Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead.`,
 
-  // Secrets card
   secrets: msg`Secrets`,
   secretsBody: msg`Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret.`,
   newSecret: msg`New secret`,

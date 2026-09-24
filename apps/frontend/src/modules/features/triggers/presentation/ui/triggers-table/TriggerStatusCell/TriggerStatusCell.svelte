@@ -20,8 +20,7 @@
   const hasFired = $derived(!!result || !!trigger.lastFiredAt);
 </script>
 
-<!-- Last-run badge (shared status language) plus a context line: next fire or
-     the reason it is off. -->
+<!-- Last run badge, and the next fire or why it is off. -->
 <div class="flex flex-col items-center justify-center gap-1">
   {#if !hasFired}
     <Badge variant="outline" class="gap-1">
@@ -39,7 +38,7 @@
       {t(triggersMessages.ok)}
     </Badge>
   {:else}
-    <!-- Fired, but the outcome arm is newer than this build — don't claim success. -->
+    <!-- An outcome arm newer than this build: do not claim success. -->
     <Badge variant="outline" class="gap-1">
       <HelpCircleIcon class="size-3" />
       {t(triggersMessages.unknown)}

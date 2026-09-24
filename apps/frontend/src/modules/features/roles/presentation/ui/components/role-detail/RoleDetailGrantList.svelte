@@ -31,7 +31,6 @@
     [PermissionScope.UNSPECIFIED]: GlobeIcon,
   };
 
-  // Revoking is the mirror of granting: system-wide, administrators only.
   const canRevoke = $derived(can(Permission.MANAGE_SYSTEM_GRANTS));
 </script>
 
@@ -49,11 +48,7 @@
       {t(rolesMessages.noGrants)}
     </p>
   {:else}
-    <!--
-      A plain overflow container rather than the shared `ScrollArea`: that
-      component's root is only `relative`, so a `max-h-*` on it clips nothing and
-      a long grant list spills over whatever follows.
-    -->
+    <!-- Not `ScrollArea`: its root does not clip under a `max-h`. -->
     <div class="max-h-72 overflow-y-auto">
       <ul class="flex flex-col gap-2 pr-2">
         {#each assignees.assignees as { grant, label } (grant.id)}

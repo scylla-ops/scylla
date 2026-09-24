@@ -9,20 +9,7 @@ import XCircleIcon from '@lucide/svelte/icons/x-circle';
 import type { StatusKey } from '@shared/utils/status-config.ts';
 import type { LucideIcon } from '../icon.ts';
 
-/**
- * The icon half of `STATUS_CONFIG`, in Svelte components.
- *
- * Split out of `status-config.ts` because that file is `utils/` and must hold
- * no framework: the icon was the one field in it that was a React component,
- * and it is also the one field that cannot be shared between the two halves of
- * the migration. Everything else about a status — its label, its colours —
- * still comes from the single table next door, so the two sides cannot drift on
- * anything that matters.
- *
- * Keyed by {@link StatusKey} rather than merged into the config object: a
- * `Record` the compiler checks for exhaustiveness is what makes a status added
- * to the union fail here instead of rendering nothing.
- */
+/** A `Record` so that a new status fails to compile here instead of rendering nothing. */
 export const STATUS_ICONS: Record<StatusKey, LucideIcon> = {
   running: Loader2Icon,
   pending: DiamondMinusIcon,
@@ -34,9 +21,6 @@ export const STATUS_ICONS: Record<StatusKey, LucideIcon> = {
   unknown: CircleHelpIcon,
 };
 
-/**
- * The icon for a status string, falling back to `pending` — the same fallback
- * `getStatusConfig` applies, so an unrecognised status gets a matching pair.
- */
+/** Falls back to `pending`, like `getStatusConfig`. */
 export const getStatusIcon = (status: string): LucideIcon =>
   STATUS_ICONS[status as StatusKey] ?? STATUS_ICONS.pending;

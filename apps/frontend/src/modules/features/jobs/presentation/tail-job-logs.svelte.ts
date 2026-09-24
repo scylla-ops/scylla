@@ -2,19 +2,10 @@ import { getModuleDomain } from '@platform/di';
 import type { ScyllaError } from '@shared/utils/scylla-result.ts';
 import type { JobsModule } from '../jobs.module.ts';
 
-/**
- * How often buffered lines are handed to the view.
- *
- * Lines are buffered and flushed on a timer rather than published per line: a
- * noisy job emits thousands in a burst, and re-publishing the whole string per
- * line would both rebuild it each time (O(n²)) and stall the stream reader
- * enough to lag the server-side broadcast, which drops lines. Buffering keeps
- * the reader fast so nothing is lost.
- */
+/** Lines are buffered and flushed on a timer: publishing per line is O(n²) and makes the stream lag and drop lines. */
 const FLUSH_INTERVAL_MS = 150;
 
 export interface TailedLogs {
-  /** Every line received so far, newline-joined. Only ever grows, or restarts. */
   readonly text: string;
   readonly isLoading: boolean;
   readonly isError: boolean;
@@ -23,25 +14,12 @@ export interface TailedLogs {
 
 export interface TailJobLogsOptions {
   jobId: () => string;
-  /** Scopes the stream to one node's logs. */
   nodeId?: () => string | undefined;
 }
 
 /**
- * Subscribes to a job's logs as a single ordered stream: the backend replays the
- * full persisted history (untruncated) and then appends live lines, so the view
- * is complete regardless of when it is opened and stays live while the job runs.
- *
- * A server stream is a system outside the framework, which is what `$effect` is
- * for — one of the few places in this codebase where the React original's
- * `useEffect` was already the right tool. What changes is the honesty of the
- * dependencies: the effect re-runs when `jobId` or `nodeId` actually change,
- * with no array to keep in step, and the cleanup that cancels the stream is the
- * same one Svelte runs on unmount.
- *
- * `jobId` and `nodeId` are getters: a panel is reused across jobs, and reading
- * either once would pin the subscription to whichever job happened to be open
- * first.
+ * A job's logs as one ordered stream: the full history, then the live lines.
+ * `jobId` and `nodeId` are getters: a panel is reused across jobs.
  */
 export const createTailJobLogs = ({ jobId, nodeId }: TailJobLogsOptions): TailedLogs => {
   let text = $state('');
@@ -99,7 +77,7 @@ export const createTailJobLogs = ({ jobId, nodeId }: TailJobLogsOptions): Tailed
           });
         }
       } catch {
-        // Stream cancelled — expected on cleanup.
+        // The stream was cancelled on cleanup.
       }
       flush(); // final flush, so the last lines aren't lost between ticks
     };

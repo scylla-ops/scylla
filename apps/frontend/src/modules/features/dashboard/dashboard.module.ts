@@ -3,10 +3,6 @@ import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import { Permission } from '@platform/authz';
 import type { ScyllaModule } from '@platform/routing';
 
-/**
- * The organization overview. It owns no data of its own — it composes other
- * modules' hooks — so its `domain` is empty and it contributes only a route.
- */
 export const DashboardModule = {
   id: 'dashboard',
   domain: {},
@@ -14,8 +10,7 @@ export const DashboardModule = {
     organization: [
       {
         path: 'dashboard',
-        // Same gate as the projects list: the overview is a read of the
-        // organization, and it is where every org-level redirect lands.
+        // The overview reads the organization; every organization redirect lands here.
         permission: Permission.READ_ORGANIZATION,
         breadcrumb: () => ({ label: msg`Dashboard` }),
         page: () => import('./presentation/ui/Dashboard/Dashboard.page.svelte'),

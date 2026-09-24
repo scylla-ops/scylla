@@ -5,9 +5,6 @@ import type {
 } from '@/modules/features/agents/domain/structs/agent.struct.ts';
 import type { AgentEntity } from '@/modules/features/agents/domain/entities/agent.entity.ts';
 
-/**
- * Repository interface for Agents. Agents are organization-scoped.
- */
 export interface AgentsRepository {
   listAgents(organizationId: string): Promise<ScyllaResult<AgentEntity[]>>;
   getAgent(agentId: string): Promise<ScyllaResult<AgentEntity>>;

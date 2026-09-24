@@ -87,8 +87,6 @@ describe('AgentCard', () => {
     const onRequestDelete = vi.fn();
     render(AgentCard, { agent: agent(), onRequestDelete });
 
-    // Findable by name now: the port gave the icon-only control an `sr-only`
-    // label, where the React test had to reach for `.border-t button`.
     await userEvent.click(screen.getByRole('button', { name: 'Delete agent' }));
 
     expect(onRequestDelete).toHaveBeenCalledWith('agent-1');

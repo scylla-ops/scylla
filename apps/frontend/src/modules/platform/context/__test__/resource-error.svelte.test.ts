@@ -47,7 +47,6 @@ describe('createResourceError', () => {
 
       expect(state.redirecting).toBe(true);
       expect(toastError).toHaveBeenCalledWith('App not found');
-      // `replace`, so the back button does not land on the page that just 404'd.
       expect(navigator.navigate).toHaveBeenCalledWith('..', { replace: true });
     });
     cleanup();
@@ -71,8 +70,7 @@ describe('createResourceError', () => {
 
   it('reacts to an error that only arrives on a later render', () => {
     const cleanup = $effect.root(() => {
-      // The reason `error` is a getter: a query starts undefined and fails
-      // later, and taking the value once would never see the failure.
+      // A getter: the query fails after the first read.
       let error = $state<unknown>(undefined);
       const state = createResourceError({
         error: () => error,

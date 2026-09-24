@@ -46,7 +46,6 @@ afterEach(() => {
   permissionsStore.setState({ permissions: null });
 });
 
-/** Builds the ViewModel inside a reactive root — it is made of runes. */
 const withMembership = async (
   overrides: { scopeId?: string | null; onMembershipChanged?: () => void } = {},
   body: (state: ReturnType<typeof createScopeMembership>) => Promise<void> | void = () => {},
@@ -173,8 +172,7 @@ describe('removeMember', () => {
       await state.removeMember('user-1', 'alice');
     });
 
-    // RevokeAllAccess, never a series of revokeGrant: narrower grants left
-    // behind would keep the person listed.
+    // RevokeAllAccess, not a series of revokeGrant: a grant left behind would keep the person listed.
     expect(revokeAllAccess).toHaveBeenCalledWith({
       principal: { kind: PrincipalKind.USER, id: 'user-1' },
       scope: PermissionScope.PROJECT,

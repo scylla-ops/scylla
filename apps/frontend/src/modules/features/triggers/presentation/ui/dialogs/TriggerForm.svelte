@@ -35,7 +35,6 @@
 
   interface Props {
     pipelineId: string;
-    /** Present => edit mode (kind is locked). Absent => create mode. */
     trigger?: TriggerEntity;
     onCreated?: (created: CreatedTrigger) => void;
     onDone: () => void;
@@ -50,12 +49,7 @@
   const isEdit = !!trigger;
   const isPending = $derived(createTrigger.isPending || updateTrigger.isPending);
 
-  /**
-   * Seeded from the edited trigger at creation time, and that is the whole
-   * reason this is a component of its own: the dialog recreates it on every
-   * open, so these initializers *are* the reset the React version needed an
-   * effect on `[open, trigger]` for.
-   */
+  // Seeded once: the dialog rebuilds the form at each opening.
   const DEFAULT_CRON = '0 9 * * *';
 
    
@@ -77,7 +71,7 @@
   let inputs = $state<DraftInput[]>(triggerToDraftInputs(trigger));
    
 
-  /** A source arm newer than this build can't be rendered, so it can't be re-sent either. */
+  /** An unknown source arm cannot be rendered, so it cannot be sent again. */
   // svelte-ignore state_referenced_locally
   const isUnknownSource = trigger?.source.kind === TriggerKind.Unknown;
 
@@ -100,15 +94,13 @@
       if (isEdit && trigger) {
         await updateTrigger.mutateAsync({ triggerId: trigger.id, draft });
       } else {
-        // Awaited into a binding first: `onCreated?.(await …)` would skip the
-        // argument entirely when no callback is passed — creating nothing while
-        // still closing the dialog as though it had worked.
+        // `onCreated?.(await …)` would skip the call when no callback is given.
         const created = await createTrigger.mutateAsync(draft);
         onCreated?.(created);
       }
       onDone();
     } catch {
-      // Toast shown by the global MutationCache onError handler.
+      // The global mutation handler toasts the error.
     }
   };
 </script>

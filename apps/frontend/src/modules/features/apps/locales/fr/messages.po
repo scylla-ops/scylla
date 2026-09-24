@@ -13,51 +13,51 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:70
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:53
 msgid "{appName} · {label} credentials"
 msgstr "Identifiants {appName} · {label}"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:28
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:19
 msgid "{name} credentials"
 msgstr "Identifiants {name}"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:19
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:11
 msgid "active"
 msgstr "actif"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:66
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:49
 msgid "Add a credential for this app."
 msgstr "Ajouter un identifiant pour cette app."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:14
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:6
 msgid "App"
 msgstr "App"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:45
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:30
 msgid "App actions"
 msgstr "Actions de l'app"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:55
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:39
 msgid "App ID"
 msgstr "ID de l'app"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:50
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:34
 msgid "App not found"
 msgstr "Application introuvable"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:15
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:7
 msgid "Apps"
 msgstr "Apps"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:60
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:44
 msgid "Apps are credentials, not processes. There's nothing to monitor here — no online/offline, no runs. If you need observability, create an Agent instead."
 msgstr "Les apps sont des identifiants, pas des processus. Rien à surveiller ici — pas d'en ligne/hors ligne, pas d'exécutions. Pour de l'observabilité, créez plutôt un agent."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:22
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:14
 msgid "Apps are machine credentials. Create one to let an automation authenticate against the Scylla API."
 msgstr "Les apps sont des identifiants machine. Créez-en une pour qu'une automatisation s'authentifie auprès de l'API Scylla."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:35
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:25
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -65,68 +65,68 @@ msgstr "Annuler"
 msgid "ci-runner"
 msgstr "ci-runner"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:53
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:37
 msgid "Coming soon"
 msgstr "Bientôt disponible"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:39
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:28
 msgid "Copy id"
 msgstr "Copier l'id"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:29
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:20
 msgid "Copy the secret below — it is shown only once."
 msgstr "Copiez le secret ci-dessous — il est affiché une seule fois."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:25
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:17
 msgid "Create & reveal secret →"
 msgstr "Créer & révéler le secret →"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:23
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:15
 msgid "Create your first app"
 msgstr "Créez votre première app"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:40
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:29
 msgid "created"
 msgstr "créé le"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:58
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:42
 msgctxt "date-prefix"
 msgid "Created"
 msgstr "Créé le"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:64
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:47
 msgid "Credentials to authenticate this app. Disable cuts active sessions instantly; revoke deletes the secret."
 msgstr "Identifiants pour authentifier cette app. Désactiver coupe les sessions actives immédiatement ; révoquer supprime le secret."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:36
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:26
 msgid "Delete"
 msgstr "Supprimer"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:46
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:31
 msgid "Delete app"
 msgstr "Supprimer l'app"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:33
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:23
 msgid "Delete app?"
 msgstr "Supprimer l'app ?"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:68
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:51
 msgid "disabled"
 msgstr "désactivé"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:49
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:33
 msgid "Error loading app"
 msgstr "Erreur lors du chargement de l'app"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:18
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:10
 msgid "Error loading apps"
 msgstr "Erreur lors du chargement des apps"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:24
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:16
 msgid "Get credentials to authenticate."
 msgstr "Obtenez des identifiants pour vous authentifier."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:20
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:12
 msgid "inactive"
 msgstr "inactif"
 
@@ -134,7 +134,7 @@ msgstr "inactif"
 msgid "Label"
 msgstr "Étiquette"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:51
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:35
 msgid "Machine credential · no runtime presence"
 msgstr "Identifiant machine · aucune présence runtime"
 
@@ -142,84 +142,84 @@ msgstr "Identifiant machine · aucune présence runtime"
 msgid "my-build-runner"
 msgstr "my-build-runner"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:56
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:40
 #: src/modules/features/apps/presentation/utils/create-app-form-items.ts:7
 msgid "Name"
 msgstr "Nom"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:16
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:8
 msgid "New App"
 msgstr "Nouvelle app"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:65
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:48
 msgid "New secret"
 msgstr "Nouveau secret"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:21
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:13
 msgid "No apps yet"
 msgstr "Aucune app pour l'instant"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:67
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:50
 msgid "No secrets. Create one so this app can authenticate."
 msgstr "Aucun secret. Créez-en un pour que cette app puisse s'authentifier."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:54
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:38
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:74
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:57
 msgid "Revoke"
 msgstr "Révoquer"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:75
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:58
 msgid "Revoke secret"
 msgstr "Révoquer le secret"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:72
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:55
 msgid "Revoke secret?"
 msgstr "Révoquer le secret ?"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:71
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:54
 msgid "Secret"
 msgstr "Secret"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:63
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:46
 msgid "Secrets"
 msgstr "Secrets"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:13
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:5
 msgid "Service"
 msgstr "Service"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:57
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:41
 msgid "Status"
 msgstr "Statut"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:73
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:56
 msgid "This permanently deletes the secret and immediately cuts any session using it. Cannot be undone."
 msgstr "Supprime définitivement le secret et coupe immédiatement toute session qui l'utilise. Irréversible."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:34
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:24
 msgid "This revokes the app's credentials. Cannot be undone."
 msgstr "Cela révoque les identifiants de l'app. Irréversible."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:52
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:36
 msgid "Toggle app active"
 msgstr "Activer/désactiver l'app"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:69
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:52
 msgid "Toggle secret enabled"
 msgstr "Activer/désactiver le secret"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:59
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:43
 msgctxt "date-prefix"
 msgid "Updated"
 msgstr "Mis à jour le"
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:30
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:21
 msgid "Use these credentials (id + secret) to authenticate an automation against the Scylla API."
 msgstr "Utilisez ces identifiants (ID + secret) pour authentifier une automatisation auprès de l'API Scylla."
 
-#: src/modules/features/apps/presentation/ui/apps.messages.ts:17
+#: src/modules/features/apps/presentation/ui/apps.messages.ts:9
 msgid "You don't have permission to create apps."
 msgstr "Vous n'avez pas la permission de créer des apps."

@@ -7,13 +7,6 @@ import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import type { LoginRepository } from '@/modules/features/login/domain/repository/login.repository.ts';
 import LoginPage from './Login.page.svelte';
 
-/**
- * What `use-login.test.tsx` and `LoginForm.test.tsx` used to cover between them,
- * now driven end to end through the page: the form, the mutation and the
- * redirect are one view model, and the repository behind it is injected through
- * the DI registry rather than mocked.
- */
-
 const makeFakeRepository = (overrides: Partial<LoginRepository> = {}) => {
   const login = overrides.login ?? vi.fn().mockResolvedValue(ScyllaResult.success(undefined));
   return { repository: { login } satisfies LoginRepository, login };
@@ -68,7 +61,6 @@ describe('LoginPage', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Login' })).toBeEnabled());
     expect(testNavigator.navigate).not.toHaveBeenCalled();
-    // The form is still there to try again — no loading screen took it over.
     expect(screen.getByLabelText('Username')).toBeInTheDocument();
   });
 

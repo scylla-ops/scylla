@@ -25,7 +25,6 @@
   const selection = createSelection('secrets');
   const deleteSecret = createMutation(() => secretMutations.remove(projectId));
 
-  /** The row awaiting confirmation. `null` closes the dialog. */
   let pendingDeletion = $state<string | null>(null);
 
   const confirmDelete = () => {
@@ -35,8 +34,7 @@
     deleteSecret.mutate(secretId, {
       onSuccess: () => toast.success(i18n._(ToastMessages.SECRET_DELETE)),
     });
-    // Clicking the row's trash never selected it, so this drops it from the
-    // selection if it was there and is a no-op otherwise.
+    // Drops the row from the selection, if it was selected.
     selection.select(secretId);
     pendingDeletion = null;
   };
@@ -53,7 +51,7 @@
     </div>
     <div class="flex min-w-0 flex-col text-start">
       <p class="truncate font-semibold text-foreground">{secret.name}</p>
-      <!-- The id, not the value: a secret's plaintext never reaches the client. -->
+      <!-- The id: a secret's value never reaches the client. -->
       <CopyableText class="text-xs text-muted-foreground/80" value={secret.id} />
     </div>
   </div>
@@ -74,7 +72,7 @@
     size="icon"
     class="size-8"
     onclick={event => {
-      // The row itself toggles selection on click; deleting must not also do it.
+      // A click on the row toggles its selection; deleting must not.
       event.stopPropagation();
       pendingDeletion = secret.id;
     }}

@@ -55,7 +55,7 @@
       label: overview.runsTruncated
         ? t(dashboardMessages.successRateRecent)
         : t(dashboardMessages.successRate),
-      // `null` means nothing has finished yet — not a 0 % success rate.
+      // `null`: nothing finished yet, which is not 0 %.
       value:
         overview.runs.successRate === null
           ? '—'
@@ -70,10 +70,7 @@
     ),
   );
 
-  /**
-   * A project the user may see listed but not open: the row stays inert rather
-   * than sending them to a permission-denied panel.
-   */
+  /** A project the user may see but not open: the row stays inert. */
   const openPipelineRow = (projectId: string) => {
     const project = overview.projects.find(candidate => candidate.id === projectId);
     if (project && overview.canOpenProject(project.id)) {
@@ -83,15 +80,8 @@
 </script>
 
 <!--
-  The organization landing page.
-
-  A fixed frame: header, stats and chart keep their own height (`shrink-0`) and
-  the two lists share what is left, each scrolling inside its own box. The lists
-  carry a `min-h` floor so they stay usable instead of being squeezed to a
-  sliver; if a viewport is too short to honour even that, the frame itself
-  scrolls rather than collapsing them out of sight. `pr-2` keeps right-aligned
-  content off the scroll track, unconditionally, so the layout does not shift
-  depending on whether a scrollbar happens to be showing.
+  Header, stats and chart keep their height; the two lists share the rest and
+  scroll inside their box, with a minimum height (the frame scrolls below that).
 -->
 {#if overview.projectsError}
   <ErrorState message={t(dashboardMessages.loadError)} />
@@ -214,10 +204,7 @@
         {:else}
           <div class="rounded-xl border overflow-hidden">
             <table class="w-full text-sm">
-              <!--
-                Sticky inside the section's scroll box — needs an opaque
-                background so rows don't show through as they pass under.
-              -->
+              <!-- Sticky: needs an opaque background. -->
               <thead class="sticky top-0 z-10 border-b bg-muted">
                 <tr>
                   <th class="px-4 py-3 text-left font-medium text-muted-foreground">
@@ -270,10 +257,7 @@
       </div>
     </section>
 
-    <!--
-      The chart reads agent stats — hidden whole rather than rendering a panel
-      that can only fail for a user without agent access.
-    -->
+    <!-- Hidden without the permission: the chart could only fail. -->
     {#if can(Permission.READ_APP_STATS)}
       <Separator class="shrink-0" />
 

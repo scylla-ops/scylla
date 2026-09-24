@@ -18,13 +18,13 @@ import {
   type RoutePath,
 } from './route-path.ts';
 
-/** A crumb on the way to a page, and the number of URL segments its path covers. */
+/** A crumb on the way to a page, and how many URL segments its path covers. */
 export interface TrailMark {
   breadcrumb: BreadcrumbFn;
   depth: number;
 }
 
-/** A route the router can match: a page or a redirect, with all it needs to render. */
+/** A page or a redirect, with everything needed to render it. */
 export interface CompiledRoute {
   mount: RouteMount;
   /** From the root, e.g. `[':organizationSlug', 'agents']`. */
@@ -32,15 +32,14 @@ export interface CompiledRoute {
   page?: PageLoader;
   redirect?: string;
   permission?: Permission;
-  /** The layout of the root mount. A route without one renders alone. */
+  /** The layout of the root mount. Without one, the page renders alone. */
   layout?: LayoutComponent;
-  /** The wrappers of the mount and of its parents, from the outermost. */
+  /** From the outermost. */
   wrappers: readonly RouteWrapper[];
-  /** The crumbs of every path that leads here, from the root. */
+  /** From the root. */
   trail: readonly TrailMark[];
 }
 
-/** The compiled router: its routes, most specific first, and the page for no match. */
 export interface RouteTable {
   routes: readonly CompiledRoute[];
   fallback: Component;
@@ -48,7 +47,6 @@ export interface RouteTable {
 
 type Mounts = AppRouterConfig['mounts'];
 
-/** The mount and its parents, from the root. */
 export const mountChain = (mount: RouteMount, mounts: Mounts): MountDefinition[] => {
   const { parent } = mounts[mount];
   return [...(parent ? mountChain(parent, mounts) : []), mounts[mount]];
@@ -58,7 +56,6 @@ export const mountChain = (mount: RouteMount, mounts: Mounts): MountDefinition[]
 export const mountPath = (mount: RouteMount, mounts: Mounts): RoutePath =>
   mountChain(mount, mounts).flatMap(definition => splitPath(definition.path));
 
-/** The crumb a mount declares on its own path, as a route of that mount. */
 const mountCrumbs = (mounts: Mounts): FlatRoute[] =>
   (Object.keys(mounts) as RouteMount[]).flatMap(mount => {
     const { breadcrumb } = mounts[mount];

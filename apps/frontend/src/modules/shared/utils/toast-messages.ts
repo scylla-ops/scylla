@@ -1,18 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import type { MessageDescriptor } from '@lingui/core';
 
-/**
- * Centralized toast message descriptors.
- *
- * Usage:
- *   import { i18n } from '@lingui/core';
- *   import { ToastMessages } from '@shared/utils/toast-messages.ts';
- *
- *   toast.success(i18n._(ToastMessages.USER_CREATE));
- *
- * Messages are statically extractable by the Lingui CLI and land in
- * src/locales/{locale}/messages (shared catalog).
- */
 export const ToastMessages = {
   // Users
   USER_CREATE: msg`User created`,

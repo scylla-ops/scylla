@@ -27,9 +27,7 @@
   import { triggersMessages } from '../../triggers.messages.ts';
 
   interface Props {
-    /** Initial cron expression (read once on mount). */
     initialValue: string;
-    /** Emits the rendered cron string whenever the schedule changes. */
     onChange: (expression: string) => void;
   }
 
@@ -46,16 +44,7 @@
 
   const expression = $derived(buildCron(model));
 
-  /**
-   * One source of truth: the expression is *derived* from the model, and every
-   * write goes through here so the parent is told at the same moment.
-   *
-   * The React version ran an effect on `[model, onChange]` to re-emit, which
-   * also fired on mount — that mattered, because a freshly created trigger needs
-   * a valid default. `parseCron(initialValue)` already gives one, and the parent
-   * seeds its own state from the same string, so nothing is lost by not firing
-   * before the user has touched anything.
-   */
+  /** The expression is derived from the model; every change goes through here and is emitted at once. */
   const patch = (next: Partial<CronModel>) => {
     model = { ...model, ...next };
     onChange(buildCron(model));
@@ -91,7 +80,6 @@
   </Select>
 {/snippet}
 
-<!-- Compact UTC time picker (hour : minute). -->
 {#snippet timePicker()}
   <div class="flex items-center gap-2">
     <span class="text-sm text-muted-foreground">{t(triggersMessages.at)}</span>
@@ -114,10 +102,7 @@
   </div>
 {/snippet}
 
-<!--
-  A visual schedule builder: pick a frequency and the relevant when, instead of
-  hand-writing cron. The expression is shown live so power users still see it.
--->
+<!-- Builds the cron from a frequency and a time; the expression shows live. -->
 <div class="space-y-3">
   <RadioGroup
     value={model.frequency}
@@ -145,7 +130,6 @@
     {/each}
   </RadioGroup>
 
-  <!-- Contextual controls per frequency -->
   {#if model.frequency === 'hourly'}
     <div class="flex items-center gap-2">
       <span class="text-sm text-muted-foreground">{t(triggersMessages.atMinute)}</span>
@@ -201,7 +185,6 @@
     </div>
   {/if}
 
-  <!-- Live summary + the resulting expression -->
   <div class="flex flex-wrap items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
     <span class="text-xs text-muted-foreground">{describeCron(model, i18n)}</span>
     <code class="ml-auto font-mono text-xs text-foreground">{expression || '—'}</code>

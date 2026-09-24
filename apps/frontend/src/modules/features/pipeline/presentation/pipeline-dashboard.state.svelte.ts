@@ -6,24 +6,13 @@ import { ScyllaError } from '@shared/utils/scylla-result.ts';
 import { pipelineMessages } from './pipeline.messages.ts';
 import { pipelineQueries } from './pipeline.queries.ts';
 
-/** The shape `jobsByPipelinesQueries().combine` reads off each fanned-out query. */
 type HistoryResult = {
   data?: { pipelineId: string; jobs: JobEntity[] };
   isLoading: boolean;
   isError: boolean;
 };
 
-/**
- * The project dashboard: one page of pipelines, each with its recent run
- * history beside it.
- *
- * Two reads, and the second depends on the first — the history fan-out is one
- * query per pipeline on the page, so it cannot be declared until the page is
- * known. `jobsByPipelinesQueries` comes from `features/jobs` through its public
- * API, gate included: `ListJobsByPipeline` is enforced per project, so without
- * the grant nothing is asked and `canListJobs` is what the history cells read
- * to say "not allowed to look" rather than "failed to load".
- */
+/** One page of pipelines, each with its recent runs. The history needs `LIST_JOBS_BY_PIPELINE`: read `canListJobs`. */
 export const createPipelineDashboard = (projectId: () => string) => {
   const pagination = createPagination({ responsive: true });
 
@@ -36,10 +25,7 @@ export const createPipelineDashboard = (projectId: () => string) => {
   const pipelines = $derived(pipelinesQuery.data?.items);
   const pipelineIds = $derived(pipelines?.map(pipeline => pipeline.id) ?? []);
 
-  // The clamp inside `updatePaginationInfo` is remembered state — the page the
-  // reader is on can stop existing when the last row of the last page is
-  // deleted — so this is synchronisation with the server's answer, not a mirror
-  // of it. The React hook needed the same effect for the same reason.
+  // Clamps the page when the last row of the last page is deleted.
   $effect(() => {
     pagination.updatePaginationInfo(pipelinesQuery.data?.pagination);
   });
@@ -47,12 +33,7 @@ export const createPipelineDashboard = (projectId: () => string) => {
   const fanOut = $derived(jobsByPipelinesQueries(pipelineIds));
   const jobResults = createQueries(() => ({ queries: fanOut.queries }));
 
-  /**
-   * Folded here rather than handed to `createQueries` as its `combine`.
-   * TanStack's Svelte binding wraps a combined result in a raw ref that
-   * re-exposes its top-level keys, which empties a `Map` silently — the trap
-   * `grant-target-labels.svelte.ts` documents. An array of results survives it.
-   */
+  /** Folded here, not in the `combine`: the Svelte binding empties a combined `Map`. */
   const jobs = $derived(fanOut.combine([...jobResults] as HistoryResult[]));
 
   return {

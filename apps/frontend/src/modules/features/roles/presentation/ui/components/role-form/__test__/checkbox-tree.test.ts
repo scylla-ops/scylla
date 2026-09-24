@@ -3,13 +3,6 @@ import { describe, it, expect } from 'vitest';
 import { Permission } from '@platform/authz';
 import { checkedIdsOf, descendantIdsOf, findNode, type CheckboxNode } from '../checkbox-tree.ts';
 
-/**
- * The permission tree's rules, without a DOM.
- *
- * They came out of `shared/presentation/ui/forms/CheckboxTree.tsx`, where they
- * were entangled with the widget. Pinning them here is what lets the component
- * test stay about clicking.
- */
 const tree: CheckboxNode[] = [
   {
     id: Permission.READ_PIPELINE,
@@ -73,7 +66,6 @@ describe('checkedIdsOf', () => {
   });
 
   it('stops at the first broken link of the chain', () => {
-    // The grandchild is ticked, its parent is not: neither reads as checked.
     const checked = new Set([Permission.READ_PIPELINE, Permission.READ_JOB_LOGS]);
 
     expect(checkedIdsOf(tree, checked)).toEqual([Permission.READ_PIPELINE]);

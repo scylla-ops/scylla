@@ -1,10 +1,7 @@
 import { createSelection } from './selection.svelte.ts';
 
 export interface FeatureSelectionOptions {
-  /**
-   * Deletes a single item by id. When provided, `headerProps.onDeleteSelection`
-   * fans out over the current selection (settling every call) and then clears it.
-   */
+  /** When set, deleting the selection calls it for every selected id, then clears the selection. */
   deleteItem?: (id: string) => Promise<unknown>;
 }
 
@@ -24,18 +21,13 @@ export interface FeatureSelection {
   isSelected: (id: string) => boolean;
   selectAll: () => void;
   clearSelection: () => void;
-  /** Spread onto `<FeatureHeader>` to wire its selection toolbar. */
+  /** Spread onto `<FeatureHeader>`. */
   readonly headerProps: FeatureSelectionHeaderProps;
 }
 
 /**
- * Binds the keyed selection store to a concrete list of ids so a feature's
- * `FeatureHeader` and `DataTable` share a single source of truth.
- *
- * `allIds` is a getter, not an array: the list is server data that arrives and
- * changes, and taking the value once would freeze "select all" on whatever the
- * first render happened to hold. React re-ran the hook on every render and got
- * this for free; in Svelte the caller passes `() => rows.map(r => r.id)`.
+ * Binds the keyed selection to a list of ids, shared by `FeatureHeader` and `DataTable`.
+ * `allIds` is a getter: the list arrives and changes after the first render.
  */
 export const createFeatureSelection = (
   key: string,
@@ -48,9 +40,7 @@ export const createFeatureSelection = (
 
   const deleteSelection = async (): Promise<void> => {
     if (!deleteItem) return;
-    // `allSettled`: one failing delete must not strand the others, and the
-    // selection is cleared either way so the toolbar cannot keep offering to
-    // delete rows that are already gone.
+    // `allSettled`: one failed delete must not stop the others.
     await Promise.allSettled(selection.selectedIds.map(id => deleteItem(id)));
     selection.clearSelection();
   };

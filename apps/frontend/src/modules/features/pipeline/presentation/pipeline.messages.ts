@@ -1,28 +1,11 @@
 import { msg } from '@lingui/core/macro';
 
-/**
- * Every string the pipeline screens show.
- *
- * `lingui extract` does not read `.svelte`, so a message declared inside a
- * component would vanish from the catalogs without failing a single gate.
- *
- * Named placeholders where the React original had positional ones: `{0}` is
- * what the macro emits for an expression it cannot name —
- * `getRelativeTime(job.createdAt)` — and a function parameter always has one,
- * so those four msgids changed and their French was carried across by hand.
- * Every message the original *could* name keeps that name, because there the
- * msgid survives and renaming it would have emptied the translation in silence.
- *
- * It sits at `presentation/` rather than under `ui/` because `pipeline.queries.ts`
- * needs one of them: the duplicate mutation names the copy it creates.
- */
+/** Here, not under `ui/`: `pipeline.queries.ts` uses `copyOf`. */
 export const pipelineMessages = {
-  // ── Dashboard ──────────────────────────────────────────────────────────────
   loadError: msg`Unable to load pipelines`,
   noPipelines: msg`No pipeline found`,
   noPipelinesBody: msg`Create your first pipeline to get started`,
 
-  // ── Dashboard header ───────────────────────────────────────────────────────
   pipeline: msg`Pipeline`,
   pipelines: msg`Pipelines`,
   newPipeline: msg`New pipeline`,
@@ -31,24 +14,20 @@ export const pipelineMessages = {
   members: msg`Members`,
   secrets: msg`Secrets`,
 
-  // ── Table columns ──────────────────────────────────────────────────────────
   status: msg`Status`,
   history: msg`History`,
   lastRun: msg`Last Run`,
   actions: msg`Actions`,
   creation: msg`Creation:`,
 
-  // ── Row actions ────────────────────────────────────────────────────────────
   run: msg`Run`,
   edit: msg`Edit`,
   editPipeline: msg`Edit pipeline`,
   duplicate: msg`Duplicate`,
   viewJobs: msg`View Jobs`,
   triggers: msg`Triggers`,
-  /** New: the React compact dropdown trigger carried no accessible name. */
   pipelineActions: msg`Pipeline actions`,
 
-  // ── History strip ──────────────────────────────────────────────────────────
   jobsForbidden: msg`You don't have permission to view this pipeline's jobs`,
   jobsError: msg`Error loading jobs`,
   noJobsYet: msg`No jobs yet`,
@@ -58,7 +37,6 @@ export const pipelineMessages = {
   finishedAt: (time: string) => msg`Finished ${time}`,
   durationOf: (duration: string) => msg`Duration: ${duration}`,
 
-  // ── Editor ─────────────────────────────────────────────────────────────────
   selectProjectFirst: msg`Select a project first`,
   create: msg`Create`,
   save: msg`Save`,
@@ -73,19 +51,16 @@ export const pipelineMessages = {
   statusSaved: msg`All changes saved`,
   editDenied: msg`You don't have permission to edit this pipeline.`,
 
-  // ── Blueprint canvas ───────────────────────────────────────────────────────
   addNode: msg`Add Node`,
   deleteNode: msg`Delete node`,
   deleteEdge: msg`Delete edge`,
   unnamedPipeline: msg`Unnamed`,
 
-  // ── Pipeline-name dialog ───────────────────────────────────────────────────
   pipelineName: msg`Pipeline name`,
   pipelineNameDescription: msg`Set the name of the pipeline.`,
   name: msg`Name`,
   namePlaceholder: msg`e.g., my-pipeline`,
 
-  // ── Step dialog ────────────────────────────────────────────────────────────
   addNodeTitle: msg`Add a new node`,
   addNodeDescription: msg`Define a new pipeline step with a unique ID and clear inputs for the command or script it should run.`,
   editNodeTitle: msg`Edit node`,
@@ -106,16 +81,13 @@ export const pipelineMessages = {
   envValuePlaceholder: msg`value`,
   envKindLiteral: msg`Literal`,
   envKindSecret: msg`Secret`,
-  /** The kind picker has no visible label — a row of them needs one each. */
   envKindLabel: msg`Value kind`,
   referenceASecret: msg`Reference a secret`,
   secretNamePlaceholder: msg`secret name`,
   addVariable: msg`Add variable`,
-  /** New: the trash buttons on argument and variable rows had no name. */
   removeArgument: msg`Remove argument`,
   removeVariable: msg`Remove variable`,
   cancel: msg`Cancel`,
 
-  // ── Duplication ────────────────────────────────────────────────────────────
   copyOf: (name: string) => msg`${name} (copy)`,
 };

@@ -7,7 +7,7 @@ import LoginRedirect from './LoginRedirect.svelte';
 import OrganizationSyncWrapper from './OrganizationSync.wrapper.svelte';
 import { coreMessages } from './core.messages.ts';
 
-/** The pages the shell owns: the entry points that send the user on to a module's page. */
+/** The pages the shell owns, which send the user on to a module's page. */
 const shellRoutes: RouteSource = {
   id: 'shell',
   routes: {
@@ -16,13 +16,7 @@ const shellRoutes: RouteSource = {
   },
 };
 
-/**
- * The application: the mounts the shell owns, and the routes that the modules
- * graft onto them.
- *
- * Add a page in the `*.module.ts` of its module, not here. This changes only when
- * the shell gets a new mount.
- */
+/** Add a page in its module's `*.module.ts`, not here. This changes only for a new mount. */
 export const appRoutes: AppRouterConfig = {
   mounts: {
     public: {},
@@ -39,7 +33,7 @@ export const appRoutes: AppRouterConfig = {
   fallback: LoginRedirect,
 };
 
-/** Starts the router and installs it as the navigator of the app. Call it once, before mount. */
+/** Call it once, before mount. */
 export const startRouter = (): void => {
   setAppNavigator(createAppRouter(appRoutes));
 };

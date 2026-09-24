@@ -6,16 +6,7 @@ import { withLocale } from '@/test/i18n.ts';
 import type { JobsSummary } from '@/modules/features/jobs';
 import RunActivityCard from './RunActivityCard.svelte';
 
-/**
- * The three run-activity sentences interpolate a **positional** `{0}`, because
- * the `<Trans>` they were ported from gave lingui an expression rather than an
- * identifier. `dashboard.messages.ts` keeps them that way on purpose: a msgid is
- * the whole string, placeholders included, so naming them would have minted new
- * messages and quietly dropped the French — with `extract` happy,
- * `i18n:collisions` at zero and coverage unchanged.
- *
- * This is the test that notices.
- */
+/** These sentences use a positional `{0}`: naming it would change the msgid and lose the French. */
 withLocale('fr', messages);
 
 const summary = (overrides: Partial<JobsSummary> = {}): JobsSummary =>

@@ -12,7 +12,6 @@
   import { jobsMessages } from '../jobs.messages.ts';
 
   interface Props {
-    /** From the route: `…/pipelines/:pipelineId/jobs/:jobId`. */
     jobId?: string;
   }
 
@@ -21,9 +20,7 @@
   const jobQuery = createQuery(() => jobQueries.byId(jobId ?? ''));
   const job = $derived(jobQuery.data);
 
-  // A getter: the executions arrive with the job, and a list read once would
-  // filter the URL against an empty set on the first paint, dropping every
-  // panel the incoming link asked for.
+  // A getter: the nodes arrive with the job.
   const panels = createOpenLogPanels(() => job?.nodeExecutions.map(nodeIdOf) ?? []);
 
   const resourceError = createResourceError({
@@ -33,22 +30,11 @@
   });
 </script>
 
-<!--
-  One job: what it did, and what it printed.
-
-  Which log panels are open lives in the URL rather than in state, so a link can
-  open the page already showing one node's logs — which is what the timeline
-  segments on the jobs list and the pipeline dashboard link to, and what this
-  page's own timeline does to the page it is already on.
-
-  The page fills the viewport instead of growing with its content: the logs are
-  what the page is for, so they take the room the summary leaves and scroll
-  inside it, rather than pushing the whole page into a scroll of its own.
--->
+<!-- The open log panels are in the URL. The page fills the viewport and the logs scroll inside it. -->
 {#if !jobId}
   <ErrorState message={t(jobsMessages.jobIdMissing)} />
 {:else if resourceError.redirecting}
-  <!-- Nothing: the redirect is already in flight. -->
+  <!-- The redirect is in flight. -->
 {:else if jobQuery.isLoading}
   <Skeleton class="h-72 w-full rounded-xl" />
 {:else if jobQuery.isError || !job}

@@ -8,30 +8,18 @@ import { DEFAULT_PAGE_SIZE, type PaginationParams } from '@shared/domain/structs
 import type { ProjectEntity } from '../domain/entities/project.entity.ts';
 import type { ProjectModule } from '../project.module.ts';
 
-/**
- * Everything the project module reads and writes.
- *
- * Replaces the seven hooks, and keeps what mattered about them: one query-key
- * factory shared by the paginated list, the dashboard overview and the
- * grant-label lookup, so the same organization asked for the same page is the
- * same cache entry whoever asks.
- */
+// Resolved per call: tests swap the registry.
 const repository = () =>
   getModuleDomain<typeof ProjectModule.domain>('project').projectRepository;
 
-/** The project list of one organization, for one page. */
 export const PROJECTS_QUERY_KEY = (
   organizationId: string | null,
   pagination?: PaginationParams,
 ) => ['projects', organizationId, pagination] as const;
 
-/** Prefix matching every page of every organization — for broad invalidation. */
 export const PROJECTS_QUERY_ROOT = ['projects'] as const;
 
-/**
- * One request covers an organization's whole project list for the lookups that
- * need names rather than a page (dashboard overview, grant target labels).
- */
+/** One request for an organization's whole list, for the lookups by name. */
 export const PROJECTS_LOOKUP_PAGE: PaginationParams = { page: 1, pageSize: 100 };
 
 export const PROJECT_MEMBERS_QUERY_KEY = (projectId: string) =>
@@ -39,21 +27,13 @@ export const PROJECT_MEMBERS_QUERY_KEY = (projectId: string) =>
 
 const FIRST_PAGE: PaginationParams = { page: 1, pageSize: DEFAULT_PAGE_SIZE };
 
-/**
- * Whether this organization's projects may be listed at all.
- *
- * The backend checks `ListProjectsByOrganization` on the organization, and
- * these queries are consumed from `roles` and `core` — outside this module's
- * route guard — so they ask for themselves. An empty list is therefore not
- * proof of "no projects"; a caller that must tell the two apart calls this.
- */
+/** Used outside this module's route guard, so checked here. An empty list is then not proof of "no projects". */
 export const canListProjects = (organizationId: string | null): boolean =>
   authorizationReady() &&
   !!organizationId &&
   can(Permission.LIST_PROJECTS_BY_ORGANIZATION, { organizationId });
 
 export const projectQueries = {
-  /** One organization's projects, paginated. */
   byOrganization: (organizationId: string | null, pagination: PaginationParams = FIRST_PAGE) =>
     queryOptions({
       queryKey: PROJECTS_QUERY_KEY(organizationId, pagination),
@@ -62,14 +42,7 @@ export const projectQueries = {
       enabled: canListProjects(organizationId),
     }),
 
-  /**
-   * Every project of one organization, unpaginated from the caller's point of
-   * view — for the pages that need the whole list rather than a page of it.
-   *
-   * The backend already filters to what the caller may read, so unlike
-   * {@link projectQueries.byOrganization} there is no client-side gate: the
-   * dashboard calls this for the organization it is already on.
-   */
+  /** The whole list, scoped by the backend: no client-side gate. */
   lookup: (organizationId: string | null) =>
     queryOptions({
       queryKey: PROJECTS_QUERY_KEY(organizationId, PROJECTS_LOOKUP_PAGE),
@@ -79,14 +52,7 @@ export const projectQueries = {
       staleTime: 30_000,
     }),
 
-  /**
-   * Who holds a role scoped to the project.
-   *
-   * Derived from grants on the backend, so a grant mutation changes it. Those
-   * live in `useScopedGrants`, which cannot reach this key without coupling the
-   * two features — callers invalidate it with
-   * {@link invalidateProjectMembers}.
-   */
+  /** Derived from grants: callers invalidate it with `invalidateProjectMembers`. */
   members: (projectId: string | null, options: { enabled?: boolean } = {}) =>
     queryOptions({
       queryKey: PROJECT_MEMBERS_QUERY_KEY(projectId ?? ''),
@@ -101,19 +67,8 @@ export interface ProjectLookupEntry {
 }
 
 /**
- * A projectId → {name, organization} lookup across several organizations.
- *
- * A project id on its own says nothing about which organization owns it, so
- * anything resolving ids to names has to fan out. That fan-out is a project
- * concern, so it lives here rather than being rebuilt against the repository by
- * every caller — and it shares {@link PROJECTS_QUERY_KEY} with the paginated
- * list, so an organization already loaded is served from cache.
- *
- * Filtered by permission *before* going out: asking for all of them would mean
- * one denial per organization the caller cannot read.
- *
- * Returns what `useQueries` / `createQueries` take, rather than calling either,
- * so both bindings can run it.
+ * projectId → name and organization, across organizations. Asks only the
+ * organizations the user may list (one denial each otherwise). Shares `PROJECTS_QUERY_KEY`.
  */
 export const projectLookupQueries = (organizationIds: string[], enabled = true) => {
   const readableIds =
@@ -125,12 +80,10 @@ export const projectLookupQueries = (organizationIds: string[], enabled = true) 
 
   return {
     queries: readableIds.map(organizationId => projectQueries.lookup(organizationId)),
-    // Folded here rather than by the caller so TanStack Query can memoize the
-    // map on the underlying results instead of rebuilding it every render.
+    // Folded here so TanStack Query memoizes it on the results.
     combine: (results: { data?: { projects: ProjectEntity[] } }[]) => {
       const byProjectId = new Map<string, ProjectLookupEntry>();
       results.forEach((result, index) => {
-        // Indexes line up with `readableIds`, which is what was queried.
         const organizationId = readableIds[index];
         for (const project of result.data?.projects ?? []) {
           byProjectId.set(project.id, { name: project.name, organizationId });

@@ -23,8 +23,7 @@
     deleteItem: id => deleteProject.mutateAsync(id),
   });
 
-  // Creating a project is an organization-level capability; deleting one is
-  // checked per project, so this only reflects the current context.
+  // Creating is an organization capability; deleting is checked per project.
   const canCreate = $derived(can(Permission.CREATE_PROJECT));
   const canDelete = $derived(can(Permission.DELETE_PROJECT));
 </script>

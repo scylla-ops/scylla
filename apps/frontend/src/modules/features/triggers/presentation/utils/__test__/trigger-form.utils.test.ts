@@ -43,12 +43,7 @@ describe('convertCronToUTC / convertCronToLocal', () => {
     expect(convertCronToUTC('30 * * * *')).toBe('30 * * * *');
   });
 
-  // The exact hour/day shift depends on the host's local timezone offset, which
-  // this suite must not hardcode (it varies by machine and by DST). What must
-  // hold everywhere is the round trip: converting to UTC and back to local
-  // (or the reverse) with the day fields left wide open ('*') returns the
-  // original expression exactly, because both legs read the same "now" and a
-  // shift composed with its own inverse is the identity.
+  // The shift depends on the host's timezone: check the round trip, which holds everywhere.
   it.each(['30 9 * * *', '0 0 * * *', '15 23 * * *', '45 6 * * 1-5'])(
     'round-trips %s through UTC and back to local',
     expression => {
@@ -121,7 +116,7 @@ describe('buildTriggerDraft', () => {
       signatureHeader: '',
       inputs: [{ key: 'sha', valueKind: 'jsonPointer', value: '/head/sha' }],
     });
-    // A cron trigger has no webhook payload to point into - always literal.
+    // A cron trigger has no payload: always literal.
     expect(cronDraft.inputs).toEqual([{ key: 'sha', value: { kind: 'literal', value: '/head/sha' } }]);
   });
 

@@ -4,10 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { findTooltip, queryTooltip, render, textSnippet } from '@/test/render.svelte.ts';
 import TruncatedText from './TruncatedText.svelte';
 
-/**
- * jsdom never lays out text, so `scrollWidth`/`clientWidth` are always 0 — fake
- * whichever relationship the test needs on the rendered trigger.
- */
+/** jsdom lays out nothing: fake the widths. */
 const setOverflow = (element: HTMLElement, { truncated }: { truncated: boolean }) => {
   Object.defineProperty(element, 'scrollWidth', {
     configurable: true,

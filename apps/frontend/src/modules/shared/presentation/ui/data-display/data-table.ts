@@ -2,32 +2,14 @@ import { columnSizingFeature } from '@tanstack/table-core';
 import type { CellData, ColumnDef, RowData, TableFeatures } from '@tanstack/table-core';
 
 /**
- * The feature set `DataTable` builds its tables from.
- *
- * TanStack Table 9 composes features explicitly instead of shipping them all:
- * the core ones (rows, columns, headers, cells, the core row model) come for
- * free, everything else is opt-in. `columnSizingFeature` is here because it is
- * what declares `size` and `minSize` on a column definition — the two numbers
- * `buildGridTemplate` reads. Nothing else is opted into: no sorting, no
- * filtering, no pagination. `Pagination` is a separate, server-driven component.
- *
- * In particular `columnVisibilityFeature` is *not* here, which is why the
- * component iterates `row.getAllCells()` where the React one called
- * `getVisibleCells()` — no column in this app can be hidden, so the two return
- * the same list and the second costs a feature.
+ * The TanStack Table features `DataTable` uses. `columnSizingFeature` declares
+ * `size` and `minSize`, read by `buildGridTemplate`. No column can be hidden.
  */
 export const DATA_TABLE_FEATURES = { columnSizingFeature } as const;
 
 export type DataTableFeatures = typeof DATA_TABLE_FEATURES;
 
-/**
- * A column definition for `DataTable`.
- *
- * Features carry types in v9, so a bare `ColumnDef<TData, TValue>` no longer
- * exists — the feature set is the first type argument. Aliasing it here means a
- * feature writes `DataTableColumn<SecretEntity>` and never has to name the
- * feature set.
- */
+/** A column definition, with the feature set already filled in. */
 export type DataTableColumn<TData extends RowData, TValue extends CellData = CellData> = ColumnDef<
   DataTableFeatures,
   TData,
@@ -67,22 +49,11 @@ export const cellAlignClass: Record<ColumnAlign, string> = {
 };
 
 /**
- * One grid track per column.
+ * One grid track per column: `minmax(minSize, size)`, or `minmax(minSize, 1fr)`
+ * without a `size`. When no column is flexible, `${size}fr` so the table still
+ * fills its container.
  *
- * A CSS table cannot express this: `table-layout: fixed` ignores `min-width` on
- * cells entirely, and `auto` never shrinks a column below its content. `minmax()`
- * gives every column a real floor:
- *
- * - `size` set       → `minmax(minSize, size)` — grows up to `size`, shrinks back to
- *   `minSize`, i.e. down to nothing when no `minSize` is declared.
- * - `size` undefined → `minmax(minSize, 1fr)` — absorbs all the leftover space.
- *
- * When no column is flexible, each track becomes `${size}fr` instead so the table
- * still fills its container, sharing the width proportionally as a fixed table
- * layout would — otherwise the columns would leave a gap on the right.
- *
- * Read from the `columns` prop, never from `column.columnDef`: TanStack defaults
- * the latter to `size: 150, minSize: 20`, which makes "unspecified" unreadable.
+ * Read from the `columns` prop: `column.columnDef` defaults `size` to 150.
  */
 export const buildGridTemplate = (columns: { size?: number; minSize?: number }[]): string => {
   const hasFlexibleColumn = columns.some(column => column.size === undefined);
@@ -96,6 +67,6 @@ export const buildGridTemplate = (columns: { size?: number; minSize?: number }[]
     .join(' ');
 };
 
-/** Summed minimums: below this the tracks overflow and the table must scroll. */
+/** Below this width the table scrolls. */
 export const minTableWidthOf = (columns: { minSize?: number }[]): number =>
   columns.reduce((total, column) => total + (column.minSize ?? 0), 0);

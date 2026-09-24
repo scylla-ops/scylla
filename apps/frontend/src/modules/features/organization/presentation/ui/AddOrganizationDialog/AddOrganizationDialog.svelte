@@ -21,8 +21,7 @@
 
   const createOrganization = createMutation(() => organizationMutations.create());
 
-  // The items resolve their labels with the Lingui macro at call time; reading
-  // the active locale is what rebuilds them when it changes.
+  // Reading the locale rebuilds the labels on a switch.
   const items = $derived((activeLocale(), createOrganizationItems()));
 
   const handleSubmit = ({ name, description }: FormValues<'name' | 'description'>) => {
@@ -31,8 +30,7 @@
     createOrganization.mutate(
       { name, description: description.trim() || undefined },
       {
-        // The mutation already makes the new organization the active one; this
-        // is the part that only the caller knows — where to land afterwards.
+        // The mutation already made it active; where to land is the caller's choice.
         onSuccess: () => {
           setOpen(false);
           navigateTo(`/${slugifyOrgName(name)}/projects`);

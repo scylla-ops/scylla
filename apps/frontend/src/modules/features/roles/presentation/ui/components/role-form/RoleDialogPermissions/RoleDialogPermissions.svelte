@@ -14,12 +14,9 @@
   interface Props {
     scope: PermissionScope;
     permissions: Permission[];
-    /**
-     * How many permissions the role holds outside this build's catalog. They
-     * are kept on save; the count is shown so nobody thinks they vanished.
-     */
+    /** Permissions outside this build's catalog: kept on save, counted so nobody thinks they vanished. */
     preservedCount: number;
-    /** What will actually be written — riders included. The honest count. */
+    /** What will be written, implicit permissions included. */
     conferredCount: number;
     isPending: boolean;
     onPermissionsChange: (permissions: Permission[]) => void;
@@ -34,19 +31,14 @@
     onPermissionsChange,
   }: Props = $props();
 
-  // Labels read against the *role's* scope, so a project permission conferred by
-  // an organization role says "every project" rather than "the project".
+  // Against the role's scope: an organization role says "every project".
   const labelForScope = (permission: Permission) => permissionLabelOf(permission, scope);
 
   const nodes = $derived(
     buildPermissionTree(getEditablePermissionDefinitionsForScope(scope), labelForScope),
   );
 
-  /**
-   * Conferred by construction at this scope, so shown ticked and locked rather
-   * than hidden: the reader still learns the role carries it, and nobody can
-   * build a role that admits someone to a place they cannot see.
-   */
+  /** Conferred at this scope: shown ticked and locked. */
   const alwaysGranted = $derived(getAlwaysGrantedPermissionsForScope(scope));
 </script>
 
@@ -56,8 +48,7 @@
     <Badge variant="secondary">{t(rolesMessages.conferredCount(conferredCount))}</Badge>
   </div>
 
-  <!-- Plain overflow rather than the shared `ScrollArea` — that root is only
-       `relative`, so a fixed height on it clips nothing. -->
+  <!-- Not `ScrollArea`: its root does not clip under a fixed height. -->
   <div class="h-56 overflow-y-auto rounded-lg border p-2">
     <div class="flex flex-col gap-0.5">
       {#each alwaysGranted as permission (permission)}
@@ -71,10 +62,7 @@
         </label>
       {/each}
 
-      <!--
-        Keyed on the scope: switching it rebuilds the tree from another catalog
-        slice, and the component seeds its checked set once, at construction.
-      -->
+      <!-- Keyed on the scope: the tree seeds its checked set once. -->
       {#key scope}
         <CheckboxTree
           {nodes}

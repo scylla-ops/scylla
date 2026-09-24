@@ -48,8 +48,6 @@ describe('AddOrganizationDialog', () => {
     const button = screen.getByRole('button', { name: 'Create Organization' });
     expect(button).toBeDisabled();
 
-    // Description isn't marked optional on this form either, even though the
-    // dialog's own submit guard only actually cares about the name.
     await user.type(screen.getByLabelText('Organization name'), 'Acme Corp');
     expect(button).toBeDisabled();
 
@@ -67,8 +65,7 @@ describe('AddOrganizationDialog', () => {
     await user.type(screen.getByLabelText('Description'), 'a real one');
     await user.click(screen.getByRole('button', { name: 'Create Organization' }));
 
-    // Unlike the description, the name reaches the repository exactly as typed —
-    // only the submit guard and the form's validity check trim a copy.
+    // The name reaches the repository as typed; only the checks trim a copy.
     await waitFor(() => expect(create).toHaveBeenCalledWith('  Acme Corp  ', 'a real one'));
     await waitFor(() => expect(setOpen).toHaveBeenCalledWith(false));
     expect(contextStore.getState().organization).toEqual({ id: 'org-1', name: 'Acme Corp' });

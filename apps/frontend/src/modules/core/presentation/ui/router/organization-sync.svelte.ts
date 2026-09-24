@@ -4,12 +4,7 @@ import { createQuery } from '@platform/query';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { organizationQueries } from '@/modules/features/organization';
 
-/**
- * Makes the organization of the URL the active organization.
- *
- * It finds the organization whose slug is `organizationSlug`. When no
- * organization matches, it goes to the dashboard of the first organization.
- */
+/** When no organization matches the slug, goes to the first organization's dashboard. */
 export const syncOrganization = (organizationSlug: string | undefined): void => {
   const organizations = createQuery(() => organizationQueries.mine());
 

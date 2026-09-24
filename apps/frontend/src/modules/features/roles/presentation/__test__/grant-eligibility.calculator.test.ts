@@ -100,10 +100,7 @@ describe('buildGrantEligibility', () => {
   });
 
   it('gives a role the catalog does not hold the benefit of the doubt', () => {
-    // `roleConfers(undefined, …)` is true by design: a caller that cannot read
-    // the catalog must not have every role treated as empty. The consequence
-    // here is that an unknown role reads as admitting — the backend is still
-    // the enforcer, and greying someone out on a guess is the worse failure.
+    // `roleConfers(undefined, …)` is true: an unknown role counts as admitting.
     expect(eligibilityOf([grant({ roleId: 'ghost' })], [])).toBe('eligible');
   });
 });

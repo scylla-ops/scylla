@@ -1,6 +1,5 @@
 import { FormItemType, type FormItem } from '../scylla-form.struct.ts';
 
-/** The id union the form fixtures pin their component to. */
 export type Ids = 'username' | 'bio';
 
 export const items: readonly FormItem<Ids>[] = [

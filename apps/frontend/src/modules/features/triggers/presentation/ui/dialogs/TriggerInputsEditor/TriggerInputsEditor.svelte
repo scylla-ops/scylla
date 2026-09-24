@@ -17,7 +17,7 @@
   interface Props {
     inputs: DraftInput[];
     onChange: (inputs: DraftInput[]) => void;
-    /** Webhook triggers may extract values from the payload via a JSON pointer. */
+    /** Webhook triggers may read values from the payload with a JSON pointer. */
     allowJsonPointer: boolean;
   }
 
@@ -31,7 +31,6 @@
   const add = () => onChange([...inputs, { key: '', valueKind: 'literal', value: '' }]);
 </script>
 
-<!-- Editor for a trigger's repeated key → (literal | json-pointer) inputs. -->
 <div class="space-y-2">
   <div class="flex items-center justify-between">
     <span class="text-sm font-medium">{t(triggersMessages.inputs)}</span>
@@ -44,12 +43,7 @@
   {#if inputs.length === 0}
     <p class="text-xs text-muted-foreground">{t(triggersMessages.inputsHint)}</p>
   {:else}
-    <!--
-      Keyed by index, and deliberately: a draft row has no id until it is saved,
-      and two blank rows are indistinguishable. Rows are only ever appended or
-      removed from the end of the user's attention, so an index key costs
-      nothing here — unlike in a server-backed list.
-    -->
+    <!-- Keyed by index: a draft row has no id. -->
     {#each inputs as input, index (index)}
       <div class="flex items-center gap-2">
         <Input
@@ -92,7 +86,6 @@
           class="size-8 shrink-0"
         >
           <Trash2Icon class="size-4 text-destructive" />
-          <!-- Icon-only: the React original carried no accessible name. -->
           <span class="sr-only">{t(triggersMessages.removeInput)}</span>
         </Button>
       </div>

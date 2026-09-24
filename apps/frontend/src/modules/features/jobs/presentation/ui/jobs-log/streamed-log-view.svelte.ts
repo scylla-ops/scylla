@@ -1,41 +1,22 @@
 import { EditorView } from '@codemirror/view';
 
-/** Distance from the end that still counts as "parked at the tail", in px. */
 const TAIL_THRESHOLD_PX = 24;
 
 export interface StreamedLogView {
-  /** Hand to `renderCodeMirror`'s `onView`. */
   attach: (view: EditorView | null) => void;
 }
 
 /**
- * Feeds a growing log stream into a CodeMirror viewer, and keeps the viewport on
- * the tail the way an IDE console does: it opens on the end of the log, sticks
- * to it while lines arrive, and hands control back the moment the reader takes
- * over — scrolling up, or pressing on a line to select it. Following resumes by
- * itself once they are back at the end with nothing selected.
- *
- * **The document is written only here, by appending the delta.** Re-syncing a
- * changed value over the whole document — `changes: { from: 0, to: length }`,
- * which is what `@uiw/react-codemirror` did on every `value` change — drops the
- * scroll offset and collapses the selection. At one flush per 150 ms that reads
- * as "the log keeps jumping back to the top and I can't select anything". The
- * action next door takes `doc` once and never looks at it again for the same
- * reason.
- *
- * Appending assumes the stream only ever grows or restarts from scratch, which
- * is what `createTailJobLogs` produces (a cumulative `lines.join('\n')`).
- *
- * `logs` is a getter, read inside an `$effect`: that is the subscription. The
- * editor arrives through {@link StreamedLogView.attach} rather than being looked
- * up, because there is no moment before the action runs at which it exists.
+ * Feeds a growing log into CodeMirror and follows the tail like an IDE console,
+ * until the reader scrolls up or selects; following resumes at the end.
+ * The document is only appended to: replacing it would lose the scroll and the
+ * selection. `logs` only grows, or restarts.
  */
 export const createStreamedLogView = (logs: () => string): StreamedLogView => {
   let view = $state<EditorView | null>(null);
   let isFollowing = true;
   let hasAnchored = false;
 
-  // 1. The document: append whatever is new since the last write.
   $effect(() => {
     const text = logs();
     if (!view) return;
@@ -43,8 +24,7 @@ export const createStreamedLogView = (logs: () => string): StreamedLogView => {
     const written = view.state.doc.length;
     if (text.length === written) return;
 
-    // Shorter than what is on screen ⇒ the stream restarted (another job, or a
-    // reconnect): nothing of the old document is worth keeping.
+    // Shorter than on screen: the stream restarted.
     view.dispatch({
       changes:
         text.length > written
@@ -53,7 +33,6 @@ export const createStreamedLogView = (logs: () => string): StreamedLogView => {
     });
   });
 
-  // 2. The viewport: follow the tail, unless the reader has taken over.
   $effect(() => {
     const text = logs();
     if (!view || !isFollowing || text.length === 0) return;
@@ -61,21 +40,14 @@ export const createStreamedLogView = (logs: () => string): StreamedLogView => {
     const end = view.state.doc.length;
     if (end === 0) return;
 
-    // Opening an already-finished job hands over the whole log at once.
-    // Animating across it would scroll through lines CodeMirror has not
-    // rendered yet — it only renders the viewport — and stop short of the end,
-    // since the heights it scrolls against are estimates until measured. Land
-    // on the end instead, and let `scrollIntoView` re-apply itself across the
-    // measure passes.
+    // A finished job arrives whole: jump to the end (CodeMirror only renders the viewport).
     if (!hasAnchored) {
       hasAnchored = true;
       view.dispatch({ effects: EditorView.scrollIntoView(end, { y: 'end' }) });
       return;
     }
 
-    // Afterwards the document only grows a few lines at a time: a frame late,
-    // so they are laid out and `scrollHeight` is final, and smooth because the
-    // jump is small enough to follow with the eye.
+    // Then a few lines at a time: a frame later, smoothly.
     const scroller = view.scrollDOM;
     const frame = requestAnimationFrame(() => {
       scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
@@ -84,7 +56,6 @@ export const createStreamedLogView = (logs: () => string): StreamedLogView => {
     return () => cancelAnimationFrame(frame);
   });
 
-  // 3. Who is in control: the reader, or the tail.
   $effect(() => {
     if (!view) return;
 
@@ -96,8 +67,7 @@ export const createStreamedLogView = (logs: () => string): StreamedLogView => {
     const isAtTail = () =>
       scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <= TAIL_THRESHOLD_PX;
 
-    // Both selections are read: the viewer is not editable, so a drag leaves a
-    // native browser selection, where an editable instance keeps it in CM state.
+    // Read-only viewer: a drag leaves a native selection.
     const hasSelection = () => {
       if (!editor.state.selection.main.empty) return true;
 
@@ -109,8 +79,7 @@ export const createStreamedLogView = (logs: () => string): StreamedLogView => {
       isFollowing = isAtTail() && !hasSelection();
     };
 
-    // Wheel and keys are handled before the box has actually moved, so the
-    // position is only worth reading on the next frame.
+    // Wheel and keys fire before the scroll: read the position a frame later.
     const handleUserScroll = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(resync);
@@ -118,15 +87,11 @@ export const createStreamedLogView = (logs: () => string): StreamedLogView => {
 
     const handlePointerDown = () => {
       isFollowing = false;
-      // A drag is not a scroll, so the browser keeps animating a smooth scroll
-      // underneath it — that is what makes a selection slide away mid-drag.
-      // Writing the current offset aborts it; a real user scroll aborts it alone.
+      // Abort the smooth scroll under a drag, or the selection slides away.
       scroller.scrollTo({ top: scroller.scrollTop, behavior: 'instant' });
     };
 
-    // Watched on the document: a drag started in the log can be released
-    // outside it, and a touch scroll ends on `pointercancel` instead of
-    // `pointerup`.
+    // On the document: a drag can end outside the log, and a touch scroll ends on `pointercancel`.
     const handleGestureEnd = () => resync();
 
     scroller.addEventListener('wheel', handleUserScroll, { passive: true });

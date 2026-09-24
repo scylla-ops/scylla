@@ -8,8 +8,7 @@
   import LoginForm from '../LoginForm/LoginForm.svelte';
   import { loginMessages } from '../login.messages.ts';
 
-  // Built here, in the component's initialisation: the mutation inside it
-  // installs an effect, which needs an owner.
+  // Built during initialisation: its mutation needs an owner.
   const state = new LoginState();
 </script>
 
@@ -17,14 +16,7 @@
   <ScyllaLoadingScreen />
 {:else}
   <div class="flex flex-col items-center">
-    <!--
-      The wordmark is flat black and unreadable on the dark background, so the
-      dark variant is the white cut of the same logo.
-
-      Swapped by CSS rather than by reading the theme store: `index.html` puts
-      `.dark` on <html> before the first paint, so this is right from the start,
-      where a JS swap would paint the wrong logo first and flash.
-    -->
+    <!-- A dark variant swapped by CSS: `.dark` is set before the first paint, so no flash. -->
     <img src={LogoScylla} alt="Scylla" class="h-2/6 w-2/6 dark:hidden" />
     <img src={LogoScyllaDark} alt="Scylla" class="hidden h-2/6 w-2/6 dark:block" />
 

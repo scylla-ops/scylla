@@ -9,8 +9,7 @@ describe('IconButton', () => {
   it('is findable by the tooltip text, which is its accessible name', () => {
     render(IconButton, { icon: PencilIcon, tooltip: 'Edit secret' });
 
-    // The visually-hidden label, not the tooltip: a tooltip is only wired up as
-    // `aria-describedby`, so while it is closed the button would have no name.
+    // The hidden label: a closed tooltip gives the button no name.
     expect(screen.getByRole('button', { name: 'Edit secret' })).toBeInTheDocument();
   });
 
@@ -49,7 +48,6 @@ describe('IconButton', () => {
 
     await userEvent.click(button);
 
-    // `busy` is one prop, not a `disabled` and a spinner that can drift apart.
     expect(onclick).not.toHaveBeenCalled();
   });
 });

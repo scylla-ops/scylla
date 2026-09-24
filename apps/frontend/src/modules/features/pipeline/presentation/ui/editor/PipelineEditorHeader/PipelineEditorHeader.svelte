@@ -11,11 +11,10 @@
   interface Props {
     onSubmit: () => void;
     submitLabel: string;
-    /** `create` shows a neutral draft state; `edit` tracks dirty/saved divergence. */
+    /** `edit` tracks the unsaved changes; `create` does not. */
     mode: 'create' | 'edit';
-    /** Disables the submit button (e.g. when the script JSON is invalid). */
     submitDisabled?: boolean;
-    /** Disables the blueprint tab so an invalid script can't be silently overwritten. */
+    /** So that an invalid script is not overwritten from the blueprint. */
     blueprintDisabled?: boolean;
     isDirty: boolean;
     isSaving?: boolean;
@@ -44,7 +43,6 @@
     isSaving ? 'saving' : mode === 'create' ? 'draft' : isDirty ? 'dirty' : 'saved',
   );
 
-  // Creating vs. editing needs a different permission, in the current project context.
   const canSubmit = $derived(
     can(mode === 'create' ? Permission.CREATE_PIPELINE : Permission.UPDATE_PIPELINE),
   );
@@ -74,8 +72,7 @@
           )}
         ></span>
       </span>
-      <!-- `{#key}` rebuilds the label on every status change, which replays the
-           enter animation. The React version used a `key` prop for the same. -->
+      <!-- `{#key}` replays the enter animation on each status change. -->
       {#key status}
         <span
           class="hidden animate-in fade-in-0 slide-in-from-bottom-1 duration-150 ease-out whitespace-nowrap md:inline-flex"

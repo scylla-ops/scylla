@@ -13,16 +13,14 @@
     maxJobs?: number;
     isLoading?: boolean;
     isError?: boolean;
-    /** The job history was never fetched — the user may not list this project's jobs. */
+    /** The history was not fetched: the user may not list this project's jobs. */
     isForbidden?: boolean;
-    /** Makes each run in the history open that job's details page. */
     onSelectJob?: (jobId: string) => void;
   }
 
   let { jobs, maxJobs, isLoading = false, isError = false, isForbidden = false, onSelectJob }: Props =
     $props();
 
-  /** The bar's item, carrying what its tooltip needs — one snippet serves them all. */
   type RunItem = StatusBarItem & { job: JobEntity; runNumber: number };
 
   const items = $derived.by((): RunItem[] =>
@@ -31,7 +29,7 @@
       .map((job, index) => ({
         id: job.id,
         status: job.status,
-        // Oldest on the left, so run numbers count up the way the eye reads.
+        // Oldest on the left: run numbers count up.
         runNumber: jobs.length - index,
         job,
         label: t(pipelineMessages.runNumber(jobs.length - index)),
@@ -41,7 +39,6 @@
   );
 </script>
 
-<!-- A pipeline's recent runs as a strip of coloured segments, newest last. -->
 {#snippet runTooltip(item: RunItem)}
   {@const config = getStatusConfig(item.job.status)}
   {@const duration = calculateDuration(item.job.createdAt, item.job.updatedAt)}
@@ -70,8 +67,7 @@
     {/each}
   </div>
 {:else if isForbidden}
-  <!-- Checked before the error state: nothing was requested, so there is no
-       failure to report — only a permission the user doesn't hold. -->
+  <!-- Before the error state: nothing was asked, so nothing failed. -->
   <div class="flex h-10 w-full items-center justify-center py-1">
     <span class="text-xs text-muted-foreground italic">{t(pipelineMessages.jobsForbidden)}</span>
   </div>

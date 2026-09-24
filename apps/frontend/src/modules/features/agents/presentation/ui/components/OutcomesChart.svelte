@@ -15,15 +15,13 @@
   import { agentsMessages } from '../agents.messages.ts';
 
   interface Props {
-    /** Per-day finished-job outcomes from the stats endpoint (gap days absent). */
     daily: DailyOutcome[];
-    /** All-time aggregates for the legend (from the stats endpoint). */
     aggregate: { completed: number; failed: number; cancelled: number };
   }
 
   let { daily, aggregate }: Props = $props();
 
-  // Same semantics as STATUS_CONFIG: completed is the primary hue, not --success.
+  // Like STATUS_CONFIG: completed uses the primary color.
   const SEGMENTS = [
     { key: 'completed', color: 'var(--primary)' },
     { key: 'failed', color: 'var(--destructive)' },
@@ -77,7 +75,6 @@
       </div>
     {:else}
       <div class="relative pl-7">
-        <!-- Y ticks -->
         <div
           class="pointer-events-none absolute left-0 top-0 flex h-[120px] w-6 flex-col justify-between font-mono text-[9px] text-muted-foreground"
         >
@@ -87,7 +84,6 @@
         </div>
 
         <div class="relative h-[120px] border-b border-foreground/80">
-          <!-- gridlines -->
           <div class="pointer-events-none absolute inset-0 flex flex-col justify-between">
             <div class="border-t border-dashed border-border"></div>
             <div class="border-t border-dashed border-border"></div>
@@ -113,11 +109,7 @@
                   if (hover === index) hover = null;
                 }}
               >
-                <!--
-                  `h-full` on the wrapper above is load-bearing: this bar's
-                  percentage height resolves against it — without it every bar
-                  computes to 0 and the chart renders empty.
-                -->
+                <!-- The bars' percentage heights need `h-full` on the wrapper above. -->
                 <div
                   class={cn(
                     'mx-auto flex w-full max-w-[28px] flex-col-reverse transition-opacity',
@@ -168,7 +160,6 @@
           </div>
         </div>
 
-        <!-- X labels — thin out on the 30d window so they stay readable -->
         <div class="mt-1 flex gap-px pl-0">
           <span class="absolute left-0 font-mono text-[9px] text-muted-foreground">
             {monthLabel}
@@ -189,7 +180,6 @@
       </div>
     {/if}
 
-    <!-- Legend -->
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
       <span class="flex items-center gap-1.5">
         <span class="h-2.5 w-2.5 rounded-sm" style="background: var(--primary)"></span>

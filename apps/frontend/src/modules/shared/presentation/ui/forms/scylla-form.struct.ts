@@ -1,4 +1,3 @@
-/** The declarative shape that a `ScyllaForm` is built from. Labels are translated strings. */
 export enum FormItemType {
   Input = 'input',
   Select = 'select',
@@ -32,11 +31,5 @@ export type FormItemBase<TId extends string = string> = {
 
 export type FormItem<TId extends string = string> = FormItemBase<TId> & (FormInput | FormSelect);
 
-/**
- * What a form holds and submits: one string per declared item id.
- *
- * `TId` is inferred from the `items` array, so a form declared with literal ids
- * submits `{ username: string; password: string }` and a typo is a type error.
- * Items typed as plain `FormItem[]` fall back to `Record<string, string>`.
- */
+/** One string per item id. `TId` comes from the `items`, so a typo is a type error. */
 export type FormValues<TId extends string = string> = Record<TId, string>;

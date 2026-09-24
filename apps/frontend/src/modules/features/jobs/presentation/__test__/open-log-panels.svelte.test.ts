@@ -8,7 +8,6 @@ const PATHNAME = '/acme/projects/p1/pipelines/pipe-1/jobs/job-1';
 
 let navigator: ReturnType<typeof installTestNavigator>;
 
-/** Installs a navigator already sitting on `search`, as an incoming link would. */
 const openedWith = (search: string) => {
   navigator = installTestNavigator({ pathname: PATHNAME, search });
 };
@@ -61,7 +60,6 @@ describe('createOpenLogPanels', () => {
     openedWith('?nodes=build');
 
     const cleanup = $effect.root(() => {
-      // The job is still loading: nothing matches yet.
       let nodeIds = $state<string[]>([]);
       const state = createOpenLogPanels(() => nodeIds);
       expect(state.openNodeIds).toEqual([]);
@@ -69,7 +67,7 @@ describe('createOpenLogPanels', () => {
       nodeIds = NODES;
       flushSync();
 
-      // A list read once would have dropped the panel the link asked for.
+      // A list read once would drop the panel the link asked for.
       expect(state.openNodeIds).toEqual(['build']);
     });
     cleanup();
@@ -110,7 +108,6 @@ describe('createOpenLogPanels', () => {
       flushSync();
 
       expect(state.isWholeJobOpen).toBe(true);
-      // Written away entirely rather than left as an empty value.
       expect(navigator.navigate).toHaveBeenCalledWith(PATHNAME, { replace: true });
     });
     cleanup();

@@ -12,7 +12,7 @@
     memberCount: number;
     active: boolean;
     selected: boolean;
-    /** False for roles that cannot be bulk-deleted (builtins, or without rights). */
+    /** False for builtins, or without the rights. */
     selectable: boolean;
     onOpen: () => void;
     onToggleSelect: () => void;
@@ -22,14 +22,6 @@
     $props();
 </script>
 
-<!--
-  One row of the role catalog.
-
-  The row markup is here rather than in a shared `ListCard`: that component was
-  in `shared/` for genericity it never used — this is its only caller — and all
-  three of its sections were passed `noSeparator`, so what survived the port is
-  the flex row itself.
--->
 <div
   role="button"
   tabindex="0"

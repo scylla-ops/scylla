@@ -14,7 +14,6 @@
   import { triggersMessages } from '../triggers.messages.ts';
 
   interface Props {
-    /** From the route: `/:organizationSlug/projects/:projectId/pipelines/:pipelineId/triggers`. */
     pipelineId?: string;
     projectId?: string;
   }
@@ -28,7 +27,7 @@
   const triggers = $derived(triggersQuery.data ?? []);
 
   let isCreateOpen = $state(false);
-  /** The one-time webhook secret, held only as long as the dialog shows it. */
+  /** Held only while the dialog shows it. */
   let revealed = $state<{ id: string; name: string; secret: string } | null>(null);
 
   const errorMessage = $derived(
@@ -38,7 +37,7 @@
   );
 
   const handleCreated = (created: CreatedTrigger) => {
-    // The webhook secret is returned exactly once — reveal it now or it's lost.
+    // Returned only once: reveal it now.
     if (!created.webhookSecret) return;
 
     revealed = {
@@ -52,7 +51,7 @@
 {#if !pipelineId || !projectId}
   <ErrorState message={t(triggersMessages.pipelineIdMissing)} />
 {:else if triggersQuery.isLoading}
-  <!-- Nothing: the list is the page, and a skeleton of it would be the page. -->
+  <!-- Nothing: a skeleton of the list would be the page itself. -->
 {:else if triggersQuery.isError}
   <ErrorState message={errorMessage} />
 {:else}

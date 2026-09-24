@@ -1,24 +1,16 @@
 /**
- * Module id -> that module's `domain` (its repositories and use cases).
- *
- * Deliberately untyped per module: the concrete map is assembled by the
- * composition root, and if this type named it, every feature reading a
- * dependency would depend on every other feature. A feature pins the type on
- * its own side when it calls `getModuleDomain<T>`.
+ * Module id -> that module's `domain`. Untyped on purpose: a feature types its
+ * own domain with `getModuleDomain<T>`, so no feature depends on the others.
  */
 export type DomainRegistry = Readonly<Record<string, object>>;
 
-/**
- * The registry of the app. The composition root sets it at start-up. A test sets
- * it with `withRegistry` from `src/test/render.svelte.ts`.
- */
 let registry: DomainRegistry | null = null;
 
 export const setDependencyRegistry = (next: DomainRegistry | null): void => {
   registry = next;
 };
 
-/** The domain of one module. Call it from a `*.queries.ts` or a `*.state.svelte.ts`, not from a component. */
+/** Call it from a `*.queries.ts` or a `*.state.svelte.ts`, never from a component. */
 export const getModuleDomain = <TDomain extends object>(moduleId: string): TDomain => {
   if (registry == null) {
     throw new Error(

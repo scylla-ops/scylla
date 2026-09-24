@@ -10,9 +10,7 @@ const def = (overrides: Partial<PermissionDefinition> & { id: Permission }): Per
   ...overrides,
 });
 
-// A numeric enum's reverse mapping gives back its member name - a readable,
-// unique stand-in label for these tests (the real labeler resolves a
-// MessageDescriptor instead, already covered by the last test below).
+// The enum member name: a readable, unique label.
 const label = (permission: Permission): string => Permission[permission];
 const named = (permission: Permission) => Permission[permission];
 
@@ -41,7 +39,6 @@ describe('buildPermissionTree', () => {
   });
 
   it('a dependsOn whose target is absent from the list becomes a root instead (the usual case for a single-scope filter)', () => {
-    // READ_PROJECT is not in `definitions` - only its dependent is.
     const tree = buildPermissionTree(
       [def({ id: Permission.UPDATE_PROJECT, dependsOn: Permission.READ_PROJECT })],
       label,

@@ -22,8 +22,7 @@
   import AppCard from '../components/AppCard/AppCard.svelte';
   import { appsMessages } from '../apps.messages.ts';
 
-  // The organization comes from the context store, not the route: this page is
-  // mounted under the org shell and the store is what the selector writes to.
+  // From the context store: the organization selector writes there.
   const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
@@ -35,9 +34,7 @@
   const activeCount = $derived(apps.filter(app => app.isActive).length);
 
   let createOpen = $state(false);
-  /** The one-time plaintext, held only as long as the dialog shows it. */
   let created = $state<CreatedApp | null>(null);
-  /** The app awaiting confirmation. `null` closes the dialog. */
   let pendingDeletion = $state<string | null>(null);
 
   const canCreate = $derived(can(Permission.CREATE_APP));
@@ -124,8 +121,7 @@
         {#each apps as app (app.id)}
           <AppCard {app} onRequestDelete={id => (pendingDeletion = id)} {canDelete} />
         {/each}
-        <!-- The header already shows a disabled "New" without CREATE_APP, so
-             this duplicate tile is hidden rather than disabled. -->
+        <!-- The header already shows a disabled "New": this tile is hidden instead. -->
         {#if canCreate}
           <button
             type="button"

@@ -45,11 +45,7 @@
     navigateTo(`/${slugifyOrgName(name)}/dashboard`);
   };
 
-  /**
-   * Deleting the organization you are looking at leaves every scoped URL
-   * pointing at nothing, so the context moves to another one first — and to
-   * none at all when it was the last.
-   */
+  /** Deleting the current organization moves the context to another one, or to none. */
   const onDeleteOrganization = async () => {
     if (!deleteOrgId) return;
 
@@ -95,9 +91,7 @@
               tooltip={t(organizationMessages.members)}
               onclick={event => {
                 event.stopPropagation();
-                // The members page reads the organization from the context
-                // store, so looking at another org's members means moving to
-                // it — the row's own click does the same thing.
+                // The members page reads the organization from the context.
                 contextStore.getState().setOrganization(organization.id, organization.name);
                 navigateTo(`/${slugifyOrgName(organization.name)}/members`);
               }}

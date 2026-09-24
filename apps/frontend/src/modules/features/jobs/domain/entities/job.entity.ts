@@ -7,8 +7,7 @@ export interface JobEntity {
   nodeExecutions: JobNodeExecution[];
   createdAt: string;
   updatedAt: string;
-  /** When execution actually began (a worker picked it up). Unset while pending. */
+  /** When a worker picked it up. Unset while pending. */
   startedAt?: string;
-  /** When execution finished. Unset while pending/running. */
   finishedAt?: string;
 }

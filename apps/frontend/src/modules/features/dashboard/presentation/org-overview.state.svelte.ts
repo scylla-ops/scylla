@@ -6,27 +6,14 @@ import { projectQueries } from '@/modules/features/project';
 import { asPipelineFeed, pipelineQueries, type PipelineMetadata } from '@/modules/features/pipeline';
 import { asJobFeed, jobQueries } from '@/modules/features/jobs';
 
-/** A pipeline carrying the name of the project it belongs to. */
 export type PipelineWithProject = PipelineMetadata & { projectName: string };
 
-/** Project ids the user may open — the project route needs this same permission. */
+/** Whether the user may open the project (the project route needs the same permission). */
 export type ProjectAccess = (projectId: string) => boolean;
 
 /**
- * The organization-wide overview behind the dashboard: the projects the user
- * can see, every pipeline in the organization, and the recent run activity.
- *
- * Each half comes from the module that owns it, through its public API — the
- * dashboard composes, it does not query. That is also why this module has no
- * repository and an empty `domain`: adding one would fork the cache into two
- * keys for one resource.
- *
- * All three calls are organization-scoped and filtered server-side, so there is
- * no client-side permission gate on the data itself. That replaced a
- * per-project fan-out which cost one request per project and produced one
- * `PERMISSION_DENIED` toast for every project the caller could not read.
- * {@link ProjectAccess} remains, for a different question: whether a row the
- * user may *see* leads somewhere they may *enter*.
+ * Projects, pipelines and recent runs of the organization, each from the module
+ * that owns it. Scoped by the backend: no permission gate on the data.
  */
 export const createOrgOverview = () => {
   const context = toRune(contextStore);
@@ -73,11 +60,10 @@ export const createOrgOverview = () => {
     get pipelinesLoading() {
       return pipelinesQuery.isLoading;
     },
-    /** More pipelines exist than the page fetched — counts are a floor. */
+    /** Counts are a floor. */
     get pipelinesTruncated() {
       return pipelineFeed.isPartialWindow;
     },
-    /** Outcome mix over the recent-runs window. */
     get runs() {
       return jobFeed.summary;
     },
@@ -90,17 +76,11 @@ export const createOrgOverview = () => {
     get runsLoading() {
       return jobsQuery.isLoading;
     },
-    /** The summary covers a window, not the whole history — say so in the UI. */
+    /** Say so in the UI. */
     get runsTruncated() {
       return jobFeed.isPartialWindow;
     },
-    /**
-     * Whether opening this project would land on something the user may see.
-     *
-     * A method rather than a precomputed set: `can` is reactive, so the answer
-     * changes on its own once `usePermissionSync` fills the store, and a row
-     * that was inert on the first paint becomes clickable without an effect.
-     */
+    /** Reactive: a row becomes clickable once the permissions load. */
     canOpenProject: ((projectId: string) =>
       can(Permission.LIST_PIPELINES_BY_PROJECT, { projectId })) satisfies ProjectAccess,
   };

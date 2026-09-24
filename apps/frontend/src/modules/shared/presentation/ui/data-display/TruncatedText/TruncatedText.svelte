@@ -5,7 +5,7 @@
 
   interface Props {
     children: Snippet;
-    /** Tooltip body; defaults to `children`. */
+    /** Defaults to `children`. */
     tooltip?: string;
     class?: string;
   }
@@ -21,16 +21,8 @@
 </script>
 
 <!--
-  Single-line text that ellipsizes, and reveals itself in a tooltip *only* when it
-  is actually cut off — a tooltip repeating text already fully visible is noise.
-
-  The overflow is measured when the pointer arrives rather than watched with a
-  ResizeObserver: a resize while nothing hovers the text changes nothing the user
-  can see, and this keeps the component free of subscriptions in every table row.
-  That is also why this is an event handler and not a Svelte action — there is no
-  outside system to stay in sync with, only a question asked on hover.
-
-  Needs a bounded parent to have any effect — a flex/grid ancestor with `min-w-0`.
+  Shows a tooltip only when the text is really cut off, measured on hover.
+  Needs a bounded parent (`min-w-0`).
 -->
 <Tooltip>
   <TooltipTrigger

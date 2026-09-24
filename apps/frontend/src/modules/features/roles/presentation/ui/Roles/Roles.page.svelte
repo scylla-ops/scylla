@@ -10,15 +10,7 @@
   const page = createRolesPage();
 </script>
 
-<!--
-  Access-control administration: the role catalog on the left, one role's
-  permissions and grants on the right.
-
-  Holding `MANAGE_ROLES` is what opens this page *and* what carries grant
-  management with it, so the whole screen is behind one gate — but the two
-  destructive controls still ask for themselves, because the route guard is not
-  the thing the backend enforces.
--->
+<!-- The destructive controls still check their own permission: the backend enforces, not the route guard. -->
 <div class="flex h-full min-h-0 w-full flex-col gap-4">
   <FeatureHeader
     count={page.roles.length}

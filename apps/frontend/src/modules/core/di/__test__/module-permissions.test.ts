@@ -4,16 +4,8 @@ import { appRoutes } from '@core/presentation/ui/router/core.router.ts';
 import { modules } from '../registry.ts';
 
 /**
- * Conformance over every route in the app — not a behaviour test of any one of
- * them.
- *
- * A per-component test pins a gate someone already wrote; it cannot fail for a
- * gate someone forgot. This rule enumerates the compiled routes, so a feature
- * added tomorrow is checked the day it joins the registry and the default is
- * fail-closed: a new page with no `permission` turns the suite red without
- * anyone remembering to write a test for it.
- *
- * A sidebar link needs no check of its own: it takes the permission of its route.
+ * Every page of the app, enumerated from the compiled routes: a new page with
+ * no `permission` fails this suite. A sidebar link takes its route's permission.
  */
 
 const guardedPages = compileRoutes(appRoutes).routes.flatMap(route =>
@@ -22,13 +14,7 @@ const guardedPages = compileRoutes(appRoutes).routes.flatMap(route =>
     : [],
 );
 
-/**
- * Pages deliberately reachable without a declared permission.
- *
- * A ratchet, like the coverage thresholds: this list may shrink, never grow.
- * Each entry states why the page cannot simply declare one — "we haven't got to
- * it yet" is not a reason, it is a missing `permission`.
- */
+/** A ratchet: it may shrink, never grow. Each entry says why the page has no permission. */
 const UNGATED_PAGES: Readonly<Record<string, string>> = {
   '/':
     'The landing of the shell: it only sends the user on to the dashboard of an organization, ' +
@@ -44,8 +30,7 @@ const UNGATED_PAGES: Readonly<Record<string, string>> = {
 };
 
 describe('module permission declarations', () => {
-  // A test that enumerates can pass by enumerating nothing. If `compileRoutes`
-  // or the registry ever stops yielding pages here, that is the bug — not a green run.
+  // Enumerating nothing would pass: make sure there is something to check.
   it('finds the registry pages it is supposed to check', () => {
     expect(guardedPages.length).toBeGreaterThan(10);
     expect(navEntriesFor(modules).length).toBeGreaterThan(0);

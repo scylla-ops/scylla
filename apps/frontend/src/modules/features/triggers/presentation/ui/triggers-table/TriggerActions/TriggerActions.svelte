@@ -29,18 +29,10 @@
 
   const canManage = $derived(can(Permission.MANAGE_TRIGGERS));
 
-  // An action, not a ref + effect: this element lives in a table row and is
-  // created and destroyed with it, which is the case the React pair kept
-  // getting wrong.
   const container = createCompactContainer();
 </script>
 
-<!--
-  Row actions: fire now (test), edit, delete. All three write to the trigger, so
-  they hide together behind `MANAGE_TRIGGERS`.
-
-  Switches to dropdown mode when the column gets too narrow for three buttons.
--->
+<!-- Every action writes: all hidden without `MANAGE_TRIGGERS`. A menu when the column is narrow. -->
 {#if canManage}
   <div
     use:container.measure
@@ -56,7 +48,6 @@
           onclick={(event: MouseEvent) => event.stopPropagation()}
         >
           <MoreHorizontalIcon class="h-4 w-4" />
-          <!-- Icon-only: the React trigger carried no accessible name. -->
           <span class="sr-only">{t(triggersMessages.triggerActions)}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-40">

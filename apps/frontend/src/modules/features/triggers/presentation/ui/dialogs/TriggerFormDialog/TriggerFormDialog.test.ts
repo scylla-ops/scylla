@@ -164,7 +164,7 @@ describe('TriggerFormDialog — edit mode', () => {
   it('refuses to re-send a source arm this build cannot render', () => {
     render(TriggerFormDialog, props({ trigger: trigger({ source: { kind: TriggerKind.Unknown } }) }));
 
-    // Round-tripping a shape we do not understand would silently rewrite it.
+    // A shape this build does not understand would be rewritten.
     expect(submitButton('Save')).toBeDisabled();
     expect(screen.getByText('Unknown')).toBeInTheDocument();
   });

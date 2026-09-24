@@ -1,11 +1,4 @@
-/**
- * The catalog's search box — what `use-filter.store.ts` held in Zustand.
- *
- * Module-level `$state` is the rune equivalent of a store: one value, shared by
- * every component that imports it, with no provider. It stays UI-only. **Never
- * put the fetched items here** — the list belongs to TanStack Query, and a copy
- * in a store is a second thing to keep in step.
- */
+/** Module-level `$state`, shared by the components. UI only: never store the fetched items here. */
 let filter = $state('');
 
 export const marketplaceFilter = {
@@ -17,10 +10,6 @@ export const marketplaceFilter = {
   },
 };
 
-/**
- * Whether an item matches the current search — the rule the list applies,
- * pulled out so it can be tested without rendering anything.
- */
 export const matchesFilter = (
   item: { title: string; provider: string },
   search: string,

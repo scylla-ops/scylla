@@ -2,48 +2,18 @@ import '@testing-library/jest-dom/vitest';
 import { i18n } from '@lingui/core';
 import { beforeEach, vi } from 'vitest';
 
-// The app loads compiled catalogs and activates a locale in `main.ts`. Tests
-// don't run that entry point, so `t` needs at least a loaded+activated locale —
-// an empty catalog is enough: lingui falls back to the message id, which
-// happens to be the source English text for every macro call in this
-// codebase, and loading (even empty) silences its "not loaded" warning.
-//
-// A test that needs a *real* translation (see modules/shared/test/i18n.ts)
-// loads its catalog itself and restores this default afterwards.
+// An empty catalog: lingui falls back to the message id, the English source. `test/i18n.ts` loads a real one.
 i18n.load('en', {});
 i18n.activate('en');
 
-/**
- * Browser APIs jsdom doesn't implement, stubbed once for the whole suite.
- *
- * Radix reaches for all of these on its own (Tooltip and Popover measure
- * themselves, Select captures the pointer and scrolls the active item into
- * view), so any test rendering a shadcn control needs them — which was 57
- * copies of this block across the suite before it moved here. None of them
- * carries test-specific meaning: they only keep jsdom from throwing.
- *
- * They are re-applied per test because `vi.restoreAllMocks()` / `unstubAllGlobals`
- * in a test's own teardown would otherwise strip them for the next one.
- *
- * A test that needs to *drive* one of these — asserting on a real resize, say —
- * overrides it in its own `beforeEach`, which runs after this one.
- */
+/** Browser APIs jsdom lacks, stubbed per test (a test's teardown may strip them). A test overrides one in its own `beforeEach`. */
 class ResizeObserverStub {
   observe = vi.fn();
   unobserve = vi.fn();
   disconnect = vi.fn();
 }
 
-/**
- * jsdom implements no Web Animations API, and a Svelte `transition:` runs on
- * `element.animate()` — without this, every component with one throws
- * "element.animate is not a function" the moment it enters or leaves.
- *
- * The stub stays *running* rather than resolving: a transition that finished
- * instantly would tear its node down before a test could observe the leaving
- * state, which is precisely what the page transitions are about. Tests that
- * care about the end of an animation call `finish()` on the returned handle.
- */
+/** A Svelte transition needs `element.animate()`. The stub keeps running, so a test can see the leaving state; call `finish()` to end it. */
 class AnimationStub {
   currentTime = 0;
   startTime = 0;
@@ -72,12 +42,7 @@ beforeEach(() => {
   // `// @vitest-environment node` — there is nothing to stub there.
   if (typeof window === 'undefined') return;
 
-  // bits-ui locks the page behind an open dialog with an inline
-  // `pointer-events: none` on `<body>`, and unmounting the component during
-  // testing-library's cleanup does not always get to restore it. The stale lock
-  // then makes `userEvent` refuse every click in the *next* test of the file,
-  // with an error that points at the innocent test. Clearing it at the start of
-  // each test is unambiguous: no test begins with a dialog already open.
+  // bits-ui can leave `pointer-events: none` on the body after a dialog; it would block the next test's clicks.
   document.body.style.pointerEvents = '';
 
   vi.stubGlobal('ResizeObserver', ResizeObserverStub);
@@ -86,12 +51,9 @@ beforeEach(() => {
   Element.prototype.setPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
-  // jsdom logs "Not implemented: Window's scrollTo()" instead of throwing;
-  // noise, not a failure, but it drowns real output.
+  // jsdom logs "Not implemented" for it.
   window.scrollTo = vi.fn();
-  // jsdom has no media queries at all. Report "no match", i.e. the desktop
-  // layout — the shadcn sidebar asks for `max-width: 767px` to decide whether
-  // to render as a drawer.
+  // No media queries in jsdom: report the desktop layout.
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,

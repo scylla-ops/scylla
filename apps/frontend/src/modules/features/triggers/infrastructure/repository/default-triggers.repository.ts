@@ -8,7 +8,6 @@ import type { TriggersRepository } from '@/modules/features/triggers/domain/repo
 import type { TriggersRemoteDataSource } from '@/modules/features/triggers/infrastructure/repository/data-sources/triggers-remote.data-source.ts';
 import { GrpcTriggerMapper } from '@/modules/features/triggers/infrastructure/repository/mappers/grpc-trigger.mapper.ts';
 
-/** TriggersRepository backed by the remote (gRPC) data source. */
 export class DefaultTriggersRepository implements TriggersRepository {
   constructor(private readonly remoteDataSource: TriggersRemoteDataSource) {}
 

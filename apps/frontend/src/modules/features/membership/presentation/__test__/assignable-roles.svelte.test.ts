@@ -6,10 +6,6 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { RoleEntity } from '@/modules/features/roles';
 import { createAssignableRoles } from '../assignable-roles.state.svelte.ts';
 
-/**
- * The grantable-role shape, derived rather than deep-imported: `roles` does not
- * export the entity through its barrel, and this file may not reach past it.
- */
 interface GrantableRole {
   roleId: string;
   scope: PermissionScope;
@@ -68,12 +64,7 @@ afterEach(() => {
   permissionsStore.setState({ permissions: null });
 });
 
-/**
- * Runs `body` inside a reactive root and waits for both queries to settle.
- *
- * The factory is built from `$derived`, so it only exists inside an effect
- * root — the runes counterpart of `renderHook`.
- */
+/** Runs `body` in a reactive root and waits for both queries. */
 const withAssignableRoles = async (
   scope: PermissionScope,
   body: (state: ReturnType<typeof createAssignableRoles>) => void | Promise<void>,

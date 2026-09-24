@@ -6,25 +6,18 @@
   import UserInformation from './UserInformation.svelte';
 
   interface Props {
-    /** From the route: `/:organizationSlug/users/:userId`. */
     userId?: string;
-    /**
-     * The user's organizations panel, injected by whoever owns the route.
-     * Listing organizations is the organization module's job, and it already
-     * depends on `user` — so it fills this slot rather than being imported from
-     * here. A snippet now, where it used to be a `ReactNode`.
-     */
+    /** Filled by the route's owner (`organization`), which already depends on `user`. */
     organizations?: Snippet;
   }
 
   let { userId, organizations }: Props = $props();
 
-  // Falling back to the signed-in user is what makes `/users/me`-style entry
-  // work: the settings screen with no id in the route is your own.
+  // No id in the route: your own settings.
   const shownUserId = $derived(userId ?? localStorage.getItem('userId') ?? undefined);
 </script>
 
-<!-- TODO: change and list only organizations that the user is in -->
+<!-- TODO: list only the organizations the user is in. -->
 <div class="flex w-full flex-col gap-4">
   <div class="flex items-center gap-4">
     <h1 class="text-3xl font-bold">{t(userMessages.userSettings)}</h1>

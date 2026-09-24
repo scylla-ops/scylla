@@ -64,8 +64,7 @@ describe('TriggersOverview', () => {
       ],
     });
 
-    // formatDate's exact wording is covered elsewhere — this only pins that the
-    // earlier (January) date won, not the March one.
+    // Only pins that the earlier date won.
     expect(screen.queryByText('—')).not.toBeInTheDocument();
     expect(screen.getByText(/jan/i)).toBeInTheDocument();
   });

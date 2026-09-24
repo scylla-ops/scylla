@@ -14,9 +14,7 @@ const pickFromSelect = async (label: string, option: string) => {
 
 describe('CronScheduleBuilder', () => {
   it('does not emit before the user has touched anything', () => {
-    // The parent seeds its own state from the same string, so a mount-time
-    // emit would only re-send what it already has — the React effect did, and
-    // that fired on every open.
+    // No emit on mount: the parent already has the initial value.
     const onChange = vi.fn();
     render(CronScheduleBuilder, { initialValue: '0 9 * * *', onChange });
 
@@ -85,8 +83,7 @@ describe('CronScheduleBuilder', () => {
 
     expect(screen.getByRole('radio', { name: /weekly/i })).toBeChecked();
 
-    // Add Monday to the already-selected Friday: the list is sorted, so the
-    // expression does not depend on the order they were clicked in.
+    // The days are sorted: the expression does not depend on the click order.
     const monday = screen.getAllByRole('button', { pressed: false })[0];
     await userEvent.click(monday);
 

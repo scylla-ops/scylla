@@ -33,7 +33,6 @@ const page = (items: JobEntity[], totalCount = items.length): PaginatedList<JobE
   },
 });
 
-/** What `refetchInterval` is handed — only `state.data` is ever read. */
 const withData = <TData>(data: TData | undefined) =>
   ({ state: { data } }) as never;
 

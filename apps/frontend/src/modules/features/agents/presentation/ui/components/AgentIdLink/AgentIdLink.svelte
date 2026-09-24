@@ -9,9 +9,7 @@
 
   interface Props {
     id: string;
-    /** Truncate to N chars with an ellipsis (full id when omitted). */
     truncate?: number;
-    /** Chip variant: paperWarm background + faint border at rest. */
     chip?: boolean;
     class?: string;
   }
@@ -21,24 +19,19 @@
   const label = $derived(truncate && id.length > truncate ? `${id.slice(0, truncate)}…` : id);
 
   const copyId = async (event: MouseEvent) => {
-    // Cards navigate on click — copying must not also open the agent.
+    // The card opens on click: copying must not.
     event.stopPropagation();
     try {
       await navigator.clipboard.writeText(id);
       toast.success(i18n._(ToastMessages.AGENT_ID_COPIED));
     } catch {
-      // Clipboard can be denied (permissions, non-secure context) — say so
-      // instead of failing silently.
+      // The clipboard can be denied: say so.
       toast.error(i18n._(ToastMessages.AGENT_ID_COPY_ERROR));
     }
   };
 </script>
 
-<!--
-  The agent id, click-to-copy: one click puts the full id in the clipboard and
-  confirms with a toast. Shown truncated in tight spots (cards), full in the
-  detail strip — the copy always carries the complete id.
--->
+<!-- Click to copy the full id, even when it shows truncated. -->
 <button
   type="button"
   onclick={event => void copyId(event)}

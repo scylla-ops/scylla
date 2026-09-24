@@ -20,8 +20,6 @@ import { GrpcPermissionMapper } from '@/modules/features/roles/infrastructure/re
 export class DefaultPermissionRepository implements PermissionRepository {
   constructor(private readonly _dataSource: GrpcPermissionRemoteDataSource) {}
 
-  // ── Roles ──────────────────────────────────────────────────────────────────
-
   public async listRoles(): Promise<ScyllaResult<RoleEntity[]>> {
     return (await this._dataSource.listRoles()).map(roles => roles.map(GrpcRoleMapper.toDomain));
   }
@@ -49,8 +47,6 @@ export class DefaultPermissionRepository implements PermissionRepository {
     return this._dataSource.deleteRole(id);
   }
 
-  // ── Introspection ──────────────────────────────────────────────────────────
-
   public async getEffectivePermissions(
     principal: PrincipalEntity,
   ): Promise<ScyllaResult<EffectivePermissionsEntity>> {
@@ -66,16 +62,13 @@ export class DefaultPermissionRepository implements PermissionRepository {
     return (await this._dataSource.getMyPermissions()).map(GrpcEffectivePermissionsMapper.toDomain);
   }
 
-  // ── Grants ─────────────────────────────────────────────────────────────────
-
   public async listGrants(
     scope?: PermissionScope,
     scopeId?: string,
   ): Promise<ScyllaResult<GrantEntity[]>> {
     return (
       await ScyllaResult.try(
-        // No scope filter → list every grant; otherwise bind the filter to the
-        // scope's own id, as `ScopeRef` now carries both together.
+        // No scope: every grant.
         () =>
           scope != null ? GrpcPermissionMapper.scopeRefToGrpc(scope, scopeId ?? '') : undefined,
         'Failed to map scope to gRPC request',
@@ -115,15 +108,12 @@ export class DefaultPermissionRepository implements PermissionRepository {
   public async listGrantableRoles(
     scope?: PermissionScope,
   ): Promise<ScyllaResult<GrantableRoleEntity[]>> {
-    // The grantable-role catalog filters on the id-free `ScopeKind`.
     return (
       await this._dataSource.listGrantableRoles(
         scope != null ? GrpcPermissionMapper.scopeToGrpc(scope) : undefined,
       )
     ).map(roles => roles.map(GrpcGrantableRoleMapper.toDomain));
   }
-
-  // ── Vocabulary ─────────────────────────────────────────────────────────────
 
   public async listPermissionVocabulary(): Promise<ScyllaResult<PermissionVocabularyEntity>> {
     return (await this._dataSource.listPermissionVocabulary()).map(

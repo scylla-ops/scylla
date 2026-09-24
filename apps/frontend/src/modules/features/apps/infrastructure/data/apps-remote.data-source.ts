@@ -13,7 +13,6 @@ import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { wrapId } from '@shared/infrastructure/grpc/wrappers.ts';
 import { GrpcAppMapper } from './grpc-app.mapper.ts';
 
-/** Remote data source for apps over gRPC. Shares the repository contract. */
 export type AppsRemoteDataSource = AppsRepository;
 
 export class AppsRemoteDataSourceImpl implements AppsRemoteDataSource {

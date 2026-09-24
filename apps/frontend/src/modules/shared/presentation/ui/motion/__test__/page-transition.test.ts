@@ -2,7 +2,6 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { PAGE_IN_MS, PAGE_OUT_MS, pageIn, pageOut } from '../page-transition.ts';
 import { motionDuration, prefersReducedMotion } from '../reduced-motion.ts';
 
-/** `setup.ts` reports "no match" for every query; override the one that matters. */
 const setReducedMotion = (reduce: boolean) => {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: reduce && query === '(prefers-reduced-motion: reduce)',

@@ -15,17 +15,12 @@
 
   interface Props {
     nodeExecutions: JobNodeExecution[];
-    /**
-     * Makes the segments activatable. The detailed view targets the node that
-     * was clicked; the grouped view stands for several nodes at once, so it
-     * passes none and the caller falls back to the job itself.
-     */
+    /** A grouped segment names no node: the caller falls back to the job. */
     onSelectNode?: (nodeId?: string) => void;
   }
 
   let { nodeExecutions, onSelectNode }: Props = $props();
 
-  /** A bar segment, plus the node it stands for — what the tooltip reads. */
   interface NodeItem extends StatusBarItem {
     node: JobNodeExecution;
   }
@@ -51,11 +46,7 @@
   const total = $derived(nodeExecutions.length);
 </script>
 
-<!--
-  A job's node executions as one bar: a segment per node, or — past the
-  threshold, where per-node segments stop being readable — one proportional
-  segment per status.
--->
+<!-- One segment per node, or one per status past the threshold. -->
 {#snippet nodeTooltip(item: NodeItem)}
   {@const duration = calculateExecutionDuration(item.node.startedAt, item.node.finishedAt)}
   <div class="text-xs">
@@ -96,8 +87,6 @@
                 onclick={event => {
                   (props.onclick as ((e: MouseEvent) => void) | undefined)?.(event);
                   event.stopPropagation();
-                  // A grouped segment stands for several nodes and names none,
-                  // which comes back to the job as a whole.
                   onSelectNode();
                 }}
                 class={groupClass}

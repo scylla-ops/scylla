@@ -20,7 +20,7 @@ const GEOMETRY: ChartGeometry = {
   padding: { top: 0, right: 0, bottom: 0, left: 0 },
 };
 
-/** Samples a cubic bezier segment, so the curve can be checked between knots. */
+/** Samples a cubic segment, to check the curve between points. */
 const sampleCubic = (p0: Point, c1: Point, c2: Point, p1: Point, steps = 20): number[] =>
   Array.from({ length: steps + 1 }, (_, i) => {
     const t = i / steps;
@@ -28,7 +28,6 @@ const sampleCubic = (p0: Point, c1: Point, c2: Point, p1: Point, steps = 20): nu
     return u * u * u * p0.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * p1.y;
   });
 
-/** Pulls the numbers back out of a `d` string, in order. */
 const numbersIn = (path: string): number[] =>
   (path.match(/-?\d+(\.\d+)?/g) ?? []).map(Number);
 
@@ -49,7 +48,7 @@ describe('fillBuckets', () => {
   });
 
   it('treats a day the backend never sent as a real zero, not a gap', () => {
-    // Drawing straight across the hole would claim activity that never happened.
+    // A straight line across the hole would show activity that did not happen.
     const buckets = fillBuckets(
       [{ day: new Date(2026, 2, 10).toISOString(), completed: 4, failed: 1, cancelled: 0 }],
       3,
@@ -208,14 +207,12 @@ describe('monotoneLinePath', () => {
   });
 
   it('never overshoots below zero between two days with no runs', () => {
-    // The whole reason the curve is monotone: a plain spline dips under the
-    // baseline here and draws negative jobs.
+    // A plain spline dips below zero here.
     const values = [0, 0, 5, 0, 0];
     const points = projectPoints(values, 5, GEOMETRY);
     const tangentsPath = monotoneLinePath(points);
     const numbers = numbersIn(tangentsPath);
 
-    // Walk the emitted control points and sample every segment.
     let cursor = 2;
     for (let i = 0; i < points.length - 1; i += 1) {
       const c1 = { x: numbers[cursor], y: numbers[cursor + 1] };
@@ -224,7 +221,7 @@ describe('monotoneLinePath', () => {
       cursor += 6;
 
       for (const y of sampleCubic(points[i], c1, c2, end)) {
-        // y is in SVG space: the baseline is the largest y.
+        // SVG y: the baseline is the largest y.
         expect(y).toBeLessThanOrEqual(GEOMETRY.height + 0.01);
         expect(y).toBeGreaterThanOrEqual(-0.01);
       }

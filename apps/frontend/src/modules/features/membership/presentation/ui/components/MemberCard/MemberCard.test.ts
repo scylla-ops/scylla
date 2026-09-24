@@ -35,8 +35,6 @@ const baseProps = {
 describe('MemberCard', () => {
   it('shows "No role" when the member holds none', () => {
     render(MemberCard, { ...baseProps });
-    // Appears twice: the subtitle's pluralized count and MemberRoleBadges' own
-    // empty state both say "No role" for a member with zero roles.
     expect(screen.getAllByText('No role')).toHaveLength(2);
   });
 

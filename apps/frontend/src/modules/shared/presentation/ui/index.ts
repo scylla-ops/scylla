@@ -1,7 +1,4 @@
-/**
- * The shared Svelte components, group by group. The shadcn-svelte primitives
- * are not re-exported here: import them from `@shadcn`.
- */
+/** Import the shadcn-svelte primitives from `@shadcn`. */
 export * from './controls';
 export * from './data-display';
 export * from './editor/code-mirror.actions.ts';

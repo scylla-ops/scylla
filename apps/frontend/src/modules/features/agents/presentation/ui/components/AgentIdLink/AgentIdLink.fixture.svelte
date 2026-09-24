@@ -9,11 +9,7 @@
   let { id, onCardClick }: Props = $props();
 </script>
 
-<!--
-  The card wrapper the component actually lives in, so the test can pin that a
-  copy click does not also open the agent. A `createRawSnippet` cannot do this:
-  the child is a component, not markup.
--->
+<!-- The card wrapper, to check that a copy click does not also open the agent. -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div onclick={onCardClick}>

@@ -37,9 +37,7 @@ describe('createFeatureSelection', () => {
     let rows: string[] = [];
     const feature = createFeatureSelection('jobs', () => rows);
 
-    // The React hook re-ran on every render and got this for free; here it is
-    // the getter that does it. Taking the array once would freeze select-all on
-    // the empty first render.
+    // A getter: taking the array once would freeze select-all on the empty first render.
     rows = ids;
     feature.selectAll();
 

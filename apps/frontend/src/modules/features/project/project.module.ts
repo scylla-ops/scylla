@@ -12,7 +12,6 @@ const projectRepository = new DefaultProjectRepository(projectRemoteDataSource);
 export const ProjectModule = {
   id: 'project',
   domain: {
-    /** Repository interface — the module's data surface. */
     projectRepository: projectRepository,
   },
   routes: {

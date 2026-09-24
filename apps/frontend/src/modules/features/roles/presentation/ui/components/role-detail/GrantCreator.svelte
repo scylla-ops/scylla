@@ -57,19 +57,7 @@
   };
 </script>
 
-<!--
-  Grants one role to one user, across the scope targets the role requires.
-
-  Project grants follow the backend's tenant boundary: a user may only receive
-  one once the organization owning the project has already admitted them — which
-  is exactly what being a member of it means. So the dialog asks for the
-  organization first and greys out the users it has not admitted, turning a
-  server-side rejection into a constraint you can see. Admitting someone is the
-  members dialog's job, in the organization switcher.
-
-  Grants are administered system-wide in this build: one permission for every
-  scope, held by system administrators only.
--->
+<!-- Users not admitted to the organization are greyed out: the backend would reject a project grant. -->
 {#snippet userPicker()}
   <div class="flex flex-col gap-1.5">
     <Label for="grant-user">{t(rolesMessages.user)}</Label>
@@ -83,11 +71,7 @@
         <SelectValue placeholder={userPlaceholder} />
       </SelectTrigger>
       <SelectContent>
-        <!--
-          A disabled item carries `pointer-events-none`, so a hover tooltip on it
-          would never fire — the reason is rendered inline instead, which also
-          saves the reader a hover to find out why a name is greyed out.
-        -->
+        <!-- A disabled item gets no hover: the reason is shown inline. -->
         {#each creator.users as user (user.id)}
           <SelectItem value={user.id} label={user.name} disabled={!!user.ineligible}>
             <span class="flex w-full items-center gap-2">

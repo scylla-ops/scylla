@@ -7,13 +7,6 @@ import type MarketplaceRepository from '../../domain/repository/marketplace.repo
 import type { MarketItem } from '../../domain/structs/market-item.struct.ts';
 import { MARKETPLACE_QUERY_KEY, marketplaceQueries } from '../marketplace.queries.ts';
 
-/**
- * The port's dividend: what `use-marketplace.test.tsx` needed a React tree, a
- * provider stack and a `waitFor` to observe is now a plain function call. No
- * jsdom, no retry backoff to wait out — the options object is data, and running
- * `queryFn` is running the repository call.
- */
-
 const item = (overrides: Partial<MarketItem> = {}): MarketItem => ({
   provider: 'scylla',
   title: 'Hello world',
@@ -52,8 +45,7 @@ describe('marketplaceQueries.list', () => {
   });
 
   it('resolves the repository per call, not at import time', async () => {
-    // The registry is installed by the composition root long after this module
-    // is imported — capturing the repository once would pin it to `undefined`.
+    // Resolved per call: the registry is installed after this module loads.
     const first = withRepository();
     await runQueryFn(marketplaceQueries.list());
 

@@ -6,22 +6,9 @@ import { dirname, join } from 'node:path';
 import { modules } from '../registry.ts';
 
 /**
- * Two conformance rules over the features themselves, enumerated from the
- * registry like the route rules in `module-permissions.test.ts`.
- *
- * Where that file walks *declarations*, this one reads *source*. The gating a
- * feature applies to its own buttons is not declared anywhere the type system
- * can see it, so the only way to ask "does this feature gate at all?" is to look
- * at what it wrote. That makes these rules deliberately coarse — they answer
- * completeness, never correctness:
- *
- *   caught     a feature that ships with no gating whatsoever, and a hook that
- *              crosses a feature boundary without checking for itself
- *   not caught the *wrong* permission on the right button
- *
- * Relating each mutation to the permission it needs would require that mapping
- * to be declared — today it is spread across a hook, a table, a child component
- * and a route. Until it is, the per-component tests carry correctness.
+ * Reads the source of each feature: gating a button is declared nowhere a type
+ * can see. Coarse on purpose: it finds a feature with no gating at all, not a
+ * wrong permission.
  */
 
 const FEATURES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'features');
@@ -32,36 +19,19 @@ const walk = (dir: string): string[] =>
     return statSync(path).isDirectory() ? walk(path) : [path];
   });
 
-/**
- * Source files only: a test file's mention of a permission proves nothing.
- *
- * `.svelte` is in the glob, and has to be: a migrated feature gates its buttons
- * in components, so a `.tsx?`-only scan would quietly report every one of them
- * as ungated — or, worse, find nothing to check at all. See `refacto_svelte.md`
- * §4.6: no gate may go blind on the new code.
- */
+/** A test's mention of a permission proves nothing. */
 const sourcesIn = (dir: string): string[] =>
   existsSync(dir) ? walk(dir).filter(f => /\.(tsx?|svelte)$/.test(f) && !/\.(test|fixture)\./.test(f)) : [];
 
 const read = (path: string): string => readFileSync(path, 'utf8');
 
-/**
- * The same file with its comments stripped.
- *
- * Every probe below is a bare identifier — `can(`, `useCan`, `useMutation(` —
- * and a doc comment explaining why a query needs no gate contains them exactly
- * as readily as a call does. `roles.queries.ts` notes that "every `can()` in the
- * app reads it" and was counted as self-gating on the strength of that sentence.
- * Prose is not a gate, and the failure mode is the silent one: a rule that finds
- * what it was looking for in a comment never fails.
- */
+/** Comments stripped: a comment that mentions `can(` is not a gate. */
 const code = (path: string): string =>
   read(path)
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-/** Module ids are the directory names under `features/`; this asserts it stays true. */
 const featureDirs = modules.map(module => {
   const dir = join(FEATURES_DIR, module.id);
   return {
@@ -81,27 +51,14 @@ describe('feature permission conformance', () => {
     ).toEqual([]);
   });
 
-  /**
-   * Features that mutate without gating anything.
-   *
-   * A ratchet: entries may leave, never join without a reason that is a design
-   * decision rather than a backlog item.
-   */
+  /** A ratchet: entries may leave, never join without a design reason. */
   const UNGATED_FEATURES: Readonly<Record<string, string>> = {
     login:
       'Signing in is what establishes identity; there is no permission to hold before holding one.',
   };
 
   describe('a feature that mutates gates something in its UI', () => {
-    /**
-     * What a write looks like on either side of the migration.
-     *
-     * A React feature calls `useMutation(` in a hook under `presentation/hooks/`;
-     * a migrated one declares `mutationOptions(` in its `*.queries.ts`. Both
-     * shapes are collected, or the rule would empty itself out one feature at a
-     * time as they move to Svelte — silently, since nothing fails when a
-     * conformance test simply stops finding anything to check.
-     */
+    /** A write is a `useMutation(` call or a `mutationOptions(` declaration. */
     const writesIn = (feature: (typeof featureDirs)[number]) =>
       sourcesIn(feature.hooks).some(file => code(file).includes('useMutation(')) ||
       sourcesIn(join(feature.dir, 'presentation'))
@@ -115,7 +72,6 @@ describe('feature permission conformance', () => {
     });
 
     it.each(mutating.map(feature => [feature.id, feature] as const))('%s', (id, feature) => {
-      // `can(` covers the Svelte half, where there is no hook to name.
       const gates = sourcesIn(feature.ui).some(file =>
         /Permission\.[A-Z_]+|PermissionButton|useCan|useAuthorization|\bcan\(/.test(code(file)),
       );
@@ -138,24 +94,12 @@ describe('feature permission conformance', () => {
   });
 
   /**
-   * A hook another feature consumes runs outside its owner's route guard: the
-   * consumer's page was entered on the consumer's permission, not the owner's.
-   * `useJobsByPipelines` is the one that already learned this — it checks
-   * `LIST_JOBS_BY_PIPELINE` itself rather than trusting whoever called it.
+   * A query another feature uses runs outside its owner's route guard, so it must
+   * check its permission itself (like `jobsByPipelinesQueries`).
    */
   describe('a query hook consumed across a feature boundary checks for itself', () => {
-    /**
-     * What a read looks like on either side of the migration.
-     *
-     * A React feature exports a `use*` hook; a migrated one exports a
-     * `*Queries` factory of options objects. The rule is the same for both —
-     * the consumer's route guard does not cover the owner's permission — so
-     * both shapes are collected here rather than the rule quietly emptying out
-     * as features move to Svelte.
-     */
     const isSharedRead = (name: string) => /^use[A-Z]/.test(name) || /Queries$/.test(name);
 
-    /** Read names a feature re-exports through its barrel, by owning feature. */
     const barrelExports = new Map(
       featureDirs.map(feature => {
         const barrel = join(feature.dir, 'index.ts');
@@ -166,7 +110,6 @@ describe('feature permission conformance', () => {
       }),
     );
 
-    /** `owner.hookName` -> the features that import it, excluding the owner. */
     const consumersOf = new Map<string, Set<string>>();
     for (const feature of featureDirs) {
       for (const file of sourcesIn(feature.dir)) {
@@ -191,7 +134,6 @@ describe('feature permission conformance', () => {
       readonly selfGated: boolean;
     }
 
-    /** Collects the exported reads of one file that cross a barrel. */
     const sharedReadsIn = (
       featureId: string,
       file: string,
@@ -218,9 +160,8 @@ describe('feature permission conformance', () => {
     };
 
     const sharedHooks: SharedHook[] = featureDirs.flatMap(feature => [
-      // The React half: a `use*` hook under `presentation/hooks/`.
       ...sourcesIn(feature.hooks).flatMap(file =>
-        // `useQueryClient` is not a query — match the call, not the prefix.
+        // `useQueryClient` is not a query: match the call.
         /\buseQuery\(|\buseQueries\(/.test(code(file))
           ? sharedReadsIn(
               feature.id,
@@ -230,8 +171,7 @@ describe('feature permission conformance', () => {
             )
           : [],
       ),
-      // The Svelte half: a `*.queries.ts` factory. There is no hook to look at,
-      // so the gate is a `can(...)` inside the options it builds.
+      // A `*.queries.ts` factory gates with a `can(...)` inside its options.
       ...sourcesIn(join(feature.dir, 'presentation'))
         .filter(file => file.endsWith('.queries.ts'))
         .flatMap(file =>
@@ -239,14 +179,7 @@ describe('feature permission conformance', () => {
         ),
     ]);
 
-    /**
-     * Cross-feature hooks that deliberately do not check, and why. A ratchet.
-     *
-     * `TRIAGE` marks the ones nobody has ruled on yet: the consumer's route
-     * permission is not the one the hook's data needs, so the call may well come
-     * back `PERMISSION_DENIED`. They are listed rather than fixed because each
-     * needs a product decision — what should the consuming page show instead?
-     */
+    /** A ratchet. `TRIAGE`: nobody decided yet what the consuming page should show instead. */
     const UNCHECKED_SHARED_HOOKS: Readonly<Record<string, string>> = {
       'jobs.jobQueries':
         'The entry `useOrganizationJobs` left behind. `byOrganization`, the read that crosses ' +

@@ -6,18 +6,7 @@ import { render } from '@/test/render.svelte.ts';
 import { withLocale } from '@/test/i18n.ts';
 import FeatureHeader from './FeatureHeader.svelte';
 
-/**
- * The Svelte side's one real-translation test, and it exists for a specific
- * reason beyond mirroring `FeatureHeader.fr.test.tsx`.
- *
- * Messages moved out of the component into `feature-header.messages.ts`, and a
- * ported message only keeps its translation if its **msgid** is byte-identical —
- * which includes the placeholder names. `{count, plural, …}` and
- * `{selectedCount, plural, …}` are two different messages. Nothing would have
- * failed had they diverged: `pnpm extract` would have written a second, empty
- * entry, `i18n:collisions` would still report zero, and this arm would render
- * in English. This test is the thing that notices.
- */
+/** The placeholder name is part of the msgid: a renamed placeholder would lose the French plural. */
 const toastSuccess = vi.fn();
 vi.mock('svelte-sonner', () => ({
   toast: { success: (...args: unknown[]) => toastSuccess(...args) },

@@ -6,16 +6,12 @@ import { PermissionScope, permissionsStore } from '@platform/authz';
 import { findFloating, render } from '@/test/render.svelte.ts';
 import TriggerActions from './TriggerActions.svelte';
 
-/**
- * Drives the ResizeObserver the compact-container action installs, so the
- * narrow layout can be reached without a real layout engine.
- */
+/** Drives the observer, to reach the narrow layout. */
 let notify: ((entries: Array<{ contentRect: { width: number } }>) => void) | null = null;
 
 const narrowTheColumn = async () => {
   notify?.([{ contentRect: { width: 40 } }]);
   flushSync();
-  // The dropdown branch only exists after the re-render the width change causes.
   await Promise.resolve();
 };
 
@@ -54,8 +50,7 @@ describe('TriggerActions', () => {
     permissionsStore.setState({ permissions: { scopes: [] } });
     render(TriggerActions, { ...handlers() });
 
-    // Svelte leaves an anchor comment behind, so the rule is "no control",
-    // not "empty node".
+    // Svelte leaves an anchor comment: check for no control, not an empty node.
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 

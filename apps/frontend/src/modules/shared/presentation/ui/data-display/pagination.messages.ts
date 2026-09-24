@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
 
 export const paginationMessages = {
-  /** Placeholder names are part of the msgid — keep `start`, `end`, `totalCount`. */
+  /** Keep the placeholder names: they are part of the msgid. */
   showing: (start: number, end: number, totalCount: number) =>
     msg`Showing ${start}-${end} of ${totalCount}`,
 };

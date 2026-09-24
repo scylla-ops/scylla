@@ -1,5 +1,3 @@
-// The member-view kit, shared by the organization and project member pages:
-// both show the same thing about a different scope.
 export { default as AddMemberDialog } from './AddMemberDialog/AddMemberDialog.svelte';
 export { default as AddRoleSelect } from './AddRoleSelect/AddRoleSelect.svelte';
 export { default as MemberCard } from './MemberCard/MemberCard.svelte';

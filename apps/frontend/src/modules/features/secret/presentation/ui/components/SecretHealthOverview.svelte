@@ -13,11 +13,7 @@
   let { warningCount }: Props = $props();
 </script>
 
-<!--
-  Not mounted by any page: `Secret.page.svelte` renders the header and the list
-  only, and the figures below are placeholders rather than data. Ported as it
-  stood rather than rewritten — see the module's AGENTS.md.
--->
+<!-- Not mounted: placeholder figures. See AGENTS.md. -->
 <div class="grid gap-4 md:grid-cols-3">
   <Card class="gap-2 rounded-2xl border-blue-200/40 bg-blue-500/5 py-3">
     <CardHeader class="pb-1">

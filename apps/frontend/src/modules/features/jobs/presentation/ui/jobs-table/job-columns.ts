@@ -5,7 +5,6 @@ import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
 import type { JobEntity } from '../../../domain/entities/job.entity.ts';
 import { jobsMessages } from '../jobs.messages.ts';
 
-/** One snippet per column, each taking the row it renders. */
 export interface JobCells {
   status: Snippet<[JobEntity]>;
   id: Snippet<[JobEntity]>;
@@ -15,15 +14,6 @@ export interface JobCells {
   actions: Snippet<[JobEntity]>;
 }
 
-/**
- * The jobs table, as a column definition.
- *
- * `size` / `minSize` survived the port untouched — the same numbers the React
- * version declared, which is the dividend of TanStack Table being
- * framework-agnostic data. What changed is that a `cell` returns a Svelte
- * snippet instead of a React element, so the markup stays in `JobsTable` and
- * this file stays a `.ts`.
- */
 export const jobColumns = (cells: JobCells): DataTableColumn<JobEntity>[] => [
   {
     accessorKey: 'status',
@@ -43,7 +33,7 @@ export const jobColumns = (cells: JobCells): DataTableColumn<JobEntity>[] => [
     id: 'timeline',
     header: t(jobsMessages.timeline),
     cell: ({ row }) => renderSnippet(cells.timeline, row.original),
-    // No size: takes every pixel the sized columns leave, down to 200px.
+    // No size: takes the space left, down to 200px.
     minSize: 200,
   },
   {

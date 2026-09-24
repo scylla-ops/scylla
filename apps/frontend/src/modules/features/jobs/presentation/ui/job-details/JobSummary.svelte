@@ -16,19 +16,13 @@
 
   interface Props {
     job: JobEntity;
-    /**
-     * Shows that node's logs alone, closing whatever else was open — picking a
-     * segment out of the timeline means reading that one, not adding to a pile.
-     * A grouped segment stands for several nodes at once and names none, which
-     * comes back to the job as a whole.
-     */
+    /** Shows that node alone. A grouped segment names no node: the whole job. */
     onSelectNode: (nodeId?: string) => void;
   }
 
   let { job, onSelectNode }: Props = $props();
 
-  // Ticks only while the job is still moving, and stops on its own when it
-  // finishes — the getter is what makes that work without an extra effect.
+  // Ticks only while the job runs.
   const now = createNow(() => isActiveStatus(job.status));
 
   const duration = $derived.by(() => {

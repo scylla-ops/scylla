@@ -7,35 +7,25 @@
     open: boolean;
     title: string;
     description: string;
-    /** The one-time secret value shown (blurred until revealed). */
+    /** Blurred until revealed. */
     secret: string;
-    /** Label displayed on the secret snippet (e.g. the entity id). */
+    /** E.g. the entity id. */
     secretLabel: string;
-    /** Toast shown after copying; defaults to "Secret copied". */
     copyToast?: string;
-    /** Heading for the secret step; defaults to "Copy your secret". */
     secretStepTitle?: string;
-    /**
-     * Optional numbered second step, revealed once the secret is shown — e.g.
-     * run instructions. When present, the checklist connector + step 2 bullet
-     * appear.
-     */
+    /** Shown once the secret is revealed, e.g. the run instructions. */
     secondStep?: { title: string; content: Snippet };
-    /** Optional quiet note shown under the secret once revealed (no second step). */
+    /** Shown under the secret once revealed, when there is no second step. */
     revealedNote?: string;
-    /** Footer note; defaults to "You won't see this secret again." */
     footerNote?: string;
-    /** Called once the user confirms they've copied it — caller closes + navigates. */
+    /** The user confirmed the copy. The caller closes the dialog. */
     onClose: () => void;
   }
 
   let { open, ...checklist }: Props = $props();
 </script>
 
-<!--
-  The one-time secret reveal: copy the secret, then start the worker. It cannot
-  be dismissed; the checklist closes it once the secret was revealed.
--->
+<!-- Cannot be dismissed: the checklist closes it once the secret was revealed. -->
 <ScyllaDialog
   {open}
   onOpenChange={() => {}}

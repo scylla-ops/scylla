@@ -10,10 +10,7 @@
 
   let { items, filter }: Props = $props();
 
-  // Filtered here rather than inside the loop with an `{#if}`: the React version
-  // returned an empty fragment for a non-match, which made every hidden item a
-  // node in the flex row. Keying on the title also replaces the array index it
-  // used, so re-filtering no longer reuses one card's state for another item.
+  // Keyed on the title, filtered before the loop.
   const visible = $derived((items ?? []).filter(item => matchesFilter(item, filter)));
 </script>
 

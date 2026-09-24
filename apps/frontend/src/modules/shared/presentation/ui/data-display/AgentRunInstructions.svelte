@@ -6,9 +6,8 @@
   import { agentRunInstructionsMessages as messages } from './agent-run-instructions.messages.ts';
 
   interface Props {
-    /** The agent's app id (its identity towards the control plane). */
     appId: string;
-    /** One-time plaintext secret (creation flow). Omitted → placeholder. */
+    /** Shown once at creation. Without it, a placeholder. */
     secret?: string;
   }
 
@@ -18,8 +17,7 @@
   const DOCKER_IMAGE = 'godlyjaaaaj/scylla-agent:latest';
 
   const secretValue = $derived(secret ?? SECRET_PLACEHOLDER);
-  // The control plane serves this very page, so the browser's own address bar
-  // already holds the value the snippets ask the user to type.
+  // The control plane serves this page, so its URL is the page's origin.
   const controlPlaneUrl = window.location.origin;
 
   const cargoCommand = $derived(
@@ -48,13 +46,7 @@
     'data-[state=active]:bg-transparent data-[state=active]:shadow-none';
 </script>
 
-<!--
-  "How do I start this worker?" — the copy-paste answer, in the two supported
-  flavours: `cargo run` from a repo checkout (first — no extra tooling concepts
-  beyond Rust itself), or the published Docker image. Shared by the one-time
-  secret dialog (shown after the reveal) and the agent detail page (placeholder
-  secret).
--->
+<!-- How to start the worker: `cargo run` from a checkout, or the Docker image. -->
 <div class="w-full space-y-3">
   <Tabs value="cargo" class="w-full">
     <TabsList

@@ -16,7 +16,7 @@
   import MembersList from '../components/MembersList/MembersList.svelte';
   import { membershipMessages } from '../membership.messages.ts';
 
-  /** The builtin whose whole content is "belongs here, sees it exists". */
+  /** The builtin that only means "belongs here". */
   const ORGANIZATION_MEMBER_ROLE_ID = 'organization-member';
 
   const context = toRune(contextStore);
@@ -25,8 +25,7 @@
   const target = $derived({ organizationId: organizationId ?? undefined });
 
   const canManage = $derived(can(Permission.MANAGE_ORG_GRANTS, target));
-  // Enumerating accounts is a system capability an org administrator may not
-  // hold; without it, roles can still be moved around among people already here.
+  // Without LIST_USERS, roles can still be changed among the people already here.
   const canListUsers = $derived(can(Permission.LIST_USERS));
 
   const membersQuery = createQuery(() => organizationQueries.members(organizationId));
@@ -40,31 +39,22 @@
     scope: PermissionScope.ORGANIZATION,
     scopeId: () => organizationId,
     canManage: () => canManage,
-    // The member list is derived from grants on the backend, so a grant mutation
-    // changes it. The grant mutations cannot reach this key without coupling the
-    // two features, which is why the caller invalidates it.
+    // The backend derives members from grants; the grant mutations cannot reach this key.
     onMembershipChanged: () => void invalidateOrganizationMembers(organizationId),
   });
 
   let addOpen = $state(false);
-  /** Who is being removed — the id to act on, the name to name in the prompt. */
   let pendingRemoval = $state<{ userId: string; username: string } | null>(null);
 
   const usernameById = $derived(new Map(members.map(member => [member.userId, member.username])));
 
-  /** The id is the honest fallback: better a raw id than an empty cell. */
   const nameFor = (memberId: string) => usernameById.get(memberId) ?? memberId;
 
-  /**
-   * Everyone the organization holds, each with their organization roles. Seeded
-   * with the backend's member list so someone reached only through a project is
-   * still listed — with no organization role, which is the truth about them.
-   */
+  /** Seeded with the backend's list: someone reached only through a project is listed too. */
   const scopeMembers = $derived(
     buildOrganizationMembers(membership.grants, [...usernameById.keys()]),
   );
 
-  /** Only people not already in — re-admitting an existing member is a no-op. */
   const candidates = $derived(
     (usersQuery.data?.items ?? []).filter(user => !usernameById.has(user.userId)),
   );
@@ -88,20 +78,7 @@
   };
 </script>
 
-<!--
-  Who belongs to an organization, with which roles, and the operations that
-  change either.
-
-  Membership has no storage of its own: the backend derives it from the grants
-  table, so this page calls no "add member" or "remove member" RPC — none exists,
-  and none is missing. Admitting someone is granting them a role at the
-  organization's scope, which is exactly what `AcceptInvitation` does when an
-  invitation is accepted; removing them clears every grant they hold at that
-  scope *and beneath it*. Both live in `createScopeMembership`.
-
-  Every write needs `MANAGE_ORG_GRANTS` **on this organization** — the scoped
-  permission an organization administrator holds, not the system-wide one.
--->
+<!-- Writes need `MANAGE_ORG_GRANTS` on this organization. -->
 {#snippet blurb()}
   <p class="max-w-3xl text-sm text-muted-foreground">
     {t(membershipMessages.organizationBlurb(organization.name ?? ''))}

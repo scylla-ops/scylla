@@ -9,7 +9,6 @@
   interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    /** If provided, the dialog edits that step instead of defining a new one. */
     editingStep?: PipelineStep;
     projectId?: string;
     onAdd: (nodeId: string, value: NodeFormValue) => void;

@@ -26,9 +26,8 @@
   import { pipelineMessages } from '../../../../pipeline.messages.ts';
 
   interface Props {
-    /** The step being edited; `undefined` means a new one is being defined. */
     editingStep?: PipelineStep;
-    /** Scopes the secret picker offered for a `secret` environment entry. */
+    /** Scopes the secret picker. */
     projectId?: string;
     onSubmit: (nodeId: string, value: NodeFormValue) => void;
     onCancel: () => void;
@@ -42,8 +41,7 @@
   // svelte-ignore state_referenced_locally
   const form = createStepNodeForm(editingStep);
 
-  // A plain options object, shared with the `secret` module — same query key,
-  // same cache entry.
+  // Same options object as the `secret` module: one cache entry.
   const secretsQuery = createQuery(() => secretQueries.byProject(projectId ?? ''));
   const secrets = $derived(secretsQuery.data ?? []);
 
@@ -71,8 +69,7 @@
     />
   </div>
 
-  <!-- A script and a command are alternatives, not both: this picker is what
-       decides which half of the form is even asked for. -->
+  <!-- A script or a command, not both. -->
   <div class="grid grid-cols-2 gap-1 rounded-md border p-1">
     <button
       type="button"
@@ -146,7 +143,6 @@
       <div class="space-y-2">
         <Label>{t(pipelineMessages.argumentsLabel)}</Label>
         <div class="space-y-2">
-          <!-- Keyed by index: an argument has no identity beyond its position. -->
           {#each form.args as arg, index (index)}
             <div class="flex items-center gap-2">
               <Input
@@ -213,9 +209,7 @@
           </Select>
 
           {#if row.kind === 'secret'}
-            <!-- A free-text box when there is nothing to pick from: the project
-                 may hold no secret yet, or the caller may not be allowed to
-                 list them, and neither should block writing a reference. -->
+            <!-- A free-text box when there is nothing to pick: writing a reference must still work. -->
             {#if secrets.length > 0 || row.secretRef}
               <Select
                 type="single"

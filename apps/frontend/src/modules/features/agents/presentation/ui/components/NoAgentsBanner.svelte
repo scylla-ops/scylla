@@ -9,7 +9,6 @@
   import { agentsMessages } from '../agents.messages.ts';
 
   interface Props {
-    /** Only warn when something is actually stuck behind the missing agent. */
     hasPendingJobs: boolean;
   }
 
@@ -18,9 +17,7 @@
   const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
-  // The query is gated on LIST_AGENTS inside `agentQueries`; this is the same
-  // question asked again, because the banner must *say something different*
-  // when it cannot look rather than claim no agent is connected.
+  // Checked again: without the permission the banner says something else.
   const canListAgents = $derived(can(Permission.LIST_AGENTS));
 
   const agentsQuery = createQuery(() => agentQueries.byOrganization(organizationId));
@@ -29,14 +26,8 @@
 </script>
 
 <!--
-  Quiet inline banner shown when jobs are queued but no agent of the org is
-  connected — without it a pending job is just a spinner that never moves.
-  Disappears on its own once an agent comes online (the agents query refetches
-  every 10s).
-
-  Without LIST_AGENTS the agent list is never fetched, so connectivity is
-  unknowable from here: the banner then only points at agents as the likely
-  cause instead of asserting none is connected.
+  Shown when jobs are queued and no agent is connected. Without LIST_AGENTS,
+  connectivity is unknown: the banner only points at the agents.
 -->
 {#snippet banner(children: Snippet)}
   <div

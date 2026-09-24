@@ -7,7 +7,6 @@
   import { pipelineMessages } from '../../pipeline.messages.ts';
 
   interface Props {
-    /** From the route — `create` is mounted under a project. */
     projectId?: string;
   }
 

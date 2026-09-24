@@ -10,17 +10,7 @@ import {
 const readPermissions = toRune(permissionsStore);
 const readContext = toRune(contextStore);
 
-/**
- * Whether the current user holds `permission`, read from the stores.
- *
- * The stores are read through `toRune`, so `$derived(can(…))` in a component
- * updates when the permissions arrive or the active project changes. Outside a
- * reactive context it is a plain synchronous function.
- *
- * **Denies while the permissions are unknown.** Gated UI must never show
- * content that the user may not hold; callers that want a loading state read
- * {@link authorizationReady}.
- */
+/** Reactive in a `$derived`. Denies while the permissions are not loaded yet. */
 export const can = (permission: Permission, target?: PermissionTarget): boolean => {
   const effective = readPermissions().permissions;
   if (!effective) return false;
@@ -33,5 +23,4 @@ export const can = (permission: Permission, target?: PermissionTarget): boolean 
   });
 };
 
-/** Whether the permissions have been loaded at all — `can` denies until they are. */
 export const authorizationReady = (): boolean => readPermissions().permissions !== null;

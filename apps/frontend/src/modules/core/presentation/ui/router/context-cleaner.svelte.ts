@@ -8,13 +8,7 @@ import { projectQueries } from '@/modules/features/project';
 const isPipelinePath = (pathname: string): boolean =>
   pathname.includes('/edit/') || pathname.includes('/pipelines/');
 
-/**
- * Removes stale context when the user opens a project page.
- *
- * When the project of the URL does not exist, it clears the project and the
- * pipeline and goes back to the project list. Outside the pipeline pages, it
- * clears the active pipeline.
- */
+/** Leaves a project that no longer exists, and clears the pipeline outside the pipeline pages. */
 export const cleanContext = (projectId: string | undefined): void => {
   const pathname = currentPathname();
   const context = toRune(contextStore);

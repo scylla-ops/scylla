@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPagination } from '../pagination.svelte.ts';
 
-/**
- * jsdom, but only for `document.createElement` and a driveable ResizeObserver —
- * the action needs a real element to attach to. Everything else here is plain
- * state.
- */
 class ResizeObserverMock {
   static instances: ResizeObserverMock[] = [];
   callback: ResizeObserverCallback;
@@ -28,7 +23,6 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 });
 
-/** What `use:measure` does, called by hand. */
 const attach = (measure: ReturnType<typeof createPagination>['measure'], height = 0) => {
   const node = document.createElement('div');
   vi.spyOn(node, 'clientHeight', 'get').mockReturnValue(height);
@@ -78,8 +72,7 @@ describe('createPagination', () => {
 
     attach(pagination.measure, 1240);
 
-    // Nothing has fired yet — the height came from `clientHeight`, which is what
-    // stops the first paint happening at a placeholder size.
+    // No observer callback yet: the height came from `clientHeight`.
     expect(pagination.pageSize).toBe(20);
   });
 

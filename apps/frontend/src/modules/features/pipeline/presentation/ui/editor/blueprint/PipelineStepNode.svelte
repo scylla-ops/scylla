@@ -12,14 +12,11 @@
   const { deleteElements } = useSvelteFlow();
 
   const step = $derived(data.step);
-  /** The first line that is not blank — a preview, not the script. */
   const scriptPreview = $derived(
     step.kind === 'script' ? (step.script.split('\n').find(line => line.trim() !== '') ?? '') : '',
   );
 </script>
 
-<!-- One pipeline step on the canvas: its id, what it runs, and the two handles
-     its dependencies are drawn between. -->
 <Card
   class="w-[260px] cursor-pointer overflow-hidden p-0 transition-all duration-200 hover:scale-105 hover:border-primary hover:shadow-lg {selected
     ? 'scale-105 shadow-lg ring-2 ring-primary'

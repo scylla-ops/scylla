@@ -8,7 +8,6 @@ interface SelectionState {
   getSelectedIds: (key: string) => string[];
 }
 
-/** The selected rows of every table, per feature key. The only selection store of the app. */
 export const selectionStore = createStore<SelectionState>((set, get) => ({
   selectedIds: {},
 

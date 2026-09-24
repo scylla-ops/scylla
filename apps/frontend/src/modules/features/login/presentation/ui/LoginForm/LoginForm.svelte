@@ -11,9 +11,6 @@
 
   let { handleSubmit, isPending = false }: Props = $props();
 
-  // The ids are literal, which is what types the submitted values: `onSubmit`
-  // receives `{ username: string; password: string }` and neither field is
-  // looked up by string.
   const items: readonly FormItem<'username' | 'password'>[] = $derived([
     {
       id: 'username',

@@ -11,326 +11,326 @@ msgstr ""
 "Language: \n"
 "Language-Team: \n"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:120
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:92
 msgid "{name} (copy)"
 msgstr "{name} (copy)"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:38
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:20
 msgid "Actions"
 msgstr "Actions"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:89
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:64
 msgid "Add a new node"
 msgstr "Add a new node"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:101
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:76
 msgid "Add argument"
 msgstr "Add argument"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:77
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:54
 msgid "Add Node"
 msgstr "Add Node"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:113
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:87
 msgid "Add variable"
 msgstr "Add variable"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:73
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:51
 msgid "All changes saved"
 msgstr "All changes saved"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:99
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:74
 msgid "Arguments"
 msgstr "Arguments"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:69
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:47
 msgid "Blueprint"
 msgstr "Blueprint"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:117
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:90
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:96
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:71
 msgid "Command"
 msgstr "Command"
 
-#: src/modules/features/pipeline/pipeline.module.ts:29
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:63
+#: src/modules/features/pipeline/pipeline.module.ts:28
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:41
 msgid "Create"
 msgstr "Create"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:23
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:7
 msgid "Create your first pipeline to get started"
 msgstr "Create your first pipeline to get started"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:39
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:21
 msgid "Creation:"
 msgstr "Creation:"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:90
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:65
 msgid "Define a new pipeline step with a unique ID and clear inputs for the command or script it should run."
 msgstr "Define a new pipeline step with a unique ID and clear inputs for the command or script it should run."
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:79
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:56
 msgid "Delete edge"
 msgstr "Delete edge"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:78
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:55
 msgid "Delete node"
 msgstr "Delete node"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:70
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:48
 msgid "Draft — not created yet"
 msgstr "Draft — not created yet"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:45
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:26
 msgid "Duplicate"
 msgstr "Duplicate"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:59
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:38
 msgid "Duration: {duration}"
 msgstr "Duration: {duration}"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:100
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:75
 msgid "e.g., --release"
 msgstr "e.g., --release"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:103
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:78
 msgid "e.g., ./services/api or /workspace"
 msgstr "e.g., ./services/api or /workspace"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:94
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:69
 msgid "e.g., build-step"
 msgstr "e.g., build-step"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:97
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:72
 msgid "e.g., cargo build && cargo test"
 msgstr "e.g., cargo build && cargo test"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:86
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:62
 msgid "e.g., my-pipeline"
 msgstr "e.g., my-pipeline"
 
-#: src/modules/features/pipeline/pipeline.module.ts:38
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:43
+#: src/modules/features/pipeline/pipeline.module.ts:37
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:24
 msgid "Edit"
 msgstr "Edit"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:91
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:66
 msgid "Edit node"
 msgstr "Edit node"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:44
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:25
 msgid "Edit pipeline"
 msgstr "Edit pipeline"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:104
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:79
 msgid "Environment variables"
 msgstr "Environment variables"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:53
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:32
 msgid "Error loading jobs"
 msgstr "Error loading jobs"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:65
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:43
 msgid "Failed to load pipeline"
 msgstr "Failed to load pipeline"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:58
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:37
 msgid "Finished {time}"
 msgstr "Finished {time}"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:36
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:18
 msgid "History"
 msgstr "History"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:67
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:45
 msgid "Invalid JSON"
 msgstr "Invalid JSON"
 
-#: src/modules/features/pipeline/pipeline.module.ts:50
+#: src/modules/features/pipeline/pipeline.module.ts:48
 msgid "Jobs"
 msgstr "Jobs"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:105
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:80
 msgid "KEY"
 msgstr "KEY"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:37
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:19
 msgid "Last Run"
 msgstr "Last Run"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:107
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:82
 msgid "Literal"
 msgstr "Literal"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:66
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:44
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:31
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:14
 msgid "Members"
 msgstr "Members"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:85
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:61
 msgid "Name"
 msgstr "Name"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:28
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:11
 msgid "New pipeline"
 msgstr "New pipeline"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:54
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:33
 msgid "No jobs yet"
 msgstr "No jobs yet"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:22
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:6
 msgid "No pipeline found"
 msgstr "No pipeline found"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:93
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:68
 msgid "Node ID"
 msgstr "Node ID"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:55
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:34
 msgid "Open the last run"
 msgstr "Open the last run"
 
-#: src/modules/features/pipeline/pipeline.module.ts:36
-#: src/modules/features/pipeline/pipeline.module.ts:48
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:26
+#: src/modules/features/pipeline/pipeline.module.ts:35
+#: src/modules/features/pipeline/pipeline.module.ts:46
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:9
 msgid "Pipeline"
 msgstr "Pipeline"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:49
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:29
 msgid "Pipeline actions"
 msgstr "Pipeline actions"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:83
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:59
 msgid "Pipeline name"
 msgstr "Pipeline name"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:27
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:10
 msgid "Pipelines"
 msgstr "Pipelines"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:111
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:85
 msgid "Reference a secret"
 msgstr "Reference a secret"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:115
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:88
 msgid "Remove argument"
 msgstr "Remove argument"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:116
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:89
 msgid "Remove variable"
 msgstr "Remove variable"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:42
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:23
 msgid "Run"
 msgstr "Run"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:56
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:35
 msgid "Run #{runNumber}"
 msgstr "Run #{runNumber}"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:64
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:42
 msgid "Save"
 msgstr "Save"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:71
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:49
 msgid "Saving…"
 msgstr "Saving…"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:95
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:70
 msgid "Script"
 msgstr "Script"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:68
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:46
 msgid "Scripting"
 msgstr "Scripting"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:108
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:83
 msgid "Secret"
 msgstr "Secret"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:112
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:86
 msgid "secret name"
 msgstr "secret name"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:32
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:15
 msgid "Secrets"
 msgstr "Secrets"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:62
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:40
 msgid "Select a project first"
 msgstr "Select a project first"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:84
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:60
 msgid "Set the name of the pipeline."
 msgstr "Set the name of the pipeline."
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:98
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:73
 msgid "Shell"
 msgstr "Shell"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:57
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:36
 msgid "Started {time}"
 msgstr "Started {time}"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:35
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:17
 msgid "Status"
 msgstr "Status"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:47
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:28
 msgid "Triggers"
 msgstr "Triggers"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:21
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:5
 msgid "Unable to load pipelines"
 msgstr "Unable to load pipelines"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:80
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:57
 msgid "Unnamed"
 msgstr "Unnamed"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:72
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:50
 msgid "Unsaved changes"
 msgstr "Unsaved changes"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:92
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:67
 msgid "Update the step details and dependencies."
 msgstr "Update the step details and dependencies."
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:106
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:81
 msgid "value"
 msgstr "value"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:110
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:84
 msgid "Value kind"
 msgstr "Value kind"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:46
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:27
 msgid "View Jobs"
 msgstr "View Jobs"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:102
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:77
 msgid "Working directory"
 msgstr "Working directory"
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:29
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:12
 msgid "You don't have permission to create pipelines."
 msgstr "You don't have permission to create pipelines."
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:30
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:13
 msgid "You don't have permission to delete pipelines."
 msgstr "You don't have permission to delete pipelines."
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:74
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:52
 msgid "You don't have permission to edit this pipeline."
 msgstr "You don't have permission to edit this pipeline."
 
-#: src/modules/features/pipeline/presentation/pipeline.messages.ts:52
+#: src/modules/features/pipeline/presentation/pipeline.messages.ts:31
 msgid "You don't have permission to view this pipeline's jobs"
 msgstr "You don't have permission to view this pipeline's jobs"

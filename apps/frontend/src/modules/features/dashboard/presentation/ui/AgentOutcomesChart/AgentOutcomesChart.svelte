@@ -27,7 +27,7 @@
   const RANGE_DAYS: Record<Range, number> = { '7d': 7, '14d': 14, '30d': 30 };
   const STATUS_FILTERS: StatusFilter[] = ['all', 'completed', 'failed', 'cancelled'];
 
-  /** The drawing box, in SVG user units — see the note on `preserveAspectRatio`. */
+  /** In SVG user units: the SVG stretches (`preserveAspectRatio="none"`). */
   const GEOMETRY: ChartGeometry = {
     width: 600,
     height: 160,
@@ -96,21 +96,8 @@
 </script>
 
 <!--
-  Run outcomes per agent, over a window — the one chart `recharts` used to draw,
-  and the reason 119 kB gzip of it (plus `d3-*` and `victory-vendor`) left the
-  bundle in Phase 4.
-
-  The geometry lives in `outcomes-chart.calculator.ts`, tested without a DOM;
-  what is left here is markup. Two decisions that matter:
-
-  - **The SVG is stretched, the text is not.** `preserveAspectRatio="none"` lets
-    the curve fill whatever width the card has without measuring it, and
-    `vector-effect="non-scaling-stroke"` keeps the stroke one pixel wide under
-    that stretch. Anything with glyphs — axis ticks, labels, tooltip — is HTML
-    beside the SVG rather than `<text>` inside it, which would be distorted by
-    the same transform.
-  - **Hover is an HTML band per day**, not a point hit-test: the reader is
-    asking about a day, and a band is a target the whole height of the chart.
+  The SVG stretches to the card; the stroke does not (`non-scaling-stroke`). Text is
+  HTML beside it, or it would stretch too. Hover is one band per day.
 -->
 {#if agentsQuery.isLoading}
   <Card><CardContent class="p-4"><Skeleton class="h-[210px] w-full" /></CardContent></Card>
@@ -198,7 +185,6 @@
           </div>
         {:else}
           <div class="relative pl-7">
-            <!-- Y ticks, top to bottom -->
             <div
               class="pointer-events-none absolute left-0 top-0 flex h-[160px] w-6 flex-col justify-between text-right font-mono text-[10px] text-muted-foreground"
             >
@@ -224,7 +210,6 @@
                   {/each}
                 </defs>
 
-                <!-- Horizontal gridlines, one per tick -->
                 {#each ticks as tick (tick)}
                   {@const y =
                     GEOMETRY.padding.top +
@@ -254,7 +239,6 @@
                 {/each}
               </svg>
 
-              <!-- One hover band per day, over the whole chart height -->
               <div class="absolute inset-0 flex">
                 {#each buckets as bucket, index (bucket.day)}
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -284,7 +268,6 @@
               </div>
             </div>
 
-            <!-- X labels — thinned so 30 day-numbers do not smear together -->
             <div class="mt-1 flex">
               {#each buckets as bucket, index (bucket.day)}
                 <span

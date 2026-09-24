@@ -23,8 +23,7 @@ describe('createNow', () => {
 
   it('stops when the caller says the thing it was timing has finished', () => {
     const cleanup = $effect.root(() => {
-      // A getter, not a boolean: this is the whole reason for the signature.
-      // Captured once, a job that finishes would leave the timer running.
+      // A getter: captured once, a finished job would leave the timer running.
       let running = $state(true);
       const now = createNow(() => running);
       flushSync();

@@ -58,7 +58,6 @@ describe('AppCard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete app' }));
 
     expect(onRequestDelete).toHaveBeenCalledWith('app-1');
-    // The row click must not fire too — that is what `stopPropagation` buys.
     expect(testNavigator.navigate).not.toHaveBeenCalled();
   });
 
@@ -68,9 +67,7 @@ describe('AppCard', () => {
     expect(screen.getByRole('button', { name: 'Delete app' })).toBeDisabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'App actions' }));
-    // `findFloating`, not `findByRole`: bits-ui puts the menu in a floating
-    // layer that floating-ui leaves `visibility: hidden` under jsdom, which
-    // hides the whole subtree from the accessibility tree.
+    // `findFloating`: jsdom leaves the floating layer `visibility: hidden`.
     expect(await findFloating('menuitem', 'Delete')).toHaveAttribute('data-disabled');
   });
 

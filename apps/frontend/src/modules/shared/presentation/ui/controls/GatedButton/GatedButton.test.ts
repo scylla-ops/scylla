@@ -34,8 +34,7 @@ describe('GatedButton', () => {
       deniedReason: "You don't have permission to create apps.",
     });
 
-    // The wrapper span, not the button: a disabled button fires no pointer
-    // events, which is exactly why the span is there.
+    // The span: a disabled button fires no pointer events.
     await userEvent.hover(screen.getByRole('button', { name: 'New app' })
       .parentElement as HTMLElement);
 
@@ -64,8 +63,6 @@ describe('GatedButton', () => {
     render(GatedButton, { children: textSnippet('Delete'), tooltip: 'Delete', onclick });
 
     const button = screen.getByRole('button', { name: 'Delete' });
-    // The tooltip must not cost the button its click — the denied arm disables
-    // it, this one must not.
     await userEvent.click(button);
     expect(onclick).toHaveBeenCalledOnce();
 

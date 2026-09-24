@@ -9,10 +9,7 @@ export interface JobsRepository {
     pipelineId: string,
     pagination?: PaginationParams,
   ): Promise<ScyllaResult<PaginatedList<JobEntity>>>;
-  /**
-   * Every job of an organization, most recent first — the run feed the
-   * organization dashboard reads. Scoped server-side to what the caller may see.
-   */
+  /** Most recent first. Scoped by the backend to what the caller may see. */
   getByOrganizationId(
     organizationId: string,
     pagination?: PaginationParams,

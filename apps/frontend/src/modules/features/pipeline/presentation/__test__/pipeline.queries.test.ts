@@ -96,7 +96,6 @@ describe('pipelineQueries.byProject', () => {
     });
   });
 
-  /** The page size is measured from the layout — asking early fetches twice. */
   it('stays disabled until the caller says its container has been measured', () => {
     const pending = pipelineQueries.byProject('project-1', { page: 1, pageSize: 5 }, { enabled: false });
     expect(pending.enabled).toBe(false);
@@ -261,7 +260,6 @@ describe('pipelineMutations.run', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['jobs', 'pipeline', 'pipeline-1'] });
   });
 
-  /** The advice about agent connectivity lives in `run-pipeline.svelte.ts`. */
   it('says nothing on its own', () => {
     runOnSuccess(pipelineMutations.run(), undefined, 'pipeline-1');
     expect(toastSuccess).not.toHaveBeenCalled();

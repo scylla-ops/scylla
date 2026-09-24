@@ -11,15 +11,7 @@ import {
 
 export type AccessKind = 'fullControl' | 'restricted';
 
-/**
- * Creating or editing one role.
- *
- * Seeded from `role` **at construction**, with no effect watching it: the
- * dialog renders this form under `{#key open}`, so reopening it builds a new
- * instance and the initialisers below are the reset. React needed an effect on
- * `[open, role]` for the same thing, plus a `setTimeout` to undo the mutation's
- * success flag before the next opening.
- */
+/** Creates or edits a role. Seeded once: the dialog rebuilds it at each opening. */
 export const createRoleForm = (role: RoleEntity | null) => {
   const isEdit = role !== null;
   const initialScope = role?.scope ?? PermissionScope.ORGANIZATION;
@@ -31,11 +23,7 @@ export const createRoleForm = (role: RoleEntity | null) => {
     role?.access.kind === 'fullControl' ? 'fullControl' : 'restricted',
   );
 
-  /**
-   * The ticked boxes. Hidden and non-catalog permissions are kept out: they are
-   * re-added on save, and leaving them in would show them twice — once in the
-   * tree, once in the count.
-   */
+  /** The ticked boxes, without the hidden and preserved permissions (re-added on save). */
   let permissions = $state<Permission[]>(
     role?.access.kind === 'restricted'
       ? role.access.permissions.filter(
@@ -45,11 +33,7 @@ export const createRoleForm = (role: RoleEntity | null) => {
       : [],
   );
 
-  /**
-   * Permissions the role holds that this build's catalog does not expose — set
-   * by the backend, by another client, or by an older build. The editor cannot
-   * show them, so it carries them through rather than quietly deleting them.
-   */
+  /** Permissions this build's catalog does not show: kept on save, never deleted. */
   const preserved: Permission[] =
     role?.access.kind === 'restricted'
       ? role.access.permissions.filter(permission => !isEditablePermission(permission))
@@ -58,15 +42,14 @@ export const createRoleForm = (role: RoleEntity | null) => {
   const createRole = createMutation(() => roleMutations.create());
   const updateRole = createMutation(() => roleMutations.update());
 
-  /** What the role will actually confer: the ticked boxes plus the implicit ones. */
+  /** The ticked boxes plus the implicit ones. */
   const conferred = $derived(withImplicitPermissions(scope, permissions));
 
   const buildAccess = (): AccessSpec =>
     accessKind === 'fullControl'
       ? { kind: 'fullControl' }
       : {
-          // The implicit ones never appear in the editor, so they are written
-          // here or nowhere.
+          // The implicit permissions never show in the editor: add them here.
           kind: 'restricted',
           // deduplication,
           // spread straight back into an array; the Set never outlives the expression.
@@ -121,11 +104,7 @@ export const createRoleForm = (role: RoleEntity | null) => {
         (accessKind === 'fullControl' || conferred.length + preserved.length > 0)
       );
     },
-    /**
-     * Changing scope drops every selected permission the new scope cannot
-     * confer, and every one it now confers implicitly — those are re-added on
-     * save and would otherwise be counted twice.
-     */
+    /** Drops the permissions the new scope cannot confer, and the ones it now confers implicitly. */
     changeScope: (next: PermissionScope) => {
       scope = next;
       // a lookup local to
@@ -136,11 +115,7 @@ export const createRoleForm = (role: RoleEntity | null) => {
         permission => allowed.has(permission) && !isHiddenAtScope(permission, next),
       );
     },
-    /**
-     * Writes the role and answers whether it landed, so the dialog closes on
-     * success and stays open — with the typing still in it — on failure. The
-     * error itself is already toasted by the global mutation cache.
-     */
+    /** Returns whether it was saved: the dialog closes on success and keeps the input on failure. */
     submit: async (): Promise<boolean> => {
       try {
         if (role) {

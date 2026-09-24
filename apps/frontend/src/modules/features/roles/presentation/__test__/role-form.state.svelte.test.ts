@@ -39,7 +39,6 @@ afterEach(() => {
   restoreRegistry();
 });
 
-/** Builds the ViewModel inside a reactive root — it is made of runes. */
 const withForm = async (
   editing: RoleEntity | null,
   body: (form: ReturnType<typeof createRoleForm>) => Promise<void> | void,
@@ -56,7 +55,6 @@ const withForm = async (
   }
 };
 
-/** The permissions written by the last create, whatever their order. */
 const createdPermissions = (): Permission[] => {
   const access = createRoleCall.mock.calls[0]?.[0]?.access as {
     kind: string;

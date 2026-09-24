@@ -8,7 +8,6 @@
   import PipelineTable from '../pipeline-table/PipelineTable.svelte';
 
   interface Props {
-    /** From the route: this page is a project's index. */
     projectId?: string;
   }
 
@@ -21,8 +20,7 @@
 {#if dashboard.isError}
   <ErrorState message={dashboard.errorMessage} />
 {:else}
-  <!-- The frame renders before the pipelines do: the table area has to be in the
-       DOM for its height to be measured, and that height decides what to fetch. -->
+  <!-- The frame renders first: the table area's height decides what to fetch. -->
   <div class="flex h-full min-h-0 w-full flex-col gap-4">
     <PipelineDashboardHeader
       numberOfPipelines={dashboard.totalCount}

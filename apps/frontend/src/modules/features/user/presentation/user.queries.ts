@@ -6,33 +6,13 @@ import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import type { UserModule } from '../user.module.ts';
 
-/**
- * The user directory's reads and writes, as plain options objects.
- *
- * These are what the five `use-*` hooks were. Being data rather than hooks is
- * what lets the modules that have not been migrated yet keep consuming them:
- * `roles` and `membership` pass `userQueries.list()` straight to react-query's
- * `useQuery`, which is the same options object svelte-query's `createQuery`
- * takes. One declaration, both bindings, one cache entry.
- */
 const repository = () => getModuleDomain<typeof UserModule.domain>('user').userRepository;
 
 export const USERS_QUERY_KEY = () => ['users'] as const;
 export const USER_QUERY_KEY = (userId?: string) => ['user', userId] as const;
 
 export const userQueries = {
-  /**
-   * The whole directory.
-   *
-   * **The query asks for the permission itself**, rather than trusting its
-   * caller: it is exported through the barrel and consumed from `roles` and
-   * `membership`, whose pages were entered on `MANAGE_ROLES` and
-   * `LIST_ORGANIZATION_MEMBERS` — outside this module's route guard. Listing
-   * users is a system-wide capability and the backend checks it on every call.
-   *
-   * An empty result therefore means "none" *or* "not allowed to look"; a caller
-   * that must tell them apart calls {@link canListUsers}.
-   */
+  /** Checks `LIST_USERS` itself (used outside this module's route guard). An empty list can mean "not allowed": see `canListUsers`. */
   list: (options: { enabled?: boolean } = {}) =>
     queryOptions({
       queryKey: USERS_QUERY_KEY(),
@@ -51,7 +31,6 @@ export const userQueries = {
     }),
 };
 
-/** Whether the directory may be read at all — see {@link userQueries.list}. */
 export const canListUsers = (): boolean => authorizationReady() && can(Permission.LIST_USERS);
 
 export const userMutations = {
@@ -65,7 +44,6 @@ export const userMutations = {
       },
     }),
 
-  /** No password: changing one is not exposed through this repository. */
   update: () =>
     mutationOptions({
       mutationFn: async ({ userId, username }: { userId: string; username?: string }) =>

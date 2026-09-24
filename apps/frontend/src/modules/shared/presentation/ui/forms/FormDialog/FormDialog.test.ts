@@ -2,8 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { render } from '@/test/render.svelte.ts';
-// The fixture, not the component: it is what pins the id generic. See the
-// comment at the top of `DataTable.fixture.svelte`.
+// The fixture pins the id generic.
 import FormDialog from './FormDialog.fixture.svelte';
 import { FormItemType, type FormItem } from '../scylla-form.struct.ts';
 

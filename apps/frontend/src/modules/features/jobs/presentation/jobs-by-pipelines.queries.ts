@@ -9,42 +9,27 @@ interface HistoryResult {
 }
 
 /**
- * The most recent jobs of several pipelines at once, as a fan-out both bindings
- * can run — `pipeline`'s dashboard draws a history strip per row.
+ * The latest jobs of several pipelines. Without `LIST_JOBS_BY_PIPELINE` nothing is
+ * asked (one denial per pipeline otherwise): callers read `canListJobs`.
  *
- * `ListJobsByPipeline` is enforced per project, so without the grant this is
- * one guaranteed `PERMISSION_DENIED` per pipeline — an error toast each, and a
- * row of "failed to load" where the honest answer is "you may not see this".
- * Nothing is asked in that case, and callers read `canListJobs` to say so.
- *
- * Returns what `useQueries` / `createQueries` take rather than calling either,
- * the way `projectLookupQueries` does — that is what lets `pipeline` keep
- * consuming it from React until Phase 5.
- *
- * **In its own file, and that is load-bearing.** `feature-permissions.test.ts`
- * asks "does this factory check for itself?" by looking for a `can(` in the
- * file that declares it. Sitting next to `jobQueries` — which deliberately does
- * *not* check, being organization-scoped and filtered server-side — this one's
- * gate would have vouched for both, and the ratchet would have gone quiet on
- * exactly the read it exists to watch.
+ * In its own file: `feature-permissions.test.ts` looks for `can(` per file, and
+ * `jobQueries` deliberately does not check.
  */
 export const jobsByPipelinesQueries = (pipelineIds: string[]) => {
-  // The page is already scoped to one project, so the ambient target is it.
+  // The page is scoped to one project: the ambient target.
   const canListJobs = authorizationReady() && can(Permission.LIST_JOBS_BY_PIPELINE);
 
   return {
     canListJobs,
     queries: pipelineIds.map(pipelineId => jobQueries.historyOf(pipelineId, canListJobs)),
-    // Folded here rather than by the caller so TanStack Query can memoize the
-    // map on the underlying results instead of rebuilding it every render.
+    // Folded here so TanStack Query memoizes it on the results.
     combine: (results: HistoryResult[]) => ({
       jobsByPipelineId: new Map(
         results.flatMap(result =>
           result.data ? [[result.data.pipelineId, result.data.jobs] as const] : [],
         ),
       ),
-      // Permissions still unknown → keep the skeletons up, rather than flash an
-      // empty history or a denial the user may not actually be under.
+      // Permissions unknown: keep the skeletons.
       isJobsLoading: !authorizationReady() || results.some(result => result.isLoading),
       isJobsError: results.some(result => result.isError),
     }),

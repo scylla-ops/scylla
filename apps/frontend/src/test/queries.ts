@@ -1,18 +1,7 @@
 import { getQueryClient } from '@platform/query';
 
-/**
- * Running a `*.queries.ts` factory's options without a component.
- *
- * This is the reason the query hooks became options objects: what used to need
- * `renderHook`, a provider stack and a `waitFor` is now a function call.
- *
- * The casts are the price, and they belong here rather than in every test —
- * TanStack types `queryFn` as `QueryFunction | typeof skipToken` and hands it a
- * context object nothing here reads. The conditional types below pull the data
- * type back out of the options so assertions stay typed.
- */
+/** Runs a `*.queries.ts` factory's options without a component. The casts live here, not in every test. */
 
-/** `{ queryFn?: QueryFunction<T> | skipToken }` -> `T`. */
 type QueryData<TOptions> = TOptions extends { queryFn?: infer TQueryFn }
   ? Awaited<ReturnType<Extract<TQueryFn, (...args: never[]) => unknown>>>
   : unknown;
@@ -52,7 +41,6 @@ export const runMutationFn = <TOptions extends { mutationFn?: unknown }>(
   return (options.mutationFn as (vars: unknown) => Promise<MutationData<TOptions>>)(variables);
 };
 
-/** Fires the success callback, which is where invalidation and toasts live. */
 export const runOnSuccess = <TOptions extends { onSuccess?: unknown }>(
   options: TOptions,
   data: MutationData<TOptions>,
@@ -66,19 +54,8 @@ export const runOnSuccess = <TOptions extends { onSuccess?: unknown }>(
 };
 
 /**
- * A stand-in for a `*.queries.ts` factory, for a test that mocks the barrel of
- * a feature.
- *
- * A consumer passes an options object to `createQuery`, so the stub is an
- * options object too. `initialData` is what keeps the
- * test synchronous — without it the first render is always `isLoading`, and
- * every assertion would have to become a `findBy`.
- *
- * ```ts
- * vi.mock('@/modules/features/organization', () => ({
- *   organizationQueries: { mine: () => stubQuery(['organizations'], state.organizations) },
- * }));
- * ```
+ * A stand-in for a query factory, for a test that mocks a feature's barrel.
+ * `initialData` keeps the first render synchronous.
  */
 export const stubQuery = <TData>(
   queryKey: readonly unknown[],

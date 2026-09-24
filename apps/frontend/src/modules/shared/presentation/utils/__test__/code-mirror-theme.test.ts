@@ -13,11 +13,7 @@ const tokenClass = (isDark: boolean) =>
   );
 
 describe('buildCodeMirrorTheme', () => {
-  // CodeMirror's `Extension` is itself array-shaped internally (a Facet
-  // provider), so `Array.isArray`/length can't distinguish "just the theme"
-  // from "theme + syntaxHighlighting" - assert the one thing that must hold
-  // instead: dark mode's extra oneDarkHighlightStyle makes it a genuinely
-  // different extension from the light-mode one.
+  // `Extension` is array-shaped internally: compare the two extensions instead.
   it('dark mode adds the oneDarkHighlightStyle override, producing a different extension than light mode', () => {
     const light = buildCodeMirrorTheme({ isDark: false });
     const dark = buildCodeMirrorTheme({ isDark: true });

@@ -68,7 +68,6 @@ afterEach(() => {
   permissionsStore.setState({ permissions: null });
 });
 
-/** Builds the ViewModel inside a reactive root — it is made of runes. */
 const withOverview = async (
   body: (overview: ReturnType<typeof createOrgOverview>) => Promise<void> | void,
 ) => {

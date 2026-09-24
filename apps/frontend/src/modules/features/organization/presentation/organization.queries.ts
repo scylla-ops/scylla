@@ -6,14 +6,7 @@ import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
 import type { OrganizationModule } from '../organization.module.ts';
 
-/**
- * Organizations, as options objects rather than hooks.
- *
- * The shell (`layout`, `core`) and two features still on React consume these
- * through react-query's `useQuery`; this module's own Svelte UI runs the same
- * objects through `createQuery`. One declaration, one cache entry, whichever
- * binding asks.
- */
+// Resolved per call: tests swap the registry.
 const repository = () =>
   getModuleDomain<typeof OrganizationModule.domain>('organization').organizationRepository;
 
@@ -23,12 +16,7 @@ export const ORGANIZATION_MEMBERS_QUERY_KEY = (organizationId: string) =>
   ['organizations', organizationId, 'members'] as const;
 
 export const organizationQueries = {
-  /**
-   * The organizations the signed-in user belongs to.
-   *
-   * Member-scoped on purpose: a non-admin is denied the global
-   * `listOrganizations`, so the switcher has to ask for its own.
-   */
+  /** Not the global list: non-admins may not read it. */
   mine: () =>
     queryOptions({
       queryKey: MY_ORGANIZATIONS_QUERY_KEY(),
@@ -36,14 +24,7 @@ export const organizationQueries = {
       staleTime: 1000 * 60 * 5, // 5 minutes TODO: change
     }),
 
-  /**
-   * Who belongs to an organization.
-   *
-   * The backend derives this from grants, so any grant mutation changes it.
-   * Those live in `useGrants`, which cannot reach this key without coupling the
-   * two features — callers that create or revoke a grant invalidate it
-   * themselves with {@link invalidateOrganizationMembers}.
-   */
+  /** Derived from grants: callers invalidate it with `invalidateOrganizationMembers`. */
   members: (organizationId: string | null, options: { enabled?: boolean } = {}) =>
     queryOptions({
       queryKey: ORGANIZATION_MEMBERS_QUERY_KEY(organizationId ?? ''),
@@ -69,8 +50,7 @@ export const organizationMutations = {
       mutationFn: async ({ name, description }: { name: string; description?: string }) =>
         (await repository().create(name, description)).unwrap(),
       onSuccess: data => {
-        // The new organization becomes the active one: whoever created it is
-        // looking at it next, and every scoped URL is built from this.
+        // The new organization becomes the active one.
         contextStore.getState().setOrganization(data.id, data.name);
         toast.success(i18n._(ToastMessages.ORGANIZATION_CREATE));
         return invalidateOrganizations();

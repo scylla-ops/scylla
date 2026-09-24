@@ -6,15 +6,12 @@
   import SecretList from './components/SecretList/SecretList.svelte';
 
   interface Props {
-    /** From the route: `/:organizationSlug/projects/:projectId/secrets`. */
     projectId?: string;
   }
 
   let { projectId }: Props = $props();
 
-  // `enabled` on the query handles a missing id, so the component tree below
-  // does not have to — but the id is non-optional to its children, so the page
-  // still guards before rendering them.
+  // The children need a defined id, so the page still checks it.
   const secretsQuery = createQuery(() => secretQueries.byProject(projectId ?? ''));
   const secrets = $derived(secretsQuery.data ?? []);
 

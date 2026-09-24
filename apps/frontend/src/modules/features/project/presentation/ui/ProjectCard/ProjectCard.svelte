@@ -51,7 +51,6 @@
         </CardTitle>
       </div>
       <div class="flex shrink-0 flex-row items-center gap-1">
-        <!-- Checked against this card's project, not the active one. -->
         {#if can(Permission.UPDATE_PROJECT, { projectId: project.id })}
           <IconButton
             icon={PencilIcon}

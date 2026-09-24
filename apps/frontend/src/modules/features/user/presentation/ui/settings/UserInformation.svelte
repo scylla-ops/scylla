@@ -70,10 +70,6 @@
     <CardDescription>{t(userMessages.manageAccount)}</CardDescription>
   </CardHeader>
 
-  <!--
-    One card, four bodies — the React version repeated the whole card in each
-    branch, so the header existed four times and could drift.
-  -->
   {#if !userId}
     <CardContent>
       <div class="text-center text-muted-foreground">
@@ -100,11 +96,7 @@
         </div>
       </div>
 
-      <!--
-        Keyed on the user: `createFormState` seeds its values once, so without
-        this the fields would keep showing the previous account's name when the
-        route moves to another user.
-      -->
+      <!-- Keyed on the user: the form seeds its values once. -->
       {#key user.userId}
         <ScyllaForm
           onSubmit={handleSubmit}

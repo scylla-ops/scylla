@@ -11,7 +11,6 @@ const node = (overrides: Partial<JobNodeExecution> = {}): JobNodeExecution => ({
   ...overrides,
 });
 
-/** Enough nodes to pass the collapse threshold, all of one status unless said. */
 const many = (count: number, state = 'completed') =>
   Array.from({ length: count }, (_, index) => node({ id: `node-${index}`, state }));
 
@@ -34,7 +33,6 @@ describe('JobTimeline', () => {
       onSelectNode: vi.fn(),
     });
 
-    // Two statuses, two segments — not the twelve nodes.
     expect(screen.getAllByRole('button')).toHaveLength(2);
     expect(screen.getByRole('button', { name: '10 Success nodes' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '2 Failed nodes' })).toBeInTheDocument();

@@ -14,11 +14,7 @@
   let { jobs }: Props = $props();
 </script>
 
-<!--
-  Nothing mounts this yet: live jobs are mocked and the standalone /jobs/:id
-  route does not exist. Ported rather than deleted — deciding a component's fate
-  is not the migration's call. See this module's AGENTS.md.
--->
+<!-- Not mounted yet: live jobs are mocked. See AGENTS.md. -->
 {#snippet sectionHeader(tone: 'running' | 'pending', label: string, count: number)}
   {@const active = count > 0}
   <div class="flex items-center gap-2">
@@ -40,7 +36,6 @@
   </div>
 {/snippet}
 
-<!-- Job rows are styled per spec but inert for now. -->
 {#snippet jobRow(
   tone: 'running' | 'pending',
   id: string,
@@ -77,7 +72,6 @@
 
 <Card>
   <CardContent class="space-y-4 p-4">
-    <!-- Running -->
     <div class="space-y-2">
       {@render sectionHeader('running', t(agentsMessages.running), jobs.running.length)}
       {#if jobs.running.length > 0}
@@ -98,7 +92,6 @@
       {/if}
     </div>
 
-    <!-- Pending -->
     <div class="space-y-2">
       {@render sectionHeader('pending', t(agentsMessages.pending), jobs.pending.length)}
       {#if jobs.pending.length > 0}

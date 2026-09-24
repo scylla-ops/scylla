@@ -23,15 +23,11 @@
 
   let openDialog = $state(false);
 
-  // Users are a system-level resource — no org/project target to check against.
+  // A system resource: no target to check.
   const canCreate = $derived(can(Permission.CREATE_USER));
   const canDelete = $derived(can(Permission.DELETE_USER));
 
-  /**
-   * Deleting the account you are signed in with would lock you out of the
-   * screen you are on, so it is refused before any call goes out. Throwing is
-   * what keeps `FeatureHeader` from reporting a success it did not get.
-   */
+  /** Deleting your own account is refused before any call. Throwing stops `FeatureHeader` from reporting a success. */
   const handleDelete = async () => {
     const currentUserId = localStorage.getItem('userId');
     if (currentUserId && selection.selectedIds.includes(currentUserId)) {
@@ -46,7 +42,7 @@
 </script>
 
 {#if usersQuery.isLoading}
-  <!-- todo: handle properly -->
+  <!-- Nothing while loading: the table would only flash. -->
 {:else if usersQuery.isError}
   <ErrorState message={t(userMessages.loadError)} />
 {:else}
