@@ -1,4 +1,5 @@
 use crate::application::GrantUseCases;
+use crate::application::grant::CreateGrant;
 use crate::application::user::{CreateUser, GetUserByUsername, UserUseCases};
 use crate::application::{HashService, UserRepository};
 use crate::domain::caller::{CallerContext, ServiceIdentity};
@@ -6,9 +7,7 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::role::RoleName;
 use crate::domain::user::{Email, Password, Username};
 use derive_more::Constructor;
-use scylla_auth::authz::{
-    Grant, GrantRepository, PermissionService, PolicyControl, Principal, Scope,
-};
+use scylla_auth::authz::{GrantRepository, PermissionService, PolicyControl, Principal, Scope};
 use scylla_extension::Actions;
 use std::sync::Arc;
 use tracing::instrument;
@@ -68,12 +67,12 @@ where
             Err(e) => return Err(e),
         };
 
-        let grant = Grant::new(
-            Principal::User(user.id().clone()),
-            role.clone(),
-            Scope::System,
-        );
-        self.grant_uc.grant(&caller, &grant).await?;
+        let grant = CreateGrant {
+            principal: Principal::User(user.id().clone()),
+            role: role.clone(),
+            scope: Scope::System,
+        };
+        self.actions.run(&*self.grant_uc, &caller, grant).await?;
         tracing::info!(
             user_id = %user.id(),
             role = %role,

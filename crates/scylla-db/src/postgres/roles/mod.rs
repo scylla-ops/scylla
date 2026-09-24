@@ -222,9 +222,10 @@ mod tests {
         use crate::domain::ids::UserId;
         use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
-        use scylla_auth::authz::{
-            PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
-        };
+        use scylla_auth::authz::{PermissionService, PolicyControl, Principal, Scope};
+        use scylla_core::application::PermissionAuthorizer;
+        use scylla_core::application::role::{GetEffectivePermissions, RoleUseCases};
+        use scylla_extension::{Actions, Hooks};
         use std::sync::Arc;
 
         struct AllowAll;
@@ -282,12 +283,21 @@ mod tests {
         let uc = RoleUseCases::new(
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool)),
-            Arc::new(AllowAll),
             Arc::new(NoopPolicy),
         );
+        let actions = Actions::new(
+            Arc::new(PermissionAuthorizer::new(Arc::new(AllowAll))),
+            Arc::new(Hooks::new()),
+        );
         let caller = CallerContext::Service(ServiceIdentity::recorder());
-        let scopes = uc
-            .effective_permissions(&caller, &Principal::User(UserId::new("alice")))
+        let scopes = actions
+            .run(
+                &uc,
+                &caller,
+                GetEffectivePermissions {
+                    principal: Principal::User(UserId::new("alice")),
+                },
+            )
             .await
             .unwrap();
 
@@ -313,9 +323,10 @@ mod tests {
         use crate::domain::ids::UserId;
         use crate::domain::permission::Permission;
         use crate::postgres::PgGrantRepository;
-        use scylla_auth::authz::{
-            PermissionService, PolicyControl, Principal, RoleUseCases, Scope,
-        };
+        use scylla_auth::authz::{PermissionService, PolicyControl, Principal, Scope};
+        use scylla_core::application::PermissionAuthorizer;
+        use scylla_core::application::role::{GetEffectivePermissions, RoleUseCases};
+        use scylla_extension::{Actions, Hooks};
         use std::sync::Arc;
 
         struct DenyAll;
@@ -344,8 +355,11 @@ mod tests {
         let uc = RoleUseCases::new(
             Arc::new(PgRoleRepository::new(pool.clone())),
             Arc::new(PgGrantRepository::new(pool)),
-            Arc::new(DenyAll),
             Arc::new(NoopPolicy),
+        );
+        let actions = Actions::new(
+            Arc::new(PermissionAuthorizer::new(Arc::new(DenyAll))),
+            Arc::new(Hooks::new()),
         );
 
         let alice = CallerContext::User(UserId::new("alice"));
@@ -358,7 +372,14 @@ mod tests {
         assert!(uc.my_permissions(&bob).await.unwrap().is_empty());
 
         assert!(
-            uc.effective_permissions(&alice, &Principal::User(UserId::new("bob")))
+            actions
+                .run(
+                    &uc,
+                    &alice,
+                    GetEffectivePermissions {
+                        principal: Principal::User(UserId::new("bob")),
+                    },
+                )
                 .await
                 .is_err(),
             "reading another principal must still require manageSystemGrants",

@@ -1,7 +1,6 @@
 use crate::surface::Surface;
 use http::{HeaderName, HeaderValue, Method};
 use scylla_auth::audit::AuditLog;
-use scylla_auth::authz::RoleUseCases;
 use scylla_auth::cedar::CedarPermissionService;
 #[cfg(feature = "register")]
 use scylla_core::application::SignupUseCases;
@@ -10,7 +9,7 @@ use scylla_core::application::{
     CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases,
     InvitationAcceptUseCases, InvitationUseCases, JobLogUseCases, JobReaper, JobUseCases, Mailer,
     NoopMailer, OAuthUseCases, OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer,
-    PipelineUseCases, ProjectUseCases, SecretCipher, SecretResolver, SecretUseCases,
+    PipelineUseCases, ProjectUseCases, RoleUseCases, SecretCipher, SecretResolver, SecretUseCases,
     TriggerCronScheduler, TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases,
     WebhookIngressUseCases,
 };
@@ -42,7 +41,7 @@ pub(crate) type SharedPermissionChecker = Arc<PermissionChecker>;
 pub(crate) type SharedGrantUc =
     Arc<GrantUseCases<PgGrantRepository, PermissionChecker, PermissionChecker>>;
 pub(crate) type SharedRoleUc =
-    Arc<RoleUseCases<PgRoleRepository, PgGrantRepository, PermissionChecker, PermissionChecker>>;
+    Arc<RoleUseCases<PgRoleRepository, PgGrantRepository, PermissionChecker>>;
 
 pub(crate) type SharedAuthUc =
     Arc<AuthUseCases<PgUserRepository, PgSessionRepository, Argon2HashService>>;
@@ -288,7 +287,6 @@ pub(crate) async fn init_services(
     let role_uc = Arc::new(RoleUseCases::new(
         role_repo.clone(),
         grant_repo.clone(),
-        permission_checker.clone(),
         permission_checker.clone(),
     ));
     if let Some(cfg) = &config.bootstrap {
@@ -625,8 +623,8 @@ where
     );
     let agent_admin_handler =
         AgentAdminHandler::new(services.actions.clone(), services.agent_uc.clone());
-    let grant_handler = GrantHandler::new(services.grant_uc.clone());
-    let role_handler = RoleHandler::new(services.role_uc.clone());
+    let grant_handler = GrantHandler::new(services.actions.clone(), services.grant_uc.clone());
+    let role_handler = RoleHandler::new(services.actions.clone(), services.role_uc.clone());
     let invitation_handler =
         InvitationHandler::new(services.actions.clone(), services.invitation_uc.clone());
 

@@ -12,6 +12,7 @@ pub mod organization;
 pub mod pagination;
 pub mod pipeline;
 pub mod project;
+pub mod role;
 pub mod secret;
 pub mod signup;
 pub mod trigger;
@@ -44,6 +45,7 @@ pub use oauth::{
 pub use organization::{OrganizationRepository, OrganizationUseCases};
 pub use pipeline::{PipelineRepository, PipelineUseCases};
 pub use project::{ProjectRepository, ProjectUseCases};
+pub use role::RoleUseCases;
 pub use secret::{
     DispatchSecretResolver, SecretCipher, SecretRepository, SecretResolver, SecretUseCases,
 };

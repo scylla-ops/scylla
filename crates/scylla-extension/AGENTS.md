@@ -420,7 +420,7 @@ the row is still in the state the gate saw.
 ## Limits and follow-ups
 
 - The project, organization, user, secret, pipeline, trigger, app, agent, job,
-  job log and invitation use cases are on the pipeline. The other aggregates
+  job log, invitation, grant and role use cases are on the pipeline. The other aggregates
   keep their hand-written sequence until they migrate.
 - The agent stream sends `RecordJobStatus` and `AppendJobLog` through
   `Actions` for each report, as the agent's own token, so the `WriteJobStatus`
@@ -451,6 +451,18 @@ the row is still in the state the gate saw.
   has no account yet: the token is the credential, and no permission is asked.
   The invite mail is sent in the `commit` closure of `CreateInvitation`, after
   the write; a failed send is logged and does not fail the call, as before.
+- `GrantUseCases::revoke` stays outside the pipeline. Its permission is the
+  manage-grants permission of the grant's scope, and only the loaded grant knows
+  that scope; an unknown id asks for `ManageSystemGrants`. `ListGrantableRoles`
+  asks for no permission: the catalog is static data.
+- `CreateGrant` builds the grant in `Prepare` and checks there, in this order,
+  the role, the organization admission and the escalation rule. The bootstrap
+  admin grant goes through `Actions` as the bootstrap service.
+- `RoleUseCases` lives in `scylla-core` (`application/role/`), not in
+  `scylla-auth`: the `Run` impls need the struct in the crate that names the
+  commands. `scylla-auth` keeps `Role`, `RoleRepository` and
+  `validate_role_permissions`. `RoleUseCases::my_permissions` stays outside the
+  pipeline: a caller reads its own grants and no permission is asked.
 - `SecretUseCases::delete` stays outside the pipeline. Its permission is
   `DeleteSecret` on the secret's project, and only the loaded secret knows that
   project; `Describe` sees the command alone.

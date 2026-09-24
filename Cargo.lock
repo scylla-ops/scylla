@@ -2920,7 +2920,6 @@ dependencies = [
  "async-trait",
  "cedar-policy",
  "chrono",
- "derive_more",
  "scylla-domain",
  "tokio",
  "tracing",
