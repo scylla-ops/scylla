@@ -6,6 +6,7 @@ pub mod pagination_mapper;
 pub mod pipeline_mapper;
 pub mod project_mapper;
 pub mod secret_mapper;
+pub mod trigger_mapper;
 pub mod user_mapper;
 
 pub use error_mapper::domain_error_to_status;
@@ -16,4 +17,5 @@ pub use pagination_mapper::{domain_to_proto_metadata, proto_to_domain_pagination
 pub use pipeline_mapper::{pipeline_node_to_proto, pipeline_to_proto, pipeline_to_proto_summary};
 pub use project_mapper::project_to_proto;
 pub use secret_mapper::secret_to_proto;
+pub use trigger_mapper::trigger_to_proto;
 pub use user_mapper::user_to_proto;

@@ -1,4 +1,4 @@
-use super::use_case::TRIGGER_RUNNER_APP_NAME;
+use super::TRIGGER_RUNNER_APP_NAME;
 use crate::application::agent::dispatch_port::AgentDispatch;
 use crate::application::{
     AppRepository, DispatchOutcome, DispatchUseCases, JobRepository, PipelineRepository,

@@ -419,12 +419,19 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization, user, secret and pipeline use cases are on the
-  pipeline. The other aggregates keep their hand-written sequence until they
-  migrate.
+- The project, organization, user, secret, pipeline and trigger use cases are
+  on the pipeline. The other aggregates keep their hand-written sequence until
+  they migrate.
 - `SecretUseCases::delete` stays outside the pipeline. Its permission is
   `DeleteSecret` on the secret's project, and only the loaded secret knows that
   project; `Describe` sees the command alone.
+- `TriggerUseCases::get`, `update`, `set_enabled` and `delete`, and
+  `TriggerFireUseCases::fire_now`, stay outside the pipeline. Their permission
+  is on the trigger's pipeline, and only the loaded trigger knows that pipeline.
+- `CreateTrigger` asks for `RunPipeline` a second time in its `Prepare` runner.
+  This check refuses: managing triggers must not give run rights. A `Policy` on
+  `Prepare` therefore runs before it. The runner app of the organization is
+  provisioned in `Persist`, next to the trigger write.
 - `PipelineUseCases::run_with_inputs` and `assign_agent` stay outside the
   pipeline. A trigger fire calls them as the trigger-runner App, with an origin
   and inputs that no RPC sends. `RunPipeline` is the RPC path; the handler then

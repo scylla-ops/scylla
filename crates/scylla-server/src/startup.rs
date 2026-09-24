@@ -612,6 +612,7 @@ where
         services.dispatch_uc.clone(),
     );
     let trigger_handler = TriggerHandler::new(
+        services.actions.clone(),
         services.trigger_uc.clone(),
         services.trigger_fire_uc.clone(),
         config
