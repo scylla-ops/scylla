@@ -59,6 +59,10 @@ handling here **and** widening `NavEntry['section']` in `@platform/routing`.
 are translated, `highlight` is business data shown verbatim. Nothing here builds a crumb from a
 pathname.
 
+The `pipelineName` it passes is the name of the active pipeline only when that pipeline is the
+one in the URL. In all other cases it is the `pipelineId` route parameter. The pipeline crumb
+therefore always identifies its pipeline, also after a reload or a direct link.
+
 ## The context selector
 
 `OrganizationSelector` is a dropdown menu. It shows `OrganizationList` from

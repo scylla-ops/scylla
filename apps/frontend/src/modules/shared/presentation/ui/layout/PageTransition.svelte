@@ -18,18 +18,10 @@
 </script>
 
 <!--
-  Replaces `AnimatedOutlet.tsx`, and gets back what the Lot A cleanup lost.
-
-  React could only animate a page *in*: by the time a route changed, the old
-  node was already unmounted and no CSS could touch it. Svelte keeps the
-  outgoing node alive for the length of its `out:` transition, so both halves
-  exist at once — which is also why the wrapper is `relative` and the two panes
-  are absolutely stacked: without that, the departing page would occupy layout
-  space and shove the arriving one down for 140 ms.
-
-  The two overlap instead of queueing. framer-motion's `mode='wait'` held the
-  new page back until the old one had finished leaving, and that 200 ms of
-  nothing was the only part anyone noticed.
+  Svelte keeps the outgoing node alive for its `out:` transition, so both panes
+  exist at once. They are absolutely stacked, or the departing page would push
+  the arriving one down. The arriving page stays transparent until the departing
+  one is gone (see `page-transition.ts`), so the text of the two never overlaps.
 -->
 <div class="relative h-full w-full">
   {#key key}

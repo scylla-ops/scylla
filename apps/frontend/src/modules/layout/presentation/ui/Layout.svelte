@@ -1,9 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { NavEntry } from '@platform/routing';
-  import { routePathname } from '@platform/routing';
   import { SidebarInset, SidebarProvider } from '@shadcn';
-  import { PageTransition, ScyllaLoadingScreen } from '@shared/presentation/ui';
+  import { ScyllaLoadingScreen } from '@shared/presentation/ui';
   import { createShellState } from '../shell.state.svelte.ts';
   import AppSidebar from './AppSidebar.svelte';
   import FirstOrganization from './FirstOrganization.svelte';
@@ -32,9 +31,7 @@
     >
       <TopBar />
       <div class="min-h-0 flex-1 overflow-y-auto p-2">
-        <PageTransition key={routePathname()}>
-          {@render children()}
-        </PageTransition>
+        {@render children()}
       </div>
     </SidebarInset>
     <WhatsNewDialog />

@@ -46,4 +46,18 @@ describe('the breadcrumb trail the modules compose', () => {
     expect(screen.getByRole('link', { name: /Jobs/ })).toHaveAttribute('href', jobsPath);
     expect(screen.getByRole('link', { name: /job-42/ })).toHaveAttribute('aria-current', 'page');
   });
+
+  it('shows the pipeline id when the active pipeline is unknown', async () => {
+    contextStore.setState({ pipeline: { id: null, name: null } });
+    await renderTrailAt(jobsPath);
+
+    expect(trail()).toEqual(['Projects', 'Project#Scylla', 'Pipeline#pipeline-1- Jobs']);
+  });
+
+  it('shows the pipeline id when the active pipeline is another one', async () => {
+    contextStore.setState({ pipeline: { id: 'pipeline-2', name: 'Release' } });
+    await renderTrailAt('/acme/projects/project-1/edit/pipeline-1');
+
+    expect(trail()).toEqual(['Projects', 'Project#Scylla', 'Pipeline#pipeline-1- Edit']);
+  });
 });

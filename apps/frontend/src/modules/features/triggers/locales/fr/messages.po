@@ -19,7 +19,7 @@ msgstr "{days} à {time}"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:17
 msgid "{name} webhook secret"
-msgstr ""
+msgstr "Secret webhook {name}"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:96
 msgid "5-field cron (min hour day month weekday), evaluated in your local time."
@@ -88,11 +88,11 @@ msgstr "Le {0} de chaque mois à {time}"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:100
 msgid "Day of the month"
-msgstr ""
+msgstr "Jour du mois"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:102
 msgid "Days of the week"
-msgstr ""
+msgstr "Jours de la semaine"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:58
 msgid "Delete"
@@ -116,7 +116,7 @@ msgstr "Modifier le déclencheur"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:41
 msgid "Enable {name}"
-msgstr ""
+msgstr "Activer {name}"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:29
 msgid "enabled"
@@ -153,7 +153,7 @@ msgstr "Déclencher maintenant"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:101
 msgid "Frequency"
-msgstr ""
+msgstr "Fréquence"
 
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:30
 msgid "Fri"
@@ -165,7 +165,7 @@ msgstr "En-tête portant la signature HMAC. Laissez vide pour la valeur par déf
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:98
 msgid "Hour"
-msgstr ""
+msgstr "Heure"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:82
 msgid "Hourly"
@@ -197,7 +197,7 @@ msgstr "heure locale"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:99
 msgid "Minute"
-msgstr ""
+msgstr "Minute"
 
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:26
 msgid "Mon"
@@ -269,7 +269,7 @@ msgstr "ID de pipeline :"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:79
 msgid "Remove input"
-msgstr ""
+msgstr "Supprimer l'entrée"
 
 #: src/modules/features/triggers/presentation/utils/cron.utils.ts:31
 msgid "Sat"
@@ -309,7 +309,7 @@ msgstr "Déclencheur"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:43
 msgid "Trigger actions"
-msgstr ""
+msgstr "Actions du déclencheur"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:23
 #: src/modules/features/triggers/triggers.module.ts:28
@@ -330,7 +330,7 @@ msgstr "Le type ne peut pas être modifié — supprimez et recréez pour change
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:14
 msgid "Unable to load triggers"
-msgstr ""
+msgstr "Impossible de charger les déclencheurs"
 
 #: src/modules/features/triggers/presentation/ui/triggers.messages.ts:49
 msgid "Unknown"
