@@ -1,15 +1,16 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import ClockIcon from '@lucide/svelte/icons/clock';
   import HelpCircleIcon from '@lucide/svelte/icons/help-circle';
   import WebhookIcon from '@lucide/svelte/icons/webhook';
   import { scyllaNavigate } from '@platform/context';
   import { createMutation } from '@platform/query';
-  import { Switch } from '@shadcn-svelte';
+  import { Switch } from '@shadcn';
   import {
     ConfirmOperationAlertDialog,
     CopyableText,
     DataTable,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { createSelection } from '@shared/presentation/state/selection.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { TriggerEntity } from '../../../domain/entities/trigger.entity.ts';
@@ -44,10 +45,10 @@
   let editTarget = $state<TriggerEntity | null>(null);
   let deleteTargetId = $state<string | null>(null);
   /** Per-row, because two rows can be firing at once. */
-  let firingIds = $state(new Set<string>());
+  const firingIds = new SvelteSet<string>();
 
   const handleFire = (trigger: TriggerEntity) => {
-    firingIds = new Set(firingIds).add(trigger.id);
+    firingIds.add(trigger.id);
 
     fireNow
       .mutateAsync(trigger.id)
@@ -57,9 +58,7 @@
         // Toast shown by the global MutationCache onError handler.
       })
       .finally(() => {
-        const next = new Set(firingIds);
-        next.delete(trigger.id);
-        firingIds = next;
+        firingIds.delete(trigger.id);
       });
   };
 

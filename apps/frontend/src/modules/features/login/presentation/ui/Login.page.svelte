@@ -1,8 +1,8 @@
 <script lang="ts">
   import LogoScylla from '@/assets/logo_scylla.png';
   import LogoScyllaDark from '@/assets/logo_scylla_dark.png';
-  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn-svelte';
-  import { ScyllaLoadingScreen } from '@shared/presentation/ui-svelte';
+  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn';
+  import { ScyllaLoadingScreen } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { LoginState } from '../login.state.svelte.ts';
   import LoginForm from './LoginForm.svelte';

@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
   import RadioIcon from '@lucide/svelte/icons/radio';
   import TerminalIcon from '@lucide/svelte/icons/terminal';
   import XIcon from '@lucide/svelte/icons/x';
   import { Permission, can } from '@platform/authz';
-  import { Badge, Button } from '@shadcn-svelte';
-  import { getStatusIcon } from '@shared/presentation/ui-svelte';
+  import { Badge, Button } from '@shadcn';
+  import { getStatusIcon } from '@shared/presentation/ui';
   import { createMeasuredHeight } from '@shared/presentation/state/measured-height.svelte.ts';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
@@ -45,13 +46,11 @@
   // it, or measuring it would resize what it measures.
   const column = createMeasuredHeight();
 
-  let collapsedIds = $state(new Set<string>());
+  const collapsedIds = new SvelteSet<string>();
 
   const toggleCollapse = (nodeId: string) => {
-    const next = new Set(collapsedIds);
-    if (next.has(nodeId)) next.delete(nodeId);
-    else next.add(nodeId);
-    collapsedIds = next;
+    if (collapsedIds.has(nodeId)) collapsedIds.delete(nodeId);
+    else collapsedIds.add(nodeId);
   };
 
   const nodes = $derived(

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/query-core';
 import { setDependencyRegistry } from '@platform/di';
 import { setQueryClient } from '@platform/query';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
 import { runMutationFn, runOnSuccess, runQueryFn } from '@/test/queries.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ProjectEntity } from '../domain/entities/project.entity.ts';
@@ -43,21 +43,21 @@ const withRepository = (overrides: Partial<ProjectRepository> = {}) => {
     update: vi.fn().mockResolvedValue(ScyllaResult.success(project())),
     delete: vi.fn().mockResolvedValue(ScyllaResult.success(undefined)),
     ...overrides,
-  } as unknown as ProjectRepository;
+  };
 
   setDependencyRegistry({ project: { projectRepository: repository } });
   return repository;
 };
 
 const grantEverything = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
   });
 
-const grantNothing = () => usePermissionsStore.setState({ permissions: { scopes: [] } });
-const forgetPermissions = () => usePermissionsStore.setState({ permissions: null });
+const grantNothing = () => permissionsStore.setState({ permissions: { scopes: [] } });
+const forgetPermissions = () => permissionsStore.setState({ permissions: null });
 
 let queryClient: QueryClient;
 
@@ -148,7 +148,7 @@ describe('projectQueries.lookup', () => {
 
 describe('projectLookupQueries', () => {
   it('skips the organizations the caller may not read rather than collecting denials', () => {
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [
           {
@@ -186,7 +186,7 @@ describe('projectLookupQueries', () => {
   });
 
   it('keeps each result attached to the organization it came from when some are skipped', () => {
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [
           {

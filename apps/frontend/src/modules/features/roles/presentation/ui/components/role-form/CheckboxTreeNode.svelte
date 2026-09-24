@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Permission } from '@platform/authz';
-  import { Checkbox, Label } from '@shadcn-svelte';
+  import { Checkbox, Label } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { rolesMessages } from '../../roles.messages.ts';
   import type { CheckboxNode } from './checkbox-tree.ts';

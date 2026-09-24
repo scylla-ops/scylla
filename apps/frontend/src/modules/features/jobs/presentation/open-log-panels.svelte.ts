@@ -48,12 +48,14 @@ export const createOpenLogPanels = (nodeIds: () => readonly string[]): OpenLogPa
 
   const openNodeIds = $derived.by(() => {
     void revision;
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- parses the query string once, never state
     const requested = (new URLSearchParams(currentSearch()).get(NODES_PARAM) ?? '').split(',');
     return nodeIds().filter(id => requested.includes(id));
   });
 
   const write = (nextNodeIds: readonly string[]) => {
     const ordered = nodeIds().filter(id => nextNodeIds.includes(id));
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- parses the query string once, never state
     const params = new URLSearchParams(currentSearch());
 
     if (ordered.length > 0) params.set(NODES_PARAM, ordered.join(','));

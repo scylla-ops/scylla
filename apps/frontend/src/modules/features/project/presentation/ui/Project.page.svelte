@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import ProjectList from './ProjectList.svelte';
   import { projectMessages } from './project.messages.ts';
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id);
 </script>
 

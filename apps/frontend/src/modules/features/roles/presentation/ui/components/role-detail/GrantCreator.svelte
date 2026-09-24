@@ -18,8 +18,8 @@
     SelectItem,
     SelectTrigger,
     SelectValue,
-  } from '@shadcn-svelte';
-  import { GatedButton } from '@shared/presentation/ui-svelte';
+  } from '@shadcn';
+  import { GatedButton } from '@shared/presentation/ui';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../../domain/entities/role.entity.ts';

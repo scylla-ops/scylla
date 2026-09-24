@@ -2,8 +2,8 @@
   import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
   import { Permission, can } from '@platform/authz';
   import { createMutation } from '@platform/query';
-  import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@shadcn-svelte';
-  import { CopyableText, FeatureHeader } from '@shared/presentation/ui-svelte';
+  import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@shadcn';
+  import { CopyableText, FeatureHeader } from '@shared/presentation/ui';
   import { createFeatureSelection } from '@shared/presentation/state/feature-selection.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { jobMutations } from '../jobs.queries.ts';

@@ -6,9 +6,8 @@ import { queryClient } from './query-client.ts';
  *
  * The production answer is always `queryClient`; the override exists for tests,
  * which need `retry: false` and a cache that does not survive the file. Same
- * shape as `setDependencyRegistry` in `@platform/di`, and for the same reason:
- * Phase 0 replaced React's providers with module singletons, so substitution in
- * a test is a setter rather than a wrapper component.
+ * shape as `setDependencyRegistry` in `@platform/di`: there are no providers, so
+ * substitution in a test is a setter.
  */
 let active: QueryClient | null = null;
 

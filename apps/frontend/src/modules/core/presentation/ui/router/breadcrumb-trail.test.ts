@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import { useContextStore, navigateTo, setAppNavigator } from '@platform/context';
+import { contextStore, navigateTo, setAppNavigator } from '@platform/context';
 import { createAppRouter } from '@platform/routing';
 import ScyllaBreadcrumbs from '@/modules/layout/presentation/ui/ScyllaBreadcrumbs.svelte';
 import { appRoutes } from './core.router.ts';
@@ -18,7 +18,7 @@ const renderTrailAt = async (path: string) => {
 };
 
 beforeEach(() => {
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: 'project-1', name: 'Scylla' },
     pipeline: { id: 'pipeline-1', name: 'Nightly' },

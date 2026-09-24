@@ -1,5 +1,5 @@
 import { untrack } from 'svelte';
-import { navigateTo, useContextStore } from '@platform/context';
+import { navigateTo, contextStore } from '@platform/context';
 import { createQuery } from '@platform/query';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { organizationQueries } from '@/modules/features/organization';
@@ -18,7 +18,7 @@ export const syncOrganization = (organizationSlug: string | undefined): void => 
     if (!organizationSlug || organizations.isLoading || !list) return;
 
     untrack(() => {
-      const store = useContextStore.getState();
+      const store = contextStore.getState();
       const match = list.find(organization => slugifyOrgName(organization.name) === organizationSlug);
 
       if (match) {

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn-svelte';
-  import { StatusBar, type StatusBarItem } from '@shared/presentation/ui-svelte';
+  import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn';
+  import { StatusBar, type StatusBarItem } from '@shared/presentation/ui';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import {

@@ -5,9 +5,9 @@ import {
   Permission,
   PermissionScope,
   PrincipalKind,
-  usePermissionsStore,
+  permissionsStore,
 } from '@platform/authz';
-import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { focusSettled, render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { RoleEntity } from '../../domain/entities/role.entity.ts';
@@ -50,7 +50,7 @@ let cache: ReturnType<typeof withQueryClient>;
 let restoreRegistry: () => void;
 
 const withPermissions = (permissions: Permission[] | 'all') =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [
         {
@@ -103,14 +103,14 @@ beforeEach(() => {
     },
   });
 
-  useSelectionStore.setState({ selectedIds: {} });
+  selectionStore.setState({ selectedIds: {} });
   withPermissions('all');
 });
 
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('RolesPage — the catalog', () => {

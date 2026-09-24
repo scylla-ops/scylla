@@ -16,7 +16,7 @@
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { userQueries } from '@/modules/features/user';
   import { signOut } from '../sign-out.ts';

@@ -5,7 +5,7 @@
     ConfirmOperationAlertDialog,
     CopyableText,
     DataTable,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { createNow } from '@shared/presentation/state/now.svelte.ts';
   import { createSelection } from '@shared/presentation/state/selection.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';

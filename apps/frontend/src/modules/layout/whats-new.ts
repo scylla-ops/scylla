@@ -4,7 +4,7 @@ import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import Moon from '@lucide/svelte/icons/moon';
 import ShieldIcon from '@lucide/svelte/icons/shield';
 import UsersRound from '@lucide/svelte/icons/users-round';
-import type { LucideIcon } from '@shared/presentation/ui-svelte/icon.ts';
+import type { LucideIcon } from '@shared/presentation/ui/icon.ts';
 
 /**
  * One thing worth telling the user about in a release.

@@ -2,10 +2,10 @@
   import type { Snippet } from 'svelte';
   import KeyRoundIcon from '@lucide/svelte/icons/key-round';
   import { i18n } from '@lingui/core';
-  import { createResourceError, scyllaNavigate, useContextStore } from '@platform/context';
+  import { createResourceError, scyllaNavigate, contextStore } from '@platform/context';
   import { createMutation, createQuery } from '@platform/query';
-  import { Badge, Button, Card, CardContent, CodeSnippet, Skeleton, Switch } from '@shadcn-svelte';
-  import { ConfirmOperationAlertDialog, ErrorState } from '@shared/presentation/ui-svelte';
+  import { Badge, Button, Card, CardContent, CodeSnippet, Skeleton, Switch } from '@shadcn';
+  import { ConfirmOperationAlertDialog, ErrorState } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { formatDate } from '@shared/utils/date-utils.ts';
   import { ToastMessages } from '@shared/utils/toast-messages.ts';
@@ -21,7 +21,7 @@
 
   let { appId }: Props = $props();
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
   const appQuery = createQuery(() => appQueries.byId(appId ?? ''));

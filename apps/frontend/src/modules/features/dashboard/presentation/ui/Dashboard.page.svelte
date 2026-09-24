@@ -15,8 +15,8 @@
     CardTitle,
     Separator,
     Skeleton,
-  } from '@shadcn-svelte';
-  import { ErrorState, FeatureHeader } from '@shared/presentation/ui-svelte';
+  } from '@shadcn';
+  import { ErrorState, FeatureHeader } from '@shared/presentation/ui';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { getRelativeTime } from '@shared/utils/date-utils.ts';

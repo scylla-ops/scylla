@@ -4,8 +4,8 @@
   import { Permission, can } from '@platform/authz';
   import { scyllaNavigate } from '@platform/context';
   import { createMutation } from '@platform/query';
-  import { Button } from '@shadcn-svelte';
-  import { FeatureHeader } from '@shared/presentation/ui-svelte';
+  import { Button } from '@shadcn';
+  import { FeatureHeader } from '@shared/presentation/ui';
   import { createFeatureSelection } from '@shared/presentation/state/feature-selection.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { pipelineMutations } from '../../pipeline.queries.ts';

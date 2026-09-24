@@ -1,4 +1,4 @@
-import { navigateTo, useContextStore } from '@platform/context';
+import { navigateTo, contextStore } from '@platform/context';
 import { createQuery } from '@platform/query';
 import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
@@ -11,7 +11,7 @@ import { organizationQueries } from '@/modules/features/organization';
  */
 export const redirectToOrganization = (): void => {
   const organizations = createQuery(() => organizationQueries.mine());
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   let done = false;
 
   $effect(() => {

@@ -7,7 +7,7 @@
  * administers roles and grants.
  *
  * Loading the store is the other side of the coin and stays in
- * `features/roles` (`usePermissionSync`), because it needs a repository call.
+ * `features/roles` (`syncMyPermissions`), because it needs a repository call.
  */
 export {
   Permission,
@@ -25,7 +25,7 @@ export {
   type PermissionTarget,
 } from './domain/entities/effective-permissions.entity.ts';
 export { authorizationReady, can } from './presentation/authorization.ts';
-export { usePermissionsStore } from './presentation/stores/use-permissions.store.ts';
+export { permissionsStore } from './presentation/stores/permissions.store.ts';
 export { default as Can } from './presentation/ui/Can.svelte';
 export { default as PermissionDenied } from './presentation/ui/PermissionDenied.svelte';
 export { default as RequirePermission } from './presentation/ui/RequirePermission.svelte';

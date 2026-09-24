@@ -1,7 +1,7 @@
 <script lang="ts">
   import { can, Permission } from '@platform/authz';
   import { createMutation } from '@platform/query';
-  import { CopyableText, FeatureHeader } from '@shared/presentation/ui-svelte';
+  import { CopyableText, FeatureHeader } from '@shared/presentation/ui';
   import { createFeatureSelection } from '@shared/presentation/state/feature-selection.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { triggerMutations } from '../../triggers.queries.ts';

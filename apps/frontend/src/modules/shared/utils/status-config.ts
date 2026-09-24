@@ -14,10 +14,9 @@ export type StatusKey =
 /**
  * Everything a status looks like **except its icon**.
  *
- * The icon used to live here, as a `LucideIcon`, which made a file under
- * `utils/` import a rendering library — and made it unusable from Svelte, since
- * a React component cannot be rendered by one. It now lives in a per-framework
- * table keyed by {@link StatusKey}: `ui-svelte/data-display/status-icons.ts`.
+ * The icon is a component, and a file under `utils/` imports no UI library, so
+ * the icons are in `presentation/ui/data-display/status-icons.ts`, keyed by
+ * {@link StatusKey}.
  * The colours and labels, which are the part worth keeping in one place, stayed.
  */
 export interface StatusConfig {

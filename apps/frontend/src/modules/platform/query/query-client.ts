@@ -37,16 +37,12 @@ const reportError = (error: unknown, label: string, signOutOnNetworkError: boole
 /**
  * The app's one query cache.
  *
- * Built from `@tanstack/query-core` rather than from either binding, and held at
- * module scope rather than in a provider: React reads it through
- * `QueryClientProvider` and Svelte through its own context, but both hand it
- * *this* instance. That is what lets a migrated module and a React one share a
- * cache entry instead of each fetching the same resource under its own key —
- * see `refacto_svelte.md` §3.
+ * Built from `@tanstack/query-core` and held at module scope, so any module
+ * reaches it without a provider.
  *
- * `react-query` and `svelte-query` pin `query-core` to an exact version each, so
- * they must be bumped in lockstep to releases naming the same one. Two copies of
- * `query-core` would fork the cache silently, with nothing failing.
+ * `@tanstack/svelte-query` pins `query-core` to an exact version. The direct
+ * dependency on `@tanstack/query-core` must name the same version: two copies
+ * would fork the cache silently.
  */
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({

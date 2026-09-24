@@ -1,6 +1,6 @@
 <script lang="ts">
   import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
-  import { Badge, Checkbox } from '@shadcn-svelte';
+  import { Badge, Checkbox } from '@shadcn';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../domain/entities/role.entity.ts';

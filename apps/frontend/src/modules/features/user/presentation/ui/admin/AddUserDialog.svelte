@@ -6,7 +6,7 @@
     FormItemType,
     type FormItem,
     type FormValues,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { ToastMessages } from '@shared/utils/toast-messages.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';

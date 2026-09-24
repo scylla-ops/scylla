@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { waitFor } from '@testing-library/svelte';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useContextStore } from '@platform/context';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
 import { withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { JobEntity } from '@/modules/features/jobs';
@@ -55,17 +55,17 @@ beforeEach(() => {
     jobs: { jobsRepository: { getByOrganizationId: getJobs } },
   });
 
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
-  } as never);
-  usePermissionsStore.setState({ permissions: null });
+  });
+  permissionsStore.setState({ permissions: null });
 });
 
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 /** Builds the ViewModel inside a reactive root — it is made of runes. */
@@ -153,7 +153,7 @@ describe('createOrgOverview', () => {
     });
 
     it('delegates to LIST_PIPELINES_BY_PROJECT, scoped to the given project id', async () => {
-      usePermissionsStore.setState({
+      permissionsStore.setState({
         permissions: {
           scopes: [
             {

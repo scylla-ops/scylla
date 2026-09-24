@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/query-core';
 import { setDependencyRegistry } from '@platform/di';
 import { setQueryClient } from '@platform/query';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { runMutationFn, runOnSuccess, runQueryFn } from '@/test/queries.ts';
 import { ScyllaResult, ScyllaError } from '@shared/utils/scylla-result.ts';
 import type { OrganizationEntity } from '../domain/entities/organization.entity.ts';
@@ -39,7 +39,7 @@ const withRepository = (overrides: Partial<OrganizationRepository> = {}) => {
     update: vi.fn().mockResolvedValue(ScyllaResult.success(org())),
     delete: vi.fn().mockResolvedValue(ScyllaResult.success(undefined)),
     ...overrides,
-  } as unknown as OrganizationRepository;
+  };
 
   setDependencyRegistry({ organization: { organizationRepository: repository } });
   return repository;
@@ -49,7 +49,7 @@ let queryClient: QueryClient;
 
 beforeEach(() => {
   toastSuccess.mockClear();
-  useContextStore.getState().reset();
+  contextStore.getState().reset();
   queryClient = new QueryClient();
   setQueryClient(queryClient);
 });
@@ -140,7 +140,7 @@ describe('organizationMutations.create', () => {
       name: 'New Org',
     });
 
-    expect(useContextStore.getState().organization).toEqual({ id: 'org-new', name: 'New Org' });
+    expect(contextStore.getState().organization).toEqual({ id: 'org-new', name: 'New Org' });
     expect(toastSuccess).toHaveBeenCalledWith('Organization created');
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ORGANIZATIONS_QUERY_KEY() });
   });

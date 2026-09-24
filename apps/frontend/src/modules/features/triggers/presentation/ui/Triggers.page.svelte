@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import { createQuery } from '@platform/query';
-  import { ErrorState, SecretRevealDialog } from '@shared/presentation/ui-svelte';
+  import { ErrorState, SecretRevealDialog } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { ScyllaError } from '@shared/utils/scylla-result.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
@@ -21,7 +21,7 @@
 
   let { pipelineId, projectId }: Props = $props();
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const pipelineName = $derived(context().pipeline?.name ?? '');
 
   const triggersQuery = createQuery(() => triggerQueries.byPipeline(pipelineId ?? ''));

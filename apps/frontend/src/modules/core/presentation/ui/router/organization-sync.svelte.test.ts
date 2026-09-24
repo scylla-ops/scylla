@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { flushSync } from 'svelte';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { stubQuery } from '@/test/queries.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
 import { withQueryClient } from '@/test/render.svelte.ts';
@@ -39,7 +39,7 @@ beforeEach(() => {
     { id: 'org-2', name: 'Globex Inc' },
   ];
   organizationsState.isLoading = false;
-  useContextStore.setState({ organization: { id: null, name: null } });
+  contextStore.setState({ organization: { id: null, name: null } });
 });
 
 afterEach(() => {
@@ -51,7 +51,7 @@ describe('syncOrganization', () => {
   it('does nothing without a slug', () => {
     run(undefined)();
 
-    expect(useContextStore.getState().organization.id).toBeNull();
+    expect(contextStore.getState().organization.id).toBeNull();
     expect(navigator.navigate).not.toHaveBeenCalled();
   });
 
@@ -59,20 +59,20 @@ describe('syncOrganization', () => {
     organizationsState.isLoading = true;
     run('acme-corp')();
 
-    expect(useContextStore.getState().organization.id).toBeNull();
+    expect(contextStore.getState().organization.id).toBeNull();
     expect(navigator.navigate).not.toHaveBeenCalled();
   });
 
   it('makes the organization that matches the slug the active one', () => {
     run('globex-inc')();
 
-    expect(useContextStore.getState().organization).toEqual({ id: 'org-2', name: 'Globex Inc' });
+    expect(contextStore.getState().organization).toEqual({ id: 'org-2', name: 'Globex Inc' });
     expect(navigator.navigate).not.toHaveBeenCalled();
   });
 
   it('does not set the store again when the matched organization is already active', () => {
-    useContextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
-    const setOrganization = vi.spyOn(useContextStore.getState(), 'setOrganization');
+    contextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
+    const setOrganization = vi.spyOn(contextStore.getState(), 'setOrganization');
 
     run('acme-corp')();
 
@@ -83,7 +83,7 @@ describe('syncOrganization', () => {
     run('no-such-org')();
 
     expect(navigator.navigate).toHaveBeenCalledWith('/acme-corp/dashboard', { replace: true });
-    expect(useContextStore.getState().organization).toEqual({ id: 'org-1', name: 'Acme Corp' });
+    expect(contextStore.getState().organization).toEqual({ id: 'org-1', name: 'Acme Corp' });
   });
 
   it('does nothing when the slug matches none and there is no organization', () => {
@@ -91,6 +91,6 @@ describe('syncOrganization', () => {
     run('no-such-org')();
 
     expect(navigator.navigate).not.toHaveBeenCalled();
-    expect(useContextStore.getState().organization.id).toBeNull();
+    expect(contextStore.getState().organization.id).toBeNull();
   });
 });

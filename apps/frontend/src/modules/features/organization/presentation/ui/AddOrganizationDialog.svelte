@@ -1,7 +1,7 @@
 <script lang="ts">
   import { navigateTo } from '@platform/context';
   import { createMutation } from '@platform/query';
-  import { FormDialog, type FormValues } from '@shared/presentation/ui-svelte';
+  import { FormDialog, type FormValues } from '@shared/presentation/ui';
   import {
     activeLocale,
     t,

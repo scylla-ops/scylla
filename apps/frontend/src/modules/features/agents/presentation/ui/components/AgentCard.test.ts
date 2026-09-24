@@ -3,8 +3,8 @@ import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { findFloating, render } from '@/test/render.svelte.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
-import { useContextStore } from '@platform/context';
-import { PermissionScope, usePermissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
+import { PermissionScope, permissionsStore } from '@platform/authz';
 import type { AgentEntity } from '../../../domain/entities/agent.entity.ts';
 import AgentCard from './AgentCard.svelte';
 
@@ -26,7 +26,7 @@ const agent = (overrides: Partial<AgentEntity> = {}): AgentEntity => ({
 });
 
 const fullControl = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -37,7 +37,7 @@ let testNavigator: ReturnType<typeof installTestNavigator>;
 beforeEach(() => {
   toastSuccess.mockClear();
   testNavigator = installTestNavigator({ pathname: '/acme/agents' });
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
   });
@@ -96,7 +96,7 @@ describe('AgentCard', () => {
   });
 
   it('hides both delete affordances without DELETE_APP', async () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     render(AgentCard, { agent: agent(), onRequestDelete: vi.fn() });
 
     expect(screen.queryByRole('button', { name: 'Delete agent' })).not.toBeInTheDocument();

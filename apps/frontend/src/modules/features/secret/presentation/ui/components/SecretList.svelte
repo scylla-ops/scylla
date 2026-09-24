@@ -3,8 +3,8 @@
   import Trash2Icon from '@lucide/svelte/icons/trash-2';
   import { i18n } from '@lingui/core';
   import { createMutation } from '@platform/query';
-  import { Button } from '@shadcn-svelte';
-  import { ConfirmOperationAlertDialog, CopyableText, DataTable } from '@shared/presentation/ui-svelte';
+  import { Button } from '@shadcn';
+  import { ConfirmOperationAlertDialog, CopyableText, DataTable } from '@shared/presentation/ui';
   import { createSelection } from '@shared/presentation/state/selection.svelte.ts';
   import { formatDay } from '@shared/utils/date-utils.ts';
   import { toast } from '@shared/presentation/utils/toast.ts';

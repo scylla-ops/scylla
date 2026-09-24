@@ -1,6 +1,6 @@
 <script lang="ts">
   import ArrowLeftToLineIcon from '@lucide/svelte/icons/arrow-left-to-line';
-  import { Button, getSidebar } from '@shadcn-svelte';
+  import { Button, getSidebar } from '@shadcn';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { layoutMessages } from './layout.messages.ts';

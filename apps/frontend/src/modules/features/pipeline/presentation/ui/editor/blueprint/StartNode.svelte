@@ -1,7 +1,7 @@
 <script lang="ts">
   import PlayIcon from '@lucide/svelte/icons/play';
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-  import { Card } from '@shadcn-svelte';
+  import { Card } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { BlueprintStartNode } from '../../../utils/blueprint-converter.ts';
   import { pipelineMessages } from '../../../pipeline.messages.ts';

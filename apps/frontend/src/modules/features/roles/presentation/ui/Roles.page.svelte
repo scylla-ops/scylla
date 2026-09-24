@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FeatureHeader } from '@shared/presentation/ui-svelte';
+  import { FeatureHeader } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { createRolesPage } from '../roles-page.state.svelte.ts';
   import RoleDetailPanel from './components/RoleDetailPanel.svelte';

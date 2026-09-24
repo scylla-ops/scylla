@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { TriggersRepository } from '../../../domain/repository/triggers.repository.ts';
 import TriggersHeader from './TriggersHeader.svelte';
@@ -11,7 +11,7 @@ import TriggersHeader from './TriggersHeader.svelte';
 const deleteById = vi.fn();
 
 const grant = (permissions: Permission[] | 'all') =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [
         {
@@ -33,14 +33,14 @@ beforeEach(() => {
   restoreRegistry = withRegistry({
     triggers: { triggersRepository: { deleteById } as unknown as TriggersRepository },
   });
-  useSelectionStore.setState({ selectedIds: {} });
+  selectionStore.setState({ selectedIds: {} });
   grant('all');
 });
 
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 const props = (overrides: Record<string, unknown> = {}) => ({

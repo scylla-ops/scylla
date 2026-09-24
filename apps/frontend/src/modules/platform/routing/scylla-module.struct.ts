@@ -1,7 +1,7 @@
 import type { Component } from 'svelte';
 import type { MessageDescriptor } from '@lingui/core';
 import type { Permission } from '@platform/authz';
-import type { LucideIcon } from '@shared/presentation/ui-svelte/icon.ts';
+import type { LucideIcon } from '@shared/presentation/ui/icon.ts';
 import type { BreadcrumbParams, Crumb } from './route-handle.struct.ts';
 
 /**

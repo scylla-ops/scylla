@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Dialog, DialogContent } from '@shadcn-svelte';
+  import { Dialog, DialogContent } from '@shadcn';
   import type { CreatedTrigger, TriggerEntity } from '../../../domain/entities/trigger.entity.ts';
   import TriggerForm from './TriggerForm.svelte';
 

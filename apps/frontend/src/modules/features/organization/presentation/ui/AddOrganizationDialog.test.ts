@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { focusSettled, render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { OrganizationRepository } from '../../domain/repository/organization.repository.ts';
 import AddOrganizationDialog from './AddOrganizationDialog.svelte';
@@ -34,7 +34,7 @@ const setUp = (props: { setOpen?: (open: boolean) => void; hideCancel?: boolean 
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useContextStore.setState({ organization: { id: null, name: null } });
+  contextStore.setState({ organization: { id: null, name: null } });
 });
 
 afterEach(() => teardown.forEach(restore => restore()));
@@ -71,7 +71,7 @@ describe('AddOrganizationDialog', () => {
     // only the submit guard and the form's validity check trim a copy.
     await waitFor(() => expect(create).toHaveBeenCalledWith('  Acme Corp  ', 'a real one'));
     await waitFor(() => expect(setOpen).toHaveBeenCalledWith(false));
-    expect(useContextStore.getState().organization).toEqual({ id: 'org-1', name: 'Acme Corp' });
+    expect(contextStore.getState().organization).toEqual({ id: 'org-1', name: 'Acme Corp' });
     expect(testNavigator.navigate).toHaveBeenCalledWith('/acme-corp/projects', undefined);
   });
 

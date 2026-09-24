@@ -60,7 +60,7 @@ beforeEach(() => {
         Promise.resolve(ScyllaResult.success(trigger({ id, enabled }))),
       ),
     fireNow: vi.fn().mockResolvedValue(ScyllaResult.success('job-1')),
-  } as unknown as TriggersRepository;
+  };
 
   setDependencyRegistry({ triggers: { triggersRepository: repository } });
 
@@ -127,11 +127,11 @@ describe('triggerMutations', () => {
     expect(created.webhookSecret).toBe('whsec-once');
   });
 
-  it('invalidates the list after a create', async () => {
+  it('invalidates the list after a create', () => {
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
     const options = triggerMutations.create(PIPELINE_ID);
 
-    options.onSuccess?.({ trigger: trigger() }, draft, undefined as never, undefined as never);
+    options.onSuccess?.({ trigger: trigger() }, draft, undefined, undefined as never);
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: TRIGGERS_QUERY_KEY(PIPELINE_ID) });
   });
@@ -151,7 +151,7 @@ describe('triggerMutations', () => {
     await runMutationFn(options, 'trigger-1');
     expect(repository.deleteById).toHaveBeenCalledWith('trigger-1');
 
-    options.onSuccess?.(undefined, 'trigger-1', undefined as never, undefined as never);
+    options.onSuccess?.(undefined, 'trigger-1', undefined, undefined as never);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: TRIGGERS_QUERY_KEY(PIPELINE_ID) });
   });
 
@@ -163,7 +163,7 @@ describe('triggerMutations', () => {
     expect(repository.fireNow).toHaveBeenCalledWith('trigger-1');
     expect(jobId).toBe('job-1');
 
-    options.onSuccess?.('job-1', 'trigger-1', undefined as never, undefined as never);
+    options.onSuccess?.('job-1', 'trigger-1', undefined, undefined as never);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['jobs', 'pipeline', PIPELINE_ID] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: TRIGGERS_QUERY_KEY(PIPELINE_ID) });
   });

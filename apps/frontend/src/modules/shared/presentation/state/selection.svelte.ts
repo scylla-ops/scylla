@@ -1,4 +1,4 @@
-import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
 
 const EMPTY: string[] = [];
@@ -25,14 +25,14 @@ export interface Selection {
  * call mirror state.
  */
 export const createSelection = (key: string): Selection => {
-  const read = toRune(useSelectionStore);
+  const read = toRune(selectionStore);
 
   return {
     get selectedIds() {
       return read().selectedIds[key] ?? EMPTY;
     },
-    select: (id: string) => useSelectionStore.getState().select(key, id),
-    selectAll: (ids: string[]) => useSelectionStore.getState().selectAll(key, ids),
-    clearSelection: () => useSelectionStore.getState().clearSelection(key),
+    select: (id: string) => selectionStore.getState().select(key, id),
+    selectAll: (ids: string[]) => selectionStore.getState().selectAll(key, ids),
+    clearSelection: () => selectionStore.getState().clearSelection(key),
   };
 };

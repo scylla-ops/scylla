@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PermissionScope, PrincipalKind, usePermissionsStore } from '@platform/authz';
+import { PermissionScope, PrincipalKind, permissionsStore } from '@platform/authz';
 import { withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import { toast } from '@shared/presentation/utils/toast.ts';
@@ -43,7 +43,7 @@ beforeEach(() => {
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 /** Builds the ViewModel inside a reactive root — it is made of runes. */

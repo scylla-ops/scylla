@@ -8,16 +8,11 @@ import { getQueryClient } from './active-query-client.ts';
 /**
  * TanStack's Svelte bindings, already holding the app's client.
  *
- * `createQuery(options)` on its own reads the client from Svelte context, put
- * there by a `QueryClientProvider` — and a Svelte island has no such ancestor:
- * it is mounted into a React tree, which is the whole point of Phase 0. Every
- * call would otherwise have to remember `createQuery(opts, () => queryClient)`,
- * and forgetting it throws at runtime rather than at build time.
- *
- * So the client is bound once, here. **Import `createQuery` from
- * `@platform/query`, never from `@tanstack/svelte-query`** — `eslint`'s
- * `no-restricted-imports` enforces that, because the two are indistinguishable
- * at the call site.
+ * `createQuery(options)` on its own reads the client from the Svelte context,
+ * and no component puts one there. So the client is bound once, here.
+ * **Import `createQuery` from `@platform/query`, never from
+ * `@tanstack/svelte-query`** — `no-restricted-imports` enforces that, because
+ * the two are indistinguishable at the call site.
  *
  * The client is read per call rather than captured, so a test that installs its
  * own with `setQueryClient` is seen by components created afterwards.

@@ -1,8 +1,8 @@
 <script lang="ts">
   import scyllaLogo from '@/assets/logo_scylla.png';
   import scyllaLogoDark from '@/assets/logo_scylla_dark.png';
-  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn-svelte';
-  import { ScyllaForm, type FormValues } from '@shared/presentation/ui-svelte';
+  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn';
+  import { ScyllaForm, type FormValues } from '@shared/presentation/ui';
   import { activeLocale, t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { createOrganizationItems } from '@/modules/features/organization';
   import { layoutMessages } from './layout.messages.ts';

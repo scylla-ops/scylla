@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/query-core';
 import { setDependencyRegistry } from '@platform/di';
 import { setQueryClient } from '@platform/query';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useContextStore } from '@platform/context';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
 import { runMutationFn, runOnSuccess, runQueryFn } from '@/test/queries.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { AgentsRepository } from '../domain/repository/agents.repository.ts';
@@ -34,7 +34,7 @@ let invalidate: ReturnType<typeof vi.fn>;
 
 /** Drives the real permissions store — never a mocked `can`. */
 const grantEverything = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -47,7 +47,7 @@ beforeEach(() => {
     getAgentStats: vi.fn().mockResolvedValue(ScyllaResult.success({ daily: [] })),
     createAgent: vi.fn().mockResolvedValue(ScyllaResult.success({ agent, secret: 'sk-once' })),
     deleteAgent: vi.fn().mockResolvedValue(ScyllaResult.success(undefined)),
-  } as unknown as AgentsRepository;
+  };
 
   setDependencyRegistry({ agents: { agentsRepository: repository } });
 
@@ -56,7 +56,7 @@ beforeEach(() => {
   queryClient.invalidateQueries = invalidate as unknown as QueryClient['invalidateQueries'];
   setQueryClient(queryClient);
 
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
   });
@@ -66,7 +66,7 @@ beforeEach(() => {
 afterEach(() => {
   setDependencyRegistry(null);
   setQueryClient(null);
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('agentQueries', () => {
@@ -82,13 +82,13 @@ describe('agentQueries', () => {
     // `ListAgents` is enforced server-side, so asking without LIST_AGENTS is a
     // guaranteed PERMISSION_DENIED — and the global error handler would toast
     // it on every page that merely peeks at agents.
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
 
     expect(agentQueries.byOrganization('org-1').enabled).toBe(false);
   });
 
   it('gates the stats query on its own permission, separately from the list', () => {
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [
           {

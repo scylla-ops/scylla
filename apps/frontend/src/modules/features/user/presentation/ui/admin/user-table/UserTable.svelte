@@ -1,7 +1,7 @@
 <script lang="ts">
   import EyeIcon from '@lucide/svelte/icons/eye';
-  import { Avatar, AvatarFallback, AvatarImage } from '@shadcn-svelte';
-  import { DataTable, IconButton, TruncatedText } from '@shared/presentation/ui-svelte';
+  import { Avatar, AvatarFallback, AvatarImage } from '@shadcn';
+  import { DataTable, IconButton, TruncatedText } from '@shared/presentation/ui';
   import { createSelection } from '@shared/presentation/state/selection.svelte.ts';
   import { formatDate } from '@shared/utils/date-utils.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';

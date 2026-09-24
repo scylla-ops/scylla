@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
+import { defineConfig, type Plugin } from 'vite';
+import { transformAsync } from '@babel/core';
+import linguiMacroPlugin from '@lingui/babel-plugin-lingui-macro';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -14,47 +15,56 @@ import { lingui } from '@lingui/vite-plugin';
  * back into the entry. Splitting by library also means a dependency bump only
  * invalidates its own chunk instead of the whole bundle.
  *
- * An entry matches a package when it is the exact name (`react`), a scope
- * (`@radix-ui` matches `@radix-ui/react-dialog`), or a name prefix written with
- * a trailing dash (`d3-` would match `d3-scale`). Substring matching would be wrong
- * here — plain `react` would otherwise swallow `reactflow` and `lucide-react`.
+ * An entry matches a package when it is the exact name (`svelte`), a scope
+ * (`@codemirror` matches `@codemirror/view`), or a name prefix written with a
+ * trailing dash (`d3-` would match `d3-scale`).
  */
 const VENDOR_CHUNKS: Record<string, string[]> = {
-  'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'],
-  // Svelte compiles away, so this only ever holds the small shared runtime.
-  // It exists so the React chunk can shrink and disappear on its own schedule
-  // while both frameworks are in the tree — see `refacto_svelte.md`.
-  'vendor-svelte': ['svelte'],
+  'vendor-svelte': ['svelte', 'sv-router', 'esm-env', 'clsx'],
   'vendor-ui': [
-    '@radix-ui',
-    'radix-ui',
-    'lucide-react',
-    'sonner',
+    'bits-ui',
+    '@lucide/svelte',
+    'svelte-toolbelt',
+    'runed',
+    '@floating-ui',
+    'tabbable',
+    'svelte-sonner',
     'class-variance-authority',
     'tailwind-merge',
-    'clsx',
   ],
-  // The Svelte half of `vendor-ui`, kept apart rather than merged into it: a
-  // page that has been migrated must not pull Radix along, and this chunk is
-  // what `vendor-ui` becomes once Phase 6 deletes the React one.
-  //
-  // Only packages that belong to Svelte alone are listed. `@floating-ui` and
-  // `tabbable` are deliberately absent: Radix reaches them too, so claiming the
-  // scope here moved 8.7 kB gzip of *React* positioning code into a chunk named
-  // for Svelte, and preloaded it from the entry. Shared packages stay
-  // unassigned until the React side is gone.
-  'vendor-ui-svelte': ['bits-ui', '@lucide/svelte', 'svelte-toolbelt', 'runed'],
   'vendor-query': ['@tanstack'],
   'vendor-i18n': ['@lingui', 'messageformat-parser', '@messageformat'],
-  // `@xyflow/svelte` replaced `reactflow` in Phase 5; `@xyflow/system` is the
-  // shared core both ports were built on, so the chunk keeps its name and its
-  // role and only its contents changed.
   'vendor-flow': ['@xyflow'],
-  // `@uiw` is gone with the React wrapper — CodeMirror itself is agnostic and
-  // survives the migration untouched.
   'vendor-codemirror': ['codemirror', '@codemirror', '@lezer'],
   'vendor-grpc': ['@protobuf-ts'],
 };
+
+/**
+ * Compiles the Lingui macros (`msg`, `t`, `plural`) in TypeScript files.
+ *
+ * Only the files that import `@lingui/core/macro` go through Babel. Babel parses
+ * TypeScript and does not remove the types: Vite does that after this plugin.
+ */
+const linguiMacros = (): Plugin => ({
+  name: 'scylla:lingui-macros',
+  enforce: 'pre',
+  async transform(code, id) {
+    const path = id.split('?')[0];
+    if (!/\.(ts|js)$/.test(path) || path.includes('/node_modules/')) return null;
+    if (!code.includes('@lingui/core/macro')) return null;
+
+    const result = await transformAsync(code, {
+      filename: path,
+      babelrc: false,
+      configFile: false,
+      sourceMaps: true,
+      parserOpts: { plugins: ['typescript'] },
+      plugins: [linguiMacroPlugin],
+    });
+
+    return result?.code ? { code: result.code, map: result.map } : null;
+  },
+});
 
 /** `…/node_modules/@scope/name/dist/x.js` -> `@scope/name`. */
 const packageNameOf = (id: string): string => {
@@ -77,11 +87,7 @@ export default defineConfig({
   resolve: process.env.VITEST ? { conditions: ['browser'] } : {},
   plugins: [
     lingui(),
-    react({
-      plugins: [['@lingui/swc-plugin', {}]],
-    }),
-    // Handles `.svelte` only; `.tsx` stays with the React plugin. The two
-    // coexist for the whole migration.
+    linguiMacros(),
     svelte(),
     tailwindcss(),
     // `loose` is what makes `@platform/…` resolve from a `.svelte` file: by
@@ -96,6 +102,8 @@ export default defineConfig({
       '@tanstack/svelte-query',
       '@tanstack/svelte-table',
       '@xyflow/svelte',
+      'sv-router',
+      'svelte-sonner',
     ],
   },
   build: {
@@ -134,20 +142,18 @@ export default defineConfig({
       // `include` is what makes untested files count: everything matching is
       // reported at 0% rather than being absent, which is the difference
       // between a real number and one that flatters itself.
-      include: ['src/modules/**/*.{ts,tsx,svelte}'],
+      include: ['src/modules/**/*.{ts,svelte}'],
       exclude: [
         // Machine output: generated proto clients and compiled Lingui catalogs.
         'src/generated/**',
         '**/locales/**',
-        '**/*.test.{ts,tsx}',
+        '**/*.test.ts',
         // Test scaffolding too: a `*.fixture.svelte` exists to pin a generic or
         // to compose parts a raw snippet cannot build, and it is rendered only
         // by the test beside it.
         '**/*.fixture.{ts,svelte}',
-        // Vendored shadcn primitives — upstream code we don't own. Both ports:
-        // the React one is frozen for the migration, the Svelte one replaces it.
+        // Vendored shadcn primitives — upstream code we don't own.
         '**/shadcn/**',
-        '**/shadcn-svelte/**',
         // Barrels and module declarations are re-exports and wiring: covering
         // them measures nothing, and `*.module.ts` pulls a feature's gRPC
         // client in just by being imported.
@@ -159,10 +165,10 @@ export default defineConfig({
       // number can only go up. Raise them when a batch of tests lands; never
       // lower them to make a red run green.
       thresholds: {
-        statements: 74,
-        branches: 69,
-        functions: 71,
-        lines: 74,
+        statements: 77,
+        branches: 70,
+        functions: 74,
+        lines: 77,
       },
     },
   },

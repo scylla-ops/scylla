@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from '@shadcn-svelte';
-  import { ScyllaForm, FormItemType, type FormItem } from '@shared/presentation/ui-svelte';
+  import { Button } from '@shadcn';
+  import { ScyllaForm, FormItemType, type FormItem } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { loginMessages } from './login.messages.ts';
 

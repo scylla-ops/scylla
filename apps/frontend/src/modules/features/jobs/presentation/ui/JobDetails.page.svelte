@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createResourceError } from '@platform/context';
   import { createQuery } from '@platform/query';
-  import { Skeleton } from '@shadcn-svelte';
-  import { ErrorState } from '@shared/presentation/ui-svelte';
+  import { Skeleton } from '@shadcn';
+  import { ErrorState } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { jobQueries } from '../jobs.queries.ts';
   import { createOpenLogPanels } from '../open-log-panels.svelte.ts';

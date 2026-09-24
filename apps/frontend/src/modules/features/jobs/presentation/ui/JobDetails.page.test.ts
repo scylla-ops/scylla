@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { flushSync } from 'svelte';
 import { render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { JobEntity } from '../../domain/entities/job.entity.ts';
 import type { JobsRepository } from '../../domain/repository/jobs.repository.ts';
@@ -72,7 +72,7 @@ let restoreRegistry: (() => void) | null = null;
 let navigator: ReturnType<typeof installTestNavigator>;
 
 const grantAll = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -104,7 +104,7 @@ afterEach(() => {
   restoreRegistry?.();
   restoreRegistry = null;
   navigator?.restore();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('JobDetailsPage', () => {
@@ -249,7 +249,7 @@ describe('JobDetailsPage', () => {
   });
 
   it('hides the logs, keeping the job itself, without READ_JOB_LOGS', async () => {
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [
           {

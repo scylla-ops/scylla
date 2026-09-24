@@ -5,11 +5,10 @@ import type { MessageDescriptor } from '@lingui/core';
  * Centralized toast message descriptors.
  *
  * Usage:
- *   import { useLingui } from '@lingui/react/macro';
- *   import { ToastMessages } from '@shared/utils/toast-messages';
+ *   import { i18n } from '@lingui/core';
+ *   import { ToastMessages } from '@shared/utils/toast-messages.ts';
  *
- *   const { _ } = useLingui();
- *   toast.success(_(ToastMessages.USER_CREATE));
+ *   toast.success(i18n._(ToastMessages.USER_CREATE));
  *
  * Messages are statically extractable by the Lingui CLI and land in
  * src/locales/{locale}/messages (shared catalog).

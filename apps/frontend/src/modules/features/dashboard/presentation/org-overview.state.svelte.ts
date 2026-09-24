@@ -1,5 +1,5 @@
 import { Permission, can } from '@platform/authz';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { createQuery } from '@platform/query';
 import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
 import { projectQueries } from '@/modules/features/project';
@@ -29,7 +29,7 @@ export type ProjectAccess = (projectId: string) => boolean;
  * user may *see* leads somewhere they may *enter*.
  */
 export const createOrgOverview = () => {
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id);
 
   const projectsQuery = createQuery(() => projectQueries.lookup(organizationId));

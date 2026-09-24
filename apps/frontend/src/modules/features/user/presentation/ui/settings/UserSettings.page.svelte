@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Card, CardContent, CardHeader, CardTitle } from '@shadcn-svelte';
+  import { Card, CardContent, CardHeader, CardTitle } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { userMessages } from '../user.messages.ts';
   import UserInformation from './UserInformation.svelte';

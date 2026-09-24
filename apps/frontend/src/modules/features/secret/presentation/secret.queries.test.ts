@@ -28,7 +28,7 @@ const withRepository = (overrides: Partial<SecretRepository> = {}) => {
     create: vi.fn().mockResolvedValue(ScyllaResult.success(secret())),
     deleteById: vi.fn().mockResolvedValue(ScyllaResult.success(undefined)),
     ...overrides,
-  } as unknown as SecretRepository;
+  };
   setDependencyRegistry({ secret: { secretRepository: repository } });
   return repository;
 };

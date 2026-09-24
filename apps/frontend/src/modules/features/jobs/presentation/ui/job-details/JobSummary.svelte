@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Badge } from '@shadcn-svelte';
-  import { CopyableText } from '@shared/presentation/ui-svelte';
+  import { Badge } from '@shadcn';
+  import { CopyableText } from '@shared/presentation/ui';
   import { createNow } from '@shared/presentation/state/now.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import {

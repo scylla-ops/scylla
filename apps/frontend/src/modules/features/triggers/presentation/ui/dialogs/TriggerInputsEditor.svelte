@@ -9,7 +9,7 @@
     SelectItem,
     SelectTrigger,
     SelectValue,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { DraftInput } from '../../utils/trigger-form.utils.ts';
   import { triggersMessages } from '../triggers.messages.ts';

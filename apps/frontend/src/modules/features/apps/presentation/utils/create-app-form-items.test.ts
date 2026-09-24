@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { createAppItems } from './create-app-form-items';
-import { FormItemType } from '@shared/presentation/structs/scylla-form.struct.ts';
+import { FormItemType } from '@shared/presentation/ui';
 
 describe('createAppItems', () => {
   const [item] = createAppItems();

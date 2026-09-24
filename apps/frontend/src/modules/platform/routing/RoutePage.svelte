@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PageTransition } from '@shared/presentation/ui-svelte';
+  import { PageTransition } from '@shared/presentation/ui';
   import { routeInShell, routePathname } from './route-state.ts';
   import RouteEntry from './RouteEntry.svelte';
 

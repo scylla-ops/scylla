@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
 import CanFixture from './Can.fixture.svelte';
 
 beforeEach(() => {
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 const grantEverything = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -23,7 +23,7 @@ describe('Can', () => {
   });
 
   it('renders nothing by default when the user lacks the permission', () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     const { container } = render(CanFixture, { permission: Permission.READ_PROJECT });
 
     expect(screen.queryByText('visible content')).not.toBeInTheDocument();
@@ -31,7 +31,7 @@ describe('Can', () => {
   });
 
   it('renders the fallback instead, when given one', () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     render(CanFixture, { permission: Permission.READ_PROJECT, withFallback: true });
 
     expect(screen.getByText('fallback content')).toBeInTheDocument();

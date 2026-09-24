@@ -19,7 +19,8 @@ type Navigate = (
  */
 export const createAppRouter = (config: AppRouterConfig): AppNavigator => {
   const router = createRouter(toRouterTree(config, RoutePage) as Routes);
-  const navigate = router.navigate as unknown as Navigate;
+  const routerApi = router as unknown as { navigate: Navigate };
+  const navigate: Navigate = (to, options) => routerApi.navigate(to, options);
   const state: RouteState = router.route;
   setRouteState(state);
 

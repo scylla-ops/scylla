@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useContextStore } from '@platform/context';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
 import { render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import AgentOutcomesChart from './AgentOutcomesChart.svelte';
@@ -70,11 +70,11 @@ beforeEach(() => {
     agents: { agentsRepository: { listAgents, getAgentStats } },
   });
 
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
-  } as never);
-  usePermissionsStore.setState({
+  });
+  permissionsStore.setState({
     permissions: {
       scopes: [
         {
@@ -93,7 +93,7 @@ beforeEach(() => {
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('AgentOutcomesChart', () => {

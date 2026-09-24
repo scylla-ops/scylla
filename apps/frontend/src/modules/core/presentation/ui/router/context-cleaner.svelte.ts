@@ -1,5 +1,5 @@
 import { untrack } from 'svelte';
-import { currentPathname, navigateTo, useContextStore } from '@platform/context';
+import { currentPathname, navigateTo, contextStore } from '@platform/context';
 import { createQuery } from '@platform/query';
 import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
@@ -17,7 +17,7 @@ const isPipelinePath = (pathname: string): boolean =>
  */
 export const cleanContext = (projectId: string | undefined): void => {
   const pathname = currentPathname();
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id);
   const projects = createQuery(() => projectQueries.byOrganization(organizationId));
 
@@ -26,7 +26,7 @@ export const cleanContext = (projectId: string | undefined): void => {
     if (projects.isLoading || !list || !projectId) return;
 
     untrack(() => {
-      const store = useContextStore.getState();
+      const store = contextStore.getState();
 
       if (!list.some(project => project.id === projectId)) {
         store.setProject(null, null);

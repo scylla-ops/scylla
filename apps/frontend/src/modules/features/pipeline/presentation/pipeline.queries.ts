@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { getModuleDomain } from '@platform/di';
-import { scyllaNavigate, useContextStore } from '@platform/context';
+import { scyllaNavigate, contextStore } from '@platform/context';
 import { getQueryClient, mutationOptions, queryOptions } from '@platform/query';
 import { JOBS_QUERY_KEY } from '@/modules/features/jobs';
 import type { PaginationParams } from '@shared/domain/structs/pagination.struct.ts';
@@ -35,7 +35,7 @@ const repository = () =>
   getModuleDomain<typeof PipelineModule.domain>('pipeline').pipelineRepository;
 
 /** The project the user is currently in, which is where a write lands. */
-const currentProject = () => useContextStore.getState().project;
+const currentProject = () => contextStore.getState().project;
 
 export const pipelineQueries = {
   /**

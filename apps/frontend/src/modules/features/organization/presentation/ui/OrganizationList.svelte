@@ -5,14 +5,14 @@
   import TrashIcon from '@lucide/svelte/icons/trash';
   import UsersIcon from '@lucide/svelte/icons/users';
   import { can, Permission } from '@platform/authz';
-  import { navigateTo, useContextStore } from '@platform/context';
+  import { navigateTo, contextStore } from '@platform/context';
   import { createMutation, createQuery } from '@platform/query';
-  import { Skeleton } from '@shadcn-svelte';
+  import { Skeleton } from '@shadcn';
   import {
     ConfirmOperationAlertDialog,
     ContextItem,
     IconButton,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { slugifyOrgName } from '@shared/utils/slug.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
@@ -34,14 +34,14 @@
 
   const deleteOrganization = createMutation(() => organizationMutations.remove());
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const currentOrganizationId = $derived(context().organization.id);
 
   let editOrg = $state<{ id: string; name: string; description?: string } | null>(null);
   let deleteOrgId = $state<string | null>(null);
 
   const selectOrganization = (id: string, name: string) => {
-    useContextStore.getState().setOrganization(id, name);
+    contextStore.getState().setOrganization(id, name);
     navigateTo(`/${slugifyOrgName(name)}/dashboard`);
   };
 
@@ -60,7 +60,7 @@
     if (deletedId !== currentOrganizationId) return;
 
     const other = organizations?.find(organization => organization.id !== deletedId);
-    useContextStore.getState().setOrganization(other?.id ?? null, other?.name ?? null);
+    contextStore.getState().setOrganization(other?.id ?? null, other?.name ?? null);
     if (other) navigateTo(`/${slugifyOrgName(other.name)}/dashboard`);
   };
 </script>
@@ -98,7 +98,7 @@
                 // The members page reads the organization from the context
                 // store, so looking at another org's members means moving to
                 // it — the row's own click does the same thing.
-                useContextStore.getState().setOrganization(organization.id, organization.name);
+                contextStore.getState().setOrganization(organization.id, organization.name);
                 navigateTo(`/${slugifyOrgName(organization.name)}/members`);
               }}
               class="h-7 w-7"

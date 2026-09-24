@@ -1,13 +1,13 @@
 <script lang="ts">
   import { i18n } from '@lingui/core';
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import { createMutation } from '@platform/query';
   import {
     FormDialog,
     FormItemType,
     type FormItem,
     type FormValues,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { ToastMessages } from '@shared/utils/toast-messages.ts';
@@ -22,7 +22,7 @@
 
   let { open, setOpen }: Props = $props();
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id);
 
   const createProject = createMutation(() => projectMutations.create());

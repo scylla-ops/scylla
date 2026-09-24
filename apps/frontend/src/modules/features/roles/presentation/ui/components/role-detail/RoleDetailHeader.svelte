@@ -2,8 +2,8 @@
   import PencilIcon from '@lucide/svelte/icons/pencil';
   import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
   import { can, Permission } from '@platform/authz';
-  import { Badge } from '@shadcn-svelte';
-  import { GatedButton } from '@shared/presentation/ui-svelte';
+  import { Badge } from '@shadcn';
+  import { GatedButton } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../../domain/entities/role.entity.ts';
   import { scopeLabelOf } from '../../../utils/permission-mapping.ts';

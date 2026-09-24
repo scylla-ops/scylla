@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { setDependencyRegistry } from '@platform/di';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useContextStore } from '@platform/context';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
 import { runQueryFn } from '@/test/queries.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { JobEntity } from '../domain/entities/job.entity.ts';
@@ -32,13 +32,13 @@ const listOf = (items: JobEntity[]) => ({
 
 /** Drives the real permissions store — never a mocked `can`. */
 const grantEverything = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
   });
 
-const grantNothing = () => usePermissionsStore.setState({ permissions: { scopes: [] } });
+const grantNothing = () => permissionsStore.setState({ permissions: { scopes: [] } });
 
 let repository: JobsRepository;
 
@@ -56,7 +56,7 @@ beforeEach(() => {
 
 afterEach(() => {
   setDependencyRegistry(null);
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('jobsByPipelinesQueries', () => {
@@ -72,7 +72,7 @@ describe('jobsByPipelinesQueries', () => {
   });
 
   it('reports loading, not denied, while the permissions are still unknown', () => {
-    usePermissionsStore.setState({ permissions: null });
+    permissionsStore.setState({ permissions: null });
     const { canListJobs, combine } = jobsByPipelinesQueries(['pipeline-1']);
 
     expect(canListJobs).toBe(false);
@@ -122,12 +122,12 @@ describe('jobsByPipelinesQueries', () => {
   it('resolves against the project the page is already scoped to, with no target passed', () => {
     // The ambient target is the context store's project — which is the whole
     // reason `can()` is called without one here.
-    useContextStore.setState({
+    contextStore.setState({
       organization: { id: 'org-1', name: 'Acme' },
       project: { id: 'project-1', name: 'Acme project' },
     });
 
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [
           {

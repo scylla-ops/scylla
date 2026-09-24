@@ -27,10 +27,10 @@ module.exports = {
       to: {
         circular: true,
         // A cycle that runs through a dynamic import is not a cycle at runtime —
-        // it is a chunk boundary. Modules declare their pages with react-router
-        // `lazy`, so `x.module.ts -> (lazy) SomePage -> a hook -> use-x-domain.ts
-        // -> (type only) x.module.ts` is expected and is precisely what makes the
-        // page a separate chunk. Only flag cycles where every edge is static.
+        // it is a chunk boundary. Modules declare their pages with a `lazy`
+        // import, so `x.module.ts -> (lazy) SomePage -> ... -> x.module.ts` is
+        // expected and is precisely what makes the page a separate chunk. Only
+        // flag cycles where every edge is static.
         viaOnly: { dependencyTypesNot: ['dynamic-import'] },
       },
     },
@@ -150,14 +150,14 @@ module.exports = {
     {
       name: 'domain-is-pure',
       comment:
-        'domain/ is pure business logic: no React, no gRPC, no generated proto, no ' +
+        'domain/ is pure business logic: no UI framework, no gRPC, no generated proto, no ' +
         'query/state library. Framework types belong in infrastructure or presentation.',
       severity: 'error',
       from: { path: '^src/modules/.+/domain/' },
       to: {
         path: [
           '^src/generated/',
-          '^node_modules/(react|react-dom|zustand|@tanstack|@lingui|@protobuf-ts|lucide-react|react-router)',
+          '^node_modules/(svelte|sv-router|bits-ui|@tanstack|@lingui|@protobuf-ts|@lucide)',
         ],
       },
     },
@@ -191,7 +191,7 @@ module.exports = {
       // `src/test/`, which is the suite's own harness and never ships.
       from: {
         path: '^src/',
-        pathNot: ['[.](spec|test)[.](ts|tsx)$', '[.]d[.]ts$', '^src/test/'],
+        pathNot: ['[.](spec|test)[.]ts$', '[.]d[.]ts$', '^src/test/'],
       },
       to: { dependencyTypes: ['npm-dev'], dependencyTypesNot: ['type-only'] },
     },
@@ -209,11 +209,11 @@ module.exports = {
           '[.]d[.]ts$',
           '(^|/)tsconfig[.]json$',
           '(^|/)(vite|eslint|lingui|postcss)[.]config[.][^/]+$',
-          '^src/main[.]tsx$',
+          '^src/main[.]ts$',
           '^src/generated/',
           // Vitest loads setup.ts by path from the config, and the render
-          // helpers are only imported by `.test.tsx` files, which are
-          // themselves orphans — neither is reachable from the module graph.
+          // helpers are only imported by test files, which are themselves
+          // orphans — neither is reachable from the module graph.
           '^src/test/',
         ],
       },

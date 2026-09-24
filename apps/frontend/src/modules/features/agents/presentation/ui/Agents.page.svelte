@@ -2,9 +2,9 @@
   import CpuIcon from '@lucide/svelte/icons/cpu';
   import PlusIcon from '@lucide/svelte/icons/plus';
   import { can, Permission } from '@platform/authz';
-  import { scyllaNavigate, useContextStore } from '@platform/context';
+  import { scyllaNavigate, contextStore } from '@platform/context';
   import { createMutation, createQuery } from '@platform/query';
-  import { Button, Card, Skeleton } from '@shadcn-svelte';
+  import { Button, Card, Skeleton } from '@shadcn';
   import {
     AgentRunInstructions,
     ConfirmOperationAlertDialog,
@@ -13,7 +13,7 @@
     FormDialog,
     SecretRevealDialog,
     type FormValues,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { activeLocale, t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { CreatedAgent } from '../../domain/structs/agent.struct.ts';
@@ -22,7 +22,7 @@
   import AgentCard from './components/AgentCard.svelte';
   import { agentsMessages } from './agents.messages.ts';
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
   const agentsQuery = createQuery(() => agentQueries.byOrganization(organizationId));

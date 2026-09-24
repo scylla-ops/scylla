@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card } from '@shadcn-svelte';
+  import { Card } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { MemberRole } from '../../../domain/structs/scope-member.struct.ts';
   import type { AssignableRole } from '../../assignable-roles.state.svelte.ts';

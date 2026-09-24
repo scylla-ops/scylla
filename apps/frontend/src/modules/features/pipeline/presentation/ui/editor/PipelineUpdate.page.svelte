@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createMutation, createQuery } from '@platform/query';
-  import { ErrorState } from '@shared/presentation/ui-svelte';
+  import { ErrorState } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { pipelineMutations, pipelineQueries } from '../../pipeline.queries.ts';
   import PipelineEditor from './PipelineEditor.svelte';

@@ -6,8 +6,8 @@
   import UserIcon from '@lucide/svelte/icons/user';
   import XIcon from '@lucide/svelte/icons/x';
   import { can, Permission, PermissionScope, PrincipalKind } from '@platform/authz';
-  import { Badge } from '@shadcn-svelte';
-  import { IconButton } from '@shared/presentation/ui-svelte';
+  import { Badge } from '@shadcn';
+  import { IconButton } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../../domain/entities/role.entity.ts';
   import { createGrantTargetLabels } from '../../../grant-target-labels.svelte.ts';

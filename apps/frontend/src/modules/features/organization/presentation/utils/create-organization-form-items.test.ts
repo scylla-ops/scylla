@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { createOrganizationItems } from './create-organization-form-items';
-import { FormItemType } from '@shared/presentation/ui-svelte';
+import { FormItemType } from '@shared/presentation/ui';
 
 describe('createOrganizationItems', () => {
   it('declares a name and a description field, neither pattern-constrained', () => {

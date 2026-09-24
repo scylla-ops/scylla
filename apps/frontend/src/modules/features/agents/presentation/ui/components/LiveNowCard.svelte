@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
-  import { Card, CardContent } from '@shadcn-svelte';
+  import { Card, CardContent } from '@shadcn';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { AgentLiveJobs } from '../../utils/agent-mock-data.ts';

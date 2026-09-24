@@ -1,6 +1,6 @@
 <script lang="ts">
   import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-  import { Button } from '@shadcn-svelte';
+  import { Button } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { mockInitialLogs, type LogLevel } from '../../utils/agent-mock-data.ts';
   import { agentsMessages } from '../agents.messages.ts';

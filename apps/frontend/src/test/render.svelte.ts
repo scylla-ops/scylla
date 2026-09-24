@@ -5,18 +5,15 @@ import { setDependencyRegistry, type DomainRegistry } from '@platform/di';
 import { setQueryClient } from '@platform/query';
 
 /**
- * Svelte counterpart of `render.tsx`, and deliberately much smaller.
+ * The render helpers of the suite.
  *
- * A React component needs four providers around it before it can do anything —
- * i18n, query client, DI. A Svelte component needs none: Phase 0 turned all of
- * them into module singletons, so `render()` from `@testing-library/svelte`
- * works on its own and the helpers below only exist for the pieces that *are*
- * still per-test state.
+ * A component needs no provider: i18n, the query client and the DI registry are
+ * module singletons, so `render()` from `@testing-library/svelte` works on its
+ * own. The helpers below exist for the pieces that are per-test state.
  *
- * `setup.ts` is shared with the React suite and already activates an empty `en`
- * catalog, which makes lingui fall back to the message id — the English source
- * string. Assertions therefore read `getByText('Create grant')` and stay
- * legible, exactly as on the React side.
+ * `setup.ts` activates an empty `en` catalog, which makes lingui fall back to
+ * the message id — the English source string. Assertions therefore read
+ * `getByText('Create grant')`.
  */
 
 export { render };
@@ -41,8 +38,7 @@ export const withRegistry = (registry: DomainRegistry): (() => void) => {
  * Installs a fresh query cache for a test that renders anything fetching data.
  *
  * `createQuery` from `@platform/query` reads the active client at call time, so
- * this is the Svelte equivalent of wrapping React in a `QueryClientProvider`
- * with `createTestQueryClient()`. Same leak as `withRegistry`, same remedy —
+ * a test installs its own here. Same leak as `withRegistry`, same remedy —
  * and same reason for `retry: false`: without it a rejecting query is retried
  * three times with backoff and the test times out instead of reporting the
  * error.

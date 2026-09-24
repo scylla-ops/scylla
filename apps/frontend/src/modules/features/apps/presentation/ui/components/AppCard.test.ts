@@ -3,7 +3,7 @@ import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { findFloating, render } from '@/test/render.svelte.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import type { AppEntity } from '../../../domain/entities/app.entity.ts';
 import AppCard from './AppCard.svelte';
 
@@ -25,7 +25,7 @@ let testNavigator: ReturnType<typeof installTestNavigator>;
 beforeEach(() => {
   toastSuccess.mockClear();
   testNavigator = installTestNavigator({ pathname: '/acme/apps' });
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
   });

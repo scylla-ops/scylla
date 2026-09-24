@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { focusSettled, render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ProjectEntity } from '../../domain/entities/project.entity.ts';
 import type { ProjectRepository } from '../../domain/repository/project.repository.ts';
@@ -42,14 +42,14 @@ const install = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useContextStore.setState({ organization: { id: 'org-1', name: 'Acme' } });
+  contextStore.setState({ organization: { id: 'org-1', name: 'Acme' } });
 });
 
 afterEach(() => teardown.forEach(restore => restore()));
 
 describe('AddProjectDialog', () => {
   it('toasts an error and never calls the repository when no organization is selected', async () => {
-    useContextStore.setState({ organization: { id: null, name: null } });
+    contextStore.setState({ organization: { id: null, name: null } });
     install();
     render(AddProjectDialog, { open: true, setOpen: vi.fn() });
     await focusSettled();

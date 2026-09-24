@@ -1,5 +1,4 @@
-// Page/app layout building blocks.
-export * from './AnimatedOutlet.tsx';
-export * from './ContextItem.tsx';
-export * from './FeatureHeader.tsx';
-export * from './ScyllaLoadingScreen.tsx';
+export { default as ContextItem } from './ContextItem.svelte';
+export { default as FeatureHeader } from './FeatureHeader.svelte';
+export { default as PageTransition } from './PageTransition.svelte';
+export { default as ScyllaLoadingScreen } from './ScyllaLoadingScreen.svelte';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CopyableText } from '@shared/presentation/ui-svelte';
+  import { CopyableText } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { TriggerEntity } from '../../../domain/entities/trigger.entity.ts';
   import { TriggerKind } from '../../../domain/structs/trigger-source.struct.ts';

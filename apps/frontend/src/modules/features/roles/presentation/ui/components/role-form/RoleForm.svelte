@@ -10,7 +10,7 @@
     SelectItem,
     SelectTrigger,
     SelectValue,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../../domain/entities/role.entity.ts';
   import { createRoleForm, type AccessKind } from '../../../role-form.state.svelte.ts';

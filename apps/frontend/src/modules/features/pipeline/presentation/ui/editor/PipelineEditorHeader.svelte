@@ -2,8 +2,8 @@
   import type { MessageDescriptor } from '@lingui/core';
   import Loader2Icon from '@lucide/svelte/icons/loader-2';
   import { Permission, can } from '@platform/authz';
-  import { TabsList, TabsTrigger } from '@shadcn-svelte';
-  import { GatedButton } from '@shared/presentation/ui-svelte';
+  import { TabsList, TabsTrigger } from '@shadcn';
+  import { GatedButton } from '@shared/presentation/ui';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { pipelineMessages } from '../../pipeline.messages.ts';

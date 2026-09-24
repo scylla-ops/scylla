@@ -6,7 +6,7 @@ import {
   Permission,
   PermissionScope,
   PrincipalKind,
-  usePermissionsStore,
+  permissionsStore,
 } from '@platform/authz';
 import { runMutationFn, runQueryFn } from '@/test/queries.ts';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
@@ -111,7 +111,7 @@ beforeEach(() => {
   setQueryClient(queryClient);
 
   localStorage.setItem('userId', 'user-1');
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
   resetPermissionSync();
 });
 
@@ -119,7 +119,7 @@ afterEach(() => {
   setDependencyRegistry(null);
   setQueryClient(null);
   localStorage.clear();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
   resetPermissionSync();
 });
 
@@ -274,7 +274,7 @@ describe('refreshMyPermissions', () => {
   it('fills the store with what the backend answers', async () => {
     await refreshMyPermissions();
 
-    expect(usePermissionsStore.getState().permissions?.scopes).toHaveLength(1);
+    expect(permissionsStore.getState().permissions?.scopes).toHaveLength(1);
   });
 
   it('settles a signed-out session as "no permissions" rather than leaving it loading', async () => {
@@ -282,7 +282,7 @@ describe('refreshMyPermissions', () => {
 
     await refreshMyPermissions();
 
-    expect(usePermissionsStore.getState().permissions).toEqual({ scopes: [] });
+    expect(permissionsStore.getState().permissions).toEqual({ scopes: [] });
     expect(getMyPermissions).not.toHaveBeenCalled();
   });
 
@@ -291,7 +291,7 @@ describe('refreshMyPermissions', () => {
 
     await refreshMyPermissions();
 
-    expect(usePermissionsStore.getState().permissions).toEqual({ scopes: [] });
+    expect(permissionsStore.getState().permissions).toEqual({ scopes: [] });
   });
 });
 

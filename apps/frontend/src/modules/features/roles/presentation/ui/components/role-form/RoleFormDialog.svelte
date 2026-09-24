@@ -6,7 +6,7 @@
     DialogDescription,
     DialogHeader,
     DialogTitle,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../../domain/entities/role.entity.ts';
   import { rolesMessages } from '../../roles.messages.ts';

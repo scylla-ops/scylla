@@ -1,7 +1,7 @@
 <script lang="ts">
   import MoonIcon from '@lucide/svelte/icons/moon';
   import SunIcon from '@lucide/svelte/icons/sun';
-  import { Button } from '@shadcn-svelte';
+  import { Button } from '@shadcn';
   import { getTheme, setTheme } from '@shared/presentation/stores/theme.store.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { coreMessages } from './router/core.messages.ts';

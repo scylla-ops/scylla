@@ -1,7 +1,7 @@
 <script lang="ts">
   import { EditorState } from '@codemirror/state';
   import { EditorView, lineNumbers } from '@codemirror/view';
-  import { renderCodeMirror } from '@shared/presentation/ui-svelte';
+  import { renderCodeMirror } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { createTailJobLogs } from '../../tail-job-logs.svelte.ts';
   import { createStreamedLogView } from './streamed-log-view.svelte.ts';

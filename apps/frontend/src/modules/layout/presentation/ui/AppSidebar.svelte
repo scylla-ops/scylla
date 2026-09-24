@@ -1,6 +1,6 @@
 <script lang="ts">
   import { authorizationReady, can } from '@platform/authz';
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import type { NavEntry } from '@platform/routing';
   import {
     Sidebar,
@@ -9,7 +9,7 @@
     SidebarGroup,
     SidebarRail,
     Skeleton,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { slugifyOrgName } from '@shared/utils/slug.ts';
@@ -24,7 +24,7 @@
 
   let { navEntries }: { navEntries: readonly NavEntry[] } = $props();
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationName = $derived(context().organization.name);
   const ready = $derived(authorizationReady());
 

@@ -1,4 +1,4 @@
-import { type FormItem, FormItemType } from '@shared/presentation/ui-svelte';
+import { type FormItem, FormItemType } from '@shared/presentation/ui';
 import { t } from '@lingui/core/macro';
 
 export const createOrganizationItems = (): readonly FormItem<'name' | 'description'>[] => [

@@ -1,6 +1,6 @@
 <script lang="ts">
   import PlusIcon from '@lucide/svelte/icons/plus';
-  import { Button } from '@shadcn-svelte';
+  import { Button } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { PipelineStep } from '../../../../domain/structs/pipeline.struct.ts';
   import { createBlueprintState } from '../../../blueprint.state.svelte.ts';

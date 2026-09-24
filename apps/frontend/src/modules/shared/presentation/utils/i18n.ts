@@ -65,7 +65,7 @@ export async function setAppLocale(locale: SupportedLocale): Promise<void> {
 }
 
 /**
- * Awaited before the first render (see `main.tsx`), so the app never paints a
+ * Awaited before the first render (see `main.ts`), so the app never paints a
  * frame of untranslated text.
  */
 export async function initializeAppLocale(): Promise<SupportedLocale> {

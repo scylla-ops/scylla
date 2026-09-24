@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { setAppNavigator, useContextStore } from '@platform/context';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { setAppNavigator, contextStore } from '@platform/context';
 import { render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import DashboardPage from './Dashboard.page.svelte';
@@ -49,7 +49,7 @@ let restoreRegistry: () => void;
 
 /** A system-wide grant of exactly these permissions. */
 const grant = (permissions: Permission[]) =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [
         {
@@ -77,10 +77,10 @@ beforeEach(() => {
   });
 
   setAppNavigator({ navigate, back: vi.fn(), pathname: () => '/', search: () => '' });
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
-  } as never);
+  });
   grant([Permission.LIST_PIPELINES_BY_PROJECT]);
 });
 
@@ -88,7 +88,7 @@ afterEach(() => {
   cache.restore();
   restoreRegistry();
   setAppNavigator(null);
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 /**
@@ -135,7 +135,7 @@ describe('DashboardPage', () => {
   it('opens a project the user may enter', async () => {
     const user = userEvent.setup();
     grant([]);
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [
           {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from '@shadcn-svelte';
+  import { Badge } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { RoleEntity } from '../../../../domain/entities/role.entity.ts';
   import { permissionLabelOf } from '../../../utils/permission-mapping.ts';

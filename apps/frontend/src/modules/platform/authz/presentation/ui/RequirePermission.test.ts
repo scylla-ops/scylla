@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
 import RequirePermissionFixture from './RequirePermission.fixture.svelte';
 
 beforeEach(() => {
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('RequirePermission', () => {
@@ -17,7 +17,7 @@ describe('RequirePermission', () => {
   });
 
   it('renders the content when the user holds the permission', () => {
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
       },
@@ -28,7 +28,7 @@ describe('RequirePermission', () => {
   });
 
   it('renders the denial panel when the user lacks the permission', () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     render(RequirePermissionFixture, { permission: Permission.READ_PROJECT });
 
     expect(screen.queryByText('gated content')).not.toBeInTheDocument();
@@ -36,7 +36,7 @@ describe('RequirePermission', () => {
   });
 
   it('shows a custom message in the denial panel', () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     render(RequirePermissionFixture, {
       permission: Permission.READ_PROJECT,
       message: 'Ask for manage-roles.',

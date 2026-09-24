@@ -9,7 +9,7 @@
     CardFooter,
     CardHeader,
     CardTitle,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { marketplaceMessages } from './marketplace.messages.ts';

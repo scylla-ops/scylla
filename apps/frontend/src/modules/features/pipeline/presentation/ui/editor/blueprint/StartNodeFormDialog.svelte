@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FormDialog, FormItemType, type FormItem, type FormValues } from '@shared/presentation/ui-svelte';
+  import { FormDialog, FormItemType, type FormItem, type FormValues } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { pipelineMessages } from '../../../pipeline.messages.ts';
 

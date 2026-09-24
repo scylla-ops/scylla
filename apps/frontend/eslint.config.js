@@ -1,7 +1,5 @@
 import js from '@eslint/js'
 import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import svelte from 'eslint-plugin-svelte'
 import svelteParser from 'svelte-eslint-parser'
@@ -20,14 +18,12 @@ export default tseslint.config([
   ]),
 
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.ts'],
     extends: [
       js.configs.recommended,
       // Type-aware rules: catches floating promises, misused promises, etc.
       // Requires parserOptions.projectService below.
       tseslint.configs.recommendedTypeChecked,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
     ],
     languageOptions: {
       ecmaVersion: 2020,
@@ -82,22 +78,27 @@ export default tseslint.config([
       // Static mapper methods (GrpcXxxMapper.toDomain etc.) are pure functions that
       // never access `this` — treating them as unbound is a false positive.
       '@typescript-eslint/unbound-method': ['error', { ignoreStatic: true }],
+    },
+  },
 
-      // ── React Fast Refresh ────────────────────────────────────────────────────
-      // shadcn components export CVA configs alongside components — this is the
-      // expected shadcn pattern and does not break Fast Refresh in practice.
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+  // ── Tests ──────────────────────────────────────────────────────────────────────
+  // `expect(repository.method)` reads a mock off an object and never calls it
+  // unbound. `unbound-method` flags every such assertion, with no true positive.
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
 
   // ── The Svelte query bindings come from @platform/query ───────────────────────
   // `createQuery` from `@tanstack/svelte-query` reads its client from Svelte
-  // context, which an island mounted in the React tree does not have. The
-  // re-export in `@platform/query` binds the app's client; the two are
-  // indistinguishable at the call site, so the wrong import fails at runtime.
+  // context. The re-export in `@platform/query` binds the app's client; the two
+  // are indistinguishable at the call site, so the wrong import fails at runtime.
+  // ── The router is sv-router, and only @platform/routing may import it ──────────
   {
-    files: ['src/modules/**/*.{ts,tsx,svelte}'],
-    ignores: ['src/modules/platform/query/**'],
+    files: ['src/modules/**/*.{ts,svelte}'],
+    ignores: ['src/modules/platform/query/**', 'src/modules/platform/routing/**'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -107,23 +108,15 @@ export default tseslint.config([
               name: '@tanstack/svelte-query',
               message:
                 'Import createQuery / createMutation from @platform/query — they carry the ' +
-                "app's QueryClient, which a Svelte island has no context to find.",
+                "app's QueryClient.",
+            },
+            {
+              name: 'sv-router',
+              message: 'Import the router API from @platform/routing, the only module that knows the router.',
             },
           ],
         },
       ],
-    },
-  },
-
-  // ── shadcn UI library files ───────────────────────────────────────────────────
-  // These are auto-generated / copy-pasted from shadcn and follow their own
-  // conventions. We relax a few rules that would otherwise fire on every update.
-  {
-    files: ['src/modules/shared/presentation/ui/shadcn/**'],
-    rules: {
-      '@typescript-eslint/restrict-template-expressions': 'off',
-      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
-      'react-refresh/only-export-components': 'off',
     },
   },
 

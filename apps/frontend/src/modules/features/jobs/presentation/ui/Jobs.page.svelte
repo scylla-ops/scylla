@@ -1,7 +1,7 @@
 <script lang="ts">
   import { loadNoAgentsBanner } from '@/modules/features/agents';
   import { createQuery } from '@platform/query';
-  import { ErrorState, PaginationSlot } from '@shared/presentation/ui-svelte';
+  import { ErrorState, PaginationSlot } from '@shared/presentation/ui';
   import { createPagination } from '@shared/presentation/state/pagination.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { ScyllaError } from '@shared/utils/scylla-result.ts';

@@ -31,7 +31,7 @@ const install = (tailLogs: JobsRepository['tailLogs']) => {
 };
 
 /** The editor's own scroller — what the caller's `maxHeight` ends up capping. */
-const editor = () => document.querySelector('.cm-editor') as HTMLElement | null;
+const editor = () => document.querySelector<HTMLElement>('.cm-editor');
 
 beforeEach(() => {
   restore = null;
@@ -42,7 +42,7 @@ afterEach(() => restore?.());
 describe('JobLogDisplay', () => {
   it('waits rather than opening an editor when there is no job to tail', () => {
     const tailLogs = vi.fn();
-    install(tailLogs as unknown as JobsRepository['tailLogs']);
+    install(tailLogs);
 
     render(JobLogDisplay, { jobId: '' });
 
@@ -73,7 +73,7 @@ describe('JobLogDisplay', () => {
 
   it('scopes the stream to the node when the caller names one', async () => {
     const tailLogs = vi.fn(() => ScyllaResult.success(streamOf([])));
-    install(tailLogs as unknown as JobsRepository['tailLogs']);
+    install(tailLogs);
 
     render(JobLogDisplay, { jobId: 'job-1', nodeId: 'build' });
 

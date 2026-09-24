@@ -6,9 +6,7 @@ import { setAppNavigator } from '@platform/context';
  *
  * `scyllaNavigate` and everything built on it go through the singleton in
  * `@platform/context`, which the shell installs at startup — a test never
- * renders the shell, so it installs this instead. That replaces the
- * `vi.mock('react-router-dom', …)` those tests used to carry, and it works the
- * same for a React component and a Svelte one, which is the point.
+ * renders the shell, so it installs this instead of the router.
  *
  * ```ts
  * const nav = installTestNavigator({ pathname: '/acme/projects/p1' });

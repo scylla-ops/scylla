@@ -2,7 +2,7 @@
   import type { JobEntity } from '@/modules/features/jobs';
   import { scyllaNavigate } from '@platform/context';
   import { createMutation } from '@platform/query';
-  import { DataTable } from '@shared/presentation/ui-svelte';
+  import { DataTable } from '@shared/presentation/ui';
   import { createSelection } from '@shared/presentation/state/selection.svelte.ts';
   import { toStatusState } from '@shared/utils/job-status.utils.ts';
   import type { PipelineMetadata } from '../../../../domain/structs/pipeline.struct.ts';

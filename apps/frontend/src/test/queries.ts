@@ -66,12 +66,11 @@ export const runOnSuccess = <TOptions extends { onSuccess?: unknown }>(
 };
 
 /**
- * A stand-in for a `*.queries.ts` factory, for a React test that mocks a
- * migrated feature's barrel.
+ * A stand-in for a `*.queries.ts` factory, for a test that mocks the barrel of
+ * a feature.
  *
- * Those tests used to stub a hook and hand back `{ data, isLoading }` directly.
- * The hooks are gone: a consumer now passes an options object to `useQuery`, so
- * the stub has to be an options object too. `initialData` is what keeps the
+ * A consumer passes an options object to `createQuery`, so the stub is an
+ * options object too. `initialData` is what keeps the
  * test synchronous — without it the first render is always `isLoading`, and
  * every assertion would have to become a `findBy`.
  *

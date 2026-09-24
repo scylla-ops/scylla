@@ -3,7 +3,7 @@
     CopyableText,
     StatusIndicator,
     type StatusState,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { formatDay } from '@shared/utils/date-utils.ts';
   import type { PipelineMetadata } from '../../../../domain/structs/pipeline.struct.ts';

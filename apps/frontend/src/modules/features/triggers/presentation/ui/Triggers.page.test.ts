@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useContextStore } from '@platform/context';
-import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { PermissionScope, permissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
+import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { focusSettled, render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { TriggersRepository } from '../../domain/repository/triggers.repository.ts';
@@ -49,13 +49,13 @@ beforeEach(() => {
     },
   });
 
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: 'project-1', name: 'Web' },
     pipeline: { id: 'pipeline-1', name: 'build' },
-  } as never);
-  useSelectionStore.setState({ selectedIds: {} });
-  usePermissionsStore.setState({
+  });
+  selectionStore.setState({ selectedIds: {} });
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -65,7 +65,7 @@ beforeEach(() => {
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('TriggersPage', () => {

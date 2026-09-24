@@ -1,18 +1,138 @@
-export * from './button.tsx';
-export * from './input.tsx';
-export * from './card.tsx';
-export * from './label.tsx';
-export * from './avatar.tsx';
-export * from './progress.tsx';
-export * from './select.tsx';
-export * from './toggle.tsx';
-export * from './toggle-group.tsx';
-export * from './dialog.tsx';
-export * from './alert-dialog.tsx';
-export * from './dropdown-menu.tsx';
-export * from './table.tsx';
-export * from './select.tsx';
-export * from './separator.tsx';
-export * from './badge.tsx';
-export * from './sonner.tsx';
-export * from './pagination.tsx';
+/**
+ * The shadcn primitives, ported to Svelte on bits-ui.
+ *
+ * Ported on demand: a primitive lands here when its first consumer needs it.
+ * Class strings are copied verbatim from shadcn/ui, which is why the design
+ * survived the migration from React untouched.
+ */
+import {
+  AlertDialog as AlertDialogPrimitive,
+  Dialog as DialogPrimitive,
+  DropdownMenu as DropdownMenuPrimitive,
+  Select as SelectPrimitive,
+} from 'bits-ui';
+
+export { default as Button } from './button.svelte';
+// Not from the `.svelte` file: `tsc` only ever sees a component's default
+// export, so anything a `.ts` needs to import must live in a `.ts`.
+export { buttonVariants, type ButtonSize, type ButtonVariant } from './button-variants.ts';
+
+export { default as Card } from './card.svelte';
+export { default as CardAction } from './card-action.svelte';
+export { default as CardContent } from './card-content.svelte';
+export { default as CardDescription } from './card-description.svelte';
+export { default as CardFooter } from './card-footer.svelte';
+export { default as CardHeader } from './card-header.svelte';
+export { default as CardTitle } from './card-title.svelte';
+
+export { default as Input } from './input.svelte';
+export { default as Skeleton } from './skeleton.svelte';
+
+export { default as Tooltip } from './tooltip.svelte';
+export { default as TooltipContent } from './tooltip-content.svelte';
+export { default as TooltipTrigger } from './tooltip-trigger.svelte';
+
+// The parts that carry no styling are bits-ui's own, aliased here rather than
+// wrapped — `shadcn/dialog.tsx` does exactly the same with Radix. A wrapper
+// whose whole body is `<Primitive {...rest} />` is a file to keep in sync for
+// nothing.
+export const Dialog = DialogPrimitive.Root;
+export const DialogClose = DialogPrimitive.Close;
+export const DialogPortal = DialogPrimitive.Portal;
+export const DialogTrigger = DialogPrimitive.Trigger;
+export { default as DialogContent } from './dialog-content.svelte';
+export { default as DialogDescription } from './dialog-description.svelte';
+export { default as DialogFooter } from './dialog-footer.svelte';
+export { default as DialogHeader } from './dialog-header.svelte';
+export { default as DialogOverlay } from './dialog-overlay.svelte';
+export { default as DialogTitle } from './dialog-title.svelte';
+
+export const AlertDialog = AlertDialogPrimitive.Root;
+export const AlertDialogPortal = AlertDialogPrimitive.Portal;
+export const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
+export { default as AlertDialogAction } from './alert-dialog-action.svelte';
+export { default as AlertDialogCancel } from './alert-dialog-cancel.svelte';
+export { default as AlertDialogContent } from './alert-dialog-content.svelte';
+export { default as AlertDialogDescription } from './alert-dialog-description.svelte';
+export { default as AlertDialogFooter } from './alert-dialog-footer.svelte';
+export { default as AlertDialogHeader } from './alert-dialog-header.svelte';
+export { default as AlertDialogOverlay } from './alert-dialog-overlay.svelte';
+export { default as AlertDialogTitle } from './alert-dialog-title.svelte';
+
+export { default as Checkbox } from './checkbox.svelte';
+
+export { default as Avatar } from './avatar.svelte';
+export { default as AvatarFallback } from './avatar-fallback.svelte';
+export { default as AvatarImage } from './avatar-image.svelte';
+
+export { default as TableBody } from './table-body.svelte';
+export { default as TableCell } from './table-cell.svelte';
+export { default as TableHead } from './table-head.svelte';
+export { default as TableHeader } from './table-header.svelte';
+export { default as TableRow } from './table-row.svelte';
+
+export { default as Label } from './label.svelte';
+export { default as Field } from './field.svelte';
+export { default as FieldGroup } from './field-group.svelte';
+export { default as FieldLabel } from './field-label.svelte';
+export { fieldVariants, type FieldOrientation } from './field-variants.ts';
+
+export const Select = SelectPrimitive.Root;
+export { default as SelectContent } from './select-content.svelte';
+export { default as SelectItem } from './select-item.svelte';
+export { default as SelectTrigger } from './select-trigger.svelte';
+export { default as SelectValue } from './select-value.svelte';
+
+export { default as Badge } from './badge.svelte';
+export { badgeVariants, type BadgeVariant } from './badge-variants.ts';
+
+export { default as Switch } from './switch.svelte';
+
+export { default as Separator } from './separator.svelte';
+
+export { default as CodeSnippet } from './code-snippet.svelte';
+
+export { default as RadioGroup } from './radio-group.svelte';
+export { default as RadioGroupItem } from './radio-group-item.svelte';
+
+export { default as ToggleGroup } from './toggle-group.svelte';
+export { default as ToggleGroupItem } from './toggle-group-item.svelte';
+export { toggleVariants, type ToggleSize, type ToggleVariant } from './toggle-variants.ts';
+
+export { default as Tabs } from './tabs.svelte';
+export { default as TabsContent } from './tabs-content.svelte';
+export { default as TabsList } from './tabs-list.svelte';
+export { default as TabsTrigger } from './tabs-trigger.svelte';
+
+// Root and trigger carry no styling — bits-ui's own, aliased rather than
+// wrapped, as with `Dialog` above.
+export const DropdownMenu = DropdownMenuPrimitive.Root;
+export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+export { default as DropdownMenuContent } from './dropdown-menu-content.svelte';
+export { default as DropdownMenuItem } from './dropdown-menu-item.svelte';
+export { default as DropdownMenuLabel } from './dropdown-menu-label.svelte';
+export { default as DropdownMenuSeparator } from './dropdown-menu-separator.svelte';
+export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
+export { default as DropdownMenuRadioItem } from './dropdown-menu-radio-item.svelte';
+
+export { default as Sidebar } from './sidebar.svelte';
+export { default as SidebarContent } from './sidebar-content.svelte';
+export { default as SidebarFooter } from './sidebar-footer.svelte';
+export { default as SidebarGroup } from './sidebar-group.svelte';
+export { default as SidebarGroupLabel } from './sidebar-group-label.svelte';
+export { default as SidebarInset } from './sidebar-inset.svelte';
+export { default as SidebarMenu } from './sidebar-menu.svelte';
+export { default as SidebarMenuButton } from './sidebar-menu-button.svelte';
+export { default as SidebarMenuItem } from './sidebar-menu-item.svelte';
+export { default as SidebarProvider } from './sidebar-provider.svelte';
+export { default as SidebarRail } from './sidebar-rail.svelte';
+export { getSidebar, type SidebarState } from './sidebar-state.svelte.ts';
+
+export { default as Pagination } from './pagination.svelte';
+export { default as PaginationContent } from './pagination-content.svelte';
+export { default as PaginationEllipsis } from './pagination-ellipsis.svelte';
+export { default as PaginationItem } from './pagination-item.svelte';
+export { default as PaginationLink } from './pagination-link.svelte';
+export { default as PaginationNext } from './pagination-next.svelte';
+export { default as PaginationPrevious } from './pagination-previous.svelte';
+export { default as Toaster } from './sonner.svelte';

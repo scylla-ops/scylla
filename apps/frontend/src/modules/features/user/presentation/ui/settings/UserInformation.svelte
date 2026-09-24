@@ -8,13 +8,13 @@
     CardDescription,
     CardHeader,
     CardTitle,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import {
     FormItemType,
     ScyllaForm,
     type FormItem,
     type FormValues,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { userMutations, userQueries } from '../../user.queries.ts';
   import { userMessages } from '../user.messages.ts';

@@ -2,7 +2,7 @@
   import Building2Icon from '@lucide/svelte/icons/building-2';
   import PlusIcon from '@lucide/svelte/icons/plus';
   import { can, Permission } from '@platform/authz';
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -14,7 +14,7 @@
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { loadAddOrganizationDialog, loadOrganizationList } from '@/modules/features/organization';
@@ -22,7 +22,7 @@
   import CurrentContextDisplay from './CurrentContextDisplay.svelte';
 
   const sidebar = getSidebar();
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationName = $derived(context().organization.name);
   const canCreate = $derived(can(Permission.CREATE_ORGANIZATION));
   const label = $derived(t(layoutMessages.organization));

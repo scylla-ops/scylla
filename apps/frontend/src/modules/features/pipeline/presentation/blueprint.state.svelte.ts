@@ -109,6 +109,7 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
 
     /** Adds a step, disambiguating its id against the ones already on the canvas. */
     addNode(nodeId: string, value: NodeFormValue) {
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity -- a lookup table local to this call, never state
       const id = generateUniqueNodeId(nodeId, new Set(nodes.map(node => node.id)));
 
       const node: BlueprintStepNode = {
@@ -132,6 +133,7 @@ export const createBlueprintState = (params: BlueprintStateParams) => {
      * silently loses its wiring on the next round trip through the document.
      */
     editNode(originalId: string, newNodeId: string, value: NodeFormValue) {
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity -- a lookup table local to this call, never state
       const id = generateUniqueNodeId(newNodeId, new Set(nodes.map(node => node.id)), originalId);
 
       nodes = nodes.map((node): BlueprintNode => {

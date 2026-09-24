@@ -15,8 +15,8 @@
     SelectItem,
     SelectTrigger,
     SelectValue,
-  } from '@shadcn-svelte';
-  import { renderCodeMirror } from '@shared/presentation/ui-svelte';
+  } from '@shadcn';
+  import { renderCodeMirror } from '@shared/presentation/ui';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { PipelineStep, Shell } from '../../../../domain/structs/pipeline.struct.ts';

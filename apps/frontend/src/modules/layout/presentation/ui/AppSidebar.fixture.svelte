@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { NavEntry } from '@platform/routing';
-  import { SidebarProvider } from '@shadcn-svelte';
+  import { SidebarProvider } from '@shadcn';
   import AppSidebar from './AppSidebar.svelte';
 
   let { navEntries }: { navEntries: readonly NavEntry[] } = $props();

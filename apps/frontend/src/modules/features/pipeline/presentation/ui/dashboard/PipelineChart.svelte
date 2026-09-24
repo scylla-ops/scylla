@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { JobEntity } from '@/modules/features/jobs';
-  import { Skeleton } from '@shadcn-svelte';
-  import { StatusBar, type StatusBarItem } from '@shared/presentation/ui-svelte';
+  import { Skeleton } from '@shadcn';
+  import { StatusBar, type StatusBarItem } from '@shared/presentation/ui';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { calculateDuration, formatDuration, getRelativeTime } from '@shared/utils/date-utils.ts';

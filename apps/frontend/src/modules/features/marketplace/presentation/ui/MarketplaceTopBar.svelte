@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input } from '@shadcn-svelte';
+  import { Input } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { marketplaceFilter } from '../marketplace-filter.state.svelte.ts';
   import { marketplaceMessages } from './marketplace.messages.ts';

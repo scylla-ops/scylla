@@ -4,9 +4,9 @@ import {
   Permission,
   PermissionScope,
   PrincipalKind,
-  usePermissionsStore,
+  permissionsStore,
 } from '@platform/authz';
-import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { PermissionRepository } from '../domain/repository/permission.repository.ts';
@@ -40,7 +40,7 @@ let cache: ReturnType<typeof withQueryClient>;
 let restoreRegistry: () => void;
 
 const asSystemAdmin = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -67,14 +67,14 @@ beforeEach(() => {
     },
   });
 
-  useSelectionStore.setState({ selectedIds: {} });
+  selectionStore.setState({ selectedIds: {} });
   asSystemAdmin();
 });
 
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 /** Builds the ViewModel inside a reactive root — it is made of runes. */
@@ -128,7 +128,7 @@ describe('createRolesPage', () => {
   });
 
   it('offers nothing for deletion without MANAGE_ROLES, builtin or not', async () => {
-    usePermissionsStore.setState({
+    permissionsStore.setState({
       permissions: {
         scopes: [
           {

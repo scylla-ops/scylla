@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
 import { runMutationFn, runOnSuccess, runQueryFn } from '@/test/queries.ts';
@@ -72,7 +72,7 @@ beforeEach(() => {
   });
   navigator = installTestNavigator({ pathname: '/acme/projects/project-1' });
 
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: null, name: null },
     project: { id: null, name: null },
     pipeline: { id: null, name: null },
@@ -157,7 +157,7 @@ describe('asPipelineFeed', () => {
 
 describe('pipelineMutations.create', () => {
   it('invalidates that project\'s list and navigates back to it', () => {
-    useContextStore.setState({ project: { id: 'project-1', name: 'web' } });
+    contextStore.setState({ project: { id: 'project-1', name: 'web' } });
     const invalidate = vi.spyOn(cache.queryClient, 'invalidateQueries');
 
     runOnSuccess(pipelineMutations.create(), undefined, {
@@ -193,7 +193,7 @@ describe('pipelineMutations.update', () => {
   });
 
   it('invalidates the project list and the single-pipeline entry, then returns to the project', () => {
-    useContextStore.setState({ project: { id: 'project-1', name: 'web' } });
+    contextStore.setState({ project: { id: 'project-1', name: 'web' } });
     const invalidate = vi.spyOn(cache.queryClient, 'invalidateQueries');
 
     runOnSuccess(pipelineMutations.update(), pipeline(), { id: 'pipeline-1', nodes: [] });

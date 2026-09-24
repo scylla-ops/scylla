@@ -13,7 +13,7 @@
     SelectItem,
     SelectTrigger,
     SelectValue,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { createMutation } from '@platform/query';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { CreatedTrigger, TriggerEntity } from '../../../domain/entities/trigger.entity.ts';
@@ -58,7 +58,7 @@
    */
   const DEFAULT_CRON = '0 9 * * *';
 
-  /* eslint-disable svelte/no-unused-svelte-ignore */
+   
   // svelte-ignore state_referenced_locally
   let name = $state(trigger?.name ?? '');
   // svelte-ignore state_referenced_locally
@@ -75,7 +75,7 @@
   );
   // svelte-ignore state_referenced_locally
   let inputs = $state<DraftInput[]>(triggerToDraftInputs(trigger));
-  /* eslint-enable svelte/no-unused-svelte-ignore */
+   
 
   /** A source arm newer than this build can't be rendered, so it can't be re-sent either. */
   // svelte-ignore state_referenced_locally

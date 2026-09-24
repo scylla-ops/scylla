@@ -1,4 +1,3 @@
-// User feedback: errors, confirmations, banners, reveal dialogs.
-export * from './ErrorState.tsx';
-export * from './ConfirmOperationAlertDialog.tsx';
-export * from './SecretRevealDialog.tsx';
+export { default as ConfirmOperationAlertDialog } from './ConfirmOperationAlertDialog.svelte';
+export { default as ErrorState } from './ErrorState.svelte';
+export { default as SecretRevealDialog } from './SecretRevealDialog.svelte';

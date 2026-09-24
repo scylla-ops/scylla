@@ -10,7 +10,7 @@
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { setAppLocale, type SupportedLocale } from '@shared/presentation/utils/i18n.ts';
   import { activeLocale, t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { layoutMessages } from './layout.messages.ts';

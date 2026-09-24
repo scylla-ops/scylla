@@ -1,8 +1,19 @@
-// Components that render data: tables, lists, status, pagination, copyable values.
-export * from './DataTable.tsx';
-export * from './Pagination.tsx';
-export * from './StatusBar.tsx';
-export * from './status-indicator.tsx';
-export * from './AgentRunInstructions.tsx';
-export * from './CopyableText.tsx';
-export * from './TruncatedText.tsx';
+export { default as AgentRunInstructions } from './AgentRunInstructions.svelte';
+export { default as CopyableText } from './CopyableText.svelte';
+export { default as DataTable } from './DataTable.svelte';
+export { default as TruncatedText } from './TruncatedText.svelte';
+export {
+  buildGridTemplate,
+  minTableWidthOf,
+  type ColumnAlign,
+  type DataTableColumn,
+  type DataTableFeatures,
+} from './data-table.ts';
+export { default as Pagination } from './Pagination.svelte';
+export { default as PaginationSlot } from './PaginationSlot.svelte';
+export { generatePageNumbers, type PageItem } from './pagination.ts';
+export { default as StatusBar } from './StatusBar.svelte';
+export type { StatusBarItem } from './status-bar.ts';
+export { default as StatusIndicator } from './StatusIndicator.svelte';
+export type { StatusIndicatorSize, StatusState } from './status-indicator.ts';
+export { STATUS_ICONS, getStatusIcon } from './status-icons.ts';

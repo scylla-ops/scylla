@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { flushSync } from 'svelte';
-import { PermissionScope, usePermissionsStore } from '@platform/authz';
+import { PermissionScope, permissionsStore } from '@platform/authz';
 import { withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { RoleEntity } from '@/modules/features/roles';
@@ -42,13 +42,13 @@ let cache: ReturnType<typeof withQueryClient>;
 let restoreRegistry: () => void;
 
 const grantCatalogAccess = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
   });
 
-const denyCatalogAccess = () => usePermissionsStore.setState({ permissions: { scopes: [] } });
+const denyCatalogAccess = () => permissionsStore.setState({ permissions: { scopes: [] } });
 
 beforeEach(() => {
   listRoles = vi.fn().mockResolvedValue(ScyllaResult.success([]));
@@ -65,7 +65,7 @@ beforeEach(() => {
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 /**

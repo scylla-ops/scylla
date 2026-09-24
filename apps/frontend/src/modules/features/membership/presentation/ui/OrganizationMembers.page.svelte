@@ -1,11 +1,11 @@
 <script lang="ts">
   import { i18n } from '@lingui/core';
   import { can, Permission, PermissionScope } from '@platform/authz';
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import { createQuery } from '@platform/query';
   import { invalidateOrganizationMembers, organizationQueries } from '@/modules/features/organization';
   import { userQueries } from '@/modules/features/user';
-  import { ConfirmOperationAlertDialog, FeatureHeader } from '@shared/presentation/ui-svelte';
+  import { ConfirmOperationAlertDialog, FeatureHeader } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
@@ -19,7 +19,7 @@
   /** The builtin whose whole content is "belongs here, sees it exists". */
   const ORGANIZATION_MEMBER_ROLE_ID = 'organization-member';
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organization = $derived(context().organization);
   const organizationId = $derived(organization.id);
   const target = $derived({ organizationId: organizationId ?? undefined });

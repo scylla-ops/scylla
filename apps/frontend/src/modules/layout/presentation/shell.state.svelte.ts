@@ -1,7 +1,7 @@
-import { navigateTo, useContextStore } from '@platform/context';
+import { navigateTo, contextStore } from '@platform/context';
 import { createMutation, createQuery } from '@platform/query';
 import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
-import type { FormValues } from '@shared/presentation/ui-svelte';
+import type { FormValues } from '@shared/presentation/ui';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 import { organizationMutations, organizationQueries } from '@/modules/features/organization';
 import { syncMyPermissions } from '@/modules/features/roles';
@@ -15,7 +15,7 @@ import { syncMyPermissions } from '@/modules/features/roles';
 export const createShellState = () => {
   const organizations = createQuery(() => organizationQueries.mine());
   const createOrganization = createMutation(() => organizationMutations.create());
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
 
   $effect(() => {
     const { organization, project } = context();

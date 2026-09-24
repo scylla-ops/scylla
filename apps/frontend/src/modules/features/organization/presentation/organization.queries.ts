@@ -1,6 +1,6 @@
 import { getQueryClient, mutationOptions, queryOptions } from '@platform/query';
 import { getModuleDomain } from '@platform/di';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { i18n } from '@lingui/core';
 import { toast } from '@shared/presentation/utils/toast.ts';
 import { ToastMessages } from '@shared/utils/toast-messages.ts';
@@ -71,7 +71,7 @@ export const organizationMutations = {
       onSuccess: data => {
         // The new organization becomes the active one: whoever created it is
         // looking at it next, and every scoped URL is built from this.
-        useContextStore.getState().setOrganization(data.id, data.name);
+        contextStore.getState().setOrganization(data.id, data.name);
         toast.success(i18n._(ToastMessages.ORGANIZATION_CREATE));
         return invalidateOrganizations();
       },

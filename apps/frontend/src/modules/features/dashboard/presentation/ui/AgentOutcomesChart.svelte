@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import { createQuery } from '@platform/query';
-  import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@shadcn-svelte';
+  import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@shadcn';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
@@ -40,7 +40,7 @@
     { key: 'cancelled', color: 'var(--warning)' },
   ];
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
   const agentsQuery = createQuery(() => agentQueries.byOrganization(organizationId));

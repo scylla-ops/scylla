@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn-svelte';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { membershipMessages } from '../membership.messages.ts';
 

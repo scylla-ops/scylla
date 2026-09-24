@@ -1,6 +1,6 @@
 <script lang="ts">
   import { i18n } from '@lingui/core';
-  import { Card, CardContent } from '@shadcn-svelte';
+  import { Card, CardContent } from '@shadcn';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { DailyOutcome } from '../../../domain/structs/agent.struct.ts';

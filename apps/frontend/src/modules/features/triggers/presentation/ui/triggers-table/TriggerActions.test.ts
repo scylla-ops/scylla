@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { flushSync } from 'svelte';
-import { PermissionScope, usePermissionsStore } from '@platform/authz';
+import { PermissionScope, permissionsStore } from '@platform/authz';
 import { findFloating, render } from '@/test/render.svelte.ts';
 import TriggerActions from './TriggerActions.svelte';
 
@@ -20,7 +20,7 @@ const narrowTheColumn = async () => {
 };
 
 const grantManage = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -46,12 +46,12 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('TriggerActions', () => {
   it('offers no action at all without MANAGE_TRIGGERS', () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     render(TriggerActions, { ...handlers() });
 
     // Svelte leaves an anchor comment behind, so the rule is "no control",

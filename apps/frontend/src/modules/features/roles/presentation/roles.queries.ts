@@ -1,7 +1,7 @@
 import { getQueryClient, mutationOptions, queryOptions } from '@platform/query';
 import { getModuleDomain } from '@platform/di';
 import {
-  usePermissionsStore,
+  permissionsStore,
   type EffectivePermissionsEntity,
   type PermissionScope,
   type PrincipalEntity,
@@ -135,7 +135,7 @@ export const roleQueries = {
  * point: every `can()` in the app reads it.
  */
 export const refreshMyPermissions = async (): Promise<void> => {
-  const setPermissions = usePermissionsStore.getState().setPermissions;
+  const setPermissions = permissionsStore.getState().setPermissions;
   const userId = localStorage.getItem('userId') ?? '';
 
   if (userId === '') {

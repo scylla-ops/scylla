@@ -15,7 +15,7 @@
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { cn } from '@shared/presentation/utils';
   import { formatDate } from '@shared/utils/date-utils.ts';
   import { toast } from '@shared/presentation/utils/toast.ts';

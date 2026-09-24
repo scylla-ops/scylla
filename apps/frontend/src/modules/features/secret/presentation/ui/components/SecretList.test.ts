@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
-import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { SecretEntity } from '../../../domain/entities/secret.entity.ts';
 import type { SecretRepository } from '../../../domain/repository/secret.repository.ts';
@@ -46,7 +46,7 @@ const setUp = (secrets: SecretEntity[] = [secret()]) => {
 
 beforeEach(() => {
   toastSuccess.mockClear();
-  useSelectionStore.setState({ selectedIds: {} });
+  selectionStore.setState({ selectedIds: {} });
 });
 
 afterEach(() => teardown.forEach(restore => restore()));
@@ -78,7 +78,7 @@ describe('SecretList', () => {
 
     await userEvent.click(screen.getByText('DATABASE_URL'));
 
-    expect(useSelectionStore.getState().selectedIds.secrets).toEqual(['secret-1']);
+    expect(selectionStore.getState().selectedIds.secrets).toEqual(['secret-1']);
   });
 
   it('asks for confirmation before deleting, without selecting the row', async () => {
@@ -89,7 +89,7 @@ describe('SecretList', () => {
     expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
     expect(deleteById).not.toHaveBeenCalled();
     // The click must not bubble to the row underneath.
-    expect(useSelectionStore.getState().selectedIds.secrets ?? []).toEqual([]);
+    expect(selectionStore.getState().selectedIds.secrets ?? []).toEqual([]);
   });
 
   it('deletes and reports it once the confirmation is accepted', async () => {

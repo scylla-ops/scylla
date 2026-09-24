@@ -1,12 +1,12 @@
 <script lang="ts">
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import { routeParams, routeTrail } from '@platform/routing';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { breadcrumbsFor, type BreadcrumbItem } from '../breadcrumbs.ts';
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
 
   const crumbs = $derived.by(() => {
     const { organization, project, pipeline } = context();

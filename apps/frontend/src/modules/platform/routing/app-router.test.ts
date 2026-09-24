@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import { msg } from '@lingui/core/macro';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
 import { currentPathname, navigateTo, setAppNavigator } from '@platform/context';
 import { createAppRouter } from './app-router.ts';
 import type { AppRouterConfig } from './app-route.struct.ts';
@@ -43,7 +43,7 @@ const config: AppRouterConfig = {
 };
 
 const grantOnly = (...permissions: Permission[]) =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [
         { scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'restricted', permissions } },
@@ -60,7 +60,7 @@ const renderAt = async (pathname: string) => {
 };
 
 beforeEach(() => {
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 afterEach(() => {

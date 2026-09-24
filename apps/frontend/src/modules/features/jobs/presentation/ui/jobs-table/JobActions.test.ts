@@ -3,7 +3,7 @@ import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { flushSync } from 'svelte';
 import { findFloating, render } from '@/test/render.svelte.ts';
-import { PermissionScope, usePermissionsStore } from '@platform/authz';
+import { PermissionScope, permissionsStore } from '@platform/authz';
 import JobActions from './JobActions.svelte';
 
 /**
@@ -30,7 +30,7 @@ class ResizeObserverMock {
 }
 
 const fullControl = () =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -42,7 +42,7 @@ beforeEach(() => {
   fullControl();
 });
 
-afterEach(() => usePermissionsStore.setState({ permissions: null }));
+afterEach(() => permissionsStore.setState({ permissions: null }));
 
 describe('JobActions', () => {
   it('in the wide layout, shows a view action next to delete', () => {
@@ -53,7 +53,7 @@ describe('JobActions', () => {
   });
 
   it('hides the delete button without DELETE_JOB', () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     render(JobActions, { onView: vi.fn(), onDelete: vi.fn() });
 
     // Only the always-available View button remains.
@@ -61,7 +61,7 @@ describe('JobActions', () => {
     expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
   });
 
-  it('collapses into a single, named dropdown trigger once the column is too narrow', async () => {
+  it('collapses into a single, named dropdown trigger once the column is too narrow', () => {
     render(JobActions, { onView: vi.fn(), onDelete: vi.fn() });
 
     ResizeObserverMock.instances[0].fire(50);
@@ -86,7 +86,7 @@ describe('JobActions', () => {
   });
 
   it('the collapsed menu omits delete without DELETE_JOB', async () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     render(JobActions, { onView: vi.fn(), onDelete: vi.fn() });
 
     ResizeObserverMock.instances[0].fire(50);

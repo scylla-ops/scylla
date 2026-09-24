@@ -1,6 +1,6 @@
 import type { Snippet } from 'svelte';
 import { renderSnippet } from '@tanstack/svelte-table';
-import type { DataTableColumn } from '@shared/presentation/ui-svelte';
+import type { DataTableColumn } from '@shared/presentation/ui';
 import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
 import type { JobEntity } from '../../../domain/entities/job.entity.ts';
 import { jobsMessages } from '../jobs.messages.ts';

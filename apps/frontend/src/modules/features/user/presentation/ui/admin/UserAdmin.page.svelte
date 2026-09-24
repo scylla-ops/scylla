@@ -3,7 +3,7 @@
   import { can, Permission } from '@platform/authz';
   import { scyllaNavigate } from '@platform/context';
   import { createMutation, createQuery } from '@platform/query';
-  import { ErrorState, FeatureHeader } from '@shared/presentation/ui-svelte';
+  import { ErrorState, FeatureHeader } from '@shared/presentation/ui';
   import { createFeatureSelection } from '@shared/presentation/state/feature-selection.svelte.ts';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { ToastMessages } from '@shared/utils/toast-messages.ts';

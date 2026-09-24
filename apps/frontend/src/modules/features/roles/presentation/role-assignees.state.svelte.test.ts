@@ -4,7 +4,7 @@ import {
   Permission,
   PermissionScope,
   PrincipalKind,
-  usePermissionsStore,
+  permissionsStore,
 } from '@platform/authz';
 import { withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
@@ -69,7 +69,7 @@ beforeEach(() => {
     project: { projectRepository: { getByOrganizationId: getProjects } },
   });
 
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -79,7 +79,7 @@ beforeEach(() => {
 afterEach(() => {
   cache.restore();
   restoreRegistry();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 const inRoot = async <T>(build: () => T, body: (value: T) => Promise<void> | void) => {

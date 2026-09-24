@@ -5,7 +5,7 @@
     FormItemType,
     type FormItem,
     type FormValues,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { ProjectEntity } from '../../domain/entities/project.entity.ts';
   import { projectMutations } from '../project.queries.ts';

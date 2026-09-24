@@ -28,12 +28,6 @@
       ],
       "@shadcn": [
         "src/modules/shared/presentation/ui/shadcn"
-      ],
-      "@shadcn-svelte/*": [
-        "src/modules/shared/presentation/ui/shadcn-svelte/*"
-      ],
-      "@shadcn-svelte": [
-        "src/modules/shared/presentation/ui/shadcn-svelte"
       ]
     }
   }

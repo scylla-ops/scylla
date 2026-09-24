@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { LucideIcon } from '@shared/presentation/ui-svelte/icon.ts';
+import type { LucideIcon } from '@shared/presentation/ui/icon.ts';
 
 export interface NavItem {
   title: string;

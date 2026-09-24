@@ -2,7 +2,7 @@
   import ActivityIcon from '@lucide/svelte/icons/activity';
   import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list';
   import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
-  import { Button, Card, CardContent, CardHeader, CardTitle } from '@shadcn-svelte';
+  import { Button, Card, CardContent, CardHeader, CardTitle } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { secretMessages } from '../secret.messages.ts';
 

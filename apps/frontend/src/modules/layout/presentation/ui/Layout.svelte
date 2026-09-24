@@ -2,8 +2,8 @@
   import type { Snippet } from 'svelte';
   import type { NavEntry } from '@platform/routing';
   import { routePathname } from '@platform/routing';
-  import { SidebarInset, SidebarProvider } from '@shadcn-svelte';
-  import { PageTransition, ScyllaLoadingScreen } from '@shared/presentation/ui-svelte';
+  import { SidebarInset, SidebarProvider } from '@shadcn';
+  import { PageTransition, ScyllaLoadingScreen } from '@shared/presentation/ui';
   import { createShellState } from '../shell.state.svelte.ts';
   import AppSidebar from './AppSidebar.svelte';
   import FirstOrganization from './FirstOrganization.svelte';

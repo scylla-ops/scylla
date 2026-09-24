@@ -13,8 +13,8 @@
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-  } from '@shadcn-svelte';
-  import { IconButton } from '@shared/presentation/ui-svelte';
+  } from '@shadcn';
+  import { IconButton } from '@shared/presentation/ui';
   import { createCompactContainer } from '@shared/presentation/state/compact-container.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { pipelineMessages } from '../../../pipeline.messages.ts';

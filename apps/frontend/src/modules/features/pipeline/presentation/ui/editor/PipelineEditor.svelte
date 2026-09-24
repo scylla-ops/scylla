@@ -1,8 +1,8 @@
 <script lang="ts">
   import { StreamLanguage } from '@codemirror/language';
   import { json } from '@codemirror/legacy-modes/mode/javascript';
-  import { Card, Tabs, TabsContent } from '@shadcn-svelte';
-  import { renderCodeMirror } from '@shared/presentation/ui-svelte';
+  import { Card, Tabs, TabsContent } from '@shadcn';
+  import { renderCodeMirror } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { PipelineStep } from '../../../domain/structs/pipeline.struct.ts';
   import { createPipelineScript } from '../../pipeline-script.state.svelte.ts';

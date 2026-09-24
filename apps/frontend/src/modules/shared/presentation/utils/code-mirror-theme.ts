@@ -1,7 +1,3 @@
-// From the CodeMirror packages themselves, not from `@uiw/react-codemirror`
-// which re-exports them: this file is `utils/`, so it must stay framework-free,
-// and a Svelte editor importing it through the React wrapper would pull React
-// into its chunk. Same objects either way — `@uiw` only re-exports these.
 import { EditorView } from '@codemirror/view';
 import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark';
 import type { Extension } from '@codemirror/state';
@@ -16,8 +12,8 @@ export interface CodeMirrorThemeOptions {
 
 /**
  * Builds the editor theme from the app's CSS variables so it follows light/dark
- * automatically. Passed to `<ReactCodeMirror theme={...} />` (not `extensions`)
- * so it replaces the library's hardcoded white default instead of fighting it.
+ * automatically. It goes in as the theme of the editor (not as an extension), so
+ * it replaces the library's hardcoded white default instead of fighting it.
  *
  * In error mode the accent (left bar on focus + the resting border) turns
  * destructive so it reads as a single coherent state instead of an outer red

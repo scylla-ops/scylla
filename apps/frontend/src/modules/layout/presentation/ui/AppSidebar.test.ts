@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { msg } from '@lingui/core/macro';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useContextStore } from '@platform/context';
+import { Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
 import type { NavEntry } from '@platform/routing';
 import { installTestNavigator } from '@/test/navigator.ts';
 import AppSidebarFixture from './AppSidebar.fixture.svelte';
@@ -27,7 +27,7 @@ const entry = (overrides: Partial<NavEntry> = {}): NavEntry => ({
 });
 
 const grantOnly = (...permissions: Permission[]) =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [
         { scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'restricted', permissions } },
@@ -40,8 +40,8 @@ let navigator: ReturnType<typeof installTestNavigator>;
 beforeEach(() => {
   navigator = installTestNavigator({ pathname: '/acme-corp/dashboard' });
   localStorage.clear();
-  usePermissionsStore.setState({ permissions: null });
-  useContextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
+  permissionsStore.setState({ permissions: null });
+  contextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
 });
 
 afterEach(() => navigator.restore());

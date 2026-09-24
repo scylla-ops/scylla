@@ -1,7 +1,7 @@
 <script lang="ts">
   import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
-  import { getSidebar } from '@shadcn-svelte';
-  import type { LucideIcon } from '@shared/presentation/ui-svelte/icon.ts';
+  import { getSidebar } from '@shadcn';
+  import type { LucideIcon } from '@shared/presentation/ui/icon.ts';
 
   interface Props {
     name: string;

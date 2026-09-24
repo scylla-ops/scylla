@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Badge } from '@shadcn-svelte';
-  import { TruncatedText, getStatusIcon } from '@shared/presentation/ui-svelte';
+  import { Badge } from '@shadcn';
+  import { TruncatedText, getStatusIcon } from '@shared/presentation/ui';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { getStatusConfig } from '@shared/utils/status-config.ts';

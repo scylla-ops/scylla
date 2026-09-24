@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ErrorState, PaginationSlot } from '@shared/presentation/ui-svelte';
+  import { ErrorState, PaginationSlot } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { createPipelineDashboard } from '../../pipeline-dashboard.state.svelte.ts';
   import { createRunPipeline } from '../../run-pipeline.svelte.ts';

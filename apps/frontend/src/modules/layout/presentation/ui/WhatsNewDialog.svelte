@@ -7,7 +7,7 @@
     DialogFooter,
     DialogHeader,
     DialogTitle,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { dismissRelease, unseenRelease } from '../whats-new.svelte.ts';
   import { layoutMessages } from './layout.messages.ts';

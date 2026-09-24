@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createQuery } from '@platform/query';
-  import { ErrorState, Pagination } from '@shared/presentation/ui-svelte';
+  import { ErrorState, Pagination } from '@shared/presentation/ui';
   import { createPagination } from '@shared/presentation/state/pagination.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { projectQueries } from '../project.queries.ts';

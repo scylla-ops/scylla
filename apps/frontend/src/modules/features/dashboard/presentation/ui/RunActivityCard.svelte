@@ -5,7 +5,7 @@
   import Loader2Icon from '@lucide/svelte/icons/loader-2';
   import UnplugIcon from '@lucide/svelte/icons/unplug';
   import XCircleIcon from '@lucide/svelte/icons/x-circle';
-  import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@shadcn-svelte';
+  import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { getRelativeTime } from '@shared/utils/date-utils.ts';
   import type { JobsSummary } from '@/modules/features/jobs';

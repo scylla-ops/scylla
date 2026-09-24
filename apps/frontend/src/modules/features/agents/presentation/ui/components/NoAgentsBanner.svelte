@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { can, Permission } from '@platform/authz';
-  import { scyllaNavigate, useContextStore } from '@platform/context';
+  import { scyllaNavigate, contextStore } from '@platform/context';
   import { createQuery } from '@platform/query';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
@@ -15,7 +15,7 @@
 
   let { hasPendingJobs }: Props = $props();
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
   // The query is gated on LIST_AGENTS inside `agentQueries`; this is the same

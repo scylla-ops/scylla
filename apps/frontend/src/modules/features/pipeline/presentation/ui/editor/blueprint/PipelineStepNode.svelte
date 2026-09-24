@@ -2,7 +2,7 @@
   import TerminalIcon from '@lucide/svelte/icons/terminal';
   import XIcon from '@lucide/svelte/icons/x';
   import { Handle, Position, useSvelteFlow, type NodeProps } from '@xyflow/svelte';
-  import { Card } from '@shadcn-svelte';
+  import { Card } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { BlueprintStepNode } from '../../../utils/blueprint-converter.ts';
   import { pipelineMessages } from '../../../pipeline.messages.ts';

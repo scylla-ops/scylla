@@ -7,7 +7,7 @@
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import type { NavItem, NavSection } from '../structs/nav-section.struct.ts';
   import { markSeen } from '../whats-new.svelte.ts';
   import { NAV_SECTION_CARD_CLASS, NAV_SECTION_DIVIDER_CLASS } from './nav-classes.ts';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Dialog, DialogContent } from '@shadcn-svelte';
+  import { Dialog, DialogContent } from '@shadcn';
   import type { AssignableRole } from '../../assignable-roles.state.svelte.ts';
   import AddMemberForm from './AddMemberForm.svelte';
   import type { MemberCandidate } from './member-candidate.ts';

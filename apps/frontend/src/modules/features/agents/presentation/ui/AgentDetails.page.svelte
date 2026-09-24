@@ -2,14 +2,14 @@
   import type { Snippet } from 'svelte';
   import CpuIcon from '@lucide/svelte/icons/cpu';
   import { can, Permission } from '@platform/authz';
-  import { createResourceError, scyllaNavigate, useContextStore } from '@platform/context';
+  import { createResourceError, scyllaNavigate, contextStore } from '@platform/context';
   import { createMutation, createQuery } from '@platform/query';
-  import { Badge, Button, Skeleton } from '@shadcn-svelte';
+  import { Badge, Button, Skeleton } from '@shadcn';
   import {
     AgentRunInstructions,
     ConfirmOperationAlertDialog,
     ErrorState,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { cn } from '@shared/presentation/utils';
   import { formatDate, getRelativeTime } from '@shared/utils/date-utils.ts';
@@ -26,7 +26,7 @@
 
   let { agentId }: Props = $props();
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
   const agentQuery = createQuery(() => agentQueries.byId(agentId ?? ''));

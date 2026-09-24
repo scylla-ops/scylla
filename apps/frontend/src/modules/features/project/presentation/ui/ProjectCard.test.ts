@@ -3,9 +3,9 @@ import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
-import { useContextStore } from '@platform/context';
-import { usePermissionsStore, PermissionScope } from '@platform/authz';
-import { useSelectionStore } from '@shared/presentation/stores/use-selection.store.ts';
+import { contextStore } from '@platform/context';
+import { permissionsStore, PermissionScope } from '@platform/authz';
+import { selectionStore } from '@shared/presentation/stores/selection.store.ts';
 import { ScyllaResult } from '@shared/utils/scylla-result.ts';
 import type { ProjectEntity } from '../../domain/entities/project.entity.ts';
 import type { ProjectRepository } from '../../domain/repository/project.repository.ts';
@@ -41,12 +41,12 @@ const renderCard = (entity: ProjectEntity = project()) => {
 };
 
 beforeEach(() => {
-  useSelectionStore.setState({ selectedIds: {} });
-  useContextStore.setState({
+  selectionStore.setState({ selectedIds: {} });
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
   });
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [{ scope: PermissionScope.SYSTEM, scopeId: '', access: { kind: 'fullControl' } }],
     },
@@ -79,7 +79,7 @@ describe('ProjectCard', () => {
   const findEditButton = () => screen.queryByRole('button', { name: 'Edit' });
 
   it('the Edit button is hidden without UPDATE_PROJECT on this project', () => {
-    usePermissionsStore.setState({ permissions: { scopes: [] } });
+    permissionsStore.setState({ permissions: { scopes: [] } });
     renderCard();
     expect(findEditButton()).toBeNull();
   });
@@ -99,6 +99,6 @@ describe('ProjectCard', () => {
     await userEvent.click(screen.getByRole('checkbox'));
 
     expect(testNavigator.navigate).not.toHaveBeenCalled();
-    expect(useSelectionStore.getState().selectedIds.projects).toContain('project-9');
+    expect(selectionStore.getState().selectedIds.projects).toContain('project-9');
   });
 });

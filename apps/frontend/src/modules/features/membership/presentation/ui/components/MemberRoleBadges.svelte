@@ -1,7 +1,7 @@
 <script lang="ts">
   import LockIcon from '@lucide/svelte/icons/lock';
   import XIcon from '@lucide/svelte/icons/x';
-  import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn-svelte';
+  import { Tooltip, TooltipContent, TooltipTrigger } from '@shadcn';
   import { scopeLabelOf } from '@/modules/features/roles';
   import { cn } from '@shared/presentation/utils';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';

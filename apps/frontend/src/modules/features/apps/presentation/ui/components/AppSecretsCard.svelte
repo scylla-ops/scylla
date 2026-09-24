@@ -3,13 +3,13 @@
   import PlusIcon from '@lucide/svelte/icons/plus';
   import TrashIcon from '@lucide/svelte/icons/trash';
   import { createMutation, createQuery } from '@platform/query';
-  import { Badge, Button, Card, CardContent, Skeleton, Switch } from '@shadcn-svelte';
+  import { Badge, Button, Card, CardContent, Skeleton, Switch } from '@shadcn';
   import {
     ConfirmOperationAlertDialog,
     FormDialog,
     SecretRevealDialog,
     type FormValues,
-  } from '@shared/presentation/ui-svelte';
+  } from '@shared/presentation/ui';
   import { formatDate } from '@shared/utils/date-utils.ts';
   import { activeLocale, t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { AppEntity } from '../../../domain/entities/app.entity.ts';

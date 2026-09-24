@@ -1,5 +1,5 @@
 import { currentPathname, navigateBack, navigateTo } from './navigator.ts';
-import { useContextStore } from './use-context.store.ts';
+import { contextStore } from './context.store.ts';
 import { slugifyOrgName } from '@shared/utils/slug.ts';
 
 /**
@@ -14,7 +14,7 @@ import { slugifyOrgName } from '@shared/utils/slug.ts';
  */
 
 const getOrgPrefix = () => {
-  const orgName = useContextStore.getState().organization.name;
+  const orgName = contextStore.getState().organization.name;
   return orgName ? `/${slugifyOrgName(orgName)}` : '';
 };
 
@@ -29,24 +29,24 @@ const goToSubRoute = (subPath: string, options = {}) => {
 // infrastructure and must stay ignorant of what a project or a pipeline is.
 const goToProject = (id: string, name: string) => {
   navigateTo(`${getOrgPrefix()}/projects/${id}`);
-  useContextStore.getState().setProject(id, name);
+  contextStore.getState().setProject(id, name);
 };
 
 const goToCreatePipeline = () => {
-  navigateTo(`${getOrgPrefix()}/projects/${useContextStore.getState().project.id}/create`);
+  navigateTo(`${getOrgPrefix()}/projects/${contextStore.getState().project.id}/create`);
 };
 
 const goToEditPipeline = (id: string, name: string) => {
-  navigateTo(`${getOrgPrefix()}/projects/${useContextStore.getState().project.id}/edit/${id}`);
-  useContextStore.getState().setPipeline(id, name);
+  navigateTo(`${getOrgPrefix()}/projects/${contextStore.getState().project.id}/edit/${id}`);
+  contextStore.getState().setPipeline(id, name);
 };
 
 // `name` is optional: a caller already inside the pipeline (its jobs, one of
 // its jobs) navigates without renaming the context it is already in.
 const goToJobs = (id: string, name?: string) => {
-  const projectId = useContextStore.getState().project.id;
+  const projectId = contextStore.getState().project.id;
   navigateTo(`${getOrgPrefix()}/projects/${projectId}/pipelines/${id}/jobs`);
-  if (name) useContextStore.getState().setPipeline(id, name);
+  if (name) contextStore.getState().setPipeline(id, name);
 };
 
 const goToJobDetails = (
@@ -54,7 +54,7 @@ const goToJobDetails = (
   jobId: string,
   options: { nodeId?: string; pipelineName?: string } = {},
 ) => {
-  const projectId = useContextStore.getState().project.id;
+  const projectId = contextStore.getState().project.id;
   // `nodes` is a list the page opens a panel per id for; one id opens that
   // node's logs alone, which is what every caller here means.
   const query = options.nodeId ? `?nodes=${encodeURIComponent(options.nodeId)}` : '';
@@ -62,13 +62,13 @@ const goToJobDetails = (
     `${getOrgPrefix()}/projects/${projectId}/pipelines/${pipelineId}/jobs/${jobId}${query}`,
   );
   if (options.pipelineName)
-    useContextStore.getState().setPipeline(pipelineId, options.pipelineName);
+    contextStore.getState().setPipeline(pipelineId, options.pipelineName);
 };
 
 const goToTriggers = (id: string, name: string) => {
-  const projectId = useContextStore.getState().project.id;
+  const projectId = contextStore.getState().project.id;
   navigateTo(`${getOrgPrefix()}/projects/${projectId}/pipelines/${id}/triggers`);
-  useContextStore.getState().setPipeline(id, name);
+  contextStore.getState().setPipeline(id, name);
 };
 
 const goToUserSettings = (userId: string) => {

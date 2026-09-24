@@ -1,7 +1,7 @@
 <script lang="ts">
   import TrashIcon from '@lucide/svelte/icons/trash';
-  import { Badge } from '@shadcn-svelte';
-  import { IconButton } from '@shared/presentation/ui-svelte';
+  import { Badge } from '@shadcn';
+  import { IconButton } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { membershipMessages } from '../membership.messages.ts';
 

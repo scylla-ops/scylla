@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { flushSync } from 'svelte';
-import { useContextStore } from '@platform/context';
+import { contextStore } from '@platform/context';
 import { stubQuery } from '@/test/queries.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
 import { withQueryClient } from '@/test/render.svelte.ts';
@@ -36,7 +36,7 @@ beforeEach(() => {
   cache = withQueryClient();
   organizationsState.organizations = undefined;
   organizationsState.isLoading = false;
-  useContextStore.setState({ organization: { id: null, name: null } });
+  contextStore.setState({ organization: { id: null, name: null } });
 });
 
 afterEach(() => {
@@ -53,7 +53,7 @@ describe('redirectToOrganization', () => {
   });
 
   it('goes to the dashboard of the active organization', () => {
-    useContextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
+    contextStore.setState({ organization: { id: 'org-1', name: 'Acme Corp' } });
     organizationsState.organizations = [{ id: 'org-2', name: 'Other Co' }];
     run();
 

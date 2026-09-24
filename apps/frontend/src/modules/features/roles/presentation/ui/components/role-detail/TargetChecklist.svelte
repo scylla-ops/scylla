@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge, Checkbox, Label } from '@shadcn-svelte';
+  import { Badge, Checkbox, Label } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { TargetOption } from '../../../grant-creator.state.svelte.ts';
   import { rolesMessages } from '../../roles.messages.ts';

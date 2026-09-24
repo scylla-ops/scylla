@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { Permission, PermissionScope, usePermissionsStore } from '@platform/authz';
-import { useContextStore } from '@platform/context';
+import { type Permission, PermissionScope, permissionsStore } from '@platform/authz';
+import { contextStore } from '@platform/context';
 import { render, withQueryClient, withRegistry } from '@/test/render.svelte.ts';
 import { installTestNavigator } from '@/test/navigator.ts';
 import { ScyllaError, ScyllaResult } from '@shared/utils/scylla-result.ts';
@@ -37,7 +37,7 @@ let restoreRegistry: () => void;
 let nav: ReturnType<typeof installTestNavigator>;
 
 const grant = (permissions: Permission[] | 'all') =>
-  usePermissionsStore.setState({
+  permissionsStore.setState({
     permissions: {
       scopes: [
         {
@@ -73,7 +73,7 @@ beforeEach(() => {
     },
   });
 
-  useContextStore.setState({
+  contextStore.setState({
     organization: { id: 'org-1', name: 'Acme' },
     project: { id: null, name: null },
   });
@@ -85,7 +85,7 @@ afterEach(() => {
   cache.restore();
   restoreRegistry();
   nav.restore();
-  usePermissionsStore.setState({ permissions: null });
+  permissionsStore.setState({ permissions: null });
 });
 
 describe('AppDetailsPage', () => {

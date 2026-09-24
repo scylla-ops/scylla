@@ -5,7 +5,7 @@
     DialogDescription,
     DialogHeader,
     DialogTitle,
-  } from '@shadcn-svelte';
+  } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import type { PipelineStep } from '../../../../domain/structs/pipeline.struct.ts';
   import type { NodeFormValue } from '../../../utils/blueprint-converter.ts';

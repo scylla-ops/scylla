@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core';
 import { SvelteSet } from 'svelte/reactivity';
 import { Permission, can } from '@platform/authz';
-import { scyllaNavigate, useContextStore } from '@platform/context';
+import { scyllaNavigate, contextStore } from '@platform/context';
 import { createMutation, createQuery } from '@platform/query';
 import { agentQueries } from '@/modules/features/agents';
 import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
@@ -24,7 +24,7 @@ import { pipelineMutations } from './pipeline.queries.ts';
  * something to check, rather than claiming none is connected.
  */
 export const createRunPipeline = () => {
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id ?? '');
 
   const canListAgents = $derived(can(Permission.LIST_AGENTS));

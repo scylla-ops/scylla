@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card } from '@shadcn-svelte';
+  import { Card } from '@shadcn';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { marketplaceMessages } from './marketplace.messages.ts';
 

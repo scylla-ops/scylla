@@ -1,12 +1,12 @@
 <script lang="ts">
   import { i18n } from '@lingui/core';
   import { can, Permission, PermissionScope } from '@platform/authz';
-  import { useContextStore } from '@platform/context';
+  import { contextStore } from '@platform/context';
   import { createQuery } from '@platform/query';
   import { organizationQueries } from '@/modules/features/organization';
   import { invalidateProjectMembers, projectQueries } from '@/modules/features/project';
   import { roleConfers, roleQueries } from '@/modules/features/roles';
-  import { ConfirmOperationAlertDialog, FeatureHeader } from '@shared/presentation/ui-svelte';
+  import { ConfirmOperationAlertDialog, FeatureHeader } from '@shared/presentation/ui';
   import { toRune } from '@shared/presentation/stores/to-rune.svelte.ts';
   import { toast } from '@shared/presentation/utils/toast.ts';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
@@ -29,7 +29,7 @@
 
   let { projectId }: Props = $props();
 
-  const context = toRune(useContextStore);
+  const context = toRune(contextStore);
   const organizationId = $derived(context().organization.id);
   // Every check is about *this* project, not whichever one the context store
   // happens to hold — a direct URL hit may land here before the two agree.

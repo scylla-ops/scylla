@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createMutation } from '@platform/query';
-  import { FormDialog, type FormValues } from '@shared/presentation/ui-svelte';
+  import { FormDialog, type FormValues } from '@shared/presentation/ui';
   import { t } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { activeLocale } from '@shared/presentation/utils/i18n-svelte.svelte.ts';
   import { secretMutations } from '../secret.queries.ts';

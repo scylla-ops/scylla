@@ -42,7 +42,7 @@ beforeEach(() => {
     createAppSecret: vi.fn().mockResolvedValue(ScyllaResult.success({ credential: {}, secret: 's' })),
     revokeAppSecret: vi.fn().mockResolvedValue(ScyllaResult.success(undefined)),
     setAppSecretEnabled: vi.fn().mockResolvedValue(ScyllaResult.success({})),
-  } as unknown as AppsRepository;
+  };
 
   setDependencyRegistry({ apps: { appsRepository: repository } });
 
