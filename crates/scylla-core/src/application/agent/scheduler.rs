@@ -1,6 +1,6 @@
 use crate::application::agent::dispatch::assemble_dispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
-use crate::application::agent::use_case::{DispatchOutcome, DispatchUseCases};
+use crate::application::agent::dispatch_use_case::{DispatchOutcome, DispatchUseCases};
 use crate::application::job::repository::JobRepository;
 use crate::application::pipeline::repository::PipelineRepository;
 use crate::application::secret::SecretResolver;

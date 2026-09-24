@@ -1,27 +1,13 @@
-use crate::application::HashService;
 use crate::application::agent::dispatch::JobDispatch;
 use crate::application::agent::dispatch_port::AgentDispatch;
-use crate::application::agent::repository::{AgentRepository, AgentStats};
-use crate::application::app::repository::AppRepository;
-use crate::domain::agent::{Agent, AgentHost};
-use crate::domain::app::{App, AppCredential};
-use crate::domain::app::{AppName, AppSecret, AppSecretLabel};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
-use crate::domain::ids::{AppId, OrganizationId, PipelineId};
+use crate::domain::ids::{AppId, PipelineId};
 use crate::domain::permission::Permission;
-use crate::domain::role::RoleName;
-use chrono::{DateTime, Utc};
-use derive_more::Constructor;
-use scylla_auth::authz::{
-    Grant, ORGANIZATION_AGENT_ROLE, PermissionService, PolicyControl, Principal, Scope,
-};
-use std::collections::HashSet;
+use scylla_auth::authz::PermissionService;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::{instrument, warn};
-
-const DEFAULT_SECRET_LABEL: &str = "default";
 
 pub enum DispatchOutcome {
     Dispatched(AppId),
@@ -92,157 +78,6 @@ impl<W: AgentDispatch, PS: PermissionService> DispatchUseCases<W, PS> {
             "no connected agent authorized to execute pipeline; job left pending"
         );
         Ok(DispatchOutcome::NoAgentAvailable)
-    }
-}
-
-pub struct CreatedAgent {
-    pub app: App,
-    pub secret: AppSecret,
-}
-
-pub struct AgentView {
-    pub app: App,
-    pub connected: bool,
-    pub last_seen: Option<DateTime<Utc>>,
-    pub in_flight: usize,
-    pub host: Option<AgentHost>,
-}
-
-#[derive(Constructor)]
-pub struct AgentUseCases<A, W, H, PC, PS>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
-    app_repo: Arc<A>,
-    agent_repo: Arc<W>,
-    hash_service: Arc<H>,
-    policy_control: Arc<PC>,
-    permission_service: Arc<PS>,
-    registry: Arc<dyn AgentDispatch>,
-}
-
-impl<A, W, H, PC, PS> AgentUseCases<A, W, H, PC, PS>
-where
-    A: AppRepository,
-    W: AgentRepository,
-    H: HashService,
-    PC: PolicyControl,
-    PS: PermissionService,
-{
-    #[instrument(skip_all, fields(org_id = %organization_id, name = %name))]
-    pub async fn create(
-        &self,
-        caller: &CallerContext,
-        organization_id: OrganizationId,
-        name: AppName,
-    ) -> DomainResult<CreatedAgent> {
-        self.permission_service
-            .check(caller, Permission::CreateAgent(organization_id.clone()))
-            .await?;
-
-        let secret = crate::application::app::mint_app_secret();
-        let secret_hash = self.hash_service.hash_secret(&secret).await?;
-        let app = App::create(organization_id.clone(), name);
-        let credential = AppCredential::create(
-            app.id().clone(),
-            AppSecretLabel::new(DEFAULT_SECRET_LABEL)?,
-            secret_hash,
-        );
-        let agent = Agent::create(app.id().clone());
-
-        let grant = Grant::new(
-            Principal::App(app.id().clone()),
-            RoleName::new(ORGANIZATION_AGENT_ROLE)?,
-            Scope::Organization(organization_id),
-        );
-        self.app_repo
-            .provision_agent(&app, &credential, &agent, &grant)
-            .await?;
-        self.policy_control.reload().await?;
-
-        Ok(CreatedAgent { app, secret })
-    }
-
-    #[instrument(skip_all, fields(org_id = %organization_id))]
-    pub async fn list(
-        &self,
-        caller: &CallerContext,
-        organization_id: OrganizationId,
-    ) -> DomainResult<Vec<AgentView>> {
-        self.permission_service
-            .check(caller, Permission::ListAgents(organization_id.clone()))
-            .await?;
-
-        let agents = self
-            .agent_repo
-            .list_by_organization(&organization_id)
-            .await?;
-        let connected: HashSet<String> = self
-            .registry
-            .connected()
-            .into_iter()
-            .map(|id| id.as_str().to_string())
-            .collect();
-
-        let mut views = Vec::with_capacity(agents.len());
-        for agent in &agents {
-            let app = self.app_repo.find_by_id(agent.app_id()).await?;
-            let is_connected = connected.contains(app.id().as_str());
-            let in_flight = self.registry.in_flight(agent.app_id());
-            views.push(AgentView {
-                app,
-                connected: is_connected,
-                last_seen: agent.last_seen(),
-                in_flight,
-                host: agent.host().cloned(),
-            });
-        }
-        Ok(views)
-    }
-
-    #[instrument(skip_all, fields(app_id = %app_id))]
-    pub async fn get(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentView> {
-        self.permission_service
-            .check(caller, Permission::ReadApp(app_id.clone()))
-            .await?;
-
-        let agent = self.agent_repo.find_by_app_id(&app_id).await?;
-        let app = self.app_repo.find_by_id(&app_id).await?;
-        let connected = self
-            .registry
-            .connected()
-            .iter()
-            .any(|id| id.as_str() == app_id.as_str());
-        Ok(AgentView {
-            app,
-            connected,
-            last_seen: agent.last_seen(),
-            in_flight: self.registry.in_flight(&app_id),
-            host: agent.host().cloned(),
-        })
-    }
-
-    #[instrument(skip_all, fields(app_id = %app_id))]
-    pub async fn stats(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<AgentStats> {
-        self.permission_service
-            .check(caller, Permission::ReadAppStats(app_id.clone()))
-            .await?;
-        self.agent_repo.agent_stats(&app_id).await
-    }
-
-    #[instrument(skip_all, fields(app_id = %app_id))]
-    pub async fn delete(&self, caller: &CallerContext, app_id: AppId) -> DomainResult<()> {
-        self.permission_service
-            .check(caller, Permission::DeleteApp(app_id.clone()))
-            .await?;
-        // Drop the stream first so a removed agent stops at once; the delete cascades the rest.
-        self.registry.disconnect(&app_id);
-        self.app_repo.delete(&app_id).await?;
-        self.policy_control.reload().await
     }
 }
 

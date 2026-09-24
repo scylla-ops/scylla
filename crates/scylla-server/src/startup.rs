@@ -104,15 +104,8 @@ pub(crate) type SharedAppTokenUc = Arc<
     >,
 >;
 pub(crate) type SharedDispatchUc = Arc<DispatchUseCases<InMemoryAgentRegistry, PermissionChecker>>;
-pub(crate) type SharedAgentUc = Arc<
-    AgentUseCases<
-        PgAppRepository,
-        PgAgentRepository,
-        Argon2HashService,
-        PermissionChecker,
-        PermissionChecker,
-    >,
->;
+pub(crate) type SharedAgentUc =
+    Arc<AgentUseCases<PgAppRepository, PgAgentRepository, Argon2HashService, PermissionChecker>>;
 pub(crate) type SharedTriggerUc = Arc<
     TriggerUseCases<
         PgTriggerRepository,
@@ -289,7 +282,6 @@ pub(crate) async fn init_services(
         app_repo.clone(),
         agent_repo.clone(),
         hash_service.clone(),
-        permission_checker.clone(),
         permission_checker.clone(),
         agent_registry.clone(),
     ));
@@ -636,7 +628,8 @@ where
         services.agent_repo.clone(),
         services.pending_signal.clone(),
     );
-    let agent_admin_handler = AgentAdminHandler::new(services.agent_uc.clone());
+    let agent_admin_handler =
+        AgentAdminHandler::new(services.actions.clone(), services.agent_uc.clone());
     let grant_handler = GrantHandler::new(services.grant_uc.clone());
     let role_handler = RoleHandler::new(services.role_uc.clone());
     let invitation_handler = InvitationHandler::new(services.invitation_uc.clone());

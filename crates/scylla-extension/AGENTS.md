@@ -419,9 +419,13 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization, user, secret, pipeline, trigger and app use cases
-  are on the pipeline. The other aggregates keep their hand-written sequence
-  until they migrate.
+- The project, organization, user, secret, pipeline, trigger, app and agent
+  use cases are on the pipeline. The other aggregates keep their hand-written
+  sequence until they migrate.
+- `DispatchUseCases`, `PendingJobScheduler` and the agent stream
+  (`AgentHandler`) stay outside the pipeline. They run as the scheduler or as
+  the agent's own token, not for a caller that asks for a permission;
+  `dispatch_job` asks for `ExecuteJob` only to choose an agent, never to refuse.
 - `AppUseCases::revoke_secret` and `set_secret_enabled` stay outside the
   pipeline. Their permission is `DeleteApp` on the secret's app, and only the
   loaded credential knows that app. `DeleteApp` and `SetAppActive` stage the id

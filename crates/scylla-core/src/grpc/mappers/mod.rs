@@ -1,3 +1,4 @@
+pub mod agent_mapper;
 pub mod app_mapper;
 pub mod error_mapper;
 pub mod job_log_mapper;
@@ -10,6 +11,7 @@ pub mod secret_mapper;
 pub mod trigger_mapper;
 pub mod user_mapper;
 
+pub use agent_mapper::{agent_stats_to_proto, agent_to_proto, agent_view_to_proto};
 pub use app_mapper::{app_credential_to_proto, app_to_proto};
 pub use error_mapper::domain_error_to_status;
 pub use job_log_mapper::job_log_to_proto;
