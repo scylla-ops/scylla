@@ -120,7 +120,16 @@ export default tseslint.config([
   // after it for exactly that reason. Here we only need the parser and the
   // plugin's own rules.
   ...svelte.configs.recommended,
+  // `.svelte` and `.svelte.ts` (rune) files skip type-aware linting on
+  // purpose: svelte-eslint-parser's bridge to the TypeScript program is known
+  // to scale badly on large projects (sveltejs/eslint-plugin-svelte#1084 —
+  // minutes per run, sometimes far worse, versus seconds for plain `.ts`).
+  // `svelte-check` (run separately in `typecheck`) already covers full type
+  // correctness for both file kinds, so the only real loss here is
+  // `no-floating-promises` on their script content.
   {
+    // `.svelte.ts` (rune files, no template) still need this parser: runes
+    // syntax (`$state`, `$derived`...) is not valid plain TypeScript.
     files: ['**/*.svelte', '**/*.svelte.ts'],
     plugins: { '@typescript-eslint': tseslint.plugin },
     languageOptions: {
@@ -128,13 +137,11 @@ export default tseslint.config([
       globals: globals.browser,
       parserOptions: {
         parser: tseslint.parser,
-        projectService: true,
         tsconfigRootDir: import.meta.dirname,
         extraFileExtensions: ['.svelte'],
       },
     },
     rules: {
-      '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/consistent-type-imports': [
         'error',
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
