@@ -69,7 +69,7 @@
       </SidebarGroup>
     {/if}
   </SidebarContent>
-  <SidebarFooter class="flex flex-col gap-2">
+  <SidebarFooter class="flex flex-col gap-2 p-0">
     <LanguageSelector />
     <NavUser />
   </SidebarFooter>
