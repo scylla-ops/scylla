@@ -64,6 +64,14 @@ describe('Layout', () => {
     expect(screen.getByRole('button', { name: 'Toggle Sidebar' })).toBeInTheDocument();
   });
 
+  it('leaves the page transition to the router, so the page gets no second padded wrapper', async () => {
+    setUp(() => Promise.resolve(ScyllaResult.success([{ id: 'org-1', name: 'Acme' }])));
+
+    const page = await screen.findByText('page content');
+
+    expect(page.closest('main')).toHaveAttribute('data-slot', 'sidebar-inset');
+  });
+
   it('loads the permissions for the active organization and project', async () => {
     setUp(() => Promise.resolve(ScyllaResult.success([{ id: 'org-1', name: 'Acme' }])));
     await screen.findByText('page content');
