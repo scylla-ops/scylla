@@ -1,19 +1,13 @@
 use crate::application::job::GetJob;
-use crate::application::pagination::PaginationMetadata;
+use crate::application::pagination::PaginatedResult;
 use crate::application::{JobLogRepository, JobLogStreamPort, JobRepository};
-use crate::application::{JobLogStreamUseCase, JobLogUseCases, JobUseCases};
+use crate::application::{JobLogUseCases, JobUseCases};
 use crate::extract_auth_context;
 use crate::grpc::adapter::run;
-use crate::grpc::convert::{optional, required};
-use crate::grpc::mappers::{
-    domain_error_to_status, domain_to_proto_metadata, job_log_to_proto, job_to_proto,
-    proto_to_domain_pagination,
-};
+use crate::grpc::convert::Parse;
+use crate::grpc::mappers::{domain_error_to_status, job_to_proto};
 use crate::grpc::streaming::spawn_log_forwarder;
 use derive_more::Constructor;
-use scylla_auth::authz::PermissionService;
-use scylla_domain::domain::ids::JobId;
-use scylla_domain::domain::pipeline::NodeId;
 use scylla_extension::Actions;
 use scylla_proto::job::v1::{
     DeleteJobRequest, DeleteJobResponse, GetJobRequest, GetJobResponse, ListJobLogsRequest,
@@ -27,16 +21,10 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 #[derive(Constructor)]
-pub struct JobHandler<
-    J: JobRepository,
-    L: JobLogRepository,
-    S: JobLogStreamPort,
-    PS: PermissionService,
-> {
+pub struct JobHandler<J: JobRepository, L: JobLogRepository, S: JobLogStreamPort> {
     actions: Arc<Actions>,
     jobs: Arc<JobUseCases<J>>,
-    log_use_cases: Arc<JobLogUseCases<L, PS>>,
-    log_stream_use_case: Arc<JobLogStreamUseCase<L, S, PS>>,
+    logs: Arc<JobLogUseCases<L, S>>,
 }
 
 #[async_trait::async_trait]
@@ -44,8 +32,7 @@ impl<
     J: JobRepository + Send + Sync + 'static,
     L: JobLogRepository + Send + Sync + 'static,
     S: JobLogStreamPort + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-> JobService for JobHandler<J, L, S, PS>
+> JobService for JobHandler<J, L, S>
 {
     async fn get_job(
         &self,
@@ -102,47 +89,31 @@ impl<
         request: Request<ListJobLogsRequest>,
     ) -> Result<Response<ListJobLogsResponse>, Status> {
         let caller = caller!(request);
-        let req = request.into_inner();
-        let job_id = JobId::new(&required(req.job_id, "job_id")?);
-        let pagination = proto_to_domain_pagination(req.pagination);
+        let query = request.into_inner().parse()?;
 
-        let node_id_arg = optional(req.node_id);
-        let result = if let Some(node_id_str) = node_id_arg.as_deref() {
-            let node_id = NodeId::new(node_id_str)
-                .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?;
-
+        if let Some(node_id) = &query.node_id {
             // Log rows can be persisted before the matching status update; the domain rule gates them.
+            let get = GetJob {
+                id: query.job_id.clone(),
+            };
             let job = self
                 .actions
-                .run(&*self.jobs, &caller, GetJob { id: job_id.clone() })
+                .run(&*self.jobs, &caller, get)
                 .await
                 .map_err(domain_error_to_status)?;
-            if !job.logs_readable_for(&node_id) {
-                let params = pagination.unwrap_or_default();
-                let empty_meta = PaginationMetadata::new(&params, 0);
-                return Ok(Response::new(ListJobLogsResponse {
-                    logs: Vec::new(),
-                    pagination: Some(domain_to_proto_metadata(&empty_meta)),
-                }));
+            if !job.logs_readable_for(node_id) {
+                let params = query.pagination.unwrap_or_default();
+                let empty = PaginatedResult::new(Vec::new(), &params, 0);
+                return Ok(Response::new(empty.into()));
             }
-
-            self.log_use_cases
-                .list_by_job_and_node(&caller, &job_id, &node_id, pagination.as_ref())
-                .await
-        } else {
-            self.log_use_cases
-                .list_by_job(&caller, &job_id, pagination.as_ref())
-                .await
         }
-        .map_err(domain_error_to_status)?;
 
-        let (logs, metadata) = result.into_parts();
-        let logs = logs.iter().map(job_log_to_proto).collect();
-
-        Ok(Response::new(ListJobLogsResponse {
-            logs,
-            pagination: Some(domain_to_proto_metadata(&metadata)),
-        }))
+        let page = self
+            .actions
+            .run(&*self.logs, &caller, query)
+            .await
+            .map_err(domain_error_to_status)?;
+        Ok(Response::new(page.into()))
     }
 
     type TailJobLogsStream = Pin<
@@ -153,21 +124,7 @@ impl<
         &self,
         request: Request<TailJobLogsRequest>,
     ) -> Result<Response<Self::TailJobLogsStream>, Status> {
-        let caller = caller!(request);
-        let req = request.into_inner();
-        let job_id = JobId::new(&required(req.job_id, "job_id")?);
-        let node_id = optional(req.node_id)
-            .as_deref()
-            .map(NodeId::new)
-            .transpose()
-            .map_err(|e| Status::invalid_argument(format!("Invalid node_id: {e}")))?;
-
-        let stream = self
-            .log_stream_use_case
-            .stream(&caller, &job_id, node_id.as_ref())
-            .await
-            .map_err(domain_error_to_status)?;
-
+        let stream = run(&self.actions, &*self.logs, request).await?;
         Ok(Response::new(Box::pin(spawn_log_forwarder(stream))))
     }
 }

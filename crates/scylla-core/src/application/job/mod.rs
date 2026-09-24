@@ -1,8 +1,5 @@
 pub mod commands;
-pub mod log_repository;
-pub mod log_stream_port;
-pub mod log_stream_use_case;
-pub mod log_use_case;
+pub mod log;
 pub mod queries;
 pub mod reaper;
 pub mod repository;
@@ -10,10 +7,10 @@ pub mod repository;
 pub use scylla_domain::JobEvent;
 
 pub use commands::{DeleteJob, RecordJobStatus};
-pub use log_repository::JobLogRepository;
-pub use log_stream_port::{JobLogLiveStream, JobLogStreamPort};
-pub use log_stream_use_case::JobLogStreamUseCase;
-pub use log_use_case::JobLogUseCases;
+pub use log::{
+    AppendJobLog, JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogUseCases,
+    ListJobLogs, TailJobLogs,
+};
 pub use queries::{GetJob, ListJobs, ListOrganizationJobs, ListPipelineJobs, ListProjectJobs};
 pub use reaper::JobReaper;
 pub use repository::JobRepository;

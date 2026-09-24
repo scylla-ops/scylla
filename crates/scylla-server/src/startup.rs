@@ -8,7 +8,7 @@ use scylla_core::application::SignupUseCases;
 use scylla_core::application::{
     AgentDispatch, AgentUseCases, AppTokenUseCases, AppUseCases, AuthUseCases, BootstrapUseCases,
     CronSchedule, DispatchSecretResolver, DispatchUseCases, GrantUseCases, InvitationUseCases,
-    JobLogStreamUseCase, JobLogUseCases, JobReaper, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
+    JobLogUseCases, JobReaper, JobUseCases, Mailer, NoopMailer, OAuthUseCases,
     OrganizationUseCases, PendingJobScheduler, PermissionAuthorizer, PipelineUseCases,
     ProjectUseCases, SecretCipher, SecretResolver, SecretUseCases, TriggerCronScheduler,
     TriggerFireUseCases, TriggerFiring, TriggerUseCases, UserUseCases, WebhookIngressUseCases,
@@ -83,9 +83,7 @@ pub(crate) type SharedPipelineUc = Arc<
 >;
 pub(crate) type SharedJobUc = Arc<JobUseCases<PgJobRepository>>;
 pub(crate) type SharedSecretUc = Arc<SecretUseCases<PgSecretRepository, PermissionChecker>>;
-pub(crate) type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, PermissionChecker>>;
-pub(crate) type SharedJobLogStreamUc =
-    Arc<JobLogStreamUseCase<PgJobLogRepository, InMemoryJobLogStream, PermissionChecker>>;
+pub(crate) type SharedJobLogUc = Arc<JobLogUseCases<PgJobLogRepository, InMemoryJobLogStream>>;
 pub(crate) type SharedAppUc = Arc<
     AppUseCases<
         PgAppRepository,
@@ -148,7 +146,6 @@ pub(crate) struct Services {
     pub secret_uc: SharedSecretUc,
     pub job_uc: SharedJobUc,
     pub job_log_uc: SharedJobLogUc,
-    pub job_log_stream_uc: SharedJobLogStreamUc,
     pub app_uc: SharedAppUc,
     pub app_token_uc: SharedAppTokenUc,
     pub agent_uc: SharedAgentUc,
@@ -255,10 +252,6 @@ pub(crate) async fn init_services(
         secret_resolver.clone(),
     ));
     let job_uc = Arc::new(JobUseCases::new(job_repo.clone()));
-    let job_log_uc = Arc::new(JobLogUseCases::new(
-        job_log_repo.clone(),
-        permission_checker.clone(),
-    ));
     // Built before app_uc and grant_uc: they drop an app's live stream on disable, delete or revoke.
     let agent_registry = Arc::new(InMemoryAgentRegistry::new());
     let app_uc = Arc::new(AppUseCases::new(
@@ -350,10 +343,9 @@ pub(crate) async fn init_services(
     };
 
     let job_log_stream = Arc::new(InMemoryJobLogStream::new());
-    let job_log_stream_uc = Arc::new(JobLogStreamUseCase::new(
+    let job_log_uc = Arc::new(JobLogUseCases::new(
         job_log_repo.clone(),
         job_log_stream.clone(),
-        permission_checker.clone(),
     ));
     let dispatch_uc = Arc::new(DispatchUseCases::new(
         agent_registry.clone(),
@@ -459,7 +451,6 @@ pub(crate) async fn init_services(
         secret_uc,
         job_uc,
         job_log_uc,
-        job_log_stream_uc,
         app_uc,
         app_token_uc,
         agent_uc,
@@ -613,7 +604,6 @@ where
         services.actions.clone(),
         services.job_uc.clone(),
         services.job_log_uc.clone(),
-        services.job_log_stream_uc.clone(),
     );
     let app_handler = AppHandler::new(services.actions.clone(), services.app_uc.clone());
     let secret_handler = SecretHandler::new(services.actions.clone(), services.secret_uc.clone());

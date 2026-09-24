@@ -31,8 +31,8 @@ pub use bootstrap::BootstrapUseCases;
 pub use grant::GrantUseCases;
 pub use invitation::{AcceptOutcome, InvitationRepository, InvitationUseCases};
 pub use job::{
-    JobEvent, JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogStreamUseCase,
-    JobLogUseCases, JobReaper, JobRepository, JobUseCases,
+    JobEvent, JobLogLiveStream, JobLogRepository, JobLogStreamPort, JobLogUseCases, JobReaper,
+    JobRepository, JobUseCases,
 };
 pub use mail::{Mailer, NoopMailer};
 pub use oauth::{

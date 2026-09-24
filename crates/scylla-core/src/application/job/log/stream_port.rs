@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use futures_core::Stream;
 use std::pin::Pin;
 
-pub type JobLogLiveStream = Pin<Box<dyn Stream<Item = DomainResult<JobLog>> + Send>>;
+pub type JobLogLiveStream = Pin<Box<dyn Stream<Item = DomainResult<JobLog>> + Send + Sync>>;
 
 #[async_trait]
 pub trait JobLogStreamPort: Send + Sync {

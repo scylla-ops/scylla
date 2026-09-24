@@ -1,4 +1,4 @@
-use crate::application::job::RecordJobStatus;
+use crate::application::job::{AppendJobLog, RecordJobStatus};
 use crate::application::{
     AgentDispatch, AgentRepository, JobLogRepository, JobLogUseCases, JobRepository, JobUseCases,
 };
@@ -8,7 +8,6 @@ use crate::extract_auth_context;
 use crate::grpc::convert::dt;
 use crate::infrastructure::{InMemoryAgentRegistry, InMemoryJobLogStream};
 use derive_more::Constructor;
-use scylla_auth::authz::PermissionService;
 use scylla_domain::domain::agent::AgentHost;
 use scylla_domain::domain::ids::{AppId, JobId};
 use scylla_domain::domain::job::JobLog;
@@ -30,27 +29,23 @@ use tonic::{Request, Response, Status, Streaming};
 use tracing::warn;
 
 #[derive(Constructor)]
-pub struct AgentHandler<J, L, PS>
+pub struct AgentHandler<J, L>
 where
     J: JobRepository,
     L: JobLogRepository,
-    PS: PermissionService,
 {
     registry: Arc<InMemoryAgentRegistry>,
     log_stream: Arc<InMemoryJobLogStream>,
     actions: Arc<Actions>,
     job_use_cases: Arc<JobUseCases<J>>,
-    log_use_cases: Arc<JobLogUseCases<L, PS>>,
+    log_use_cases: Arc<JobLogUseCases<L, InMemoryJobLogStream>>,
     agent_repo: Arc<dyn AgentRepository>,
     pending_signal: Arc<Notify>,
 }
 
 #[async_trait::async_trait]
-impl<
-    J: JobRepository + Send + Sync + 'static,
-    L: JobLogRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
-> AgentService for AgentHandler<J, L, PS>
+impl<J: JobRepository + Send + Sync + 'static, L: JobLogRepository + Send + Sync + 'static>
+    AgentService for AgentHandler<J, L>
 {
     type OpenStream = Pin<Box<dyn Stream<Item = Result<AgentDown, Status>> + Send + 'static>>;
 
@@ -97,12 +92,12 @@ impl<
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn read_reports<J, L, PS>(
+async fn read_reports<J, L>(
     mut inbound: Streaming<AgentUp>,
     app_id: AppId,
     actions: Arc<Actions>,
     job_use_cases: Arc<JobUseCases<J>>,
-    log_use_cases: Arc<JobLogUseCases<L, PS>>,
+    log_use_cases: Arc<JobLogUseCases<L, InMemoryJobLogStream>>,
     log_stream: Arc<InMemoryJobLogStream>,
     registry: Arc<InMemoryAgentRegistry>,
     agent_repo: Arc<dyn AgentRepository>,
@@ -110,7 +105,6 @@ async fn read_reports<J, L, PS>(
 ) where
     J: JobRepository + Send + Sync + 'static,
     L: JobLogRepository + Send + Sync + 'static,
-    PS: PermissionService + Send + Sync + 'static,
 {
     let caller = CallerContext::App(app_id.clone());
     touch_last_seen(&agent_repo, &app_id).await;
@@ -139,7 +133,8 @@ async fn read_reports<J, L, PS>(
             }
             Some(agent_up::Payload::Log(line)) => {
                 if let Some(log) = log_line_to_domain(&line) {
-                    if let Err(e) = log_use_cases.append(&caller, &log).await {
+                    let append = AppendJobLog { log: log.clone() };
+                    if let Err(e) = actions.run(&*log_use_cases, &caller, append).await {
                         warn!(app_id = %app_id, job_id = %log.job_id(), error = %e, "failed to append job log");
                     } else {
                         log_stream.publish(log);

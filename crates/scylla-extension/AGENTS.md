@@ -419,12 +419,20 @@ the row is still in the state the gate saw.
 
 ## Limits and follow-ups
 
-- The project, organization, user, secret, pipeline, trigger, app, agent and
-  job use cases are on the pipeline. The other aggregates keep their
+- The project, organization, user, secret, pipeline, trigger, app, agent, job
+  and job log use cases are on the pipeline. The other aggregates keep their
   hand-written sequence until they migrate.
-- The agent stream sends `RecordJobStatus` through `Actions` for each status
-  report, as the agent's own token, so the `WriteJobStatus` check is the
-  authorize stage. The rest of the stream stays outside the pipeline.
+- The agent stream sends `RecordJobStatus` and `AppendJobLog` through
+  `Actions` for each report, as the agent's own token, so the `WriteJobStatus`
+  and `AppendJobLog` checks are the authorize stage. The live fan-out
+  (`InMemoryJobLogStream::publish`) and the rest of the stream stay outside the
+  pipeline.
+- `TailJobLogs` is a query: its `Fetch` returns the stream, so hooks see the
+  subscription open, not each line. `JobLogLiveStream` is `Sync` for that
+  reason, because a query output is.
+- `ListJobLogs` with a node sends `GetJob` first, from the handler. That
+  `ReadJob` check refuses, so it is not a scope inside `Fetch`; a node that is
+  not readable yet gives an empty page, as before.
   `JobReaper` writes through the port directly: it runs as the server, not for
   a caller.
 - `DispatchUseCases`, `PendingJobScheduler` and the agent stream
