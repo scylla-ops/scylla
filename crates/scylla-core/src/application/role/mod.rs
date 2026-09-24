@@ -9,8 +9,9 @@ use crate::domain::errors::{DomainError, DomainResult};
 use derive_more::Constructor;
 use scylla_auth::authz::{
     EffectiveScope, FULL_CONTROL, GrantRepository, PolicyControl, Principal, RoleRepository, Scope,
+    permissions_by_role,
 };
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -42,13 +43,7 @@ impl RoleUseCases {
         &self,
         principal: &Principal,
     ) -> DomainResult<Vec<EffectiveScope>> {
-        let role_perms: HashMap<String, Vec<String>> = self
-            .role_repo
-            .list_all()
-            .await?
-            .into_iter()
-            .map(|r| (r.id, r.permissions))
-            .collect();
+        let role_perms = permissions_by_role(self.role_repo.as_ref()).await?;
         let grants = self.grant_repo.list_all().await?;
 
         let mut groups: Vec<(Scope, BTreeSet<String>)> = Vec::new();

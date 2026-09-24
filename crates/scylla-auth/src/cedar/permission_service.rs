@@ -4,7 +4,7 @@ use crate::authz::PermissionService;
 use crate::authz::entity_provider::AuthzEntityProvider;
 use crate::authz::grant::{Grant, GrantRepository, Principal, Scope};
 use crate::authz::policy::PolicyControl;
-use crate::authz::role::{Role, RoleRepository};
+use crate::authz::role::{Role, RoleRepository, permissions_by_role};
 use crate::authz::visibility::{Visibility, VisibilityResolver, visibility_from_grants};
 use crate::domain::caller::CallerContext;
 use crate::domain::errors::{DomainError, DomainResult};
@@ -353,13 +353,7 @@ impl<EP: AuthzEntityProvider + 'static> VisibilityResolver for CedarPermissionSe
             },
         };
 
-        let role_permissions: HashMap<String, Vec<String>> = self
-            .role_repo
-            .list_all()
-            .await?
-            .into_iter()
-            .map(|r| (r.id, r.permissions))
-            .collect();
+        let role_permissions = permissions_by_role(self.role_repo.as_ref()).await?;
         let grants = self.grant_repo.list_all().await?;
 
         Ok(visibility_from_grants(

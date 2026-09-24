@@ -36,8 +36,13 @@ impl UserRepository for StubUsers {
             .cloned()
             .ok_or_else(|| DomainError::not_found("User", id.to_string()))
     }
-    async fn find_by_ids(&self, _: &[UserId]) -> DomainResult<Vec<User>> {
-        Ok(Vec::new())
+    async fn find_by_ids(&self, ids: &[UserId]) -> DomainResult<Vec<User>> {
+        let rows = self.rows.lock().unwrap();
+        Ok(ids
+            .iter()
+            .rev()
+            .filter_map(|id| rows.get(id).cloned())
+            .collect())
     }
     async fn find_by_username(&self, username: &Username) -> DomainResult<User> {
         self.rows
@@ -308,4 +313,19 @@ async fn a_read_by_username_asks_for_list_users() {
 
     assert_eq!(read.id(), created.id());
     assert_eq!(permissions.permissions()[1], Permission::ListUsers);
+}
+
+#[tokio::test]
+async fn users_in_order_keeps_the_page_order_and_metadata_and_drops_unknown_ids() {
+    let lab = lab(Arc::new(RecordingPermissionService::new()));
+    let bob = lab.create("bob").await.unwrap();
+    let carol = lab.create("carol").await.unwrap();
+    let ids = vec![bob.id().clone(), UserId::new("ghost"), carol.id().clone()];
+    let page = PaginatedResult::new(ids, &PaginationParams::default(), 7);
+
+    let users = users_in_order(lab.users.as_ref(), page).await.unwrap();
+
+    let got: Vec<&UserId> = users.items().iter().map(User::id).collect();
+    assert_eq!(got, vec![bob.id(), carol.id()]);
+    assert_eq!(users.metadata().total_count(), 7);
 }

@@ -4,7 +4,7 @@ pub mod repository;
 
 pub use commands::{CreateUser, DeleteUser, UpdateUser};
 pub use queries::{GetUser, GetUserByUsername, ListUsers};
-pub use repository::UserRepository;
+pub use repository::{UserRepository, users_in_order};
 
 use crate::application::HashService;
 use derive_more::Constructor;

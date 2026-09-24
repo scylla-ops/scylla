@@ -9,12 +9,13 @@ use crate::domain::permission::{Permission, ResourceRef};
 use crate::domain::role::RoleName;
 use async_trait::async_trait;
 use scylla_auth::authz::{
-    FULL_CONTROL, Grant, Principal, Scope, removal_orphans_scope, validate_role_in_db,
+    FULL_CONTROL, Grant, Principal, Scope, permissions_by_role, removal_orphans_scope,
+    validate_role_in_db,
 };
 use scylla_extension::{
     Authorized, Command, Committed, Describe, Draft, Persist, Prepare, Prepared, Run,
 };
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
 #[derive(Debug)]
 pub struct CreateGrant {
@@ -134,13 +135,7 @@ impl GrantUseCases {
     }
 
     async fn holding_at(&self, principal: &Principal, scope: &Scope) -> DomainResult<Holding> {
-        let role_perms: HashMap<String, Vec<String>> = self
-            .role_repo
-            .list_all()
-            .await?
-            .into_iter()
-            .map(|r| (r.id, r.permissions))
-            .collect();
+        let role_perms = permissions_by_role(self.role_repo.as_ref()).await?;
         let grants = self.grant_repo.list_all().await?;
 
         let mut keys = BTreeSet::new();

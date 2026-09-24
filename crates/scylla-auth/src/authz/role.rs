@@ -3,6 +3,7 @@ use crate::domain::errors::{DomainError, DomainResult};
 use crate::domain::ids::OrganizationId;
 use crate::domain::permission::permission_resource_type;
 use async_trait::async_trait;
+use std::collections::HashMap;
 
 /// Unconstrained Cedar action: an admin role covers permissions added later without a re-seed.
 pub const FULL_CONTROL: &str = "*";
@@ -93,6 +94,18 @@ pub trait RoleRepository: Send + Sync {
     async fn create(&self, role: &Role) -> DomainResult<()>;
     async fn update(&self, role: &Role) -> DomainResult<()>;
     async fn delete(&self, id: &str) -> DomainResult<()>;
+}
+
+/// Every role's permission keys, by role id.
+pub async fn permissions_by_role(
+    repo: &dyn RoleRepository,
+) -> DomainResult<HashMap<String, Vec<String>>> {
+    Ok(repo
+        .list_all()
+        .await?
+        .into_iter()
+        .map(|r| (r.id, r.permissions))
+        .collect())
 }
 
 #[cfg(test)]

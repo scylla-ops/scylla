@@ -3,6 +3,7 @@
 
 use super::ProjectUseCases;
 use crate::application::pagination::{PaginatedResult, PaginationParams};
+use crate::application::user::users_in_order;
 use crate::domain::errors::DomainResult;
 use crate::domain::ids::{OrganizationId, ProjectId, UserId};
 use crate::domain::permission::Permission;
@@ -11,7 +12,6 @@ use crate::domain::user::User;
 use async_trait::async_trait;
 use scylla_auth::authz::Visibility;
 use scylla_extension::{Authorized, Describe, Fetch, Fetched, Query, Run};
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct GetProject {
@@ -138,23 +138,12 @@ impl Run<Fetch<ListProjectMembers>> for ProjectUseCases {
         input: Authorized<ListProjectMembers>,
     ) -> DomainResult<Fetched<ListProjectMembers>> {
         let query = input.command();
-        let paginated = self
+        let ids = self
             .project_repo
             .list_principals(&query.project_id, query.pagination.as_ref())
             .await?;
-        let (user_ids, metadata) = paginated.into_parts();
-        let mut by_id: HashMap<String, User> = self
-            .user_repo
-            .find_by_ids(&user_ids)
-            .await?
-            .into_iter()
-            .map(|u| (u.id().as_str().to_owned(), u))
-            .collect();
-        let users = user_ids
-            .iter()
-            .filter_map(|id| by_id.remove(id.as_str()))
-            .collect();
-        Ok(input.fetched(PaginatedResult::from_parts(users, metadata)))
+        let users = users_in_order(self.user_repo.as_ref(), ids).await?;
+        Ok(input.fetched(users))
     }
 }
 

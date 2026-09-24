@@ -15,7 +15,7 @@ pub use grant::{
 };
 pub use policy::PolicyControl;
 pub use role::{
-    EffectiveScope, FULL_CONTROL, Role, RoleRepository, resource_home_scope,
+    EffectiveScope, FULL_CONTROL, Role, RoleRepository, permissions_by_role, resource_home_scope,
     validate_role_permissions,
 };
 pub use service::PermissionService;
