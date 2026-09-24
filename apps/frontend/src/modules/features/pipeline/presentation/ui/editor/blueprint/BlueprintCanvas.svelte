@@ -56,3 +56,13 @@
   <Background variant={BackgroundVariant.Dots} gap={16} size={1} class="bg-background!" />
   <Controls class="border-border! bg-background! shadow-sm!" />
 </SvelteFlow>
+
+<style>
+  :global(.svelte-flow__controls-button) {
+    --xy-controls-button-background-color: var(--background);
+    --xy-controls-button-background-color-hover: var(--muted);
+    --xy-controls-button-color: var(--foreground);
+    --xy-controls-button-color-hover: var(--foreground);
+    --xy-controls-button-border-color: var(--border);
+  }
+</style>

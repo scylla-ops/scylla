@@ -44,7 +44,7 @@
 />
 
 {#if selected}
-  <EdgeLabel x={path[1]} y={path[2]} class="nodrag nopan" style="pointer-events: all; z-index: 1000;">
+  <EdgeLabel x={path[1]} y={path[2]} transparent class="nodrag nopan" style="pointer-events: all; z-index: 1000;">
     <button
       type="button"
       aria-label={t(pipelineMessages.deleteEdge)}

@@ -49,7 +49,7 @@
 {/snippet}
 
 <Sidebar variant="inset" collapsible="icon">
-  <SidebarContent class="gap-3 px-2 py-2 group-data-[collapsible=icon]:px-0">
+  <SidebarContent class="gap-3">
     {#if ready}
       <NavMain {sections} />
     {:else}
@@ -69,7 +69,7 @@
       </SidebarGroup>
     {/if}
   </SidebarContent>
-  <SidebarFooter class="flex flex-col gap-2">
+  <SidebarFooter class="flex flex-col gap-2 p-0">
     <LanguageSelector />
     <NavUser />
   </SidebarFooter>
