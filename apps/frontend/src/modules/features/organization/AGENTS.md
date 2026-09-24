@@ -12,17 +12,13 @@ Organizations: the top-level tenant, its members, and the switcher in the shell.
 
 **Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
 unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
-options objects in `presentation/organization.queries.ts`, which both bindings can run —
-`createQuery` here, react-query's `useQuery` in the modules still on React.
+options objects in `presentation/organization.queries.ts`, which a component or another
+feature runs with `createQuery`.
 
-**One piece of this module's UI moved out rather than across.** The organization switcher's list
-used to live here and take its row wrapper as a component prop, so the sidebar could make each
-row a `DropdownMenuItem`. A Svelte component cannot be handed a React one — Radix's menu item
-provides roving focus and `onSelect` through React context — so the rendering moved to
-`layout/presentation/ui/context-selector/OrganizationSwitcherList.tsx`, next to the dropdown it
-belongs to, and reads this module's queries through the barrel. `OrganizationList.svelte` here
-renders the same list as plain blocks for the user settings panel. The two meet again in Phase 6,
-when the sidebar becomes Svelte and the React copy goes.
+**`OrganizationList` is the one list of organizations, for two places.** The user settings panel
+shows it with plain rows (`OrganizationRow.svelte`). The organization selector of the shell shows
+it inside a dropdown menu, and gives it `DropdownMenuItem` as the `row` prop, so each row gets
+the keyboard focus of the menu. A row component takes `class`, `onSelect` and `children`.
 
 ## Public API — `index.ts`
 
@@ -33,13 +29,13 @@ organizationMutations      create · update · remove
 invalidateOrganizationMembers
 ORGANIZATIONS_QUERY_KEY, MY_ORGANIZATIONS_QUERY_KEY, ORGANIZATION_MEMBERS_QUERY_KEY
 createOrganizationItems
-OrganizationList                              ← the settings panel (Svelte)
-AddOrganizationDialog, EditOrganizationDialog ← mounted as islands by the React shell
+loadOrganizationList         () => import(OrganizationList.svelte)       ← the shell's selector
+loadAddOrganizationDialog    () => import(AddOrganizationDialog.svelte)  ← the shell's selector
 ```
 
-The two dialogs are part of the contract because the shell still opens them, through
-`SvelteIsland`: every prop they take is a plain value or a callback, so no adapter is needed
-beyond the island itself. Never add: `organization.module.ts`, `UserSettingsRoute`.
+The shell imports this barrel eagerly for the queries, so the components are exported as
+**loaders**: a re-exported component would put its UI library in the entry chunk. Never add:
+`organization.module.ts`, `UserSettingsRoute`, a component.
 
 ## Data contract
 
@@ -52,7 +48,7 @@ beyond the island itself. Never add: `organization.module.ts`, `UserSettingsRout
 | `listMembers(organizationId)` | `UserEntity[]` |
 
 `getAll` vs `getMine` is a real distinction — the switcher must use `getMine`. Reach the
-repository with `useOrganizationDomain()` **inside a hook only**.
+repository with `getModuleDomain` **inside `organization.queries.ts` only**.
 
 ## Layout
 
@@ -94,14 +90,10 @@ segment here without conflicting.
 - **`UserSettingsRoute` is a composition seam.** It renders `UserSettingsPage`, imported from
   `features/user`'s public API — one of the two sanctioned page exports in the codebase. Keep
   the wrapper thin; do not copy user logic into it.
-- **The camelCase hook filenames (`useOrganizations.ts`, `useCreateOrganization.ts`) violate the
-  kebab-case convention.** They predate it. Do not rename them opportunistically — renaming
-  moves Lingui message ownership and requires `node scripts/restore-translations.mjs`. New files
-  here use `use-{name}.ts`.
 - `ORGANIZATION_MEMBERS_QUERY_KEY` is exported so `membership` invalidates the same entry this
   module reads. Never hand-write the key.
 - The shell depends on `OrganizationList` / `AddOrganizationDialog`. Changing their props is a
-  breaking change for `layout/` — update `ContextSelector` in the same commit.
+  breaking change for `layout/` — update `OrganizationSelector` in the same commit.
 
 ## Before done
 

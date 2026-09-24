@@ -1,69 +1,54 @@
 # `platform/query` — AGENTS.md
 
-The app's single TanStack Query cache.
+The app's single TanStack Query cache, and the Svelte bindings that use it.
 
 ## Public API (`index.ts`)
 
-| Export | Type | What it is |
-|---|---|---|
-| `queryClient` | `QueryClient` | The one cache instance, built at module load |
-
-That is the whole surface. There are no hooks here: the bindings live with their
-framework (`@tanstack/react-query`, `@tanstack/svelte-query`) and are handed
-*this* client.
+| Export | What it is |
+|---|---|
+| `queryClient` | The one cache instance, built at module load |
+| `getQueryClient`, `setQueryClient` | The active client; a test installs its own |
+| `createQuery`, `createMutation`, `createQueries` | The `@tanstack/svelte-query` functions, bound to the active client |
+| `queryOptions`, `mutationOptions` | Re-exported unchanged |
+| `type CreateQueryResult`, `type CreateMutationResult` | Re-exported unchanged |
 
 ## File map
 
 ```
 platform/query/
-├── index.ts          public API
-└── query-client.ts   the instance + the global error handlers
+├── index.ts                public API
+├── query-client.ts         the instance + the global error handlers
+├── active-query-client.ts  getQueryClient / setQueryClient
+└── svelte-query.ts         the bound createQuery / createMutation / createQueries
 ```
 
-## Why it is a capability and not a line in `core/App.tsx`
+## Why it is a capability and not a line in the shell
 
-Two reasons, both load-bearing:
+**Features may not import the shell.** `core/` is above `features/` in the layer order, so a
+client declared in the shell is unreachable from a feature — for example from a plain function
+that invalidates a query.
 
-1. **Features may not import the shell.** `core/` is above `features/` in the
-   layer order, so a client declared in `App.tsx` is unreachable from a feature
-   that needs it outside a React hook.
-2. **Both frameworks must get the same instance.** During the React → Svelte
-   migration, `QueryClientProvider` (React) and svelte-query's context are both
-   given `queryClient`. A migrated module and a React one therefore share cache
-   entries instead of each fetching the same resource under its own key.
+## The rules that bite here
 
-## The rule that bites here
-
-**`@tanstack/react-query` and `@tanstack/svelte-query` pin `@tanstack/query-core`
-to an exact version each.** They must be bumped in lockstep to releases naming
-the same one — today `5.103.1` for both.
-
-Two copies of `query-core` fork the cache **silently**: nothing throws, no test
-fails, and a mutation in a Svelte module simply stops invalidating the React
-module's query. Check after any bump:
-
-```sh
-ls -d node_modules/.pnpm/@tanstack+query-core@*   # stale store entries are fine
-node -e "const {createRequire}=require('module');
-const rq=createRequire(require.resolve('@tanstack/react-query/package.json'));
-const sq=createRequire(require.resolve('@tanstack/svelte-query/package.json'));
-console.log(rq.resolve('@tanstack/query-core/package.json') === sq.resolve('@tanstack/query-core/package.json'));"
-```
+- **Import `createQuery` / `createMutation` from `@platform/query`, never from
+  `@tanstack/svelte-query`.** The originals read the client from the Svelte context, and no
+  component puts one there. `no-restricted-imports` enforces it.
+- **`@tanstack/svelte-query` pins `@tanstack/query-core` to an exact version.** The direct
+  dependency on `@tanstack/query-core` must name the same version. Two copies fork the cache
+  silently.
 
 ## Error handling
 
-`queryCache.onError` and `mutationCache.onError` are the app's single reporting
-point. **A hook must not add its own `onError` toast** — the failure would be
-reported twice.
+`queryCache.onError` and `mutationCache.onError` are the app's single reporting point. **A query
+or a mutation must not add its own `onError` toast** — the failure would be reported twice.
 
-The two differ on purpose: a *query* that fails with a network error signs the
-user out (the UI is served from the control plane's own origin, so "unreachable"
-and "no longer authenticated" are indistinguishable from the browser), a
-*mutation* only toasts.
+The two differ on purpose: a *query* that fails with a network error signs the user out (the UI
+is served from the control plane's own origin, so "unreachable" and "no longer authenticated"
+are indistinguishable from the browser), a *mutation* only toasts.
 
 ## Tests
 
-`queryClient` is the production instance and is never used by the suite. Tests
-build their own through `createTestQueryClient()` in `src/test/render.tsx`,
-which sets `retry: false` — without it a rejecting query is retried three times
-with backoff and the test times out instead of reporting the error.
+`queryClient` is the production instance and is never used by the suite. A test installs its
+own with `withQueryClient()` from `src/test/render.svelte.ts`, which sets `retry: false` —
+without it a rejecting query is retried three times with backoff and the test times out instead
+of reporting the error.

@@ -75,8 +75,7 @@ being made holds it off regardless.
 `jobsByPipelinesQueries` is worth knowing about: it describes the runs of many pipelines as a
 *list* of query options, so the caller fans them out in one batch rather than looping one call
 per pipeline — which is how the pipeline dashboard shows a "last run" column without an N+1
-storm. Because the options carry no framework, `pipeline` (still React) hands them to
-`useQueries` and the Svelte pages hand them to their own runner, sharing one cache.
+storm. `pipeline` and the pages here run them with `createQueries`, sharing one cache.
 
 ## Query keys are part of the contract
 

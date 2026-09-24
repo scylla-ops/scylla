@@ -3,8 +3,8 @@
 > [Scylla frontend](../../../../README.md) › `platform/` › **authz** ·
 > [agent guide](./AGENTS.md) · [architecture](../../../../docs/architecture.md)
 
-The authorization primitives: the `Permission` enum, the hooks that answer "may this user do
-this?", and the components that gate UI on the answer.
+The authorization primitives: the `Permission` enum, the `can` function that answers "may this
+user do this?", and the components that gate UI on the answer.
 
 Imported everywhere as `@platform/authz`.
 
@@ -17,15 +17,15 @@ depending on itself to gate its own UI.
 
 So authz was split in half along the line of *who needs I/O*:
 
-- **The read side lives here.** `useCan` answers from a Zustand store, synchronously, with no
-  network call and no repository. Because it needs nothing, anything may depend on it, and it
+- **The read side lives here.** `can` answers from a store, synchronously, with no network call
+  and no repository. Because it needs nothing, anything may depend on it, and it
   sits in `platform/` below the features.
 - **The load side stays in `features/roles`.** Fetching the current user's effective permissions
-  needs a repository call, so `usePermissionSync` lives there and the shell mounts it once after
-  sign-in.
+  needs a repository call, so `syncMyPermissions` lives there and the shell calls it when the
+  active organization or project changes.
 
 ```
-features/roles ──usePermissionSync──▶ usePermissionsStore ──useCan──▶ every feature
+features/roles ──syncMyPermissions──▶ permissionsStore ──can()──▶ every feature
    (fetches)                            (platform/authz)              (asks, no deps)
 ```
 
@@ -35,7 +35,7 @@ is machine-enforced too — `platform-knows-no-feature` is an error in
 `.dependency-cruiser.cjs`.
 
 The practical consequence, worth knowing when you change grants: if a mutation could affect the
-*current* user's own access, something has to refresh the store, or `useCan` keeps answering
+*current* user's own access, something has to refresh the store, or `can` keeps answering
 from stale data.
 
 ## The model
@@ -49,28 +49,27 @@ from stale data.
   all their roles and grants are resolved. `canAccess` is the pure function that queries it.
 
 Scope resolution is the part worth *not* reimplementing. "Does this user have `X` on project
-`P`?" means checking the project's own grants and the parent organization's. `useAuthorization`
-does it; comparing permission arrays by hand gets it wrong.
+`P`?" means checking the project's own grants and the parent organization's. `can` does it; comparing permission arrays by hand gets it wrong.
 
-## Four ways to gate
+## Ways to gate
 
-| Component / hook | For |
+| Component / function | For |
 |---|---|
 | `<Can permission={…}>` | show a fragment only if allowed |
 | `<RequirePermission>` | guard a route or a whole section |
-| `<PermissionButton>` | render the action, disabled, when not allowed |
-| `useCan` / `useAuthorization` | imperative checks inside a hook |
+| `GatedButton` (`@shared`) with `allowed={can(…)}` | render the action, disabled, when not allowed |
+| `can(…)` | checks inside a ViewModel, a query or a template |
 
 `PermissionDenied` is the shared denial state, so a blocked page looks the same everywhere.
 
-Prefer `PermissionButton` to hiding an action. A user who cannot see that a capability exists
-cannot ask an administrator for it; a disabled button with a reason can.
+Prefer a disabled `GatedButton` to hiding an action. A user who cannot see that a capability
+exists cannot ask an administrator for it; a disabled button with a reason can.
 
 ## Routes gate themselves
 
 You rarely write `<RequirePermission>` around a page by hand. A module declares
-`permission` on its route, the composer copies it into the route's `handle`, and `RouteGuard`
-from [platform/routing](../routing/README.md) applies it — while the sidebar reads the *same*
+`permission` on its route, the composer copies it into the route's `handle`, and the route guard
+of [platform/routing](../routing/README.md) applies it — while the sidebar reads the *same*
 declaration to decide whether to show the link.
 
 That single declaration is why a link can no longer be visible for a page that will deny you, or
@@ -85,5 +84,5 @@ thing standing between a user and data.
 ## Related modules
 
 - [features/roles](../../features/roles/README.md) — fills the store; administers roles/grants.
-- [platform/routing](../routing/README.md) — `RouteGuard`, which applies route permissions.
+- [platform/routing](../routing/README.md) — the route guard, which applies route permissions.
 - [features/membership](../../features/membership/README.md) — grants as membership.

@@ -90,7 +90,7 @@ The jobs **list** route is owned here, not by [`jobs`](../jobs/AGENTS.md): the p
 **Run** action, which is a pipeline operation. `PipelineJobsRoute` renders `JobsPage` (imported
 from `jobs`'s public API) and supplies that action. The job **details** route
 (`pipelines/:pipelineId/jobs/:jobId`) is owned by `jobs` itself — it needs nothing from here —
-and this module links to it with `useScyllaNavigate().goToJobDetails(...)`, never by importing
+and this module links to it with `scyllaNavigate.goToJobDetails(...)`, never by importing
 the page.
 
 ## Rules that bite here

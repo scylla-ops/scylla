@@ -12,8 +12,8 @@ Projects: the unit that owns pipelines, secrets and its own member list.
 
 **Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
 unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
-options objects in `presentation/*.queries.ts`, which both bindings can run — `createQuery` here,
-react-query's `useQuery` in the modules still on React.
+options objects in `presentation/*.queries.ts`, which a component or another feature runs with
+`createQuery`.
 
 ## Public API — `index.ts`
 
@@ -26,9 +26,9 @@ canListProjects, invalidateProjectMembers
 PROJECTS_QUERY_KEY, PROJECTS_QUERY_ROOT, PROJECTS_LOOKUP_PAGE, PROJECT_MEMBERS_QUERY_KEY
 ```
 
-`core`, `roles`, `membership` and `dashboard` all still run these through react-query's
-`useQuery` / `useQueries` — the options objects are framework-agnostic, which is what keeps the
-three ways of reading an organization's projects on one cache entry.
+`core`, `roles`, `membership` and `dashboard` all run these with `createQuery` /
+`createQueries`, which keeps the three ways of reading an organization's projects on one cache
+entry.
 
 Never add: `project.module.ts`, pages.
 

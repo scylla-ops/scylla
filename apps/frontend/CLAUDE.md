@@ -1,6 +1,6 @@
 # Scylla Frontend — CLAUDE.md
 
-React + TypeScript frontend for Scylla, built on **Clean Architecture** with **TanStack Query** for async data. This file is the contract for working in this codebase — follow it. Full references: `docs/architecture.md` and `docs/naming-conventions.md`.
+Svelte 5 + TypeScript frontend for Scylla, built on **Clean Architecture** with **TanStack Query** for async data. This file is the contract for working in this codebase — follow it. Full references: `docs/architecture.md` and `docs/naming-conventions.md`.
 
 ---
 
@@ -21,11 +21,11 @@ src/modules/shared/AGENTS.md                  generic UI + utils
 
 - Touching one module → read its `AGENTS.md`.
 - Touching several → read each one. Cross-module work is where the rules bite hardest.
-- Consuming another module's hook or type → read *its* `AGENTS.md` to find what the barrel
+- Consuming another module's query or type → read *its* `AGENTS.md` to find what the barrel
   actually exports, instead of guessing or deep-importing.
 
 This file stays authoritative for anything that spans the whole codebase — layering, naming,
-React rules, the commands below. A module's `AGENTS.md` never contradicts it; it makes it
+Svelte rules, the commands below. A module's `AGENTS.md` never contradicts it; it makes it
 concrete. **If you find a contradiction, this file wins and the `AGENTS.md` is stale — fix it.**
 
 Each module also has a **`README.md`**, written for humans: what the module is for, and the
@@ -46,11 +46,11 @@ Package manager is **pnpm** (`pnpm@11.1.2`). Run all commands from `apps/fronten
 |---------|---------|
 | `pnpm dev` | Run prebuild + Vite dev server |
 | `pnpm build` | prebuild + typecheck + production build |
-| `pnpm typecheck` | `tsc -b` — type check only |
+| `pnpm typecheck` | `tsc -b && svelte-check` — `tsc` cannot see `.svelte` files, `svelte-check` can |
 | `pnpm test` | Vitest, single run — **must be green** |
 | `pnpm test:watch` | Vitest in watch mode |
-| `pnpm coverage` | Vitest + v8 coverage, enforces the thresholds in `vitest.config.ts` |
-| `pnpm lint` | ESLint, `--max-warnings 0` (warnings are errors) |
+| `pnpm coverage` | Vitest + v8 coverage, enforces the thresholds in `vite.config.ts` |
+| `pnpm lint` | ESLint, `--max-warnings 0` (warnings are errors). Slow (~20 min) and needs an 8 GB heap, which the script sets |
 | `pnpm lint:fix` | ESLint with `--fix` |
 | `pnpm gen-proto` | Generate gRPC/protobuf-ts clients |
 | `pnpm extract` / `pnpm compile` | Lingui: extract messages (`--clean`, drops obsolete entries) / compile catalogs |
@@ -81,7 +81,7 @@ French translation of anything that moved. Confirm with `--dry-run` that nothing
 The app has **four layers, and dependencies only ever point down**:
 
 ```
-app/  (core/ + layout/)   composition root — router shell, providers, module registry.  May import anything.
+app/  (core/ + layout/)   composition root — router shell, app shell, module registry.  May import anything.
   ↓
 features/                 the business modules.  May import platform + shared, never the shell,
                           and never another feature's internals.
@@ -100,8 +100,8 @@ cycle-free and must stay that way** — `pnpm depcruise:cycles` is a CI gate.
 A module's `index.ts` **is** its public API. Everything else in it is private and free to move.
 
 ```typescript
-import { useProjects } from '@/modules/features/project';   // ✅ the public API
-import { useProjects } from '@/modules/features/project/presentation/hooks/useProjects.ts'; // ❌
+import { projectQueries } from '@/modules/features/project';                                   // ✅ the public API
+import { projectQueries } from '@/modules/features/project/presentation/project.queries.ts';   // ❌
 import { Permission } from '@platform/authz';               // ✅
 import { Permission } from '@platform/authz/domain/structs/permission.struct.ts';           // ❌
 ```
@@ -114,15 +114,15 @@ What a barrel must **not** export:
 - **`<feature>.module.ts`** — it instantiates the feature's data sources at import time, so
   re-exporting it pulls that feature's gRPC client into the chunk of anyone who imports the
   barrel. The registry imports it directly by path; that is the only door.
-- **`use-<feature>-domain.ts`** — a feature pins the type of its *own* injection there. Another
-  module calling it queries your repository behind your hooks' back and forks the query cache
-  into two keys for one resource.
-- **Pages**, as a rule. Two exceptions exist and are marked as such (`JobsPage`,
-  `UserSettingsPage`): another module composes them behind its own route, and both consumers
-  are themselves lazily loaded.
+- **A Svelte component.** Rollup cannot drop a component that a barrel re-exports, so every
+  module that imports the barrel would pull the component and its UI library into its chunk.
+  Export a **loader** instead: `export const loadJobsPage = () => import('./…/Jobs.page.svelte')`.
+  The consumer writes `{#await loadJobsPage() then { default: JobsPage }}`.
+- **Pages**, as a rule. Two exceptions exist, as loaders (`loadJobsPage`,
+  `loadUserSettingsPage`): another module composes them behind its own route.
 
 Need something from another feature that its `index.ts` does not export? Add the export **to
-that feature**, or ask it for a hook that does the job. Do not reach past the barrel — a
+that feature**, or ask it for a query that does the job. Do not reach past the barrel — a
 "temporary" deep import is how the sixteen modules once became one.
 
 Inside a feature, dependencies point **inward**: `presentation → domain ← infrastructure`.
@@ -132,7 +132,7 @@ feature/
 ├── feature.module.ts    → THE module declaration: { id, domain, routes?, nav? }
 │                          private: only core/di/registry.ts imports it
 ├── index.ts             → public API — the ONLY thing other modules may import (enforced)
-├── domain/              → PURE business logic, ZERO external deps (no React, no gRPC, no proto)
+├── domain/              → PURE business logic, ZERO external deps (no Svelte, no gRPC, no proto)
 │   ├── repository/      → repository INTERFACES + their input types (the data contract)
 │   ├── entities/        → {Name}Entity — identity-bearing business objects (*.entity.ts)
 │   ├── structs/         → value objects, enums, DTOs, wrappers (*.struct.ts)
@@ -145,9 +145,10 @@ feature/
 │   └── data/remote/                         → gRPC call impl
 ├── locales/             → i18n (en/, fr/)
 └── presentation/        → UI layer
-    ├── hooks/           → TanStack Query hooks + the module's domain accessor
-    ├── stores/          → Zustand stores (ephemeral UI state ONLY)
-    └── ui/              → React components (pages, dialogs, tables, columns)
+    ├── <feature>.queries.ts        → TanStack Query options factories (plain TS) + key factories
+    ├── <view>.state.svelte.ts      → ViewModels of the views that need one (runes)
+    ├── *.actions.ts / *.calculator.ts → Svelte actions / pure algorithms, when needed
+    └── ui/              → Svelte components (pages, dialogs, tables) + *.messages.ts
 ```
 
 ### Layer responsibilities
@@ -157,11 +158,14 @@ feature/
   them (e.g. `CreateGrantInput` in `permission.repository.ts`). No framework imports here, ever.
   Split domain types into two buckets, both proto-independent: **entities** (`entities/*.entity.ts` → `{Name}Entity`) are the identity-bearing things the feature owns (e.g. `SecretEntity`, `RoleEntity`, `UserEntity`); they may hold related input shapes (`CreateSecretInput`) and pure behavior (`updateRole`). **Structs** (`structs/*.struct.ts`) are plain data shapes with no identity — value objects, enums, DTOs, and list/result wrappers (e.g. `Permission`, `PermissionScope`, `ProjectList`, `CreatedApp`) — named with plain PascalCase (no suffix). The `Entity` suffix is what distinguishes the two at every use site, including against the proto types (which keep the bare name, aliased in mappers). There are **no `*.model.ts` files** — every domain type is an entity or a struct.
 - **Infrastructure** — Data sources (interface + `*.impl`) per transport; repository impl coordinates data sources and maps infra types → domain types via mappers (`Grpc{Entity}Mapper`).
-- **Presentation** — Hooks wrap the repository (or a use case) with `useQuery`/`useMutation`. Components are dumb-ish: they consume hooks. Zustand is for UI state only (modals, form values) — **server state lives in TanStack Query, never Zustand**.
-- **DI** — `platform/di` provides the mechanism, the app provides the wiring. Each feature has a
-  typed accessor in `presentation/hooks/use-<feature>-domain.ts`; hooks call
-  `const { <feature>Repository } = use<Feature>Domain()`. The concrete map is assembled in
-  `core/di/registry.ts` and injected by `DependenciesProvider`.
+- **Presentation** — `*.queries.ts` wraps the repository (or a use case) in `queryOptions` /
+  `mutationOptions`. A component or a ViewModel runs them with `createQuery` / `createMutation`
+  from `@platform/query`. Components are dumb-ish: they render state. **Server state lives in
+  TanStack Query, never in a store.**
+- **DI** — `platform/di` provides the mechanism, the app provides the wiring. A feature's
+  `*.queries.ts` reads its own repository with
+  `getModuleDomain<typeof XModule.domain>('<id>').xRepository`. The concrete map is assembled in
+  `core/di/registry.ts` and installed with `setDependencyRegistry`.
 
 ### Use cases are optional — most operations don't need one
 
@@ -179,14 +183,16 @@ injected, still substitutable in a test. Only the redundant indirection is gone.
 
 ### Module map
 
-- `core/` — composition root: module registry (`di/registry.ts`), router shell, `App.tsx`, auth guard.
-- `platform/` — below the features, may never import one: `authz` (Permission, `useCan`, `Can`,
-  `RequirePermission`), `context` (current org/project/pipeline + navigation), `di`, `grpc`, `routing`
-  (`ScyllaModule`, route composer, `RouteGuard`).
+- `core/` — composition root: module registry (`di/registry.ts`), router shell (`core.router.ts`),
+  `App.svelte`, auth guard.
+- `platform/` — below the features, may never import one: `authz` (Permission, `can`, `Can`,
+  `RequirePermission`), `context` (current org/project/pipeline + navigation), `di`, `grpc`,
+  `query` (the query client and the Svelte bindings), `routing` (`ScyllaModule`, route composer,
+  the router — the only module that knows `sv-router`).
 - `features/` — `agents`, `apps`, `dashboard`, `jobs`, `login`, `marketplace`, `membership`,
   `organization`, `pipeline`, `project`, `roles`, `secret`, `triggers`, `user`.
 - `layout/` — App shell (Layout, AppSidebar, ScyllaBreadcrumbs, context-selector).
-- `shared/` — Reusable components/hooks/stores/utils. **No business logic, no feature imports.**
+- `shared/` — Reusable components/state helpers/stores/utils. **No business logic, no feature imports.**
 
 ### The `ScyllaModule` contract
 
@@ -201,7 +207,7 @@ export const SecretModule = {
     mount: 'project', path: 'secrets',
     permission: Permission.LIST_SECRETS,      // read by RouteGuard *and* the sidebar
     breadcrumb: () => ({ label: msg`Secrets` }),
-    lazy: async () => ({ Component: (await import('./presentation/ui/Secret.page.tsx')).SecretPage }),
+    lazy: () => import('./presentation/ui/Secret.page.svelte'),
   }],
   nav: [/* sidebar entries */],
 } satisfies ScyllaModule;
@@ -210,7 +216,8 @@ export const SecretModule = {
 Rules that matter:
 - `routes.lazy` is what keeps pages out of the initial chunk. Keep it.
 - `permission` is declared **once** and drives both the route guard and the sidebar link.
-- Breadcrumb/nav labels are `` msg`…` `` descriptors, not JSX, so the module file stays a `.ts`.
+- Breadcrumb/nav labels are `` msg`…` `` descriptors, so the module file stays a `.ts`.
+- Route parameters arrive as props of the page: `let { projectId }: { projectId?: string } = $props();`.
 - `core/di/registry.ts` imports `<feature>.module.ts` — **never** `<feature>/index.ts`, whose
   re-exported UI would drag every page back into the entry chunk.
 
@@ -226,19 +233,27 @@ result.fold({ onSuccess: data => ..., onError: err => ... });
 const data = result.unwrap(); // or throw on error
 ```
 
-In mutation/query hooks, call `.unwrap()` inside `mutationFn`/`queryFn` so TanStack Query handles the error. `ScyllaError` extends `Error` with gRPC code extraction. Utilities live in `src/modules/shared/utils/`.
+In query and mutation options, call `.unwrap()` inside `mutationFn`/`queryFn` so TanStack Query handles the error. `ScyllaError` extends `Error` with gRPC code extraction. Utilities live in `src/modules/shared/utils/`.
 
 ---
 
 ## Shared Patterns (reuse these — don't reinvent)
 
-- **Selection**: `useSelection(key)` over a single `useSelectionStore`, keyed by feature. Used by `DataTable` + `FeatureHeader`. No per-feature selection store.
+- **Selection**: `createSelection(key)` over the single `selectionStore`, keyed by feature. Used by
+  `DataTable` + `FeatureHeader`. No per-feature selection store.
 - **List headers**: `FeatureHeader` (count, clear/delete selection, new button).
-- **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog; `useFormState(items)` manages values/changes/reset/validation. Both are generic over the item ids — type the items `readonly FormItem<'a' | 'b'>[]` and `onSubmit` hands back a typed `FormValues` record, so never search the values by id.
-- **Pagination**: `usePagination()` (local page state merged with server `totalCount`/`totalPages`).
-- **Navigation**: `useScyllaNavigate()`.
-- **Global state**: only `useContextStore` (current org/project) and `useSelectionStore` are app-wide. Everything else = TanStack Query (server) or local `useState`.
-- **Batch loads**: use `useQueries` to avoid N+1 (see jobs-per-pipeline).
+- **Forms**: declarative `ScyllaForm` from `FormItem[]`; `FormDialog` wraps it in a dialog;
+  `createFormState(() => items)` manages values/changes/reset/validation. Both are generic over
+  the item ids — type the items `readonly FormItem<'a' | 'b'>[]` and `onSubmit` hands back a typed
+  `FormValues` record, so never search the values by id.
+- **Pagination**: `createPagination(options)` (local page state merged with server
+  `totalCount`/`totalPages`).
+- **Navigation**: `scyllaNavigate` and `navigateTo` from `@platform/context`. Never import the
+  router.
+- **Global state**: only `contextStore` (current org/project) and `selectionStore` are app-wide,
+  plus `permissionsStore` in `@platform/authz`. Everything else = TanStack Query (server) or local
+  `$state`.
+- **Batch loads**: use `createQueries` to avoid N+1 (see jobs-per-pipeline).
 
 ### Query keys
 
@@ -252,41 +267,71 @@ export const JOBS_QUERY_KEY = (pipelineId: string) =>
 
 ---
 
-## React — Best Practices
+## Svelte — Best Practices
 
-### `useEffect` is a last resort, not the default tool
+Svelte 5, **runes only** (`svelte.config.js` sets `runes: true`). No SvelteKit: the build is a
+static SPA that the Rust binary serves. See `refacto_svelte.md` for the reasons.
 
-An effect exists to synchronize with a system **outside** React (browser API, subscription, timer, ReactFlow/CodeMirror instance, URL sync). For everything else there is a better tool:
+### Where the logic goes
+
+| Need | Solution | Where |
+|------|----------|-------|
+| Simple UI state (a toggle, a dialog, tabs) | `$state` | the `<script>` of the `.svelte` file |
+| Page orchestration (queries + filters + pagination) | a ViewModel | `presentation/<view>.state.svelte.ts` |
+| Complex UI logic without network (a wizard, a matrix) | a UI-only ViewModel | `presentation/<view>.state.svelte.ts` |
+| A pure algorithm (a chart scale, a graph layout) | a pure function | `presentation/*.calculator.ts` |
+| DOM measurement, native events, a third-party widget | a Svelte action | `presentation/*.actions.ts` |
+
+**Never put non-trivial logic in a `.svelte` file.** A ViewModel is named after the view it
+controls (`user-list.state.svelte.ts`), never after a global concept. A ViewModel is testable in
+plain TypeScript, without a component.
+
+### `$effect` is a last resort, not the default tool
+
+An effect exists to synchronize with a system **outside** Svelte (the router, a timer, a
+subscription, a CodeMirror or `@xyflow` instance). For everything else there is a better tool:
 
 | Need | ❌ Not an effect | ✅ Instead |
 |------|-----------------|-----------|
-| Value derived from props/state | `useEffect` + `setState` | Compute during render |
-| Server data | `useEffect` + gRPC call | A TanStack Query hook (`presentation/hooks/use-*`) |
-| React to a user action | effect watching state | The event handler |
-| Reset state when a prop changes | effect + `setState` | A `key` on the component |
-| Transform a list before display | effect + mirror state | Derive inline (memoize only if measurably costly) |
+| Value derived from props/state | `$effect` + assignment | `$derived` / `$derived.by` |
+| Server data | `$effect` + gRPC call | `createQuery` on a `*.queries.ts` factory |
+| Respond to a user action | effect watching state | The event handler |
+| Reset a form when a dialog opens | effect on `open` | `{#key open}` around a child component |
 | Refetch after a mutation | effect | `invalidateQueries` in `onSuccess` |
+| Touch the DOM | `bind:this` + effect | a Svelte action (`use:action`) — the only sanctioned way |
 
-- **No mirror state.** What TanStack Query already holds (`data`, `isPending`, `error`) is never copied into `useState` or Zustand. Same for form state owned by `useFormState`, and for the current org/project owned by `useContextStore`.
-- **Honest dependencies.** Never empty a dep array to silence `react-hooks/exhaustive-deps` — fix the cause (stabilize the callback, move the value out, or drop the effect entirely).
-- **No `setState` cascade inside an effect body.** If an effect's only job is to set state from other state, that state was derivable.
-- **Don't read/write `ref.current` during render** — refs are for effects and handlers.
-- `useMemo` / `useCallback` only when they solve a real problem (expensive computation, reference passed to a memoized child or a hook dep array) — not by reflex. **React 18, the React Compiler is not enabled**, so memoization is manual but still not free.
+- **No mirror state.** What TanStack Query already holds (`data`, `isPending`, `error`) is never
+  copied into `$state` or a store. Same for form state owned by `createFormState`, and for the
+  current org/project owned by `contextStore`.
+- **A list that arrives later is passed as a getter**, not as an array: `createFeatureSelection`
+  takes `() => string[]`. A value read once freezes the helper on the first, usually empty,
+  render.
+- **Read a store from rune code with `toRune(store)`** (`shared/presentation/stores`). It
+  subscribes only while something reads it.
+- When an effect must read state that must not re-run it, read that state with `untrack`.
 
 ### Data access
 
-- **A component never reaches the domain directly.** `use<Feature>Domain()` belongs in `presentation/hooks/`; UI consumes hooks only. This holds across the codebase today — keep it that way.
-- One remote operation = one hook (`use-create-user.ts`, `use-pipelines.ts`), built on a query-key factory.
-- Lists go through `DataTable` + `usePagination()`; don't render thousands of unpaginated rows. Row keys must be stable business ids, never array indices.
+- **A component never reaches the domain directly.** Only a `*.queries.ts` or a
+  `*.state.svelte.ts` calls `getModuleDomain`.
+- One remote operation = one entry in a `*.queries.ts` factory, built on a query-key factory.
+- **Import `createQuery` / `createMutation` from `@platform/query`**, never from
+  `@tanstack/svelte-query` (`no-restricted-imports`).
+- Lists go through `DataTable` + `createPagination()`; don't render thousands of unpaginated
+  rows. Row keys must be stable business ids, never array indices.
 
 ### Component splitting
 
-- **One component = one responsibility.** Past ~150 lines, or as soon as you have to scroll to follow the JSX, split it.
-- Logic moves into a colocalized `use-*` hook in the feature; the page/dialog keeps rendering only.
-- Self-contained or repeated JSX blocks become named components (`PipelineActions`, `FeatureHeader`).
-- **Never define a component inside another component** — it is recreated on every render and loses its state.
-- A component used by ≥ 2 features moves up to `shared/presentation/ui/` (and gets exported from the relevant barrel `index.ts`).
-- Components use **named exports**; a handful of pages use `export default` — match the neighbouring files rather than converting them.
+- **One component = one responsibility.** Past ~150 lines, or as soon as you have to scroll to
+  follow the markup, split it.
+- Logic moves into a ViewModel, an action or a calculator; the component keeps rendering only.
+- Self-contained or repeated markup becomes a named component, or a `{#snippet}` when it is
+  local to one file. A snippet can call itself — use that for recursion, not a component that
+  imports itself (`no-circular`).
+- A component used by ≥ 2 features moves up to `shared/presentation/ui/` (and gets exported from
+  the relevant barrel `index.ts`).
+- `tsc` sees only the default export of a `.svelte` file. Anything a `.ts` file imports — a
+  `cva` config, a type — lives in a `.ts` file beside the component.
 
 ### Minimalism (applies inside the layers, not against them)
 
@@ -301,11 +346,19 @@ The 4-layer structure is mandatory; everything else must earn its place. Before 
 
 ## Naming Conventions (enforced)
 
-**Files/folders: kebab-case. React component files: PascalCase.**
+**Files/folders: kebab-case. Svelte component files: PascalCase.**
 
 | Thing | Pattern | Example |
 |-------|---------|---------|
-| Page component file | `*.page.tsx` | `UserAdmin.page.tsx` |
+| Page component file | `*.page.svelte` | `UserAdmin.page.svelte` |
+| Svelte component | `PascalCase.svelte` | `SecretList.svelte` |
+| ViewModel (runes) | `<view>.state.svelte.ts` → `create{View}State` or a `{View}State` class | `roles-page.state.svelte.ts` |
+| Rune helper (no view) | `*.svelte.ts` | `organization-sync.svelte.ts` |
+| Query / mutation options | `<feature>.queries.ts` → `{feature}Queries`, `{feature}Mutations` | `user.queries.ts` / `userQueries` |
+| Messages (i18n) | `*.messages.ts` → `{name}Messages` | `secret.messages.ts` / `secretMessages` |
+| Svelte action | `*.actions.ts`, named by a verb | `code-mirror.actions.ts` / `renderCodeMirror` |
+| Pure algorithm | `*.calculator.ts` | `outcomes-chart.calculator.ts` |
+| Test fixture (a component a test renders) | `*.fixture.svelte` | `DataTable.fixture.svelte` |
 | Use case (only when it orchestrates) | `*.use-case.ts` → `{Verb}{Entity}UseCase` | `update-role.use-case.ts` / `UpdateRoleUseCase` |
 | Repository interface | `*.repository.ts` (domain) → `{Entity}Repository` | `user.repository.ts` / `UserRepository` |
 | Repository impl | `default-*.repository.ts` (infra) → `Default{Entity}Repository` | `default-user.repository.ts` / `DefaultUserRepository` |
@@ -314,19 +367,17 @@ The 4-layer structure is mandatory; everything else must earn its place. Before 
 | Mapper | `grpc-*.mapper.ts` → `Grpc{Entity}Mapper` | `grpc-user.mapper.ts` |
 | Domain entity | `*.entity.ts` → `{Name}Entity` | `secret.entity.ts` / `SecretEntity` |
 | Struct (value object / enum / DTO / wrapper) | `*.struct.ts` (plain name, no suffix) | `permission.struct.ts` / `Permission`, `pagination.struct.ts` / `PaginationInfo` |
-| Hook | `use-{name}.ts` | `use-create-user.ts` |
-| Zustand store | `use-{name}.store.ts` → `use{Name}Store` | `use-context.store.ts` |
+| Store (framework-free, `createStore`) | `*.store.ts` → `{name}Store` | `context.store.ts` / `contextStore` |
 | Module declaration (at module root) | `*.module.ts` → `{Feature}Module` | `user.module.ts` / `UserModule` |
-| Module domain accessor | `use-{feature}-domain.ts` | `use-user-domain.ts` / `useUserDomain` |
 | Module public API | `index.ts` | `features/membership/index.ts` |
-| Guard / Wrapper | `*.guard.tsx` / `*.wrapper.tsx` | `Auth.guard.tsx` |
-| Router | `*.router.tsx` | `Core.router.tsx` |
+| Guard / Wrapper | `*.guard.svelte` / `*.wrapper.svelte` | `Auth.guard.svelte` |
+| Router | `*.router.ts` | `core.router.ts` |
 
-Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `I` prefix); hooks **camelCase `use*`**; true constants **UPPER_SNAKE_CASE** (`DEFAULT_PAGE_SIZE`); query-key factories **UPPER_SNAKE_CASE**; props type = `{Component}Props`.
+Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `I` prefix); factories of rune state **camelCase `create*`**; true constants **UPPER_SNAKE_CASE** (`DEFAULT_PAGE_SIZE`); query-key factories **UPPER_SNAKE_CASE**; props type = `Props` inside the component. There are no `use*` hooks.
 
 ### `interface` vs `type`
 
-- **`interface`** for object shapes that are extended or implemented: component props (`interface UserTableProps`), repository contracts, data source contracts. This is the codebase majority — follow it.
+- **`interface`** for object shapes that are extended or implemented: component props (`interface Props`), repository contracts, data source contracts. This is the codebase majority — follow it.
 - **`type`** for everything a shape can't express: unions, literal unions, mapped/utility types, function types, aliases (`type PermissionScope = 'org' | 'project'`).
 - Type-only imports must use `import type` (`@typescript-eslint/consistent-type-imports` is an error, and `verbatimModuleSyntax` requires it).
 - Colocate a type with the file that uses it; a dedicated file is only justified for shared or bulky types — and in `domain/` it must land in `entities/` or `structs/` per the rules above.
@@ -337,35 +388,39 @@ Code identifiers: Interfaces/Types/Classes/Components/Enums **PascalCase** (no `
 
 ## Testing (Vitest)
 
-Tests live **next to the code they cover** — `use-grants.ts` → `use-grants.test.ts`,
-`GrantCreator.tsx` → `GrantCreator.test.tsx`. There is no `__tests__/` mirror tree. Several
-small hooks of one feature may share a file (`roles-hooks.test.tsx`); that is fine.
+Tests live **next to the code they cover** — `grant-creator.state.svelte.ts` →
+`grant-creator.state.svelte.test.ts`, `GrantCreator.svelte` → `GrantCreator.test.ts`. There is no
+`__tests__/` mirror tree.
 
-The harness is three files in `src/test/`, and it is the only shared test code:
+The harness is five files in `src/test/`, and it is the only shared test code:
 
 | | |
 |---|---|
-| `src/test/setup.ts` | Runs before every file. Activates an empty `en` catalog, and stubs the browser APIs jsdom lacks (`ResizeObserver`, pointer capture, `scrollIntoView`, `scrollTo`, `matchMedia`). **Never re-stub these per file.** |
-| `src/test/render.tsx` | `renderWithI18n`, `renderWithProviders`, `renderHookWithProviders`, `createProvidersWrapper`, `createTestQueryClient`. |
+| `src/test/setup.ts` | Runs before every file. Activates an empty `en` catalog, and stubs the browser APIs jsdom lacks (`ResizeObserver`, `IntersectionObserver`, `Element.animate`, pointer capture, `scrollIntoView`, `scrollTo`, `matchMedia`). **Never re-stub these per file.** |
+| `src/test/render.svelte.ts` | `render`, `withRegistry` (stub DI registry), `withQueryClient` (fresh cache, `retry: false`), `focusSettled`, `textSnippet`, `findFloating` / `findTooltip`. |
+| `src/test/navigator.ts` | `installTestNavigator` — a fake navigator, for a test that navigates. |
+| `src/test/queries.ts` | `runQueryFn`, `runMutationFn`, `runOnSuccess`, `stubQuery`. |
 | `src/test/i18n.ts` | `withLocale(locale, messages)` — for the handful of tests that assert on a real translation. |
 
 ### The rules that bite here
 
-- **Render through the helpers**, not through a locally rebuilt provider stack. A bare
-  `render()` from `@testing-library/react` is only right for a component with no `<Trans>`
-  in its tree — and the tooltip label inside an `IconButton` counts.
+- **A component is rendered with `render` from `@testing-library/svelte`.** There are no
+  providers: install what the component reads (`withRegistry`, `withQueryClient`,
+  `installTestNavigator`) and restore it in `afterEach` — it is module state.
+- **A ViewModel is tested without a component**, in `$effect.root` + `flushSync`. A
+  `*.queries.ts` factory is tested with `runQueryFn` / `runMutationFn`.
+- A component with parts or a generic type is driven from a `*.fixture.svelte`.
 - **A pure test opts out of jsdom** with `// @vitest-environment node` on the first line.
-  Mappers, `domain/`, `presentation/utils/` — anything that never touches the DOM. Building a
-  jsdom for `slugifyOrgName` was ~40% of the suite's wall time.
-- **Query by role and accessible name**, not by CSS class. `.lucide-pencil` and `.animate-spin`
-  are a library's private business — lucide has already renamed `pencil` to `square-pen` once.
-  An icon-only control that can't be found by name is a missing `sr-only` label in the
-  *component*, not a reason to reach for `querySelector`. App-owned attributes (`data-slot`,
-  `data-variant`) are fair game; a third party's class names are not.
-- **Inject a fake repository through `DependenciesProvider`** — that is what the DI layer is
-  for. Don't mock the hook under test; mock the boundary beneath it.
-- **Don't mock `useCan`/`usePermissionsStore` away.** Drive the real store with
-  `usePermissionsStore.setState(...)`, so the authorization chain is actually exercised.
+  Mappers, `domain/`, calculators — anything that never touches the DOM. A test that imports the
+  router (`@platform/routing`) needs jsdom.
+- **Query by role and accessible name**, not by CSS class. An icon-only control that can't be
+  found by name is a missing `sr-only` label in the *component*, not a reason to reach for
+  `querySelector`. App-owned attributes (`data-slot`, `data-variant`) are fair game; a third
+  party's class names are not.
+- **Inject a fake repository through the DI registry** (`withRegistry`). Don't mock the query
+  under test; mock the boundary beneath it.
+- **Don't mock `can`/`permissionsStore` away.** Drive the real store with
+  `permissionsStore.setState(...)`, so the authorization chain is actually exercised.
 - **Name a test after the rule it pins**, not the action it performs: "still redirects for an
   empty-string token" beats "test token". The suite output is the spec.
 - **No snapshots.** None exist; keep it that way.
@@ -388,11 +443,11 @@ reason** — a ratchet, like the coverage thresholds, and a stale entry fails th
 `feature-permissions.test.ts` applies the same idea one level down, by reading source because
 the gating of a *button* is declared nowhere a type can see it:
 
-3. a feature whose hooks call `useMutation` must mention a `Permission` somewhere under its
+3. a feature that declares a mutation must mention a `Permission` somewhere under its
    `presentation/ui/`;
-4. a query hook another feature imports through the barrel must check for itself — crossing a
+4. a query another feature imports through the barrel must check for itself — crossing a
    barrel means running outside the owner's route guard, on the *consumer's* permission.
-   `useJobsByPipelines` is the model: `enabled: ready && can(...)`.
+   `jobsByPipelinesQueries` is the model: `enabled: ready && can(...)`.
 
 All four rules answer **completeness, not correctness**: they cannot tell you the permission on
 a button is the wrong one. That stays the job of the per-component tests. `UNGATED_FEATURES` and
@@ -410,7 +465,14 @@ turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/
 
 ## i18n (Lingui)
 
-- Use `<Trans>...</Trans>` in JSX and `` t`...` `` for strings. `FormItem` labels accept `ReactNode`.
+- **`lingui extract` does not read `.svelte` files.** Declare every message of a component with
+  `` msg`…` `` in a `*.messages.ts` beside it, and render it with `t()` from
+  `shared/presentation/utils/i18n-svelte.svelte.ts` (reactive to a locale switch). A message
+  written in a `.svelte` file disappears from the catalogs, and no gate fails.
+- A message with a placeholder is a function: `` newEntity: (label: string) => msg`New ${label}` ``.
+  **When you port a message, keep its placeholder names**: they are part of the msgid.
+- The `msg`, `t` and `plural` macros of `@lingui/core/macro` compile in `.ts` files only, through
+  Babel (`linguiMacros` in `vite.config.ts`).
 - Catalogs live in `locales/{en,fr}/messages.po` per feature (+ global). Run `pnpm extract` after adding strings, `pnpm compile` to build catalogs. Don't edit `messages.ts` by hand.
 - **Catalogs are per-module, but the runtime merges them into one flat map** keyed by a hash of
   message + context, last one loaded winning. So two modules translating the same source string
@@ -418,13 +480,13 @@ turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/
   every catalog still looks complete. `pnpm i18n:collisions` is the CI gate; keep it at zero.
 - When the same English word needs two French forms, **give one a `context`** rather than living
   with the collision — it is part of the hash, so it separates them cleanly:
-  `` <Trans context='date-prefix'>Created</Trans> `` → "Créé le" vs. the bare column header "Créé";
+  `` msg({ context: 'date-prefix', message: 'Created' }) `` → "Créé le" vs. the bare column header "Créé";
   `msg({ context: 'feminine', message: 'Unknown' })` → "Inconnue" vs. "Inconnu".
   When the two uses genuinely mean the same thing, unify the wording instead.
 - French copy uses **straight apostrophes** (`'`), never `’` — the two are different characters and
   produce two different messages for the same string.
 - `i18n:collisions` compares catalogs; it cannot tell you a French plural or interpolation
-  actually renders. That is what the `*.fr.test.tsx` files do, via `withLocale` — a handful of
+  actually renders. That is what the `*.fr.test.ts` files do, via `withLocale` — a handful of
   them, on the messages with plural arms and placeholders. Add one when you add a message whose
   French form is structurally different from the English (`_0` arms, gendered agreement).
 
@@ -434,59 +496,48 @@ turn a red run green. Generated proto code, compiled catalogs, vendored `shadcn/
 
 - Path alias `@/` → `src/` (e.g. `@/modules/features/user/...`).
 - Prettier: semicolons, single quotes (incl. JSX), 2-space tabs, trailing commas (all), printWidth 100, `arrowParens: avoid`. Match this style; don't reformat unrelated code.
-- Routing: React Router v7, centralized in `Core.router.tsx`. Protected routes wrapped by `AuthGuard` + `Layout`.
+- Routing: `sv-router`, behind `@platform/routing` (the only module that imports it). The shell
+  skeleton is `core/presentation/ui/router/core.router.ts`; protected routes are wrapped by
+  `AuthGuard` + `Layout` (`AppShell.svelte`).
 - Backend comms: gRPC-Web via protobuf-ts through `CoreGrpcTransport`.
-- Comments: **English**, concise, and oriented on *why* rather than *what*. Don't narrate code that already reads clearly.
-- Lint rules worth knowing (see `eslint.config.js`): `no-floating-promises` and `no-misused-promises` are errors — never fire-and-forget a promise; unused bindings must be prefixed `_` to be tolerated. The `no-unsafe-*` rules are off only because of the generated proto layer — that is not a licence to spread `any`.
+- Comments: **none in the code, except on public/exported items.** When the reason behind the
+  code needs more room, write it in the module's `AGENTS.md`, not inline. Team-visible text
+  (PR bodies, issues, `AGENTS.md`, comments on public items) is written in ASD-STE100.
+- Lint rules worth knowing (see `eslint.config.js`): `no-floating-promises` and `no-misused-promises` are errors — never fire-and-forget a promise; unused bindings must be prefixed `_` to be tolerated. The `no-unsafe-*` rules are off only because of the generated proto layer — that is not a licence to spread `any`. `no-restricted-imports` forbids `@tanstack/svelte-query` (use `@platform/query`) and `sv-router` (use `@platform/routing`).
 
 ### Stack
-React 18 · TypeScript 5.8 · TanStack Query 5 · Zustand 5 · React Router 7 · Lingui 5 · gRPC-Web (protobuf-ts) · shadcn/ui + Radix · Tailwind CSS 4 · Vite 7 · Framer Motion.
+Svelte 5 (runes) · TypeScript 5.8 · TanStack Query 5 (`@tanstack/svelte-query`) · TanStack Table 9 · sv-router · Lingui 5 · gRPC-Web (protobuf-ts) · shadcn-svelte + bits-ui · lucide (`@lucide/svelte`) · svelte-sonner · `@xyflow/svelte` · CodeMirror 6 · Tailwind CSS 4 · Vite 7 · Vitest + Testing Library.
 
 ---
 
 ## Adding a feature (checklist)
-
-> **A new feature's presentation layer is written in Svelte, not React.** Phase 1 of
-> `refacto_svelte.md` has landed: the Svelte design system, test harness and shared state helpers
-> all exist, and `shared/presentation/ui/` + `hooks/` are **frozen** — bug fixes only. Steps 1 to 4
-> and 7 to 12 below are unchanged (domain, infrastructure and the `ScyllaModule` contract are
-> framework-agnostic and stay exactly as they are); steps 5, 6 and 11 read differently:
->
-> - **No `use-<feature>-domain.ts` hook.** Call `getModuleDomain('<id>')` directly — DI is a module
->   singleton since Phase 0, so there is no provider to be inside of. The rule it enforced still
->   holds: a component never reaches the domain, only a `*.state.svelte.ts` or a `*.queries.ts` does.
-> - **No custom hooks.** Follow the decision matrix in `refacto_svelte.md` §4.1: simple UI state is
->   `$state` in the component, page orchestration is a `*.state.svelte.ts` ViewModel, DOM work is a
->   Svelte action, heavy pure computation is a `*.calculator.ts`.
-> - **Messages go in a `*.messages.ts`** beside the component, declared with `msg` — `lingui extract`
->   does not read `.svelte`, and a message declared inside one disappears without failing any gate.
->   Keep the original's placeholder names when porting: they are part of the msgid.
-> - **Import shared UI from `@shared/presentation/ui-svelte`** and primitives from `@shadcn-svelte`.
->   Read `src/modules/shared/AGENTS.md` first — it holds what the ports get wrong.
-> - **Tests** use `@testing-library/svelte` through `src/test/render.svelte.ts`.
->
-> Migrating an existing feature: follow the recipe in `refacto_svelte.md` §6, not this checklist.
 
 1. Create `src/modules/features/<feature>/` with `domain/ infrastructure/ locales/ presentation/`.
 2. Domain: repository interface (+ its input types), `entities/*.entity.ts` and `structs/*.struct.ts`.
    **Add a use case only if it orchestrates** — see "Use cases are optional".
 3. Infrastructure: data source (iface + `.impl`), `default-<feature>.repository.ts`, `grpc-<feature>.mapper.ts`.
 4. `<feature>.module.ts` at the module root: `{ id, domain, routes?, nav? } satisfies ScyllaModule`,
-   using `grpcTransport` from `@platform/grpc`. Register it in `core/di/registry.ts`.
-5. `presentation/hooks/use-<feature>-domain.ts`: `useModuleDomain<typeof XModule.domain>('<id>')`.
-6. Presentation: TanStack Query hooks (use query-key factories), Zustand store only if UI state needs it,
-   UI components — the domain accessor belongs in hooks only, and no effect where a derivation or a
-   handler would do.
-7. Declare routes/nav on the module (not in the router); add `locales/{en,fr}/` and register the
-   catalog in `lingui.config.js`.
-8. `index.ts`: export only what other modules may use — never the `*.module.ts`, never
-   `use-<feature>-domain.ts`, and a page only when another module composes it behind its own route.
-   Every feature has one, even when nothing consumes it yet: that is where a contributor looks first.
+   using `grpcTransport` from `@platform/grpc`. Each route loads its page with
+   `lazy: () => import('./presentation/ui/X.page.svelte')`. Register the module in
+   `core/di/registry.ts`.
+5. `presentation/<feature>.queries.ts`: query-key factories, `queryOptions` / `mutationOptions`
+   factories. The repository comes from
+   `getModuleDomain<typeof XModule.domain>('<id>')` — in this file only.
+6. Presentation: follow "Where the logic goes" — a `*.state.svelte.ts` ViewModel for a page that
+   orchestrates, actions for DOM work, calculators for pure algorithms. Components import shared
+   UI from `@shared/presentation/ui` and primitives from `@shadcn`. Read
+   `src/modules/shared/AGENTS.md` first.
+7. Every message in a `*.messages.ts` beside its component (`msg`), rendered with `t()`. Add
+   `locales/{en,fr}/` and register the catalog in `lingui.config.js`.
+8. `index.ts`: export only what other modules may use — never the `*.module.ts`, never a
+   component (export a loader), and a page only when another module composes it behind its own
+   route. Every feature has one, even when nothing consumes it yet.
 9. Reuse before adding: check `shared/` and the Shared Patterns section first.
 10. `AGENTS.md` + `README.md` at the module root, and a row in the root `README.md`'s module
     table. Follow the shape of a neighbouring module's pair: `AGENTS.md` = public API, data
     contract, file map, routes/nav, the rules that bite there; `README.md` = what it is for and
     why it is built that way.
-11. Tests next to the code they cover (`*.test.ts` / `*.test.tsx`) — see "Testing" below.
+11. Tests next to the code they cover (`*.test.ts`) — see "Testing" above. Run `pnpm coverage`:
+    the thresholds are the gate that sees a module arrive without tests.
 12. `pnpm typecheck && pnpm test && pnpm lint && pnpm depcruise && pnpm depcruise:cycles &&
     pnpm i18n:collisions` all clean.

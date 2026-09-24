@@ -72,8 +72,8 @@ exporting them would drag them into the bundle of anything importing this module
 This module went Svelte in Phase 3, ahead of `roles`, which it reads from. That is why `roles`
 now carries `roles.queries.ts`: a Svelte component cannot call `useScopedGrants`, and declaring
 the same grant list a second time here would have forked one resource into two cache entries
-that disagree after a mutation. The factories are the shared declaration, and `roles`' hooks
-became thin bindings over them — so the React screens and these pages read the same entry.
+that disagree after a mutation. The factories are the shared declaration, so the pages of
+`roles` and these pages read the same entry.
 
 The two files above are ViewModels, not hooks: they hold `$state`/`$derived` and are created by
 the page. They take **getters** for the scope id and the permission, because both arrive after

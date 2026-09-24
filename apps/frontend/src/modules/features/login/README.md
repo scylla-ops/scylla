@@ -28,7 +28,7 @@ cost is that the `localStorage` key is a contract shared by three modules, so ch
 changing all three together.
 
 Permissions are **not** loaded here. A freshly signed-in user has an empty permission store
-until [roles](../roles/README.md)'s `usePermissionSync` fills it — that call needs a repository
+until [roles](../roles/README.md)'s `syncMyPermissions` fills it — that call needs a repository
 and a session, so it happens inside the authenticated shell rather than at sign-in.
 
 ## Why it is a module at all

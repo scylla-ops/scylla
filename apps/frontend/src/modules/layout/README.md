@@ -29,8 +29,8 @@ marketplace) and **system** (users, roles) — which reflects the real distincti
 
 ## Breadcrumbs come from route handles
 
-`ScyllaBreadcrumbs` does not parse the pathname. It reads the `breadcrumb` function each matched
-route stored in its `handle`, and renders the resulting crumbs.
+`ScyllaBreadcrumbs` does not parse the pathname. It reads the `breadcrumb` function that each
+route on the URL stored in its `handle`, and renders the resulting crumbs.
 
 A crumb keeps translatable words apart from data: `label` and `detail` are Lingui message
 descriptors, `highlight` is the resource's name shown verbatim in every locale. So
@@ -42,12 +42,10 @@ renders without waiting for the page's chunk.
 ## The context selector
 
 The organization switcher at the top of the sidebar is where `layout` reaches into a feature.
-`ContextSelector` composes `OrganizationList` and `AddOrganizationDialog`, imported from
-[organization](../features/organization/README.md)'s public API, and writes the chosen
-organization into the [context store](../platform/context/README.md).
-
-That is the reason those two components are exported from a feature barrel at all — they are
-part of that module's contract precisely because the shell renders them.
+`OrganizationSelector` shows `OrganizationList` from
+[organization](../features/organization/README.md) inside a dropdown menu, and gives it the menu
+item as the row component. The settings page of the user shows the same list with plain rows.
+There is one list, not two.
 
 The dependency runs one way only: the shell may import a feature, a feature may never import the
 shell. Dependency-cruiser enforces both halves. If a feature ever appears to need something from

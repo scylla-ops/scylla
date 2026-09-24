@@ -12,8 +12,8 @@ Project-scoped secrets, injected into pipeline runs.
 
 **Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
 unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
-options objects in `presentation/*.queries.ts`, which both bindings can run — `createQuery` here,
-react-query's `useQuery` in the modules still on React.
+options objects in `presentation/*.queries.ts`, which a component or another feature runs with
+`createQuery`.
 
 ## Public API — `index.ts`
 
@@ -23,7 +23,7 @@ secretQueries, secretMutations, SECRETS_QUERY_KEY
 ```
 
 `pipeline`'s step dialog consumes `secretQueries.byProject` to offer secret names; it runs it
-through react-query's `useQuery`, on the same cache entry this module's pages use.
+with `createQuery`, on the same cache entry this module's pages use.
 
 Never add: `secret.module.ts`, pages.
 

@@ -12,35 +12,23 @@ The dependency-injection mechanism. The *wiring* lives in `core/di/registry.ts`,
 ## Public API — `index.ts`
 
 ```typescript
-DependenciesContext, type DomainRegistry
-DependenciesProvider
-useModuleDomain                                    // React: reads the context
-getModuleDomain                                    // no React: reads the singleton
-setDependencyRegistry, getDependencyRegistry
+type DomainRegistry
+getModuleDomain            // one module's domain, read from the registry
+setDependencyRegistry      // installed by core; replaced by a test
 ```
 
-### Two doors, and which one to use
-
-| Calling from | Use | Why |
-|---|---|---|
-| a component or a hook | `useModuleDomain` (through the feature's own accessor) | reads the **context**, so a test can swap the registry for one subtree |
-| anywhere else — a Svelte island, an event handler, a route guard | `getModuleDomain` | a Svelte component mounted in a React page sees no React context at all |
-
 `core/di/registry.ts` calls `setDependencyRegistry(dependencies)` at import time, so the
-singleton is installed before the first render. `DependenciesProvider` is unchanged and remains
-the door for React — the two can never disagree, because the provider is handed the same object.
+registry is installed before the first render. There is no provider and no context.
 
-**A test reaching the domain without React must call `setDependencyRegistry` itself**, and
-restore it in `afterEach`: it is module state, so it leaks between tests otherwise.
+**A test that reaches the domain installs a stub registry**, with `withRegistry` from
+`src/test/render.svelte.ts`, and restores it in `afterEach`. The registry is module state, so it
+leaks between tests otherwise.
 
 ## Layout
 
 ```
 index.ts                             public API
-dependencies.context.ts              the React context + DomainRegistry type
-Dependencies.provider.tsx            provider — mounted once by core
-use-module-domain.ts                 the typed accessor (React)
-dependencies.registry.ts             the same registry, reachable without React
+dependencies.registry.ts             DomainRegistry, the registry, getModuleDomain
 ```
 
 ## `DomainRegistry` is untyped per module — on purpose
@@ -51,30 +39,27 @@ export type DomainRegistry = Readonly<Record<string, object>>;
 
 If this type named each module's domain, every feature reading a dependency would transitively
 depend on **every other feature**. The registry is deliberately opaque; features pin the type on
-their own side.
+their own side, in one place per feature:
 
 ```typescript
-// features/jobs/presentation/hooks/use-jobs-domain.ts   ← one per feature, private
-export const useJobsDomain = () => useModuleDomain<typeof JobsModule.domain>('jobs');
+// features/organization/presentation/organization.queries.ts
+const repository = () =>
+  getModuleDomain<typeof OrganizationModule.domain>('organization').organizationRepository;
 ```
 
-That accessor is the single place per feature where the cast happens, and `typeof
-XModule.domain` keeps it honest — the type follows the module declaration automatically.
+`typeof XModule.domain` keeps the cast honest — the type follows the module declaration.
 
-**Never call `useModuleDomain` directly from a hook or a component.** Always go through the
-feature's accessor.
+**Only a `*.queries.ts` or a `*.state.svelte.ts` calls `getModuleDomain`.** A component never
+reaches the domain.
 
 ## Failure modes
 
-`useModuleDomain` throws, loudly, in two cases:
+`getModuleDomain` throws, loudly, in two cases:
 
 | Error | Cause |
 |---|---|
-| `must be used within a DependenciesProvider` | called outside the provider — usually a test without the wrapper |
+| `No dependency registry set` | a test did not install a registry |
 | `No module registered under id "x"` | the module isn't in `core/di/registry.ts`, or the string id is misspelt |
-
-The second is the common one when adding a feature: the accessor's id string must match
-`Module.id` **and** the module must be listed in the registry.
 
 ## Rules that bite here
 
@@ -83,17 +68,15 @@ The second is the common one when adding a feature: the accessor's id string mus
 - The registry imports `<feature>.module.ts` **directly by path**, never `<feature>/index.ts` —
   the barrel re-exports UI, and importing it here would pull every page into the entry chunk.
   Enforced by `module-declaration-is-private`.
-- `use-<feature>-domain.ts` is private to its feature (`domain-accessor-is-private`, error).
-  Another module calling it would query that repository behind its hooks' back and fork the
-  query cache into two keys for one resource.
-- One provider, mounted once by `core`. Do not nest a second one.
+- A feature calls `getModuleDomain` only with its **own** id. Another module that reads the
+  repository of a feature queries it behind the back of its `*.queries.ts`, and forks the query
+  cache into two keys for one resource. Use the queries of that feature through its `index.ts`.
 
 ## Adding a feature to DI
 
 1. `<feature>.module.ts` → `{ id: 'x', domain: { xRepository } } satisfies ScyllaModule`.
 2. Register it in `core/di/registry.ts`.
-3. `presentation/hooks/use-x-domain.ts` → `useModuleDomain<typeof XModule.domain>('x')`.
-4. Hooks call `const { xRepository } = useXDomain();` — components never do.
+3. In `presentation/x.queries.ts`: `getModuleDomain<typeof XModule.domain>('x').xRepository`.
 
 ## Before done
 

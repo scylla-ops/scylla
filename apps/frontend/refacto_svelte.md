@@ -20,10 +20,18 @@ Objectif final : plus une ligne de React, et une surface de dépendances divisé
 | **2** — 6 features pilotes | ✅ **fait** | **292,3 kB** | **862 kB** | 47 |
 | **3** — apps, agents, membership, jobs, triggers | ✅ **fait** | **336,1 kB** | **779,5 kB** | 47 |
 | **4** — roles + dashboard (`recharts` sort ici) | ✅ **fait** | **331,3 kB** | **676,8 kB** | **48** |
-| **5** — pipeline (`reactflow` sort ici) | ✅ **fait** | | | |
-| **6** — shell + suppression de React | ⬜ | | | ~20 |
+| **5** — pipeline (`reactflow` sort ici) | ✅ **fait** | *non mesuré* | | |
+| **6** — shell + suppression de React | ✅ **fait** | **217,2 kB** | **510,3 kB** | **23** |
 
 Cible finale : ~170 kB initial, ~380 kB total, ~400 paquets transitifs.
+
+**Phase 6, mesuré** (gzip -9 des fichiers `.js` / `.css` de `dist/`, l'initial étant ce que
+`dist/index.html` charge) : **217,2 kB initial, 510,3 kB total, 23 dépendances runtime, 555
+paquets** dans le lockfile (911 à la fin de la Phase 5, 938 avant la Phase 0). La cible des
+~400 paquets n'est **pas** atteinte : 165 paquets seulement sont de production, le reste est
+l'outillage de dev (Vitest + jsdom, ESLint + typescript-eslint, dependency-cruiser,
+`@lingui/cli` et Babel, le plugin protobuf-ts). Le total dépasse la cible surtout à cause de
+`vendor-codemirror` (89 kB) et `vendor-flow` (53 kB), que la migration ne touche pas.
 
 **La Phase 4 fait baisser le chargement initial pour la première fois** : 336,1 → 331,3 kB, et le
 total passe sous le point de départ — 676,8 kB contre 779,5 en Phase 3 et **660 kB avant la
@@ -380,7 +388,17 @@ export const autoScroll: Action<HTMLElement, boolean enabled: { }> = (node, opti
 };
 ```
 
-### 4.2 Le routeur — **décidé : maison (~300 LOC)**
+### 4.2 Le routeur — ~~décidé : maison (~300 LOC)~~ → **`sv-router`** (Phase 6)
+
+> **Écart au plan, décidé en Phase 6.** Le routeur maison n'a pas été écrit : l'équipe a choisi
+> [`sv-router`](https://github.com/colinlienard/sv-router) (Svelte 5, sans SvelteKit, ~5 kB gzip,
+> maintenu). Raison : écrire et maintenir ~300 lignes de routeur coûtait plus que d'adopter une
+> petite dépendance. Le raisonnement ci-dessous reste vrai pour ce qu'il protège : `sv-router`
+> n'est importé **que** par `@platform/routing` (`no-restricted-imports` l'interdit ailleurs), qui
+> garde `ScyllaModule`, `routesFor`, les `handle` (permission + breadcrumb) et les paramètres de
+> route passés en props aux pages. Changer de routeur reste un changement d'un seul module. Le
+> détail de l'adaptateur (métadonnées de route, `RoutePage`, garde) est dans
+> `src/modules/platform/routing/AGENTS.md`.
 
 SvelteKit est écarté (§0). Les micro-routeurs de l'écosystème (`svelte-spa-router`, `svelte-routing`)  
 ne gèrent pas correctement layouts imbriqués, `lazy` et métadonnées de route — or `RouteGuard` et  
@@ -398,12 +416,12 @@ endroit** à changer.
 | Aujourd'hui | Demain | Note |
 |---|---|---|
 | `react`, `react-dom` | `svelte` | |
-| `react-router-dom` (45 fichiers) | `@platform/routing` maison | −1 dép ; depuis la Phase 2, la navigation passe par `setAppNavigator` / `navigateTo` et **`Core.router.tsx` est le seul fichier à changer** |
+| `react-router-dom` (45 fichiers) | ✅ `sv-router` derrière `@platform/routing` | ±0 dép ; la navigation passe par `setAppNavigator` / `navigateTo`, et `sv-router` n'est connu que de `@platform/routing` (écart au plan : §4.2) |
 | `@tanstack/react-query` (49) | `@tanstack/svelte-query` | **même `query-core`, même `QueryClient`, cache partagé**. ⚠ Phase 2 : `createQuery`/`createMutation` s'importent de `@platform/query`, qui y lie le client — un îlot n'a pas le contexte Svelte que les originaux lisent |
-| `zustand` (7) | runes (`$state` en module / classes `*.state.svelte.ts`) | −1 dép |
+| `zustand` (7) | ✅ `createStore` maison (~70 lignes, `shared/presentation/stores/create-store.ts`) + `toRune` | −1 dép ; même API (`getState`/`setState`/`subscribe`), même format `localStorage` |
 | `framer-motion` (5) | `transition:` / `animate:` / `crossfade` natifs | −1 dép, −41 kB |
 | `next-themes` (6) | ~25 lignes maison | −1 dép |
-| `sonner` (24 fichiers, **1 seul point d'entrée** : `shared/presentation/utils/toast.ts`) | `svelte-sonner` | échange trivial |
+| `sonner` (24 fichiers, **1 seul point d'entrée** : `shared/presentation/utils/toast.ts`) | ✅ `svelte-sonner` | échange trivial |
 | `lucide-react` (89) | `@lucide/svelte` | mapping 1:1, mécanique |
 | `@radix-ui` + `radix-ui` (38 fichiers, 33 primitives shadcn) | `shadcn-svelte` (sur `bits-ui`) | **Tailwind et classes identiques → tout le style survit tel quel** |
 | `@tanstack/react-table` (12) | `@tanstack/svelte-table` **v9** | ⚠️ corrigé en Phase 1 : pas de v8 pour Svelte 5. La *forme* des défs survit, la signature générique non — voir « Ce que la fin de la Phase 1 a appris » |
@@ -472,8 +490,8 @@ Aucune phase n'est terminée si un gate est désactivé « le temps de la migrat
   **Vérifié en Phase 0, pas après.**
 - **Couverture** : ✅ `coverage.include` est passé à `src/modules/**/*.{ts,tsx,svelte}`. Les seuils  
   restent un cliquet : ils ne baissent jamais, même temporairement. Un module migré rend ses tests,  
-  sinon il n'est pas migré. Trajet : 55,8 % (creux de la Phase 3) → 74,5 % → **75,7 %** de lignes,  
-  seuils à **74 / 69 / 71 / 74**. C'est le seul gate qui voie un module arriver sans tests.
+  sinon il n'est pas migré. Trajet : 55,8 % (creux de la Phase 3) → 74,5 % → 75,7 % → 68,3 %
+  (fin de Phase 5) → **78,0 %** de lignes (Phase 6), seuils à **77 / 70 / 74 / 77**. C'est le seul gate qui voie un module arriver sans tests.
 - **`svelte-check`** : `.svelte` est invisible pour `tsc -b`. `pnpm typecheck` enchaîne donc  
   `tsc -b && svelte-check` — le gate garde son nom et rien ne passe entre les mailles.
 - **`i18n:collisions`** : zéro à chaque phase.
@@ -733,12 +751,12 @@ qui masque le nœud à `getByRole` **et** vide son nom accessible.
     |---|---|---|---|---|
   | Changement de route | fade + scale in/out, 200 ms | entrée seule | ✅ | `PageTransition.svelte` — `{#key}` + `in:pageIn` / `out:pageOut` |
   | Logo de chargement | fade + rotation | identique | ✅ | `ScyllaLoadingScreen.svelte` — et il gagne la sortie que React ne pouvait pas faire |
-  | Écran « première orga » | fade + scale + y, 800 ms | entrée seule | ⬜ | vit dans `layout/Layout.tsx` → **Phase 6** |
+  | Écran « première orga » | fade + scale + y, 800 ms | entrée seule | ✅ | `layout/.../FirstOrganization.svelte` — `in:welcomeIn` (fade + scale 0,95 + y 1,25rem, 800 ms, `motionDuration`) |
   | Statut éditeur pipeline | crossfade vertical 150 ms | entrée seule | ⬜ | vit dans `pipeline/PipelineEditorHeader.tsx` → **Phase 5** |
 
   Les deux sites restants ne sont pas un oubli : ce sont des composants React de modules non
   migrés, et les convertir voudrait dire migrer `layout/` et `pipeline/` en avance. Les
-  transitions dont ils ont besoin existent déjà dans `ui-svelte/motion/` ; il ne restera qu'à les
+  transitions dont ils ont besoin existent déjà dans `ui/motion/` ; il ne restera qu'à les
   appliquer.
 
   **Pas de `crossfade`, finalement.** Le `crossfade` de Svelte apparie des éléments *envoyés* et
@@ -985,32 +1003,78 @@ d'`organization` suivent tous le même patron ; côté Svelte le consommateur fa
 
 ---
 
-### Phase 6 — Bascule du shell et suppression de React
+### Phase 6 — Bascule du shell et suppression de React ✅ **fait**
 
-*`layout` (1 051) + `core` (335) + `platform/authz` presentation (226). ~1 600 LOC, mais c'est la  
+*`layout` (1 051) + `core` (335) + `platform/authz` presentation (226). ~1 600 LOC, mais c'est la
 phase qui rend le reste définitif.*
 
-1. **Routeur maison** (§4.2) : `compose-module-routes.ts` réécrit contre lui, `RouteGuard`,  
-   `route-handle.struct.ts`, chargement `lazy`, `useMatches` pour les breadcrumbs. Les features ne  
-   l'appellent que via `@platform/routing` (règle posée en Phase 0), la surface est concentrée.
-2. `layout` : `Layout`, `AppSidebar`, `NavMain`, `ScyllaBreadcrumbs`, `context-selector`.
-3. `core` : `App`, `Core.router`, `Auth.guard`, les trois wrappers (`OrganizationSync`,  
-   `OrganizationRedirect`, `ContextCleaner`), `main.tsx`.
-4. `platform/authz` : `Can`, `RequirePermission` en Svelte (`useCan` disparaît, `can()` reste).
-5. **Suppression** : `react`, `react-dom`, `react-router-dom`, `@tanstack/react-query`,  
-   `@tanstack/react-table`, `@radix-ui/*`, `radix-ui`, `lucide-react`, `sonner`, `zustand`,  
-   `@lingui/react`, `@vitejs/plugin-react-swc`, `@lingui/swc-plugin`, `@testing-library/react`,  
-   `@types/react*`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`. Le `shared` React  
-   est supprimé, le `<SvelteIsland>` aussi.
-6. `VENDOR_CHUNKS` nettoyé.
-7. **`CLAUDE.md` réécrit** : « React — Best Practices » → « Svelte — Best Practices », stack,  
-   conventions de nommage (`*.page.svelte`, `*.state.svelte.ts` pour les ViewModels runes), checklist  
-   « Adding a feature ». Les 18 `AGENTS.md` sont déjà à jour, phase par phase.
+1. ✅ **Routeur** (§4.2) : **`sv-router`**, pas un routeur maison — écart au plan, voir §4.2.
+   `compose-module-routes.ts` produit un arbre `AppRoute` sans framework ; `router-tree.ts` le
+   convertit en objet de routes `sv-router`. La garde de route, `route-handle.struct.ts`, le
+   chargement `lazy` et la piste des breadcrumbs passent par les métadonnées de route (`meta`).
+   Les features n'importent toujours que `@platform/routing`.
+2. ✅ `layout` : `Layout`, `AppSidebar`, `NavMain`, `ScyllaBreadcrumbs`, sélecteur d'organisation.
+3. ✅ `core` : `App.svelte`, `core.router.ts`, `Auth.guard.svelte`, les trois wrappers, `main.ts`.
+4. ✅ `platform/authz` : `Can`, `RequirePermission`, `PermissionDenied` en Svelte. `useCan`,
+   `useAuthorization` et `PermissionButton` disparaissent (`GatedButton` + `can()` le remplacent).
+5. ✅ **Suppression** : toutes les dépendances de la liste, plus `shadcn` (CLI React),
+   `components.json` et trois paquets sans usage (`tailwindcss-animate`, `autoprefixer`,
+   `postcss`). `ui-svelte/` et `shadcn-svelte/` prennent la place de `ui/` et `shadcn/`
+   (`@shared/presentation/ui`, `@shadcn`). Le `shared` React, `SvelteIsland`, `LazySvelteIsland`, `sveltePage`,
+   `DependenciesProvider`, `useModuleDomain` et `useScyllaNavigate` sont supprimés.
+6. ✅ `VENDOR_CHUNKS` nettoyé : `vendor-react` disparaît, `vendor-ui-svelte` devient `vendor-ui`
+   (qui reprend `@floating-ui` et `tabbable`, plus partagés avec Radix).
+7. ✅ **`CLAUDE.md` réécrit** : « Svelte — Best Practices », conventions de nommage, harnais de
+   test, checklist « Adding a feature ».
 
-**Critère de sortie** : `grep -r "react" package.json` ne renvoie rien, `pnpm ls` sous ~400 paquets,  
-et les 6 gates verts.
+**Critère de sortie** : `grep -r "react" package.json` ne renvoie rien ✅, les 6 gates verts ✅
+(plus la couverture, seuils remontés à 77 / 70 / 74 / 77), `pnpm ls` sous ~400 paquets ⚠️ **555**
+— voir les mesures en tête de document.
 
----
+#### Ce que la phase a appris
+
+1. **`sv-router` ne sert qu'à matcher, pas à monter.** Ses layouts imbriqués et son `lazy`
+   (détecté par une regex sur le source de la fonction) ne tiennent pas le contrat de
+   `ScyllaModule` : paramètres en props, garde au plus profond, breadcrumbs. Chaque feuille
+   rend donc un seul composant, `RoutePage`, qui lit dans `meta` le loader de la page, la piste
+   des `handle` (avec leur profondeur, pour le lien de chaque breadcrumb), les wrappers du shell
+   et la redirection éventuelle. `sv-router` garde le matching, l'historique et les clics sur
+   `<a>`.
+2. **La transition de page oblige à figer la page sortante.** `PageTransition` garde l'ancienne
+   page à l'écran 140 ms. Si elle lisait le routeur de façon réactive, elle afficherait — et
+   monterait — la nouvelle page pendant sa sortie : doubles requêtes, double streaming de logs.
+   `RouteEntry` lit donc l'état de la route **une fois**, au montage, et `RoutePage` en monte un
+   nouveau par pathname. Les wrappers (`OrganizationSync`, `ContextCleaner`) reçoivent leurs
+   paramètres de la même façon et lisent le store de contexte avec `untrack`, sinon l'ancien et
+   le nouveau wrapper se renvoient l'organisation active pendant la sortie.
+3. **`sv-router` essaie la clé `/` en premier à chaque niveau.** Un groupe de layout sous `/`
+   aurait matché `/login` comme slug d'organisation. Le shell est donc le layout racine, et les
+   routes publiques et le fallback en sortent avec la syntaxe `(segment)`.
+4. **La navigation devient asynchrone.** react-router mettait l'URL à jour dans l'appel ;
+   `sv-router` après une micro-tâche. `currentPathname()` / `currentSearch()` sont donc réactifs
+   (ils lisent l'état du routeur), et `navigateTo` résout les cibles relatives (`..`) lui-même.
+5. **Les macros Lingui avaient besoin du plugin SWC de React.** Sans `@vitejs/plugin-react-swc`,
+   plus rien ne compilait `msg` dans les `.ts`. Un plugin Vite de 20 lignes (`linguiMacros`) les
+   passe à Babel avec `@lingui/babel-plugin-lingui-macro` — Babel était déjà là par `@lingui/cli`,
+   donc zéro paquet transitif en plus. Les ids générés sont les mêmes : catalogues inchangés.
+6. **Zustand sort sans toucher aux appels.** `createStore` (~70 lignes) garde `getState` /
+   `setState` / `subscribe` et le format `localStorage` de `persist`, donc le contexte stocké des
+   utilisateurs survit. Les stores perdent le préfixe `use` (`contextStore`, `permissionsStore`,
+   `selectionStore`) : ce ne sont plus des hooks.
+7. **La liste d'organisations n'existe plus qu'une fois.** `OrganizationList` prend un composant
+   de ligne en prop : `DropdownMenuItem` dans le sélecteur du shell, une ligne simple dans les
+   réglages. En Svelte, un composant passé en prop garde le contexte du menu — ce qui était
+   impossible entre React et Svelte (Phase 2, point 2).
+8. **La couverture était déjà sous les seuils à l'entrée de la phase** (68,3 % de lignes après
+   la Phase 5, dont `pipeline` à 20 %) : le gate `coverage` de la CI était rouge. Les tests de la
+   phase couvrent le shell, `OrganizationList` et les ViewModels et pages de `pipeline` ; la
+   couverture remonte à **78,0 %** de lignes (77,1 / 70,4 / 74,2 % pour instructions, branches,
+   fonctions) et les seuils à **77 / 70 / 74 / 77**.
+9. **Le gate `lint` était rouge sur du code déjà commité** (Phases 2 à 5) : assertions inutiles,
+   `unbound-method` sur `expect(repository.method)` dans les tests, `Set` au lieu de `SvelteSet`.
+   Corrigé ici ; `unbound-method` est coupé pour `*.test.ts` seulement, où il n'a aucun vrai
+   positif. `pnpm lint` a besoin de plus de 4 Go de tas sur ce projet
+   (`NODE_OPTIONS=--max-old-space-size=8192`), sinon il meurt en OOM après ~20 minutes.
 
 ## 6. La recette, pour un module (Workflow de migration)
 

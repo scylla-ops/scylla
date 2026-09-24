@@ -36,14 +36,11 @@ do. `GrpcAgentMapper` converts proto messages into the domain types.
 
 **Presentation** is Svelte, as of Phase 3 of the migration. The three query hooks became
 `agents.queries.ts`: `queryOptions` and `mutationOptions` objects, which is plain data with no
-framework in it. That shape is what let `pipeline` and `dashboard` — both still React — keep
-reading agents through this module's barrel while the pages here were rewritten: `useQuery`
-takes the same object `createQuery` does, and the two halves share one cache entry.
+framework in it. `pipeline` and `dashboard` read agents through this module's barrel with the
+same objects, and share one cache entry with the pages here.
 
-One thing a React caller has to do that a Svelte one does not: subscribe to the permissions
-store, with `useCan(Permission.LIST_AGENTS)`. The agents query decides its own `enabled` from
-`can(…)`, and a React component that never subscribed simply would not re-render when the
-permissions arrive — leaving the query disabled for good.
+The agents query decides its own `enabled` from `can(…)`. A caller builds the options inside
+the `createQuery` callback, so the query starts when the permissions arrive.
 
 The UI is split into small cards — `AgentCard`, `LiveNowCard`, `OutcomesChart`, `AgentLogs` — so
 the pages stay layout-only, and the outcomes chart's bucket arithmetic sits in

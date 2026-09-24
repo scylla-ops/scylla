@@ -58,7 +58,7 @@ No entities, no structs, no mappers — there is nothing to model.
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `public` | `/login` | none | `Login.page.svelte`, via `sveltePage()` |
+| `public` | `/login` | none | `Login.page.svelte` |
 
 `mount: 'public'` puts it **outside** `AuthGuard`. It must stay there: mounting it anywhere else
 makes signing in require being signed in.
@@ -69,13 +69,13 @@ No nav entry — the sidebar only renders inside the authenticated shell.
 
 - **Session storage is `localStorage`, keys `token` and `userId`.** Three places touch it and
   they must agree: this data source writes them, `platform/grpc`'s transport reads `token` for
-  the `Authorization: Bearer` header, and `core/.../Auth.guard.tsx` reads it to decide whether
+  the `Authorization: Bearer` header, and `core/.../Auth.guard.svelte` reads it to decide whether
   to redirect. Changing the key or the mechanism means changing all three in the same commit.
 - **`LoginState` must be constructed during a component's initialisation.** The mutation inside
   it installs an `$effect.pre`; built from an event handler, Svelte throws `effect_orphan`. True
   of every view model holding a query or a mutation.
 - No permission gate anywhere in this module — the user has none yet. Permissions are loaded
-  *after* sign-in by `usePermissionSync` in [`roles`](../roles/AGENTS.md).
+  *after* sign-in by `syncMyPermissions` in [`roles`](../roles/AGENTS.md), which the shell calls.
 - After a successful login the app must land somewhere the user can actually reach; that
   redirect is the shell's job, not this module's.
 - Never log, toast or store the password. Errors surface as a generic failure — do not leak

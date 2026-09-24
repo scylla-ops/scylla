@@ -12,8 +12,8 @@ Ready-made pipeline templates a project can start from.
 
 **Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
 unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
-options objects in `presentation/*.queries.ts`, which both bindings can run — `createQuery` here,
-react-query's `useQuery` in the modules still on React.
+options objects in `presentation/*.queries.ts`, which a component or another feature runs with
+`createQuery`.
 
 ## Public API — `index.ts`
 

@@ -23,9 +23,8 @@ ROLES_QUERY_KEY, GRANTS_QUERY_KEY, GRANTABLE_ROLES_QUERY_KEY
 ```
 
 Every export is **framework-free** — options factories, pure functions, types. That is load
-bearing, not incidental: `membership` (Svelte) and `layout` (still React) both read from here,
-and a `queryOptions` object is the only thing `useQuery` and `createQuery` can run against the
-same cache entry.
+bearing, not incidental: `membership` and `layout` both read from here, on the same cache
+entries as this module's pages.
 
 Never add: `roles.module.ts`, a domain accessor, a page, **or any `.svelte` component** — a
 component re-exported from a barrel cannot be dropped by Rollup and drags bits-ui into the chunk
@@ -46,10 +45,10 @@ The division:
 | Administering roles/grants | **here** | it is a feature |
 
 `syncMyPermissions(organizationId, projectId)` fetches `getMyPermissions()` and fills
-`usePermissionsStore`, **only when the sync key — user + organization + project — changed**. The
+`permissionsStore`, **only when the sync key — user + organization + project — changed**. The
 guard is in this function, not in its caller, so it survives whichever framework mounts it. The
-shell owns *when*: `layout/presentation/hooks/use-permission-sync.ts` is its React binding today
-and becomes a Svelte effect in Phase 6, with this function untouched. Call it from **one place**,
+shell owns *when*: an effect in `layout/presentation/shell.state.svelte.ts` calls it when the
+active organization or project changes. Call it from **one place**,
 never from a feature, and never write the authz store from anywhere else.
 
 `resetPermissionSync()` forgets the key — for sign-out and for tests.
@@ -116,14 +115,14 @@ presentation/
   utils/permission-mapping.ts, permission-tree.ts, role-label.ts
 ```
 
-There is no `presentation/hooks/`, no `use-roles-domain.ts` and no Zustand store — the thirteen
+There is no `presentation/hooks/`, no `use-roles-domain.ts` and no store of its own — the thirteen
 hooks became `roles.queries.ts` plus the four ViewModels above.
 
 ## Routes & nav
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `organization` | `roles` | `MANAGE_ROLES` | `Roles.page.svelte` via `sveltePage()` |
+| `organization` | `roles` | `MANAGE_ROLES` | `Roles.page.svelte` |
 
 Sidebar: section **`system`** (not `organization`), order `20`, icon `ShieldIcon`.
 

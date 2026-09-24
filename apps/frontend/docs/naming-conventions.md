@@ -1,5 +1,9 @@
 # Naming Conventions
 
+> **Out of date.** This document describes the frontend before the migration to Svelte
+> (`refacto_svelte.md`). `CLAUDE.md` and the `AGENTS.md` of each module are the current contract.
+> Where this document disagrees with them, they are correct.
+
 This document defines the naming rules applied across the Scylla frontend codebase.
 
 ---

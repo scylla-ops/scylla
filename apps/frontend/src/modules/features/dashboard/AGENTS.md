@@ -30,7 +30,7 @@ wrong.
 
 | From | Read |
 |---|---|
-| `@platform/context` | `useContextStore` — the current organization |
+| `@platform/context` | `contextStore` — the current organization |
 | `@platform/authz` | `can`, `Permission` — per-project access |
 | `features/project` | `projectQueries.lookup` |
 | `features/pipeline` | `pipelineQueries.byOrganization` + `asPipelineFeed` |
@@ -38,7 +38,7 @@ wrong.
 | `features/agents` | `agentQueries.byOrganization`, `agentQueries.statsOf` (in the chart) |
 
 All four reads are `queryOptions` objects, so this module shares one cache entry per resource
-with whoever else reads it — including the modules still on React.
+with whoever else reads it.
 
 ## Layout
 
@@ -61,7 +61,7 @@ No `domain/`, no `infrastructure/` — correct for this module, do not add them.
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `organization` | `dashboard` | `READ_ORGANIZATION` | `Dashboard.page.svelte` via `sveltePage()` |
+| `organization` | `dashboard` | `READ_ORGANIZATION` | `Dashboard.page.svelte` |
 
 Sidebar: section `organization`, order `10`, icon `LayoutDashboard`.
 

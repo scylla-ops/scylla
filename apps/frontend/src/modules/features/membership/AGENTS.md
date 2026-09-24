@@ -41,11 +41,8 @@ It composes, through public APIs only:
 | `features/user` | user identities |
 | `@platform/authz` | `PrincipalKind`, `PermissionScope`, `Permission`, `can` |
 
-**`roles` was given query factories for this module's sake, before its own migration.** A
-Svelte component cannot call `useScopedGrants`; `roleQueries.scopedGrants` is the same
-declaration with the framework taken out, and `roles`' own React hooks are now thin bindings
-over it — so one resource still has exactly one query key. Phase 4 deletes the bindings, not
-the factories.
+**This module reads the grants through `roleQueries.scopedGrants`**, the same factory that
+`roles` uses — so one resource has exactly one query key.
 
 ## Layout
 
@@ -80,7 +77,7 @@ No `infrastructure/` — correct, do not add one.
 | `project` | `members` | `LIST_PROJECT_MEMBERS` | `ProjectMembers.page.svelte` |
 
 The project page takes `projectId` as a **prop**: route params are the one thing a Svelte page
-cannot read from a singleton, so `sveltePage` hands them down.
+cannot read from a singleton, so the router gives them as props (`@platform/routing`).
 
 Sidebar: one entry only — section `organization`, order `30`, icon `UsersRound`, gated on
 `LIST_ORGANIZATION_MEMBERS`. The project page is reached from inside a project, not the org nav.

@@ -22,16 +22,13 @@ NoAgentsBanner          // a .svelte component
 
 Never add to this barrel: `agents.module.ts`, pages.
 
-**This module is Svelte** (Phase 3). There is no `use-agents-domain.ts` and no hooks. The
-three hooks became the factories in `presentation/agents.queries.ts`, which is what let
-`pipeline` and `dashboard` keep consuming them while still in React: a `queryOptions` object
-has no framework in it, so `useQuery` takes it unchanged and both halves share one cache entry.
+**This module is Svelte** (Phase 3). There is no `use-agents-domain.ts` and no hooks. Reads and
+writes are the factories in `presentation/agents.queries.ts`; `pipeline` and `dashboard` run them
+with `createQuery` and share one cache entry with this module's pages.
 
-**A React consumer must subscribe to the permissions store itself.** `agentQueries.byOrganization`
-computes its own `enabled` from `can(LIST_AGENTS)`; in Svelte that is reactive, but a React
-component only re-renders when something it subscribed to changes. Call
-`useCan(Permission.LIST_AGENTS)` — `use-run-pipeline.ts` and `AgentOutcomesChart.tsx` both do —
-or the query stays disabled for good once permissions arrive.
+`agentQueries.byOrganization` computes its own `enabled` from `can(LIST_AGENTS)`. Build the
+options inside the `createQuery` callback, so `can` stays reactive and the query starts when the
+permissions arrive.
 
 ## Data contract
 
@@ -79,7 +76,7 @@ presentation/
 | `organization` | `agents/:agentId` | `READ_APP` | `AgentDetails.page.svelte` |
 
 The detail page takes `agentId` as a **prop**: route params are the one thing a Svelte page
-cannot read from a singleton, so `sveltePage` hands them down (`refacto_svelte.md` §6.7).
+cannot read from a singleton, so the router gives them as props (`@platform/routing`).
 
 Sidebar: section `organization`, order `40`, icon `HardDriveIcon`, same permission.
 

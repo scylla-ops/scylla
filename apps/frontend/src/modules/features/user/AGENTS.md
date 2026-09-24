@@ -12,21 +12,21 @@ User accounts: the system-wide directory and a user's own settings.
 
 **Presentation is Svelte** (Phase 2 of `refacto_svelte.md`). Domain and infrastructure are
 unchanged. There is no `use-<feature>-domain.ts` and no hooks: reads and writes are declared as
-options objects in `presentation/*.queries.ts`, which both bindings can run — `createQuery` here,
-react-query's `useQuery` in the modules still on React.
+options objects in `presentation/*.queries.ts`, which a component or another feature runs with
+`createQuery`.
 
 ## Public API — `index.ts`
 
 ```typescript
 type UserEntity
 userQueries, userMutations, canListUsers, USERS_QUERY_KEY, USER_QUERY_KEY
-UserSettingsPage                      ← the documented page exception
+loadUserSettingsPage                  ← the documented page exception, as a loader
 ```
 
-`roles`, `membership` and `layout` consume `userQueries` through react-query's `useQuery` —
-the options object is the same one `createQuery` runs here, so there is one cache entry.
+`roles`, `membership` and `layout` run `userQueries` with `createQuery`, on the same cache entry
+as this module's pages.
 
-`UserSettingsPage` is exported because [`organization`](../organization/AGENTS.md) composes it
+`loadUserSettingsPage` is exported because [`organization`](../organization/AGENTS.md) composes it
 behind its own `users/:userId` route, to render the organizations panel. That consumer is
 lazily loaded, which is what makes the exception safe. Do not add a second page export. The
 panel is a **snippet** prop now, where it used to be a `ReactNode`.
@@ -74,7 +74,7 @@ presentation/
 
 | Mount | Path | Permission | Component |
 |---|---|---|---|
-| `organization` | `users` (index) | `LIST_USERS` | `UserAdmin.page.svelte`, via `sveltePage()` |
+| `organization` | `users` (index) | `LIST_USERS` | `UserAdmin.page.svelte` |
 
 Sidebar: section **`system`** (not `organization`), order `10`, icon `UsersIcon`.
 

@@ -6,7 +6,8 @@
 Scylla's UI is scoped: you are always inside an organization, often inside a project, sometimes
 looking at a pipeline. This capability holds *which ones*, and builds navigation from that.
 
-Two exports, imported as `@platform/context`: `useContextStore` and `useScyllaNavigate`.
+Imported as `@platform/context`: the `contextStore`, the navigator of the app, and
+`scyllaNavigate`, the navigation built on the context.
 
 ## Identifiers only, on purpose
 
@@ -24,8 +25,8 @@ needs more reads the id from here and calls the owning feature's hook with it. T
 pointer, not a cache.
 
 The same reasoning explains why it is one of only two global stores in the app (the other being
-`useSelectionStore` in [shared](../../shared/README.md)). Everything else is either server state
-in TanStack Query or local `useState`.
+`selectionStore` in [shared](../../shared/README.md)). Everything else is either server state
+in TanStack Query or local `$state`.
 
 ## Switching organizations clears the rest
 
@@ -42,28 +43,31 @@ were rather than dumping you at the organization picker.
 ## The URL is the source of truth
 
 Context is *derived from the route*, not the other way round. The shell's
-`OrganizationSync.wrapper.tsx` reads route params and writes them into the store;
-`ContextCleaner.wrapper.tsx` clears context when you leave a scope. See
+`OrganizationSync.wrapper.svelte` reads route params and writes them into the store;
+`ContextCleaner.wrapper.svelte` clears context when you leave a scope. See
 [core](../../core/README.md).
 
 This direction is deliberate. If both the URL and the store could drive each other, you would
-need effects on both sides watching for changes — the mirror-state cascade the codebase's React
-rules exist to prevent. One writer, one direction, and a pasted URL always wins.
+need effects on both sides watching for changes — a mirror-state cascade. One writer, one direction, and a pasted URL always wins.
 
 ## Navigating
 
-`useScyllaNavigate()` is how you move between scoped screens. It knows the current context, so
+`scyllaNavigate` is how you move between scoped screens. It knows the current context, so
 callers ask for a destination rather than assembling
 `/${orgSlug}/projects/${projectId}/pipelines/${id}/jobs` by hand.
 
 Beyond convenience, it is a single point of change: when a route's shape changes, one file is
 updated instead of every template literal scattered across fourteen modules.
 
+The navigator itself is one installed object (`setAppNavigator`). The shell installs the router
+of [platform/routing](../routing/README.md) there, and a test installs a fake one. So nothing in a
+feature knows which router the app uses.
+
 ## Structure
 
-Two files and a barrel, with no `domain/` or `presentation/` folders. That is intentional
+A few files and a barrel, with no `domain/` or `presentation/` folders. That is intentional
 minimalism — the layered structure is mandatory for features that model something; a
-two-file capability does not need scaffolding to look like one.
+small capability does not need scaffolding to look like one.
 
 ## Related modules
 

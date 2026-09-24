@@ -17,7 +17,7 @@ All of its data comes from other modules' public APIs:
 
 | Question | Answered by |
 |---|---|
-| Which organization am I in? | `useContextStore` — [platform/context](../../platform/context/README.md) |
+| Which organization am I in? | `contextStore` — [platform/context](../../platform/context/README.md) |
 | Which projects can I see? | `projectQueries.lookup` — [project](../project/README.md) |
 | Which pipelines exist? | `pipelineQueries.byOrganization` — [pipeline](../pipeline/README.md) |
 | How did recent runs go? | `jobQueries.byOrganization` — [jobs](../jobs/README.md) |

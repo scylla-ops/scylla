@@ -41,8 +41,8 @@ Beyond the list, `SecretHealthOverview` gives an at-a-glance summary — how man
 how old they are, whether any look stale. It is a nudge toward rotation, built entirely from the
 metadata the list already returns, so it costs no extra request.
 
-The list itself is a `DataTable` with columns defined in `secret-columns.tsx`, paginated through
-the shared `usePagination` hook, with a `FeatureHeader` carrying the count and the new-secret
+The list itself is a `DataTable` with columns defined in `secret-columns.ts`, paginated through
+the shared `createPagination` helper, with a `FeatureHeader` carrying the count and the new-secret
 button.
 
 ## Naming: secret vs credential

@@ -24,18 +24,22 @@ enforces that no *other* module does the same.
 ## Layout
 
 ```
-di/registry.ts                       THE module list + the DI map
-di/module-permissions.test.ts        conformance: every page declares a gate
-di/feature-permissions.test.ts       conformance: features gate, shared hooks check
-presentation/ui/App.tsx              provider stack (the QueryClient is @platform/query)
-presentation/ui/svelte/              Phase 0 conformance: a Svelte island needs no React context
+di/registry.ts                          THE module list + the DI map
+di/module-permissions.test.ts           conformance: every page declares a gate
+di/feature-permissions.test.ts          conformance: features gate, shared queries check
+presentation/ui/App.svelte              theme toggle, router view, toaster
+presentation/ui/ThemeToggle.svelte
 presentation/ui/router/
-  Core.router.tsx                    the shell skeleton
-  Auth.guard.tsx                     token present? → Outlet, else /login
-  OrganizationSync.wrapper.tsx       URL slug → context store
-  OrganizationRedirect.wrapper.tsx   `/` → the user's organization
-  ContextCleaner.wrapper.tsx         drops stale project/pipeline context
-locales/                             the shell's own catalog
+  core.router.ts                        the shell skeleton (appRoutes) + startRouter()
+  core.messages.ts                      the shell's own messages
+  AppShell.svelte                       root layout: AuthGuard + layout's Layout
+  Auth.guard.svelte                     token present? → routes, else /login
+  OrganizationSync.wrapper.svelte       URL slug → context store (organization-sync.svelte.ts)
+  OrganizationRedirect.wrapper.svelte   `/` → the user's organization (organization-redirect.svelte.ts)
+  ContextCleaner.wrapper.svelte         drops stale project/pipeline context (context-cleaner.svelte.ts)
+  LoginRedirect.svelte                  the fallback for a URL that no route matches
+locales/                                the shell's own catalog
+src/main.ts                             entry: loads the locale, starts the router, mounts App
 ```
 
 ## `di/registry.ts` — the only list
@@ -45,6 +49,7 @@ export const modules = [LoginModule, DashboardModule, …] as const satisfies re
 export const dependencies: DomainRegistry = Object.fromEntries(
   modules.map(module => [module.id, module.domain]),
 );
+setDependencyRegistry(dependencies);
 ```
 
 Routes, sidebar entries **and** DI are all derived from this one array. **Registration order
@@ -59,100 +64,87 @@ Because everything is derived from `modules`, one test can hold the whole app to
 of thirteen. It enumerates the *composed* route trees (`routesFor`) and asserts:
 
 1. **Every page behind `AuthGuard` declares a `permission`** — on itself or on an ancestor,
-   matching `RouteGuard`'s deepest-match rule. A route with no `lazy` is a grouping node and is
-   walked through, not reported.
+   matching the deepest-match rule of the route guard. A route with no `lazy` is a grouping
+   node and is walked through, not reported.
 2. **A sidebar link and the page it opens require the same permission.** `permission` is written
    twice — once in `routes`, once in `nav` — and nothing but this test stops the two drifting.
    It also fails on a nav `url` that no route renders.
 
-The point is the *default*: a page added tomorrow is checked the day its module joins the
-registry, without anyone remembering to write a test for it. Per-component tests pin gates that
-exist; this one fails for gates that don't.
-
 `UNGATED_PAGES` is a **ratchet** — entries may be removed, never added without a real reason,
 and a stale entry fails the suite too. `mount: 'public'` is exempt structurally.
 
-A new mount in `Core.router.tsx` means adding it to `GUARDED_MOUNTS` (and `SHELL_SEGMENTS`, if
+A new mount in `core.router.ts` means adding it to `GUARDED_MOUNTS` (and `SHELL_SEGMENTS`, if
 the shell owns the segment a nav entry addresses — `projects` is the one such case today).
 
 ## `di/feature-permissions.test.ts` — the same idea, one level down
 
-Route declarations are typed, so the rules above can walk them. The gating a feature applies to
-its own *buttons* is not declared anywhere, so this file reads source instead. Two rules,
-enumerated from `modules` so a new feature is checked on arrival:
+It reads source, enumerated from `modules`:
 
-1. **A feature that mutates gates something in its UI.** If nothing under its `presentation/ui/`
-   ever mentions a `Permission`, every write it offers is open to anyone who reaches the page.
-2. **A query hook another feature imports checks for itself.** Crossing a barrel means running
-   outside the owner's route guard — the consumer's page was entered on the *consumer's*
-   permission. `useJobsByPipelines` is the one that already does this.
+1. **A feature that mutates gates something in its UI.**
+2. **A query another feature imports checks for itself.** Crossing a barrel means running outside
+   the owner's route guard.
 
-Both are **completeness, never correctness**: they catch a feature with no gating and a hook that
-trusts its caller; they cannot catch the wrong permission on the right button. Doing that would
-need the mutation→permission mapping declared somewhere — today it is spread across a hook, a
-table, a child component and a route. Until then, correctness lives in the per-component tests.
+Both are **completeness, never correctness**. `UNGATED_FEATURES` and `UNCHECKED_SHARED_HOOKS`
+are ratchets. Entries marked `SEEDED DEBT` or `TRIAGE` are open questions, not decisions.
 
-`UNGATED_FEATURES` and `UNCHECKED_SHARED_HOOKS` are ratchets, seeded with today's state and
-shrinking only. Entries marked `SEEDED DEBT` or `TRIAGE` are open questions, not decisions.
-
-## `Core.router.tsx` — the skeleton, and only the skeleton
+## `core.router.ts` — the skeleton, and only the skeleton
 
 ```
-routesFor(modules, 'public')                     ← outside the guard
-└── AuthGuard
-    └── Layout (navEntries)
-        ├── index → OrganizationRedirectWrapper
-        └── /:organizationSlug → OrganizationSyncWrapper
-            └── RouteGuard → routesFor(modules, 'organization')
-                └── projects → routesFor(modules, 'projects')
-                    └── :projectId → ContextCleanerWrapper
-                        └── RouteGuard → routesFor(modules, 'project')
+publicRoutes: routesFor(modules, 'public')        ← outside the shell layout
+shell: AppShell (AuthGuard + Layout)
+├── index → OrganizationRedirectWrapper
+└── :organizationSlug   wrapper OrganizationSyncWrapper
+    ├── index → redirect 'dashboard'
+    ├── routesFor(modules, 'organization')
+    └── projects   (breadcrumb "Projects")
+        ├── routesFor(modules, 'projects')
+        └── :projectId   wrapper ContextCleanerWrapper (breadcrumb "Project")
+            └── routesFor(modules, 'project')
+fallback: LoginRedirect
 ```
 
 **Never add a page here.** Adding a page is a change to one module's `*.module.ts`; this file
 does not move. It changes only when a *mount point* is added or the shell's structure changes.
 
-## Global error handling lives in `@platform/query`
+The route guard is not in this tree. Every page goes through `RoutePage` in
+`@platform/routing`, which applies the deepest `permission` on the URL.
 
-It used to be in `App.tsx`; it moved because features must be able to reach the client without
-importing the shell, and because React and Svelte have to be handed the same instance. `App.tsx`
-now only hands `queryClient` to `QueryClientProvider`.
+`startRouter()` creates the router and installs it with `setAppNavigator`. `main.ts` calls it
+once, before it mounts `App`.
+
+## The wrappers
+
+A wrapper is a `RouteWrapper` (`@platform/routing`): it gets the route parameters as the
+`params` prop, and renders `children`. The logic of each wrapper is in its `*.svelte.ts` file,
+and the tests run that file without a component.
+
+- The wrappers own the **URL → store** direction of context sync. The URL is the source of
+  truth. Do not add a store → URL sync.
+- **A wrapper reads its parameters once, when it mounts.** The router mounts the wrappers again
+  for each new pathname. During the exit animation, the old wrappers stay on screen, so they
+  must not react to the new URL.
+- The effects read the context store with `untrack`. If an effect depended on the active
+  organization, the old wrapper and the new wrapper could set the store one after the other.
+- `ContextCleanerWrapper` also handles a project id that no longer exists (redirects out).
+
+## Global error handling lives in `@platform/query`
 
 The `QueryClient` carries a `QueryCache` **and** a `MutationCache` `onError`:
 
 - `UNAUTHENTICATED` or a network error → clear `localStorage.token`, hard-redirect to `/login`.
 - Otherwise → `error.log()` and `toast.error(error.userMessage())`.
 
-**Consequence: individual hooks must NOT add their own `onError` toast** — you get a double
-toast. This is the codebase's documented rule for mutations.
-
-Two `//todo`s are recorded there deliberately (production console noise; domain errors ideally
-toasted by the owning module). Leave them unless you are addressing them.
-
-## `presentation/ui/svelte/` — Phase 0's conformance test
-
-`PlatformSingletons.fixture.svelte` + its test pin that a Svelte component mounted inside the
-React tree reaches the translation, the permission, the context store and the DI registry with
-**no React provider above it**. Each assertion fails the day one of those goes back behind a
-context.
-
-It lives in `core/` and not next to `SvelteIsland` in `shared/` for a layering reason: it imports
-`@platform/*`, and `shared/` sits below platform. The same test also pins that `react-query` and
-`svelte-query` resolve the **same** `@tanstack/query-core` — two copies fork the cache in silence,
-with nothing failing anywhere.
+**Consequence: individual queries and mutations must NOT add their own `onError` toast** — you
+get a double toast.
 
 ## Rules that bite here
 
 - `localStorage.token` is a three-way contract: `features/login` writes it, `platform/grpc`
-  reads it for the auth header, `Auth.guard.tsx` reads it to redirect. Change all three at once.
-- The **wrappers own the URL → store direction** of context sync. Their `useEffect`s are
-  legitimate (URL is an outside-React system). Do not add a store → URL sync — the URL is the
-  source of truth.
-- `ContextCleanerWrapper` also handles a project id that no longer exists (redirects out).
-- Provider order in `App.tsx` matters: `ThemeProvider` → `I18nProvider` → `QueryClientProvider`
-  → `DependenciesProvider` → router. `DependenciesProvider` must wrap the router, or every
-  `useModuleDomain` throws.
-- `StrictMode` is on: effects run twice in dev. Fix the effect, do not remove `StrictMode`.
+  reads it for the auth header, `Auth.guard.svelte` reads it to redirect. Change all three at
+  once.
+- There are no providers. The query client, the DI registry, the i18n instance and the stores
+  are module singletons. `App.svelte` only renders the theme toggle, the router view and the
+  toaster.
 
 ## Before done
 

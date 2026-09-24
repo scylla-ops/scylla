@@ -28,9 +28,8 @@ factories in `presentation/jobs.queries.ts` resolve the repository through
 `getModuleDomain('jobs')` per call, and a component runs them with `createQuery` /
 `createMutation` from `@platform/query`.
 
-The hooks are gone, and that is what keeps the React consumers working: `dashboard` and
-`pipeline` are still React, and a `queryOptions` object has no framework in it — they hand one
-straight to `useQuery` / `useQueries` and share the *same* cache entry as the Svelte pages.
+`dashboard` and `pipeline` run the same factories with `createQuery` / `createQueries`, and
+share the *same* cache entry as this module's pages.
 
 `loadJobsPage` is a **loader** (`() => import(…)`), never the component. `pipeline` composes this
 page behind its own route because it owns the "Run" action, and a `.svelte` re-exported from a
@@ -120,7 +119,7 @@ already renders a page of its own.
 - **Log tailing is a subscription to something outside the framework**, so it is a Svelte
   action / `*.svelte.ts` owner — `tail-job-logs.svelte.ts` — and never reactivity. It opens the
   stream and **closes it on teardown**; the same holds for `streamed-log-view.svelte.ts`, which
-  drives a CodeMirror instance through `@shared/presentation/ui-svelte/editor/code-mirror.actions.ts`.
+  drives a CodeMirror instance through `@shared/presentation/ui/editor/code-mirror.actions.ts`.
 - **Never re-seed the editor with the whole live log string.** Replacing the document
   (`changes: { from: 0, to: doc.length }`) resets the scroll offset and collapses the selection;
   at one flush per 150 ms the log appears to jump back to the top and nothing can be selected.

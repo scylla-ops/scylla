@@ -33,7 +33,7 @@ may depend on it.
 What stays here is the half that needs a backend call:
 
 ```
-syncMyPermissions  (this module)  ──fills──▶  usePermissionsStore  (platform/authz)
+syncMyPermissions  (this module)  ──fills──▶  permissionsStore  (platform/authz)
                                                        │
                                                    can() reads it
                                                        │
@@ -101,7 +101,7 @@ includes a permission, `updateRole` applies changes immutably.
 thirteen React hooks collapsed into two kinds of file: `roles.queries.ts`, which declares every
 read and write as a plain options object with no framework in it, and four
 `*.state.svelte.ts` ViewModels, one per view rather than one per module. The queries file is what
-lets `membership` and the still-React shell read the same role catalog out of the same cache
+lets `membership` and the shell read the same role catalog out of the same cache
 entry; the ViewModels are where filters, selection and mutations are orchestrated, so the
 components stay about rendering.
 
